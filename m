@@ -1,217 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaEUISe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:18:34 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:63902 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbaEUIS2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:18:28 -0400
-Date: Wed, 21 May 2014 10:16:09 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140521081608.GA11068@ulmo>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com>
- <4161434.ylGuoPKcfs@wuerfel>
- <20140520135956.GA23140@ulmo>
- <5123714.0MpMQfsmcr@wuerfel>
+	id S1752078AbaEUISo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:18:44 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:42388
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751691AbaEUISj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 04:18:39 -0400
+From: <hongbo.zhang@freescale.com>
+To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>
+CC: <leo.li@freescale.com>, <scottwood@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v5 2/3] DMA: Freescale: add suspend resume functions for DMA driver
+Date: Wed, 21 May 2014 16:03:02 +0800
+Message-ID: <1400659383-6555-3-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400659383-6555-1-git-send-email-hongbo.zhang@freescale.com>
+References: <1400659383-6555-1-git-send-email-hongbo.zhang@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(81342001)(46102001)(77982001)(50226001)(62966002)(36756003)(87936001)(87286001)(76482001)(77156001)(4396001)(50466002)(6806004)(83322001)(48376002)(44976005)(76176999)(92726001)(77096999)(19580395003)(2201001)(92566001)(86152002)(85852003)(74662001)(31966008)(83072002)(99396002)(74502001)(19580405001)(89996001)(50986999)(64706001)(33646001)(21056001)(20776003)(575784001)(86362001)(88136002)(47776003)(93916002)(102836001)(551934003)(80022001)(81542001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB399;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:gate-az5.freescale.com;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <5123714.0MpMQfsmcr@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Forefront-PRVS: 0218A015FA
+Authentication-Results: spf=fail (sender IP is 192.88.158.246)
+ smtp.mailfrom=hongbo.zhang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds suspend and resume functions for Freescale DMA driver.
 
-On Tue, May 20, 2014 at 10:31:29PM +0200, Arnd Bergmann wrote:
-> On Tuesday 20 May 2014 16:00:02 Thierry Reding wrote:
-> > On Tue, May 20, 2014 at 03:34:46PM +0200, Arnd Bergmann wrote:
-> > > On Tuesday 20 May 2014 15:17:43 Thierry Reding wrote:
-> > > > On Tue, May 20, 2014 at 02:41:18PM +0200, Arnd Bergmann wrote:
-> > > > > On Tuesday 20 May 2014 14:02:43 Thierry Reding wrote:
-> > > > [...]
-> > > > > > Couldn't a single-master IOMMU be windowed?
-> > > > >=20
-> > > > > Ah, yes. That would actually be like an IBM pSeries, which has a =
-windowed
-> > > > > IOMMU but uses one window per virtual machine. In that case, the =
-window could
-> > > > > be a property of the iommu node though, rather than part of the a=
-ddress
-> > > > > in the link.
-> > > >=20
-> > > > Does that mean that the IOMMU has one statically configured window =
-which
-> > > > is the same for each virtual machine? That would require some other
-> > > > mechanism to assign separate address spaces to each virtual machine,
-> > > > wouldn't it? But I suspect that if the IOMMU allows that it could be
-> > > > allocated dynamically at runtime.
-> > >=20
-> > > The way it works on pSeries is that upon VM creation, the guest is as=
-signed
-> > > one 256MB window for use by assigned DMA capable devices. When the gu=
-est
-> > > creates a mapping, it uses a hypercall to associate a bus address in =
-that
-> > > range with a guest physical address. The hypervisor checks that the b=
-us
-> > > address is within the allowed range, and translates the guest physical
-> > > address into a host physical address, then enters both into the I/O p=
-age
-> > > table or I/O TLB.
-> >=20
-> > So when a VM is booted it is passed a device tree with that DMA window?
->=20
-> Correct.
->=20
-> > Given what you describe above this seems to be more of a configuration
-> > option to restrict the IOMMU to a subset of the physical memory for
-> > purposes of virtualization. So I agree that this wouldn't be a good fit
-> > for what we're trying to achieve with iommus or dma-ranges in this
-> > binding.
->=20
-> Thinking about it again now, I wonder if there are any other use cases
-> for windowed IOMMUs. If this is the only one, there might be no use
-> in the #address-cells model I suggested instead of your original
-> #iommu-cells.
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+---
+ drivers/dma/fsldma.c |   77 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/dma/fsldma.h |   15 ++++++++++
+ 2 files changed, 92 insertions(+)
 
-So in this case virtualization is the reason why we need the DMA window.
-The reason for that is that the guest has no other way of knowing what
-other guests might be using, so it's essentially a mechanism for the
-host to manage the DMA region and allocate subregions for each guest. If
-virtualization isn't an issue then it seems to me that the need for DMA
-windows goes away because the operating system will track DMA regions
-anyway.
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index b291e6c..465f16d 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -400,6 +400,14 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+ 
+ 	spin_lock_bh(&chan->desc_lock);
+ 
++#ifdef CONFIG_PM
++	if (unlikely(chan->pm_state != RUNNING)) {
++		chan_dbg(chan, "cannot submit due to suspend\n");
++		spin_unlock_bh(&chan->desc_lock);
++		return -1;
++	}
++#endif
++
+ 	/*
+ 	 * assign cookies to all of the software descriptors
+ 	 * that make up this transaction
+@@ -1221,6 +1229,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
+ 	INIT_LIST_HEAD(&chan->ld_pending);
+ 	INIT_LIST_HEAD(&chan->ld_running);
+ 	chan->idle = true;
++#ifdef CONFIG_PM
++	chan->pm_state = RUNNING;
++#endif
+ 
+ 	chan->common.device = &fdev->common;
+ 	dma_cookie_init(&chan->common);
+@@ -1360,6 +1371,69 @@ static int fsldma_of_remove(struct platform_device *op)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int fsldma_suspend_late(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct fsldma_device *fdev = platform_get_drvdata(pdev);
++	struct fsldma_chan *chan;
++	int i;
++
++	for (i = 0; i < FSL_DMA_MAX_CHANS_PER_DEVICE; i++) {
++		chan = fdev->chan[i];
++		if (!chan)
++			continue;
++
++		spin_lock_bh(&chan->desc_lock);
++		if (unlikely(!chan->idle))
++			goto out;
++		chan->regs_save.mr = get_mr(chan);
++		chan->pm_state = SUSPENDED;
++		spin_unlock_bh(&chan->desc_lock);
++	}
++	return 0;
++
++out:
++	for (; i >= 0; i--) {
++		chan = fdev->chan[i];
++		if (!chan)
++			continue;
++		chan->pm_state = RUNNING;
++		spin_unlock_bh(&chan->desc_lock);
++	}
++	return -EBUSY;
++}
++
++static int fsldma_resume_early(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct fsldma_device *fdev = platform_get_drvdata(pdev);
++	struct fsldma_chan *chan;
++	u32 mode;
++	int i;
++
++	for (i = 0; i < FSL_DMA_MAX_CHANS_PER_DEVICE; i++) {
++		chan = fdev->chan[i];
++		if (!chan)
++			continue;
++
++		spin_lock_bh(&chan->desc_lock);
++		mode = chan->regs_save.mr
++			& ~FSL_DMA_MR_CS & ~FSL_DMA_MR_CC & ~FSL_DMA_MR_CA;
++		set_mr(chan, mode);
++		chan->pm_state = RUNNING;
++		spin_unlock_bh(&chan->desc_lock);
++	}
++
++	return 0;
++}
++
++static const struct dev_pm_ops fsldma_pm_ops = {
++	.suspend_late	= fsldma_suspend_late,
++	.resume_early	= fsldma_resume_early,
++};
++#endif
++
+ static const struct of_device_id fsldma_of_ids[] = {
+ 	{ .compatible = "fsl,elo3-dma", },
+ 	{ .compatible = "fsl,eloplus-dma", },
+@@ -1372,6 +1446,9 @@ static struct platform_driver fsldma_of_driver = {
+ 		.name = "fsl-elo-dma",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = fsldma_of_ids,
++#ifdef CONFIG_PM
++		.pm = &fsldma_pm_ops,
++#endif
+ 	},
+ 	.probe = fsldma_of_probe,
+ 	.remove = fsldma_of_remove,
+diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
+index d56e835..f2e0c4d 100644
+--- a/drivers/dma/fsldma.h
++++ b/drivers/dma/fsldma.h
+@@ -134,6 +134,17 @@ struct fsldma_device {
+ #define FSL_DMA_CHAN_PAUSE_EXT	0x00001000
+ #define FSL_DMA_CHAN_START_EXT	0x00002000
+ 
++#ifdef CONFIG_PM
++struct fsldma_chan_regs_save {
++	u32 mr;
++};
++
++enum fsldma_pm_state {
++	RUNNING = 0,
++	SUSPENDED,
++};
++#endif
++
+ struct fsldma_chan {
+ 	char name[8];			/* Channel name */
+ 	struct fsldma_chan_regs __iomem *regs;
+@@ -148,6 +159,10 @@ struct fsldma_chan {
+ 	struct tasklet_struct tasklet;
+ 	u32 feature;
+ 	bool idle;			/* DMA controller is idle */
++#ifdef CONFIG_PM
++	struct fsldma_chan_regs_save regs_save;
++	enum fsldma_pm_state pm_state;
++#endif
+ 
+ 	void (*toggle_ext_pause)(struct fsldma_chan *fsl_chan, int enable);
+ 	void (*toggle_ext_start)(struct fsldma_chan *fsl_chan, int enable);
+-- 
+1.7.9.5
 
-The only reason I can think of why a windowed IOMMU would be useful is
-to prevent two or more devices from stepping on each others' toes. But
-that's a problem that the OS should already be handling during DMA
-buffer allocation, isn't it?
 
-> > > > > I would like to add an explanation about dma-ranges to the bindin=
-g:
-> > > > >=20
-> > > > > 8<--------
-> > > > > The parent bus of the iommu must have a valid "dma-ranges" proper=
-ty
-> > > > > describing how the physical address space of the IOMMU maps into
-> > > > > memory.
-> > > >=20
-> > > > With physical address space you mean the addresses after translatio=
-n,
-> > > > not the I/O virtual addresses, right? But even so, how will this wo=
-rk
-> > > > when there are multiple IOMMU devices? What determines which IOMMU =
-is
-> > > > mapped via which entry?
-> > > >=20
-> > > > Perhaps having multiple IOMMUs implies that there will have to be s=
-ome
-> > > > partitioning of the parent address space to make sure two IOMMUs do=
-n't
-> > > > translate to the same ranges?
-> > >=20
-> > > These dma-ranges properties would almost always be for the entire RAM,
-> > > and we can treat anything else as a bug.
-> >=20
-> > Would it typically be a 1:1 mapping? In that case could we define an
-> > empty dma-ranges property to mean exactly that? That would make it
-> > consistent with the ranges property.
->=20
-> Yes, I believe that is how it's already defined.
-
-I've gone through the proposal at [0] again, but couldn't find a mention
-of an empty "dma-ranges" property. But regardless I think that a 1:1
-mapping is the obvious meaning of an empty "dma-ranges" property.
-
-[0]: http://www.openfirmware.org/ofwg/proposals/Closed/Accepted/410-it.txt
-
-One thing I'm not sure about is whether dma-ranges should be documented
-in this binding at all. Since there's an accepted standard proposal it
-would seem that it doesn't need to be specifically mentioned. One other
-option would be to link to the above proposal from the binding and then
-complement that with what an empty "dma-ranges" property means.
-
-Or we could possible document this in a file along with other standard
-properties. I don't think we currently do that for any properties, but
-my concern is that there will always be a limited number of people
-knowing about how such properties are supposed to work. If all of a
-sudden all these people would disappear, everybody else would be left
-with references to these properties but nowhere to look for their
-meaning.
-
-> > > > > A device with an "iommus" property will ignore the "dma-ranges" p=
-roperty
-> > > > > of the parent node and rely on the IOMMU for translation instead.
-> > > >=20
-> > > > Do we need to consider the case where an IOMMU listed in iommus isn=
-'t
-> > > > enabled (status =3D "disabled")? In that case presumably the device=
- would
-> > > > either not function or may optionally continue to master onto the p=
-arent
-> > > > untranslated.
-> > >=20
-> > > My reasoning was that the DT should specify whether we use the IOMMU
-> > > or not. Being able to just switch on or off the IOMMU sounds nice as
-> > > well, so we could change the text above to do that.
-> > >=20
-> > > Another option would be to do this in the IOMMU code, basically
-> > > falling back to the IOMMU parent's dma-ranges property and using
-> > > linear dma_map_ops when that is disabled.
-> >=20
-> > Yes, it should be trivial for the IOMMU core code to take care of this
-> > special case. Still I think it's worth mentioning it in the binding so
-> > that it's clearly specified.
->=20
-> Agreed.
-
-Okay, I have a new version of the binding that I think incorporates all
-the changes discussed so far. It uses #address-cells and #size-cells to
-define the length of the specifier, but if we decide against that it can
-easily be changed again.
-
-Thierry
-
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfGDIAAoJEN0jrNd/PrOhVooP/27Bf22lkTAWzMAboZ3YpGFh
-e7okRs+gzx4zl75Du9xT38uDzDvdHY/TBrmPtuziyBdb6VVAX+tcTiWQrFhqXHFl
-7jRqtWAhMgFkZRuD5cZ7MuwuuqfX0+3Oi0ctqH8+V6fMsKSP1s5pRElLBWigaG/p
-ggqIeioDIYLtVE4rFSq6HpjF7gqMA6+HsT3V/MGlNd+ej9LpMBgeiCWQxZaFANYi
-N/AVmE9PmlxMupt0sAeU6mYhhUcAFsZRqZG6BAvtax94B1SvYu5vBDj2HHlXkf2C
-yW1Gj5gUdMr6GT3/kAprsZQggxEUdk+4n/zco5l7NhzJxTdKCUVbtBcZdBZUxq6U
-qVqtng+54UW3/FQC+MWt7+9SzdcSAuuceI7nxj5SDLW8bg44rewz84jC82g08EIc
-0zgZvzOuIN2UuGc1k2whSMFCrFTcSFZB0FJnPNU44qAUhS0qy7s1qj0sDYbV7r2F
-b8j+11zeFuuNChS+3mjyX6UfYy+r6X811vTrkosRrQw7898zQI5HsOcWia2q1CrY
-cIaLsLNGA/M+R6ywwbl9B5ED6hWD+bvQz+VhvHX0LqOVmHQCi59DdAhfPzE5owOy
-3Fhxb0pXNs4/KA6alQGcpy0FHikotDWQsWIkXK+avCfnSB54nWwmKorkwCa8tRBv
-5K+uVvmdZN6R6zVXp36C
-=5MKV
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
