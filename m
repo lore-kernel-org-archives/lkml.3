@@ -1,129 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaEUQJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:09:43 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:50346 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690AbaEUQJk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:09:40 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 2/3] of: Make of_find_node_by_path() handle /aliases
-To: frowand.list@gmail.com
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        David Daney <david.daney@cavium.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <537C15B1.3020006@gmail.com>
-References: <1399993115-21552-1-git-send-email-grant.likely@linaro.org>
-	<1399993115-21552-3-git-send-email-grant.likely@linaro.org>
-	<537C15B1.3020006@gmail.com>
-Date: Thu, 22 May 2014 01:09:31 +0900
-Message-Id: <20140521160931.DD7F9C4198A@trevor.secretlab.ca>
+	id S1752537AbaEUQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:10:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60405 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751137AbaEUQKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 12:10:55 -0400
+Message-ID: <537CCFCE.7070701@ti.com>
+Date: Wed, 21 May 2014 12:09:50 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <grant.likely@linaro.org>, <rdunlap@infradead.org>,
+        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>, <olof@lixom.net>,
+        <w-kwok2@ti.com>, <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>
+Subject: Re: [Patch v4 2/5] Power: reset: add bindings for keystone reset
+ driver
+References: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com> <5023955.Vhmhn25HgF@wuerfel> <537CCE5A.7030909@ti.com> <13696681.6eGQ96hCX4@wuerfel>
+In-Reply-To: <13696681.6eGQ96hCX4@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 19:55:45 -0700, Frank Rowand <frowand.list@gmail.com> wrote:
-> On 5/13/2014 7:58 AM, Grant Likely wrote:
+On Wednesday 21 May 2014 12:07 PM, Arnd Bergmann wrote:
+> On Wednesday 21 May 2014 19:03:38 Ivan Khoronzhuk wrote:
+>>
+>> I've slightly confused where should I add these bindings.
+>> The main pll controller mostly used by clk driver....
+>> As its register set is used also by reset driver it's logically to put 
+>> it to bindings/mfd,
+>> but pll controller in mfd it's strange....
+>>
+>> Could you please help to decide where should it be?.
 > 
-> > Make of_find_node_by_path() handle aliases as prefixes. To make this
+> Put it into Documentation/devicetree/bindings/clock/keystone-pll.txt
 > 
-> > work the name search is refactored to search by path component instead
-> 
-> > of by full string. This should be a more efficient search, and it makes
-> 
-> > it possible to start a search at a subnode of a tree.
-> 
-> > 
-> 
-> > Signed-off-by: David Daney <david.daney@cavium.com>
-> 
-> > Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> 
-> > [grant.likely: Rework to not require allocating at runtime]
-> 
-> > Acked-by: Rob Herring <robh@kernel.org>
-> 
-> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> 
-> > ---
-> 
-> >  drivers/of/base.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++----
-> 
-> >  1 file changed, 56 insertions(+), 4 deletions(-)
-> 
-> 
-> 
-> Was this patch created against a tree that has modifications to device tree
-> 
-> locking?
->   I get a hang due to deadlock when I apply it.  Patch to verify the
-> cause is below.
+I was just about post the same suggestion. Lets do that.
 
-Ummm... I may have forgotten to enable CONFIG_LOCKDEP when testing. Try
-the following fix, and can you please pass me that brown paper bag.
-
-g.
-
-commit 35e9c5ae6c3d0b5eb91579f397d8e1ecb95ee711
-Author: Grant Likely <grant.likely@linaro.org>
-Date:   Thu May 22 01:04:17 2014 +0900
-
-    dt: Create unlocked version of for_each_child_of_node()
-    
-    When iterating over nodes, sometimes it needs to be done when the DT
-    lock is already held. This patch makes an unlocked version of the
-    for_each_child_of_node() macro.
-    
-    Signed-off-by: Grant Likely <grant.likely@linaro.org>
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 8900d378c07e..c05a143b6a70 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -695,6 +695,22 @@ struct device_node *of_get_next_parent(struct device_node *node)
- }
- EXPORT_SYMBOL(of_get_next_parent);
- 
-+#define __for_each_child_of_node(parent, child) \
-+	for (child = __of_get_next_child(parent, NULL); child != NULL; \
-+	     child = __of_get_next_child(parent, child))
-+static struct device_node *__of_get_next_child(const struct device_node *node,
-+						struct device_node *prev)
-+{
-+	struct device_node *next;
-+
-+	next = prev ? prev->sibling : node->child;
-+	for (; next; next = next->sibling)
-+		if (of_node_get(next))
-+			break;
-+	of_node_put(prev);
-+	return next;
-+}
-+
- /**
-  *	of_get_next_child - Iterate a node childs
-  *	@node:	parent node
-@@ -710,11 +726,7 @@ struct device_node *of_get_next_child(const struct device_node *node,
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
--	next = prev ? prev->sibling : node->child;
--	for (; next; next = next->sibling)
--		if (of_node_get(next))
--			break;
--	of_node_put(prev);
-+	next = __of_get_next_child(node, prev);
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 	return next;
- }
-@@ -780,7 +792,7 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
- 	if (!len)
- 		return parent;
- 
--	for_each_child_of_node(parent, child) {
-+	__for_each_child_of_node(parent, child) {
- 		const char *name = strrchr(child->full_name, '/');
- 		if (WARN(!name, "malformed device_node %s\n", child->full_name))
- 			continue;
+regards,
+Santosh
 
