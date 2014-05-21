@@ -1,296 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaEUJEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:04:54 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:56448 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993AbaEUJEu (ORCPT
+	id S1752254AbaEUJFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:05:10 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:60936 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229AbaEUJFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:04:50 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        swarren@nvidia.com, dianders@chromium.org, linux@arm.linux.org.uk,
-        nicolas.pitre@linaro.org, thomas.abraham@linaro.org,
-        pdeschrijver@nvidia.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V4 2/3] cpufreq: add support for intermediate (stable) frequencies
-Date: Wed, 21 May 2014 14:29:30 +0530
-Message-Id: <59e1185a31e61c428aca9f4b8f0a69f182ee458e.1400662383.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
-References: <cover.1400662383.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
-References: <cover.1400662383.git.viresh.kumar@linaro.org>
+	Wed, 21 May 2014 05:05:04 -0400
+Date: Wed, 21 May 2014 11:02:45 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
+        Dave Martin <Dave.Martin@arm.com>
+Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140521090244.GB19268@ulmo>
+References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com>
+ <5123714.0MpMQfsmcr@wuerfel>
+ <20140521081608.GA11068@ulmo>
+ <4506822.XX7GrvtHhk@wuerfel>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yNb1oOkm5a9FJOVX"
+Content-Disposition: inline
+In-Reply-To: <4506822.XX7GrvtHhk@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Douglas Anderson, recently pointed out an interesting problem due to which
-udelay() was expiring earlier than it should.
 
-While transitioning between frequencies few platforms may temporarily switch to
-a stable frequency, waiting for the main PLL to stabilize.
+--yNb1oOkm5a9FJOVX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For example: When we transition between very low frequencies on exynos, like
-between 200MHz and 300MHz, we may temporarily switch to a PLL running at 800MHz.
-No CPUFREQ notification is sent for that. That means there's a period of time
-when we're running at 800MHz but loops_per_jiffy is calibrated at between 200MHz
-and 300MHz. And so udelay behaves badly.
+On Wed, May 21, 2014 at 10:54:42AM +0200, Arnd Bergmann wrote:
+> On Wednesday 21 May 2014 10:16:09 Thierry Reding wrote:
+> > On Tue, May 20, 2014 at 10:31:29PM +0200, Arnd Bergmann wrote:
+> > > On Tuesday 20 May 2014 16:00:02 Thierry Reding wrote:
+> > > > On Tue, May 20, 2014 at 03:34:46PM +0200, Arnd Bergmann wrote:
+> > > > > On Tuesday 20 May 2014 15:17:43 Thierry Reding wrote:
+> > > > > > On Tue, May 20, 2014 at 02:41:18PM +0200, Arnd Bergmann wrote:
+> > > > > > > On Tuesday 20 May 2014 14:02:43 Thierry Reding wrote:
+> > > > > > [...]
+> > > > > > > > Couldn't a single-master IOMMU be windowed?
+> > > > > > >=20
+> > > > > > > Ah, yes. That would actually be like an IBM pSeries, which ha=
+s a windowed
+> > > > > > > IOMMU but uses one window per virtual machine. In that case, =
+the window could
+> > > > > > > be a property of the iommu node though, rather than part of t=
+he address
+> > > > > > > in the link.
+> > > > > >=20
+> > > > > > Does that mean that the IOMMU has one statically configured win=
+dow which
+> > > > > > is the same for each virtual machine? That would require some o=
+ther
+> > > > > > mechanism to assign separate address spaces to each virtual mac=
+hine,
+> > > > > > wouldn't it? But I suspect that if the IOMMU allows that it cou=
+ld be
+> > > > > > allocated dynamically at runtime.
+> > > > >=20
+> > > > > The way it works on pSeries is that upon VM creation, the guest i=
+s assigned
+> > > > > one 256MB window for use by assigned DMA capable devices. When th=
+e guest
+> > > > > creates a mapping, it uses a hypercall to associate a bus address=
+ in that
+> > > > > range with a guest physical address. The hypervisor checks that t=
+he bus
+> > > > > address is within the allowed range, and translates the guest phy=
+sical
+> > > > > address into a host physical address, then enters both into the I=
+/O page
+> > > > > table or I/O TLB.
+> > > >=20
+> > > > So when a VM is booted it is passed a device tree with that DMA win=
+dow?
+> > >=20
+> > > Correct.
+> > >=20
+> > > > Given what you describe above this seems to be more of a configurat=
+ion
+> > > > option to restrict the IOMMU to a subset of the physical memory for
+> > > > purposes of virtualization. So I agree that this wouldn't be a good=
+ fit
+> > > > for what we're trying to achieve with iommus or dma-ranges in this
+> > > > binding.
+> > >=20
+> > > Thinking about it again now, I wonder if there are any other use cases
+> > > for windowed IOMMUs. If this is the only one, there might be no use
+> > > in the #address-cells model I suggested instead of your original
+> > > #iommu-cells.
+> >=20
+> > So in this case virtualization is the reason why we need the DMA window.
+> > The reason for that is that the guest has no other way of knowing what
+> > other guests might be using, so it's essentially a mechanism for the
+> > host to manage the DMA region and allocate subregions for each guest. If
+> > virtualization isn't an issue then it seems to me that the need for DMA
+> > windows goes away because the operating system will track DMA regions
+> > anyway.
+> >=20
+> > The only reason I can think of why a windowed IOMMU would be useful is
+> > to prevent two or more devices from stepping on each others' toes. But
+> > that's a problem that the OS should already be handling during DMA
+> > buffer allocation, isn't it?
+>=20
+> Right. As long as we always unmap the buffers from the IOMMU after they
+> have stopped being in use, it's very unlikely that even a broken device
+> driver causes a DMA into some bus address that happens to be mapped for
+> another device.
 
-To get this fixed in a generic way, lets introduce another set of callbacks
-get_intermediate() and target_intermediate(), only for drivers with
-target_index() and CPUFREQ_ASYNC_NOTIFICATION unset.
+I think that if buffers remain mapped in the IOMMU when they have been
+deallocated that should be considered a bug.
 
-get_intermediate() should return a stable intermediate frequency platform wants
-to switch to, and target_intermediate() should set CPU to to that frequency,
-before jumping to the frequency corresponding to 'index'. Core will take care of
-sending notifications and driver doesn't have to handle them in
-target_intermediate() or target_index().
+Thierry
 
-NOTE: ->target_index() should restore to policy->restore_freq in case of
-failures as core would send notifications for that.
+--yNb1oOkm5a9FJOVX
+Content-Type: application/pgp-signature
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- Documentation/cpu-freq/cpu-drivers.txt | 29 ++++++++++++++-
- drivers/cpufreq/cpufreq.c              | 67 ++++++++++++++++++++++++++++++----
- include/linux/cpufreq.h                | 25 +++++++++++++
- 3 files changed, 112 insertions(+), 9 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-index b045fe5..14f4e63 100644
---- a/Documentation/cpu-freq/cpu-drivers.txt
-+++ b/Documentation/cpu-freq/cpu-drivers.txt
-@@ -26,6 +26,7 @@ Contents:
- 1.4  target/target_index or setpolicy?
- 1.5  target/target_index
- 1.6  setpolicy
-+1.7  get_intermediate and target_intermediate
- 2.   Frequency Table Helpers
- 
- 
-@@ -79,6 +80,10 @@ cpufreq_driver.attr -		A pointer to a NULL-terminated list of
- 				"struct freq_attr" which allow to
- 				export values to sysfs.
- 
-+cpufreq_driver.get_intermediate
-+and target_intermediate		Used to switch to stable frequency while
-+				changing CPU frequency.
-+
- 
- 1.2 Per-CPU Initialization
- --------------------------
-@@ -151,7 +156,7 @@ Some cpufreq-capable processors switch the frequency between certain
- limits on their own. These shall use the ->setpolicy call
- 
- 
--1.4. target/target_index
-+1.5. target/target_index
- -------------
- 
- The target_index call has two arguments: struct cpufreq_policy *policy,
-@@ -160,6 +165,9 @@ and unsigned int index (into the exposed frequency table).
- The CPUfreq driver must set the new frequency when called here. The
- actual frequency must be determined by freq_table[index].frequency.
- 
-+It should always restore to earlier frequency (i.e. policy->restore_freq) in
-+case of errors, even if we switched to intermediate frequency earlier.
-+
- Deprecated:
- ----------
- The target call has three arguments: struct cpufreq_policy *policy,
-@@ -179,7 +187,7 @@ Here again the frequency table helper might assist you - see section 2
- for details.
- 
- 
--1.5 setpolicy
-+1.6 setpolicy
- ---------------
- 
- The setpolicy call only takes a struct cpufreq_policy *policy as
-@@ -190,6 +198,23 @@ setting when policy->policy is CPUFREQ_POLICY_PERFORMANCE, and a
- powersaving-oriented setting when CPUFREQ_POLICY_POWERSAVE. Also check
- the reference implementation in drivers/cpufreq/longrun.c
- 
-+1.7 get_intermediate and target_intermediate
-+--------------------------------------------
-+
-+Only for drivers with target_index() and CPUFREQ_ASYNC_NOTIFICATION unset.
-+
-+get_intermediate should return a stable intermediate frequency platform wants to
-+switch to, and target_intermediate() should set CPU to to that frequency, before
-+jumping to the frequency corresponding to 'index'. Core will take care of
-+sending notifications and driver doesn't have to handle them in
-+target_intermediate() or target_index().
-+
-+Drivers can return '0' from get_intermediate() in case they don't wish to switch
-+to intermediate frequency for some target frequency. In that case core will
-+directly call ->target_index().
-+
-+NOTE: ->target_index() should restore to policy->restore_freq in case of
-+failures as core would send notifications for that.
- 
- 
- 2. Frequency Table Helpers
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index ae11dd5..a72c4d5 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1816,20 +1816,55 @@ EXPORT_SYMBOL(cpufreq_unregister_notifier);
-  *                              GOVERNORS                            *
-  *********************************************************************/
- 
-+/* Must set freqs->new to intermediate frequency */
-+static int __target_intermediate(struct cpufreq_policy *policy,
-+				 struct cpufreq_freqs *freqs, int index)
-+{
-+	int ret;
-+
-+	freqs->new = cpufreq_driver->get_intermediate(policy, index);
-+
-+	/* We don't need to switch to intermediate freq */
-+	if (!freqs->new)
-+		return 0;
-+
-+	pr_debug("%s: cpu: %d, switching to intermediate freq: oldfreq: %u, intermediate freq: %u\n",
-+		 __func__, policy->cpu, freqs->old, freqs->new);
-+
-+	cpufreq_freq_transition_begin(policy, freqs);
-+	ret = cpufreq_driver->target_intermediate(policy, index);
-+	cpufreq_freq_transition_end(policy, freqs, ret);
-+
-+	if (ret)
-+		pr_err("%s: Failed to change to intermediate frequency: %d\n",
-+		       __func__, ret);
-+	else
-+		/* Set old freq to intermediate */
-+		freqs->old = freqs->new;
-+
-+	return ret;
-+}
-+
- static int __target_index(struct cpufreq_policy *policy,
- 			  struct cpufreq_frequency_table *freq_table, int index)
- {
--	struct cpufreq_freqs freqs;
-+	struct cpufreq_freqs freqs = {.old = policy->cur, .flags = 0};
-+	unsigned int intermediate_freq = 0;
- 	int retval = -EINVAL;
- 	bool notify;
- 
- 	notify = !(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION);
--
- 	if (notify) {
--		freqs.old = policy->cur;
--		freqs.new = freq_table[index].frequency;
--		freqs.flags = 0;
-+		/* Handle switching to intermediate frequency */
-+		if (cpufreq_driver->get_intermediate) {
-+			retval = __target_intermediate(policy, &freqs, index);
-+			if (retval)
-+				return retval;
- 
-+			intermediate_freq = freqs.new;
-+		}
-+
-+		freqs.new = freq_table[index].frequency;
- 		pr_debug("%s: cpu: %d, oldfreq: %u, new freq: %u\n",
- 			 __func__, policy->cpu, freqs.old, freqs.new);
- 
-@@ -1841,9 +1876,23 @@ static int __target_index(struct cpufreq_policy *policy,
- 		pr_err("%s: Failed to change cpu frequency: %d\n", __func__,
- 		       retval);
- 
--	if (notify)
-+	if (notify) {
- 		cpufreq_freq_transition_end(policy, &freqs, retval);
- 
-+		/*
-+		 * Failed after setting to intermediate freq? Driver should have
-+		 * reverted back to initial frequency and so should we. Check
-+		 * here for intermediate_freq instead of get_intermediate, in
-+		 * case we have't switched to intermediate freq at all.
-+		 */
-+		if (unlikely(retval && intermediate_freq)) {
-+			freqs.old = intermediate_freq;
-+			freqs.new = policy->restore_freq;
-+			cpufreq_freq_transition_begin(policy, &freqs);
-+			cpufreq_freq_transition_end(policy, &freqs, retval);
-+		}
-+	}
-+
- 	return retval;
- }
- 
-@@ -1875,6 +1924,9 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
- 	if (target_freq == policy->cur)
- 		return 0;
- 
-+	/* Save last value to restore later on errors */
-+	policy->restore_freq = policy->cur;
-+
- 	if (cpufreq_driver->target)
- 		retval = cpufreq_driver->target(policy, target_freq, relation);
- 	else if (cpufreq_driver->target_index) {
-@@ -2361,7 +2413,8 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
- 	    !(driver_data->setpolicy || driver_data->target_index ||
- 		    driver_data->target) ||
- 	     (driver_data->setpolicy && (driver_data->target_index ||
--		    driver_data->target)))
-+		    driver_data->target)) ||
-+	     (!!driver_data->get_intermediate != !!driver_data->target_intermediate))
- 		return -EINVAL;
- 
- 	pr_debug("trying to register driver %s\n", driver_data->name);
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 3f45889..ec4112d 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -75,6 +75,7 @@ struct cpufreq_policy {
- 	unsigned int		max;    /* in kHz */
- 	unsigned int		cur;    /* in kHz, only needed if cpufreq
- 					 * governors are used */
-+	unsigned int		restore_freq; /* = policy->cur before transition */
- 	unsigned int		suspend_freq; /* freq to set during suspend */
- 
- 	unsigned int		policy; /* see above */
-@@ -221,11 +222,35 @@ struct cpufreq_driver {
- 
- 	/* define one out of two */
- 	int	(*setpolicy)	(struct cpufreq_policy *policy);
-+
-+	/*
-+	 * On failure, should always restore frequency to policy->restore_freq
-+	 * (i.e. old freq).
-+	 */
- 	int	(*target)	(struct cpufreq_policy *policy,	/* Deprecated */
- 				 unsigned int target_freq,
- 				 unsigned int relation);
- 	int	(*target_index)	(struct cpufreq_policy *policy,
- 				 unsigned int index);
-+	/*
-+	 * Only for drivers with target_index() and CPUFREQ_ASYNC_NOTIFICATION
-+	 * unset.
-+	 *
-+	 * get_intermediate should return a stable intermediate frequency
-+	 * platform wants to switch to and target_intermediate() should set CPU
-+	 * to to that frequency, before jumping to the frequency corresponding
-+	 * to 'index'. Core will take care of sending notifications and driver
-+	 * doesn't have to handle them in target_intermediate() or
-+	 * target_index().
-+	 *
-+	 * Drivers can return '0' from get_intermediate() in case they don't
-+	 * wish to switch to intermediate frequency for some target frequency.
-+	 * In that case core will directly call ->target_index().
-+	 */
-+	unsigned int (*get_intermediate)(struct cpufreq_policy *policy,
-+					 unsigned int index);
-+	int	(*target_intermediate)(struct cpufreq_policy *policy,
-+				       unsigned int index);
- 
- 	/* should be defined, if possible */
- 	unsigned int	(*get)	(unsigned int cpu);
--- 
-2.0.0.rc2
+iQIcBAEBAgAGBQJTfGu0AAoJEN0jrNd/PrOhMaEP/3U9wYaiRJENl/qkdrq9JmXA
+dIXncqJqMIPhM28PozMRPib9Eb0jiMLBKit0nweuhn2JdwujKqgOoZ412vYefMaw
+baYXUgwoemsQGzJSUGegqYVSiCLfCswO05sZodgvjdlViKqEcU2ajSxQtnZHU6LC
+xEiZu2E2BTq/AM0kKLk0MKv/2U9zYzwcYRKTgqUKrktQ0Hgyth/kxWNWJUp5XLl5
+nEDd/Cpz6AOhOx3M+CHhJIo540ElZIaLji6lkhTi45Or5F7Fj2LDr7Q8zUPZslwX
+1S6LA7ooGyAS5TfeJw/gBA+q3fzl8vLk2EH/LeNHybtEanV+31n0tymTEXcOLzCG
+9gMWdnOozhDnEvu+vVmDZSIYRV4FGGShElSHFT7f/xuzupKHCGeHTAt71a0eDRAE
+cItHgWvxyjE5dYVhWKtShsR7xrIkSKT0XJADyUFDzyi/eU1GBd6WgFyQAk0XKOf/
+fMkWlbdEd9uIyNJWsJseB9p/AxYQcYDprd9HIyUisVnZqjSqW/3ycYxF5bMqrptl
+onNks9Vzg+7tUKZPtYdHaeuus8IHuOGiCOZ+TRVyanri/zIre5h8tSRwbZQKl08O
+ztrRuEtTmbd39HV4dlutDnqrPNU2KdHNiDMZtBz4U5AkAxZLLZ+pYTCHsZlCYf6i
+hqAuw8SlkAvnE1KjpKBg
+=NkWI
+-----END PGP SIGNATURE-----
 
+--yNb1oOkm5a9FJOVX--
