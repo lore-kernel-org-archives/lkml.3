@@ -1,165 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaEUDqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 23:46:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58930 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaEUDp7 (ORCPT
+	id S1751474AbaEUDxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 23:53:00 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65449 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaEUDw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 23:45:59 -0400
-Date: Tue, 20 May 2014 20:45:47 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-65cef1311d5d212fd3d48a43678536dc878ca288@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1400525957-11525-3-git-send-email-bp@alien8.de>
-References: <1400525957-11525-3-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86, microcode: Add a disable chicken bit
-Git-Commit-ID: 65cef1311d5d212fd3d48a43678536dc878ca288
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 20 May 2014 23:52:58 -0400
+Message-ID: <1400644374.5158.19.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 21 May 2014 05:52:54 +0200
+In-Reply-To: <20140520145350.GC17741@localhost.localdomain>
+References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
+	 <20140514154459.GE4570@linux.vnet.ibm.com>
+	 <1400123931.5175.38.camel@marge.simpson.net>
+	 <1400386954.5140.36.camel@marge.simpson.net>
+	 <20140518052039.GF4570@linux.vnet.ibm.com>
+	 <1400402201.5166.13.camel@marge.simpson.net>
+	 <20140518155815.GK4570@linux.vnet.ibm.com>
+	 <1400467481.5211.48.camel@marge.simpson.net>
+	 <20140519053401.GP4570@linux.vnet.ibm.com>
+	 <20140520145350.GC17741@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  65cef1311d5d212fd3d48a43678536dc878ca288
-Gitweb:     http://git.kernel.org/tip/65cef1311d5d212fd3d48a43678536dc878ca288
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Mon, 19 May 2014 20:59:17 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 20 May 2014 20:21:27 -0700
+On Tue, 2014-05-20 at 16:53 +0200, Frederic Weisbecker wrote: 
+> On Sun, May 18, 2014 at 10:34:01PM -0700, Paul E. McKenney wrote:
+> > On Mon, May 19, 2014 at 04:44:41AM +0200, Mike Galbraith wrote:
+> > > On Sun, 2014-05-18 at 08:58 -0700, Paul E. McKenney wrote: 
+> > > > On Sun, May 18, 2014 at 10:36:41AM +0200, Mike Galbraith wrote:
+> > > > > On Sat, 2014-05-17 at 22:20 -0700, Paul E. McKenney wrote:
+> > > > > 
+> > > > > > If you are saying that turning on nohz_full doesn't help unless you
+> > > > > > also ensure that there is only one runnable task per CPU, I completely
+> > > > > > agree.  If you are saying something else, you lost me.  ;-)
+> > > > > 
+> > > > > Yup, that's it more or less.  It's not only single task loads that could
+> > > > > benefit from better isolation, but if isolation improving measures are
+> > > > > tied to nohz_full, other sensitive loads will suffer if they try to use
+> > > > > isolation improvements.
+> > > > 
+> > > > So you are arguing for a separate Kconfig variable that does the isolation?
+> > > > So that NO_HZ_FULL selects this new variable, and (for example) RCU
+> > > > uses this new variable to decide when to pin the grace-period kthreads
+> > > > onto the housekeeping CPU?
+> > > 
+> > > I'm thinking more about runtime, but yes.
+> > > 
+> > > The tick mode really wants to be selectable per set (in my boxen you can
+> > > switch between nohz off/idle, but not yet nohz_full, that might get real
+> > > interesting).  You saw in my numbers that ticked is far better for the
+> > > threaded rt load, but what if the total load has both sensitive rt and
+> > > compute components to worry about?  The rt component wants relief from
+> > > the jitter that flipping the tick inflicts, but also wants as little
+> > > disturbance as possible, so RCU offload and whatever other measures that
+> > > are or become available are perhaps interesting to it as well.  The
+> > > numbers showed that here and now the two modes can work together in the
+> > > same box, I can have my rt set ticking away, and other cores doing
+> > > tickless compute, but enabling that via common config (distros don't
+> > > want to ship many kernel flavors) has a cost to rt performance.
+> > > 
+> > > Ideally, bean counting would be switchable too, giving all components
+> > > the environment they like best.
+> > 
+> > Sounds like a question for Frederic (now CCed).  ;-)
+> 
+> I'm not sure that I really understand what you want here.
+> 
+> The current state of the art is that when you enable CONFIG_NO_HZ_FULL=y, full dynticks
+> is actually off by default. This is only overriden by "nohz_full=" boot parameter.
+> 
+> Now if what you need is to enable or disable it at runtime instead of boottime,
+> I must warn you that this is going to complicate the nohz code a lot (and also perhaps sched
+> and RCU).
 
-x86, microcode: Add a disable chicken bit
+Yeah, that would be the most flexible (not to mention invasive).  That
+said, users of nohz_full are likely gonna be very few and far between,
+so maybe no big deal.  I'm just looking at it from a distro perspective,
+what can it, can it not do, what does it cost, to see how it would best
+be served once baked.
 
-Add a cmdline param which disables the microcode loader. This is useful
-mostly in debugging situations where we want to turn off microcode
-loading, both early from the initrd and late, as a means to be able to
-rule out its influence on the machine.
+> I've already been eyed by vulturous frozen sharks flying in circles above me lately
+> after a few overengineering visions.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1400525957-11525-3-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/microcode.h           |  1 +
- arch/x86/kernel/cpu/microcode/core.c       |  6 +++++
- arch/x86/kernel/cpu/microcode/core_early.c | 37 ++++++++++++++++++++++++++++++
- 3 files changed, 44 insertions(+)
+:)
 
-diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index b59827e..64dc362 100644
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -25,6 +25,7 @@ struct cpu_signature {
- struct device;
- 
- enum ucode_state { UCODE_ERROR, UCODE_OK, UCODE_NFOUND };
-+extern bool dis_ucode_ldr;
- 
- struct microcode_ops {
- 	enum ucode_state (*request_microcode_user) (int cpu,
-diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-index 15c9876..dd9d619 100644
---- a/arch/x86/kernel/cpu/microcode/core.c
-+++ b/arch/x86/kernel/cpu/microcode/core.c
-@@ -97,6 +97,9 @@ MODULE_LICENSE("GPL");
- 
- static struct microcode_ops	*microcode_ops;
- 
-+bool dis_ucode_ldr;
-+module_param(dis_ucode_ldr, bool, 0);
-+
- /*
-  * Synchronization.
-  *
-@@ -546,6 +549,9 @@ static int __init microcode_init(void)
- 	struct cpuinfo_x86 *c = &cpu_data(0);
- 	int error;
- 
-+	if (dis_ucode_ldr)
-+		return 0;
-+
- 	if (c->x86_vendor == X86_VENDOR_INTEL)
- 		microcode_ops = init_intel_microcode();
- 	else if (c->x86_vendor == X86_VENDOR_AMD)
-diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
-index be7f851..5f28a64 100644
---- a/arch/x86/kernel/cpu/microcode/core_early.c
-+++ b/arch/x86/kernel/cpu/microcode/core_early.c
-@@ -17,9 +17,11 @@
-  *	2 of the License, or (at your option) any later version.
-  */
- #include <linux/module.h>
-+#include <asm/microcode.h>
- #include <asm/microcode_intel.h>
- #include <asm/microcode_amd.h>
- #include <asm/processor.h>
-+#include <asm/cmdline.h>
- 
- #define QCHAR(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
- #define CPUID_INTEL1 QCHAR('G', 'e', 'n', 'u')
-@@ -72,10 +74,33 @@ static int x86_family(void)
- 	return x86;
- }
- 
-+static bool __init check_loader_disabled_bsp(void)
-+{
-+#ifdef CONFIG_X86_32
-+	const char *cmdline = (const char *)__pa_nodebug(boot_command_line);
-+	const char *opt	    = "dis_ucode_ldr";
-+	const char *option  = (const char *)__pa_nodebug(opt);
-+	bool *res = (bool *)__pa_nodebug(&dis_ucode_ldr);
-+
-+#else /* CONFIG_X86_64 */
-+	const char *cmdline = boot_command_line;
-+	const char *option  = "dis_ucode_ldr";
-+	bool *res = &dis_ucode_ldr;
-+#endif
-+
-+	if (cmdline_find_option_bool(cmdline, option))
-+		*res = true;
-+
-+	return *res;
-+}
-+
- void __init load_ucode_bsp(void)
- {
- 	int vendor, x86;
- 
-+	if (check_loader_disabled_bsp())
-+		return;
-+
- 	if (!have_cpuid_p())
- 		return;
- 
-@@ -96,10 +121,22 @@ void __init load_ucode_bsp(void)
- 	}
- }
- 
-+static bool check_loader_disabled_ap(void)
-+{
-+#ifdef CONFIG_X86_32
-+	return __pa_nodebug(dis_ucode_ldr);
-+#else
-+	return dis_ucode_ldr;
-+#endif
-+}
-+
- void load_ucode_ap(void)
- {
- 	int vendor, x86;
- 
-+	if (check_loader_disabled_ap())
-+		return;
-+
- 	if (!have_cpuid_p())
- 		return;
- 
+> And given that the full nohz code is still in a baby shape, it's probably not the right
+> time to expand it that way. I haven't even yet heard about users who crossed the testing
+> stage of full nohz.
+> 
+> We'll probably extend it that way in the future. But likely not in a near future.
+
+Yeah, understood, I'm just measuring and pondering potentials.
+
+-Mike
+
