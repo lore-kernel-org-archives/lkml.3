@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaEUQIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:08:55 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:56731 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaEUQIx (ORCPT
+	id S1752790AbaEUQJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:09:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40961 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752677AbaEUQI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:08:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, santosh.shilimkar@ti.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        grant.likely@linaro.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
-        grygorii.strashko@ti.com, olof@lixom.net, w-kwok2@ti.com,
-        sboyd@codeaurora.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, m-karicheri2@ti.com
-Subject: Re: [Patch v4 2/5] Power: reset: add bindings for keystone reset driver
-Date: Wed, 21 May 2014 18:07:40 +0200
-Message-ID: <13696681.6eGQ96hCX4@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <537CCE5A.7030909@ti.com>
-References: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com> <5023955.Vhmhn25HgF@wuerfel> <537CCE5A.7030909@ti.com>
+	Wed, 21 May 2014 12:08:58 -0400
+Date: Wed, 21 May 2014 13:08:18 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: tony@atomide.com, computersforpeace@gmail.com, pekon@ti.com,
+        robertcnelson@gmail.com, jg1.han@samsung.com, dwmw2@infradead.org,
+        javier@dowhile0.org, nsekhar@ti.com, linux-omap@vger.kernel.org,
+        linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 00/16] OMAP: GPMC: Restructure OMAP GPMC driver (NAND)
+Message-ID: <20140521160818.GA1150@arch.cereza>
+References: <1400671264-10702-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:QFj/8Y4R4dGuiVn8gJLwyRcgor5kwQ6Spv9M3QRN/dr
- J3GeLvausA0ol8/oBeMSQCjy7UxDDrmLrDJaRCW+UfTYU5Y5sP
- cNNr2DBqRxfHMXFhk2Rlc18ZgTUJECqpwNjTUrwcS6ltzjqa6z
- LdRDK1t8wV4uix03eHkSP+D+Ls8Vg66Eo8PjSkXJlguL80tRKW
- 5l5+gB0GLcnpAFqINtfYmYcazPxc6vkyyOVSWrFDNpw+/dLO06
- anD5kN8AuiEZzzp3HCiogW6n56tr9lGRojqWt/XGuQHuZj8HUl
- R4cCR4d8Say0JxYCKJq5j/K0dwuhFYZpYfXyo9sSNcVbvfGhGY
- SJ9thGPhqW6NiHku9yZQ=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400671264-10702-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 May 2014 19:03:38 Ivan Khoronzhuk wrote:
-> 
-> I've slightly confused where should I add these bindings.
-> The main pll controller mostly used by clk driver....
-> As its register set is used also by reset driver it's logically to put 
-> it to bindings/mfd,
-> but pll controller in mfd it's strange....
-> 
-> Could you please help to decide where should it be?.
+Hi Roger,
 
-Put it into Documentation/devicetree/bindings/clock/keystone-pll.txt
+On 21 May 02:20 PM, Roger Quadros wrote:
+> 
+> For DT boot:
+> - The GPMC controller node should have a chip select (CS) node for each used
+>   chip select. The CS node must have a child device node for each device
+>   attached to that chip select. Properties for that child are GPMC agnostic.
+> 
+>   i.e.
+> 	gpmc {
+> 		cs0 {
+> 			nand0 {
+> 			}
+> 		};
+> 
+> 		cs1 {
+> 			nor0 {
+> 			}
+> 		}
+> 		...
+> 	};
+> 
 
-	Arnd
+While I agree that the GPMC driver is a bit messy, I'm not sure it's possible
+to go through such a complete devicetree binding re-design (breaking backwards
+compatibility) now that the binding is already in production.
+
+AFAIK, TI's SDK 7.0 is released, with a v3.8.x kernel which uses this GPMC
+binding. And then you have the ISEE board too, using this binding.
+
+Also, what's the problem with the current devicetree binding (not that I'm fan
+of it)?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
