@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaEUSM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:12:27 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:49895 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678AbaEUSMY (ORCPT
+	id S1753015AbaEUSMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:12:38 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:42295 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985AbaEUSMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:12:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Date: Wed, 21 May 2014 20:11:19 +0200
-Message-ID: <4393962.rf2bYfTJVU@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140521170954.GC3830@e103592.cambridge.arm.com>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com> <20140521090037.GA19268@ulmo> <20140521170954.GC3830@e103592.cambridge.arm.com>
+	Wed, 21 May 2014 14:12:36 -0400
+Message-ID: <537CEC90.7060000@gmail.com>
+Date: Wed, 21 May 2014 20:12:32 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:pUbJr1xbOr3S16SPavQ0O+lGvxnAX/iklbJmj/f2eYM
- jdeRiDqGG7sxqqcIxsOzORGFJxZQ7GZdWHOwOzBDV89HA80CMS
- ZtGmf7oBSSzWhTh47Y2ZyP+qVNJjGyrP2ipyB8w6rpL/bZ14mB
- nzAJoo7WHELlihmF89ajcTR+hQA2k9396/+t5bApiYw9jesHp1
- KbHaZRldttdftJ9Tk/6tLjNpW9axQ178amWNUpcwGlPCUrdHlu
- uk9RhDqSZ/eUQg+ONf7I3l7IFrAmba8JNq8jhVdvWQ2eB5/Z9e
- iHfCMk+IViCgE8fRCvqkNcLp/kXlV7BSFROpmtwd8FOBQ7vkQj
- osMGSLkUNMAyKxNkKxeM=
+To: Vasiliy Kulikov <segoon@openwall.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: mtk.manpages@gmail.com,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Documenting execve() and EAGAIN
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 May 2014 18:09:54 Dave Martin wrote:
-> On Wed, May 21, 2014 at 11:00:38AM +0200, Thierry Reding wrote:
-> > On Wed, May 21, 2014 at 10:50:38AM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 21 May 2014 10:26:11 Thierry Reding wrote:
-> > > > 
-> > > > Similarily, should the IOMMU not be treated like any other device here?
-> > > > Its DMA mask should determine what address range it can access.
-> > > 
-> > > Right. But for that we need a dma-ranges property in the parent of the
-> > > iommu, just so the mask can be set correctly and we don't have to
-> > > rely on the 32-bit fallback case.
-> > 
-> > Shouldn't the IOMMU driver be the one to set the DMA mask for the device
-> > in exactly the same way that other drivers override the 32-bit default?
-> > 
-> 
-> Are we confusing the "next-hop DMA mask" with the "end-to-end DMA mask"
-> here?  The device has a next-hop mask which may be non-trivial.  The
-> IOMMU also has a next-hop mask and/or remapping, but I think we agree
-> that in sensible systems that will be trivial.  There might be other
-> non-trivial remappings between the IOMMU and memory (but again, not
-> in the common case).
-> 
-> If we just use the same name for all these, we are liable to get
-> confused.
-> 
-> To answer the question "what memory can the kernel allocate for DMA
-> with this device", it is the end-to-end transformation that is
-> important.
+Vasily (and Motohiro),
 
-Yes, but that is not the same as the dma mask of the device. The DMA
-mask gets set by the device according to its capabilities, and may
-get limited by what the bus to either memory or to the iommu can do,
-if one is in use.
+Sometime ago, Motohiro raised a documentation bug
+( https://bugzilla.kernel.org/show_bug.cgi?id=42704 ) which 
+relates to your commit 72fa59970f8698023045ab0713d66f3f4f96945c
+("move RLIMIT_NPROC check from set_user() to do_execve_common()")
 
-Without an IOMMU, the mask is used for allocations, with an IOMMU,
-The iommu code makes the decision what to allocate without taking
-dev->dma_mask into account.
+I have attempted to document this, and I would like to ask you
+(and Motohiro) if you would review the text proposed below for
+the exceve(2) man page.
 
-As mentioned, this is currently not handled well for SCSI and network,
-where we use a smaller mask than necessary and can end up copying
-data.
+Thank you,
 
-	Arnd
+Michael
+
+
+ERRORS
+       EAGAIN (since Linux 3.1)
+              Having  changed its real UID using one of the set*uid()
+              calls,  the  caller  was—and  is  now  still—above  its
+              RLIMIT_NPROC  resource limit (see setrlimit(2)).  For a
+              more detailed explanation of this error, see NOTES.
+
+NOTES
+   execve() and EAGAIN
+       A more detailed explanation of the EAGAIN error that can occur
+       (since Linux 3.1) when calling execve() is as follows.
+
+       The EAGAIN error can occur when a preceding call to setuid(2),
+       setreuid(2), or setresuid(2) caused the real user  ID  of  the
+       process  to  change,  and  that  change  caused the process to
+       exceed its RLIMIT_NPROC resource limit (i.e.,  the  number  of
+       processes  belonging  to the new real UID exceeds the resource
+       limit).  In Linux 3.0 and earlier, this caused  the  set*uid()
+       call to fail.
+
+       Since  Linux 3.1, the scenario just described no longer causes
+       the set*uid() call to fail, because it too often led to  secu‐
+       rity  holes because buggy applications didn't check the return
+       status and assumed that—if the caller had root  privileges—the
+       call  would  always succeed.  Instead, the set*uid() calls now
+       successfully change real UID, but the kernel sets an  internal
+       flag,  named  PF_NPROC_EXCEEDED, to note that the RLIMIT_NPROC
+       resource limit has been exceeded.  If the  resource  limit  is
+       still exceeded at the time of a subsequent execve() call, that
+       call fails with the error EAGAIN.  This kernel  logic  ensures
+       that the RLIMIT_NPROC resource limit is still enforced for the
+       common privileged daemon workflow—namely, fork(2)+  set*uid()+
+       execve(2).
+
+       If  the  resource  limit was not still exceeded at the time of
+       the execve() call (because other processes belonging  to  this
+       real  UID  terminated  between  the  set*uid()  call  and  the
+       execve() call), then the execve() call succeeds and the kernel
+       clears  the  PF_NPROC_EXCEEDED process flag.  The flag is also
+       cleared if a subsequent call to fork(2) by this  process  suc‐
+       ceeds.
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
