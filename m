@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaEUTOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:14:37 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35900 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069AbaEUTOf convert rfc822-to-8bit (ORCPT
+	id S1753106AbaEUTSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:18:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48131 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaEUTSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:14:35 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH v1 4/4] ARM: debug: qcom: Add APQ8084 DEBUG_LL UART support
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1400686086.856.15.camel@iivanov-dev>
-Date: Wed, 21 May 2014 14:14:29 -0500
-Cc: Arnd Bergmann <arnd@arndb.de>, Georgi Djakov <gdjakov@mm-sol.com>,
-        linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        sboyd@codeaurora.org, rvaswani@codeaurora.org, davidb@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A9A4B705-E550-407D-BDAD-91083417B356@codeaurora.org>
-References: <1400684225-21381-1-git-send-email-gdjakov@mm-sol.com> <1400684225-21381-5-git-send-email-gdjakov@mm-sol.com> <4365639.JcFl1cP048@wuerfel> <1400686086.856.15.camel@iivanov-dev>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-X-Mailer: Apple Mail (2.1874)
+	Wed, 21 May 2014 15:18:39 -0400
+Date: Wed, 21 May 2014 12:18:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/1] ptrace: task_clear_jobctl_trapping()->wake_up_bit()
+ needs mb()
+Message-Id: <20140521121837.7efc35b2bb455bd45bbc8970@linux-foundation.org>
+In-Reply-To: <20140516135116.GA19210@redhat.com>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+	<1399974350-11089-20-git-send-email-mgorman@suse.de>
+	<20140513125313.GR23991@suse.de>
+	<20140513141748.GD2485@laptop.programming.kicks-ass.net>
+	<20140514161152.GA2615@redhat.com>
+	<20140514161755.GQ30445@twins.programming.kicks-ass.net>
+	<20140516135116.GA19210@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 16 May 2014 15:51:16 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
 
-On May 21, 2014, at 10:28 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> On 05/14, Peter Zijlstra wrote:
+> >
+> > On Wed, May 14, 2014 at 06:11:52PM +0200, Oleg Nesterov wrote:
+> > >
+> > > I mean, we do not need mb() before __wake_up(). We need it only because
+> > > __wake_up_bit() checks waitqueue_active().
+> > >
+> > >
+> > > And at least
+> > >
+> > > 	fs/cachefiles/namei.c:cachefiles_delete_object()
+> > > 	fs/block_dev.c:blkdev_get()
+> > > 	kernel/signal.c:task_clear_jobctl_trapping()
+> > > 	security/keys/gc.c:key_garbage_collector()
+> > >
+> > > look obviously wrong.
+> > >
+> > > I would be happy to send the fix, but do I need to split it per-file?
+> > > Given that it is trivial, perhaps I can send a single patch?
+> >
+> > Since its all the same issue a single patch would be fine I think.
+> 
+> Actually blkdev_get() is fine, it relies on bdev_lock. But bd_prepare_to_claim()
+> is the good example of abusing bit_waitqueue(). Not only it is itself suboptimal,
+> this doesn't allow to optimize wake_up_bit-like paths. And there are more, say,
+> inode_sleep_on_writeback(). Plus we have wait_on_atomic_t() which I think should
+> be generalized or even unified with the regular wait_on_bit(). Perhaps I'll try
+> to do this later, fortunately the recent patch from Neil greatly reduced the
+> number of "action" functions.
+> 
+> As for cachefiles_walk_to_object() and key_garbage_collector(), it still seems
+> to me they need smp_mb__after_clear_bit() but I'll leave this to David, I am
+> not comfortable to change the code I absolutely do not understand. In particular,
+> I fail to understand why key_garbage_collector() does smp_mb() before clear_bit().
+> At least it could be smp_mb__before_clear_bit().
 
-> Hi, 
-> 
-> On Wed, 2014-05-21 at 17:18 +0200, Arnd Bergmann wrote:
->> On Wednesday 21 May 2014 17:57:05 Georgi Djakov wrote:
-> 
->>> 
->>> +#ifdef CONFIG_DEBUG_APQ8084_UART
->>> +#define MSM_DEBUG_UART_BASE    0xFA75E000
->>> +#define MSM_DEBUG_UART_PHYS    0xF995E000
->>> +#endif
->>> +
-> 
->> Maybe we should move debug/msm.S over to use
->> CONFIG_DEBUG_UART_PHYS/CONFIG_DEBUG_UART_VIRT now?
->> 
-> 
-> There is patch which do this [1]. It was reviewed 
-> by Stephen Boyd [2].
-> 
-> Regards,
-> Ivan
-> 
-> 
-> [1] https://lkml.org/lkml/2014/4/14/312
-> [2] https://lkml.org/lkml/2014/4/14/542
+This is all quite convincing evidence that these interfaces are too
+tricky for regular kernel developers to use. 
 
-I’ll grab Ivan’s patch and send via my qcom tree to arm-soc.
+Can we fix them?
 
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+One way would be to make the interfaces safe to use and provide
+lower-level no-barrier interfaces for use by hot-path code where the
+author knows what he/she is doing.  And there are probably other ways.
