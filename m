@@ -1,190 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaEUPeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:34:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48976 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076AbaEUPeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:34:05 -0400
-Date: Wed, 21 May 2014 16:33:57 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
- lookups in unlock_page fastpath v5
-Message-ID: <20140521153357.GW23991@suse.de>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
- <1399974350-11089-20-git-send-email-mgorman@suse.de>
- <20140513125313.GR23991@suse.de>
- <20140513141748.GD2485@laptop.programming.kicks-ass.net>
- <20140514161152.GA2615@redhat.com>
- <20140514192945.GA10830@redhat.com>
- <20140515104808.GF23991@suse.de>
- <20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
- <20140521121501.GT23991@suse.de>
- <20140521130223.GE2485@laptop.programming.kicks-ass.net>
+	id S1752392AbaEUPii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:38:38 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:34825 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076AbaEUPif (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 11:38:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140521130223.GE2485@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140520144446.GJ949@pengutronix.de>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+	<1400169891-29546-2-git-send-email-tthayer@altera.com>
+	<20140516075344.GF949@pengutronix.de>
+	<CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
+	<20140519191206.GH949@pengutronix.de>
+	<CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
+	<CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
+	<20140520144446.GJ949@pengutronix.de>
+Date: Wed, 21 May 2014 10:38:34 -0500
+Message-ID: <CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
+Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
+From: Thor Thayer <tthayer.linux@gmail.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Cc: Alan Tull <delicious.quinoa@gmail.com>, Thor Thayer <tthayer@altera.com>,
+        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
+        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
+        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Alan Tull <atull@altera.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 03:02:23PM +0200, Peter Zijlstra wrote:
-> On Wed, May 21, 2014 at 01:15:01PM +0100, Mel Gorman wrote:
-> > Andrew had suggested dropping v4 of the patch entirely as the numbers were
-> > marginal and the complexity was high. However, even on a relatively small
-> > machine running simple workloads the overhead of page_waitqueue and wakeup
-> > functions is around 5% of system CPU time. That's quite high for basic
-> > operations so I felt it was worth another shot. The performance figures
-> > are better with this version than they were for v4 and overall the patch
-> > should be more comprehensible.
-> 
-> Simpler patch and better performance, yay!
-> 
-> > This patch introduces a new page flag for 64-bit capable machines,
-> > PG_waiters, to signal there are processes waiting on PG_lock and uses it to
-> > avoid memory barriers and waitqueue hash lookup in the unlock_page fastpath.
-> 
-> The patch seems to also explicitly use it for PG_writeback, yet no
-> mention of that here.
-> 
+On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
+<s.trumtrar@pengutronix.de> wrote:
+> Hi!
+>
+> On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
+>> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
+>>
+>> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+>> >>> >> new file mode 100644
+>> >>> >> index 0000000..8f8746b
+>> >>> >> --- /dev/null
+>> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+>> >>> >> @@ -0,0 +1,11 @@
+>> >>> >> +Altera SOCFPGA SDRAM Controller
+>> >>> >> +
+>> >>> >> +Required properties:
+>> >>> >> +- compatible : "altr,sdr-ctl";
+>> >>> >> +- reg : Should contain 1 register ranges(address and length)
+>> >>> >> +
+>> >>> >> +Example:
+>> >>> >> +     sdrctl@ffc25000 {
+>> >>> >> +             compatible = "altr,sdr-ctl";
+>> >>> >> +             reg = <0xffc25000 0x1000>;
+>> >>> >> +     };
+>> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+>> >>> >> index df43702..6ce912e 100644
+>> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
+>> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
+>> >>> >> @@ -676,6 +676,11 @@
+>> >>> >>                       clocks = <&l4_sp_clk>;
+>> >>> >>               };
+>> >>> >>
+>> >>> >> +             sdrctl@ffc25000 {
+>> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
+>> >>> >                                                    ^^^^^^^^^^
+>> >>> >
+>> >>> > Get rid of that, too, please.
+>> >>>
+>> >>> Hi Steffan,
+>> >>>
+>> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
+>> >>> that has the ECC enable bitfield also includes the DRAM configuration
+>> >>> bitfields that other drivers will want to access (specifically the
+>> >>> FPGA bridge needs this information). Since this register will be
+>> >>> shared between drivers,  syscon seems like the best solution.
+>> >>>
+>> >>
+>> >> Hm, from looking at the documentation of the ctrlcfg I can't really
+>> >> understand which bits you would need for the FPGA brigde and why.
+>>
+>> Hi Steffen,
+>>
+>> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
+>> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
+>> allows an FPGA port to come out of reset (enables that port).  Has no
+>> other effect on SDRAM configuration.
+>>
+>> >> That all sounds like stuff you would want to set for the specific
+>> >> RAM you are dealing with on a specific board.
+>> >> What bridge are you talking about? The SDRAM bridge?
+>>
+>> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
+>> register the only register in the sdr that the bridge driver needs.
+>>
+>
+> So, what I suggested down ...
+>
+>> >>
+>> >> I can see the problem with the ECC enable, though.
+>> >>
+>> >> Regards,
+>> >> Steffen
+>> >>
+>> >
+>> >>> >                 sdrctl@ffc25000 {
+>> >>> >                         compatible = "altr,sdr-ctl";
+>> >>> >                         reg = <0xffc25000 0x1000>;
+>> >>> >                         ranges;
+>> >>> >
+>> >>> >                         edac@ffc2502c {
+>> >>> >                                 compatible = "altr,sdram-edac";
+>> >>> >                                 reg = <0xffc2502c 0x50>;
+>> >>> >                                 interrupts = <0 39 4>;
+>> >>> >                         };
+>> >>> >                 };
+>> >>> >
+>> >>> > Then we can later add:
+>> >>> >
+>> >>> >                         sdr-ports: ports@ffc2507c {
+>> >>> >                                 #reset-cells = <1>;
+>> >>> >                                 compatible = "altr,sdr-ports";
+>> >>> >                                 reg = <0xffc2507c 0x10>;
+>> >>> >                                 clocks = <&ddr_dqs_clk>;
+>> >>> >                                 ...
+>> >>> >                         };
+>>
+>
+> ... here should work. No?! Just a simple driver that registers with the
+> reset-framework. I would add 0x7c to that driver and than that driver could
+> "configure" the port and let it out of reset.
+>
+> I have done the same thing for the other 3 bridges, but am not finished yet.
+> Especially the GPV-stuff needs to at least be able to be added later if not now.
+>
+> Regard,
+> Steffen
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
-I'll add a note.
+Hi Steffen!
 
-> > diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-> > index 0ffa20a..f829e73 100644
-> > --- a/kernel/sched/wait.c
-> > +++ b/kernel/sched/wait.c
-> > @@ -167,31 +167,39 @@ EXPORT_SYMBOL_GPL(__wake_up_sync);	/* For internal use only */
-> >   * stops them from bleeding out - it would still allow subsequent
-> >   * loads to move into the critical region).
-> >   */
-> > +static inline void
-> 
-> Make that __always_inline, that way we're guaranteed to optimize the
-> build time constant .page=NULL cases.
-> 
+I'm not clear on how the EDAC driver will interact with the registers
+allocated to the SDRAM controller. If the group of registers from
+0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
+controller, how does the EDAC driver cleanly access that single
+register inside this range?
 
-Done.
+Is the solution that I don't use request_region() (and therefore not
+request exclusive access) when setting up the SDRAM controller?
 
-> > +__prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait,
-> > +			struct page *page, int state, bool exclusive)
-> >  {
-> >  	unsigned long flags;
-> >  
-> > +	if (page && !PageWaiters(page))
-> > +		SetPageWaiters(page);
-> > +	if (list_empty(&wait->task_list)) {
-> > +		if (exclusive) {
-> > +			wait->flags |= WQ_FLAG_EXCLUSIVE;
-> > +			__add_wait_queue_tail(q, wait);
-> > +		} else {
-> 
-> I'm fairly sure we've just initialized the wait thing to 0, so clearing
-> the bit would be superfluous.
-> 
+If you could point me to your drivers for the other bridges that you
+reference, your code may answer my question.
 
-I assume you mean the clearing of WQ_FLAG_EXCLUSIVE. It may or may not be
-superflous. If it's an on-stack wait_queue_t initialised with DEFINE_WAIT()
-then it's redundant. If it's a wait_queue_t that is being reused and
-sometimes used for exclusive waits and other times for non-exclusive
-waits then it's required. The API allows this to happen so I see no harm
-is clearing the flag like the old code did. Am I missing your point?
+Thanks for your comments and insight.
 
-> > +			wait->flags &= ~WQ_FLAG_EXCLUSIVE;
-> > +			__add_wait_queue(q, wait);
-> > +		}
-> > +	}
-> >  	set_current_state(state);
-> >  	spin_unlock_irqrestore(&q->lock, flags);
-> >  }
-> > +
-> > +void
-> > +prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)
-> > +{
-> > +	return __prepare_to_wait(q, wait, NULL, state, false);
-> > +}
-> >  EXPORT_SYMBOL(prepare_to_wait);
-> >  
-> >  void
-> >  prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
-> >  {
-> > +	return __prepare_to_wait(q, wait, NULL, state, true);
-> >  }
-> >  EXPORT_SYMBOL(prepare_to_wait_exclusive);
-> >  
-> > @@ -228,7 +236,8 @@ EXPORT_SYMBOL(prepare_to_wait_event);
-> >   * the wait descriptor from the given waitqueue if still
-> >   * queued.
-> >   */
-> > +static inline void __finish_wait(wait_queue_head_t *q, wait_queue_t *wait,
-> > +			struct page *page)
-> >  {
-> 
-> Same thing, make that __always_inline.
-> 
-
-Done.
-
-> >  	unsigned long flags;
-> >  
-> > @@ -249,9 +258,16 @@ void finish_wait(wait_queue_head_t *q, wait_queue_t *wait)
-> >  	if (!list_empty_careful(&wait->task_list)) {
-> >  		spin_lock_irqsave(&q->lock, flags);
-> >  		list_del_init(&wait->task_list);
-> > +		if (page && !waitqueue_active(q))
-> > +			ClearPageWaiters(page);
-> >  		spin_unlock_irqrestore(&q->lock, flags);
-> >  	}
-> >  }
-> > +
-> > +void finish_wait(wait_queue_head_t *q, wait_queue_t *wait)
-> > +{
-> > +	return __finish_wait(q, wait, NULL);
-> > +}
-> >  EXPORT_SYMBOL(finish_wait);
-> >  
-> >  /**
-> 
-> > @@ -374,6 +427,19 @@ int __sched out_of_line_wait_on_bit_lock(void *word, int bit,
-> >  }
-> >  EXPORT_SYMBOL(out_of_line_wait_on_bit_lock);
-> >  
-> > +void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, int bit)
-> > +{
-> > +	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
-> > +	unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&wqh->lock, flags);
-> > +	if (waitqueue_active(wqh))
-> > +		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
-> > +	else
-> > +		ClearPageWaiters(page);
-> > +	spin_unlock_irqrestore(&wqh->lock, flags);
-> > +}
-> 
-> Seeing how word is always going to be &page->flags, might it make sense
-> to remove that argument?
-> 
-
-The wait_queue was defined on-stack with DEFINE_WAIT_BIT which uses
-wake_bit_function() as a wakeup function and that thing consumes both the
-page->flags and the bit number it's interested in. This is used for both
-PG_writeback and PG_locked so assumptions cannot really be made about
-the value.
-
--- 
-Mel Gorman
-SUSE Labs
+Thor
