@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaEUPTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:19:35 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:53644 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801AbaEUPTd (ORCPT
+	id S1752784AbaEUPUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:20:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40567 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751148AbaEUPUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:19:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, sboyd@codeaurora.org, rvaswani@codeaurora.org,
-        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v1 4/4] ARM: debug: qcom: Add APQ8084 DEBUG_LL UART support
-Date: Wed, 21 May 2014 17:18:52 +0200
-Message-ID: <4365639.JcFl1cP048@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400684225-21381-5-git-send-email-gdjakov@mm-sol.com>
-References: <1400684225-21381-1-git-send-email-gdjakov@mm-sol.com> <1400684225-21381-5-git-send-email-gdjakov@mm-sol.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:B553I9x26yiUA5Ql2vdcAT8Z8Eb6j0btpfnGtU7WvS1
- gLNHuMWeA2d+dLfh1sK+IDiB8BBfHwcO+PrV4yPoRsNpMqUnpz
- 5IPc8eflwcOQBuHDm59Y3/cQWR4pq3VTaFPmockaPVB1W/iHqP
- JeNcm5sBSOrd1CsbahShXR7ToXo10rQO5JoTu9yvG3RHpl+Ebj
- W0Fc4LEWgCv4WNwKdalNg4gW5L3lB6On21Y+O3PgEWtJiatvo/
- C+pQEzE/9HojVMROAfW8qzRKwGRBcIXczMO7GFparJKJ8RjCUm
- wVQpyJb546NVaKob5JjBDeI0yr3EhEmRvjAJV/A5PuKwjTGGCe
- 10wGtmTZ5awa63N0Q8so=
+	Wed, 21 May 2014 11:20:04 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dmaengine@vger.kernel.org, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        Arnd Bergmann <arnd@arndb.de>, andriy.shevchenko@intel.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v8 0/2] Add support for the Allwinner A31 DMA Controller
+Date: Wed, 21 May 2014 17:15:54 +0200
+Message-Id: <1400685357-508-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 May 2014 17:57:05 Georgi Djakov wrote:
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index eab8ecb..91d5184 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -101,6 +101,15 @@ choice
->                 bool "Kernel low-level debugging on 9263 and 9g45"
->                 depends on HAVE_AT91_DBGU1
->  
-> +       config DEBUG_APQ8084_UART
-> +               bool "Kernel low-level debugging messages via APQ8084 UART"
-> +               depends on ARCH_QCOM
-> +               select MSM_HAS_DEBUG_UART_HS
-> +               select DEBUG_MSM_UART
-> +               help
-> +                 Say Y here if you want the debug print routines to direct
-> +                 their output to the serial port on Qualcomm APQ8084 devices.
-> +
->         config DEBUG_BCM2835
->                 bool "Kernel low-level debugging on BCM2835 PL011 UART"
->                 depends on ARCH_BCM2835
-> diff --git a/arch/arm/include/debug/msm.S b/arch/arm/include/debug/msm.S
-> index 9d653d4..178636d 100644
-> --- a/arch/arm/include/debug/msm.S
-> +++ b/arch/arm/include/debug/msm.S
-> @@ -36,6 +36,11 @@
->  #define MSM_DEBUG_UART_PHYS    MSM_UART3_PHYS
->  #endif
->  
-> +#ifdef CONFIG_DEBUG_APQ8084_UART
-> +#define MSM_DEBUG_UART_BASE    0xFA75E000
-> +#define MSM_DEBUG_UART_PHYS    0xF995E000
-> +#endif
-> +
->  #ifdef CONFIG_DEBUG_MSM8660_UART
->  #define MSM_DEBUG_UART_BASE    0xF0040000
->  #define MSM_DEBUG_UART_PHYS    0x19C40000
-> 
+Hi,
 
-Maybe we should move debug/msm.S over to use
-CONFIG_DEBUG_UART_PHYS/CONFIG_DEBUG_UART_VIRT now?
+This patchset adds support for the DMA controller found in the
+Allwinner A31 and A23 SoCs.
 
-	Arnd
+This has been tested using the newly introduced SPI driver on an A31
+EVK. Support for DMA-driven SPI transfers will be the subject of
+another patch serie.
+
+Thanks,
+Maxime
+
+Changes from v7:
+  - select DMA_OF, since we're only relying on DT
+  - Properly kill the tasklet as suggested in 
+    https://lwn.net/Articles/588457/
+  - Split up the dt bindings documentation into a separate patch
+
+Changes from v6:
+  - Dropped the merged patches and the clock patches that are pretty
+    orthogonal to this driver
+
+Changes from v5:
+  - Rebased on top of 3.15-rc1
+
+Changes from v4:
+  - Removed the packed attribute on the LLI
+  - Switched to using a NULL device pointer in clk_get on PLL6 and
+    AHB1 mux to make explicit that we are getting global clocks
+  - Switched from spin_lock_irqsave to spin_lock in the interrupt
+    handler
+  - Various nitpicks from Andy Shevchenko:
+    + Switched to using %p printk formats for pointers
+    + Inverted some tests to lose a level of indentation
+    + Dropped ifdef DEBUG protecting calls to dev_dbg
+
+Changes from v3:
+  - A few other comments made by Andy Shevchenko were fixed:
+    + Used references in %pa* printk formats
+    + Used is_slave_direction in prep_slave_sg to make sure we were
+      actually called for something, and to avoid making assumptions
+      that we were actually called with the expected directions
+    + A few others minor fixes: s/pr_err/dev_err/, etc.
+
+Changes from v2:
+  - Removed the clk_put calls in the clock protection functions
+  - Splitted out the sunxi machines into several files
+  - Moved the clock protection code into these new machine files
+  - Moved the PLL6 reparenting to the DMA driver
+  - Addressed various comments from Andy Shevchenko: switched to using
+    devm_kcalloc, used correct printk formats for physical and DMA
+    addresses, etc.
+
+Changes from v1:
+  - Removed the clk_put call in the clocks protecting patches
+  - Minor fixes here and there as suggested by Andy Shevchenko: switch
+    to dmam_pool_create, switch to dev_dbg instead of pr_debug, etc.
+
+
+Maxime Ripard (2):
+  Documentation: dt: Add Allwinner A31 DMA controller bindings
+  dmaengine: sun6i: Add driver for the Allwinner A31 DMA controller
+
+ .../devicetree/bindings/dma/sun6i-dma.txt          |   45 +
+ drivers/dma/Kconfig                                |    9 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/sun6i-dma.c                            | 1058 ++++++++++++++++++++
+ 4 files changed, 1113 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/sun6i-dma.txt
+ create mode 100644 drivers/dma/sun6i-dma.c
+
+-- 
+1.9.3
+
