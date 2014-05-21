@@ -1,88 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaEUKFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 06:05:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47192 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840AbaEUKF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 06:05:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,879,1392192000"; 
-   d="scan'208";a="544144774"
-Date: Wed, 21 May 2014 13:05:11 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mike Turquette <mturquette@linaro.org>, Jin Yao <yao.jin@linux.intel.com>,
-        Li Aubrey <aubrey.li@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/4] ACPI / LPSS: custom power domain for LPSS
-Message-ID: <20140521100511.GA29349@xps8300>
-References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1400161226-24067-3-git-send-email-heikki.krogerus@linux.intel.com>
- <3202918.AHHS8JP9gx@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3202918.AHHS8JP9gx@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752563AbaEUKGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 06:06:07 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58411 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaEUKBv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 06:01:51 -0400
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, benh@kernel.crashing.org
+Subject: [V6 10/11] power8, perf: Adapt BHRB PMU configuration to work with SW filters
+Date: Wed, 21 May 2014 15:29:55 +0530
+Message-Id: <1400666396-1682-11-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052110-5816-0000-0000-00000E232628
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Powerpc kernel now supports SW based branch filters for book3s systems with some
+specifc requirements while dealing with HW supported branch filters in order to
+achieve overall OR semantics prevailing in perf branch stack sampling framework.
+This patch adapts the BHRB branch filter configuration to meet those protocols.
+POWER8 PMU can only handle one HW based branch filter request at any point of time.
+For all other combinations PMU will pass it on to the SW.
 
-On Tue, May 20, 2014 at 11:33:09PM +0200, Rafael J. Wysocki wrote:
-> > +#ifdef CONFIG_PM
-> 
-> It would be good to add a kerneldoc explaining what's being saved here and why.
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ arch/powerpc/perf/power8-pmu.c | 50 ++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 43 insertions(+), 7 deletions(-)
 
-OK.
-
-> > +static void acpi_lpss_save_ctx(struct device *dev)
-> > +{
-> > +	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-> > +	int i;
-> > +
-> > +	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
-> > +		pdata->prv_reg_ctx[i] = __lpss_reg_read(pdata, i * sizeof(u32));
-> > +		dev_dbg(dev, "saving 0x%08x from LPSS reg at offset 0x%02x\n",
-> > +			pdata->prv_reg_ctx[i], (unsigned int)(i * sizeof(u32)));
-> > +	}
-> > +}
-> > +
-> > +static void acpi_lpss_restore_ctx(struct device *dev)
-> > +{
-> > +	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-> > +	int i;
-> > +
-> > +	/* PCI spec expects 10ms delay when resuming from D3 to D0 */
-> > +	msleep(10);
-> 
-> Two questions here.
-> 
-> First, is the 10 ms sleep really necessary?  I'd expect the AML to take care of
-> such delays (this is not a PCI device formally).
-
-Unfortunately that is not the case. There is nothing in the AML for
-this. Mika, correct me if I'm wrong.
-
-> And because this is not a PCI device formally, why is the comment talking about
-> the PCI spec?  Why is PCI relevant in any way here?
-
-Under the hood the devices are still PCI devices, even if they
-formally aren't. Maybe I should point that out in the comment..
-
-We put the sleep there because without it there was no guarantee if
-the device was properly resumed by the time the drivers resume hooks
-were called. The symptom in case of a failure was simply that the
-registers could not be written, which leads into timeouts at least in
-case of the I2C and UART and making them unusable until the next
-suspend followed by resume.
-
-
-Thanks,
-
+diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+index 699b1dd..4743bde 100644
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -635,6 +635,16 @@ static int power8_generic_events[] = {
+ 
+ static u64 power8_bhrb_filter_map(u64 branch_sample_type, u64 *bhrb_filter)
+ {
++	u64 x, pmu_bhrb_filter;
++	pmu_bhrb_filter = 0;
++	*bhrb_filter = 0;
++
++	/* No branch filter requested */
++	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY) {
++		*bhrb_filter = PERF_SAMPLE_BRANCH_ANY;
++		return pmu_bhrb_filter;
++	}
++
+ 	/* BHRB and regular PMU events share the same privilege state
+ 	 * filter configuration. BHRB is always recorded along with a
+ 	 * regular PMU event. As the privilege state filter is handled
+@@ -645,16 +655,42 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type, u64 *bhrb_filter)
+ 	/* Ignore user, kernel, hv bits */
+ 	branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
+ 
+-	/* No branch filter requested */
+-	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
+-		return 0;
++	/*
++	 * P8 does not support oring of PMU HW branch filters. Hence
++	 * if multiple branch filters are requested which includes filters
++	 * supported in PMU, still go ahead and clear the PMU based HW branch
++	 * filter component as in this case all the filters will be processed
++	 * in SW.
++	 */
+ 
+-	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL) {
+-		return POWER8_MMCRA_IFM1;
++	for_each_branch_sample_type(x) {
++		/* Ignore privilege branch filters */
++		if ((x == PERF_SAMPLE_BRANCH_USER)
++			|| (x == PERF_SAMPLE_BRANCH_KERNEL)
++				|| (x == PERF_SAMPLE_BRANCH_HV))
++			continue;
++
++		if (!(branch_sample_type & x))
++			continue;
++
++		/* Supported individual PMU branch filters */
++		if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
++			branch_sample_type &= ~PERF_SAMPLE_BRANCH_ANY_CALL;
++			if (branch_sample_type) {
++				/* Multiple branch filters will be processed in SW */
++				pmu_bhrb_filter = 0;
++				*bhrb_filter = 0;
++				return pmu_bhrb_filter;
++			} else {
++				/* Individual branch filter will be processed in PMU */
++				pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
++				*bhrb_filter    |= PERF_SAMPLE_BRANCH_ANY_CALL;
++				return pmu_bhrb_filter;
++			}
++		}
+ 	}
+ 
+-	/* Every thing else is unsupported */
+-	return -1;
++	return pmu_bhrb_filter;
+ }
+ 
+ static void power8_config_bhrb(u64 pmu_bhrb_filter)
 -- 
-heikki
+1.7.11.7
+
