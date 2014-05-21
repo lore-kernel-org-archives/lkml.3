@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaEUJsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:48:47 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42418 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaEUJsq convert rfc822-to-8bit (ORCPT
+	id S1752531AbaEUJtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:49:00 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:64258 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaEUJs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:48:46 -0400
-Message-ID: <537C7680.7050305@arm.com>
-Date: Wed, 21 May 2014 10:48:48 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 21 May 2014 05:48:58 -0400
+Date: Wed, 21 May 2014 10:48:52 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Matt Porter <mporter@linaro.org>
+Cc: Devicetree List <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL] mfd: Second IB for Mark (regulator)
+Message-ID: <20140521094852.GH6679@lee--X1>
+References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
-        "pavel@ucw.cz" <pavel@ucw.cz>, "nm@ti.com" <nm@ti.com>,
-        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH Resend] driver/core: cpu: initialize opp table
-References: <60d825e8bfe01f8a5ff98fffaf51ffbf04c7d175.1400480033.git.viresh.kumar@linaro.org>	<ca7cc76c49806ce1ac8f9617fa4266cfc29d1ea1.1400480592.git.viresh.kumar@linaro.org>	<537C7348.7060202@arm.com> <CAKohpo=F5gSPvVSAX=qePnudxiuKWLKGTZy8vd80=MJxESWJZQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=F5gSPvVSAX=qePnudxiuKWLKGTZy8vd80=MJxESWJZQ@mail.gmail.com>
-X-OriginalArrivalTime: 21 May 2014 09:48:44.0742 (UTC) FILETIME=[DAF79E60:01CF74D9]
-X-MC-Unique: 114052110484307301
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398295293-11033-1-git-send-email-mporter@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
 
+  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
 
-On 21/05/14 10:41, Viresh Kumar wrote:
-> On 21 May 2014 15:05, Sudeep Holla <sudeep.holla@arm.com> wrote:
->> As Rafael mentioned it's better to have a wrapper function to hide these
->> details. You should consider the fact that of_init_opp_table returns -EINVAL
->> if
->> CONFIG_PM_OPP not defined as well as when the list is invalid in the DT.
->> IMO we can return -ENOSYS if not implemented(i.e. !CONFIG_PM_OPP)
->
-> I didn't understood Rafael's comment as I couldn't figure out if he is just
-> pointing to CONFIG_** or some arch specific thing..
->
-> But it looks more obvious that he asked me something similar to what you
-> are saying :)
->
+are available in the git repository at:
 
-I believe so, mainly the non-DT case, since you are checking for error, it will
-end up with spurious messages as the return value is -EINVAL. Hence I was
-suggesting return -ENOSYS(which means Function not implemented)
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-regulator-v3.16-1
 
-> Why do we need to return anything? Let that function have return type 'void'?
+for you to fetch changes up to c6466950e917890be3050171f6745ccb9d91d35f:
 
-Hmm, don't we still need to throw error if DT has invalid OPP ?
-It doesn't may sense to me if no errors is returned and still CPUFreq fails
-later.
+  regulator: bcm590xx: Add support for regulators on secondary I2C slave (2014-05-21 10:40:16 +0100)
 
-> Also would it make sense to move this into it as well?
->
-> cpu->dev.of_node = of_get_cpu_node(num, NULL);
->
+----------------------------------------------------------------
+Immutable branch between MFD and Regulator due for v3.16 merge-window.
 
-I don't quite understand what you mean here ?
+----------------------------------------------------------------
+Doug Anderson (2):
+      mfd: tps65090: Don't tell child devices we have an IRQ if we don't
+      mfd: tps65090: Stop caching most registers
 
-Regards,
-Sudeep
+Matt Porter (3):
+      mfd: bcm590xx: Update binding with additional BCM59056 regulators
+      mfd: bcm590xx: Add support for secondary I2C slave address
+      regulator: bcm590xx: Add support for regulators on secondary I2C slave
 
+ Documentation/devicetree/bindings/mfd/bcm590xx.txt |  4 +-
+ drivers/mfd/bcm590xx.c                             | 60 ++++++++++----
+ drivers/mfd/tps65090.c                             | 41 ++++++----
+ drivers/power/tps65090-charger.c                   | 11 ---
+ drivers/regulator/bcm590xx-regulator.c             | 92 +++++++++++++++++++---
+ include/linux/mfd/bcm590xx.h                       |  9 ++-
+ include/linux/mfd/tps65090.h                       | 14 ++++
+ 7 files changed, 176 insertions(+), 55 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
