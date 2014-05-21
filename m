@@ -1,62 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336AbaEUFvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 01:51:20 -0400
-Received: from fgwmail3.fujitsu.co.jp ([164.71.1.134]:35542 "EHLO
-	fgwmail4.fujitsu.co.jp" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750855AbaEUFvS (ORCPT
+	id S1751674AbaEUFvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 01:51:39 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:33364 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaEUFvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 01:51:18 -0400
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 01:51:18 EDT
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <537C3CAF.5080204@jp.fujitsu.com>
-Date: Wed, 21 May 2014 14:42:07 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-CC: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH cgroup/for-3.16] cgroup: clean up MAINTAINERS entries
-References: <20140513194958.GD28815@htj.dyndns.org> <20140519203339.GE27506@mtj.dyndns.org>
-In-Reply-To: <20140519203339.GE27506@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 21 May 2014 01:51:38 -0400
+From: Inderpal Singh <inderpal.s@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: nm@ti.com, rjw@rjwysocki.net, pavel@ucw.cz, viresh.kumar@linaro.org
+Subject: [PATCH v2] PM / OPP: Implement opp_remove and free_opp_table functions
+Date: Wed, 21 May 2014 11:21:42 +0530
+Message-Id: <1400651502-23703-1-git-send-email-inderpal.s@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
+References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/20 5:33), Tejun Heo wrote:
-> On Tue, May 13, 2014 at 03:49:58PM -0400, Tejun Heo wrote:
->> There are currently three cgroup related entries in MAINTAINERS.  Make
->> the following updates.
->>
->> * Make the names - both cgroup and cpuset - singular.  We're mixing
->>    singular and plural all over the place for no good reason.
->>
->> * Drop containers@lists.linux-foundation.org from CGROUP.  That list
->>    doesn't have much to do with cgroup per-se.
->>
->> * Add Documentation field to CGROUP.
->>
->> * Drop mm/*cgroup* from CGROUP.  memcg has separate maintainers.
->>
->> * Prefix the controller-specific ones with "CONTROL CGROUP -" and
->>    collect cgroup related entries under the core one.
->>
->> * Add (MEMCG) abbreviation to MEMCG entry.
->>
->> * Drop Balbir Singh and KAMEZAWA Hiroyuki from memcg maintainers.  It
->>    has been quite a while since both actually worked on memcg.
->>
->> Signed-off-by: Tejun Heo <tj@kernel.org>
->
-> Applied to cgroup/for-3.16.
->
-thank you.
+At the driver unloading time the associated opps and its table may need
+to be deleted. Otherwise it amounts to memory leak. The existing
+OPP library does not have provision to do so.
 
--Kame
-  
+Hence this patch implements the required functions to free the same.
 
+Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+---
+Changes in v2:
+	- As suggested by Nishanth, added support to remove a single OPP
+	  for non-DT users
+	- Added an internal helper function to avoid the code duplication
+	  between opp_remove and free_opp_table functions
+ 
+ drivers/base/power/opp.c | 122 ++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/pm_opp.h   |  14 +++++-
+ 2 files changed, 134 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index faae9cf..22adef3 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -89,6 +89,7 @@ struct device_opp {
+ 	struct device *dev;
+ 	struct srcu_notifier_head head;
+ 	struct list_head opp_list;
++	struct rcu_head head_rcu;
+ };
+ 
+ /*
+@@ -427,7 +428,6 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+ 				__func__);
+ 			return -ENOMEM;
+ 		}
+-
+ 		dev_opp->dev = dev;
+ 		srcu_init_notifier_head(&dev_opp->head);
+ 		INIT_LIST_HEAD(&dev_opp->opp_list);
+@@ -464,6 +464,82 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+ EXPORT_SYMBOL_GPL(dev_pm_opp_add);
+ 
+ /**
++ * opp_remove_and_free()  - Internal helper to remove and free an OPP
++ * @dev_opp:	device_opp for which we do this operation
++ * @opp:	OPP to be removed
++ *
++ * This function removes an opp from the opp list and frees it. And, if the
++ * list is empty, it also removes the device_opp from the root list and
++ * frees it.
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * The callers need to use RCU updater strategy with mutex locks to keep the
++ * integrity of the internal data structures.
++ */
++static void opp_remove_and_free(struct device_opp *dev_opp,
++						struct dev_pm_opp *opp)
++{
++	list_del_rcu(&opp->node);
++	/*
++	 * Notify the removal of the opp
++	 */
++	srcu_notifier_call_chain(&dev_opp->head, OPP_EVENT_REMOVE, opp);
++	kfree_rcu(opp, head);
++
++	if (list_empty(&dev_opp->opp_list)) {
++		list_del_rcu(&dev_opp->node);
++		kfree_rcu(dev_opp, head_rcu);
++	}
++}
++
++/**
++ * dev_pm_opp_remove() - remove a specific OPP
++ * @dev:	device for which we do this operation
++ * @freq:	OPP frequency to remove
++ *
++ * Removes a provided opp.
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * Hence this function internally uses RCU updater strategy with mutex locks to
++ * keep the integrity of the internal data structures. Callers should ensure
++ * that this function is *NOT* called under RCU protection or in contexts where
++ * mutex locking cannot be used.
++ */
++void dev_pm_opp_remove(struct device *dev, unsigned long freq)
++{
++	struct device_opp *dev_opp = ERR_PTR(-ENODEV);
++	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
++
++	if (IS_ERR_OR_NULL(dev))
++		return;
++
++	/* Hold our list modification lock here */
++	mutex_lock(&dev_opp_list_lock);
++
++	/* Check for existing list for 'dev' */
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp))
++		goto unlock;
++
++	/* Do we have the frequency? */
++	list_for_each_entry(temp_opp, &dev_opp->opp_list, node)
++		if (temp_opp->rate == freq) {
++			opp = temp_opp;
++			break;
++		}
++
++	if (IS_ERR(opp)) {
++		dev_warn(dev, "%s: OPP freq not found\n", __func__);
++		goto unlock;
++	}
++
++	opp_remove_and_free(dev_opp, opp);
++unlock:
++	mutex_unlock(&dev_opp_list_lock);
++}
++EXPORT_SYMBOL_GPL(dev_pm_opp_remove);
++
++/**
+  * opp_set_availability() - helper to set the availability of an opp
+  * @dev:		device for which we do this operation
+  * @freq:		OPP frequency to modify availability
+@@ -653,3 +729,47 @@ int of_init_opp_table(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(of_init_opp_table);
+ #endif
++
++/**
++ * dev_pm_opp_free_opp_table() - free the opp table
++ * @dev:	device for which we do this operation
++ *
++ * Free up the allocated opp table
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * Hence this function internally uses RCU updater strategy with mutex locks to
++ * keep the integrity of the internal data structures. Callers should ensure
++ * that this function is *NOT* called under RCU protection or in contexts where
++ * mutex locking cannot be used.
++ */
++void dev_pm_opp_free_opp_table(struct device *dev)
++{
++	struct device_opp *dev_opp = ERR_PTR(-ENODEV);
++	struct dev_pm_opp *opp;
++	int count = 0;
++
++	if (IS_ERR_OR_NULL(dev))
++		return;
++
++	/* Hold our list modification lock here */
++	mutex_lock(&dev_opp_list_lock);
++
++	/* Check for existing list for 'dev' */
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp)) {
++		dev_warn(dev, "%s: OPP list not found\n", __func__);
++		goto unlock;
++	}
++
++	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node)
++		count++;
++
++	while (count--) {
++		opp = list_entry_rcu(dev_opp->opp_list.next,
++					struct dev_pm_opp, node);
++		opp_remove_and_free(dev_opp, opp);
++	}
++unlock:
++	mutex_unlock(&dev_opp_list_lock);
++}
++EXPORT_SYMBOL_GPL(dev_pm_opp_free_opp_table);
+diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
+index 0330217..13e6956 100644
+--- a/include/linux/pm_opp.h
++++ b/include/linux/pm_opp.h
+@@ -21,7 +21,7 @@ struct dev_pm_opp;
+ struct device;
+ 
+ enum dev_pm_opp_event {
+-	OPP_EVENT_ADD, OPP_EVENT_ENABLE, OPP_EVENT_DISABLE,
++	OPP_EVENT_ADD, OPP_EVENT_REMOVE, OPP_EVENT_ENABLE, OPP_EVENT_DISABLE,
+ };
+ 
+ #if defined(CONFIG_PM_OPP)
+@@ -49,7 +49,11 @@ int dev_pm_opp_enable(struct device *dev, unsigned long freq);
+ 
+ int dev_pm_opp_disable(struct device *dev, unsigned long freq);
+ 
++void dev_pm_opp_remove(struct device *dev, unsigned long freq);
++
+ struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev);
++
++void dev_pm_opp_free_opp_table(struct device *dev);
+ #else
+ static inline unsigned long dev_pm_opp_get_voltage(struct dev_pm_opp *opp)
+ {
+@@ -100,11 +104,19 @@ static inline int dev_pm_opp_disable(struct device *dev, unsigned long freq)
+ 	return 0;
+ }
+ 
++static inline void dev_pm_opp_remove(struct device *dev, unsigned long freq)
++{
++}
++
+ static inline struct srcu_notifier_head *dev_pm_opp_get_notifier(
+ 							struct device *dev)
+ {
+ 	return ERR_PTR(-EINVAL);
+ }
++
++static inline void dev_pm_opp_free_opp_table(struct device *dev)
++{
++}
+ #endif		/* CONFIG_PM_OPP */
+ 
+ #if defined(CONFIG_PM_OPP) && defined(CONFIG_OF)
+-- 
+1.8.3.2
 
