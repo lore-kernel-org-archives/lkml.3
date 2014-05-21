@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaEUWc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:32:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8052 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361AbaEUWcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753573AbaEUWdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:33:12 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:50146 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399AbaEUWcz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 May 2014 18:32:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,882,1392192000"; 
-   d="scan'208";a="515678357"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Subject: RE: [RFC] x86_64: A real proposal for iret-less return to kernel
-Thread-Topic: [RFC] x86_64: A real proposal for iret-less return to kernel
-Thread-Index: AQHPdT5wRvlmui20OUO5csd5VXpJ+ZtMCOaA//+MFSCAAHmbAP//i7GAgAB3ZAD//4s2oA==
-Date: Wed, 21 May 2014 22:32:53 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3281198D@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
- <1400639227.9759.21.camel@pippen.local.home>
- <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
- <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
- <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
- <20140521163315.GJ21205@pd.tnic>
- <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
- <20140521214845.GG25130@pd.tnic>
- <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
- <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
- <CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
-In-Reply-To: <CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
+In-Reply-To: <20140521222541.GO1873@two.firstfloor.org>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+ <20140521222541.GO1873@two.firstfloor.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 21 May 2014 15:32:33 -0700
+Message-ID: <CALCETrVambcEkh8oQuUL95DupX4Lhxwh5W0tESNqia26z3_z3g@mail.gmail.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LMX4bn022791
 
->> The recovery path has to do more than just send a signal - it needs to walk processes and
->> "mm"s to see which have mapped the physical address that the h/w told us has gone bad.
+On Wed, May 21, 2014 at 3:25 PM, Andi Kleen <andi@firstfloor.org> wrote:
 >
-> I still feel like I'm missing something.  If we interrupted user space
-> code, then the context we're in should be identical to the context
-> we'll get when we're about to return to userspace.
+> Seems like a lot of effort and risk to essentially only optimize in kernel
+> interrupt handlers.
 
-True. And this far along in do_machine_check() we have set all the other cpus
-free, so the are heading back to whatever context we interrupted them in. So
-we might be able to do all that other stuff inline here ... we interrupted user
-mode, so we know we don't hold any locks. Other cpus are running, so they can
-complete what they are doing to release any locks we might need.
+The idea is that it might allow us to remove a bunch of scary nested
+NMI code as well as speeding things up.
 
-But it will take a while (to scan all those processes). And we haven't yet
-cleared MCG_STATUS ... so another machine check before we do that
-would be fatal (x86 doesn't allow nesting).  Even if we moved the work
-after the clear of MCG_STATUS we'd still be vulnerable to a new machine
-check on x86_64 because we are sitting on the one & only machine check
-stack.
+>
+> AFAIK the most interesting cases (like user page faults) are not
+> affected at all. Usually most workloads don't spend all that much time
+> in the kernel, so it won't help most interrupts.
+>
+> I suspect the only case that's really interesting here is interrupting
+> idle. Maybe it would be possible to do some fast path in this case only.
+>
+> However idle currently has so much overhead that I suspect that there
+> are lower hanging fruit elsewhere.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I will gladly buy a meal or beverage for whomever fixes the ttwu stuff
+to stop sending IPIs to idle CPUs, which will help a lot.
+
+--Andy
