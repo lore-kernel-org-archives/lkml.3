@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077AbaEUJZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:25:33 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59920 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbaEUJZc (ORCPT
+	id S1751992AbaEUJ0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:26:35 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:59945 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaEUJ0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:25:32 -0400
-Date: Wed, 21 May 2014 11:25:23 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, acme@infradead.org,
-        jolsa@kernel.org, rostedt@goodmis.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf_tools/sched: Remove nr_state_machine_bugs in perf
- latency.
-Message-ID: <20140521092523.GG30445@twins.programming.kicks-ass.net>
-References: <20140512181946.GG13467@laptop.programming.kicks-ass.net>
- <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
- <20140519115957.GF5027@krava.brq.redhat.com>
+	Wed, 21 May 2014 05:26:32 -0400
+Date: Wed, 21 May 2014 10:26:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Matt Porter <mporter@linaro.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/4] mfd: bcm590xx: add support for secondary I2C
+ slave address
+Message-ID: <20140521092626.GF6679@lee--X1>
+References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
+ <1398295293-11033-3-git-send-email-mporter@linaro.org>
+ <20140428115627.GY21279@lee--X1>
+ <20140428140910.GB7719@beef>
+ <20140520161131.GB32025@lee--X1>
+ <20140520190055.GQ12304@sirena.org.uk>
+ <20140520202923.GT32082@beef>
+ <20140520214439.GS12304@sirena.org.uk>
+ <20140520215726.GU32082@beef>
+ <20140520221758.GH12304@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yemHoCqAZaCul8x8"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140519115957.GF5027@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140520221758.GH12304@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 20 May 2014, Mark Brown wrote:
 
---yemHoCqAZaCul8x8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Tue, May 20, 2014 at 05:57:26PM -0400, Matt Porter wrote:
+> > On Tue, May 20, 2014 at 10:44:39PM +0100, Mark Brown wrote:
+> 
+> > > I looked at that but it seems I already acked the regulator part of the
+> > > series and nothing else looked immediately relevant?
+> 
+> > The series has cross dependencies (shared header include) and thus needs
+> > to have both the mfd and regulator portions merged together. You had
+> > mentioned in the v1 version that you'd like to take it through the
+> > regulator tree and so Lee's comments earlier were with regard to you
+> > taking the mfd portions.
+> 
+> Right, OK - because it depends on the earlier MFD patches (I think?) I
+> was expecting it to be applied in MFD and merged over to regulator.
 
-On Mon, May 19, 2014 at 01:59:57PM +0200, Jiri Olsa wrote:
-> any ACKs?
->=20
+Great, that's all I needed to know.  I'm on it.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-
---yemHoCqAZaCul8x8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfHEDAAoJEHZH4aRLwOS6c6cQAIXr7m4AX7RIpD5g/kfcL6aQ
-XrSgrk4oMBuZ7t3Z1KDuigtyo8b+4mf2phxoqWuaQH2+dC1b6kTdOvvPtD/BP9Qd
-u5ceKtJG17CFEOMvuQgupctG17Ek7cnqbYsdcCdLFQ8Vh9pQ8K+DyJosDw6D+18g
-F5GFT3CTdjr6+yyQzTOsWqlnKx5HVcXnRuOHymvQV3LdX4CDnjZP71JjC+3AjG2v
-ufqtWQPV3sATvXKZIz9yBGJQsGRzhvx2W6zttPPa0+lr9HRThm2XqGSkS7SbxqPj
-CZrbHbngUdfcD8y02zKez/PfNkiak9/2IFcQJ58iNqm5v4NCF7UeCRt7VFg/5PtC
-gI+mitAljiS154LIlQNTNNfnOd6AsVDSjeKkJwT0CUIRDYnLlJLl1LgIhx2wAwt5
-P6u/MAfAskgwzf8b8R9aGMFXjJHBCD7tbYLVyyBRHHTsFKlGwOG/2Qh8Xc6K8Z42
-c8+mp1Lw69/NjZEuo16phe/uOGUsLDSPNXgyWTWPiw5qb+NJJjCc2+41A3wE8/Ek
-RxlbrHIXWSsfj14eIUzQWmwkUe0/EkoPzVGSl3FaB2BefJCkM8cdiUxiJs8FhxaE
-TSvrB89uKpSL4boi4Al564JyPLt4rN3eRNFnlpr6bEdbS7HF0ZncQK7wHutalkyG
-xC3f1/+nheceYruaDWnb
-=tzn5
------END PGP SIGNATURE-----
-
---yemHoCqAZaCul8x8--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
