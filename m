@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaEUVJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:09:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56141 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786AbaEUVJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:09:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,882,1392192000"; 
-   d="scan'208";a="435218094"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Chen Yucong <slaoub@gmail.com>
-CC: "bp@alien8.de" <bp@alien8.de>, "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
-Subject: RE: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
- to Per-CPU rather than only monarch CPU
-Thread-Topic: [PATCH v2] x86/mce: Distirbute the clear operation of
- mces_seen to Per-CPU rather than only monarch CPU
-Thread-Index: AQHPc9EexFpBbtkln0+oVFnaZ6Q3e5tKuQIAgAAGTACAAAs0AIAACkoAgAAEgACAAKhUQA==
-Date: Wed, 21 May 2014 21:09:45 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F328115FD@ORSMSX114.amr.corp.intel.com>
-References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
-		 <537C040E.3040901@jp.fujitsu.com> <1400637782.14703.32.camel@debian>
-	 <537C12BC.6080408@jp.fujitsu.com> <1400642398.14703.42.camel@debian>
- <537C1F24.8000604@jp.fujitsu.com>
-In-Reply-To: <537C1F24.8000604@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1753378AbaEUVKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:10:09 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:49675 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268AbaEUVKH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:10:07 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19m5IdPAGxMFVLLqKS0LMWT
+Date: Wed, 21 May 2014 14:09:56 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
+Message-ID: <20140521210956.GA14520@atomide.com>
+References: <1399739870-13526-1-git-send-email-sre@kernel.org>
+ <1399739870-13526-10-git-send-email-sre@kernel.org>
+ <20140514215503.GM27426@atomide.com>
+ <20140520003538.GD15793@atomide.com>
+ <20140521182513.GA26285@earth.universe>
+ <20140521184319.GL17417@atomide.com>
+ <20140521200928.GA27602@earth.universe>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140521200928.GA27602@earth.universe>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LL9sRQ022212
 
->> mce_regin, which is only called by monarch CPU, can be used for system
->> panics as quickly as possible if there is a truly data corrupting error.
->> But Monarch CPU don't have to help all other CPU to clean mces_clean.
->> One advantage of Per-CPU is the isolation of errors propagation, being
->> so, why do not we clean mces_seen by Per-CPU?
->
-> What kind of error propagations are you expecting/concerning here?
-> Could you explain the problem more in detail?
+* Sebastian Reichel <sre@kernel.org> [140521 13:10]:
+> Hi,
+> 
+> On Wed, May 21, 2014 at 11:43:19AM -0700, Tony Lindgren wrote:
+> > > > Just noticed that this patch seems to somehow break idle
+> > > > modes on n900, so dropping both dts changes for now.
+> > > > 
+> > > > Basically the n900 debug LEDs won't ever go off with
+> > > > these two dts patches enabled, even without the modem
+> > > > drivers loaded. I did not dig deeper, but it's probably
+> > > > something related to hwmod using this data for some
+> > > > settings.
+> > > 
+> > > Is hwmod data interpreted at all without the DT entries?
+> > 
+> > Yes for autoidling unused devices. We parse that with
+> > omap_device_build_from_dt().
+> 
+> That function seems to parse DT stuff. What I meant was
+> not without the *driver*, but without the *DT entry*.
+> 
+> I think the hwmod entries are completly ignored until there
+> is a DT device?
 
-Please do give us more detail on the scenario that you see that would
-make your new version behave better.
+Yes for device tree based booting. They get initialized
+based on the ti,hwmods property. Posted a suggested fix,
+you've probably seen it by now :)
 
-I'm sure the current code has no races w.r.t. clearing mces_seen. The
-monarch clears them all in mce_reign() before clearing mce_executing
-at the foot of mce_end() and allowing the others to run again.
-
-Your code has the monarch release all the other cpus from the spinloop
-in mce_end() so they will all rush together through the final lines of
-do_machine_check().  Some of them will have work to do if they saw
-errors - they may have to send signals, or log the error. Others can
-fly directly to the end of do_machine_check() and clear MCG_STATUS
-and return to executing whatever code was interrupted.
-
-So it is possible that some processors will be out doing things that can
-generate another machine check, before others have finished their
-tasks and got to the point to clear mces_seen.(*)
-
--Tony
-
-(*) maybe that doesn't matter because they haven't zeroed MCG_STATUS
-yet - so this second machine check will force those cpus to shutdown. See MCIP
-description in "15.3.1.2 IA32_MCG_STATUS_MSR" section of software
-developer manual.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Tony
