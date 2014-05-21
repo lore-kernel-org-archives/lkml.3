@@ -1,101 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaEUNcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:32:52 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:27476 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273AbaEUNct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:32:49 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-22-537caaff1ab8
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Rafael J. Wysocki'" <rjw@rjwysocki.net>
-Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Jonghwan Choi'" <jhbird.choi@samsung.com>,
-        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        "'Viresh Kumar'" <viresh.kumar@linaro.org>
-References: <20140519125124.6504764d@canb.auug.org.au>
- <1911725.FzcK6v311f@vostro.rjw.lan>
- <013b01cf73c2$5bbe1fb0$133a5f10$@samsung.com>
- <3571098.myqhuVX7FX@vostro.rjw.lan>
-In-reply-to: <3571098.myqhuVX7FX@vostro.rjw.lan>
-Subject: RE: linux-next: manual merge of the pm tree with the samsung tree
-Date: Wed, 21 May 2014 22:32:47 +0900
-Message-id: <036a01cf74f9$275d2c10$76178430$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIIb85tTBjRSQiHf0XUouzoyVElVAHpY+vKAqTXd1oDBrskZpqcat0g
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zfd3/q2qCDWbMU7C4/uU5q8WSZm6L
-	y7vmsFkcXNjGaHHm9CVWi617r7JbbPzq4cDu0XjjBpvHnWt72Dy2XG1n8ejbsorR4/MmuQDW
-	KC6blNSczLLUIn27BK6MB78WMBbs4qyYvPYRUwPjfPYuRk4OCQETia2/X7NC2GISF+6tZ+ti
-	5OIQEljGKHHhyCYWmKI/cz8xQSQWMUqcejQHquovo8Tv6fuYQarYBDQkDr9/BjZWREBXouve
-	LLBuZoFXjBKfGoIhGjYxSpx7uQOsiFPAQGL7ob1MILawgJfE17VtQHdwcLAIqErcuaoNEuYV
-	sJS4/m8DO4QtKPFj8j2omeoSk+YtYoaw5SU2r3nLDHGpgsSOs68ZIW5wk1g15ydUvYjEvhfv
-	GCFqXrJLPF/iAGKzCAhIfJt8iAVkrYSArMSmA1BjJCUOrrjBMoFRYhaSzbOQbJ6FZPMsJBsW
-	MLKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAiJ3d4djLcPWB9iTAZaP5FZSjQ5Hxj7eSXx
-	hsZmRhamJqbGRuaWZqQJK4nzJj1MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAeNzl4Sef
-	V4vz/zk05t1RMzJw5Ystz1RIu7NCYnVL3L9vM5rdAs3evwgTmHTtIeeTTdauFmycL+oWsjg/
-	vvnayS7qo3RsodA7RxPPx1qxRtOuaJtUhFzUKvRqvrVbq0ZsY/jv/2tYzW+x1spV+4VFOdWf
-	Z34w84f4ytW87csv+6z30rj89qGdEktxRqKhFnNRcSIAIbdWPvMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t9jAd3/q2qCDa69kLa4/uU5q8WSZm6L
-	y7vmsFkcXNjGaHHm9CVWi617r7JbbPzq4cDu0XjjBpvHnWt72Dy2XG1n8ejbsorR4/MmuQDW
-	qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygK5QU
-	yhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGQ9+LWAs2MVZMXntI6YGxvns
-	XYycHBICJhJ/5n5igrDFJC7cW8/WxcjFISSwiFHi1KM5UM5fRonf0/cxg1SxCWhIHH7/DKxb
-	REBXouveLBYQm1ngFaPEp4ZgiIZNjBLnXu4AK+IUMJDYfmgv2AphAS+Jr2vbWLsYOThYBFQl
-	7lzVBgnzClhKXP+3gR3CFpT4Mfke1Ex1iUnzFjFD2PISm9e8ZYa4VEFix9nXjBA3uEmsmvMT
-	ql5EYt+Ld4wTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZG
-	cGp4JrWDcWWDxSFGAQ5GJR7eBUXVwUKsiWXFlbmHGCU4mJVEeI2n1gQL8aYkVlalFuXHF5Xm
-	pBYfYkwGenQis5Rocj4wbeWVxBsam5gZWRqZWRiZmJuTJqwkznug1TpQSCA9sSQ1OzW1ILUI
-	ZgsTB6dUA+OSpY9Ybl9vWCn/xCtCxdL49WMxuX8V7KF8SwxuTGou2f/ogZrL8V89Jx/sPVfr
-	8+PZ3YfvTR8+3KH2utQ7d2uW8ez7/isXVrvPe9Sir91jGKPHZ/dt/QfbuE2zLLpX+bxyzjnF
-	U19y/XNW19Xs+XO1mjxme7k9NOvMlBcX27hi/5ovR5lNv8xWYinOSDTUYi4qTgQAlUKuh1ED	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752509AbaEUNd3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:33:29 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:9246 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752087AbaEUNd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:33:28 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, Joonsoo Kim <js1304@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Ian Campbell <ijc@hellion.org.uk>, Jiri Slaby <jirislaby@gmail.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        =?UTF-8?q?Hans-Bernhard=20Br=C3=B6ker?= 
+	<broeker@users.sourceforge.net>,
+        Hans-Bernhard Broeker <broeker@physik.rwth-aachen.de>,
+        Neil Horman <nhorman@users.sourceforge.net>,
+        Neil Horman <nhorman@tuxdriver.com>, Gerhard Sittig <gsi@denx.de>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: [PATCH] scripts/tags.sh: ignore symlink'ed source files
+Date: Wed, 21 May 2014 15:32:17 +0200
+Message-Id: <1400679137-28122-1-git-send-email-ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.9.0
+References: <1396530975.4361.28.camel@localhost.localdomain> <20140407104216.GB5287@hmsreliant.think-freely.org> <20140407124259.GZ11339@book.gsilab.sittig.org> <20140407153647.GA17258@hmsreliant.think-freely.org> <534312F8.5090609@t-online.de> <20140408075610.GJ11339@book.gsilab.sittig.org> <20140408104959.GA26003@hmsreliant.think-freely.org> <1398993559.23822.1.camel@concordia>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> 
-> On Tuesday, May 20, 2014 09:27:58 AM Kukjin Kim wrote:
-> > Rafael J. Wysocki wrote:
-> > >
-> > > On Monday, May 19, 2014 12:51:24 PM Stephen Rothwell wrote:
-> > > >
-> > > > --Sig_/n+GoYBpTr9ERl.sTIEYr/Og
-> > > > Content-Type: text/plain; charset=US-ASCII
-> > > > Content-Transfer-Encoding: quoted-printable
-> > > >
-> > > > Hi Rafael,
-> > > >
-> > > > Today's linux-next merge of the pm tree got conflicts in
-> > > > drivers/cpufreq/exynos-cpufreq.c and drivers/cpufreq/exynos-cpufreq.h
-> > > > between commit 2b07f4085479 ("cpufreq: exynos: Fix the compile error")
-> > > > from the samsung tree and commit e5eaa445b0dc ("cpufreq: exynos: Use
-> > > > dev_err/info function instead of pr_err/info") from the pm tree.
-> > > >
-> > > > I fixed it up (see below) and can carry the fix as necessary (no
-> action
-> > > > is required).
-> > >
-> > > Thanks for fixing that Stephen!
-> > >
-> > Same here ;-)
-> >
-> > > Kukjin, are you going to handle all Exynos cpufreq commits in the future?
-> > >
-> > If you're OK, would be better to us I think.
-> 
-> OK, I'll leave them to you, then.  Please ask Viresh for ACKs if needed. :-)
-> 
-I will.
+Since commit 22d651dcef536c75f75537290bf3da5038e68b6b ('selftests/powerpc:
+Import Anton's memcpy / copy_tofrom_user tests'), some source files in the
+tree appear as symlink.
+Until commit 8c38a5328af8080bc69a25b3e4e144b03eeea95e ('scripts/tags.sh:
+ignore code of user space tools'), those symlinks made cscope report some
+warnings:
 
-Thanks,
-Kukjin
+    $ make ALLSOURCE_ARCHS=all O=./obj-cscope/ cscope
+      GEN     cscope
+    cscope: cannot find
+file .../tools/testing/selftests/powerpc/copyloops/copyuser_power7.S
+    cscope: cannot find
+file .../tools/testing/selftests/powerpc/copyloops/memcpy_64.S
+    cscope: cannot find
+file .../tools/testing/selftests/powerpc/copyloops/memcpy_power7.S
+    cscope: cannot find
+file .../tools/testing/selftests/powerpc/copyloops/copyuser_64.S
+
+In order to prevent the same kind of warnings to be triggered by future
+addition of symlinks, the best option is to ignore all symlinks when
+building the file list to be processed by cscope (and other tools
+supported by scripts/tags.sh).
+
+Ignoring symlinks won't hide source files from cscope (and others) as the
+target of these symlinks already appear somewhere else in the tree, and,
+as such, should be processed by cscope (or others).
+
+Note that, cscope, when used with -R option to make it find the files to
+process by itself, already skip symlinks: it's not expected that cscope
+access source files through symlink.
+
+On top of commit 8c38a5328af8080bc69a25b3e4e144b03eeea95e ('scripts/tags.sh:
+ignore code of user space tools'), scripts/tags.sh output from
+"make cscope tags TAGS" is the same with and without this patch: it doesn't
+seems to introduce any regression (on Fedora 20).
+
+Link: http://lkml.kernel.org/r/1396530975.4361.28.camel@localhost.localdomain
+Link: http://mid.gmane.org/534312F8.5090609@t-online.de
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Hans-Bernhard Bröker <broeker@users.sourceforge.net>,
+Cc: Hans-Bernhard Broeker <broeker@physik.rwth-aachen.de>,
+Cc: Neil Horman <nhorman@users.sourceforge.net>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Gerhard Sittig <gsi@denx.de>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+
+---
+ scripts/tags.sh | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 1c50de820289..4c425d25173c 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -50,7 +50,8 @@ find_arch_sources()
+ 	for i in $archincludedir; do
+ 		prune="$prune -wholename $i -prune -o"
+ 	done
+-	find ${tree}arch/$1 $ignore $subarchprune $prune -name "$2" -print;
++	find ${tree}arch/$1 $ignore $subarchprune $prune -name "$2" \
++		-not -type l -print;
+ }
+ 
+ # find sources in arch/$1/include
+@@ -60,14 +61,15 @@ find_arch_include_sources()
+ 					-name include -type d -print);
+ 	if [ -n "$include" ]; then
+ 		archincludedir="$archincludedir $include"
+-		find $include $ignore -name "$2" -print;
++		find $include $ignore -name "$2" -not -type l -print;
+ 	fi
+ }
+ 
+ # find sources in include/
+ find_include_sources()
+ {
+-	find ${tree}include $ignore -name config -prune -o -name "$1" -print;
++	find ${tree}include $ignore -name config -prune -o -name "$1" \
++		-not -type l -print;
+ }
+ 
+ # find sources in rest of tree
+@@ -76,7 +78,7 @@ find_other_sources()
+ {
+ 	find ${tree}* $ignore \
+ 	     \( -name include -o -name arch -o -name '.tmp_*' \) -prune -o \
+-	       -name "$1" -print;
++	       -name "$1" -not -type l -print;
+ }
+ 
+ find_sources()
+-- 
+1.9.0
 
