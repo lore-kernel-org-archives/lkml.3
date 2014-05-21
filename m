@@ -1,151 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbaEUJFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:05:10 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:60936 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaEUJFE (ORCPT
+	id S1752232AbaEUJFD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:05:03 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:43487 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaEUJE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:05:04 -0400
-Date: Wed, 21 May 2014 11:02:45 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140521090244.GB19268@ulmo>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com>
- <5123714.0MpMQfsmcr@wuerfel>
- <20140521081608.GA11068@ulmo>
- <4506822.XX7GrvtHhk@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yNb1oOkm5a9FJOVX"
-Content-Disposition: inline
-In-Reply-To: <4506822.XX7GrvtHhk@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 21 May 2014 05:04:58 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        swarren@nvidia.com, dianders@chromium.org, linux@arm.linux.org.uk,
+        nicolas.pitre@linaro.org, thomas.abraham@linaro.org,
+        pdeschrijver@nvidia.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V4 3/3] cpufreq: Tegra: implement intermediate frequency callbacks
+Date: Wed, 21 May 2014 14:29:31 +0530
+Message-Id: <dc2702973028425e3ded689a6da227658fb914c4.1400662383.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
+References: <cover.1400662383.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
+References: <cover.1400662383.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tegra had always been switching to intermediate frequency (pll_p_clk) since
+ever. CPUFreq core has better support for handling notifications for these
+frequencies and so we can adapt Tegra's driver to it.
 
---yNb1oOkm5a9FJOVX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Also do a WARN() if clk_set_parent() fails while moving back to pll_x as we
+should have atleast restored to earlier frequency on error.
 
-On Wed, May 21, 2014 at 10:54:42AM +0200, Arnd Bergmann wrote:
-> On Wednesday 21 May 2014 10:16:09 Thierry Reding wrote:
-> > On Tue, May 20, 2014 at 10:31:29PM +0200, Arnd Bergmann wrote:
-> > > On Tuesday 20 May 2014 16:00:02 Thierry Reding wrote:
-> > > > On Tue, May 20, 2014 at 03:34:46PM +0200, Arnd Bergmann wrote:
-> > > > > On Tuesday 20 May 2014 15:17:43 Thierry Reding wrote:
-> > > > > > On Tue, May 20, 2014 at 02:41:18PM +0200, Arnd Bergmann wrote:
-> > > > > > > On Tuesday 20 May 2014 14:02:43 Thierry Reding wrote:
-> > > > > > [...]
-> > > > > > > > Couldn't a single-master IOMMU be windowed?
-> > > > > > >=20
-> > > > > > > Ah, yes. That would actually be like an IBM pSeries, which ha=
-s a windowed
-> > > > > > > IOMMU but uses one window per virtual machine. In that case, =
-the window could
-> > > > > > > be a property of the iommu node though, rather than part of t=
-he address
-> > > > > > > in the link.
-> > > > > >=20
-> > > > > > Does that mean that the IOMMU has one statically configured win=
-dow which
-> > > > > > is the same for each virtual machine? That would require some o=
-ther
-> > > > > > mechanism to assign separate address spaces to each virtual mac=
-hine,
-> > > > > > wouldn't it? But I suspect that if the IOMMU allows that it cou=
-ld be
-> > > > > > allocated dynamically at runtime.
-> > > > >=20
-> > > > > The way it works on pSeries is that upon VM creation, the guest i=
-s assigned
-> > > > > one 256MB window for use by assigned DMA capable devices. When th=
-e guest
-> > > > > creates a mapping, it uses a hypercall to associate a bus address=
- in that
-> > > > > range with a guest physical address. The hypervisor checks that t=
-he bus
-> > > > > address is within the allowed range, and translates the guest phy=
-sical
-> > > > > address into a host physical address, then enters both into the I=
-/O page
-> > > > > table or I/O TLB.
-> > > >=20
-> > > > So when a VM is booted it is passed a device tree with that DMA win=
-dow?
-> > >=20
-> > > Correct.
-> > >=20
-> > > > Given what you describe above this seems to be more of a configurat=
-ion
-> > > > option to restrict the IOMMU to a subset of the physical memory for
-> > > > purposes of virtualization. So I agree that this wouldn't be a good=
- fit
-> > > > for what we're trying to achieve with iommus or dma-ranges in this
-> > > > binding.
-> > >=20
-> > > Thinking about it again now, I wonder if there are any other use cases
-> > > for windowed IOMMUs. If this is the only one, there might be no use
-> > > in the #address-cells model I suggested instead of your original
-> > > #iommu-cells.
-> >=20
-> > So in this case virtualization is the reason why we need the DMA window.
-> > The reason for that is that the guest has no other way of knowing what
-> > other guests might be using, so it's essentially a mechanism for the
-> > host to manage the DMA region and allocate subregions for each guest. If
-> > virtualization isn't an issue then it seems to me that the need for DMA
-> > windows goes away because the operating system will track DMA regions
-> > anyway.
-> >=20
-> > The only reason I can think of why a windowed IOMMU would be useful is
-> > to prevent two or more devices from stepping on each others' toes. But
-> > that's a problem that the OS should already be handling during DMA
-> > buffer allocation, isn't it?
->=20
-> Right. As long as we always unmap the buffers from the IOMMU after they
-> have stopped being in use, it's very unlikely that even a broken device
-> driver causes a DMA into some bus address that happens to be mapped for
-> another device.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/tegra-cpufreq.c | 81 ++++++++++++++++++++++++-----------------
+ 1 file changed, 47 insertions(+), 34 deletions(-)
 
-I think that if buffers remain mapped in the IOMMU when they have been
-deallocated that should be considered a bug.
+diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
+index 6e774c6..a64b970 100644
+--- a/drivers/cpufreq/tegra-cpufreq.c
++++ b/drivers/cpufreq/tegra-cpufreq.c
+@@ -46,7 +46,24 @@ static struct clk *pll_x_clk;
+ static struct clk *pll_p_clk;
+ static struct clk *emc_clk;
+ 
+-static int tegra_cpu_clk_set_rate(unsigned long rate)
++static unsigned int
++tegra_get_intermediate(struct cpufreq_policy *policy, unsigned int index)
++{
++	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
++
++	/*
++	 * Don't switch to intermediate freq if:
++	 * - we are already at it, i.e. policy->cur == ifreq
++	 * - index corresponds to ifreq
++	 */
++	if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
++		return 0;
++
++	return ifreq;
++}
++
++static int
++tegra_target_intermediate(struct cpufreq_policy *policy, unsigned int index)
+ {
+ 	int ret;
+ 
+@@ -57,28 +74,9 @@ static int tegra_cpu_clk_set_rate(unsigned long rate)
+ 	clk_prepare_enable(pll_x_clk);
+ 
+ 	ret = clk_set_parent(cpu_clk, pll_p_clk);
+-	if (ret) {
+-		pr_err("Failed to switch cpu to clock pll_p\n");
+-		goto out;
+-	}
+-
+-	if (rate == clk_get_rate(pll_p_clk))
+-		goto out;
+-
+-	ret = clk_set_rate(pll_x_clk, rate);
+-	if (ret) {
+-		pr_err("Failed to change pll_x to %lu\n", rate);
+-		goto out;
+-	}
+-
+-	ret = clk_set_parent(cpu_clk, pll_x_clk);
+-	if (ret) {
+-		pr_err("Failed to switch cpu to clock pll_x\n");
+-		goto out;
+-	}
++	if (ret)
++		clk_disable_unprepare(pll_x_clk);
+ 
+-out:
+-	clk_disable_unprepare(pll_x_clk);
+ 	return ret;
+ }
+ 
+@@ -98,10 +96,23 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
+ 	else
+ 		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
+ 
+-	ret = tegra_cpu_clk_set_rate(rate * 1000);
++	/* target freq == pll_p */
++	if (rate * 1000 == clk_get_rate(pll_p_clk)) {
++		ret = tegra_target_intermediate(policy, index);
++		goto disable_pll_x;
++	}
++
++	ret = clk_set_rate(pll_x_clk, rate * 1000);
++	/* Restore to earlier frequency on error, i.e. pll_x */
+ 	if (ret)
+-		pr_err("cpu-tegra: Failed to set cpu frequency to %lu kHz\n",
+-			rate);
++		pr_err("Failed to change pll_x to %lu\n", rate);
++
++	ret = clk_set_parent(cpu_clk, pll_x_clk);
++	/* This shouldn't fail while changing or restoring */
++	WARN_ON(ret);
++
++disable_pll_x:
++	clk_disable_unprepare(pll_x_clk);
+ 
+ 	return ret;
+ }
+@@ -137,16 +148,18 @@ static int tegra_cpu_exit(struct cpufreq_policy *policy)
+ }
+ 
+ static struct cpufreq_driver tegra_cpufreq_driver = {
+-	.flags		= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
+-	.verify		= cpufreq_generic_frequency_table_verify,
+-	.target_index	= tegra_target,
+-	.get		= cpufreq_generic_get,
+-	.init		= tegra_cpu_init,
+-	.exit		= tegra_cpu_exit,
+-	.name		= "tegra",
+-	.attr		= cpufreq_generic_attr,
++	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
++	.verify			= cpufreq_generic_frequency_table_verify,
++	.get_intermediate	= tegra_get_intermediate,
++	.target_intermediate	= tegra_target_intermediate,
++	.target_index		= tegra_target,
++	.get			= cpufreq_generic_get,
++	.init			= tegra_cpu_init,
++	.exit			= tegra_cpu_exit,
++	.name			= "tegra",
++	.attr			= cpufreq_generic_attr,
+ #ifdef CONFIG_PM
+-	.suspend	= cpufreq_generic_suspend,
++	.suspend		= cpufreq_generic_suspend,
+ #endif
+ };
+ 
+-- 
+2.0.0.rc2
 
-Thierry
-
---yNb1oOkm5a9FJOVX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfGu0AAoJEN0jrNd/PrOhMaEP/3U9wYaiRJENl/qkdrq9JmXA
-dIXncqJqMIPhM28PozMRPib9Eb0jiMLBKit0nweuhn2JdwujKqgOoZ412vYefMaw
-baYXUgwoemsQGzJSUGegqYVSiCLfCswO05sZodgvjdlViKqEcU2ajSxQtnZHU6LC
-xEiZu2E2BTq/AM0kKLk0MKv/2U9zYzwcYRKTgqUKrktQ0Hgyth/kxWNWJUp5XLl5
-nEDd/Cpz6AOhOx3M+CHhJIo540ElZIaLji6lkhTi45Or5F7Fj2LDr7Q8zUPZslwX
-1S6LA7ooGyAS5TfeJw/gBA+q3fzl8vLk2EH/LeNHybtEanV+31n0tymTEXcOLzCG
-9gMWdnOozhDnEvu+vVmDZSIYRV4FGGShElSHFT7f/xuzupKHCGeHTAt71a0eDRAE
-cItHgWvxyjE5dYVhWKtShsR7xrIkSKT0XJADyUFDzyi/eU1GBd6WgFyQAk0XKOf/
-fMkWlbdEd9uIyNJWsJseB9p/AxYQcYDprd9HIyUisVnZqjSqW/3ycYxF5bMqrptl
-onNks9Vzg+7tUKZPtYdHaeuus8IHuOGiCOZ+TRVyanri/zIre5h8tSRwbZQKl08O
-ztrRuEtTmbd39HV4dlutDnqrPNU2KdHNiDMZtBz4U5AkAxZLLZ+pYTCHsZlCYf6i
-hqAuw8SlkAvnE1KjpKBg
-=NkWI
------END PGP SIGNATURE-----
-
---yNb1oOkm5a9FJOVX--
