@@ -1,43 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaEUOcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:32:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59974 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480AbaEUOce (ORCPT
+	id S1752719AbaEUOdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 10:33:11 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.163]:61593 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724AbaEUOdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:32:34 -0400
-Date: Wed, 21 May 2014 07:32:29 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Thorsten Diehl <thorsten.diehl@de.ibm.com>
-Subject: Re: /proc/stat vs. failed order-4 allocation
-Message-ID: <20140521143229.GA32011@infradead.org>
-References: <20140521122521.GB7471@osiris>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140521122521.GB7471@osiris>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 21 May 2014 10:33:10 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfssBY9SQMKk8kCovkkmJbh+VP2spQG3tvMeGW7W
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: konrad.wilk@oracle.com
+Cc: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
+        Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH 1/3] xen-blkfront: remove type check from blkfront_setup_discard
+Date: Wed, 21 May 2014 16:32:40 +0200
+Message-Id: <1400682762-17429-2-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1400682762-17429-1-git-send-email-olaf@aepfle.de>
+References: <1400682762-17429-1-git-send-email-olaf@aepfle.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 02:25:21PM +0200, Heiko Carstens wrote:
-> Hi all,
-> 
-> I'm just wondering why /proc/stat is a single_open() seq_file and not a
-> regular seq_file with an iterator (say 48 online cpus for each iteration
-> or something similar).
+In its initial implementation a check for "type" was added, but only phy
+and file are handled. This breaks advertised discard support for other
+type values such as qdisk.
 
-Probably because no one sent a patch for it. I'm pretty sure it used the
-even more horrible old proc ops before and was converted in batch with
-various other files.
+Fix and simplify this function: If the backend advertises discard
+support it is supposed to implement it properly, so enable
+feature_discard unconditionally. If the backend advertises the need for
+a certain granularity and alignment then propagate both properties to
+the blocklayer. The discard-secure property is a boolean, update the code
+to reflect that.
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ drivers/block/xen-blkfront.c | 40 ++++++++++++++--------------------------
+ 1 file changed, 14 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index efe1b47..25c11ad 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1635,36 +1635,24 @@ blkfront_closing(struct blkfront_info *info)
+ static void blkfront_setup_discard(struct blkfront_info *info)
+ {
+ 	int err;
+-	char *type;
+ 	unsigned int discard_granularity;
+ 	unsigned int discard_alignment;
+ 	unsigned int discard_secure;
+ 
+-	type = xenbus_read(XBT_NIL, info->xbdev->otherend, "type", NULL);
+-	if (IS_ERR(type))
+-		return;
+-
+-	info->feature_secdiscard = 0;
+-	if (strncmp(type, "phy", 3) == 0) {
+-		err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
+-			"discard-granularity", "%u", &discard_granularity,
+-			"discard-alignment", "%u", &discard_alignment,
+-			NULL);
+-		if (!err) {
+-			info->feature_discard = 1;
+-			info->discard_granularity = discard_granularity;
+-			info->discard_alignment = discard_alignment;
+-		}
+-		err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
+-			    "discard-secure", "%d", &discard_secure,
+-			    NULL);
+-		if (!err)
+-			info->feature_secdiscard = discard_secure;
+-
+-	} else if (strncmp(type, "file", 4) == 0)
+-		info->feature_discard = 1;
+-
+-	kfree(type);
++	info->feature_discard = 1;
++	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
++		"discard-granularity", "%u", &discard_granularity,
++		"discard-alignment", "%u", &discard_alignment,
++		NULL);
++	if (!err) {
++		info->discard_granularity = discard_granularity;
++		info->discard_alignment = discard_alignment;
++	}
++	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
++		    "discard-secure", "%d", &discard_secure,
++		    NULL);
++	if (!err)
++		info->feature_secdiscard = !!discard_secure;
+ }
+ 
+ static int blkfront_setup_indirect(struct blkfront_info *info)
