@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaEUQAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:00:34 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:34376
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752552AbaEUQAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:00:30 -0400
-Date: Wed, 21 May 2014 08:58:10 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, <linux-pm@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Michal Simek <michal.simek@xilinx.com>, <cpufreq@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
-References: <1400106655-22465-3-git-send-email-soren.brinkmann@xilinx.com>
- <20140515073816.GI16662@pengutronix.de>
- <91822600-39d0-4e71-b0f5-9eda35b76ec0@BN1AFFO11FD016.protection.gbl>
- <20140519161949.GG16662@pengutronix.de>
- <db8633e5-01a9-4d3a-80e8-74e23a456d52@BN1BFFO11FD051.protection.gbl>
- <20140520073358.GJ16662@pengutronix.de>
- <4bb5f44a-60bb-4e34-8f88-f91b8419be8d@BL2FFO11FD050.protection.gbl>
- <537B957B.5010001@codeaurora.org>
- <668683e3-856e-4f30-9b11-8f3e91e12d1d@BL2FFO11FD038.protection.gbl>
- <20140521073457.GD31687@pengutronix.de>
+	id S1752687AbaEUQBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:01:18 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:60235 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611AbaEUQBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 12:01:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Grant Grundler <grundler@chromium.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Joerg Roedel <joro@8bytes.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
+        Dave Martin <Dave.Martin@arm.com>
+Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
+Date: Wed, 21 May 2014 18:01:06 +0200
+Message-ID: <4376848.aihqtRyYDl@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CANEJEGvhEsC9wKqX_pYmOg7LwsQkoN9=jjXJuW0UeEa9XywSPw@mail.gmail.com>
+References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com> <11242680.PQytQQqlPJ@wuerfel> <CANEJEGvhEsC9wKqX_pYmOg7LwsQkoN9=jjXJuW0UeEa9XywSPw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140521073457.GD31687@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <e9090453-ce40-4662-a3ea-fbdaffdb2aa4@BN1AFFO11FD046.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(51704005)(189002)(479174003)(377424004)(24454002)(199002)(70736001)(81542001)(74662001)(20776003)(31966008)(46102001)(15975445006)(19580395003)(83506001)(81342001)(4396001)(79102001)(85182001)(74316001)(76482001)(31696002)(47776003)(77982001)(86362001)(50986999)(64706001)(99396002)(92566001)(54356999)(92726001)(83072002)(44976005)(74502001)(80022001)(87936001)(23676002)(21056001)(50466002)(102836001)(53416003)(33646001)(76176999)(85852003)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB012;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:bK8yIhrFZyNkC9GaLYHddwjz+71C0TVNOus2/ujk2Ar
+ VU59aAYHYTAJLMa20/sbCvaEjKrQmkUr1VMhbhsan3C2OxR3RD
+ +rblyy7GsOWovKnd5FvToaI5079/Fb3JDiirCFrjWzfNy+2y7r
+ IHkxrkCSjkzFMx5C/jEpXkmO8BBgcwNzLOTXc1bxSuk8VYwGLm
+ OubnKX4lTfCfEORMmNTqP+jxmHOReGhYQsGvo+cYXGy/nwkWxi
+ NQhZ4UzBo28xqL22+XVDNhtT9IugqhPGecCGopKzARfUC0IRWU
+ mJ9HxRhlFbT/nmZaflYqeDXBbge3j5X3z8BX8TM92DqVt8zaWR
+ vqHjCnmsDzBxQSAv0w+c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-21 at 09:34AM +0200, Uwe Kleine-König wrote:
-> Hello,
+On Wednesday 21 May 2014 08:44:42 Grant Grundler wrote:
+> On Wed, May 21, 2014 at 2:32 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Wednesday 21 May 2014 11:02:45 Thierry Reding wrote:
+> >> On Wed, May 21, 2014 at 10:54:42AM +0200, Arnd Bergmann wrote:
+> >>
+> >> > Right. As long as we always unmap the buffers from the IOMMU after they
+> >> > have stopped being in use, it's very unlikely that even a broken device
+> >> > driver causes a DMA into some bus address that happens to be mapped for
+> >> > another device.
+> >>
+> >> I think that if buffers remain mapped in the IOMMU when they have been
+> >> deallocated that should be considered a bug.
 > 
-> On Tue, May 20, 2014 at 02:48:20PM -0700, Sören Brinkmann wrote:
-> > On Tue, 2014-05-20 at 10:48AM -0700, Stephen Boyd wrote:
-> > > On 05/20/14 09:01, Sören Brinkmann wrote:
-> > > >
-> > > >>>>> +{
-> > > >>>>> +	unsigned long lower, upper, cur, lower_last, upper_last;
-> > > >>>>> +
-> > > >>>>> +	lower = clk_round_rate(clk, rate);
-> > > >>>>> +	if (lower >= rate)
-> > > >>>>> +		return lower;
-> > > >>>> Is the >-case worth a warning?
-> > > >>> No, it's correct behavior. If you request a rate that is way lower than what the
-> > > >>> clock can generate, returning something larger is perfectly valid, IMHO.
-> > > >>> Which reveals one problem in this whole discussion. The API does not
-> > > >>> require clk_round_rate() to round down. It is actually an implementation
-> > > >>> choice that had been made for clk-divider.
-> > > >> I'm sure it's more than an implementation choice for clk-divider. But I
-> > > >> don't find any respective documentation (but I didn't try hard).
-> > > > A similar discussion - without final conclusion:
-> > > > https://lkml.org/lkml/2010/7/14/260
-> > > >
-> > > >
-> > > 
-> > > Please call this new API something like clk_find_nearest_rate() or
-> > > something. clk_round_rate() is supposed to return the rate that will be
-> > > set if you call clk_set_rate() with the same arguments. It's up to the
-> > > implementation to decide if that means rounding the rate up or down or
-> > > to the nearest value.
-> > 
-> > Sounds good to me. Are there any cases of clocks that round up? I think
-> > that case would not be handled correctly. But I also don't see a use
-> > case for such an implementation.
-> I don't really care which semantic (i.e. round up, round down or round
-> closest) is picked, but I'd vote that all should pick up the same. I
-> think the least surprising definition is to choose rounding down and add
-> the function that is under discussion here to get a nearest match.
+> There is currently no general requirement to tear down mappings immediately.
+> An option to enforce immediate tear down might be useful since I agree
+> Virtual Guests sharing host memory through shared physical devices
+> will want that. ie there should be no opportunity for a shared device
+> to be able to access another guests memory through "stale" (but live)
+> DMA mappings. I don't think that's the case but I'd ask someone like
+> Alex Williamson for a more certain answer.
+
+I believe powerpc has a boot-time option to enforce the immediate
+IOTLB flush, which is very useful for device driver debugging when
+something goes wrong with stale DMAs.
+
+> > Obviously you have to maintain the IO page tables correctly.
 > 
-> So I suggest:
-> 
-> 	- if round_rate is given a rate that is smaller than the
-> 	  smallest available rate, return 0
-> 	- add WARN_ONCE to round_rate and set_rate if they return with a
-> 	  rate bigger than requested
+> To be clear, "Correctly" in this case just means until the IOTLB is
+> flushed, the given IOMMU Pdir entries are marked "in use" even though
+> the driver has handed "ownership" back to the IOMMU driver.
 
-Why do you think 0 is always valid? I think for a clock that can
-generate 40, 70, 120, clk_round_rate(20) should return 40.
+I don't know what a Pdir is, but I guess strictly speaking we have
+to ensure that all IO page table entries that have been unmapped by
+a driver are marked as invalid at least by the time the IOTLB is flushed,
+plus we have to flush each entry before it gets reused for a different
+page.
 
-> 	- change the return values to unsigned long
-
-Yep, I agree, this should happen.
-
-	Sören
-
+	Arnd
