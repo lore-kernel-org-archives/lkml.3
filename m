@@ -1,41 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaEUH01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 03:26:27 -0400
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:9524
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751824AbaEUH00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 03:26:26 -0400
-Date: Wed, 21 May 2014 15:10:14 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>, <jimwall@q.com>,
-        <brian@crystalfontz.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dt: imx28-cfa10036: introduce a regulator for mmc0
-Message-ID: <20140521071011.GA20050@dragon>
-References: <1400166768-18801-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1751611AbaEUH3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 03:29:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56670 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaEUH3w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 03:29:52 -0400
+Date: Wed, 21 May 2014 09:29:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Juri Lelli <juri.lelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] sched/dl: Fix race between dl_task_timer() and
+ sched_setaffinity()
+Message-ID: <20140521072945.GD30445@twins.programming.kicks-ass.net>
+References: <20140516213003.10384.7946.stgit@localhost>
+ <20140519151233.5043b749361e1b384f1e5562@gmail.com>
+ <783871400527879@web2j.yandex.ru>
+ <20140520000026.GD11096@twins.programming.kicks-ass.net>
+ <1413311400562533@web30m.yandex.ru>
+ <20140520075315.GQ2485@laptop.programming.kicks-ass.net>
+ <20140520101730.ab593e41d5ee5949740de52e@gmail.com>
+ <3056991400578422@web14g.yandex.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Mm7SuNQsQ9gs8/y1"
 Content-Disposition: inline
-In-Reply-To: <1400166768-18801-1-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130451298261079782;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(189002)(199002)(51704005)(81342001)(97756001)(81542001)(50986999)(99396002)(76176999)(50466002)(23726002)(77096999)(86362001)(64706001)(54356999)(77982001)(20776003)(47776003)(80022001)(46102001)(74502001)(31966008)(74662001)(76482001)(83506001)(21056001)(92726001)(6806004)(4396001)(83072002)(85852003)(19580395003)(46406003)(83322001)(87936001)(44976005)(19580405001)(33716001)(92566001)(102836001)(33656002)(57986005);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB414;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:gate-az5.freescale.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=softfail (sender IP is 192.88.158.246)
- smtp.mailfrom=shawn.guo@linaro.org; 
+In-Reply-To: <3056991400578422@web14g.yandex.ru>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 05:12:48PM +0200, Alexandre Belloni wrote:
-> The PWM3 pinmux configuration conflicts with gpio 3.28. Introduce a regulator
-> for mmc0 so that it conflicts with the pwm driver and fails gracefully. The
-> kernel will then able to access mmc0 normally.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Applied, thanks.
+--Mm7SuNQsQ9gs8/y1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, May 20, 2014 at 01:33:42PM +0400, Kirill Tkhai wrote:
+> [PATCH] sched/dl: Fix race in dl_task_timer()
+>=20
+> Throttled task is still on rq, and it may be moved to other cpu
+> if user is playing with sched_setaffinity(). Therefore, unlocked
+> task_rq() access makes the race.
+>=20
+> Juri Lelli reports he got this race when dl_bandwidth_enabled()
+> was not set.
+>=20
+> Other thing, pointed by Peter Zijlstra:
+>=20
+>    "Now I suppose the problem can still actually happen when
+>     you change the root domain and trigger a effective affinity
+>     change that way".
+>=20
+> To fix that we do the same as made in __task_rq_lock(). We do not
+> use __task_rq_lock() itself, because it has a useful lockdep check,
+> which is not correct in case of dl_task_timer(). We do not need
+> pi_lock locked here. This case is an exception (PeterZ):
+>=20
+>    "The only reason we don't strictly need ->pi_lock now is because
+>     we're guaranteed to have p->state =3D=3D TASK_RUNNING here and are
+>     thus free of ttwu races".
+>=20
+> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+> CC: Juri Lelli <juri.lelli@gmail.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@redhat.com>
+> Cc: <stable@vger.kernel.org> # v3.14
+> ---
+
+thanks Kirill!
+
+--Mm7SuNQsQ9gs8/y1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfFXoAAoJEHZH4aRLwOS6JD8P+gNjuZV25nYq6vMEWqI3rTuD
+N+PzB/xH6RQ/id2WQi+ZGps9A6ZaKu84JgOmRe6ETjyme90bb8R5njUqRJ+oacZZ
++F3sJkhsHi6h5A4jnO7Y5pCFbc+wy9fhsr6z2MgW8Vgwd812vuUZXa3hHcfsjY2C
+xlQOmrwDM77ZdNqeIqeG45PIfdb1xTophWUyWPXuy7ZgSVc1SsupMMJ1/2++TngD
+MBEA/+j+IFJiacIMaxB5QrtzOVJlscW3SUmi74df/V9oTQnKUa1ntHhi6FaPLWG0
+x1w7VwtWsq/immcFtN2aSwF4l7XVbmSBO2Z9PYTA0ckw9qX7vbNXxuO9tZ1BM+7Y
+u9iie0LVVQVGjRXeuxHO+7sA5tO6bMAD5v0MS64Y0Sa8CDmsm7xXUlM82flin/o/
+oWSDRJyo5EYsFB9WbCiX2PhCNoYxjj5TZEgG+SxnwXOfm+28cPrJGjqmGg4uinVk
+/3+q1MYlYraXl2efFwBV7JOuGKIqdsf5LXHN1atp4VNbQYlDftFzh/H/u+VQEVCD
+YaS/O/diP6IEDydmmb3cqhcQlnFTMc0+lOVT0Ehgg2apgYK3Zwqu3W+LxPETwev8
+Ud3bgRJaJPHujemchjZzPlbjf8sP/1dLVhkRyxhcSHaDQ19VF1ka6jJoVvUg88lQ
+X6nsH5s7PQUa507JpxY3
+=7Y8/
+-----END PGP SIGNATURE-----
+
+--Mm7SuNQsQ9gs8/y1--
