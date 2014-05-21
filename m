@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaEULXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:23:30 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:62658 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaEULXT (ORCPT
+	id S1752758AbaEULX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:23:28 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:12115 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaEULXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:23:19 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-cb-537c8c9ffdba
+	Wed, 21 May 2014 07:23:21 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-cf-537c8ca0b63e
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
@@ -17,74 +17,90 @@ Cc: Lee Jones <lee.jones@linaro.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v4 0/3] clk: s2mps11: Fixes and add support for S2MPS14 clocks
-Date: Wed, 21 May 2014 13:22:58 +0200
-Message-id: <1400671381-14792-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v4 1/3] clk: s2mps11: Add missing of_node_put and
+ of_clk_del_provider
+Date: Wed, 21 May 2014 13:22:59 +0200
+Message-id: <1400671381-14792-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xa7rze2qCDb7817TYOGM9q8XrF4YW
+In-reply-to: <1400671381-14792-1-git-send-email-k.kozlowski@samsung.com>
+References: <1400671381-14792-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xa7oLemqCDZ6+Z7fYOGM9q8XrF4YW
 	Z5vesFvc/3qU0eLyrjlsFjPO72OyWHvkLrvF0wkX2SzWz3jN4sDpcefaHjaPvi2rGD0+b5IL
-	YI7isklJzcksSy3St0vgyjjxIK9gN3fFxlv72RoYl3B2MXJySAiYSBzZeZ0NwhaTuHBvPZDN
-	xSEksJRRYsXHJywQTh+TxMG/r9lBqtgEjCU2L18C1iEikCsxv3EVWAezQDeTxOWOXUwgCWEB
-	P4mH34+ANbAIqEosO3+WFcTmFXCXuLFxKjPEOjmJk8cms05g5F7AyLCKUTS1NLmgOCk910iv
-	ODG3uDQvXS85P3cTIyRIvu5gXHrM6hCjAAejEg9vxvXqYCHWxLLiytxDjBIczEoivMcqaoKF
-	eFMSK6tSi/Lji0pzUosPMTJxcEo1MJ6p3fK46Lv6Jq1T3Ds/Xzr9otL+YtDN4n+PW8RunVy1
-	f7f666jn7v5zNfX+bH0zqXhldtyp4xu++XALy138nHV5mnKt8pHQz0H8Ly7P7vndflzN4/1i
-	0Rw7W85bz/SFPpTpWs3OP23u7fSph084UGTaSy83jcsq1mamIt6yOWkzNL6FsLj8vqXEUpyR
-	aKjFXFScCAAR/Ws28AEAAA==
+	YI7isklJzcksSy3St0vgymj+9oi5YKtgxeeTN5gaGM/wdTFyckgImEh8WrqRGcIWk7hwbz1b
+	FyMXh5DAUkaJ45ufMEM4fUwSdz+vYAGpYhMwlti8fAkbiC0ikCsxv3EVWAezQDeTxOWOXUwg
+	CWGBcIlVeyawgtgsAqoSex8uByri4OAVcJdYObsAYpucxMljk8FKOAU8JH41rwOzhYBKGg7M
+	Z5zAyLuAkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhQfd3BuPSY1SFGAQ5GJR7ejOvV
+	wUKsiWXFlbmHGCU4mJVEeI9V1AQL8aYkVlalFuXHF5XmpBYfYmTi4JRqYLSQUyi4H3zk795A
+	ee2y7YZzrzySnMmxkuOvwPmLkQbKL1y3P0l7kmjc+b9mmc6/tjO+k8ruTA2fWTnxraKo+5W/
+	mf/Fp5twFTb/PPnr0HS5MGnuOzMbhT7N27tm9cJ/86X1+2T3WyxkP3xbTvbqZIMZk5/1fDoV
+	FryRPcGzkjNX2dFsZ9i/iaeVWIozEg21mIuKEwHHEv7GCAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add of_clk_del_provider to remove previously registered clock provider.
+Add of_node_put to decrement the ref count of clock nodes.
 
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/clk/clk-s2mps11.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-This is actually a resend of previous patches, rebased on latest
-3.15-rc5. There are no changes, beside rebasing.
-
-The first two fixes were posted previously as separate patches and they
-didn't get review [1]. I am attaching them here.
-The last patch adds support for S2MPS14 device and already was
-reviewed/acked [2].
-
-Mike, could you pick them up or should they go through MFD tree?
-
-
-[1] https://lkml.org/lkml/2014/4/7/42
-[2] http://thread.gmane.org/gmane.linux.kernel.samsung-soc/28039/focus=310279
-
-
-Changes since v3:
-=================
-1. Add Mike's acked-by (see [2]).
-2. Rebase patch 3/3 on the fixes (patches 1 and 2).
-3. Rebase on v3.15-rc5-157-g60b5f90d0fac
-
-Changes since v2:
-=================
-1. Patch 2/3: Remove MFD cells of_compatible which aren't used by child
-   drivers and are not documented.
-2. Added Tomasz's Review-by.
-
-Changes since v1:
-=================
-1. Patch 1/3: Update driver description in Kconfig.
-2. Patch 2/3: Add of_compatible to all MFD cells.
-3. Add Yadwinder's Review-by.
-
-
-Best regards,
-Krzysztof
-
-
-Krzysztof Kozlowski (3):
-  clk: s2mps11: Add missing of_node_put and of_clk_del_provider
-  clk: s2mps11: Remove useless check for clk_table
-  clk: s2mps11: Add support for S2MPS14 clocks
-
- drivers/clk/Kconfig       |  8 ++---
- drivers/clk/clk-s2mps11.c | 88 +++++++++++++++++++++++++++++++++--------------
- 2 files changed, 66 insertions(+), 30 deletions(-)
-
+diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+index f2f62a1bf61a..843ec3646501 100644
+--- a/drivers/clk/clk-s2mps11.c
++++ b/drivers/clk/clk-s2mps11.c
+@@ -44,6 +44,7 @@ enum {
+ 
+ struct s2mps11_clk {
+ 	struct sec_pmic_dev *iodev;
++	struct device_node *clk_np;
+ 	struct clk_hw hw;
+ 	struct clk *clk;
+ 	struct clk_lookup *lookup;
+@@ -156,7 +157,6 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+ {
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+ 	struct s2mps11_clk *s2mps11_clks, *s2mps11_clk;
+-	struct device_node *clk_np = NULL;
+ 	unsigned int s2mps11_reg;
+ 	int i, ret = 0;
+ 	u32 val;
+@@ -168,9 +168,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+ 
+ 	s2mps11_clk = s2mps11_clks;
+ 
+-	clk_np = s2mps11_clk_parse_dt(pdev);
+-	if (IS_ERR(clk_np))
+-		return PTR_ERR(clk_np);
++	/* Store clocks of_node in first element of s2mps11_clks array */
++	s2mps11_clks->clk_np = s2mps11_clk_parse_dt(pdev);
++	if (IS_ERR(s2mps11_clks->clk_np))
++		return PTR_ERR(s2mps11_clks->clk_np);
+ 
+ 	switch(platform_get_device_id(pdev)->driver_data) {
+ 	case S2MPS11X:
+@@ -225,7 +226,8 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+ 
+ 		clk_data.clks = clk_table;
+ 		clk_data.clk_num = S2MPS11_CLKS_NUM;
+-		of_clk_add_provider(clk_np, of_clk_src_onecell_get, &clk_data);
++		of_clk_add_provider(s2mps11_clks->clk_np,
++				of_clk_src_onecell_get, &clk_data);
+ 	}
+ 
+ 	platform_set_drvdata(pdev, s2mps11_clks);
+@@ -250,6 +252,10 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+ 	struct s2mps11_clk *s2mps11_clks = platform_get_drvdata(pdev);
+ 	int i;
+ 
++	of_clk_del_provider(s2mps11_clks[0].clk_np);
++	/* Drop the reference obtained in s2mps11_clk_parse_dt */
++	of_node_put(s2mps11_clks[0].clk_np);
++
+ 	for (i = 0; i < S2MPS11_CLKS_NUM; i++)
+ 		clkdev_drop(s2mps11_clks[i].lookup);
+ 
 -- 
 1.9.1
 
