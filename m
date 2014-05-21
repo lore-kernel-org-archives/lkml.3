@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaEUJEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:04:34 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:43787 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899AbaEUJEb (ORCPT
+	id S1752190AbaEUJEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:04:44 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:33224 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101AbaEUJEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:04:31 -0400
+	Wed, 21 May 2014 05:04:41 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
@@ -14,77 +14,116 @@ Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
         swarren@nvidia.com, dianders@chromium.org, linux@arm.linux.org.uk,
         nicolas.pitre@linaro.org, thomas.abraham@linaro.org,
         pdeschrijver@nvidia.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V4 0/3] cpufreq: add support for intermediate (stable) frequencies
-Date: Wed, 21 May 2014 14:29:28 +0530
-Message-Id: <cover.1400662383.git.viresh.kumar@linaro.org>
+Subject: [PATCH V4 1/3] cpufreq: handle calls to ->target_index() in separate routine
+Date: Wed, 21 May 2014 14:29:29 +0530
+Message-Id: <b2ed4e111222c2367a77a1382a6a7ea232ef9b59.1400662383.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
+References: <cover.1400662383.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
+References: <cover.1400662383.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug raised many important concerns on V3:
-https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg645134.html
+Handling calls to ->target_index() has got complex over time and might become
+more complex. So, its better to take target_index() bits out in another routine
+__target_index() for better code readability. Shouldn't have any functional
+impact.
 
-and so here is another iteration with improvements.
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c | 56 ++++++++++++++++++++++++++++-------------------
+ 1 file changed, 33 insertions(+), 23 deletions(-)
 
-@Stephen: I have dropped you Tested-by's as patches are updated and requires a
-retest, sorry for that :(
-
-Douglas Anderson, recently pointed out an interesting problem due to which
-udelay() was expiring earlier than it should.
-
-While transitioning between frequencies few platforms may temporarily switch to
-a stable frequency, waiting for the main PLL to stabilize.
-
-For example: When we transition between very low frequencies on exynos, like
-between 200MHz and 300MHz, we may temporarily switch to a PLL running at 800MHz.
-No CPUFREQ notification is sent for that. That means there's a period of time
-when we're running at 800MHz but loops_per_jiffy is calibrated at between 200MHz
-and 300MHz. And so udelay behaves badly.
-
-To get this fixed in a generic way, lets introduce another set of callbacks
-get_intermediate() and target_intermediate(), only for drivers with
-target_index() and CPUFREQ_ASYNC_NOTIFICATION unset.
-
-get_intermediate should return a stable intermediate frequency platform wants to
-switch to, and target_intermediate() should set CPU to to that frequency, before
-jumping to the frequency corresponding to 'index'. Core will take care of
-sending notifications and driver doesn't have to handle them in
-target_intermediate() or target_index().
-
-This patchset also update Tegra to use this new infrastructure and is already
-tested by Stephen.
-
-V3->V4:
-- Allow get_intermediate() to return zero when we don't need to switch to
-  intermediate first
-- Get rid of 'goto' and create another routine for handling intermediate freqs
-- Allow target_index() to fail, its not a crime :)
-- Fix tegra driver to return zero from get_intermediate() for few situations
-  (refer to patch 3/4)
-- Fix issues with tegra's patch, like s/rate/rate * 1000
-- Overall there are more modifications that what Doug requested as I felt we
-  need better support from core.
-- Looks much better now, thanks Doug :)
-
-V2-V3:
-- Fix spelling error: s/Uset/Used
-- Update tegra with the changes Stephen suggested
-- Include a dependency patch sent separately earlier (3/4)
-
-V1-V2: Almost changed completely, V1 was here: https://lkml.org/lkml/2014/5/15/40
-
-Viresh Kumar (3):
-  cpufreq: handle calls to ->target_index() in separate routine
-  cpufreq: add support for intermediate (stable) frequencies
-  cpufreq: Tegra: implement intermediate frequency callbacks
-
- Documentation/cpu-freq/cpu-drivers.txt |  29 ++++++++-
- drivers/cpufreq/cpufreq.c              | 111 ++++++++++++++++++++++++++-------
- drivers/cpufreq/tegra-cpufreq.c        |  81 ++++++++++++++----------
- include/linux/cpufreq.h                |  25 ++++++++
- 4 files changed, 186 insertions(+), 60 deletions(-)
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index a05c921..ae11dd5 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1816,12 +1816,43 @@ EXPORT_SYMBOL(cpufreq_unregister_notifier);
+  *                              GOVERNORS                            *
+  *********************************************************************/
+ 
++static int __target_index(struct cpufreq_policy *policy,
++			  struct cpufreq_frequency_table *freq_table, int index)
++{
++	struct cpufreq_freqs freqs;
++	int retval = -EINVAL;
++	bool notify;
++
++	notify = !(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION);
++
++	if (notify) {
++		freqs.old = policy->cur;
++		freqs.new = freq_table[index].frequency;
++		freqs.flags = 0;
++
++		pr_debug("%s: cpu: %d, oldfreq: %u, new freq: %u\n",
++			 __func__, policy->cpu, freqs.old, freqs.new);
++
++		cpufreq_freq_transition_begin(policy, &freqs);
++	}
++
++	retval = cpufreq_driver->target_index(policy, index);
++	if (retval)
++		pr_err("%s: Failed to change cpu frequency: %d\n", __func__,
++		       retval);
++
++	if (notify)
++		cpufreq_freq_transition_end(policy, &freqs, retval);
++
++	return retval;
++}
++
+ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 			    unsigned int target_freq,
+ 			    unsigned int relation)
+ {
+-	int retval = -EINVAL;
+ 	unsigned int old_target_freq = target_freq;
++	int retval = -EINVAL;
+ 
+ 	if (cpufreq_disabled())
+ 		return -ENODEV;
+@@ -1848,8 +1879,6 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 		retval = cpufreq_driver->target(policy, target_freq, relation);
+ 	else if (cpufreq_driver->target_index) {
+ 		struct cpufreq_frequency_table *freq_table;
+-		struct cpufreq_freqs freqs;
+-		bool notify;
+ 		int index;
+ 
+ 		freq_table = cpufreq_frequency_get_table(policy->cpu);
+@@ -1870,26 +1899,7 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 			goto out;
+ 		}
+ 
+-		notify = !(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION);
+-
+-		if (notify) {
+-			freqs.old = policy->cur;
+-			freqs.new = freq_table[index].frequency;
+-			freqs.flags = 0;
+-
+-			pr_debug("%s: cpu: %d, oldfreq: %u, new freq: %u\n",
+-				 __func__, policy->cpu, freqs.old, freqs.new);
+-
+-			cpufreq_freq_transition_begin(policy, &freqs);
+-		}
+-
+-		retval = cpufreq_driver->target_index(policy, index);
+-		if (retval)
+-			pr_err("%s: Failed to change cpu frequency: %d\n",
+-			       __func__, retval);
+-
+-		if (notify)
+-			cpufreq_freq_transition_end(policy, &freqs, retval);
++		retval = __target_index(policy, freq_table, index);
+ 	}
+ 
+ out:
 -- 
 2.0.0.rc2
 
