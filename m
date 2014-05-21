@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaEUSE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:04:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39943 "EHLO mail.zytor.com"
+	id S1752752AbaEUSHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:07:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49109 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018AbaEUSE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:04:26 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CACna6ryC8jjpJwzuHMbwuskrCgr7STMN8Bs3a7HN5h-rBZ68Rg@mail.gmail.com>
-References: <CACna6rzTUnxHJX8MmDAbmj5SsL_VscfdV5oj735zMtLY5k8JCA@mail.gmail.com> <CACna6rxb2+xBFRt-g7ttkSB++-WtVEMycC7G=wf1ircKPW12ZQ@mail.gmail.com> <537CE3C2.8030601@zytor.com> <CACna6ryC8jjpJwzuHMbwuskrCgr7STMN8Bs3a7HN5h-rBZ68Rg@mail.gmail.com>
+	id S1751962AbaEUSHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 14:07:43 -0400
+Date: Wed, 21 May 2014 20:07:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+Message-ID: <20140521180718.GN21205@pd.tnic>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+ <1400639227.9759.21.camel@pippen.local.home>
+ <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
+ <20140521094626.GB21205@pd.tnic>
+ <CALCETrWkAnSe6kzha5+MmnZn+YT+rBrmu0vz+9Pr94uUjh9dDQ@mail.gmail.com>
+ <20140521163002.GI21205@pd.tnic>
+ <CALCETrXP1GSfgObP4DLbG+Reu3a4g=26aoOpe9jfUtt4_bzCfQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: Bisected 3.9 regression: Corrupted low memory (x86, mm: Move reserving low memory later in initialization)
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 21 May 2014 11:03:59 -0700
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Message-ID: <c969f4d3-8b82-456d-b126-77a3b66a88bd@email.android.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrXP1GSfgObP4DLbG+Reu3a4g=26aoOpe9jfUtt4_bzCfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, I'm sure.  The old memory reservation code kept the checker from working.
+On Wed, May 21, 2014 at 10:52:01AM -0700, Andy Lutomirski wrote:
+> I think that some of these exceptions are synchronous things (e.g.
+> int3 or page faults) that happen because the kernel caused them.
+> 
+> Anyway, going through the list:
+> 
+> Reset, INIT, and stpclk ought to be irrelevant -- we don't handle them anyway.
 
-On May 21, 2014 10:58:39 AM PDT, "Rafał Miłecki" <zajec5@gmail.com> wrote:
->On 21 May 2014 19:34, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 05/21/2014 06:31 AM, Rafał Miłecki wrote:
->>> On 16 May 2014 07:29, Rafał Miłecki <zajec5@gmail.com> wrote:
->>>> Sorry for the late report, this bug appears on my old notebook I
->don't
->>>> commonly use. Anyway, I've noticed following problem when using
->>>> 3.15-rc1:
->>>>
->>>> Corrupted low memory at ffff88000000be98 (be98 phys) =
->b02a000400000000
->>>
->>> Ping?
->>>
->>
->> It's not a regression, but rather a progression: the checker now does
->> what it claims to do, which is to check for low memory corruption.
->>
->> However, the checker is also rather useless as anything other than a
->> diagnostic tool.  It tells you that your BIOS is corrupting memory,
->and
->> the solution to that is to reserve the memory, which we already do.
->>
->> All the checker tells us is that on your system, yes, we really do
->need
->> to reserve the memory.
->
->What about making checker a bit more user friendly?
->
->First of all, I got many repeated messages like:
->Corrupted low memory at (...)
->In the first e-mail you can see ~10 of them and I really got more.
->
->Secondly, if this is just a confirmation that low memory reservation
->was indeed needed, what about making it debugging only? Right now it
->sounds like an error for end-users. What about making it something
->like
->Low memory reservation prevented corruption at (...)
->
->The last question, just for sure... are you convinced what I'm seeing
->is not any kind of error? After all, it started appearing after commit
->that moves memory reservation. It's not a commit that enabled the
->checker or something like that.
->What it seems to be for someone not experienced is a bit opposite. It
->looks that after commit in question, kernel reserves low memory too
->late and BIOS already corrupts some data placed in it.
->However I'm not on expert, so I'll just listen to your opinion. I
->simply wanted to ask, just to be sure everything is alright.
+Yeah.
+
+> SMI is already supposedly correct wrt nesting inside NMI.
+
+It better be. :)
+
+> Debug register stuff should be handled in my outline.  Hopefully
+> correctly :)  We need to make sure that no breakpoints trip before the
+> nmi count is incremented, but that should be straightforward as long
+> as we don't do ridiculous things like poking at userspace addresses.
+> I don't know how kgdb/kdb fits in -- if someone sets a watchpoint on a
+> kernel address (e.g. the nesting count) or enables single-stepping,
+> we'll mess up.
+> 
+> 
+> It may pay to bump the nesting count inside the #DB and #BP handlers
+> and to check the RIP that we're returning to,
+
+Right, at a first glance, all those higher prio exceptions' nesting
+count could be nicely dealt with in those paranoidzeroentry* macros.
+
+> but that starts to look ugly, and we have to be careful about NMI,
+> immediate breakpoint, and them immediate MCE.
+
+Btw, hpa just confirmed that exceptions are never deferred and thus can
+happen while the NMI nahdler runs. Which means, we should defensively
+prepare for NMI handlers being interrupted at any point.
+
+> I'd rather just be able to say that there are some very short windows
+> in which a debug or breakpoint exception will never happen.
+
+Sounds perfectly fine to me.
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
