@@ -1,64 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaEUUeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 16:34:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49123 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaEUUeK (ORCPT
+	id S1753328AbaEUUhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 16:37:39 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:54319 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752837AbaEUUhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 16:34:10 -0400
-Date: Wed, 21 May 2014 13:34:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Hugh Dickins <hughd@google.com>,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
-        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
-        mingo@kernel.org, dave.hansen@intel.com
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
- for powerpc
-Message-Id: <20140521133408.4d2f1a551e9652fb0e12265f@linux-foundation.org>
-In-Reply-To: <20140521134027.263DDE009B@blue.fi.intel.com>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
-	<537479E7.90806@linux.vnet.ibm.com>
-	<alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
-	<87wqdik4n5.fsf@rustcorp.com.au>
-	<53797511.1050409@linux.vnet.ibm.com>
-	<alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
-	<20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
-	<20140520004429.E660AE009B@blue.fi.intel.com>
-	<87oaythsvk.fsf@rustcorp.com.au>
-	<20140520102738.7F096E009B@blue.fi.intel.com>
-	<20140520125956.aa61a3bfd84d4d6190740ce2@linux-foundation.org>
-	<20140521134027.263DDE009B@blue.fi.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 21 May 2014 16:37:37 -0400
+Message-ID: <1400704654.30334.22.camel@x220>
+Subject: [PATCH] PM / devfreq: remove checks for CONFIG_EXYNOS_ASV
+From: Paul Bolle <pebolle@tiscali.nl>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 21 May 2014 22:37:34 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 May 2014 20:37:35.0387 (UTC) FILETIME=[7F709EB0:01CF7534]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 May 2014 16:40:27 +0300 (EEST) "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+Checks for CONFIG_EXYNOS_ASV were added in v3.3. But the related Kconfig
+symbol has never been added to the tree. Remove these checks, as they
+always evaluate to false.
 
-> > Or something.  Can we please get some code commentary over
-> > do_fault_around() describing this design decision and explaining the
-> > reasoning behind it?
-> 
-> I'll do this. But if do_fault_around() rework is needed, I want to do that
-> first.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Untested.
 
-This sort of thing should be at least partially driven by observation
-and I don't have the data for that.  My seat of the pants feel is that
-after the first fault, accesses at higher addresses are more
-common/probable than accesses at lower addresses.  In which case we
-should see improvements by centering the window at some higher address
-than the fault.  Much instrumentation and downstream analysis is needed
-and the returns will be pretty small!
+1) I do not really care much for this patch. Two years is not very long
+for dead code to remain in the tree. There is, however, a trivial issue
+that makes this patch stand out from the other patches in my current
+sweep of the tree for Kconfig related problems.
 
-But we don't need to do all that right now.  Let's get the current
-implementation wrapped up for 3.15: get the interface finalized (bytes,
-not pages!) and get the current design decisions appropriately
-documented.
+See, here the use of an unknown Kconfig macro hides an obvious typo: it
+should either be "exynos_result_of_asv" or "exynos4_result_of_asv", but
+not both. Ie, this almost certainly wouldn't have compiled even if the
+Kconfig symbol EXYNOS_ASV would have been part of the tree.
+
+2) So this makes me wonder whether there are any guidelines for using
+Kconfig macros before the related Kconfig symbols are merged?
+
+ drivers/devfreq/Kconfig              |  3 +--
+ drivers/devfreq/exynos/exynos4_bus.c | 13 -------------
+ 2 files changed, 1 insertion(+), 15 deletions(-)
+
+diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
+index 7d2f43550700..fd985630ad7d 100644
+--- a/drivers/devfreq/Kconfig
++++ b/drivers/devfreq/Kconfig
+@@ -75,8 +75,7 @@ config ARM_EXYNOS4_BUS_DEVFREQ
+ 	  and Exynos4212/4412 memory interface and bus (vdd_mif + vdd_int).
+ 	  It reads PPMU counters of memory controllers and adjusts
+ 	  the operating frequencies and voltages with OPP support.
+-	  To operate with optimal voltages, ASV support is required
+-	  (CONFIG_EXYNOS_ASV).
++	  This does net yet operate with optimal voltages.
+ 
+ config ARM_EXYNOS5_BUS_DEVFREQ
+ 	bool "ARM Exynos5250 Bus DEVFREQ Driver"
+diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
+index e07b0c68c715..c12911a0915d 100644
+--- a/drivers/devfreq/exynos/exynos4_bus.c
++++ b/drivers/devfreq/exynos/exynos4_bus.c
+@@ -25,11 +25,6 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/module.h>
+ 
+-/* Exynos4 ASV has been in the mailing list, but not upstreamed, yet. */
+-#ifdef CONFIG_EXYNOS_ASV
+-extern unsigned int exynos_result_of_asv;
+-#endif
+-
+ #include <mach/map.h>
+ 
+ #include "exynos4_bus.h"
+@@ -837,11 +832,7 @@ static int exynos4210_init_tables(struct busfreq_data *data)
+ 		data->top_divtable[i] = tmp;
+ 	}
+ 
+-#ifdef CONFIG_EXYNOS_ASV
+-	tmp = exynos4_result_of_asv;
+-#else
+ 	tmp = 0; /* Max voltages for the reliability of the unknown */
+-#endif
+ 
+ 	pr_debug("ASV Group of Exynos4 is %d\n", tmp);
+ 	/* Use merged grouping for voltage */
+@@ -922,11 +913,7 @@ static int exynos4x12_init_tables(struct busfreq_data *data)
+ 		data->dmc_divtable[i] = tmp;
+ 	}
+ 
+-#ifdef CONFIG_EXYNOS_ASV
+-	tmp = exynos4_result_of_asv;
+-#else
+ 	tmp = 0; /* Max voltages for the reliability of the unknown */
+-#endif
+ 
+ 	if (tmp > 8)
+ 		tmp = 0;
+-- 
+1.9.0
+
