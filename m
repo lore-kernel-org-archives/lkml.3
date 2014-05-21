@@ -1,90 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaEUVvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:51:10 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:65388 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629AbaEUVvH (ORCPT
+	id S1753597AbaEUVvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:51:22 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39821 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565AbaEUVvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:51:07 -0400
+	Wed, 21 May 2014 17:51:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140521072450.GT15585@mwanda>
-References: <1400621477-7603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<537BE4BB.4010308@lwfinger.net>
-	<20140520235756.GA23550@cloud>
-	<20140521072450.GT15585@mwanda>
-Date: Wed, 21 May 2014 23:51:06 +0200
-Message-ID: <CAFo99gZ6TUdJm7Vw7=XusOujTuNLC_CkNZHU3hgxG13GVUqgRw@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c: Fix for possible
- null pointer dereference
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Manu Gupta <manugupt1@gmail.com>
+X-Originating-IP: [2620:0:1000:fd1f:c4dc:b681:cd4a:92c0]
+In-Reply-To: <20140521214255.GL3582@piout.net>
+References: <1400059162-630-1-git-send-email-nicolas.ferre@atmel.com>
+	<20140520055041.GO18956@quad.lixom.net>
+	<537B727C.5080404@atmel.com>
+	<20140520164746.GA601@quad.lixom.net>
+	<537C7D25.6060705@atmel.com>
+	<20140521211105.GD24341@quad.lixom.net>
+	<20140521214255.GL3582@piout.net>
+Date: Wed, 21 May 2014 14:51:18 -0700
+Message-ID: <CAOesGMgwW+zY-yyozEiCED+hryxBWPX7soqt78z0MBz1w-AVqw@mail.gmail.com>
+Subject: Re: [GIT PULL] at91: DT for 3.16 #2
+From: Olof Johansson <olof@lixom.net>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Wenyou Yang <wenyou.yang@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-Exactly as you say Dan, cppcheck has found that there is a null check
-at some point while the others in this case are missed. So I'm not for
-unnecessary checks.
-But we can instead agree that I make a patch that will remove all null
-checks padapter?
-
-Dan: I'll check on the scripts/checkpatch.pl
-
-Best regards
-Rickard Strandqvist
-
-
-2014-05-21 9:24 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Tue, May 20, 2014 at 04:57:56PM -0700, josh@joshtriplett.org wrote:
->> On Tue, May 20, 2014 at 06:26:51PM -0500, Larry Finger wrote:
->> > On 05/20/2014 04:31 PM, Rickard Strandqvist wrote:
->> > >There is otherwise a risk of a possible null pointer dereference.
->> > >
->> > >Was largely found by using a static code analysis program called cppcheck.
->> > >
->> > >Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> > >---
->> > >  drivers/staging/rtl8188eu/os_dep/usb_intf.c |  127 ++++++++++++++-------------
->> > >  1 file changed, 66 insertions(+), 61 deletions(-)
+On Wed, May 21, 2014 at 2:42 PM, Alexandre Belloni
+<alexandre.belloni@free-electrons.com> wrote:
+> Hi,
+>
+> On 21/05/2014 at 14:11:05 -0700, Olof Johansson wrote :
+>> > This directory is flat, the board names are chosen by companies and
+>> > people that we do not control, a user tend to like finding his preferred
+>> > board dtb file unchanged from a kernel revision to another...
+>> > Well all this lead me to think that we don't have to loose too much time
+>> > thinking about a new strict convention for this file naming or changing
+>> > all this once again just for the sake of it.
 >> >
->> > Although cppcheck's analysis is correct, pointer padapter can never
->> > be null in any of these routines. In routine rtw_drv_init(),
->> > rtw_usb_if1_init() is called to allocate memory for struct adapter
->> > for the driver. If that fails, none of these other routines will
->> > ever be called as the driver will not be loaded.
->> >
->> > If it is deemed better to fill the code with needless tests because
->> > some static checker points out a place like this, that is OK with
->> > me, but I do not see the point.
+>> > Other SoC maintainers beautifully designed from the beginning the naming
+>> > scheme of their DT files, fine. AT91 did not and forgive me but when
+>> > opening arch/arm/boot/dts/Makefile file and seeing some file names, I'm
+>> > not ashamed. Moreover, now that I said to everybody since 3.10 to prefix
+>> > their *board* name with "at91-", I have to say something else, I don't
+>> > think it is worth it.
 >>
->> If it's an invariant of the code that padapter cannot ever be NULL, then
->> that seems perfectly fine to rely on, and the tool just needs fixing or
->> silencing.  At most, it might be helpful to add annotations like GCC's
->> "nonnull", if that helps the checker and the compiler generate more
->> useful warnings.
+>> I don't agree with everything above, but it's not worth arguing for the
+>> sake of arguing. :) I think we can tweak what you're doing now and get
+>> things to work well by merging new dts files with at91-<soc>-board.dts
+>> as the name. As mentioned, don't worry about the existing files. This
+>> shouldn't be a significiant change to what you've been telling people
+>> since 3.10 to cause much confusion.
+>>
 >
-> The tool is complaining that the existing checks for NULL don't make
-> sense.  Rickard changed them to cover all the dereferences but really we
-> should just remove the checks.
+> I'm not sure we should keep the at91 prefix. The sama5d3 series is not
+> at91.
+
+*headdesk* It's part of mach-at91. For all intents and purposes, the label fits.
+
+> I would suggest using <soc>-<vendor>-<board> in the future, like what is
+> done for mvebu, berlin and some omap3 and freescale boards. I would
+> however make an exception for the evaluation kits and keep the current
+> "<soc>ek" name (else we would get sama5d3-atmel-sama5d3ek).
+
+Nack on this as a hard rule. As long as there's a vendor or (large
+family) SoC prefix I don't care about the rest of the structure.
+Really, let's not waste time on it at this time.
+
+> I also got confused by the at91- prefix when looking for a few dts files
+> but I think it is too late to rename now or maybe we could do it all at
+> once for a long term release (provided we know which one it will be).
 >
-> Btw, speaking of GCC, it now silently removes inconsistent NULL
-> checking.  It takes the opposite of the normall kernel programmer
-> approach of adding checks everywhere.  :P  The glibc people recently
-> annotated qsort() to say that the function pointer can't be NULL even
-> though this "worked" in the past.  Hillarity!
->
-> https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61236
->
-> regards,
-> dan carpenter
->
+> For reference, the list of files that would need renaming:
+> animeo_ip.dts
+> at91-ariag25.dts
+> at91-cosino.dtsi
+> at91-cosino_mega2560.dts
+> at91-foxg20.dts
+> at91-qil_a9260.dts
+> ethernut5.dts
+> ge863-pro3.dtsi
+> kizbox.dts
+> mpa1600.dts
+> pm9g45.dts
+> tny_a9260.dts
+> tny_a9263.dts
+> tny_a9g20.dts
+> usb_a9260.dts
+> usb_a9263.dts
+> usb_a9g20_common.dtsi
+> aks-cdu.dts
+> evk-pro3.dts
+> at91-sama5d3_xplained.dts
+
+The DTS name is somewhat irritating in that installers and other
+environments (my own tester included) rely on file names. There's been
+a bunch of discussion about this in the past, but at the end of the
+day, you end up irritating people when you rename the resulting dtbs.
+
+As long as we don't keep adding random names beyond those, we should be OK.
+
+
+-Olof
