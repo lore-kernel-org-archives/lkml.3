@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaEUPWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:22:19 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:43740 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaEUPWS (ORCPT
+	id S1752869AbaEUPWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:22:45 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:43617 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694AbaEUPWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:22:18 -0400
+	Wed, 21 May 2014 11:22:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
-References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
- <1400639227.9759.21.camel@pippen.local.home> <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
- <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
+In-Reply-To: <20140521145857.GA5880@suse.cz>
+References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
+ <20140429100345.3f76a5bd@gandalf.local.home> <alpine.LNX.2.00.1405211540080.20534@pobox.suse.cz>
+ <20140521142055.GH21205@pd.tnic> <20140521145857.GA5880@suse.cz>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 May 2014 08:21:57 -0700
-Message-ID: <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+Date: Wed, 21 May 2014 08:22:22 -0700
+Message-ID: <CALCETrWayHx6X1pwfF=ze_SWc7Uso25M+XA0_YrAPoC4_Dq9ug@mail.gmail.com>
+Subject: Re: 64bit x86: NMI nesting still buggy?
+To: Vojtech Pavlik <vojtech@suse.cz>
+Cc: Michal Hocko <mhocko@suse.cz>, Salman Qazi <sqazi@google.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@elte.hu>, X86 ML <x86@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+        Petr Tesarik <ptesarik@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 21, 2014 5:51 AM, "Jiri Kosina" <jkosina@suse.cz> wrote:
+On May 21, 2014 7:58 AM, "Vojtech Pavlik" <vojtech@suse.cz> wrote:
 >
-> On Tue, 20 May 2014, Andy Lutomirski wrote:
+> On Wed, May 21, 2014 at 04:20:55PM +0200, Borislav Petkov wrote:
+> > On Wed, May 21, 2014 at 03:42:24PM +0200, Jiri Kosina wrote:
+> > > Alright, Andy's iret optimization efforts do immediately bring a
+> > > followup question -- why is this not a problem with iret-based return
+> > > from #MC possibly interrupting NMI?
+> >
+> > Yeah, and frankly, I don't see this nesting fun at all protected against
+> > a #MC interrupting it at any point actually. Because once the #MC
+> > handler returns, it goes into paranoid_exit and that place doesn't
+> > account for NMIs at all, AFAICS.
+> >
+> > Which would mean:
+> >
+> > * NMI goes off
+> > * MCE happens, we switch to machine_check which is paranoidzeroentry
+> > * #MC handler is done -> paranoid_exit -> IRET
+> > -> boom! Or if not "boom", at least, the NMI gets forgotten.
+> >
+> > Am I missing something?
 >
-> > So the issue here is that we can have an NMI followed immediately by
-> > an MCE.  The MCE code can call force_sig
+> I think to get a full BOOM you need a bit more complex process, namely:
 >
-> This is interesting by itself. force_sig() takes siglock spinlock. This
-> really looks like a deadlock sitting there waiting to happen.
+>         * NMI triggered
+>         * NMI handler starts
+>         * MCE happens
+>         * Second NMI triggered and queued
+>         * handler done, IRET
+>         * Second NMI handler starts and overwrites NMI return address on stack
+>         * Second NMI handler ends
+>         * First NMI handler ends and goes into an infinite IRET loop, always
+>           returning to the beginning of itself
+>
+> But you do have all the ingredients.
+>
+> And I don't see any other way out than not calling IRET for MCEs.
 
-ISTM the do_machine_check code ought to consider any kill-worthy MCE
-from kernel space to be non-recoverable, but I want to keep the scope
-of these patches under control.
-
-That being said, if an MCE that came from CPL0 never tried to return,
-this would be simpler.  I don't know enough about the machine check
-architecture to know whether that's a reasonable thing to do.
+The MCE handler could detect this and fiddle with the IST entry.  This
+sounds considerably uglier than returning via RET, though.
 
 --Andy
 
 >
 > --
-> Jiri Kosina
-> SUSE Labs
->
+> Vojtech Pavlik
+> Director SUSE Labs
