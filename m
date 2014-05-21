@@ -1,111 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaEUTBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:01:55 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:55222
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1753184AbaEUTDN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:03:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139AbaEUTBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:01:53 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next] Add hash value into RNDIS Per-packet info
-Date: Wed, 21 May 2014 12:55:39 -0700
-Message-Id: <1400702139-29280-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752159AbaEUTDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 15:03:12 -0400
+Date: Wed, 21 May 2014 15:02:25 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Elliott@hp.com, fweisbec@gmail.com, dave.hansen@linux.intel.com
+Subject: Re: [PATCH 1/6] x86, nmi:  Implement delayed irq_work mechanism to
+ handle lost NMIs
+Message-ID: <20140521190225.GC50500@redhat.com>
+References: <1400181949-157170-1-git-send-email-dzickus@redhat.com>
+ <1400181949-157170-2-git-send-email-dzickus@redhat.com>
+ <20140521102934.GZ2485@laptop.programming.kicks-ass.net>
+ <20140521164525.GY50500@redhat.com>
+ <20140521175149.GI2485@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140521175149.GI2485@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It passes the hash value as the RNDIS Per-packet info to the Hyper-V host,
-so that the send completion notices can be spread across multiple channels.
-MS-TFS: 140273
+On Wed, May 21, 2014 at 07:51:49PM +0200, Peter Zijlstra wrote:
+> On Wed, May 21, 2014 at 12:45:25PM -0400, Don Zickus wrote:
+> > > > +	/*
+> > > > +	 * Can't use send_IPI_self here because it will
+> > > > +	 * send an NMI in IRQ context which is not what
+> > > > +	 * we want.  Create a cpumask for local cpu and
+> > > > +	 * force an IPI the normal way (not the shortcut).
+> > > > +	 */
+> > > > +	bitmap_zero(nmi_mask, NR_CPUS);
+> > > > +	mask = to_cpumask(nmi_mask);
+> > > > +	cpu_set(smp_processor_id(), *mask);
+> > > > +
+> > > > +	__this_cpu_xchg(nmi_delayed_work_pending, true);
+> > > 
+> > > Why is this xchg and not __this_cpu_write() ?
+> > > 
+> > > > +	apic->send_IPI_mask(to_cpumask(nmi_mask), NMI_VECTOR);
+> > > 
+> > > What's wrong with apic->send_IPI_self(NMI_VECTOR); ?
+> > 
+> > I tried to explain that in my comment above.  IPI_self uses the shortcut
+> > method to send IPIs which means the NMI_VECTOR will be delivered in IRQ
+> > context _not_ NMI context. :-(  This is why I do the whole silly dance.
+> 
+> I'm still not getting it, probably because I don't know how these APICs
+> really work, but the way I read both the comment and your explanation
+> here is that we get an NMI nested in the IRQ context we called it from,
+> which is pretty much exactly what we want.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Um, ok.  I think my concern with that is an NMI nested in IRQ context
+could be interrupted by a real NMI. I believe that would cause nmi_enter()
+to barf among other bad things in the nmi code.
 
----
- drivers/net/hyperv/hyperv_net.h |    4 ++++
- drivers/net/hyperv/netvsc_drv.c |   18 ++++++++++++++----
- 2 files changed, 18 insertions(+), 4 deletions(-)
+> 
+> > I am open to better options.  We might be able to patch IPI_self but I am
+> > not sure why it didn't special case the NMI_VECTOR to begin with (like the
+> > other handlers seem to do).
+> 
+> cpumask_of(cpu) gives the right mask.
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 4b7df5a..6cc37c1 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -791,6 +791,7 @@ enum ndis_per_pkt_info_type {
- 	IEEE_8021Q_INFO,
- 	ORIGINAL_PKTINFO,
- 	PACKET_CANCEL_ID,
-+	NBL_HASH_VALUE = PACKET_CANCEL_ID,
- 	ORIGINAL_NET_BUFLIST,
- 	CACHED_NET_BUFLIST,
- 	SHORT_PKT_PADINFO,
-@@ -937,6 +938,9 @@ struct ndis_tcp_lso_info {
- #define NDIS_LSO_PPI_SIZE (sizeof(struct rndis_per_packet_info) + \
- 		sizeof(struct ndis_tcp_lso_info))
- 
-+#define NDIS_HASH_PPI_SIZE (sizeof(struct rndis_per_packet_info) + \
-+		sizeof(u32))
-+
- /* Format of Information buffer passed in a SetRequest for the OID */
- /* OID_GEN_RNDIS_CONFIG_PARAMETER. */
- struct rndis_config_parameter_info {
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 2e967a7..4fd71b7 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -224,9 +224,11 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb,
- 	if (nvsc_dev == NULL || ndev->real_num_tx_queues <= 1)
- 		return 0;
- 
--	if (netvsc_set_hash(&hash, skb))
-+	if (netvsc_set_hash(&hash, skb)) {
- 		q_idx = nvsc_dev->send_table[hash % VRSS_SEND_TAB_SIZE] %
- 			ndev->real_num_tx_queues;
-+		skb_set_hash(skb, hash, PKT_HASH_TYPE_L3);
-+	}
- 
- 	return q_idx;
- }
-@@ -384,6 +386,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	struct ndis_tcp_lso_info *lso_info;
- 	int  hdr_offset;
- 	u32 net_trans_info;
-+	u32 hash;
- 
- 
- 	/* We will atmost need two pages to describe the rndis
-@@ -402,9 +405,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
- 			 (num_data_pgs * sizeof(struct hv_page_buffer)) +
- 			 sizeof(struct rndis_message) +
--			 NDIS_VLAN_PPI_SIZE +
--			 NDIS_CSUM_PPI_SIZE +
--			 NDIS_LSO_PPI_SIZE, GFP_ATOMIC);
-+			 NDIS_VLAN_PPI_SIZE + NDIS_CSUM_PPI_SIZE +
-+			 NDIS_LSO_PPI_SIZE + NDIS_HASH_PPI_SIZE, GFP_ATOMIC);
- 	if (!packet) {
- 		/* out of memory, drop packet */
- 		netdev_err(net, "unable to allocate hv_netvsc_packet\n");
-@@ -443,6 +445,14 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 
- 	rndis_msg_size = RNDIS_MESSAGE_SIZE(struct rndis_packet);
- 
-+	hash = skb_get_hash_raw(skb);
-+	if (hash != 0 && net->real_num_tx_queues > 1) {
-+		rndis_msg_size += NDIS_HASH_PPI_SIZE;
-+		ppi = init_ppi_data(rndis_msg, NDIS_HASH_PPI_SIZE,
-+				    NBL_HASH_VALUE);
-+		*(u32 *)((void *)ppi + ppi->ppi_offset) = hash;
-+	}
-+
- 	if (isvlan) {
- 		struct ndis_pkt_8021q_info *vlan;
- 
--- 
-1.7.4.1
+Ok. Thanks.
+
+<snip>
+
+> > Now oddly enough there were situations were the NMI happened and it found
+> > a PMI event.  So my patch re-queued the irq_work (after clearing the
+> > 'flag' based on problem 1 above).  However, the PMI and self IPI happened
+> > at roughly the same time, such that after the IRET of the PMI NMI, the
+> > 'dummy' NMI is immediately executed (think back-to-back NMIs).
+> > 
+> > This NMI is supposed to be the 'dummy' NMI caught below with the 'flag'
+> > set.  However, the 'flag' was cleared upon re-queue of the previous PMI
+> > NMI.  This leads to a periodic unknown NMI. Ooops.
+> > 
+> > I tried to workaround this by checking the IRQ_BUSY flag and not clear it
+> > in that case.
+> 
+> OK, so this is the part I got lost in and didn't see.
+> 
+> So a comment in the handler between setting the flag and raising the IPI
+> might be a good idea..
+
+Ok. I can do that.
+
+> 
+> > So both my problems center around what guarantees does irq_work have to
+> > stay on the same cpu?
+> 
+> Well, none as you used a global irq_work, so all cpus will now contend
+> on it on every NMI trying to queue it :-(
+
+Yes, I was stuck between using a per-cpu implementation in which every dummy
+NMI grabs the spin lock in the nmi handlers, or a global lock.  I tried
+the global lock.
+
+I thought the irq_work lock seemed less contended because it was only read
+once before being acted upon (for a cacheline seperate from actual nmi work).
+
+Whereas a spin lock in the nmi handlers seems to keep reading the lock
+until it owns it thus slowing down useful work for the handler that owns
+the lock (because of the cache contention).
+
+I could be wrong though.
+
+
+> 
+> Didn't we have a problem with NMIs touching global cachelines before?
+> 
+> Wasn't that one of Dave Hansen's problems?
+
+That might have been the regular port 0x61 spin locks that we added to
+support bsp hot plugging.
+
+> 
+> > Or better yet, is there a different way to solve this problem?
+> 
+> Lemme think about that...
+
+Of course oddly enough, the external NMIs are only routed to cpu0 right
+now.  So having any non-cpu0 read them would be unexpected.  As a result
+the global spin locks are added overhead in the off-chance the bsp cpu
+disappears for some reason.
+
+Perhaps just remove those global spin locks and keep a global variable of
+which cpu gets to read the external NMIs.  Then upon hot plugging of the
+bsp cpu (or the cpu that is setup to read the external NMI), a new cpu is
+chosen and a dummy NMI is sent to handle the case an NMI is dropped during
+the transition.
+
+This would keep things fast in the normal path and be slow in the hotplug
+path (which is rare anyway).  Then we could back to one queue again
+(instead of the two queues I am proposing here).
+
+Just an idea to spark conversation.
+
+Cheers,
+Don
 
