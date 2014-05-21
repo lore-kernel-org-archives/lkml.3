@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaEUWhP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:37:15 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:32820 "EHLO mail.skyhub.de"
+	id S1753546AbaEUWhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:37:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42924 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361AbaEUWhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:37:13 -0400
-Date: Thu, 22 May 2014 00:36:47 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-Message-ID: <20140521223647.GO25130@pd.tnic>
-References: <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
- <20140521163315.GJ21205@pd.tnic>
- <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
- <20140521214845.GG25130@pd.tnic>
- <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
- <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
- <20140521221728.GM25130@pd.tnic>
- <CALCETrWY4OW0FF3vsS+ntALU_kmmcEB9wf0RMg-H5kSO7jQ-wQ@mail.gmail.com>
+	id S1753431AbaEUWhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 18:37:21 -0400
+Message-ID: <537D2A6A.2@zytor.com>
+Date: Wed, 21 May 2014 15:36:26 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrWY4OW0FF3vsS+ntALU_kmmcEB9wf0RMg-H5kSO7jQ-wQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com> <CALCETrUNWAU238xRZQ5zJwwQBArCHNzm=xsDBw4_LWGgGPjAuQ@mail.gmail.com>
+In-Reply-To: <CALCETrUNWAU238xRZQ5zJwwQBArCHNzm=xsDBw4_LWGgGPjAuQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 03:20:50PM -0700, Andy Lutomirski wrote:
-> It's not even scheduled out, right?
+On 05/21/2014 11:11 AM, Andy Lutomirski wrote:
+> On Tue, May 20, 2014 at 5:53 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Here's a real proposal for iret-less return.  If this is correct, then
+>> NMIs will never nest, which will probably delete a lot more scariness
+>> than is added by the code I'm describing.
+> 
+> OK, here's a case where I'm wrong.  An NMI interrupts userspace on a
+> 16-bit stack.  The return from NMI goes through the espfix code.
+> Something interrupts while on the espfix stack.  Boom!  Neither return
+> style is particularly good.
+> 
+> More generally, if we got interrupted while on the espfix stack, we
+> need to return back there using IRET.  Fortunately, re-enabling NMIs
+> there in harmless, since we've already switched off the NMI stack.
+> 
+> This makes me think that maybe the logic should be turned around: have
+> some RIP ranges on which the kernel stack might be invalid (which
+> includes the espfix code and some of the syscall code) and use IRET
+> only on return from NMI, return to nonstandard CS, and return to these
+> special ranges.  The NMI code just needs to never so any of this stuff
+> unless it switches off the NMI stack first.
+> 
+> For this to work reliably, we'll probably have to change CS before
+> calling into EFI code.  That should be straightforward.
+> 
 
-Right.
+I think you are onto something here.
 
-> This should be just like a signal from a failed page fault, I think.
+In particular, the key observation here is that inside the kernel, we
+can never *both* have an invalid stack *and* be inside an NMI, #MC or
+#DB handler, even if nested.
 
-Right, but there this additional work it needs to be done
-(mce_notify_process()) before sending the signal. So you want to do this
-after the MCE handler is done but before you return to the process.
+Now, does this prevent us from using RET in the common case?  I'm not
+sure it is a huge loss since kernel-to-kernel is relatively rare.
 
-> What switch_to?
+	-hpa
 
-Nevermind, that was bollocks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
