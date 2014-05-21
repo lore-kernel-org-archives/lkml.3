@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaEUJXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:23:24 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57688 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaEUJXW (ORCPT
+	id S1752027AbaEUJXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:23:55 -0400
+Received: from mx9.pku.edu.cn ([162.105.129.172]:43164 "EHLO mail.pku.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751066AbaEUJXx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:23:22 -0400
-Date: Wed, 21 May 2014 11:23:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: Fwd: [V6 00/11] perf: New conditional branch filter
-Message-ID: <20140521092313.GF30445@twins.programming.kicks-ass.net>
-References: <1399280953-31442-1-git-send-email-khandual@linux.vnet.ibm.com>
- <537C6DDE.9000204@linux.vnet.ibm.com>
+	Wed, 21 May 2014 05:23:53 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -307.455
+Date: Wed, 21 May 2014 17:23:38 +0800 (CST)
+From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
+Message-ID: <1381816856.42144.1400664218906.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <537C6D95.4040803@gmail.com>
+Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_=E5=9B=9E=E5=A4=8D=EF=BC=9A_?=
+ =?utf-8?Q?[PATCH]_arch/?= =?utf-8?Q?unicore32/kernel/setup.c:_?=
+ =?utf-8?Q?add_generic_'screen=5Finfo'_to_avoid_compiling_failure?=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T3QN4r+OPYJYSwpd"
-Content-Disposition: inline
-In-Reply-To: <537C6DDE.9000204@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.95]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---T3QN4r+OPYJYSwpd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+----- Chen Gang <gang.chen.5i5j@gmail.com> 写道：
+> 
+> Yeah, I shall send patch v2 for it (within this week). And also thank
+> you for your review the other patches.
+> 
+> BTW: I guess, it only leaves 2 kernel related issues for allmodconfig:
+> 
+>  - one for 'find_first*', 'cpuc_coherent_kern_range' and 'pm_power_off'.
+>    I guess, we can export their symbol explicitly to fix this issue.
 
-On Wed, May 21, 2014 at 02:41:58PM +0530, Anshuman Khandual wrote:
-> Hello Peter/Ingo,
->=20
-> Would you please consider reviewing the first four patches in this patch =
-series
-> which changes the generic perf kernel and perf tools code. Andi Kleen and=
- Stephane
-> Eranian have already reviewed these changes. The rest of the patch series=
- is related
-> to powerpc and being reviewed by Michael Ellerman/Ben.
->=20
+My suggestion:
+ find_first_* could export themselves in lib/find_first.c, so each archs can use it.
+   anyway, we can first add them in unicore32, and then make it a generic lib.
+ what's the problem with cpuc_coherent_kern_range? in fact, I'll remove it later.
+ pm_power_off need be exported.
 
-If they land in my inbox I might have a look.
+> 
+>  - the other for additional 'clk_*' which are needed when HAVE_CLK.
+>    I guess, just "copy/past" the other platforms' implementation is OK.
 
---T3QN4r+OPYJYSwpd
-Content-Type: application/pgp-signature
+Maybe, COMMON_CLK should be selected. I'm not sure.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> 
+> The related errors:
+> 
+>   ERROR: "clk_round_rate" [sound/spi/snd-at73c213.ko] undefined!
+>   ERROR: "clk_set_parent" [sound/soc/jz4740/snd-soc-jz4740-i2s.ko] undefined!
+>   ERROR: "clk_round_rate" [sound/soc/fsl/snd-soc-fsl-ssi.ko] undefined!
+>   ERROR: "clk_round_rate" [sound/soc/fsl/snd-soc-fsl-spdif.ko] undefined!
+>   ERROR: "find_first_bit" [sound/soc/codecs/snd-soc-uda1380.ko] undefined!
+>   ERROR: "find_first_zero_bit" [net/sctp/sctp.ko] undefined!
+>   ERROR: "find_first_bit" [net/phonet/phonet.ko] undefined!
+>   ERROR: "find_first_zero_bit" [net/nfc/nfc.ko] undefined!
+>   ERROR: "find_first_zero_bit" [net/netfilter/nf_tables.ko] undefined!
+>   ERROR: "find_first_bit" [net/mac80211/mac80211.ko] undefined!
+>   ERROR: "find_first_zero_bit" [net/bridge/bridge.ko] undefined!
+>   ERROR: "find_first_bit" [net/bridge/bridge.ko] undefined!
+>   ERROR: "find_first_zero_bit" [fs/reiserfs/reiserfs.ko] undefined!
+>   ERROR: "find_first_bit" [fs/ocfs2/ocfs2.ko] undefined!
+>   ERROR: "find_first_zero_bit" [fs/ocfs2/cluster/ocfs2_nodemanager.ko] undefined!
+>   ERROR: "find_first_bit" [fs/ocfs2/cluster/ocfs2_nodemanager.ko] undefined!
+>   ERROR: "find_first_zero_bit" [fs/nfs/nfsv4.ko] undefined!
+>   ERROR: "find_first_zero_bit" [fs/minix/minix.ko] undefined!
+>   ERROR: "find_first_bit" [fs/hfsplus/hfsplus.ko] undefined!
+>   ERROR: "find_first_zero_bit" [fs/gfs2/gfs2.ko] undefined!
+>   ERROR: "find_first_zero_bit" [fs/bfs/bfs.ko] undefined!
+>   ERROR: "find_first_zero_bit" [drivers/uwb/uwb.ko] undefined!
+>   ...
+> 
+> Thanks.
+> -- 
+> Chen Gang
+> 
+> Open, share, and attitude like air, water, and life which God blessed
 
-iQIcBAEBAgAGBQJTfHCBAAoJEHZH4aRLwOS6SY8P/1eNOV0SFb3t/L+ZSC8Qheov
-sfhNvRmiEMd7Kwa5VeHqsUkloahpX1mb4JO/dzbE09uhYy971O/B2z2IERQbsHFy
-aztZrrqJvMf4PhUE+lM+DAuj1q6OY+SVae9oF2gLAQot0UGK9BRxHXt1516BwBCg
-WlPgtaNfpyQsko9pdRxQeLA0PWKnzopWmDrsGWRy0Y5TSwIAQ5AN1UMaWz5Za78G
-GkNOsERw1vu/VOYTCIiDh9KcNsmyXQ15pJhetR9iBR88c4/7Dv9Lxj2xny5S7sEd
-SylmTw0+sTETbempebo33nIb+s1SYNtGAPamyxSL20ccQqgrGpbbioENp9d6ekEK
-zCEgb6L2lVnvVSPf0nimvf7bbFKOV7/6Ogzy56vUO9yAIquvBoCppXErbvaCt+Zo
-K0ziMC+8ihnKGwgM3QE82/xByec21vGf3PwDPZL9H95wZBpxiJY4c7IE9R0JBKtr
-ctAeIQNwpqUUVz5poa2UVUC99xNPPbOi3OpC8oIHL806hqra19EDsnKyKmr+X1cI
-hbrv1gtscXVIi13mL1Tes2B06bJxBPI3Ad/5VmXrnC913ennuJGB321KXSATx+0C
-G4IK70rDcotzZbGa1+0UN1ElFbEn0xUhiJXOt60NqjDiqzZcOW6aKWa05Rp/vRY/
-1SFnkStoCxNlRJh90P8w
-=HlRa
------END PGP SIGNATURE-----
-
---T3QN4r+OPYJYSwpd--
