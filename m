@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaEUGbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 02:31:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38882 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaEUGbu (ORCPT
+	id S1751023AbaEUGi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 02:38:57 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55095 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaEUGi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 02:31:50 -0400
-Date: Wed, 21 May 2014 15:31:38 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Holger Hans Peter Freyther <holger@moiji-mobile.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
-Message-ID: <20140521063138.GA5952@kroah.com>
-References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
- <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
- <20140520010137.GA8146@kroah.com>
- <537B24B8.9050303@linux.intel.com>
- <s5ha9acbwwo.wl%tiwai@suse.de>
- <CAPcyv4gg164u8Dz0RtV4KjXkDyCMvuC92j6VopqTbA1Shp_3QA@mail.gmail.com>
- <20140520203432.GB30178@kroah.com>
- <CAPcyv4i4jTMMbZWWdb79bJ2f5OUaSin4BN_ukWmVcv7JCiup3g@mail.gmail.com>
- <20140521002720.GC997@kroah.com>
- <CAPcyv4h-F=Qmvne4BTPsHm7gk03efitR-kHaED9GFDTM8NA4tA@mail.gmail.com>
+	Wed, 21 May 2014 02:38:56 -0400
+Date: Wed, 21 May 2014 08:38:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Russ Anderson <rja@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Reduce the rate of needless idle load balancing
+Message-ID: <20140521063826.GC30445@twins.programming.kicks-ass.net>
+References: <1400617046.2970.270.camel@schen9-DESK>
+ <CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
+ <1400619550.2970.274.camel@schen9-DESK>
+ <CAGQ1y=4z69iNRAM8eZFhh=kjRYQgwDxyMjyNG4XJ0b1xOxLURA@mail.gmail.com>
+ <1400621967.2970.280.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3TG/ZNIaOacldBdr"
 Content-Disposition: inline
-In-Reply-To: <CAPcyv4h-F=Qmvne4BTPsHm7gk03efitR-kHaED9GFDTM8NA4tA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400621967.2970.280.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:21:03PM -0700, Dan Williams wrote:
-> On Tue, May 20, 2014 at 5:27 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> Greg,
-> >>
-> >> Sorry, I don't think it is fair to users to force them to re-compile
-> >> their kernel to get their device to work.
-> >
-> > I totally agree.
-> >
-> >> Granted, I'm new to USB
-> >> development, but the rate of reports of endpoint devices that mess up
-> >> and require quirks in the hcd-driver or usb-core seems un-ending to
-> >> me.  So, I don't think it is fair to expect that the tide of quirky
-> >> devices will be stemmed in any reasonable amount of time.  Having a
-> >> "works with noxhci_port_switch" report from users is good data (hmm, I
-> >> think a printk to tell users to file a report upstream if the option
-> >> resolves their issue is needed).
-> >
-> > How about just adding a debugfs file instead?  That way, once you fix
-> > this, we can then remove it and no one will care.
-> 
-> The only thing stopping me from saying "deal." is that this darn
-> things is presently a pci quirk.  So it happens well before the user
-> has a chance to manually override it with a debugfs file.
 
-Then have the debugfs file disconnect the device and reconnect it.
+--3TG/ZNIaOacldBdr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Let me look into delaying the quirk until the driver loads, because
-> ideally the right interface for this is "blacklist xhci_hcd" in
-> /etc/modprobe.conf.
+On Tue, May 20, 2014 at 02:39:27PM -0700, Tim Chen wrote:
+> From: Tim Chen <tim.c.chen@linux.intel.com>
+> Subject: [PATCH v2] sched: Reduce the rate of needless idle load balancing
+>=20
+>=20
+> The current no_hz idle load balancer do load balancing for *all* idle cpu=
+s,
+> even though the time due to load balance for a particular
+> idle cpu could be still a while in the future.  This introduces a much
+> higher load balancing rate than what is necessary.  The patch
+> changes the behavior by only doing idle load balancing on
+> behalf of an idle cpu only when it is due for load balancing.
+>=20
+> On SGI's systems with over 3000 cores, the cpu responsible for idle balan=
+cing
+> got overwhelmed with idle balancing, and introduces a lot of OS noise
+> to workloads.  This patch fixes the issue.
+>=20
+> Acked-by: Russ Anderson <rja@sgi.com>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Jason Low <jason.low2@hp.com>
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
 
-Which really doesn't work for systems / distros that build the driver
-into the kernel.
+Thanks!
 
-thanks,
+--3TG/ZNIaOacldBdr
+Content-Type: application/pgp-signature
 
-greg k-h
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfEnWAAoJEHZH4aRLwOS6U6YP/0Z1BnU6ie+CSJ4s8Nj8Cbbp
+dAcUkbN4zHArzFzu9Nu0MNrt3JfNFESQIQHvbHV9yE6aFxbPqXd0csU6svl3I/8b
+XZRcSWcz0qM92GCbEU2iIgVMjqpky6cG7bKEcCQJQVaYUh4nOX6PmlTrmb7necC2
+hdcAv1yMiFlbQLJ0DsdYvO4g3ow/ncnd7oj0x4PG6o/U84aiR7wLMJO4Mbxo1Wvu
+FZt6jdZKylPSDeeArcOh9GnGTK6JZL1S9DmNUJO9dCsUY92UVyMy6ai2T2LWNqCk
+9Zgi/ShbBH3ApJ71gKM3V7rG10uNiS7Ovy0eyrZnBViR2TdRyolieywSn6uYzhnd
+RjTgIy28jQHKjScvIzzGd0cJLJLoAAhu+m3f+wejEFbtfkfYrtfzCagHuGNiyGWC
+oPwTgB+MasMMJKF2qVznCW6++PUEbeRVPLyltECVlOkvvIqkQ4fw2odyEa4hRZpz
+4RMj17O9MPZ7G4i4NPdiKOxjoVi5OyNG/hzV1dTKhAZ2nga72JFCFWLhQXI/6VSl
+bgDnPQIRtI2BwfI1meXQmyIYwc//46tZQYTwh3/KZK3HkOEdFYsepuiD/fAdk1K8
+P5yo6cmN88q3m7jP1pqk/KBfCPSkkabecBly15PFgybavs4R+LyIpvnXVf/cNig3
+l1i+QXPLgvxetx6gFzU1
+=GWnI
+-----END PGP SIGNATURE-----
+
+--3TG/ZNIaOacldBdr--
