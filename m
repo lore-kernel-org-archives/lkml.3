@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaEUMKo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 08:10:44 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:48293 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461AbaEUMKi (ORCPT
+	id S1752552AbaEUMMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 08:12:49 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:61321 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaEUMMr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 08:10:38 -0400
-From: Dominique van den Broeck <domdevlin@free.fr>
-To: Willy Tarreau <willy@meta-x.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Dominique van den Broeck <domdevlin@free.fr>
-Subject: [PATCH 1/3] staging: panel: (coding style) Matching braces
-Date: Wed, 21 May 2014 14:09:59 +0200
-Message-Id: <1400674201-9560-1-git-send-email-domdevlin@free.fr>
-X-Mailer: git-send-email 1.9.0
+	Wed, 21 May 2014 08:12:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140521110143.GA2375@qca.qualcomm.com>
+References: <CA+r1ZhiM7EK08Y4kriXMugMc1Mbj5VDUPwKMq8-_k8Q8qhwPtw@mail.gmail.com>
+ <20140521110143.GA2375@qca.qualcomm.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Wed, 21 May 2014 22:12:26 +1000
+Message-ID: <CAGRGNgXuS-ksFBAtmo8nLAPqPFKo2gHGDCsTcranU-k2-K3rfg@mail.gmail.com>
+Subject: Re: [ath9k-devel] randconfig build error with next-20140519, in drivers/net/wireless/ath/ath9k/dfs.c
+To: Rajkumar Manoharan <rmanohar@qti.qualcomm.com>
+Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linville <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath9k-devel@venema.h4ckr.net, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Style-only modifications to comply with checkpatch.pl --strict --file. 
-. Adds every missing brace in condition statements.
+Hi Rajkumar,
 
-Signed-off-by: Dominique van den Broeck <domdevlin@free.fr>
----
-Apply on linux-next tree, above:
-commit 4151fa6adc65da14673ece623bbb2acc6936f8be
-"Add linux-next specific files for 20140516"
+On Wed, May 21, 2014 at 9:01 PM, Rajkumar Manoharan
+<rmanohar@qti.qualcomm.com> wrote:
+> On Mon, May 19, 2014 at 09:31:16AM -0700, Jim Davis wrote:
+>> Building with the attached random configuration file,
+>>
+>> In file included from drivers/net/wireless/ath/ath9k/eeprom.h:22:0,
+>>                  from drivers/net/wireless/ath/ath9k/hw.h:27,
+>>                  from drivers/net/wireless/ath/ath9k/dfs.c:18:
+>> drivers/net/wireless/ath/ath9k/dfs.c: In function ‘ath9k_dfs_process_phyerr’:
+>> drivers/net/wireless/ath/ath9k/dfs.c:185:14: error: ‘struct ath_softc’
+>> has no member named ‘debug’
+>>     pe.ts - sc->debug.stats.dfs_stats.last_ts);
+>>               ^
+>> drivers/net/wireless/ath/ath9k/../ath.h:273:41: note: in definition of
+>> macro ‘ath_dbg’
+>>    ath_printk(KERN_DEBUG, common, fmt, ##__VA_ARGS__); \
+>>                                          ^
+>> drivers/net/wireless/ath/ath9k/dfs.c:186:5: error: ‘struct ath_softc’
+>> has no member named ‘debug’
+>>    sc->debug.stats.dfs_stats.last_ts = pe.ts;
+>>      ^
+>> make[5]: *** [drivers/net/wireless/ath/ath9k/dfs.o] Error 1
+>
+> Please select CONFIG_ATH9K_DEBUGFS.
 
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 136671a..1ac5e25 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -711,10 +711,9 @@ static void pin_to_bits(int pin, unsigned char *d_val, unsigned char *c_val)
- /* sleeps that many milliseconds with a reschedule */
- static void long_sleep(int ms)
- {
--
--	if (in_interrupt())
-+	if (in_interrupt()) {
- 		mdelay(ms);
--	else {
-+	} else {
- 		current->state = TASK_INTERRUPTIBLE;
- 		schedule_timeout((ms * HZ + 999) / 1000);
- 	}
-@@ -1141,13 +1139,13 @@ static inline int handle_lcd_special_code(void)
- 		value = 0;
- 		while (*esc && cgoffset < 8) {
- 			shift ^= 4;
--			if (*esc >= '0' && *esc <= '9')
-+			if (*esc >= '0' && *esc <= '9') {
- 				value |= (*esc - '0') << shift;
--			else if (*esc >= 'A' && *esc <= 'Z')
-+			} else if (*esc >= 'A' && *esc <= 'Z') {
- 				value |= (*esc - 'A' + 10) << shift;
--			else if (*esc >= 'a' && *esc <= 'z')
-+			} else if (*esc >= 'a' && *esc <= 'z') {
- 				value |= (*esc - 'a' + 10) << shift;
--			else {
-+			} else {
- 				esc++;
- 				continue;
- 			}
-@@ -1183,8 +1181,9 @@ static inline int handle_lcd_special_code(void)
- 				esc++;
- 				if (kstrtoul(esc, 10, &lcd_addr_y) < 0)
- 					break;
--			} else
-+			} else {
- 				break;
-+			}
- 		}
- 
- 		lcd_gotoxy();
-@@ -1973,10 +1971,11 @@ static int input_name2mask(const char *name, pmask_t *mask, pmask_t *value,
- 		if (isdigit(*name)) {
- 			out = *name - '0';
- 			om |= (1 << out);
--		} else if (*name == '-')
-+		} else if (*name == '-') {
- 			out = 8;
--		else
-+		} else {
- 			return 0;	/* unknown bit name */
-+		}
- 
- 		bit = (out * 5) + in;
- 
+The point of randconfig builds is to ensure that there it's really
+unlikely that there are any config combinations that don't build, even
+if they're utterly insane.
+
+You should really change the ath9k Kconfig rules or move or add ifdefs
+to prevent this from being possible.
+
+Thanks,
+
+-- 
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
