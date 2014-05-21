@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaEUFgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 01:36:38 -0400
-Received: from verein.lst.de ([213.95.11.211]:44821 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751478AbaEUFgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 01:36:37 -0400
-Date: Wed, 21 May 2014 07:36:34 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
-	flush worker
-Message-ID: <20140521053634.GA4764@lst.de>
-References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com> <20140519151824.GA21762@lst.de> <CACVXFVNprzhEpXGKze=A4T2b-y35vXRxRTOUqpywu+Et=t37Kw@mail.gmail.com> <20140520152303.GA20352@lst.de> <CACVXFVNP--zj_-UtygxfXk7GvSXwKm2KMKFs=h9KsrL=ZzbWVQ@mail.gmail.com>
+	id S1751068AbaEUFlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 01:41:11 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53582 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaEUFlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 01:41:08 -0400
+Message-ID: <537C3C6E.6010207@linaro.org>
+Date: Wed, 21 May 2014 11:11:02 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVNP--zj_-UtygxfXk7GvSXwKm2KMKFs=h9KsrL=ZzbWVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Mark Brown <broonie@kernel.org>
+CC: alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, lgirdwood@gmail.com, robh+dt@kernel.org,
+        sbkim73@samsung.com, rdunlap@infradead.org, dianders@chromium.org,
+        t.figa@samsung.com
+Subject: Re: [PATCH] ASoC: samsung: Add 'mclk' handling for Snow sound-card
+ driver
+References: <1400559942-5666-1-git-send-email-tushar.behera@linaro.org> <20140520111600.GL12304@sirena.org.uk>
+In-Reply-To: <20140520111600.GL12304@sirena.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 01:16:14PM +0800, Ming Lei wrote:
-> I am wondering if virtio-blk is trivial block driver, :-)
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-It's about as simple as it gets.
-
-> > The scsi-mq work that I plant to submit for the next merge window is
-> > the prime example.
+On 05/20/2014 04:46 PM, Mark Brown wrote:
+> On Tue, May 20, 2014 at 09:55:42AM +0530, Tushar Behera wrote:
+>> For audio to work on Snow board, we need the codec master clock
+>> 'mclk' to be properly configured.
+>> 
+>> Currently XCLKOUT is configured as 'mclk' for codec chip and it
+>> is required to be clocked at 24MHz for the codec to work
+>> properly.
+>> 
+>> Add appropriate clock handling within Snow sound-card driver to
+>> set 'mclk' to operate at 24MHz.
 > 
-> It depends if one scsi-mq req has to requeue itself with rq->requeue_work
-> inside its own .softirq_done_fn. If yes, we can't put call_single_data
-> and requeue_work into one union simply. From you last scsi-mq post,
-> looks the request may do that if I understand correctly.
+> The clock here is connected to the CODEC on the board so it should
+> be connected to the CODEC in the device tree too.
+> 
 
-Requeueing a request from the completion handler is indeed what we'll
-need with various more complete drivers.
+Ok. I will move 'mclk' clock handling to respective CODEC drivers.
 
-> I think the patch is clean and simple, with documenting the special
-> conflict case clearly too.
+- -- 
+Tushar Behera
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-While I can't say anything against the fact that it fixes the issue
-it's neither clean nor simple.
-
-> Follows current ideas:
-> 1), this patch with scsi-mq sharing abort_work together?
-> 2), move requeue_work out of the union inside request
-> 3), spin_lock_irqsave(&ctx->lock) everywhere and requeue
-> request directly to ctx without using work
-
-I think Jens very much wanted to avoid irq disabling in the I/O path
-if possible. If we have a separate requeue list with it's separate
-lock we can avoid that unless we actually have to take requests of
-that requeue list.  I can look into that implementation.
-
+iQEcBAEBAgAGBQJTfDxtAAoJELqclMPPkq4NkPcH/2fOwVTGgmGFarm2RSoxJcON
+QcSQlNpVXEpAqslVdz+ay7VkYCWy+wiuTq4Fe/Yw5RK/Pl7DdkEX/Ltj7/Q6+CbT
+38r6o5PSbZLlPcBxVjGXBiOTpK7PZLumF8c1DK4/6HzsHYDzLGTvbWVi6cy9kZzj
+X3glD3PBiK/NL12IuOHsRg2wzBRE56RQCmfT2kPueWHEklebGzr/qv5UgdGWa+jb
+JRVDt11klGfvIFj+Ov28yave1epzFEzrNm4ixso8MJN7J9HxlufagTheS0HkDpuX
++uY8PbRFTAdT7pjvZR4n2lPws940nk7aUqyVPTQaG9JVKk7R4FVZgBwmhMeIsMU=
+=eKSS
+-----END PGP SIGNATURE-----
