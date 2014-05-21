@@ -1,70 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaEUHcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 03:32:25 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:41370 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861AbaEUHcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 03:32:24 -0400
-X-Greylist: delayed 2454 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 03:32:23 EDT
-From: sunzc522@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: gxt@mprc.pku.edu.cn, gang.chen.5i5j@gmail.com,
-        Zhichuang SUN <sunzc522@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-fbdev@vger.kernel.org
-Subject: [PATCH] drivers/video/fbdev/fb-puv3.c: Add header files for function unifb_mmap
-Date: Wed, 21 May 2014 14:13:30 +0800
-Message-Id: <1400652811-5206-1-git-send-email-sunzc522@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1751944AbaEUHdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 03:33:52 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:63326 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaEUHdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 03:33:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
+References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
+	<CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
+Date: Wed, 21 May 2014 09:33:49 +0200
+Message-ID: <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Austin Schuh <austin@peloton-tech.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, xfs <xfs@oss.sgi.com>,
+        rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhichuang SUN <sunzc522@gmail.com>
+CC'ing RT folks
 
-Function unifb_mmap calls functions which are defined in linux/mm.h
-and asm/pgtable.h
+On Wed, May 21, 2014 at 8:23 AM, Austin Schuh <austin@peloton-tech.com> wrote:
+> On Tue, May 13, 2014 at 7:29 PM, Austin Schuh <austin@peloton-tech.com> wrote:
+>> Hi,
+>>
+>> I am observing a filesystem lockup with XFS on a CONFIG_PREEMPT_RT
+>> patched kernel.  I have currently only triggered it using dpkg.  Dave
+>> Chinner on the XFS mailing list suggested that it was a rt-kernel
+>> workqueue issue as opposed to a XFS problem after looking at the
+>> kernel messages.
+>>
+>> The only modification to the kernel besides the RT patch is that I
+>> have applied tglx's "genirq: Sanitize spurious interrupt detection of
+>> threaded irqs" patch.
+>
+> I upgraded to 3.14.3-rt4, and the problem still persists.
+>
+> I turned on event tracing and tracked it down further.  I'm able to
+> lock it up by scping a new kernel debian package to /tmp/ on the
+> machine.  scp is locking the inode, and then scheduling
+> xfs_bmapi_allocate_worker in the work queue.  The work then never gets
+> run.  The kworkers then lock up waiting for the inode lock.
+>
+> Here are the relevant events from the trace.  ffff8803e9f10288
+> (blk_delay_work) gets run later on in the trace, but ffff8803b4c158d0
+> (xfs_bmapi_allocate_worker) never does.  The kernel then warns about
+> blocked tasks 120 seconds later.
+>
+>
+>              scp-5393  [001] ....1..   148.883383: xfs_writepage: dev
+> 8:5 ino 0xd8e pgoff 0x4a3e000 size 0x16af02b0 offset 0 length 0
+> delalloc 1 unwritten 0
+>              scp-5393  [001] ....1..   148.883383: xfs_ilock_nowait:
+> dev 8:5 ino 0xd8e flags ILOCK_SHARED caller xfs_map_blocks
+>              scp-5393  [001] ....1..   148.883384: xfs_iunlock: dev
+> 8:5 ino 0xd8e flags ILOCK_SHARED caller xfs_map_blocks
+>              scp-5393  [001] ....1..   148.883386: xfs_log_reserve:
+> dev 8:5 type STRAT_WRITE t_ocnt 2 t_cnt 2 t_curr_res 112332 t_unit_res
+> 112332 t_flags XLOG_TIC_INITED|XLOG_TIC_PERM_RESERV reserveq empty
+> writeq empty grant_reserve_cycle 57 grant_reserve_bytes 9250852
+> grant_write_cycle 57 grant_write_bytes 9250852 curr_cycle 57
+> curr_block 18031 tail_cycle 57 tail_block 17993
+>              scp-5393  [001] ....1..   148.883386:
+> xfs_log_reserve_exit: dev 8:5 type STRAT_WRITE t_ocnt 2 t_cnt 2
+> t_curr_res 112332 t_unit_res 112332 t_flags
+> XLOG_TIC_INITED|XLOG_TIC_PERM_RESERV reserveq empty writeq empty
+> grant_reserve_cycle 57 grant_reserve_bytes 9475516 grant_write_cycle
+> 57 grant_write_bytes 9475516 curr_cycle 57 curr_block 18031 tail_cycle
+> 57 tail_block 17993
+>              scp-5393  [001] ....1..   148.883386: xfs_ilock: dev 8:5
+> ino 0xd8e flags ILOCK_EXCL caller xfs_iomap_write_allocate
+>              scp-5393  [001] ....1.3   148.883390:
+> workqueue_queue_work: work struct=ffff8803b4c158d0
+> function=xfs_bmapi_allocate_worker workqueue=ffff8803ea85dc00
+> req_cpu=512 cpu=1
+>              scp-5393  [001] ....1.3   148.883390:
+> workqueue_activate_work: work struct ffff8803b4c158d0
+>              scp-5393  [001] ....1.4   148.883396:
+> workqueue_queue_work: work struct=ffff8803e9f10288
+> function=blk_delay_work workqueue=ffff8803ecf96200 req_cpu=512 cpu=1
+>              scp-5393  [001] ....1.4   148.883396:
+> workqueue_activate_work: work struct ffff8803e9f10288
+>              scp-5393  [001] dN..3.4   148.883399: sched_wakeup:
+> comm=kworker/1:1H pid=573 prio=100 success=1 target_cpu=001
+>              scp-5393  [001] dN..3.4   148.883400: sched_stat_runtime:
+> comm=scp pid=5393 runtime=32683 [ns] vruntime=658862317 [ns]
+>              scp-5393  [001] d...3.4   148.883400: sched_switch:
+> prev_comm=scp prev_pid=5393 prev_prio=120 prev_state=R+ ==>
+> next_comm=kworker/1:1H next_pid=573 next_prio=100
+>
+>     irq/44-ahci-273   [000] d...3.5   148.883647: sched_wakeup:
+> comm=kworker/0:2 pid=732 prio=120 success=1 target_cpu=000
+>     irq/44-ahci-273   [000] d...3..   148.883667: sched_switch:
+> prev_comm=irq/44-ahci prev_pid=273 prev_prio=49 prev_state=S ==>
+> next_comm=kworker/0:2 next_pid=732 next_prio=120
+>     kworker/0:2-732   [000] ....1..   148.883674:
+> workqueue_execute_start: work struct ffff8800aea30cb8: function
+> xfs_end_io
+>     kworker/0:2-732   [000] ....1..   148.883674: xfs_ilock: dev 8:5
+> ino 0xd8e flags ILOCK_EXCL caller xfs_setfilesize
+>     kworker/0:2-732   [000] d...3..   148.883677: sched_stat_runtime:
+> comm=kworker/0:2 pid=732 runtime=11392 [ns] vruntime=46907654869 [ns]
+>     kworker/0:2-732   [000] d...3..   148.883679: sched_switch:
+> prev_comm=kworker/0:2 prev_pid=732 prev_prio=120 prev_state=D ==>
+> next_comm=swapper/0 next_pid=0 next_prio=120
+>
+>    kworker/1:1-99    [001] ....1..   148.884208:
+> workqueue_execute_start: work struct ffff8800aea30c20: function
+> xfs_end_io
+>     kworker/1:1-99    [001] ....1..   148.884208: xfs_ilock: dev 8:5
+> ino 0xd8e flags ILOCK_EXCL caller xfs_setfilesize
+>     kworker/1:1-99    [001] d...3..   148.884210: sched_stat_runtime:
+> comm=kworker/1:1 pid=99 runtime=36705 [ns] vruntime=48354424724 [ns]
+>     kworker/1:1-99    [001] d...3..   148.884211: sched_switch:
+> prev_comm=kworker/1:1 prev_pid=99 prev_prio=120 prev_state=R+ ==>
+> next_comm=swapper/1 next_pid=0 next_prio=120
+>
+>   kworker/u16:4-296   [001] ....1..   151.560358:
+> workqueue_execute_start: work struct ffff8803e9f10660: function
+> bdi_writeback_workfn
+>   kworker/u16:4-296   [001] ....1..   151.560389:
+> workqueue_execute_end: work struct ffff8803e9f10660
+>   kworker/u16:4-296   [001] d...3..   151.560398: sched_stat_runtime:
+> comm=kworker/u16:4 pid=296 runtime=51174 [ns] vruntime=48345513312
+> [ns]
+>   kworker/u16:4-296   [001] d...3..   151.560403: sched_switch:
+> prev_comm=kworker/u16:4 prev_pid=296 prev_prio=120 prev_state=R+ ==>
+> next_comm=swapper/1 next_pid=0 next_prio=120
+>
+>
+> I have a peak_pci can card in the machine that is consuming about 1.5
+> CPU cores because it is not connected to a CAN bus and gets error
+> interrupts every time it tries to send and resend.  If I disable the
+> card (ifconfig can0 down; ifconfig can1 down), I have a lot more
+> trouble reproducing the lockup.
+>
+> Any ideas why the scheduled work is never getting run?
+>
+> Thanks,
+> Austin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-The related error (for unicore32 with unicore32_defconfig):
-	CC      drivers/video/fbdev/fb-puv3.o
-	drivers/video/fbdev/fb-puv3.c: In function 'unifb_mmap':
-	drivers/video/fbdev/fb-puv3.c:646: error: implicit declaration of
-				      function 'vm_iomap_memory'
-	drivers/video/fbdev/fb-puv3.c:646: error: implicit declaration of
-				      function 'pgprot_noncached'
 
-Signed-off-by: Zhichuang Sun <sunzc522@gmail.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Joe Perches <joe@perches.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-fbdev@vger.kernel.org
----
- drivers/video/fbdev/fb-puv3.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/fbdev/fb-puv3.c b/drivers/video/fbdev/fb-puv3.c
-index 6db9ebd..88fa2e7 100644
---- a/drivers/video/fbdev/fb-puv3.c
-+++ b/drivers/video/fbdev/fb-puv3.c
-@@ -18,8 +18,10 @@
- #include <linux/fb.h>
- #include <linux/init.h>
- #include <linux/console.h>
-+#include <linux/mm.h>
- 
- #include <asm/sizes.h>
-+#include <asm/pgtable.h>
- #include <mach/hardware.h>
- 
- /* Platform_data reserved for unifb registers. */
 -- 
-1.7.0.4
-
+Thanks,
+//richard
