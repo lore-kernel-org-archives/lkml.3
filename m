@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972AbaEUEKg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 00:10:36 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:37429 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761AbaEUEKf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 00:10:35 -0400
+	id S1751402AbaEUEMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 00:12:41 -0400
+Received: from ozlabs.org ([103.22.144.67]:40979 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaEUEMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 00:12:40 -0400
+Date: Wed, 21 May 2014 14:12:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: linux-next: manual merge of the tip tree with Linus' tree
+Message-ID: <20140521141231.5752baae@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <5369af4d.8482440a.284c.1d3c@mx.google.com>
-References: <5369af4d.8482440a.284c.1d3c@mx.google.com>
-Date: Wed, 21 May 2014 09:40:34 +0530
-Message-ID: <CAPV97yegNd+MyptVo2J-g+k2hAWsiK-Fmk6i=hNQsavD_xcEew@mail.gmail.com>
-Subject: Re: [PATCH 00/13]staging: rtl8188eu: Remove unused functions and variables
-From: navin patidar <navin.patidar@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        navin patidar <navin.patidar@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/p_mjuqMg51itUvlnSq8w56K"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--Sig_/p_mjuqMg51itUvlnSq8w56K
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Please merge this patchset, It has been pending for some time.
+Hi all,
 
-regards,
-navin patidar
+Today's linux-next merge of the tip tree got a conflict in
+arch/x86/vdso/vdso32-setup.c between commit fa81511bb0bb ("x86-64,
+modify_ldt: Make support for 16-bit segments a runtime option") from
+Linus' tree and commit 18d0a6fd2271 ("x86, vdso: Move the 32-bit vdso
+special pages after the text") from the tip tree.
 
-On Wed, May 7, 2014 at 9:27 AM,  <navin.patidar@gmail.com> wrote:
-> From: navin patidar <navin.patidar@gmail.com>
->
-> Following patches remove unused functions, variables and functions with empty
-> definition.
->
-> navin patidar (13):
->   staging: rtl8188eu: Remove 'semaphore allrxreturnevt' from struct
->     recv_priv
->   staging: rtl8188eu: Remove unused member variables of struct
->     recv_priv
->   staging: rtl8188eu: Remove 'spinlock_t lock' from struct recv_priv
->   staging: rtl8188eu: Remove struct zero_bulkout_context
->   staging: rtl8188eu: Remove function rtw_os_recv_resource_init()
->   staging: rtl8188eu: Remove function rtw_os_recv_resource_free()
->   staging: rtl8188eu: Remove function rtw_hostapd_mlme_rx()
->   staging: rtl8188eu: Remove function rtw_os_recvbuf_resource_free()
->   staging: rtl8188eu: Remove unused inline function recvframe_push()
->   staging: rtl8188eu: Remove unused inline function get_rx_status()
->   staging: rtl8188eu: Remove 'void  *precvbuf' from struct recv_frame
->   staging: rtl8188eu: Remove 'int frame_tag' from struct recv_frame
->   staging: rtl8188eu: Remove 'u8 fragcnt' from struct recv_frame
->
->  drivers/staging/rtl8188eu/core/rtw_mlme_ext.c    |    2 --
->  drivers/staging/rtl8188eu/core/rtw_recv.c        |    8 -----
->  drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c   |    2 +-
->  drivers/staging/rtl8188eu/hal/usb_ops_linux.c    |    1 -
->  drivers/staging/rtl8188eu/include/recv_osdep.h   |    4 ---
->  drivers/staging/rtl8188eu/include/rtw_recv.h     |   36 ----------------------
->  drivers/staging/rtl8188eu/os_dep/recv_linux.c    |   25 ---------------
->  drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c |    7 -----
->  8 files changed, 1 insertion(+), 84 deletions(-)
->
-> --
-> 1.7.10.4
->
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/x86/vdso/vdso32-setup.c
+index e1f220e3ca68,c3ed708e50f4..000000000000
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@@ -36,12 -21,6 +21,10 @@@
+  #define VDSO_DEFAULT	1
+  #endif
+ =20
+ +#ifdef CONFIG_X86_64
+- #define vdso_enabled			sysctl_vsyscall32
+- #define arch_setup_additional_pages	syscall32_setup_pages
+ +extern int sysctl_ldt16;
+ +#endif
+ +
+  /*
+   * Should the kernel map a VDSO page into processes and pass its
+   * address down to glibc upon exec()?
+
+--Sig_/p_mjuqMg51itUvlnSq8w56K
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTfCe1AAoJEMDTa8Ir7ZwVPuwP/2q8ochgYOtVoD//ifHSVOV9
+AASfWB9Kmjocr6phz4SMq0HOTlAgdKZ14flEeIQB7nhCA7L2nUhNbSIx8peiIenF
+iWDi2x/dZR0RBybVYhASJegjWiW8e37nKxCOptPET6DCQqw5ejsrBkoaERGZWtxS
+tlYe4X6k4ZIzFGlJOd4vX4CvdVKsKF3Hjxwe57QgLd0dQt6JxQhbdJxqqzXjtJ5O
+VgrQplqbgM8Yn2sk17LaP565crSpFJ7LwSH+FgZ7rr83BD3S3bWPFCXAxIIzffNm
+8sxWAuHfK2KLXAGbNw+Ldeewy/6Z5ZrP63WLN1b4ugRlqvV4kDfJcxTPSNXAeSix
+1wtI28wtmBLQX/F2oCR5P9IIBr55WowZ6KenYNu69A+f/LFyuFhYxIiGR0csHe8n
+oLcTvZMOkT5aFo2ceQ4EZLsMFc7GIlD3W5meOwwYUzqA7u6+dKVwJOc139TY9zCK
+ylxwYk/BnwRjNPSIDygXtgT0RFzQSmeixKDmshzP3NYCRh69aSPH2VflFKBQoFEF
+uXjWQz6lUEOUxI9ms1JaESk6f8JuRHFjMskg89NBiS7Lu68fosyHarGRV3XZ7kDj
+IHY1oTWxI6LUReXH0Dy95r+hyHzgOjs2/We+hTc3bSKeGP3KeuPA+FUGRMb6ZDQ4
+lXUGUk66QLMLDVOslK4Y
+=WZiL
+-----END PGP SIGNATURE-----
+
+--Sig_/p_mjuqMg51itUvlnSq8w56K--
