@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbaEUNUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:20:41 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:42061 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639AbaEUNUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:20:40 -0400
-Date: Wed, 21 May 2014 09:20:38 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>, linux-aio@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hanging aio process
-Message-ID: <20140521132038.GL2915@kvack.org>
-References: <alpine.LFD.2.11.1405191908450.1847@denkbrett> <20140519180851.GD2915@kvack.org> <alpine.LFD.2.11.1405200950480.1606@denkbrett> <alpine.LFD.2.11.1405201508450.1606@denkbrett> <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com> <alpine.LFD.2.11.1405201945280.1631@denkbrett> <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com> <alpine.LFD.2.11.1405210954110.1579@denkbrett> <alpine.LFD.2.11.1405211042350.1579@denkbrett>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1405211042350.1579@denkbrett>
-User-Agent: Mutt/1.4.2.2i
+	id S1752009AbaEUN2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:28:00 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:54776 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaEUN17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:27:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <537CA726.5060909@arm.com>
+References: <cover.1400670427.git.viresh.kumar@linaro.org>
+	<ddf99132a9b2a6aabef61cba20fffbbf56ec0985.1400670427.git.viresh.kumar@linaro.org>
+	<537CA726.5060909@arm.com>
+Date: Wed, 21 May 2014 18:57:58 +0530
+Message-ID: <CAKohpokmO=QpzAgWTaOSFzYF2E29pxr3B6CSwNMZkq02khfFVg@mail.gmail.com>
+Subject: Re: [PATCH V2 1/7] opp: remove -ENOSYS from dummy implementation of of_init_opp_table()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
+        "nm@ti.com" <nm@ti.com>,
+        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 10:48:55AM +0200, Sebastian Ott wrote:
-> > 
-> > I already did that and it didn't change, always 1 + (1UL << 31) in all
-> > cases, before and after percpu_ref_kill(&ctx->reqs). I'm not really
-> > familiar with this percpu_ref stuff but it looks like the initial
-> > reference is dropped asynchronous.
-> 
-> 
-> cat /sys/kernel/debug/tracing/trace
+On 21 May 2014 18:46, Sudeep Holla <sudeep.holla@arm.com> wrote:
+> Hi Viresh,
+>
+> $subject perhaps should be "replace/remove -EINVAL.." instead of "remove
+> -ENOSYS ..."
 
-Your trace still isn't monitoring aio_complete().  You need to check if 
-aio_complete() is getting called in order to determine if the bug is in 
-the core aio code or not.
-
-		-ben
--- 
-"Thought is the essence of where you are now."
+What's going on with my logs? Really annoying for me as well..
