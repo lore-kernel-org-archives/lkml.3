@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaEUSnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:43:31 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28170 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752098AbaEUSn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:43:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/2jgFpY0ZZLhVBY0s9amZi
-Date: Wed, 21 May 2014 11:43:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
-Message-ID: <20140521184319.GL17417@atomide.com>
-References: <1399739870-13526-1-git-send-email-sre@kernel.org>
- <1399739870-13526-10-git-send-email-sre@kernel.org>
- <20140514215503.GM27426@atomide.com>
- <20140520003538.GD15793@atomide.com>
- <20140521182513.GA26285@earth.universe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140521182513.GA26285@earth.universe>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753019AbaEUSuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:50:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2334 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752939AbaEUSuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 14:50:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,881,1392192000"; 
+   d="scan'208";a="515600127"
+Subject: Re: [PATCH] sched: Reduce the rate of needless idle load balancing
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Joe Perches <joe@perches.com>, Jason Low <jason.low2@hp.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Russ Anderson <rja@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1400696776.2646.6.camel@buesod1.americas.hpqcorp.net>
+References: <1400617046.2970.270.camel@schen9-DESK>
+	 <CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
+	 <1400619550.2970.274.camel@schen9-DESK>
+	 <1400619878.2970.276.camel@schen9-DESK>
+	 <1400634953.26709.42.camel@joe-AO725>
+	 <1400690267.2970.287.camel@schen9-DESK>
+	 <1400696776.2646.6.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 May 2014 11:49:59 -0700
+Message-ID: <1400698199.2970.303.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@kernel.org> [140521 11:26]:
-> Hi,
-> 
-> On Mon, May 19, 2014 at 05:35:39PM -0700, Tony Lindgren wrote:
-> > * Tony Lindgren <tony@atomide.com> [140514 14:57]:
-> > > * Sebastian Reichel <sre@kernel.org> [140510 09:40]:
-> > > > Add SSI device tree data for OMAP3 and Nokia N900.
+On Wed, 2014-05-21 at 11:26 -0700, Davidlohr Bueso wrote:
+> On Wed, 2014-05-21 at 09:37 -0700, Tim Chen wrote:
+> > On Tue, 2014-05-20 at 18:15 -0700, Joe Perches wrote:
+> > > On Tue, 2014-05-20 at 14:04 -0700, Tim Chen wrote:
+> > > > On Tue, 2014-05-20 at 13:59 -0700, Tim Chen wrote:
+> > > > > On Tue, 2014-05-20 at 13:51 -0700, Jason Low wrote:
+> > > > > > On Tue, May 20, 2014 at 1:17 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > > > > > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > > []
+> > > > > > If we want to do idle load balancing only when it is due for a
+> > > > > > balance, shouldn't the above just be "if (time_after(jiffies,
+> > > > > > rq->next_balance))"?
+> > > > > 
+> > > > > If rq->next_balance and jiffies are equal, then
+> > > > > time_after(jiffies, rq->next_balance) check will be false and
+> > > > > you will not do balance.  But actually you want to balance
+> > > > > for this case so the jiffies+1 was used.
+> > > > 
+> > > > So maybe I should switch the check to 
+> > > > if (time_before(rq->next_balance, jiffies))
 > > > 
-> > > Picking this patch into omap-for-v3.16/dt thanks.
+> > > time_after_eq() or time_is_after_eq_jiffies()
+> > > 
+> > > 
 > > 
-> > Just noticed that this patch seems to somehow break idle
-> > modes on n900, so dropping both dts changes for now.
-> > 
-> > Basically the n900 debug LEDs won't ever go off with
-> > these two dts patches enabled, even without the modem
-> > drivers loaded. I did not dig deeper, but it's probably
-> > something related to hwmod using this data for some
-> > settings.
+> > I prefer time_after_eq to keep the code style consistent with the
+> > rest of the code in fair.c.
 > 
-> Is hwmod data interpreted at all without the DT entries?
-
-Yes for autoidling unused devices. We parse that with
-omap_device_build_from_dt().
-
-> The hwmod data may be wrong. The information from commit
-> 398917ce161e10d3c66afaefdb89c73c64c4b02d was simply
-> interpolated from all information I found. The OMAP3
-> public TRM does not contain *any* information about the
-> ssi IP-Core.
-
-It's probably something with the sysc or idlemodes that
-keeps things from idling. Maybe wrong address? Or wrong
-flags? I'm pretty sure it was the first .dts patch out of
-these two as the second one alone did not apply.
- 
-> > Sorry did not notice it earlier as I did not have the
-> > PM regression fix patches merged with my testing branch.
+> Should all the code be updated then? We should use the existing
+> interfaces if available.
 > 
-> I hoped to see working modem in 3.16, which will probably
-> be used for the next Debian stable :(
 
-That would indeed be nice, let's try to debug it as we
-still have few days. I'm finally able to test for PM
-regressions with DT patches, too bad we did not have
-that earlier because of multiple issues.
+BTW, if this code was to be updated, time_is_before_eq_jiffies(rq->next_balance) 
+check will be the correct thing to do for the patch. This expands to
+time_after_eq(jiffies, rq->next_balance), which is what we want.
 
-Anyways, this dts issue should not prevent merging the
-driver changes, I'm all for that!
+So something like:
 
-Regards,
+                if (time_is_before_eq_jiffies(rq->next_balance)) {
+                        raw_spin_lock_irq(&rq->lock);
+                        update_rq_clock(rq);
+                        update_idle_cpu_load(rq);
+                        raw_spin_unlock_irq(&rq->lock);
+                        rebalance_domains(rq, CPU_IDLE);
+                }
 
-Tony
+
+But I don't think this change is making the code logic any clearer.  
+I prefer time_after_eq(jiffies, rq->next_balance), which is more
+readable.
+
+Tim
+
