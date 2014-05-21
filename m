@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaEUCHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 22:07:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:10802 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751037AbaEUCHc (ORCPT
+	id S1751535AbaEUCNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 22:13:45 -0400
+Received: from imap.devoid-pointer.net ([31.31.77.140]:33081 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaEUCNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 22:07:32 -0400
-Message-ID: <1400638043.9759.5.camel@pippen.local.home>
-Subject: Re: [RFC PATCH v2 1/7] tracing: Add __bitmask() macro to trace
- events to cpumasks and other bitmasks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Javi Merino <javi.merino@arm.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Punit.Agrawal@arm.com, Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 20 May 2014 22:07:23 -0400
-In-Reply-To: <1400595057-8585-2-git-send-email-javi.merino@arm.com>
-References: <1400595057-8585-1-git-send-email-javi.merino@arm.com>
-	 <1400595057-8585-2-git-send-email-javi.merino@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Tue, 20 May 2014 22:13:44 -0400
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: Roland Bosa <rbosa@logitech.com>
+Cc: simon@mungewell.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+Date: Wed, 21 May 2014 04:13:40 +0200
+Message-ID: <2643156.2tkLFqgYFg@sigyn>
+User-Agent: KMail/4.13.1 (Linux/3.14.1-1-my-rd; KDE/4.13.1; x86_64; ; )
+In-Reply-To: <537BFEBF.8010601@logitech.com>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net> <1c6140633925b0838b7627e071e80761.squirrel@mungewell.org> <537BFEBF.8010601@logitech.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm, I didn't think about cross tree dependencies. I already pushed this
-patch to my for-next branch which is already in linux-next, and I do not
-rebase this branch unless there's a really good need to.
+On Tuesday 20 of May 2014 18:17:51 Roland Bosa wrote:
+> 
+> The file format of an IFR is probably easily deducible. There's a lot of
+> textual clues to parameters and the values are also written out in
+> string form.
+> 
+> I don't have a FEdit file at hand, but I suppose it will be similar.
 
-I guess I needed to make a separate branch that you could have pulled
-separately. I'm not sure how we want to proceed, unless you wait till
-Linus pulls my branch before you add this to your tree.
+I believe that Elias successfully reverse engineered the effect file format 
+produced by FEdit. There is no support for this kind of prefabricated effects 
+in the Linux FF API.
 
-Maybe it would be OK to cherry pick it? I'm not sure Linus would want
-that.
+> > I assume that most AAA games, would implement these through some middle
+> > layer. I think that is probably via Steam using SDL2 haptic API, we have
+> > been testing against SDL2's 'testhaptic'.
+> 
+> I wasn't aware of this layer. I must read up on it. It sounds like a
+> simple way to access force feedback - I guess a game developer should
+> shed some light on this...
+>
+>
+> > Do you see another path (which we should be supporting/testing)?
+> 
+> Nope, not at this time.
+> 
+> > There was some discussion about rate limiting the USB packets to the
+> > wheel, and how to deal if app updates too quickly. Is there an upper limit
+> > for the wheel itself, or is it just the USB 'pipe' which is the limiting
+> > factor?
+> 
+> On the Windows side we send 125 reports/sec. The entire simulation loop
+> runs with a 8ms resolution. I assume this value was chosen for some
+> hardware constraints back in the days, but it has proven to be a good
+> compromise for simulated periodics and physics constraints.
 
-Maybe I can make a separate branch that only has this patch and merge it
-into my tree, where git will handle the duplicate. But then we have a
-strange history.
+Our current code uses 8 msecs delay as well.
 
-How urgent is your change? Can it wait till my stuff makes it into
-Linus's tree in the 3.16 merge window?
+> In any case, the USB traffic should be decoupled from the app. Any force
+> updates should only change state in the ff-memless[-next] driver. Any
+> change there should trickle down to a 'slot' representation of the
+> device. If there's any change in the slots, the device is marked as
+> 'dirty' and USB transfers are scheduled to send the latest state to the
+> physical device.
+> 
+> The scheduling should keep track of how many requests are in-flight and
+> delay writing the next output, until the previous one has completed.
 
+The approach I had in mind would keep track of the last effect that made it to 
+the device and the last effect that arrived from userspace. This would be 
+stored for each effect slot. An update would be scheduled at the desired update 
+rate. The updating routine would figure out the state change between last 
+update and "now", send the required data to the device and reschedule itself. 
+The routine could check if there are any USB transfers still running and 
+reschedule itself immediately.
 
--- Steve
+> Question back to the community: are there APIs in the USB layer to check
+> for presence of in-progress requests? Can one add a 'completion'
+> callback to a request, that gets invoked on completion/cancellation?
 
+For instance "usb_submit_urb()" can have a completion handler that is called 
+once the transfer is done. The current code uses "hid_hw_request()" which is 
+asynchronous and doesn't report anything back.
 
-On Tue, 2014-05-20 at 15:10 +0100, Javi Merino wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Being able to show a cpumask of events can be useful as some events
-> may affect only some CPUs. There is no standard way to record the
-> cpumask and converting it to a string is rather expensive during
-> the trace as traces happen in hotpaths. It would be better to record
-> the raw event mask and be able to parse it at print time.
-> 
-> The following macros were added for use with the TRACE_EVENT() macro:
-> 
->   __bitmask()
->   __assign_bitmask()
->   __get_bitmask()
-> 
-> To test this, I added this to the sched_migrate_task event, which
-> looked like this:
-> 
-> TRACE_EVENT(sched_migrate_task,
-> 
-> 	TP_PROTO(struct task_struct *p, int dest_cpu, const struct cpumask *cpus),
-> 
-> 	TP_ARGS(p, dest_cpu, cpus),
-> 
-> 	TP_STRUCT__entry(
-> 		__array(	char,	comm,	TASK_COMM_LEN	)
-> 		__field(	pid_t,	pid			)
-> 		__field(	int,	prio			)
-> 		__field(	int,	orig_cpu		)
-> 		__field(	int,	dest_cpu		)
-> 		__bitmask(	cpumask, num_possible_cpus()	)
-> 	),
-> 
-> 	TP_fast_assign(
-> 		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
-> 		__entry->pid		= p->pid;
-> 		__entry->prio		= p->prio;
-> 		__entry->orig_cpu	= task_cpu(p);
-> 		__entry->dest_cpu	= dest_cpu;
-> 		__assign_bitmask(cpumask, cpumask_bits(cpus), num_possible_cpus());
-> 	),
-> 
-> 	TP_printk("comm=%s pid=%d prio=%d orig_cpu=%d dest_cpu=%d cpumask=%s",
-> 		  __entry->comm, __entry->pid, __entry->prio,
-> 		  __entry->orig_cpu, __entry->dest_cpu,
-> 		  __get_bitmask(cpumask))
-> );
-> 
-> With the output of:
-> 
->         ksmtuned-3613  [003] d..2   485.220508: sched_migrate_task: comm=ksmtuned pid=3615 prio=120 orig_cpu=3 dest_cpu=2 cpumask=00000000,0000000f
->      migration/1-13    [001] d..5   485.221202: sched_migrate_task: comm=ksmtuned pid=3614 prio=120 orig_cpu=1 dest_cpu=0 cpumask=00000000,0000000f
->              awk-3615  [002] d.H5   485.221747: sched_migrate_task: comm=rcu_preempt pid=7 prio=120 orig_cpu=0 dest_cpu=1 cpumask=00000000,000000ff
->      migration/2-18    [002] d..5   485.222062: sched_migrate_task: comm=ksmtuned pid=3615 prio=120 orig_cpu=2 dest_cpu=3 cpumask=00000000,0000000f
-> 
-> Link: http://lkml.kernel.org/r/1399377998-14870-6-git-send-email-javi.merino@arm.com
-> Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
-> 
-> Suggested-by: Javi Merino <javi.merino@arm.com>
-> Tested-by: Javi Merino <javi.merino@arm.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Proper decoupling of the userspace and driver is the only important thing that 
+is missing from the current code.
 
-
+Michal
