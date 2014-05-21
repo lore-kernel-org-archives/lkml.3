@@ -1,155 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaEURUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 13:20:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36465 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaEURUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 13:20:10 -0400
-Message-ID: <537CE03A.7060702@aurabindo.in>
-Date: Wed, 21 May 2014 22:49:54 +0530
-From: Jay Aurabind <mail@aurabindo.in>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752751AbaEURX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 13:23:59 -0400
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:39631
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751857AbaEURX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 13:23:57 -0400
+Date: Wed, 21 May 2014 10:21:44 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko.stuebner@bq.com>
+CC: Matthias Brugger <matthias.bgg@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
+        <daniel.lezcano@linaro.org>, <tglx@linutronix.de>,
+        <thierry.reding@gmail.com>, <florian.vaussard@epfl.ch>,
+        <jic23@kernel.org>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
+        <silvio.fricke@gmail.com>, <olof@lixom.net>,
+        <sebastian.hesselbarth@gmail.com>, <sboyd@codeaurora.org>,
+        <gregory.clement@free-electrons.com>, <arnd@arndb.de>,
+        <robherring2@gmail.com>, <marc.zyngier@arm.com>,
+        <maxime.ripard@free-electrons.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 2/6] dt-bindings: add mtk-timer bindings
+References: <1400689583-21119-1-git-send-email-matthias.bgg@gmail.com>
+ <1948139.7c1AZ80ZQt@phil>
+ <3a9b6824-e088-4774-b125-7a33b5a895dc@BN1AFFO11FD022.protection.gbl>
+ <1615424.OJcNQb1ONt@phil>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH V2] mfd: abx500-core: Fix compiler warning larger stack
- frame
-References: <536E1543.3090107@aurabindo.in> <20140520152054.GB24991@lee--X1> <537C447D.7070406@aurabindo.in> <20140521091751.GC6679@lee--X1>
-In-Reply-To: <20140521091751.GC6679@lee--X1>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="ljTfbmbbpxhTfLqBXdSa7Ov6g4E9eUUsu"
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1615424.OJcNQb1ONt@phil>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <57d6737a-47c8-4297-b668-65bbe6e00369@BY2FFO11FD028.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(51704005)(199002)(189002)(377424004)(24454002)(81542001)(46102001)(23676002)(31966008)(80022001)(74662001)(44976005)(4396001)(70736001)(81342001)(79102001)(92726001)(50466002)(92566001)(77982001)(33646001)(74316001)(76482001)(83506001)(64706001)(54356999)(87936001)(85182001)(99396002)(20776003)(50986999)(47776003)(85852003)(76176999)(74502001)(102836001)(86362001)(53416003)(21056001)(83072002)(31696002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB028;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Forefront-PRVS: 0218A015FA
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---ljTfbmbbpxhTfLqBXdSa7Ov6g4E9eUUsu
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-05-21 at 07:18PM +0200, Heiko Stübner wrote:
+> Am Mittwoch, 21. Mai 2014, 09:53:57 schrieb Sören Brinkmann:
+> > On Wed, 2014-05-21 at 06:54PM +0200, Heiko Stübner wrote:
+> > > Am Mittwoch, 21. Mai 2014, 09:34:10 schrieb Sören Brinkmann:
+> > > > Hi Matthias,
+> > > > 
+> > > > On Wed, 2014-05-21 at 06:26PM +0200, Matthias Brugger wrote:
+> > > > > +		compatible = "mediatek,mtk6577-timer";
+> > > > > +		reg = <0x10008000 0x80>;
+> > > > > +		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
+> > > > > +		clocks = <&system_clk>, <&rtc_clk>;
+> > > > > +		clock-names = "system-clk", "rtc-clk";
+> > > > 
+> > > > I'm still not convinced that the timer IP calls its clock inputs this
+> > > > way, but well.
+> > > 
+> > > Maybe this might convince you ;-)
+> > > 
+> > > "The GPT includes 5 32-bit timers and one 64-bit timer. Each timer has 4
+> > > operation modes, which are ONE-SHOT,  REPEAT,  KEEP-GO and  FREERUN, and
+> > > can operate on one of the 2 clock sources, RTC clock (32.768kHz) and
+> > > system clock (13MHz)."
+> > 
+> > Is this copied from the timer data sheet or the SOC documentation?
+> 
+> That is from the processor datasheet containing the timer documentation.
+> I don't think it's customary for soc vendors to provide additional individual 
+> documentation for self-developed IPs contained in a SoC.
 
+May be, but that is what might create the problem I'm talking about. The
+next generation SOC using the same IP may use different clocks to
+drive it. Now you're stuck with RTC and system clock as names, but they
+don't apply to the latest integration anymore. That's why I advocate
+using the IP's naming for its clock signals as opposed to the SOC's
+clock names.
+So, my concern is still standing. But I see, that this might not be
+resolvable, in case such information is not available. Nevertheless,
+I see the currently used names as implementation details of the SOC
+and not a property of the here described timer IP. But might be that
+this is as good as it gets.
 
-
-On Wednesday 21 May 2014 02:47 PM, Lee Jones wrote:
->> Change from V1 -> V2: Fix a potential null pointer dereference as repo=
-rted by kbuild test robot <fengguang.wu@intel.com>.
->>
->> Inorder to report the kzalloc failure, I have just used a pr_debug sta=
-tement. If it looks ugly, should I change the function's return value to =
-int and give out an -ENOMEM ?
->=20
-> Yes, please do that - and obviously add the checks to the calling code.=
-
-
-But I cannot find any calling code. At least thats what linux cross refer=
-ence has to say.
-
-Change from V2 -> V3:
-	Change abx500_dump_all_banks to return int so as to account for error ha=
-ndling.
-
-Change from V1 -> V2:=20
-	Fix a potential null pointer dereference as reported by kbuild test robo=
-t <fengguang.wu@intel.com>.
-
-=46rom 19d34af7240498b2e624e94b2d003f3d9928dee8 Mon Sep 17 00:00:00 2001
-From: Aurabindo J <mail@aurabindo.in>
-Date: Wed, 21 May 2014 22:27:30 +0530
-Subject: [PATCH] mfd: abx500-core: Fix compiler warning larger stack fram=
-e
-MIME-Version: 1.0
-Content-Type: text/plain; charset=3DUTF-8
-Content-Transfer-Encoding: 8bit
-
-On systems with CONFIG_FRAME_WARN=3D1024, compiler warns the allocation o=
-f
-an object of struct device on stack. Make the allocation dynamically to
-fix the warning. Also change the caller's return type to int so as to
-account for error handling.
-
-drivers/mfd/abx500-core.c: In function =E2=80=98abx500_dump_all_banks=E2=80=
-=99:
-drivers/mfd/abx500-core.c:167:1: warning: the frame size of 1032 bytes
-is larger than 1024 bytes [-Wframe-larger-than=3D]
-
-Signed-off-by: Aurabindo J <mail@aurabindo.in>
----
- drivers/mfd/abx500-core.c  | 12 ++++++++----
- include/linux/mfd/abx500.h |  2 +-
- 2 files changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/mfd/abx500-core.c b/drivers/mfd/abx500-core.c
-index f3a15aa..d6d0ec4 100644
---- a/drivers/mfd/abx500-core.c
-+++ b/drivers/mfd/abx500-core.c
-@@ -151,19 +151,23 @@ int abx500_startup_irq_enabled(struct device *dev, =
-unsigned int irq)
- }
- EXPORT_SYMBOL(abx500_startup_irq_enabled);
-=20
--void abx500_dump_all_banks(void)
-+int abx500_dump_all_banks(void)
- {
- 	struct abx500_ops *ops;
--	struct device dummy_child =3D {NULL};
-+	struct device *dummy_child;
- 	struct abx500_device_entry *dev_entry;
-=20
-+	dummy_child =3D kzalloc(sizeof(struct device), GFP_KERNEL);
-+	if (!dummy_child)
-+		return -ENOMEM;
- 	list_for_each_entry(dev_entry, &abx500_list, list) {
--		dummy_child.parent =3D dev_entry->dev;
-+		dummy_child->parent =3D dev_entry->dev;
- 		ops =3D &dev_entry->ops;
-=20
- 		if ((ops !=3D NULL) && (ops->dump_all_banks !=3D NULL))
--			ops->dump_all_banks(&dummy_child);
-+			ops->dump_all_banks(dummy_child);
- 	}
-+	kfree(dummy_child);
- }
- EXPORT_SYMBOL(abx500_dump_all_banks);
-=20
-diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
-index 3301b20..df2508f 100644
---- a/include/linux/mfd/abx500.h
-+++ b/include/linux/mfd/abx500.h
-@@ -330,7 +330,7 @@ int abx500_mask_and_set_register_interruptible(struct=
- device *dev, u8 bank,
- int abx500_get_chip_id(struct device *dev);
- int abx500_event_registers_startup_state_get(struct device *dev, u8 *eve=
-nt);
- int abx500_startup_irq_enabled(struct device *dev, unsigned int irq);
--void abx500_dump_all_banks(void);
-+int abx500_dump_all_banks(void);
-=20
- struct abx500_ops {
- 	int (*get_chip_id) (struct device *);
---=20
-1.9.1
-
-
-
-
---ljTfbmbbpxhTfLqBXdSa7Ov6g4E9eUUsu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlN84EIACgkQq5pl9aLRKAWLYAD/b2IfN13CbSq9m6X8vix8RSb+
-UaA5oWg5Is9RLOqJ6cQA/RI/np4geEzEnMv1slpb9MyKWk+AFp8wx1yBcFfW+x7k
-=pSes
------END PGP SIGNATURE-----
-
---ljTfbmbbpxhTfLqBXdSa7Ov6g4E9eUUsu--
+	Sören
