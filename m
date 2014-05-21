@@ -1,205 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747AbaEUIsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:48:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51361 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023AbaEUIsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:48:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
-   d="scan'208";a="544111117"
-Date: Wed, 21 May 2014 11:48:07 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
-Subject: Re: [PATCH V6 07/11] ACPI: introduce dummy lpss scan handler
-Message-ID: <20140521084807.GQ1651@lahna.fi.intel.com>
-References: <1400136256-2218-1-git-send-email-rui.zhang@intel.com>
- <1400136256-2218-8-git-send-email-rui.zhang@intel.com>
+	id S1751933AbaEUItF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:49:05 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:35094 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaEUItA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 04:49:00 -0400
+Date: Wed, 21 May 2014 10:48:55 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+cc: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: hanging aio process
+In-Reply-To: <alpine.LFD.2.11.1405210954110.1579@denkbrett>
+Message-ID: <alpine.LFD.2.11.1405211042350.1579@denkbrett>
+References: <alpine.LFD.2.11.1405191908450.1847@denkbrett> <20140519180851.GD2915@kvack.org> <alpine.LFD.2.11.1405200950480.1606@denkbrett> <alpine.LFD.2.11.1405201508450.1606@denkbrett> <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
+ <alpine.LFD.2.11.1405201945280.1631@denkbrett>  <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com> <alpine.LFD.2.11.1405210954110.1579@denkbrett>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400136256-2218-8-git-send-email-rui.zhang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052108-2966-0000-0000-00000B591072
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 02:44:12PM +0800, Zhang Rui wrote:
-> The new ACPI device enumeration mechanism, which will be introduced
-> in a later patch, will enumerate the _HID devices w/o any scan
-> handler attached to platform bus.
-> This means that, for the devices that are attached to a configurable
-> scan handler, we should make sure no platform devices would be
-> created for them even if the scan handler is compiled out.
+On Wed, 21 May 2014, Sebastian Ott wrote:
+> On Tue, 20 May 2014, Anatol Pomozov wrote:
+> > On Tue, May 20, 2014 at 11:09 AM, Sebastian Ott
+> > <sebott@linux.vnet.ibm.com> wrote:
+> > > On Tue, 20 May 2014, Anatol Pomozov wrote:
+> > >> On Tue, May 20, 2014 at 6:16 AM, Sebastian Ott
+> > >> <sebott@linux.vnet.ibm.com> wrote:
+> > >> > On Tue, 20 May 2014, Sebastian Ott wrote:
+> > >> >> On Mon, 19 May 2014, Benjamin LaHaise wrote:
+> > >> >> > It is entirely possible the bug isn't
+> > >> >> > caused by the referenced commit, as the commit you're pointing to merely
+> > >> >> > makes io_destroy() syscall wait for all aio outstanding to complete
+> > >> >> > before returning.
+> > >> >>
+> > >> >> I cannot reproduce this when I revert said commit (on top of 14186fe). If
+> > >> >> that matters - the arch is s390.
+> > >> >
+> > >> > Hm, ok - maybe that commit is really just highlighting a refcounting bug.
+> > >> > I just compared traces for a good and a few bad cases. The good case:
+> > >> > # tracer: function
+> > >> > #
+> > >> > # entries-in-buffer/entries-written: 16/16   #P:4
+> > >> > #
+> > >> > #                              _-----=> irqs-off
+> > >> > #                             / _----=> need-resched
+> > >> > #                            | / _---=> hardirq/softirq
+> > >> > #                            || / _--=> preempt-depth
+> > >> > #                            ||| /     delay
+> > >> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> > >> > #              | |       |   ||||       |         |
+> > >> >              fio-732   [003] ....    17.989315: kill_ioctx <-SyS_io_destroy
+> > >> >              fio-739   [003] ....    18.000563: kill_ioctx <-SyS_io_destroy
+> > >> >      ksoftirqd/3-19    [003] ..s.    18.031673: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >      ksoftirqd/3-19    [003] ..s.    18.031679: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >              fio-737   [003] ....    18.038765: kill_ioctx <-SyS_io_destroy
+> > >> >      ksoftirqd/3-19    [003] ..s.    18.062488: free_ioctx_reqs <-percpu_ref_kill_rcu
+> > >> >      ksoftirqd/3-19    [003] ..s.    18.062494: free_ioctx_reqs <-percpu_ref_kill_rcu
+> > >> >      kworker/3:1-57    [003] ....    18.062499: free_ioctx <-process_one_work
+> > >> >      kworker/3:1-57    [003] ....    18.062506: free_ioctx <-process_one_work
+> > >> >      ksoftirqd/3-19    [003] ..s.    18.072275: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >              fio-738   [003] ....    18.102419: kill_ioctx <-SyS_io_destroy
+> > >> >           <idle>-0     [003] .ns.    18.111668: free_ioctx_reqs <-percpu_ref_kill_rcu
+> > >> >      kworker/3:1-57    [003] ....    18.111675: free_ioctx <-process_one_work
+> > >> >      ksoftirqd/3-19    [003] ..s.    18.138035: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >           <idle>-0     [003] .ns.    18.191665: free_ioctx_reqs <-percpu_ref_kill_rcu
+> > >> >      kworker/3:1-57    [003] ....    18.191671: free_ioctx <-process_one_work
+> > >> >
+> > >> > (4 fio workers, free_ioctx_reqs is called 4 times)
+> > >> >
+> > >> > One of the bad cases:
+> > >> > # tracer: function
+> > >> > #
+> > >> > # entries-in-buffer/entries-written: 14/14   #P:4
+> > >> > #
+> > >> > #                              _-----=> irqs-off
+> > >> > #                             / _----=> need-resched
+> > >> > #                            | / _---=> hardirq/softirq
+> > >> > #                            || / _--=> preempt-depth
+> > >> > #                            ||| /     delay
+> > >> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> > >> > #              | |       |   ||||       |         |
+> > >> >              fio-834   [000] ....    51.127359: kill_ioctx <-SyS_io_destroy
+> > >> >           <idle>-0     [000] ..s.    51.170237: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >              fio-828   [001] ....    51.189717: kill_ioctx <-SyS_io_destroy
+> > >> >              fio-833   [001] ..s.    51.220178: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >           <idle>-0     [000] .ns.    51.220230: free_ioctx_reqs <-percpu_ref_kill_rcu
+> > >> >      kworker/0:3-661   [000] ....    51.220238: free_ioctx <-process_one_work
+> > >> >           <idle>-0     [001] .ns.    51.260188: free_ioctx_reqs <-percpu_ref_kill_rcu
+> > >> >      kworker/1:2-103   [001] ....    51.260198: free_ioctx <-process_one_work
+> > >> >              fio-833   [002] ....    51.287602: kill_ioctx <-SyS_io_destroy
+> > >> >            udevd-868   [002] ..s1    51.332519: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >           <idle>-0     [002] .ns.    51.450180: free_ioctx_reqs <-percpu_ref_kill_rcu
+> > >> >      kworker/2:2-191   [002] ....    51.450191: free_ioctx <-process_one_work
+> > >> >              fio-835   [003] ....    51.907530: kill_ioctx <-SyS_io_destroy
+> > >> >      ksoftirqd/3-19    [003] ..s.    52.000232: free_ioctx_users <-percpu_ref_kill_rcu
+> > >> >
+> > >> > (1 fio worker in D state, free_ioctx_reqs is called 3 times)
+> > >>
+> > >>
+> > >> Looking at the second trace: the first 3 io_destroy() calls cause
+> > >> free_ioctx_reqs(), but the last one does not call free_ioctx_reqs().
+> > >> Do you have more logs after the last line?
+> > >
+> > > Nope that was all.
+> > >
+> > >> If there is no more
+> > >> free_ioctx_reqs() then it means something keeps ctx->reqs refcounter.
+> > >> I suggest to add some logging to kernel to figure out what is the
+> > >> refcount value at this moment.
+> > >
+> > > Jep, I did that this morning (via atomic_read(&ctx->reqs.count) in
+> > > free_ioctx_users before percpu_ref_kill(&ctx->reqs); is called) and
+> > > the value was always the same
+> > >         1 + (1UL << 31)
+> > > even for the free_ioctx_users invocations that were not followed by
+> > > free_ioctx_reqs.
+> > 
+> > Could you add atomic_read(&ctx->reqs.count) *after* the
+> > percpu_ref_kill(&ctx->reqs)?
 > 
-> Fix this problem for lpss devices by introducing a dummy
-> lpss scan handler in this patch.
-> 
-> Plus, if lpt_clk_init() fails, we need this dummy scan handler as well.
-> 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> ---
->  drivers/acpi/Makefile    |  2 +-
->  drivers/acpi/acpi_lpss.c | 69 ++++++++++++++++++++++++++++++++++--------------
->  drivers/acpi/internal.h  |  4 ---
->  3 files changed, 50 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index 171efc2..605eff7 100644
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -39,7 +39,7 @@ acpi-y				+= processor_core.o
->  acpi-y				+= ec.o
->  acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
->  acpi-y				+= pci_root.o pci_link.o pci_irq.o
-> -acpi-$(CONFIG_X86_INTEL_LPSS)	+= acpi_lpss.o
-> +acpi-y				+= acpi_lpss.o
->  acpi-y				+= acpi_platform.o
->  acpi-y				+= acpi_pnp.o
->  acpi-y				+= power.o
-> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index 69e29f4..965428f 100644
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -24,6 +24,8 @@
->  
->  ACPI_MODULE_NAME("acpi_lpss");
->  
-> +#ifdef CONFIG_X86_INTEL_LPSS
-> +
->  #define LPSS_CLK_SIZE	0x04
->  #define LPSS_LTR_SIZE	0x18
->  
-> @@ -159,40 +161,50 @@ static struct lpss_device_desc byt_i2c_dev_desc = {
->  	.shared_clock = &i2c_clock,
->  };
->  
-> +#define LPSS_PTR(desc) ((unsigned long)&desc)
-> +
-> +#else
-> +
-> +#define LPSS_PTR(desc) 0
-> +
-> +#endif
-> +
->  static const struct acpi_device_id acpi_lpss_device_ids[] = {
->  	/* Generic LPSS devices */
-> -	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
-> +	{ "INTL9C60", LPSS_PTR(lpss_dma_desc) },
->  
->  	/* Lynxpoint LPSS devices */
-> -	{ "INT33C0", (unsigned long)&lpt_dev_desc },
-> -	{ "INT33C1", (unsigned long)&lpt_dev_desc },
-> -	{ "INT33C2", (unsigned long)&lpt_dev_desc },
-> -	{ "INT33C3", (unsigned long)&lpt_dev_desc },
-> -	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
-> -	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
-> -	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
-> +	{ "INT33C0", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT33C1", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT33C2", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT33C3", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT33C4", LPSS_PTR(lpt_uart_dev_desc) },
-> +	{ "INT33C5", LPSS_PTR(lpt_uart_dev_desc) },
-> +	{ "INT33C6", LPSS_PTR(lpt_sdio_dev_desc) },
->  	{ "INT33C7", },
->  
->  	/* BayTrail LPSS devices */
-> -	{ "80860F09", (unsigned long)&byt_pwm_dev_desc },
-> -	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
-> -	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
-> -	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
-> -	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
-> +	{ "80860F09", LPSS_PTR(byt_pwm_dev_desc) },
-> +	{ "80860F0A", LPSS_PTR(byt_uart_dev_desc) },
-> +	{ "80860F0E", LPSS_PTR(byt_spi_dev_desc) },
-> +	{ "80860F14", LPSS_PTR(byt_sdio_dev_desc) },
-> +	{ "80860F41", LPSS_PTR(byt_i2c_dev_desc) },
->  	{ "INT33B2", },
->  
-> -	{ "INT3430", (unsigned long)&lpt_dev_desc },
-> -	{ "INT3431", (unsigned long)&lpt_dev_desc },
-> -	{ "INT3432", (unsigned long)&lpt_dev_desc },
-> -	{ "INT3433", (unsigned long)&lpt_dev_desc },
-> -	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
-> -	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
-> -	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
-> +	{ "INT3430", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT3431", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT3432", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT3433", LPSS_PTR(lpt_dev_desc) },
-> +	{ "INT3434", LPSS_PTR(lpt_uart_dev_desc) },
-> +	{ "INT3435", LPSS_PTR(lpt_uart_dev_desc) },
-> +	{ "INT3436", LPSS_PTR(lpt_sdio_dev_desc) },
->  	{ "INT3437", },
->  
->  	{ }
->  };
->  
-> +#ifdef CONFIG_X86_INTEL_LPSS
-> +
->  static int is_memory(struct acpi_resource *res, void *not_used)
->  {
->  	struct resource r;
-> @@ -511,10 +523,27 @@ static struct acpi_scan_handler lpss_handler = {
->  	.unbind = acpi_lpss_unbind,
->  };
->  
-> +#endif /* CONFIG_X86_INTEL_LPSS */
-> +
-> +static int acpi_lpss_dummy_attach(struct acpi_device *adev,
-> +				const struct acpi_device_id *id)
-> +{
-> +	return 1;
-> +}
-> +
-> +static struct acpi_scan_handler lpss_dummy_handler = {
-> +	.ids = acpi_lpss_device_ids,
-> +	.attach = acpi_lpss_dummy_attach,
-> +};
-> +
->  void __init acpi_lpss_init(void)
->  {
-> +#ifdef CONFIG_X86_INTEL_LPSS
->  	if (!lpt_clk_init()) {
->  		bus_register_notifier(&platform_bus_type, &acpi_lpss_nb);
->  		acpi_scan_add_handler(&lpss_handler);
-> +		return;
->  	}
-> +#endif
+> I already did that and it didn't change, always 1 + (1UL << 31) in all
+> cases, before and after percpu_ref_kill(&ctx->reqs). I'm not really
+> familiar with this percpu_ref stuff but it looks like the initial
+> reference is dropped asynchronous.
 
-This whole #ifndef dance is ugly as hell. Can't we do any better?
 
-> +	acpi_scan_add_handler(&lpss_dummy_handler);
+cat /sys/kernel/debug/tracing/trace
+# tracer: function
+#
+# entries-in-buffer/entries-written: 25/25   #P:4
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+             fio-856   [001] ....   160.876428: SyS_io_destroy: 0000000074a18000
+             fio-856   [001] ....   160.876430: kill_ioctx <-SyS_io_destroy
+             fio-855   [000] ....   160.887737: SyS_io_destroy: 0000000074f40600
+             fio-855   [000] ....   160.887738: kill_ioctx <-SyS_io_destroy
+             fio-849   [001] ..s.   160.911948: free_ioctx_users <-percpu_ref_kill_rcu
+     ksoftirqd/0-3     [000] ..s.   160.932488: free_ioctx_users <-percpu_ref_kill_rcu
+             fio-854   [001] ....   160.938881: SyS_io_destroy: 0000000074ac0600
+             fio-854   [001] ....   160.938881: kill_ioctx <-SyS_io_destroy
+     ksoftirqd/1-11    [001] ..s.   160.942016: aio_confirm_reqs: 0000000074a18000 reqs=1
+     ksoftirqd/1-11    [001] ..s.   160.942016: free_ioctx_reqs <-percpu_ref_kill_rcu
+     kworker/1:2-465   [001] ....   160.942021: free_ioctx <-process_one_work
+             fio-856   [002] ....   160.942033: SyS_io_destroy: 0000000074a18000 done
+             fio-849   [002] ....   160.942641: SyS_io_destroy: 0000000074f28600
+             fio-849   [002] ....   160.942641: kill_ioctx <-SyS_io_destroy
+     ksoftirqd/1-11    [001] ..s.   160.961981: free_ioctx_users <-percpu_ref_kill_rcu
+          <idle>-0     [000] .ns.   160.962010: aio_confirm_reqs: 0000000074f40600 reqs=1
+          <idle>-0     [000] .ns.   160.962011: free_ioctx_reqs <-percpu_ref_kill_rcu
+     kworker/0:0-4     [000] ....   160.962016: free_ioctx <-process_one_work
+             fio-855   [001] ....   160.962017: SyS_io_destroy: 0000000074f40600 done
+     ksoftirqd/2-15    [002] ..s.   160.971998: free_ioctx_users <-percpu_ref_kill_rcu
+     ksoftirqd/1-11    [001] ..s.   160.994552: aio_confirm_reqs: 0000000074ac0600 reqs=2
+          <idle>-0     [002] .ns.   161.061976: aio_confirm_reqs: 0000000074f28600 reqs=1
+          <idle>-0     [002] .ns.   161.061976: free_ioctx_reqs <-percpu_ref_kill_rcu
+     kworker/2:2-181   [002] ....   161.061980: free_ioctx <-process_one_work
+             fio-849   [003] ....   161.061983: SyS_io_destroy: 0000000074f28600 done
 
-Also I don't like these "dummy" things at all. Can't we make the code
-work so that those are not needed?
 
->  }
-> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-> index 4a9e999..bc7d102 100644
-> --- a/drivers/acpi/internal.h
-> +++ b/drivers/acpi/internal.h
-> @@ -65,11 +65,7 @@ int acpi_debugfs_init(void);
->  #else
->  static inline void acpi_debugfs_init(void) { return; }
->  #endif
-> -#ifdef CONFIG_X86_INTEL_LPSS
->  void acpi_lpss_init(void);
-> -#else
-> -static inline void acpi_lpss_init(void) {}
-> -#endif
->  
->  acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src);
->  bool acpi_queue_hotplug_work(struct work_struct *work);
-> -- 
-> 1.8.3.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/fs/aio.c b/fs/aio.c
+index a0ed6c7..3b8e989 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -521,6 +521,13 @@ static void free_ioctx_reqs(struct percpu_ref *ref)
+ 	schedule_work(&ctx->free_work);
+ }
+ 
++void aio_confirm_reqs(struct percpu_ref *ref)
++{
++	struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
++
++	trace_printk("%p reqs=%d\n", ctx, atomic_read(&ref->count));
++}
++
+ /*
+  * When this function runs, the kioctx has been removed from the "hash table"
+  * and ctx->users has dropped to 0, so we know no more kiocbs can be submitted -
+@@ -543,7 +550,7 @@ static void free_ioctx_users(struct percpu_ref *ref)
+ 
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	percpu_ref_kill(&ctx->reqs);
++	percpu_ref_kill_and_confirm(&ctx->reqs, aio_confirm_reqs);
+ 	percpu_ref_put(&ctx->reqs);
+ }
+ 
+@@ -1220,6 +1227,8 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
+ 		struct completion requests_done =
+ 			COMPLETION_INITIALIZER_ONSTACK(requests_done);
+ 
++		trace_printk("%p\n", ioctx);
++
+ 		/* Pass requests_done to kill_ioctx() where it can be set
+ 		 * in a thread-safe way. If we try to set it here then we have
+ 		 * a race condition if two io_destroy() called simultaneously.
+@@ -1232,6 +1241,7 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
+ 		 * is destroyed.
+ 		 */
+ 		wait_for_completion(&requests_done);
++		trace_printk("%p done\n", ioctx);
+ 
+ 		return 0;
+ 	}
+
