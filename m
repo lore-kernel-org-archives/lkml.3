@@ -1,102 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294AbaEULlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:41:50 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:44145
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750761AbaEULlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:41:46 -0400
-X-Greylist: delayed 16918 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 07:41:46 EDT
-From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
-To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <michal.simek@xilinx.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-can@vger.kernel.org>,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: [PATCH v8 1/2] can: Add xilinx CAN device tree bindings documentation.
-Date: Wed, 21 May 2014 17:11:29 +0530
-X-Mailer: git-send-email 1.7.4
-X-RCIS-Action: ALLOW
-Message-ID: <17489036-3743-4393-afc6-a9064325b4d5@BN1BFFO11FD053.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(189002)(199002)(50226001)(88136002)(44976005)(87936001)(77982001)(20776003)(4396001)(64706001)(47776003)(93916002)(33646001)(74662001)(48376002)(74502001)(19580395003)(19580405001)(83322001)(76482001)(80022001)(79102001)(53416003)(21056001)(46102001)(31696002)(70736001)(62966002)(81342001)(50986999)(92726001)(83072002)(85852003)(2201001)(89996001)(102836001)(87286001)(77156001)(50466002)(99396002)(74316001)(86362001)(81542001)(23106003);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB025;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+	id S1751972AbaEULrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:47:19 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:52867 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751022AbaEULrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:47:17 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: "'Sudeep Holla'" <sudeep.holla@arm.com>, Will Deacon <Will.Deacon@arm.com>
+CC: "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>
+Date: Wed, 21 May 2014 04:46:41 -0700
+Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Topic: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Index: Ac9vV0rzR7jl/TakQBq7behtTQicwQFkLAhw
+Message-ID: <9034CBD80F070943B59700D7F8149ED9A0875776@SC-VEXCH4.marvell.com>
+References: <1398133596-29170-1-git-send-email-zhangwm@marvell.com>
+ <20140422103642.GF7484@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3B59B@SC-VEXCH4.marvell.com>
+ <20140423170821.GJ5649@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3C1F1@SC-VEXCH4.marvell.com>
+ <5360FB07.5030407@arm.com>
+ <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
+ <9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
+ <20140513184503.GF16388@arm.com>
+ <9034CBD80F070943B59700D7F8149ED9A087573F@SC-VEXCH4.marvell.com>
+ <537337F3.4080300@arm.com>
+In-Reply-To: <537337F3.4080300@arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-21_04:2014-05-21,2014-05-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405210145
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LBlPij019338
 
-Add xilinx CAN bindings documentation.
+SudeepÔºå
 
-Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
----
-Changes for v8:
-- None.
-Changes for v7:
-- Split the devicetree bindings doc as a seperate patch
----
- .../devicetree/bindings/net/can/xilinx_can.txt     |   44 ++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
+> -----Original Message-----
+> From: Sudeep Holla [mailto:sudeep.holla@arm.com]
+> Sent: 2014Âπ¥5Êúà14Êó• 17:32
+> To: Neil Zhang; Will Deacon
+> Cc: Sudeep Holla; 'linux@arm.linux.org.uk';
+> 'linux-arm-kernel@lists.infradead.org'; 'linux-kernel@vger.kernel.org';
+> 'devicetree@vger.kernel.org'
+> Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+> 
+> 
+> 
+> On 14/05/14 03:28, Neil Zhang wrote:
+> >> -----Original Message-----
+> >> From: Will Deacon [mailto:will.deacon@arm.com]
+> >> Sent: 2014Âπ¥5Êúà14Êó• 2:45
+> >> To: Neil Zhang
+> >> Cc: Sudeep Holla; 'linux@arm.linux.org.uk';
+> >> 'linux-arm-kernel@lists.infradead.org';
+> >> 'linux-kernel@vger.kernel.org'; 'devicetree@vger.kernel.org'
+> >> Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm
+> >> notifier
+> >>
+> >> On Mon, May 12, 2014 at 11:22:09AM +0100, Neil Zhang wrote:
+> >>>>> The device tree bindings for power domains is under discussion [1]
+> >>>>
+> >>>> Thanks for the information.
+> >>>> But it currently for device only, core related stuff are not supported.
+> >>>> And is it really good to register power provider for core and let
+> >>>> vfp / pmu etc to get it?
+> >>>>
+> >>>
+> >>> What's your suggestion about it?
+> >>> Is it OK that I add it under the PMU node?
+> >>
+> >> I don't really mind. I just want to avoid re-inventing the wheel in a
+> >> PMU-specific way and having to maintain that code forever because it
+> >> ended up in our DT description.
+> >>
+> >> Will
+> >
+> > I will prepare another patch to add DT description under PMU since
+> > there is no generic power domain support for pm notifier if no other
+> concerns.
+> > We can change the manner if there is generic power domain support for
+> pm notifier later.
+> > Thanks.
+> 
+> No, please don't add any DT bindings for power domains specific to PMU
+> node.
+> We can't change the DT bindings once added.
+> 
+> As I pointed out the DT bindings for generic power domains are under
+> discussion.
+> See if you can reuse it, if not help in extending it so that it can be used.
+> 
 
-diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-new file mode 100644
-index 0000000..fe38847
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-@@ -0,0 +1,44 @@
-+Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
-+---------------------------------------------------------
-+
-+Required properties:
-+- compatible		: Should be "xlnx,zynq-can-1.0" for Zynq CAN
-+			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
-+			  controllers.
-+- reg			: Physical base address and size of the Axi CAN/Zynq
-+			  CANPS registers map.
-+- interrupts		: Property with a value describing the interrupt
-+			  number.
-+- interrupt-parent	: Must be core interrupt controller
-+- clock-names		: List of input clock names - "can_clk", "pclk"
-+			  (For CANPS), "can_clk" , "s_axi_aclk"(For AXI CAN)
-+			  (See clock bindings for details).
-+- clocks		: Clock phandles (see clock bindings for details).
-+- tx-fifo-depth		: Can Tx fifo depth.
-+- rx-fifo-depth		: Can Rx fifo depth.
-+
-+
-+Example:
-+
-+For Zynq CANPS Dts file:
-+	zynq_can_0: can@e0008000 {
-+			compatible = "xlnx,zynq-can-1.0";
-+			clocks = <&clkc 19>, <&clkc 36>;
-+			clock-names = "can_clk", "pclk";
-+			reg = <0xe0008000 0x1000>;
-+			interrupts = <0 28 4>;
-+			interrupt-parent = <&intc>;
-+			tx-fifo-depth = <0x40>;
-+			rx-fifo-depth = <0x40>;
-+		};
-+For Axi CAN Dts file:
-+	axi_can_0: axi-can@40000000 {
-+			compatible = "xlnx,axi-can-1.00.a";
-+			clocks = <&clkc 0>, <&clkc 1>;
-+			clock-names = "can_clk","s_axi_aclk" ;
-+			reg = <0x40000000 0x10000>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 59 1>;
-+			tx-fifo-depth = <0x40>;
-+			rx-fifo-depth = <0x40>;
-+		};
--- 
-1.7.4
+Sorry for reply later.
+As I said before the under discussed generic power domain is not suitable for
+CPU peripherals since they are all known belong to CPU or cluster power domain.
+If we want to follow the way they are discussion, we need to register core 
+and cluster power provider, and need vfp/gic/pmu etc to require them.
+Is it really suitable?
 
+> Regards,
+> Sudeep
+> 
+> 
 
+Best Regards,
+Neil Zhang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
