@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139AbaEUNmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:42:07 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42972 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaEUNmE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:42:04 -0400
-Date: Wed, 21 May 2014 14:41:58 +0100
-From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] ext4: remove unused local variable "store" from
- ext4_readdir(...)
-Message-ID: <20140521134158.GB4719@vaio>
-References: <20140520144113.GB13333@vaio>
- <20140520200827.GM15585@mwanda>
+	id S1752224AbaEUNm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:42:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45876 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751786AbaEUNm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:42:26 -0400
+Date: Wed, 21 May 2014 15:42:24 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
+        Petr Mladek <pmladek@suse.cz>
+Subject: Re: 64bit x86: NMI nesting still buggy?
+In-Reply-To: <20140429100345.3f76a5bd@gandalf.local.home>
+Message-ID: <alpine.LNX.2.00.1405211540080.20534@pobox.suse.cz>
+References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz> <20140429100345.3f76a5bd@gandalf.local.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140520200827.GM15585@mwanda>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:08:27PM +0300, Dan Carpenter wrote:
-> On Tue, May 20, 2014 at 03:41:13PM +0100, Giedrius Rekasius wrote:
-> > From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
-> > 
-> > Remove unused local variable "store" from ext4_readdir(...)
-> > 
-> > Local variable "stored" is initialized however never used inside the function.
-> > 
-> > Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+On Tue, 29 Apr 2014, Steven Rostedt wrote:
+
+> Note, if this were true, then the x86_64 hardware would be extremely
+> buggy. That's because NMIs are not made to be nested. If SMM's come in
+> during an NMI and re-enables the NMI, then *all* software would break.
+> That would basically make NMIs useless.
 > 
-> You email client is corrupting the patch so it doesn't apply.
+> The only time I've ever witness problems (and I stress NMIs all the
+> time), is when the NMI itself does a fault. Which my patch set handles
+> properly. I've also stressed this on boxes that do have SMIs and SMMs.
 > 
-> Read Documentation/email-clients.txt (linux-next version).
+> Now, you can have a bad BIOS that does re-enable NMIs from SMMs or
+> SMIs, but then you need to take that up with your vendor.
 
-Indeed the patch was corrupt, my apologies for that. Patch resubmission 
-below.
+Alright, Andy's iret optimization efforts do immediately bring a followup 
+question -- why is this not a problem with iret-based return from #MC 
+possibly interrupting NMI?
 
-From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
-
-Remove unused local variable "store" from ext4_readdir(...)
-
-Local variable "stored" is initialized however never used inside the function.
-
-Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
----
- fs/ext4/dir.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
-index d638c57..ef1bed6 100644
---- a/fs/ext4/dir.c
-+++ b/fs/ext4/dir.c
-@@ -105,7 +105,7 @@ int __ext4_check_dir_entry(const char *function, unsigned int line,
- static int ext4_readdir(struct file *file, struct dir_context *ctx)
- {
- 	unsigned int offset;
--	int i, stored;
-+	int i;
- 	struct ext4_dir_entry_2 *de;
- 	int err;
- 	struct inode *inode = file_inode(file);
-@@ -133,7 +133,6 @@ static int ext4_readdir(struct file *file, struct dir_context *ctx)
- 			return ret;
- 	}
- 
--	stored = 0;
- 	offset = ctx->pos & (sb->s_blocksize - 1);
- 
- 	while (ctx->pos < inode->i_size) {
+-- 
+Jiri Kosina
+SUSE Labs
