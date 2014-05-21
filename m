@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395AbaEUOTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:19:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3290 "EHLO mx1.redhat.com"
+	id S1752163AbaEUOVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 10:21:20 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55857 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137AbaEUOTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:19:34 -0400
-Message-ID: <1400678426.3289.396.camel@ul30vt.home>
-Subject: Re: [PATCH] iommu/intel: Exclude devices using RMRRs from IOMMU API
- domains
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 May 2014 07:20:26 -0600
-In-Reply-To: <1400668716.13839.66.camel@shinybook.infradead.org>
-References: <20140514192620.7767.43842.stgit@bling.home>
-	 <1400668716.13839.66.camel@shinybook.infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751395AbaEUOVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 10:21:18 -0400
+Date: Wed, 21 May 2014 16:20:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Petr Tesarik <ptesarik@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: 64bit x86: NMI nesting still buggy?
+Message-ID: <20140521142055.GH21205@pd.tnic>
+References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
+ <20140429100345.3f76a5bd@gandalf.local.home>
+ <alpine.LNX.2.00.1405211540080.20534@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1405211540080.20534@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-21 at 11:38 +0100, David Woodhouse wrote:
-> On Wed, 2014-05-14 at 13:27 -0600, Alex Williamson wrote:
-> > The user of the IOMMU API domain expects to have full control of
-> > the IOVA space for the domain.  RMRRs are fundamentally incompatible
-> > with that idea.  We can neither map the RMRR into the IOMMU API
-> > domain, nor can we guarantee that the device won't continue DMA with
-> > the area described by the RMRR as part of the new domain.  Therefore
-> > we must prevent such devices from being used by the IOMMU API.
-> 
-> Ick, ick, ick. The more the ramifications of RMRRs become apparent, the
-> more I wish we'd just done the Right Thing™ and declared that firmware
-> SHALL NOT leave any device doing (IOMMU-visible) DMA after the OS takes
-> over. That way, if they wanted this kind of abomination then they'd have
-> to come up with a way of doing it differently. Hell, can't you do PCIe
-> transactions which claim to be already translated, and thus just bypass
-> the IOMMU?
-> 
-> OK, rant over... 
-> 
-> Why can't we map the RMRR into the IOMMU API domain? If we're setting up
-> a VM guest, that basically means we'd want to poke a hole in its memory
-> map and mark the RMRR-afflicted range as reserved or absent. It's
-> horrible, but *everything* about RMRRs is horrible. It's not impossible,
-> and it would allow us to give these devices away to guests. Don't we
-> sometimes *have* devices that we want to give to guests, that are
-> afflicted with RMRRs?
+On Wed, May 21, 2014 at 03:42:24PM +0200, Jiri Kosina wrote:
+> Alright, Andy's iret optimization efforts do immediately bring a
+> followup question -- why is this not a problem with iret-based return
+> from #MC possibly interrupting NMI?
 
-You're right, it is possible to assign devices with RMRRs, but in order
-to do so we'd need to expose the RMRR areas for a device beyond the
-inner workings of intel-iommu and mark those ranges as reserved in the
-guest.  That alone makes hotplug of such devices into a guest
-impossible.
+Yeah, and frankly, I don't see this nesting fun at all protected against
+a #MC interrupting it at any point actually. Because once the #MC
+handler returns, it goes into paranoid_exit and that place doesn't
+account for NMIs at all, AFAICS.
 
-Enabling such a use case also potentially provides an untrusted guest
-with direct access to regions of platform memory that potentially allows
-for untold platform specific exploits.
+Which would mean:
 
-We currently have no visibility to RMRRs from the IOMMU API, so we can't
-even attempt to do the above, nor can we guarantee that we have any
-ability to make a device discontinue use of an RMRR area when it is
-assigned to a VM domain.  Therefore the only safe thing to do is prevent
-use of such devices by a VM domain.
+* NMI goes off
+* MCE happens, we switch to machine_check which is paranoidzeroentry
+* #MC handler is done -> paranoid_exit -> IRET
+-> boom! Or if not "boom", at least, the NMI gets forgotten.
 
-> There are discussions about RMRRs being (ab)used for more than their
-> existing brain-damaged purpose. Where we have a peripheral device that
-> will (mis)interpret certain address ranges as "local" rather than
-> forwarding transactions up towards main memory, we need to ensure that
-> such ranges are never used as virtual addresses. This has largely been
-> an invisible problem until we found a device where the affected range
-> matched the IOVA our DMA API uses by default. Using an RMRR has been
-> proposed as a simple way to achieve that... which means that you end up
-> not being able to assign *those* devices to IOMMU domains either.
-> 
-> I do suspect it's going to lead to complaints... but I'm just not sure I
-> can bring myself to care. Sane designs don't require RMRRs. If someone
-> comes to me and complains that their HP storage controller or whatever
-> can't be assigned to a guest, I'm quite prepared to tell them to replace
-> it with something non-broken. Will you back me up when it happens?
+Am I missing something?
 
-Exactly, I have a hard time bringing myself to care about supporting
-such devices.  Vendors that proliferate RMRR usage need to be aware of
-the implications of RMRRs for all use cases of a device.  First and
-foremost, we need to lock out devices with RMRRs because we have no
-ability to either honor or disable RMRRs when used by the IOMMU API.  If
-vendors that rely on RMRRs want to make such devices assignable by
-providing interfaces to describe and map the area into a VM, or even a
-mechanism to disable the RMRR, more power to them.  The current
-situation is simply unsafe and needs to be prevented.  Thanks,
+-- 
+Regards/Gruss,
+    Boris.
 
-Alex
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
