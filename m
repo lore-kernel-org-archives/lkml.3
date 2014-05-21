@@ -1,169 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaEUKDx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 06:03:53 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58444 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaEUKBz (ORCPT
+	id S1752411AbaEUKD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 06:03:56 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:35767 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930AbaEUKDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 06:01:55 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, benh@kernel.crashing.org
-Subject: [V6 05/11] powerpc, perf: Re-arrange BHRB processing
-Date: Wed, 21 May 2014 15:29:50 +0530
-Message-Id: <1400666396-1682-6-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052110-5816-0000-0000-00000E232641
+	Wed, 21 May 2014 06:03:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140404125249.GC10526@twins.programming.kicks-ass.net>
+References: <1396527168-3929-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+	<20140404125249.GC10526@twins.programming.kicks-ass.net>
+Date: Wed, 21 May 2014 18:03:53 +0800
+Message-ID: <CA+qeAOp5G94n5d1wOGe876d1HkSTVxN9hVbr9jLhGmSGvsAtJA@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix tracepoint in scheduler.
+From: Dongsheng Yang <dongsheng081251@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up some existing indentation problem and
-re-organizes the BHRB processing code with an helper function
-named `update_branch_entry` making it more readable. This patch
-does not change any functionality.
+Hi Peter, did you forget to take this patch? :-)
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/perf/core-book3s.c | 102 ++++++++++++++++++++--------------------
- 1 file changed, 52 insertions(+), 50 deletions(-)
-
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 4520c93..66bea54 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -402,11 +402,21 @@ static __u64 power_pmu_bhrb_to(u64 addr)
- 	return target - (unsigned long)&instr + addr;
- }
- 
-+/* Update individual branch entry */
-+void update_branch_entry(struct cpu_hw_events *cpuhw, int u_index, u64 from, u64 to, int pred)
-+{
-+	cpuhw->bhrb_entries[u_index].from = from;
-+	cpuhw->bhrb_entries[u_index].to = to;
-+	cpuhw->bhrb_entries[u_index].mispred = pred;
-+	cpuhw->bhrb_entries[u_index].predicted = ~pred;
-+	return;
-+}
-+
- /* Processing BHRB entries */
- void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
- {
- 	u64 val;
--	u64 addr;
-+	u64 addr, tmp;
- 	int r_index, u_index, pred;
- 
- 	r_index = 0;
-@@ -417,62 +427,54 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
- 		if (!val)
- 			/* Terminal marker: End of valid BHRB entries */
- 			break;
--		else {
--			addr = val & BHRB_EA;
--			pred = val & BHRB_PREDICTION;
- 
--			if (!addr)
--				/* invalid entry */
--				continue;
-+		addr = val & BHRB_EA;
-+		pred = val & BHRB_PREDICTION;
- 
--			/* Branches are read most recent first (ie. mfbhrb 0 is
--			 * the most recent branch).
--			 * There are two types of valid entries:
--			 * 1) a target entry which is the to address of a
--			 *    computed goto like a blr,bctr,btar.  The next
--			 *    entry read from the bhrb will be branch
--			 *    corresponding to this target (ie. the actual
--			 *    blr/bctr/btar instruction).
--			 * 2) a from address which is an actual branch.  If a
--			 *    target entry proceeds this, then this is the
--			 *    matching branch for that target.  If this is not
--			 *    following a target entry, then this is a branch
--			 *    where the target is given as an immediate field
--			 *    in the instruction (ie. an i or b form branch).
--			 *    In this case we need to read the instruction from
--			 *    memory to determine the target/to address.
-+		if (!addr)
-+			/* invalid entry */
-+			continue;
-+
-+		/* Branches are read most recent first (ie. mfbhrb 0 is
-+		 * the most recent branch).
-+		 * There are two types of valid entries:
-+		 * 1) a target entry which is the to address of a
-+		 *    computed goto like a blr,bctr,btar.  The next
-+		 *    entry read from the bhrb will be branch
-+		 *    corresponding to this target (ie. the actual
-+		 *    blr/bctr/btar instruction).
-+		 * 2) a from address which is an actual branch.  If a
-+		 *    target entry proceeds this, then this is the
-+		 *    matching branch for that target.  If this is not
-+		 *    following a target entry, then this is a branch
-+		 *    where the target is given as an immediate field
-+		 *    in the instruction (ie. an i or b form branch).
-+		 *    In this case we need to read the instruction from
-+		 *    memory to determine the target/to address.
-+		 */
-+		if (val & BHRB_TARGET) {
-+			/* Target branches use two entries
-+			 * (ie. computed gotos/XL form)
- 			 */
-+			tmp = addr;
- 
-+			/* Get from address in next entry */
-+			val = read_bhrb(r_index++);
-+			addr = val & BHRB_EA;
- 			if (val & BHRB_TARGET) {
--				/* Target branches use two entries
--				 * (ie. computed gotos/XL form)
--				 */
--				cpuhw->bhrb_entries[u_index].to = addr;
--				cpuhw->bhrb_entries[u_index].mispred = pred;
--				cpuhw->bhrb_entries[u_index].predicted = ~pred;
--
--				/* Get from address in next entry */
--				val = read_bhrb(r_index++);
--				addr = val & BHRB_EA;
--				if (val & BHRB_TARGET) {
--					/* Shouldn't have two targets in a
--					   row.. Reset index and try again */
--					r_index--;
--					addr = 0;
--				}
--				cpuhw->bhrb_entries[u_index].from = addr;
--			} else {
--				/* Branches to immediate field 
--				   (ie I or B form) */
--				cpuhw->bhrb_entries[u_index].from = addr;
--				cpuhw->bhrb_entries[u_index].to =
--					power_pmu_bhrb_to(addr);
--				cpuhw->bhrb_entries[u_index].mispred = pred;
--				cpuhw->bhrb_entries[u_index].predicted = ~pred;
-+				/* Shouldn't have two targets in a
-+				   row.. Reset index and try again */
-+				r_index--;
-+				addr = 0;
- 			}
--			u_index++;
--
-+			update_branch_entry(cpuhw, u_index, addr, tmp, pred);
-+		} else {
-+			/* Branches to immediate field
-+			   (ie I or B form) */
-+			tmp = power_pmu_bhrb_to(addr);
-+			update_branch_entry(cpuhw, u_index, addr, tmp, pred);
- 		}
-+		u_index++;
- 	}
- 	cpuhw->bhrb_stack.nr = u_index;
- 	return;
--- 
-1.7.11.7
-
+On Fri, Apr 4, 2014 at 8:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Apr 03, 2014 at 08:12:48PM +0800, Dongsheng Yang wrote:
+>> In function set_task_cpu(), if cpu == new_cpu,
+>> there is no migration happen. But current trace point
+>> will raise a migration trace event.
+>>
+>> This patch change trace point to right place,
+>> only when migration really happen, an event will
+>> be threw out.
+>
+> Yeah its there so we can see pointless 'migrations'.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
