@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765AbaEUWdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:33:37 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:60304 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402AbaEUWde (ORCPT
+	id S1753882AbaEUWfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:35:17 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:55295 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407AbaEUWfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:33:34 -0400
+	Wed, 21 May 2014 18:35:15 -0400
+Date: Thu, 22 May 2014 02:35:11 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, shawn@churchofgit.com,
+        akpm@linux-foundation.org, avagin@openvz.org, xemul@parallels.com,
+        vdavydov@parallels.com
+Subject: Re: [patch 3/3] timerfd: Implement write method
+Message-ID: <20140521223511.GI12819@moon>
+References: <20140428212517.200264067@openvz.org>
+ <20140428213301.507657833@openvz.org>
+ <alpine.DEB.2.02.1405220642100.9695@ionos.tec.linutronix.de>
+ <20140521215707.GH12819@moon>
+ <alpine.DEB.2.02.1405220658530.9695@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <20140521222541.GO1873@two.firstfloor.org>
-References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
-	<20140521222541.GO1873@two.firstfloor.org>
-Date: Thu, 22 May 2014 07:33:32 +0900
-X-Google-Sender-Auth: JTGDZsPHGs3lawVTUQj_kjpNz1c
-Message-ID: <CA+55aFzx82y5xDa3-6aLm6fCvaf23FH1E14PvmXXUFngwpkdgw@mail.gmail.com>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1405220658530.9695@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 7:25 AM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> I suspect the only case that's really interesting here is interrupting
-> idle. Maybe it would be possible to do some fast path in this case only.
+On Thu, May 22, 2014 at 07:12:30AM +0900, Thomas Gleixner wrote:
+> 
+> There is a world outside of checkpoint/restore, really.
 
-Hardware-interrupts during kernel are actually fairly common under
-network-intensive loads, even outside of idle (but idle is admittedly
-likely *the* most common one). Many network loads are fairly
-kernel-intensive.
+Yes, I simply don't know who else might use this write()
+functionality for other purpose, I mean i don't see a
+point to use it for anything else.
 
-Also, from a kernel perspective, idle isn't really any different from
-most other kernel code. Using "ret" to return to the idle handler
-would be *more* of a special case than using "ret" to return to just
-generic kernel context.
+> So what's the semantics of that write function? We really want to have
+> that agreed on and documented in the man page.
 
-So I disagree vehemently. Do *not* special-case idle. It makes the
-code more complex and less generic.
+The idea was to provide a way to setup @ticks into (nonzero) value
+which we get from show_fdinfo output. Then when we restore it
+we setup the timer and set @ticks to the value it had at dump
+moment.
 
-                Linus
+> Right now the write will just update the ticks and nothing else. So
+> what if there is a waiter already? What if there is a timer armed?
+> 
+> Can you please describe how checkpoint/restore is going to use all of
+> this. How is the timer restored and how/when is the reader which was
+> waiting in read/poll at the time of suspend reattached to it.
+
+Thomas, I see what you mean. Need to think (I must admit I forgot about
+polling of timerfds :( I were to restore timerfds like this
+
+ - fetch data from fdinfo
+ - use timer_create/settime to arm it
+ - write @ticks then
+
+but i didn't try restore polling waiters, my bad. Letme rework this
+trying addressing your comments.
