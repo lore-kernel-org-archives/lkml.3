@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaEUTvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:51:43 -0400
-Received: from smtp-69.nebula.fi ([83.145.220.69]:40381 "EHLO smtp.nebula.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098AbaEUTvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:51:42 -0400
-Date: Wed, 21 May 2014 22:50:57 +0300
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux@openrisc.net,
-        jonas@southpole.se, Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH v2] openrisc: irq: use irqchip framework
-Message-ID: <20140521195056.GA14701@chokladfabriken.org>
-References: <1400530303-29182-1-git-send-email-stefan.kristiansson@saunalahti.fi>
- <alpine.DEB.2.02.1405200809260.5204@ionos.tec.linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1405200809260.5204@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753136AbaEUTxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:53:11 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:44706 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaEUTxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 15:53:10 -0400
+Message-ID: <1400701978.2646.14.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [RFC PATCH] mutex: Documentation rewrite
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
+        waiman.long@hp.com, jason.low2@hp.com, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 21 May 2014 12:52:58 -0700
+In-Reply-To: <1400698977.2970.308.camel@schen9-DESK>
+References: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
+	 <1400698977.2970.308.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 08:18:16AM +0900, Thomas Gleixner wrote:
-> On Mon, 19 May 2014, Stefan Kristiansson wrote:
-> > +static void or1k_pic_ack(struct irq_data *data)
-> > +{
-> > +	/* EDGE-triggered interrupts need to be ack'ed in order to clear
-> > +	 * the latch.
-> > +	 * LEVEL-triggered interrupts do not need to be ack'ed; however,
-> > +	 * ack'ing the interrupt has no ill-effect and is quicker than
-> > +	 * trying to figure out what type it is...
-> > +	 */
+On Wed, 2014-05-21 at 12:02 -0700, Tim Chen wrote:
+> On Wed, 2014-05-21 at 10:41 -0700, Davidlohr Bueso wrote:
+> > From: Davidlohr Bueso <davidlohr@hp.com>
+> > 
+> > Our mutexes have gone a long ways since the original implementation
+> > back in 2005/2006. However, the mutex-design.txt document is still
+> > stuck in the past, to the point where most of the information there
+> > is practically useless and, more important, simply incorrect. This
+> > patch pretty much rewrites it to resemble what we have nowadays.
+> > 
+> > Since regular semaphores are almost much extinct in the kernel
+> > (most users now rely on mutexes or rwsems), it no longer makes
+> > sense to have such a close comparison, which was copied from most
+> > of the cover letter when Ingo introduced the generic mutex subsystem.
+> > 
+> > While users who really want to learn more about kernel mutexes can
+> > go and read the code, I have marked this RFC since I'm sure more gory
+> > details can be included. Also, ww_mutexes are intentionally left out,
+> > leaving things as generic as possible.
+> > 
+> > Comments welcome!
 > 
-> The right thing to do here is to have two interrupt chips. One for
-> level and one for ack. So you do not need a runtime check and you
-> avoid the ack for the level type.
+> Thanks for doing this.
 > 
-> > +	/* The OpenRISC 1000 spec says to write a 1 to the bit to ack the
-> > +	 * interrupt, but the OR1200 does this backwards and requires a 0
-> > +	 * to be written...
-> > +	 */
 > > +
-> > +#ifdef CONFIG_OR1K_1200
-> > +	/* There are two oddities with the OR1200 PIC implementation:
-> > +	 * i)  LEVEL-triggered interrupts are latched and need to be cleared
-> > +	 * ii) the interrupt latch is cleared by writing a 0 to the bit,
-> > +	 *     as opposed to a 1 as mandated by the spec
-> > +	 */
-> > +
-> > +	mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->hwirq));
-> > +#else
-> > +	mtspr(SPR_PICSR, (1UL << data->hwirq));
-> > +#endif
+> > +(iii) slowpath: last resource, if the lock is still unable to be acquired
 > 
-> Again, you could set the write 1/0 variant at runtime.
+> change "last resource" to "last resort"
+
+Ops, yes, that's what I meant.
+
+> >  
+> >  Disadvantages
+> >  -------------
+> >  
+> > -The stricter mutex API means you cannot use mutexes the same way you
+> > -can use semaphores: e.g. they cannot be used from an interrupt context,
+> > -nor can they be unlocked from a different context that which acquired
+> > -it. [ I'm not aware of any other (e.g. performance) disadvantages from
+> > -using mutexes at the moment, please let me know if you find any. ]
+> > -
 > 
-> > +static int or1k_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
-> > +{
-> > +	irq_set_chip_and_handler_name(irq, &or1k_dev,
-> > +				      handle_level_irq, "level");
-> 
-> It's wrong to use the level flow handler for edge type interrupts as
-> you might lose edges.
-> 
+> Should we keep this instead of deleting it?  It is still true we
+> cannot use mutex from an interrupt context.
 
-Right, this patch started of as a ~10 line small cleanup of the existing
-OpenRISC irq code, so I didn't change more than an obvious bug when moving
-the code into drivers/irqchip/ir1-or1k-pic.c.
-But, I guess it's worthwile to fix things up a bit more at the same time.
+Well I wouldn't necessarily classify 'cannot be used from interrupt
+context' as something bad, it's just a characteristic of mutexes. Since
+we mention it in the Semantics part I thought we can remove it.
 
-To summarize your suggestions and the way the or1k-pic works,
-we should introduce sepearate chips for level, edge and the odd OR1K_1200
-implementation which tries to be something in between.
-This makes sense to me, but the problem is that none of those can really
-be probed, so runtime selection here means on a device-tree level.
-That's fine I think, the three different variations can be seen as seperate
-hardware implementations.
-
-I see two paths to go to get there though, and here's where I'd like some input.
-1) Define the three different implementations as seperate irqchips,
-   with accompanying IRQCHIP_DECLARE.
-2) Add custom device-tree bindings and determine the chip type from that.
-
-What would be the best choice here?
-I think I'm leaning towards 1) and I have a tentative patch for that,
-but I wanted to went the question before posting it.
-
-Stefan
