@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaEUSOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:14:44 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:61875 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109AbaEUSOn (ORCPT
+	id S1752243AbaEUSRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:17:35 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:29077 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751257AbaEUSRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:14:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, s-anna@ti.com, loic.pallardy@st.com,
-        lftan.linux@gmail.com, slapdau@yahoo.com.au,
-        courtney.cavin@sonymobile.com, robherring2@gmail.com,
-        joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
-        ks.giri@samsung.com, Jassi Brar <jaswinder.singh@linaro.org>
-Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
-Date: Wed, 21 May 2014 20:14:36 +0200
-Message-ID: <5277579.yApJqY0s9l@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140521172701.GV12304@sirena.org.uk>
-References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org> <1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org> <20140521172701.GV12304@sirena.org.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:lTzIIUU49oviosgI0nKQoPuurt6DtQY5gbcgs0bWpUp
- pwl8lzfthVfiOYCM40A328gUMr4uu4vXEjneTLs4djZOEVNBFb
- rrRvAgZv7kElJUAL5WaIP+QXk5MvRDmqitn66NL1z37fFrMnzv
- 8TwRBDfAYynDx+kYbrO/5rcdIG4uXwokrmkXnyw18abBBnw1u7
- Jiej7w2JvLL7QHTIACb9/dSAFFlgn2soica9aNyOKUDkzeutTu
- 0OGyTSpwxp6iUqL9DvUGUIFVgwbgBWiCv+C1YQif8efzmRS+h+
- Xlhh24p81wtvwJi98mbvE6G60cyQ8DzSSY2fHnUzCXncPyJh4F
- k7gbHm++rls54yjihhBI=
+	Wed, 21 May 2014 14:17:34 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugLAPLsfFNbsHTp/2dsb2JhbABZgwmCRahABAEBAQEBAQUBgzqWdoEMF3SCZhwjGIECJBOIRQHWX4VViBVkhEcBA41VgWiKMAGHaos6gzo7gTE
+Date: Wed, 21 May 2014 20:17:22 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH 1/1] lib/radix-tree.c: kernel-doc warning fix
+Message-Id: <20140521201722.c4b2f39d062752c04e1b446c@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 May 2014 18:27:01 Mark Brown wrote:
-> > +     /* The queued TX requests are simply aborted, no callbacks are made */
-> > +     spin_lock_irqsave(&chan->lock, flags);
-> > +     chan->cl = NULL;
-> > +     chan->active_req = NULL;
-> > +     if (chan->txdone_method == (TXDONE_BY_POLL | TXDONE_BY_ACK))
-> > +             chan->txdone_method = TXDONE_BY_POLL;
-> > +
-> > +     module_put(chan->mbox->dev->driver->owner);
-> > +     spin_unlock_irqrestore(&chan->lock, flags);
-> 
-> Is the module_put() safe in atomic context?
-> 
+index has been removed from __radix_tree_delete_node in
+449dd6984d0e47
+("mm: keep page cache radix tree nodes in check")
 
-I'm pretty sure it is:
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ lib/radix-tree.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-void module_put(struct module *module)
-{
-        if (module) {
-                preempt_disable();
-                smp_wmb(); /* see comment in module_refcount */
-                __this_cpu_inc(module->refptr->decs);
-
-                trace_module_put(module, _RET_IP_);
-                preempt_enable();
-        }
-}
-
-This disables preemption around everything it does, so everything inside
-is definitely safe in nonpreemptible context.
-
-	Arnd
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 9599aa7..5925956 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -1296,7 +1296,6 @@ static inline void radix_tree_shrink(struct radix_tree_root *root)
+ /**
+  *	__radix_tree_delete_node    -    try to free node after clearing a slot
+  *	@root:		radix tree root
+- *	@index:		index key
+  *	@node:		node containing @index
+  *
+  *	After clearing the slot at @index in @node from radix tree
+-- 
+1.9.1
