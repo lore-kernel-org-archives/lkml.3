@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaEUGPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 02:15:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13138 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaEUGPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 02:15:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
-   d="scan'208";a="544049302"
-Date: Wed, 21 May 2014 11:30:12 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Christopher Freeman <cfreeman@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 1/3] dma: tegra: finer granularity residual for
- tx_status
-Message-ID: <20140521060012.GL21128@intel.com>
-References: <1399411343-12222-1-git-send-email-cfreeman@nvidia.com>
- <1399411343-12222-2-git-send-email-cfreeman@nvidia.com>
- <536A6145.2080106@wwwdotorg.org>
- <20140507223745.GB20137@nvidia.com>
+	id S1751548AbaEUGPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 02:15:40 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:49832 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaEUGPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 02:15:39 -0400
+Message-ID: <537C447D.7070406@aurabindo.in>
+Date: Wed, 21 May 2014 11:45:25 +0530
+From: Jay Aurabind <mail@aurabindo.in>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140507223745.GB20137@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lee Jones <lee.jones@linaro.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kbuild test robot <fengguang.wu@intel.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH V2] mfd: abx500-core: Fix compiler warning larger stack
+ frame
+References: <536E1543.3090107@aurabindo.in> <20140520152054.GB24991@lee--X1>
+In-Reply-To: <20140520152054.GB24991@lee--X1>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="7gVwSVSWtKLgkOb7R0mBw7weLlthUx9q0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 03:37:45PM -0700, Christopher Freeman wrote:
-> On Wed, May 07, 2014 at 09:37:25AM -0700, Stephen Warren wrote:
-> > On 05/06/2014 03:22 PM, Christopher Freeman wrote:
-> > > Get word-level granularity from hardware for calculating
-> > > the transfer count remaining.
-> > 
-> > > diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-> > 
-> > > +static int tegra_dma_wcount_in_bytes(struct dma_chan *dc)
-> > 
-> > A lot of the code in this function is identical to the code in
-> > tegra_dma_terminate_all() which does the same thing. Can this be pulled
-> > out into a shared utility function?
-> > 
-> I'll look at making utility functions for ISR handling and the calculations for the byte counts.
-> 
-> > > +	tegra_dma_pause(tdc, true);
-> > 
-> > Is this continual pausing/resuming of the DMA operation going to
-> > negatively affect performance?
-> > 
-> I tried testing the performance impact and each call took about 20 uS.  And of
-> course, the client would have to be calling this constantly.
-But why do we need to pause, cant we read the status form HW and report..?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--7gVwSVSWtKLgkOb7R0mBw7weLlthUx9q0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
--- 
-~Vinod
+H1,
+
+Change from V1 -> V2: Fix a potential null pointer dereference as reporte=
+d by kbuild test robot <fengguang.wu@intel.com>.
+
+Inorder to report the kzalloc failure, I have just used a pr_debug statem=
+ent. If it looks ugly, should I change the function's return value to int=
+ and give out an -ENOMEM ?
+
+=46rom 6615c7a995a6bb4dcf4c1e9ac59bca823ec821a5 Mon Sep 17 00:00:00 2001
+From: Aurabindo J <mail@aurabindo.in>
+Date: Wed, 21 May 2014 11:18:10 +0530
+Subject: [PATCH] mfd: abx500-core: Fix compiler warning larger stack fram=
+e
+
+On systems with CONFIG_FRAME_WARN=3D1024, compiler warns the allocation o=
+f
+an object of struct device on stack. Make the allocation dynamically to
+fix the warning.
+
+Signed-off-by: Aurabindo J <mail@aurabindo.in>
+---
+ drivers/mfd/abx500-core.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/mfd/abx500-core.c b/drivers/mfd/abx500-core.c
+index f3a15aa..5e5098d 100644
+--- a/drivers/mfd/abx500-core.c
++++ b/drivers/mfd/abx500-core.c
+@@ -154,16 +154,21 @@ EXPORT_SYMBOL(abx500_startup_irq_enabled);
+ void abx500_dump_all_banks(void)
+ {
+ 	struct abx500_ops *ops;
+-	struct device dummy_child =3D {NULL};
++	struct device *dummy_child;
+ 	struct abx500_device_entry *dev_entry;
+=20
+-	list_for_each_entry(dev_entry, &abx500_list, list) {
+-		dummy_child.parent =3D dev_entry->dev;
+-		ops =3D &dev_entry->ops;
++	dummy_child =3D kzalloc(sizeof(struct device), GFP_KERNEL);
++	if (dummy_child !=3D NULL) {
++		list_for_each_entry(dev_entry, &abx500_list, list) {
++			dummy_child->parent =3D dev_entry->dev;
++			ops =3D &dev_entry->ops;
+=20
+-		if ((ops !=3D NULL) && (ops->dump_all_banks !=3D NULL))
+-			ops->dump_all_banks(&dummy_child);
+-	}
++			if ((ops !=3D NULL) && (ops->dump_all_banks !=3D NULL))
++				ops->dump_all_banks(dummy_child);
++		}
++		kfree(dummy_child);
++	} else
++		pr_debug("kzalloc failure in abx500_dump_all_banks\n");
+ }
+ EXPORT_SYMBOL(abx500_dump_all_banks);
+=20
+--=20
+1.9.1
+
+
+
+
+--7gVwSVSWtKLgkOb7R0mBw7weLlthUx9q0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlN8RIQACgkQq5pl9aLRKAVdOgEAgmTmwHevmGePGtQU9QWNmKkR
+2U7gV5A4wKH8FCMZLc4A/ilr4tRtK/009DtfecavX2wUIlQA+LwTO4pE9kqWydaM
+=u3rc
+-----END PGP SIGNATURE-----
+
+--7gVwSVSWtKLgkOb7R0mBw7weLlthUx9q0--
