@@ -1,120 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422AbaEUCzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 22:55:49 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:40733 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbaEUCzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 22:55:47 -0400
-Message-ID: <537C15B1.3020006@gmail.com>
-Date: Tue, 20 May 2014 19:55:45 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751583AbaEUC6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 22:58:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:32993 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751500AbaEUC6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 22:58:44 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Diego Viola <diego.viola@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+In-Reply-To: <CA+ToGPEsrAdm+5MGcvw_4312bU1GtvbNw_sNH8EaegKgd0vV8Q@mail.gmail.com>
+References: <20140402144219.4cafbe37@gandalf.local.home> <20140402221212.GD16570@mguzik.redhat.com> <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com> <87wqf1oi22.fsf@rustcorp.com.au> <20140502153409.329d3b5b426275e8197251a2@linux-foundation.org> <871tw9c6kt.fsf@rustcorp.com.au> <53678ED6.4070502@infradead.org> <87eh07bu60.fsf@rustcorp.com.au> <CA+ToGPFQ0Ku0odkAaU4FKDtGq0TK8hJ+HWvJr8J3wJVwYaO2mg@mail.gmail.com> <CA+ToGPF_GnnNhSUZjmbyu=5Nk=i2cTkoWPiykaO4EKJSfvNh-w@mail.gmail.com> <537A17F8.6050109@infradead.org> <877g5hjl55.fsf@rustcorp.com.au> <CA+ToGPEsrAdm+5MGcvw_4312bU1GtvbNw_sNH8EaegKgd0vV8Q@mail.gmail.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 21 May 2014 11:22:37 +0930
+Message-ID: <87k39fj3tm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        David Daney <david.daney@cavium.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Subject: Re: [PATCH 2/3] of: Make of_find_node_by_path() handle /aliases
-References: <1399993115-21552-1-git-send-email-grant.likely@linaro.org> <1399993115-21552-3-git-send-email-grant.likely@linaro.org>
-In-Reply-To: <1399993115-21552-3-git-send-email-grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/13/2014 7:58 AM, Grant Likely wrote:
+Diego Viola <diego.viola@gmail.com> writes:
+> Can't you just make a commit to fix it? If you want I can submit a patch.
+>
+> Sorry to be so OCD about this.
 
-> Make of_find_node_by_path() handle aliases as prefixes. To make this
+You know, I'd love to.  If it were up to *me* I would.  But my boss is a
+stickler, y'know, and I've all filled my quota of useless makework for
+the century.  Hell, I shouldn't even be talking to you!
 
-> work the name search is refactored to search by path component instead
-
-> of by full string. This should be a more efficient search, and it makes
-
-> it possible to start a search at a subnode of a tree.
-
-> 
-
-> Signed-off-by: David Daney <david.daney@cavium.com>
-
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-
-> [grant.likely: Rework to not require allocating at runtime]
-
-> Acked-by: Rob Herring <robh@kernel.org>
-
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-
-> ---
-
->  drivers/of/base.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++----
-
->  1 file changed, 56 insertions(+), 4 deletions(-)
-
-
-
-Was this patch created against a tree that has modifications to device tree
-
-locking?
-  I get a hang due to deadlock when I apply it.  Patch to verify the
-cause is below.
+Cheers,
+Rusty.
+PS. Try the trivial patch monkey: trivial@kernel.org
 
 
 
 
-From: Frank Rowand <frank.rowand@sonymobile.com>
-
-Do not apply this patch -- it is not a valid fix.  The point of this patch
-is to confirm the cause of a bug.
-
-Problem seen on 3.15-rc1 with dragonboard platform patches added.
-
-The dragonboard hangs on boot the very first time that of_find_node_by_path()
-is called:
-
-   of_find_node_by_path()
-      raw_spin_lock_irqsave(&devtree_lock, flags)
-      np = __of_find_node_by_path(np, path)
-         for_each_child_of_node(parent, child) {
-
-            // This is a define:
-	    #define for_each_child_of_node(parent, child) \
-	       for (child = of_get_next_child(parent, NULL); child != NULL; \
-
-	          // Resulting in a deadlock when of_get_next_child()
-		  // attempts to lock the same lock:
-	          raw_spin_lock_irqsave(&devtree_lock, flags)
-
-When this patch is applied, the first lock is commented out so the
-deadlock does not occur and the boot completes.
-
-Not-signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
----
- drivers/of/base.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-Index: b/drivers/of/base.c
-===================================================================
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -835,13 +835,17 @@ struct device_node *of_find_node_by_path
- 	}
  
- 	/* Step down the tree matching path components */
-+#if 0
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
-+#endif
- 	while (np && *path == '/') {
- 		path++; /* Increment past '/' delimiter */
- 		np = __of_find_node_by_path(np, path);
- 		path = strchrnul(path, '/');
- 	}
-+#if 0
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
-+#endif
- 	return np;
- }
- EXPORT_SYMBOL(of_find_node_by_path);
