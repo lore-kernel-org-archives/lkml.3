@@ -1,117 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaEUSXX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:23:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40841 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaEUSXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:23:22 -0400
-Date: Wed, 21 May 2014 20:23:08 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Michal Simek <michal.simek@xilinx.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
-Message-ID: <20140521182308.GN31687@pengutronix.de>
-References: <20140515073816.GI16662@pengutronix.de>
- <91822600-39d0-4e71-b0f5-9eda35b76ec0@BN1AFFO11FD016.protection.gbl>
- <20140519161949.GG16662@pengutronix.de>
- <db8633e5-01a9-4d3a-80e8-74e23a456d52@BN1BFFO11FD051.protection.gbl>
- <20140520073358.GJ16662@pengutronix.de>
- <4bb5f44a-60bb-4e34-8f88-f91b8419be8d@BL2FFO11FD050.protection.gbl>
- <537B957B.5010001@codeaurora.org>
- <668683e3-856e-4f30-9b11-8f3e91e12d1d@BL2FFO11FD038.protection.gbl>
- <20140521073457.GD31687@pengutronix.de>
- <e9090453-ce40-4662-a3ea-fbdaffdb2aa4@BN1AFFO11FD046.protection.gbl>
+	id S1752912AbaEUSZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:25:24 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55501 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751137AbaEUSZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 14:25:22 -0400
+Date: Wed, 21 May 2014 20:25:14 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
+Message-ID: <20140521182513.GA26285@earth.universe>
+References: <1399739870-13526-1-git-send-email-sre@kernel.org>
+ <1399739870-13526-10-git-send-email-sre@kernel.org>
+ <20140514215503.GM27426@atomide.com>
+ <20140520003538.GD15793@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <e9090453-ce40-4662-a3ea-fbdaffdb2aa4@BN1AFFO11FD046.protection.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20140520003538.GD15793@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sören,
 
-On Wed, May 21, 2014 at 08:58:10AM -0700, Sören Brinkmann wrote:
-> On Wed, 2014-05-21 at 09:34AM +0200, Uwe Kleine-König wrote:
-> > On Tue, May 20, 2014 at 02:48:20PM -0700, Sören Brinkmann wrote:
-> > > On Tue, 2014-05-20 at 10:48AM -0700, Stephen Boyd wrote:
-> > > > On 05/20/14 09:01, Sören Brinkmann wrote:
-> > > > >
-> > > > >>>>> +{
-> > > > >>>>> +	unsigned long lower, upper, cur, lower_last, upper_last;
-> > > > >>>>> +
-> > > > >>>>> +	lower = clk_round_rate(clk, rate);
-> > > > >>>>> +	if (lower >= rate)
-> > > > >>>>> +		return lower;
-> > > > >>>> Is the >-case worth a warning?
-> > > > >>> No, it's correct behavior. If you request a rate that is way lower than what the
-> > > > >>> clock can generate, returning something larger is perfectly valid, IMHO.
-> > > > >>> Which reveals one problem in this whole discussion. The API does not
-> > > > >>> require clk_round_rate() to round down. It is actually an implementation
-> > > > >>> choice that had been made for clk-divider.
-> > > > >> I'm sure it's more than an implementation choice for clk-divider. But I
-> > > > >> don't find any respective documentation (but I didn't try hard).
-> > > > > A similar discussion - without final conclusion:
-> > > > > https://lkml.org/lkml/2010/7/14/260
-> > > > >
-> > > > >
-> > > > 
-> > > > Please call this new API something like clk_find_nearest_rate() or
-> > > > something. clk_round_rate() is supposed to return the rate that will be
-> > > > set if you call clk_set_rate() with the same arguments. It's up to the
-> > > > implementation to decide if that means rounding the rate up or down or
-> > > > to the nearest value.
-> > > 
-> > > Sounds good to me. Are there any cases of clocks that round up? I think
-> > > that case would not be handled correctly. But I also don't see a use
-> > > case for such an implementation.
-> > I don't really care which semantic (i.e. round up, round down or round
-> > closest) is picked, but I'd vote that all should pick up the same. I
-> > think the least surprising definition is to choose rounding down and add
-> > the function that is under discussion here to get a nearest match.
-> > 
-> > So I suggest:
-> > 
-> > 	- if round_rate is given a rate that is smaller than the
-> > 	  smallest available rate, return 0
-> > 	- add WARN_ONCE to round_rate and set_rate if they return with a
-> > 	  rate bigger than requested
-> 
-> Why do you think 0 is always valid? I think for a clock that can
-> generate 40, 70, 120, clk_round_rate(20) should return 40.
-I didn't say it's a valid value. It just makes the it possible to check
-for clk_round_rate(clk, rate) <= rate.
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I grepped a bit around and found da850_round_armrate which implements a
-round_rate callback returning the best match.
-omap1_clk_round_rate_ckctl_arm can return a value < 0.
-s3c2412_roundrate_usbsrc can return values that are bigger than
-requested. (I wonder if that is a bug though.)
+Hi,
 
-> > 	- change the return values to unsigned long
-> 
-> Yep, I agree, this should happen.
-And we're using 0 as error value? e.g. for the case where
-omap1_clk_round_rate_ckctl_arm returns -EIO now?
+On Mon, May 19, 2014 at 05:35:39PM -0700, Tony Lindgren wrote:
+> * Tony Lindgren <tony@atomide.com> [140514 14:57]:
+> > * Sebastian Reichel <sre@kernel.org> [140510 09:40]:
+> > > Add SSI device tree data for OMAP3 and Nokia N900.
+> >=20
+> > Picking this patch into omap-for-v3.16/dt thanks.
+>=20
+> Just noticed that this patch seems to somehow break idle
+> modes on n900, so dropping both dts changes for now.
+>=20
+> Basically the n900 debug LEDs won't ever go off with
+> these two dts patches enabled, even without the modem
+> drivers loaded. I did not dig deeper, but it's probably
+> something related to hwmod using this data for some
+> settings.
 
-Best regards
-Uwe
+Is hwmod data interpreted at all without the DT entries?
+The hwmod data may be wrong. The information from commit
+398917ce161e10d3c66afaefdb89c73c64c4b02d was simply
+interpolated from all information I found. The OMAP3
+public TRM does not contain *any* information about the
+ssi IP-Core.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Sorry did not notice it earlier as I did not have the
+> PM regression fix patches merged with my testing branch.
+
+I hoped to see working modem in 3.16, which will probably
+be used for the next Debian stable :(
+
+-- Sebastian
+
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTfO+JAAoJENju1/PIO/qaa5wP/i+jGUtLwNgMyVplgZdMvC6W
+NzJnNZN6um2eipY5aHNXn6SdLPM+EqhopTPrsVopm01xXHjRAJxzHI2skSjQgnP7
+ipEIHRNceMr946NTJtP8YUGO04pOhu6HiXmsfqBp00LbWvFeGSTTMNhY308WU+LQ
+A/jvVilsfItfUvy1mG9ZYlDUGvpz8GptheTw3bPbZ4oW9XgnNiUWgfpvgbPkFu8n
+iw4hcBY5TLeLAcUEBSbpPXfy370h86PSvfmX9LmOTEKwNgtIMi7+dPl6vRjHUbIi
+H8dCdPlaRBOIUlqCTVfHqE8kJx628hI/6RJKYAWe/+LuWdzZrnY1lqgxidJUd2Xc
+bgB+2qammupvS6Xw3wv35cniUT3h8x0LrTIAHxK/7RiEzXRzj7PVX9N4ygv2Wk9Y
+SR3ZU8oAPld0xKOiDiaDX8LEt3AdD+f4Ok5KYhj5wKX4tRnP45NfOR6Vzg5tnFvg
+II1f+xWRvv7TtwnSekMWov2SzNwvblja1GuOnkULoAIJAPM+Bkrb1It98bqOTthO
+6VsXW2OSVcBNeUrkViNTo0mtgKtKglxE41lmdJ0kuGRjv/XPk0e+MY+afo2NBdnB
+uhuA53YHvpRs04xLt/RhdFcar15IfZw2YzyZpUYeEkWbFcPx6clTI948EqzmSW7b
+OHDamv85gjC5+n6ZDR8x
+=uNaS
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
