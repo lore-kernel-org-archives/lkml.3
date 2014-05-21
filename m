@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaEUU7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 16:59:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752713AbaEUU7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 16:59:32 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH 3.15] MIPS: Add new AUDIT_ARCH token for the N32 ABI on MIPS64
-Date: Wed, 21 May 2014 16:59:22 -0400
-Message-ID: <1683789.b73kOmCp2z@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.13.1 (Linux/3.14.4-gentoo; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <2398159.J868kTHAKn@sifl>
-References: <1397550996-14805-1-git-send-email-markos.chandras@imgtec.com> <1398177636-10442-1-git-send-email-markos.chandras@imgtec.com> <2398159.J868kTHAKn@sifl>
+	id S1753343AbaEUVCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:02:25 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:37585 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629AbaEUVCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:02:24 -0400
+Date: Wed, 21 May 2014 23:02:20 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Manuel =?utf-8?Q?Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Cc: alexander.deucher@amd.com, christian.koenig@amd.com, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] radeon: Use time_before()
+Message-ID: <20140521210215.GB6237@mithrandir>
+References: <1400693977-21033-1-git-send-email-manuel.schoelling@gmx.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="b5gNqxB1S1yM7hjW"
+Content-Disposition: inline
+In-Reply-To: <1400693977-21033-1-git-send-email-manuel.schoelling@gmx.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 12, 2014 02:53:05 PM Paul Moore wrote:
-> On Tuesday, April 22, 2014 03:40:36 PM Markos Chandras wrote:
-> > A MIPS64 kernel may support ELF files for all 3 MIPS ABIs
-> > (O32, N32, N64). Furthermore, the AUDIT_ARCH_MIPS{,EL}64 token
-> > does not provide enough information about the ABI for the 64-bit
-> > process. As a result of which, userland needs to use complex
-> > seccomp filters to decide whether a syscall belongs to the o32 or n32
-> > or n64 ABI. Therefore, a new arch token for MIPS64/n32 is added so it
-> > can be used by seccomp to explicitely set syscall filters for this ABI.
-> > 
-> > Link: http://sourceforge.net/p/libseccomp/mailman/message/32239040/
-> > Cc: Andy Lutomirski <luto@amacapital.net>
-> > Cc: Eric Paris <eparis@redhat.com>
-> > Cc: Paul Moore <pmoore@redhat.com>
-> > Cc: Ralf Baechle <ralf@linux-mips.org>
-> > Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-> > ---
-> > Ralf, can we please have this in 3.15 (Assuming it's ACK'd)?
-> > 
-> > Thanks a lot!
-> > ---
-> > 
-> >  arch/mips/include/asm/syscall.h |  2 ++
-> >  include/uapi/linux/audit.h      | 12 ++++++++++++
-> >  2 files changed, 14 insertions(+)
-> 
-> [NOTE: Adding lkml to the To line to hopefully spur discussion/acceptance as
-> this *really* should be in 3.15]
-> 
-> I'm re-replying to this patch and adding lkml to the To line because I
-> believe it is very important we get this patch into 3.15.  For those who
-> don't follow the MIPS architecture very closely, the upcoming 3.15 is the
-> first release to include support for seccomp filters, the latest generation
-> of syscall filtering which used a BPF based filter language.  For reason
-> that are easy to understand, the syscall filters are ABI specific (e.g.
-> syscall tables, word length, endianness) and those generating syscall
-> filters in userspace (e.g. libseccomp) need to take great care to ensure
-> that the generated filters take the ABI into account and fail safely in the
-> case where a different ABI is used (e.g. x86, x86_64, x32).
-> 
-> The patch below corrects, what is IMHO, an omission in the original MIPS
-> seccomp filter patch, allowing userspace to easily separate MIPS and MIPS64.
-> Without this patch we will be forced to handle MIPS/MIPS64 like we handle
-> x86_64/x32 which is a royal pain and not something I want to have deal with
-> again.
-> 
-> Further, while I don't want to speak for the audit folks, it is my
-> understanding that they want this patch for similar reasons.
-> 
-> Please merge this patch for 3.15 or at least provide some feedback as to why
-> this isn't a viable solution for upstream.  Once 3.15 ships, fixing this
-> will require breaking the MIPS ABI which isn't something any of us want.
-> 
-> Thanks,
-> -Paul
 
-*Bump*
+--b5gNqxB1S1yM7hjW
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't know what else needs to be done to get some action on this and we're 
-running out of time for 3.15.
+On Wed, May 21, 2014 at 07:39:37PM +0200, Manuel Sch=C3=B6lling wrote:
+> To be future-proof and for better readability the time comparisons are mo=
+dified
+> to use time_before() instead of plain, error-prone math.
 
--- 
-paul moore
-security and virtualization @ redhat
+Nit: commit messages are best wrapped around column 72.
 
+> Signed-off-by: Manuel Sch=C3=B6lling <manuel.schoelling@gmx.de>
+> ---
+>  drivers/gpu/drm/radeon/radeon_pm.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/=
+radeon_pm.c
+> index f30b842..b08db66 100644
+> --- a/drivers/gpu/drm/radeon/radeon_pm.c
+> +++ b/drivers/gpu/drm/radeon/radeon_pm.c
+> @@ -1592,7 +1592,7 @@ static void radeon_dynpm_idle_work_handler(struct w=
+ork_struct *work)
+>  		 * to false since we want to wait for vbl to avoid flicker.
+>  		 */
+>  		if (rdev->pm.dynpm_planned_action !=3D DYNPM_ACTION_NONE &&
+> -		    jiffies > rdev->pm.dynpm_action_timeout) {
+> +		    time_before(rdev->pm.dynpm_action_timeout, jiffies)) {
+>  			radeon_pm_get_dynpm_state(rdev);
+>  			radeon_pm_set_clocks(rdev);
+>  		}
+
+I think time_after(jiffies, rdev->pm.dynpm_action_timeout) would be more
+intuitive, but either way:
+
+Reviewed-by: Thierry Reding <treding@nvidia.com>
+
+--b5gNqxB1S1yM7hjW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfRRXAAoJEN0jrNd/PrOh2u4P/0L94g4KjQ8gr/WMlt8YRz5w
+jEYJBhJMGRR88uMxz79vPGmbblL2Bqe1cyqhusxiBg8BJMWvi6UVAHHiABzYzv0r
+G4ti0ruOOaXFLcGCjr9sIBIOdRSJC4bhCp+2CtIArgzBX/ECTFXbaF+qP9XUKWeA
+Uls4Ty1Hvjs9WTLmBijJ7/oLlAaZDEe2Ym6tELpycSKD32QGOzCqmOYjex6uzHib
+WTfzYV8//+69oPWQo41jzsuWquvmuTVpMjR66E3xMh3qyf+eqdje2aV8qLUaMPz5
+Mz8OSaT7bDOWmbf1CFKScBbGFMAEzl43OAipN02x/eclaQF20ZMFkX1gHRxxQURA
+RGTZDjWYl//h1POfor4/vrqPEWeO0kdEI7sgSJVhSwea7waJ1gbX7rIrTKhXvieA
+1yRSnRZpNFLD5FWGBJev685g4nt6oPS9dNFkJTYYwJdgX4+LN8N/MWWtrgHVF3Oi
+4iYDcWChV+ktaqTUSke1V6TCHEtleGhEPa2VPUP4l9880/6OVpAJTakBASWfc3SS
+E2EXcGFxuwLYrH/BjRn5TjA3xcgPj/DtzzvQ9+ejvnjZ6+2P2/MnI/t2JOASSP6K
+tqpiDPPknSc6qvGnRmgKqVjFkFeqvo7OxYQn7qmPVCsVl6uuDg409A9SSKD3zWwA
+hqB3RqM6bWYrVKGfEjJZ
+=7g6l
+-----END PGP SIGNATURE-----
+
+--b5gNqxB1S1yM7hjW--
