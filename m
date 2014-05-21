@@ -1,68 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215AbaEUE3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 00:29:55 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:65431 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761AbaEUE3x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 00:29:53 -0400
-Message-ID: <1400646590.5158.43.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
- futile
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 21 May 2014 06:29:50 +0200
-In-Reply-To: <20140520172033.GE4570@linux.vnet.ibm.com>
-References: <1400123931.5175.38.camel@marge.simpson.net>
-	 <1400386954.5140.36.camel@marge.simpson.net>
-	 <20140518052039.GF4570@linux.vnet.ibm.com>
-	 <1400402201.5166.13.camel@marge.simpson.net>
-	 <20140518155815.GK4570@linux.vnet.ibm.com>
-	 <1400467481.5211.48.camel@marge.simpson.net>
-	 <20140519053401.GP4570@linux.vnet.ibm.com>
-	 <20140520145350.GC17741@localhost.localdomain>
-	 <20140520155324.GD4570@linux.vnet.ibm.com>
-	 <20140520162433.GE17741@localhost.localdomain>
-	 <20140520172033.GE4570@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751689AbaEUEaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 00:30:09 -0400
+Received: from mail.eperm.de ([89.247.134.16]:50038 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520AbaEUEaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 00:30:06 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Cc: aquini@redhat.com, jeremy.wayne.powell@gmail.com, clemens@ladisch.de,
+        pwalten@au1.ibm.com, joe@perches.com
+Subject: [PATCH v7 6/6] Add DRBG test code to testmgr
+Date: Wed, 21 May 2014 06:22:24 +0200
+Message-ID: <2536061.AdkqFhFlyV@myon.chronox.de>
+User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <16102625.1uoi9eJz6k@myon.chronox.de>
+References: <16102625.1uoi9eJz6k@myon.chronox.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-20 at 10:20 -0700, Paul E. McKenney wrote: 
-> On Tue, May 20, 2014 at 06:24:36PM +0200, Frederic Weisbecker wrote:
-> > On Tue, May 20, 2014 at 08:53:24AM -0700, Paul E. McKenney wrote:
-> > > On Tue, May 20, 2014 at 04:53:52PM +0200, Frederic Weisbecker wrote:
-> 
-> [ . . . ]
-> 
-> > > > We'll probably extend it that way in the future. But likely not in a near future.
-> > > 
-> > > My guess is that Mike would be OK with making nohz_full choice of CPUs
-> > > still at boot time, but that he would like the CPUs that are not to be
-> > > in nohz_full state be able to opt out of the context-tracking overhead.
-> > 
-> > Ok that might be possible. Although still require a bit of complication.
-> > Lets wait for Mike input.
-> 
-> Sounds good!
-> 
-> Mike, would this do what you need?
+The DRBG test code implements the CAVS test approach.
 
-I don't _have_ a here and now need at all, I'm just looking at the
-possibilities.  For the users I'm aware of here and now, I'm pretty sure
-they'd be tickled pink with it as it sits ('course tickled pink will
-quickly become "I see a 1.073us perturbation once every three weeks").
+As discussed for the test vectors, all DRBG types are covered with
+testing. However, not every backend cipher is covered with testing. To
+prevent the testmgr from logging missing testing, the NULL test is
+registered for all backend ciphers not covered with specific test cases.
 
--Mike 
+All currently implemented DRBG types and backend ciphers are defined
+in SP800-90A. Therefore, the fips_allowed flag is set for all.
+
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/testmgr.c | 248 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 248 insertions(+)
+
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index dc3cf35..a2ad20a 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -27,6 +27,7 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <crypto/rng.h>
++#include <crypto/drbg.h>
+ 
+ #include "internal.h"
+ 
+@@ -108,6 +109,11 @@ struct cprng_test_suite {
+ 	unsigned int count;
+ };
+ 
++struct drbg_test_suite {
++	struct drbg_testvec *vecs;
++	unsigned int count;
++};
++
+ struct alg_test_desc {
+ 	const char *alg;
+ 	int (*test)(const struct alg_test_desc *desc, const char *driver,
+@@ -121,6 +127,7 @@ struct alg_test_desc {
+ 		struct pcomp_test_suite pcomp;
+ 		struct hash_test_suite hash;
+ 		struct cprng_test_suite cprng;
++		struct drbg_test_suite drbg;
+ 	} suite;
+ };
+ 
+@@ -1712,6 +1719,101 @@ static int alg_test_cprng(const struct alg_test_desc *desc, const char *driver,
+ 	return err;
+ }
+ 
++
++static int drbg_cavs_test(struct drbg_testvec *test, int pr,
++			  const char *driver, u32 type, u32 mask)
++{
++	int ret = -EAGAIN;
++	struct crypto_rng *drng;
++	struct drbg_test_data test_data;
++	struct drbg_string addtl, pers, testentropy;
++	unsigned char *buf = kzalloc(test->expectedlen, GFP_KERNEL);
++
++	if (!buf)
++		return -ENOMEM;
++
++	drng = crypto_alloc_rng(driver, type, mask);
++	if (IS_ERR(drng)) {
++		printk(KERN_ERR "alg: drbg: could not allocate DRNG handle for"
++		       "%s\n", driver);
++		kzfree(buf);
++		return -ENOMEM;
++	}
++
++	test_data.testentropy = &testentropy;
++	drbg_string_fill(&testentropy, test->entropy, test->entropylen);
++	drbg_string_fill(&pers, test->pers, test->perslen);
++	ret = crypto_drbg_reset_test(drng, &pers, &test_data);
++	if (ret) {
++		printk(KERN_ERR "alg: drbg: Failed to reset rng\n");
++		goto outbuf;
++	}
++
++	drbg_string_fill(&addtl, test->addtla, test->addtllen);
++	if (pr) {
++		drbg_string_fill(&testentropy, test->entpra, test->entprlen);
++		ret = crypto_drbg_get_bytes_addtl_test(drng,
++			buf, test->expectedlen, &addtl,	&test_data);
++	} else {
++		ret = crypto_drbg_get_bytes_addtl(drng,
++			buf, test->expectedlen, &addtl);
++	}
++	if (ret <= 0) {
++		printk(KERN_ERR "alg: drbg: could not obtain random data for"
++		       "driver %s\n", driver);
++		goto outbuf;
++	}
++
++	drbg_string_fill(&addtl, test->addtlb, test->addtllen);
++	if (pr) {
++		drbg_string_fill(&testentropy, test->entprb, test->entprlen);
++		ret = crypto_drbg_get_bytes_addtl_test(drng,
++			buf, test->expectedlen, &addtl, &test_data);
++	} else {
++		ret = crypto_drbg_get_bytes_addtl(drng,
++			buf, test->expectedlen, &addtl);
++	}
++	if (ret <= 0) {
++		printk(KERN_ERR "alg: drbg: could not obtain random data for"
++		       "driver %s\n", driver);
++		goto outbuf;
++	}
++
++	ret = memcmp(test->expected, buf, test->expectedlen);
++
++outbuf:
++	crypto_free_rng(drng);
++	kzfree(buf);
++	return ret;
++}
++
++
++static int alg_test_drbg(const struct alg_test_desc *desc, const char *driver,
++			 u32 type, u32 mask)
++{
++	int err = 0;
++	int pr = 0;
++	int i = 0;
++	struct drbg_testvec *template = desc->suite.drbg.vecs;
++	unsigned int tcount = desc->suite.drbg.count;
++
++	if ((0 == memcmp(driver, "drbg(pr(", 8)) ||
++	    (0 == memcmp(driver, "drbg_pr_", 8)))
++		pr = 1;
++
++	for (i = 0; i < tcount; i++) {
++		err = drbg_cavs_test(&template[i], pr, driver, type, mask);
++		if (err) {
++			printk(KERN_ERR "alg: drbg: Test %d failed for %s\n",
++			       i, driver);
++			err = -EINVAL;
++			break;
++		}
++	}
++	return err;
++
++}
++
+ static int alg_test_null(const struct alg_test_desc *desc,
+ 			     const char *driver, u32 type, u32 mask)
+ {
+@@ -2305,6 +2407,152 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.alg = "digest_null",
+ 		.test = alg_test_null,
+ 	}, {
++		.alg = "drbg(nopr(ctr(aes128)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_ctr_aes128_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_ctr_aes128_tv_template)
++			}
++		}
++	}, {
++		.alg = "drbg(nopr(ctr(aes192)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_ctr_aes192_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_ctr_aes192_tv_template)
++			}
++		}
++	}, {
++		.alg = "drbg(nopr(ctr(aes256)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_ctr_aes256_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_ctr_aes256_tv_template)
++			}
++		}
++	}, {
++		/*
++		 * There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(nopr(hmac(sha256))) test
++		 */
++		.alg = "drbg(nopr(hmac(sha1)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(nopr(hmac(sha256)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_hmac_sha256_tv_template,
++				.count =
++				ARRAY_SIZE(drbg_nopr_hmac_sha256_tv_template)
++			}
++		}
++	}, {
++		/* covered by drbg(nopr(hmac(sha256))) test */
++		.alg = "drbg(nopr(hmac(sha384)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(nopr(hmac(sha512)))",
++		.test = alg_test_null,
++		.fips_allowed = 1,
++	}, {
++		.alg = "drbg(nopr(sha1))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(nopr(sha256))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_sha256_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_sha256_tv_template)
++			}
++		}
++	}, {
++		/* covered by drbg(nopr(sha256)) test */
++		.alg = "drbg(nopr(sha384))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(nopr(sha512))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(ctr(aes128)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_pr_ctr_aes128_tv_template,
++				.count = ARRAY_SIZE(drbg_pr_ctr_aes128_tv_template)
++			}
++		}
++	}, {
++		/* covered by drbg(pr(aes128)) test */
++		.alg = "drbg(pr(ctr(aes192)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(ctr(aes256)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(hmac(sha1)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(hmac(sha256)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_pr_hmac_sha256_tv_template,
++				.count = ARRAY_SIZE(drbg_pr_hmac_sha256_tv_template)
++			}
++		}
++	}, {
++		/* covered by drbg(pr(hmac(sha256))) test */
++		.alg = "drbg(pr(hmac(sha384)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(hmac(sha512)))",
++		.test = alg_test_null,
++		.fips_allowed = 1,
++	}, {
++		.alg = "drbg(pr(sha1))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(sha256))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_pr_sha256_tv_template,
++				.count = ARRAY_SIZE(drbg_pr_sha256_tv_template)
++			}
++		}
++	}, {
++		/* covered by drbg(pr(sha256)) test */
++		.alg = "drbg(pr(sha384))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(sha512))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
+ 		.alg = "ecb(__aes-aesni)",
+ 		.test = alg_test_null,
+ 		.fips_allowed = 1,
 
