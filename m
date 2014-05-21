@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaEULcm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:32:42 -0400
-Received: from sauhun.de ([89.238.76.85]:47335 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254AbaEULck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:32:40 -0400
-Date: Wed, 21 May 2014 13:32:29 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        sjg@chromium.org, linux-kernel@vger.kernel.org, cpgs@samsung.com,
-        broonie@kernel.org, t.figa@samsung.com
-Subject: Re: [PATCH] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
-Message-ID: <20140521113229.GU2708@katana>
-References: <1398675598-25991-1-git-send-email-ch.naveen@samsung.com>
- <20140521103432.GM2708@katana>
- <CAHfPSqDwg9z27jPHaZohYCvr314dye1Wd6dgYQKP7Ub7=gSVuA@mail.gmail.com>
+	id S1752552AbaEULdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:33:03 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:13443
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752342AbaEULc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:32:59 -0400
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>
+CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v8 2/2] can: xilinx CAN controller support.
+Thread-Topic: [PATCH v8 2/2] can: xilinx CAN controller support.
+Thread-Index: AQHPdOfeEMgl0Smao0yYxudgrwK4optK5qjg
+Date: Wed, 21 May 2014 11:32:41 +0000
+References: <30fc07d6-4404-4745-8c03-1c5ae775e4f1@BY2FFO11FD047.protection.gbl>
+ <537C8E00.404@pengutronix.de>
+In-Reply-To: <537C8E00.404@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.16.44]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cqG5pBpskktEuCrX"
-Content-Disposition: inline
-In-Reply-To: <CAHfPSqDwg9z27jPHaZohYCvr314dye1Wd6dgYQKP7Ub7=gSVuA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <72e9a444-0de4-42ce-a9d3-ee247948f0e6@BN1AFFO11FD030.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(24454002)(13464003)(377454003)(479174003)(199002)(189002)(51704005)(83072002)(2656002)(85852003)(77982001)(79102001)(74662001)(92726001)(87936001)(47776003)(20776003)(64706001)(86362001)(16601075003)(33646001)(76482001)(15202345003)(15975445006)(21056001)(31696002)(53416003)(80022001)(23676002)(50466002)(19580395003)(74316001)(81342001)(99396002)(70736001)(83322001)(44976005)(19580405001)(50986999)(54356999)(76176999)(46102001)(4396001)(74502001)(81542001)(23106003);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB008;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Forefront-PRVS: 0218A015FA
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=appana.durga.rao@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LBXEVf019238
+
+Hi Marc,
+
+        Yes for DT-bindings Rob already had given ack.
+Sorry I forgot to add the Acked-by line in that patch.
+
+Regards,
+Kedar.
+
+> -----Original Message-----
+> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> Sent: Wednesday, May 21, 2014 4:59 PM
+> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+> grant.likely@linaro.org; robh+dt@kernel.org
+> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Appana Durga
+> Kedareswara Rao
+> Subject: Re: [PATCH v8 2/2] can: xilinx CAN controller support.
+>
+> On 05/21/2014 09:00 AM, Kedareswara rao Appana wrote:
+> > This patch adds xilinx CAN controller support.
+> > This driver supports both ZYNQ CANPS and Soft IP AXI CAN controller.
+> >
+> > Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+>
+> Looks good, do you already have an Ack for the DT-bindings?
+>
+> Marc
+>
+> --
+> Pengutronix e.K.                  | Marc Kleine-Budde           |
+> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
---cqG5pBpskktEuCrX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-> You want me to send another version fixing these nits ?
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
-No, did it locally here. Thanks.
-
-
---cqG5pBpskktEuCrX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfI7NAAoJEBQN5MwUoCm2xsUP/j6VRy2+sFreaM6nKTn3vsxF
-qUF2Qzzya0HvAKxxMzzGxSLyILQMx8YLaovxTRqiSE7liFhmR0EarQNnwF7WARHg
-fCTS7ct8USRqbyq0ZsAP2V6UNDdnUaICRk2p7I6YMkVH0IYqNxTzLmq6bkNg+1xZ
-KQbXMH0C8yR/niAjsAXIf16x1WAdW+VRFc2jX1QbY2MjVq3mjWJ5A9IrjG+4ObMk
-2yxOI1ctwcGQDpCzs5z7jiXlgKi6/H9YJ/ax06ey3Go86DKOMH/i8HgQCnJToKWk
-EjnbWGl1Poss225kZPituI+wPau4UUzVuKAGhIeNcIm+Vso5y6ZE7Dr4fVWCOvAI
-7a+qUWBSrP7qEq4Iws5EX/ypjcIcXdmk8/iY+24oR2QeJQMFo2oSyRRF04agEpee
-YOzK8dotHduD06d6wnscHweIJXRL4vk4m5X/5dHhJgXo0Y3HDwU33/0opeeFJgb2
-naZRedUXHMnSeZcWK+XnjHHeNKBr+dTE36KM08fCDSz7QGAPnE/4I4AWOOHyJGy7
-Kw+FB6GcHwkS43Vfy9TnkplIVDbvM59IBvHZ+4xVOZfoFLBViK/srRcN9Uqjrpcw
-z1Ot1DlOsj1S1msrw1oBI3h7Gq7+ORN0lZDna9QcXfGXNiW/OF0ICXro9BRnBbrW
-0JHhbcE5riGg2PZPfnGC
-=CQVy
------END PGP SIGNATURE-----
-
---cqG5pBpskktEuCrX--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
