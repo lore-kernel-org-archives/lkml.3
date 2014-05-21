@@ -1,211 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbaEUIHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:07:14 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:48442 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967AbaEUIHE (ORCPT
+	id S1752114AbaEUIH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:07:29 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:38769 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967AbaEUIHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:07:04 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <537C5EA3.20709@lge.com>
-Date: Wed, 21 May 2014 17:06:59 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 21 May 2014 04:07:21 -0400
+Date: Wed, 21 May 2014 10:07:12 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+cc: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: hanging aio process
+In-Reply-To: <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1405210954110.1579@denkbrett>
+References: <alpine.LFD.2.11.1405191908450.1847@denkbrett> <20140519180851.GD2915@kvack.org> <alpine.LFD.2.11.1405200950480.1606@denkbrett> <alpine.LFD.2.11.1405201508450.1606@denkbrett> <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
+ <alpine.LFD.2.11.1405201945280.1631@denkbrett>  <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>
-Subject: Re: [RFC PATCH] arm: dma-mapping: fallback allocation for cma failure
-References: <537AEEDB.2000001@lge.com> <20140520065222.GB8315@js1304-P5Q-DELUXE> <xa1t1tvo1fas.fsf@mina86.com>
-In-Reply-To: <xa1t1tvo1fas.fsf@mina86.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052108-4966-0000-0000-000000194C76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 20 May 2014, Anatol Pomozov wrote:
+> On Tue, May 20, 2014 at 11:09 AM, Sebastian Ott
+> <sebott@linux.vnet.ibm.com> wrote:
+> > On Tue, 20 May 2014, Anatol Pomozov wrote:
+> >> On Tue, May 20, 2014 at 6:16 AM, Sebastian Ott
+> >> <sebott@linux.vnet.ibm.com> wrote:
+> >> > On Tue, 20 May 2014, Sebastian Ott wrote:
+> >> >> On Mon, 19 May 2014, Benjamin LaHaise wrote:
+> >> >> > It is entirely possible the bug isn't
+> >> >> > caused by the referenced commit, as the commit you're pointing to merely
+> >> >> > makes io_destroy() syscall wait for all aio outstanding to complete
+> >> >> > before returning.
+> >> >>
+> >> >> I cannot reproduce this when I revert said commit (on top of 14186fe). If
+> >> >> that matters - the arch is s390.
+> >> >
+> >> > Hm, ok - maybe that commit is really just highlighting a refcounting bug.
+> >> > I just compared traces for a good and a few bad cases. The good case:
+> >> > # tracer: function
+> >> > #
+> >> > # entries-in-buffer/entries-written: 16/16   #P:4
+> >> > #
+> >> > #                              _-----=> irqs-off
+> >> > #                             / _----=> need-resched
+> >> > #                            | / _---=> hardirq/softirq
+> >> > #                            || / _--=> preempt-depth
+> >> > #                            ||| /     delay
+> >> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> >> > #              | |       |   ||||       |         |
+> >> >              fio-732   [003] ....    17.989315: kill_ioctx <-SyS_io_destroy
+> >> >              fio-739   [003] ....    18.000563: kill_ioctx <-SyS_io_destroy
+> >> >      ksoftirqd/3-19    [003] ..s.    18.031673: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >      ksoftirqd/3-19    [003] ..s.    18.031679: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >              fio-737   [003] ....    18.038765: kill_ioctx <-SyS_io_destroy
+> >> >      ksoftirqd/3-19    [003] ..s.    18.062488: free_ioctx_reqs <-percpu_ref_kill_rcu
+> >> >      ksoftirqd/3-19    [003] ..s.    18.062494: free_ioctx_reqs <-percpu_ref_kill_rcu
+> >> >      kworker/3:1-57    [003] ....    18.062499: free_ioctx <-process_one_work
+> >> >      kworker/3:1-57    [003] ....    18.062506: free_ioctx <-process_one_work
+> >> >      ksoftirqd/3-19    [003] ..s.    18.072275: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >              fio-738   [003] ....    18.102419: kill_ioctx <-SyS_io_destroy
+> >> >           <idle>-0     [003] .ns.    18.111668: free_ioctx_reqs <-percpu_ref_kill_rcu
+> >> >      kworker/3:1-57    [003] ....    18.111675: free_ioctx <-process_one_work
+> >> >      ksoftirqd/3-19    [003] ..s.    18.138035: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >           <idle>-0     [003] .ns.    18.191665: free_ioctx_reqs <-percpu_ref_kill_rcu
+> >> >      kworker/3:1-57    [003] ....    18.191671: free_ioctx <-process_one_work
+> >> >
+> >> > (4 fio workers, free_ioctx_reqs is called 4 times)
+> >> >
+> >> > One of the bad cases:
+> >> > # tracer: function
+> >> > #
+> >> > # entries-in-buffer/entries-written: 14/14   #P:4
+> >> > #
+> >> > #                              _-----=> irqs-off
+> >> > #                             / _----=> need-resched
+> >> > #                            | / _---=> hardirq/softirq
+> >> > #                            || / _--=> preempt-depth
+> >> > #                            ||| /     delay
+> >> > #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> >> > #              | |       |   ||||       |         |
+> >> >              fio-834   [000] ....    51.127359: kill_ioctx <-SyS_io_destroy
+> >> >           <idle>-0     [000] ..s.    51.170237: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >              fio-828   [001] ....    51.189717: kill_ioctx <-SyS_io_destroy
+> >> >              fio-833   [001] ..s.    51.220178: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >           <idle>-0     [000] .ns.    51.220230: free_ioctx_reqs <-percpu_ref_kill_rcu
+> >> >      kworker/0:3-661   [000] ....    51.220238: free_ioctx <-process_one_work
+> >> >           <idle>-0     [001] .ns.    51.260188: free_ioctx_reqs <-percpu_ref_kill_rcu
+> >> >      kworker/1:2-103   [001] ....    51.260198: free_ioctx <-process_one_work
+> >> >              fio-833   [002] ....    51.287602: kill_ioctx <-SyS_io_destroy
+> >> >            udevd-868   [002] ..s1    51.332519: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >           <idle>-0     [002] .ns.    51.450180: free_ioctx_reqs <-percpu_ref_kill_rcu
+> >> >      kworker/2:2-191   [002] ....    51.450191: free_ioctx <-process_one_work
+> >> >              fio-835   [003] ....    51.907530: kill_ioctx <-SyS_io_destroy
+> >> >      ksoftirqd/3-19    [003] ..s.    52.000232: free_ioctx_users <-percpu_ref_kill_rcu
+> >> >
+> >> > (1 fio worker in D state, free_ioctx_reqs is called 3 times)
+> >>
+> >>
+> >> Looking at the second trace: the first 3 io_destroy() calls cause
+> >> free_ioctx_reqs(), but the last one does not call free_ioctx_reqs().
+> >> Do you have more logs after the last line?
+> >
+> > Nope that was all.
+> >
+> >> If there is no more
+> >> free_ioctx_reqs() then it means something keeps ctx->reqs refcounter.
+> >> I suggest to add some logging to kernel to figure out what is the
+> >> refcount value at this moment.
+> >
+> > Jep, I did that this morning (via atomic_read(&ctx->reqs.count) in
+> > free_ioctx_users before percpu_ref_kill(&ctx->reqs); is called) and
+> > the value was always the same
+> >         1 + (1UL << 31)
+> > even for the free_ioctx_users invocations that were not followed by
+> > free_ioctx_reqs.
+> 
+> Could you add atomic_read(&ctx->reqs.count) *after* the
+> percpu_ref_kill(&ctx->reqs)?
 
-I change the name of patch into "[PATCH] arm: dma-mapping: add checking cma area initialized",
-because I remove fallback allocation and use dev_get_cma_area() to check cma area.
-If no cma area exists it goes to __alloc_remap_buffer().
+I already did that and it didn't change, always 1 + (1UL << 31) in all
+cases, before and after percpu_ref_kill(&ctx->reqs). I'm not really
+familiar with this percpu_ref stuff but it looks like the initial
+reference is dropped asynchronous.
 
-I think this is the same with the fallback allocation but a little simple.
+Regards,
+Sebastian
 
-I am sorry but I am not familiar kernel mailing style.
-Do I have to send the new patch in new email? Or is it OK to copy the new patch here?
+> 
+> before percpu_ref_kill() the refcounter is per-CPU one and correctly
+> calculate the real value you need to take &ctx->reqs.pcpu_count into
+> account. But after percpu_ref_kill() the reqs.count become the normal
+> shared refcounter.
+> 
+> >
+> >>
+> >> But *if* there was one more free_ioctx_reqs() that does not
+> >> complete(ctx->requests_done) then it means the thread does not see
+> >> value of requests_done field. It would make me believe there is a
+> >> problem with memory reordering. I do not know whether s390 reorders
+> >> stores, but anyway, could you please check this patch?
+> >
+> > Nope s390 doesn't reorder stores - I tried the patch anyway, but it didn't
+> > help.
+> >
+> > Regards,
+> > Sebastian
+> >>
+> >> anatol:linux $ git diff
+> >> diff --git a/fs/aio.c b/fs/aio.c
+> >> index a0ed6c7..6e3c0bb 100644
+> >> --- a/fs/aio.c
+> >> +++ b/fs/aio.c
+> >> @@ -514,6 +514,7 @@ static void free_ioctx_reqs(struct percpu_ref *ref)
+> >>         struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
+> >>
+> >>         /* At this point we know that there are no any in-flight requests */
+> >> +       rmb();
+> >>         if (ctx->requests_done)
+> >>                 complete(ctx->requests_done);
+> >>
+> >> @@ -758,6 +759,7 @@ static void kill_ioctx(struct mm_struct *mm,
+> >> struct kioctx *ctx,
+> >>                         vm_munmap(ctx->mmap_base, ctx->mmap_size);
+> >>
+> >>                 ctx->requests_done = requests_done;
+> >> +               wmb();
+> >>                 percpu_ref_kill(&ctx->users);
+> >>         } else {
+> >>                 if (requests_done)
+> >>
+> >>
+> >
+> 
+> 
 
------------------------------- 8< -------------------------------------------
- From e50388f5904105cacea746cd6917c200704f0bf9 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Tue, 20 May 2014 14:16:20 +0900
-Subject: [PATCH] arm: dma-mapping: add checking cma area initialized
-
-If CMA is turned on and CMA size is set to zero, kernel should
-behave as if CMA was not enabled at compile time.
-Every dma allocation should check existence of cma area
-before requesting memory.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
-  arch/arm/mm/dma-mapping.c |   12 ++++++++----
-  1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 18e98df..61f7b93 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -379,7 +379,7 @@ static int __init atomic_pool_init(void)
-         unsigned long *bitmap;
-         struct page *page;
-         struct page **pages;
--       void *ptr;
-+       void *ptr = NULL;
-         int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
-
-         bitmap = kzalloc(bitmap_size, GFP_KERNEL);
-@@ -390,12 +390,13 @@ static int __init atomic_pool_init(void)
-         if (!pages)
-                 goto no_pages;
-
--       if (IS_ENABLED(CONFIG_DMA_CMA))
-+       if (IS_ENABLED(CONFIG_DMA_CMA) && dma_contiguous_default_area)
-                 ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
-                                               atomic_pool_init);
-         else
-                 ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
-                                            atomic_pool_init);
-+
-         if (ptr) {
-                 int i;
-
-@@ -669,6 +670,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
-         u64 mask = get_coherent_dma_mask(dev);
-         struct page *page = NULL;
-         void *addr;
-+       struct cma *cma = dev_get_cma_area(dev);
-
-  #ifdef CONFIG_DMA_API_DEBUG
-         u64 limit = (mask + 1) & ~mask;
-@@ -701,7 +703,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
-                 addr = __alloc_simple_buffer(dev, size, gfp, &page);
-         else if (!(gfp & __GFP_WAIT))
-                 addr = __alloc_from_pool(size, &page);
--       else if (!IS_ENABLED(CONFIG_DMA_CMA))
-+       else if (!IS_ENABLED(CONFIG_DMA_CMA) || !cma)
-                 addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
-         else
-                 addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
-@@ -780,6 +782,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
-                            bool is_coherent)
-  {
-         struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
-+       struct cma *cma = dev_get_cma_area(dev);
-
-         if (dma_release_from_coherent(dev, get_order(size), cpu_addr))
-                 return;
-@@ -790,7 +793,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
-                 __dma_free_buffer(page, size);
-         } else if (__free_from_pool(cpu_addr, size)) {
-                 return;
--       } else if (!IS_ENABLED(CONFIG_DMA_CMA)) {
-+       } else if (!IS_ENABLED(CONFIG_DMA_CMA) || !cma) {
-                 __dma_free_remap(cpu_addr, size);
-                 __dma_free_buffer(page, size);
-         } else {
-@@ -798,6 +801,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
-                  * Non-atomic allocations cannot be freed with IRQs disabled
-                  */
-                 WARN_ON(irqs_disabled());
-+
-                 __free_from_contiguous(dev, page, cpu_addr, size);
-         }
-  }
---
-1.7.9.5
-
-
-2014-05-21 오전 3:22, Michal Nazarewicz 쓴 글:
-> On Mon, May 19 2014, Joonsoo Kim wrote:
->> On Tue, May 20, 2014 at 02:57:47PM +0900, Gioh Kim wrote:
->>>
->>> Thanks for your advise, Michal Nazarewicz.
->>>
->>> Having discuss with Joonsoo, I'm adding fallback allocation after __alloc_from_contiguous().
->>> The fallback allocation works if CMA kernel options is turned on but CMA size is zero.
->>
->> Hello, Gioh.
->>
->> I also mentioned the case where devices have their specific cma_area.
->> It means that this device needs memory with some contraint.
->> Although I'm not familiar with DMA infrastructure, I think that
->> we should handle this case.
->>
->> How about below patch?
->>
->> ------------>8----------------
->> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
->> index 6b00be1..4023434 100644
->> --- a/arch/arm/mm/dma-mapping.c
->> +++ b/arch/arm/mm/dma-mapping.c
->> @@ -379,7 +379,7 @@ static int __init atomic_pool_init(void)
->>   	unsigned long *bitmap;
->>   	struct page *page;
->>   	struct page **pages;
->> -	void *ptr;
->> +	void *ptr = NULL;
->>   	int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
->>
->>   	bitmap = kzalloc(bitmap_size, GFP_KERNEL);
->> @@ -393,7 +393,8 @@ static int __init atomic_pool_init(void)
->>   	if (IS_ENABLED(CONFIG_DMA_CMA))
->>   		ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
->>   					      atomic_pool_init);
->> -	else
->> +
->> +	if (!ptr)
->>   		ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
->>   					   atomic_pool_init);
->>   	if (ptr) {
->> @@ -701,10 +702,22 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
->>   		addr = __alloc_simple_buffer(dev, size, gfp, &page);
->>   	else if (!(gfp & __GFP_WAIT))
->>   		addr = __alloc_from_pool(size, &page);
->> -	else if (!IS_ENABLED(CONFIG_DMA_CMA))
->> -		addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
->> -	else
->> -		addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
->> +	else {
->> +		if (IS_ENABLED(CONFIG_DMA_CMA)) {
->> +			addr = __alloc_from_contiguous(dev, size, prot,
->> +							&page, caller);
->> +			/*
->> +			 * Device specific cma_area means that
->> +			 * this device needs memory with some contraint.
->> +			 * So, we can't fall through general remap allocation.
->> +			 */
->> +			if (!addr && dev && dev->cma_area)
->> +				return NULL;
->> +		}
->> +
->> +		addr = __alloc_remap_buffer(dev, size, gfp, prot,
->> +							&page, caller);
->> +	}
->
-> __arm_dma_free will have to be changed to handle the fallback as well.
-> But perhaps Marek is right and there should be no fallback for regular
-> allocations?  Than again, non-CMA allocation should be performed at
-> least in the case of cma=0.
->
->>
->>   	if (addr)
->>   		*handle = pfn_to_dma(dev, page_to_pfn(page));
->
->
->
