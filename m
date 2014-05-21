@@ -1,87 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaEULdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:33:03 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:13443
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752342AbaEULc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:32:59 -0400
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v8 2/2] can: xilinx CAN controller support.
-Thread-Topic: [PATCH v8 2/2] can: xilinx CAN controller support.
-Thread-Index: AQHPdOfeEMgl0Smao0yYxudgrwK4optK5qjg
-Date: Wed, 21 May 2014 11:32:41 +0000
-References: <30fc07d6-4404-4745-8c03-1c5ae775e4f1@BY2FFO11FD047.protection.gbl>
- <537C8E00.404@pengutronix.de>
-In-Reply-To: <537C8E00.404@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.16.44]
-Content-Type: text/plain; charset="utf-8"
+	id S1752361AbaEULet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:34:49 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:50360 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395AbaEULes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:34:48 -0400
+From: "Liviu Dudau" <liviu@dudau.co.uk>
+Date: Wed, 21 May 2014 12:34:21 +0100
+To: Sunil Kovvuri <sunil.kovvuri@gmail.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "kdb@lurndal.org" <kdb@lurndal.org>,
+        "yu.zhao@intel.com" <yu.zhao@intel.com>
+Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
+Message-ID: <20140521113421.GB13511@bart.dudau.co.uk>
+Mail-Followup-To: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	"kdb@lurndal.org" <kdb@lurndal.org>,
+	"yu.zhao@intel.com" <yu.zhao@intel.com>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+ <CA+sq2Ccok5wtKjCZUkBhhj3WsiqFAoMgHK7LY210aBtMku+8SA@mail.gmail.com>
+ <20140516132451.GK967@e106497-lin.cambridge.arm.com>
+ <CA+sq2CejJFg--0rS1arr4Sactp-ssENB8Y3g4b61JPGPBCms=A@mail.gmail.com>
+ <CA+sq2Ccp0_4hgbbWa27bkYcqiXY6Ckr8eckWnHwANvhWNo97fg@mail.gmail.com>
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <72e9a444-0de4-42ce-a9d3-ee247948f0e6@BN1AFFO11FD030.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(24454002)(13464003)(377454003)(479174003)(199002)(189002)(51704005)(83072002)(2656002)(85852003)(77982001)(79102001)(74662001)(92726001)(87936001)(47776003)(20776003)(64706001)(86362001)(16601075003)(33646001)(76482001)(15202345003)(15975445006)(21056001)(31696002)(53416003)(80022001)(23676002)(50466002)(19580395003)(74316001)(81342001)(99396002)(70736001)(83322001)(44976005)(19580405001)(50986999)(54356999)(76176999)(46102001)(4396001)(74502001)(81542001)(23106003);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB008;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+sq2Ccp0_4hgbbWa27bkYcqiXY6Ckr8eckWnHwANvhWNo97fg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Wed May 21 12:34:46 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,537c8f563032121683303
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LBXEVf019238
 
-Hi Marc,
+On Wed, May 21, 2014 at 04:45:29PM +0530, Sunil Kovvuri wrote:
+> Hi Liviu,
+> 
+> Sorry for the trouble.
+> I got why 'res->parent' is not set in my case.
+> Basically my SR-IOV device has fixed resources, so resources will not
+> be allocated/assigned and hence parent resource is not set.
+> I will move the resource claiming to host controller driver as a fixup
+> so that parent resource hierarchy is set.
+> 
+> Thanks for the support.
 
-        Yes for DT-bindings Rob already had given ack.
-Sorry I forgot to add the Acked-by line in that patch.
+Glad you worked out the cause for the problem. I will still at to my list of
+ToDo things to investigate resource parenting with my patchset.
 
-Regards,
-Kedar.
+Best regards,
+Liviu
 
-> -----Original Message-----
-> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> Sent: Wednesday, May 21, 2014 4:59 PM
-> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
-> grant.likely@linaro.org; robh+dt@kernel.org
-> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Appana Durga
-> Kedareswara Rao
-> Subject: Re: [PATCH v8 2/2] can: xilinx CAN controller support.
->
-> On 05/21/2014 09:00 AM, Kedareswara rao Appana wrote:
-> > This patch adds xilinx CAN controller support.
-> > This driver supports both ZYNQ CANPS and Soft IP AXI CAN controller.
+> 
+> Regards,
+> Sunil.
+> 
+> 
+> On Fri, May 16, 2014 at 11:12 PM, Sunil Kovvuri <sunil.kovvuri@gmail.com> wrote:
+> > Hi Liviu,
 > >
-> > Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
->
-> Looks good, do you already have an Ack for the DT-bindings?
->
-> Marc
->
+> > Issue may not be only with SR-IOV resources.
+> >
+> > I am not an expert with Linux PCI core. But i am trying to understand
+> > how even for a non SR-IOV capable device's resource, gets a parent
+> > associated with it.
+> >
+> > When a PCI device driver calls pci_enable_device() which inturn calls
+> > 'arch/arm64/kernel/pci.c' pcibios_enable_device() which uses Linux PCI core
+> > API 'pci_enable_resources'. This API checks 'res->parent' for all
+> > valid resources
+> > before enabling them, otherwise it fails.
+> >                 if (!r->parent) {
+> >                         dev_err(&dev->dev, "device not available "
+> >                                 "(can't reserve %pR)\n", r);
+> >                         return -EINVAL;
+> >                 }
+> >
+> > Can you please let me know where this hierarchy is being set for
+> > 'pcibios_enable_resources' to work.
+> >
+> > I could only find request_resource() API which sets the parent and
+> > pci_claim_resource() uses this.
+> >
+> > Thanks,
+> > Sunil.
+> >
+> > On Fri, May 16, 2014 at 6:54 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> >> Hi Sunil,
+> >>
+> >> On Fri, May 16, 2014 at 11:33:04AM +0100, Sunil Kovvuri wrote:
+> >>> Hi Liviu,
+> >>>
+> >>> I am using your ARM64 PCIe patches to write a PCIe host controller
+> >>> driver for our SOC. I am facing an issue with SR-IOV capable device.
+> >>>
+> >>> Consider an PCI Express endpoint connected to a PCI Express
+> >>> Root Port.  The PCI Express endpoint provides PCI-SIG SR-IOV
+> >>> capabilities with a single physical function and a large number
+> >>> of virtual functions.  The Root Port contains a pci-pci bridge in
+> >>> between it and the SR-IOV device.
+> >>>
+> >>> When the SR-IOV capable device's driver tries to enable sriov
+> >>> (pci_enable_sriov()) it fails to create/add PCI device for each
+> >>> virtual function reporting  "not enough MMIO resources for SR-IOV".
+> >>>
+> >>> In sriov_enable() (drivers/pci/iov.c)
+> >>>
+> >>>  296        for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+> >>>  297                 bars |= (1 << (i + PCI_IOV_RESOURCES));
+> >>>  298                 res = dev->resource + PCI_IOV_RESOURCES + i;
+> >>>  299                 if (res->parent)
+> >>>  300                         nres++;
+> >>>  301         }
+> >>>  302         if (nres != iov->nres) {
+> >>>  303                 dev_err(&dev->dev, "not enough MMIO resources for
+> >>>  SR-IOV\n");
+> >>>  304                 return -ENOMEM;
+> >>>  305         }
+> >>>
+> >>> Here its checking if physical function's IOV resource has a parent or not.
+> >>> Which is pci-pci bridge in this case. Otherwise it doesn't consider
+> >>> that resource.
+> >>>
+> >>> Added below api to your patch.
+> >>> This will try to claim a resource while creating a PCI device which
+> >>> inturn sets 'res->parent'.
+> >>>
+> >>> Let me know if this is okay.
+> >>>
+> >>> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
+> >>> index 9f29c9a..fbfb48f 100644
+> >>> --- a/arch/arm64/kernel/pci.c
+> >>> +++ b/arch/arm64/kernel/pci.c
+> >>> @@ -125,6 +125,21 @@ resource_size_t pcibios_align_resource(void
+> >>> *data, const struct resource *res,
+> >>>         return res->start;
+> >>>  }
+> >>>
+> >>> +int pcibios_add_device(struct pci_dev *pdev)
+> >>> +{
+> >>> +        unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
+> >>> +        struct resource *res;
+> >>> +
+> >>> +        for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> >>> +                res = &pdev->resource[i];
+> >>> +                if (res->parent || !(res->flags & type_mask))
+> >>> +                        continue;
+> >>> +                pci_claim_resource(pdev, i);
+> >>> +        }
+> >>> +
+> >>>
+> >>
+> >> I would like not to have to add your patch in this file as I am trying to
+> >> remove it entirely. I don't have an SR-IOV capable device in my setup so
+> >> I am not able to debug your problem, but could you have a go and try to
+> >> figure out why the SR-IOV resources do not get a parent associated with
+> >> when they get created?
+> >>
+> >> Many thanks,
+> >> Liviu
+> >>
+> >>
+> >> --
+> >> ====================
+> >> | I would like to |
+> >> | fix the world,  |
+> >> | but they're not |
+> >> | giving me the   |
+> >>  \ source code!  /
+> >>   ---------------
+> >>     Â¯\_(ãƒ„)_/Â¯
+> >>
 > --
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
 
+ One small step
+   for me ...
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
