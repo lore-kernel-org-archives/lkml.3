@@ -1,124 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972AbaEULrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:47:19 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:52867 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751022AbaEULrR (ORCPT
+	id S1752113AbaEULtl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:49:41 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58569 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaEULtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:47:17 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: "'Sudeep Holla'" <sudeep.holla@arm.com>, Will Deacon <Will.Deacon@arm.com>
-CC: "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>
-Date: Wed, 21 May 2014 04:46:41 -0700
-Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-Thread-Topic: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-Thread-Index: Ac9vV0rzR7jl/TakQBq7behtTQicwQFkLAhw
-Message-ID: <9034CBD80F070943B59700D7F8149ED9A0875776@SC-VEXCH4.marvell.com>
-References: <1398133596-29170-1-git-send-email-zhangwm@marvell.com>
- <20140422103642.GF7484@arm.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE5507A3B59B@SC-VEXCH4.marvell.com>
- <20140423170821.GJ5649@arm.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE5507A3C1F1@SC-VEXCH4.marvell.com>
- <5360FB07.5030407@arm.com>
- <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
- <9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
- <20140513184503.GF16388@arm.com>
- <9034CBD80F070943B59700D7F8149ED9A087573F@SC-VEXCH4.marvell.com>
- <537337F3.4080300@arm.com>
-In-Reply-To: <537337F3.4080300@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 21 May 2014 07:49:40 -0400
+Message-ID: <537C92C2.4090204@pengutronix.de>
+Date: Wed, 21 May 2014 13:49:22 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-21_04:2014-05-21,2014-05-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1405210145
+To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>
+CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/2] can: xilinx CAN controller support.
+References: <30fc07d6-4404-4745-8c03-1c5ae775e4f1@BY2FFO11FD047.protection.gbl> <537C8E00.404@pengutronix.de> <72e9a444-0de4-42ce-a9d3-ee247948f0e6@BN1AFFO11FD030.protection.gbl>
+In-Reply-To: <72e9a444-0de4-42ce-a9d3-ee247948f0e6@BN1AFFO11FD030.protection.gbl>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="DNR1DLrqLF72aeKBiGa0mBXm9n3QBeJOx"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LBlPij019338
 
-Sudeepï¼Œ
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--DNR1DLrqLF72aeKBiGa0mBXm9n3QBeJOx
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Sudeep Holla [mailto:sudeep.holla@arm.com]
-> Sent: 2014å¹´5æœˆ14æ—¥ 17:32
-> To: Neil Zhang; Will Deacon
-> Cc: Sudeep Holla; 'linux@arm.linux.org.uk';
-> 'linux-arm-kernel@lists.infradead.org'; 'linux-kernel@vger.kernel.org';
-> 'devicetree@vger.kernel.org'
-> Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-> 
-> 
-> 
-> On 14/05/14 03:28, Neil Zhang wrote:
-> >> -----Original Message-----
-> >> From: Will Deacon [mailto:will.deacon@arm.com]
-> >> Sent: 2014å¹´5æœˆ14æ—¥ 2:45
-> >> To: Neil Zhang
-> >> Cc: Sudeep Holla; 'linux@arm.linux.org.uk';
-> >> 'linux-arm-kernel@lists.infradead.org';
-> >> 'linux-kernel@vger.kernel.org'; 'devicetree@vger.kernel.org'
-> >> Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm
-> >> notifier
-> >>
-> >> On Mon, May 12, 2014 at 11:22:09AM +0100, Neil Zhang wrote:
-> >>>>> The device tree bindings for power domains is under discussion [1]
-> >>>>
-> >>>> Thanks for the information.
-> >>>> But it currently for device only, core related stuff are not supported.
-> >>>> And is it really good to register power provider for core and let
-> >>>> vfp / pmu etc to get it?
-> >>>>
-> >>>
-> >>> What's your suggestion about it?
-> >>> Is it OK that I add it under the PMU node?
-> >>
-> >> I don't really mind. I just want to avoid re-inventing the wheel in a
-> >> PMU-specific way and having to maintain that code forever because it
-> >> ended up in our DT description.
-> >>
-> >> Will
-> >
-> > I will prepare another patch to add DT description under PMU since
-> > there is no generic power domain support for pm notifier if no other
-> concerns.
-> > We can change the manner if there is generic power domain support for
-> pm notifier later.
-> > Thanks.
-> 
-> No, please don't add any DT bindings for power domains specific to PMU
-> node.
-> We can't change the DT bindings once added.
-> 
-> As I pointed out the DT bindings for generic power domains are under
-> discussion.
-> See if you can reuse it, if not help in extending it so that it can be used.
-> 
+On 05/21/2014 01:32 PM, Appana Durga Kedareswara Rao wrote:
+> Hi Marc,
+>=20
+>         Yes for DT-bindings Rob already had given ack.
+> Sorry I forgot to add the Acked-by line in that patch.
 
-Sorry for reply later.
-As I said before the under discussed generic power domain is not suitable for
-CPU peripherals since they are all known belong to CPU or cluster power domain.
-If we want to follow the way they are discussion, we need to register core 
-and cluster power provider, and need vfp/gic/pmu etc to require them.
-Is it really suitable?
+You mean Rob Herring?
 
-> Regards,
-> Sudeep
-> 
-> 
+    Acked-by: Rob Herring <robh@kernel.org>
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--DNR1DLrqLF72aeKBiGa0mBXm9n3QBeJOx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlN8ksIACgkQjTAFq1RaXHN0HACfVSSVOynmlG2+7ugv7JzDXJYD
+4ksAnAu/Rjweh8kDN16NLVg8uYAw0QOH
+=/3Pv
+-----END PGP SIGNATURE-----
+
+--DNR1DLrqLF72aeKBiGa0mBXm9n3QBeJOx--
