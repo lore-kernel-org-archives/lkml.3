@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaEULLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:11:10 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:44387 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443AbaEULLI (ORCPT
+	id S1752487AbaEULLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:11:18 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:59476 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaEULLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:11:08 -0400
+	Wed, 21 May 2014 07:11:16 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
         inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
         pavel@ucw.cz, len.brown@intel.com, sudeep.holla@arm.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 6/7] cpufreq: cpufreq-cpu0: don't initialize opp table
-Date: Wed, 21 May 2014 16:40:04 +0530
-Message-Id: <fe9b0ad5c92a94bd9c57e6b44a07b3cc82f7c4ef.1400670427.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 7/7] cpufreq: exynos5440: don't initialize opp table
+Date: Wed, 21 May 2014 16:40:05 +0530
+Message-Id: <09ed496bfe585eb8e19150dfd64c778016dfb7de.1400670427.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <cover.1400670427.git.viresh.kumar@linaro.org>
 References: <cover.1400670427.git.viresh.kumar@linaro.org>
@@ -27,31 +27,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 OPP tables are already initialized for CPU0 by cpufreq core and so we don't need
-to reinitialize them from cpufreq-cpu0 driver.
+to reinitialize them from exynos5440's driver.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Cd: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cd: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cpufreq-cpu0.c | 6 ------
+ drivers/cpufreq/exynos5440-cpufreq.c | 6 ------
  1 file changed, 6 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 1bf6bba..4301c7c 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -152,12 +152,6 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		goto out_put_node;
+diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+index f33f25b..72a4206 100644
+--- a/drivers/cpufreq/exynos5440-cpufreq.c
++++ b/drivers/cpufreq/exynos5440-cpufreq.c
+@@ -360,12 +360,6 @@ static int exynos_cpufreq_probe(struct platform_device *pdev)
+ 		goto err_put_node;
  	}
  
--	ret = of_init_opp_table(cpu_dev);
+-	ret = of_init_opp_table(dvfs_info->dev);
 -	if (ret) {
--		pr_err("failed to init OPP table: %d\n", ret);
--		goto out_put_node;
+-		dev_err(dvfs_info->dev, "failed to init OPP table: %d\n", ret);
+-		goto err_put_node;
 -	}
 -
- 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
+ 	ret = dev_pm_opp_init_cpufreq_table(dvfs_info->dev,
+ 					    &dvfs_info->freq_table);
  	if (ret) {
- 		pr_err("failed to init cpufreq table: %d\n", ret);
 -- 
 2.0.0.rc2
 
