@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaEUPVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:21:30 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:52537 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218AbaEUPV3 (ORCPT
+	id S1752780AbaEUPWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:22:19 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:43740 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450AbaEUPWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:21:29 -0400
+	Wed, 21 May 2014 11:22:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140521094626.GB21205@pd.tnic>
+In-Reply-To: <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
 References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
  <1400639227.9759.21.camel@pippen.local.home> <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
- <20140521094626.GB21205@pd.tnic>
+ <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 May 2014 08:21:08 -0700
-Message-ID: <CALCETrWkAnSe6kzha5+MmnZn+YT+rBrmu0vz+9Pr94uUjh9dDQ@mail.gmail.com>
+Date: Wed, 21 May 2014 08:21:57 -0700
+Message-ID: <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
 Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 21, 2014 2:46 AM, "Borislav Petkov" <bp@alien8.de> wrote:
+On May 21, 2014 5:51 AM, "Jiri Kosina" <jkosina@suse.cz> wrote:
 >
-> On Tue, May 20, 2014 at 07:39:31PM -0700, Andy Lutomirski wrote:
+> On Tue, 20 May 2014, Andy Lutomirski wrote:
+>
 > > So the issue here is that we can have an NMI followed immediately by
-> > an MCE.
+> > an MCE.  The MCE code can call force_sig
 >
-> That part might need clarification for me: #MC is higher prio interrupt
-> than NMI so a machine check exception can interrupt the NMI handler at
-> any point.
+> This is interesting by itself. force_sig() takes siglock spinlock. This
+> really looks like a deadlock sitting there waiting to happen.
 
-Except that NMI can interrupt #MC at any point as well, I think.
+ISTM the do_machine_check code ought to consider any kill-worthy MCE
+from kernel space to be non-recoverable, but I want to keep the scope
+of these patches under control.
 
->
-> But you're talking only about the small window when nmi_mce_nest_count
-> hasn't been incremented yet, right? I.e., this:
->
-> "The result is that the only interrupt that can happen with
-> `nmi_mce_nest_count == 0` in NMI context is an MCE at the beginning or
-> end of the NMI handler."
->
-> Correct?
+That being said, if an MCE that came from CPL0 never tried to return,
+this would be simpler.  I don't know enough about the machine check
+architecture to know whether that's a reasonable thing to do.
 
-Exactly.
+--Andy
 
 >
 > --
-> Regards/Gruss,
->     Boris.
+> Jiri Kosina
+> SUSE Labs
 >
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
