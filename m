@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaEUWmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:42:18 -0400
-Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:19618 "EHLO
-	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbaEUWmR (ORCPT
+	id S1753843AbaEUWms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:42:48 -0400
+Received: from host171.canaca.com ([67.55.55.225]:53425 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342AbaEUWmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:42:17 -0400
-Message-ID: <1400712127.2770.1.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [RFC PATCH] mutex: Documentation rewrite
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, tim.c.chen@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, hpa@zytor.com, waiman.long@hp.com,
-        aswin@hp.com, linux-kernel@vger.kernel.org
-Date: Wed, 21 May 2014 15:42:07 -0700
-In-Reply-To: <1400707009.4661.23.camel@j-VirtualBox>
-References: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
-	 <1400707009.4661.23.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 21 May 2014 18:42:46 -0400
+Message-ID: <77e93715d28deb2ec0508f9326f9102f.squirrel@mungewell.org>
+In-Reply-To: <537D28E3.3000401@logitech.com>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
+    <2965006.XKYHWj9YzJ@sigyn> <537B9FAE.9070602@logitech.com>
+    <10859911.6zyzadbfH9@sigyn> <537BCB63.1020200@logitech.com>
+    <CADbOyBQxC+Epv1kz8jsBKNgYGFO0R-UPBXvn_qV8Sqb6rNw+Og@mail.gmail.com>
+    <537D28E3.3000401@logitech.com>
+Date: Wed, 21 May 2014 18:42:40 -0400
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+From: simon@mungewell.org
+To: "Roland Bosa" <rbosa@logitech.com>
+Cc: "Elias Vanderstuyft" <elias.vds@gmail.com>,
+        =?iso-8859-1?Q?=22Michal_Mal=C3=BD=22?= 
+	<madcatxster@devoid-pointer.net>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "HID CORE LAYER" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jiri Kosina" <jkosina@suse.cz>,
+        "Anssi Hannula" <anssi.hannula@iki.fi>,
+        "Simon Wood" <simon@mungewell.org>
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-21 at 14:16 -0700, Jason Low wrote:
-> On Wed, 2014-05-21 at 10:41 -0700, Davidlohr Bueso wrote:
-> > From: Davidlohr Bueso <davidlohr@hp.com>
-> 
-> > +     The MCS lock (proposed by Mellor-Crummey and Scott) is a simple spinlock
-> > +     with the desirable properties of being fair and with each cpu trying
-> > +     to acquire the lock spinning on a local variable. It avoids expensive
-> > +     cacheline bouncing that common test-and-set spinlock implementations
-> > +     incur. An MCS-like lock is specially tailored for optimistic spinning
-> > +     for sleeping lock implementation.
-> 
-> Would it be helpful to also briefly mention the benefit of using the
-> specially tailored MCS lock? Maybe something along the lines of: an
-> important feature of the customized MCS lock is that it has the extra
-> property that spinners are able to exit the MCS spinlock queue when they
-> needs to reschedule. This further helps avoid situations where MCS
-> spinners that need to reschedule would continue waiting to spin on mutex
-> owner, only to go directly to slowpath upon obtaining the MCS lock.
 
-Good idea, will add it. I didn't want to go into too much details about
-MCS locks but it is worth mentioning the cancelable properties we now
-have in the kernel.
+>> But 2 Spring effects with different offsets and non-zero effective
+>> force can't be combined into a single slot (without streaming them
+>> with Constant force), right?
+>
+> Yes - you cannot *download* two springs to a single slot. You need to
+> choose (allocate) one of them. The winner gets the slot. The losers go
+> somewhere else (they might get discarded, they might get simulated).
 
-Thanks,
-Davidlohr
+In reverse engineering, I thought that a single slot could hold two
+rotational angles/points (at which a springs would start) and that that
+the direction could be set so that both acting in the same direction with
+different forces.
+--
+    Byte 2 - 0x_1
+    Byte 3 - Clockwise angle, nominally on left (0x00..0xFF - 0x00 is
+fully left)
+    Byte 4 - Anti-Clockwise angle, nominally on right(0x00..0xFF)
+    Byte 5 - L/R Proportion force, upper nibble clockwise + lower nibble
+anti-clockwise (each 0x0..0xF)
+    Byte 6 - Reverse Direction; upper nibble clockwise + lower nibble
+anti-clockwise (each 0x0..0x1)
+    Byte 7 - Force (0x00..0xFF)
+--
 
+Ie. turning from fully left (00) with no force, you could hit a 'weak'
+spring (at 40) and then a 'stronger' spring (at 80).
+
+So to some degree you /can/ merge springs... but I'm not saying that you
+should :-).
+Simon
 
