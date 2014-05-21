@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaEUQt1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:49:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801AbaEUQt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:49:26 -0400
-Date: Wed, 21 May 2014 12:48:48 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Elliott@hp.com, thomas.mingarelli@hp.com
-Subject: Re: [PATCH 5/6] x86, nmi: Move default external NMI handler to its
- own routine
-Message-ID: <20140521164848.GZ50500@redhat.com>
-References: <1400181949-157170-1-git-send-email-dzickus@redhat.com>
- <1400181949-157170-6-git-send-email-dzickus@redhat.com>
- <20140521103846.GA2485@laptop.programming.kicks-ass.net>
+	id S1752730AbaEUQuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:50:14 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40312 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaEUQuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 12:50:11 -0400
+Date: Wed, 21 May 2014 18:49:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: spinlock recursion in migrate_swap_stop
+Message-ID: <20140521164959.GI5226@laptop.programming.kicks-ass.net>
+References: <5371122D.6020605@oracle.com>
+ <537AB86B.4020901@oracle.com>
+ <20140520110431.GX2485@laptop.programming.kicks-ass.net>
+ <537B52BD.1080807@oracle.com>
+ <537CA54A.8030408@oracle.com>
+ <20140521131948.GF2485@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140521103846.GA2485@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140521131948.GF2485@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 12:38:46PM +0200, Peter Zijlstra wrote:
-> On Thu, May 15, 2014 at 03:25:48PM -0400, Don Zickus wrote:
-> > Now that we have setup an NMI subtye called NMI_EXT, there is really
-> > no need to hard code the default external NMI handler in the main
-> > nmi handler routine.
+On Wed, May 21, 2014 at 03:19:48PM +0200, Peter Zijlstra wrote:
+> On Wed, May 21, 2014 at 09:08:26AM -0400, Sasha Levin wrote:
+
+> > +++ b/kernel/sched/core.c
+> > @@ -1154,6 +1156,7 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
+> >                 goto out;
 > > 
-> > Move it to a proper function and register it on boot.  This change is
-> > just code movement.
+> >         trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
+> > +       BUG_ON(cur == p);
+> >         ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
 > > 
-> > In addition, update the hpwdt to allow it to unregister the default
-> > handler on its registration (and vice versa).  This allows the driver
-> > to take control of that io port (which it ultimately wanted to do
-> > originally), but in a cleaner way.
+> >  out:
+> > 
+> > 
+> > Which seems to get hit. This sounds like a race with task moving to
+> > other cpu maybe?
 > 
-> wanting that is one thing, but is it also a sane thing? You don't do
-> thing just because drivers want it.
+> Oi, good call that, lemme go stare.
 
-Heh. I understand.
+I think something simple like this should be sufficient to avoid the
+problem of selecting oneself as a flip target.
 
-Today, I have hacked up the SERR and IOCHK handlers to give hpwdt the
-chance to do its 'magic' bios call to collect information before
-panic'ing.
+---
+ kernel/sched/fair.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-I was trying to clean things up by removing those hacks, but I guess I can
-see your point, there is no guarantee they handle the hardware correctly.
-:-/
-
-Cheers,
-Don
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 28ccf502c63c..28ba71d815ee 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1115,6 +1115,8 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	cur = ACCESS_ONCE(dst_rq->curr);
+ 	if (cur->pid == 0) /* idle */
+ 		cur = NULL;
++	if (cur == env->p)
++		goto unlock;
+ 
+ 	/*
+ 	 * "imp" is the fault differential for the source task between the
