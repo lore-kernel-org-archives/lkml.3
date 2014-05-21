@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357AbaEUPOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:14:14 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:53388 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaEUPOM (ORCPT
+	id S1752612AbaEUPOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:14:32 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:36146 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaEUPOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:14:12 -0400
-Date: Wed, 21 May 2014 20:44:05 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] touchscreen: Introduce the use of the managed version of
- kzalloc
-Message-ID: <20140521151405.GA8526@himangi-Dell>
+	Wed, 21 May 2014 11:14:31 -0400
+Date: Wed, 21 May 2014 19:14:24 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@linux.com>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
+ offline
+Message-ID: <20140521151423.GC23193@esperanza>
+References: <alpine.DEB.2.10.1405141119320.16512@gentwo.org>
+ <20140515071650.GB32113@esperanza>
+ <alpine.DEB.2.10.1405151015330.24665@gentwo.org>
+ <20140516132234.GF32113@esperanza>
+ <alpine.DEB.2.10.1405160957100.32249@gentwo.org>
+ <20140519152437.GB25889@esperanza>
+ <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
+ <537A4D27.1050909@parallels.com>
+ <20140521135826.GA23193@esperanza>
+ <alpine.DEB.2.10.1405210944140.8038@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1405210944140.8038@gentwo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves data allocated using kzalloc to managed data allocated
-using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions. Also data allocated using input_allocate_device is moved to
-devm_input_allocate_device and unnecessary labels are removed.
+On Wed, May 21, 2014 at 09:45:54AM -0500, Christoph Lameter wrote:
+> On Wed, 21 May 2014, Vladimir Davydov wrote:
+> 
+> > Seems I've found a better way to avoid this race, which does not involve
+> > messing up free hot paths. The idea is to explicitly zap each per-cpu
+> > partial list by setting it pointing to an invalid ptr. Since
+> > put_cpu_partial(), which is called from __slab_free(), uses atomic
+> > cmpxchg for adding a new partial slab to a per cpu partial list, it is
+> > enough to add a check if partials are zapped there and bail out if so.
+> >
+> > The patch doing the trick is attached. Could you please take a look at
+> > it once time permit?
+> 
+> Well if you set s->cpu_partial = 0 then the slab should not be added to
+> the partial lists. Ok its put on there temporarily but then immediately
+> moved to the node partial list in put_cpu_partial().
 
-The following Coccinelle semantic patch was used for making the change:
+Don't think so. AFAIU put_cpu_partial() first checks if the per-cpu
+partial list has more than s->cpu_partial objects draining it if so, but
+then it adds the newly frozen slab there anyway.
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
-
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
-
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
- drivers/input/touchscreen/da9034-ts.c | 17 +++++------------
- 1 file changed, 5 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/input/touchscreen/da9034-ts.c b/drivers/input/touchscreen/da9034-ts.c
-index 8ccf7bb..ed85744 100644
---- a/drivers/input/touchscreen/da9034-ts.c
-+++ b/drivers/input/touchscreen/da9034-ts.c
-@@ -303,7 +303,8 @@ static int da9034_touch_probe(struct platform_device *pdev)
- 	struct input_dev *input_dev;
- 	int ret;
- 
--	touch = kzalloc(sizeof(struct da9034_touch), GFP_KERNEL);
-+	touch = devm_kzalloc(&pdev->dev, sizeof(struct da9034_touch),
-+			     GFP_KERNEL);
- 	if (touch == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate driver data\n");
- 		return -ENOMEM;
-@@ -322,11 +323,10 @@ static int da9034_touch_probe(struct platform_device *pdev)
- 	INIT_DELAYED_WORK(&touch->tsi_work, da9034_tsi_work);
- 	touch->notifier.notifier_call = da9034_touch_notifier;
- 
--	input_dev = input_allocate_device();
-+	input_dev = devm_input_allocate_device(&pdev->dev);
- 	if (!input_dev) {
- 		dev_err(&pdev->dev, "failed to allocate input device\n");
--		ret = -ENOMEM;
--		goto err_free_touch;
-+		return -ENOMEM;
- 	}
- 
- 	input_dev->name		= pdev->name;
-@@ -348,16 +348,10 @@ static int da9034_touch_probe(struct platform_device *pdev)
- 
- 	ret = input_register_device(input_dev);
- 	if (ret)
--		goto err_free_input;
-+		return ret;
- 
- 	platform_set_drvdata(pdev, touch);
- 	return 0;
--
--err_free_input:
--	input_free_device(input_dev);
--err_free_touch:
--	kfree(touch);
--	return ret;
- }
- 
- static int da9034_touch_remove(struct platform_device *pdev)
-@@ -365,7 +359,6 @@ static int da9034_touch_remove(struct platform_device *pdev)
- 	struct da9034_touch *touch = platform_get_drvdata(pdev);
- 
- 	input_unregister_device(touch->input_dev);
--	kfree(touch);
- 
- 	return 0;
- }
--- 
-1.9.1
-
+Thanks.
