@@ -1,132 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066AbaEUEOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 00:14:55 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:55815 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761AbaEUEOx (ORCPT
+	id S1751322AbaEUESH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 00:18:07 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:40288 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaEUESF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 00:14:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD=FV=W3ngSVegSyeN9jRgmw4RBfFcypVDyTBNvzYOZ_XjsQwQ@mail.gmail.com>
-References: <cover.1400302114.git.viresh.kumar@linaro.org>
-	<046e3785229754332de62854439d2a4a17d637b7.1400302114.git.viresh.kumar@linaro.org>
-	<CAD=FV=W3ngSVegSyeN9jRgmw4RBfFcypVDyTBNvzYOZ_XjsQwQ@mail.gmail.com>
-Date: Wed, 21 May 2014 09:44:53 +0530
-Message-ID: <CAKohpok+WgikxY-YSXfF5DgfMdSqWd-Mvh=Y9B5CtjEB119Jmw@mail.gmail.com>
-Subject: Re: [PATCH V3 2/4] cpufreq: add support for intermediate (stable) frequencies
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 21 May 2014 00:18:05 -0400
+Message-ID: <1400645881.5158.35.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 21 May 2014 06:18:01 +0200
+In-Reply-To: <20140520155324.GD4570@linux.vnet.ibm.com>
+References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
+	 <20140514154459.GE4570@linux.vnet.ibm.com>
+	 <1400123931.5175.38.camel@marge.simpson.net>
+	 <1400386954.5140.36.camel@marge.simpson.net>
+	 <20140518052039.GF4570@linux.vnet.ibm.com>
+	 <1400402201.5166.13.camel@marge.simpson.net>
+	 <20140518155815.GK4570@linux.vnet.ibm.com>
+	 <1400467481.5211.48.camel@marge.simpson.net>
+	 <20140519053401.GP4570@linux.vnet.ibm.com>
+	 <20140520145350.GC17741@localhost.localdomain>
+	 <20140520155324.GD4570@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug,
+On Tue, 2014-05-20 at 08:53 -0700, Paul E. McKenney wrote: 
+> On Tue, May 20, 2014 at 04:53:52PM +0200, Frederic Weisbecker wrote:
+> > On Sun, May 18, 2014 at 10:34:01PM -0700, Paul E. McKenney wrote:
+> > > On Mon, May 19, 2014 at 04:44:41AM +0200, Mike Galbraith wrote:
+> > > > On Sun, 2014-05-18 at 08:58 -0700, Paul E. McKenney wrote: 
+> > > > > On Sun, May 18, 2014 at 10:36:41AM +0200, Mike Galbraith wrote:
+> > > > > > On Sat, 2014-05-17 at 22:20 -0700, Paul E. McKenney wrote:
+> > > > > > 
+> > > > > > > If you are saying that turning on nohz_full doesn't help unless you
+> > > > > > > also ensure that there is only one runnable task per CPU, I completely
+> > > > > > > agree.  If you are saying something else, you lost me.  ;-)
+> > > > > > 
+> > > > > > Yup, that's it more or less.  It's not only single task loads that could
+> > > > > > benefit from better isolation, but if isolation improving measures are
+> > > > > > tied to nohz_full, other sensitive loads will suffer if they try to use
+> > > > > > isolation improvements.
+> > > > > 
+> > > > > So you are arguing for a separate Kconfig variable that does the isolation?
+> > > > > So that NO_HZ_FULL selects this new variable, and (for example) RCU
+> > > > > uses this new variable to decide when to pin the grace-period kthreads
+> > > > > onto the housekeeping CPU?
+> > > > 
+> > > > I'm thinking more about runtime, but yes.
+> > > > 
+> > > > The tick mode really wants to be selectable per set (in my boxen you can
+> > > > switch between nohz off/idle, but not yet nohz_full, that might get real
+> > > > interesting).  You saw in my numbers that ticked is far better for the
+> > > > threaded rt load, but what if the total load has both sensitive rt and
+> > > > compute components to worry about?  The rt component wants relief from
+> > > > the jitter that flipping the tick inflicts, but also wants as little
+> > > > disturbance as possible, so RCU offload and whatever other measures that
+> > > > are or become available are perhaps interesting to it as well.  The
+> > > > numbers showed that here and now the two modes can work together in the
+> > > > same box, I can have my rt set ticking away, and other cores doing
+> > > > tickless compute, but enabling that via common config (distros don't
+> > > > want to ship many kernel flavors) has a cost to rt performance.
+> > > > 
+> > > > Ideally, bean counting would be switchable too, giving all components
+> > > > the environment they like best.
+> > > 
+> > > Sounds like a question for Frederic (now CCed).  ;-)
+> > 
+> > I'm not sure that I really understand what you want here.
+> > 
+> > The current state of the art is that when you enable CONFIG_NO_HZ_FULL=y, full dynticks
+> > is actually off by default. This is only overriden by "nohz_full=" boot parameter.
+> 
+> If I understand correctly, if there is no nohz_full= boot parameter,
+> then the context-tracking code takes the early exit via the
+> context_tracking_is_enabled() check in context_tracking_user_enter().
+> I would not expect this to cause much in the way of syscall performance
+> degradation.  However, it looks like having even one CPU in nohz_full
+> mode causes all CPUs to enable context tracking.
+> 
+> My guess is that Mike wants to have (say) half of his CPUs running
+> nohz_full, and the other half having fast system calls.  So my guess
+> also is that he would like some way of having the non-nohz_full CPUs
+> to opt out of the context-tracking overhead, including the memory
+> barriers and atomic ops in rcu_user_enter() and rcu_user_exit().  ;-)
 
-On 20 May 2014 22:18, Doug Anderson <dianders@chromium.org> wrote:
+Bingo.
 
-> Is it worth documenting that if we implement target_intermediate()
-> that target_index() must not fail?  That means that any failure-prone
-> things (like setting a regulator) should happen in target_index().
+> > Now if what you need is to enable or disable it at runtime instead of boottime,
+> > I must warn you that this is going to complicate the nohz code a lot (and also perhaps sched
+> > and RCU).
+> 
+> What Frederic said!  Making RCU deal with this is possible, but a bit on
+> the complicated side.  Given that I haven't heard too many people complaining
+> that RCU is too simple, I would like to opt out of runtime changes to the
+> nohz_full mask.
+> 
+> > I've already been eyed by vulturous frozen sharks flying in circles above me lately
+> > after a few overengineering visions.
+> 
+> Nothing like the icy glare of a frozen shark, is there?  ;-)
+> 
+> > And given that the full nohz code is still in a baby shape, it's probably not the right
+> > time to expand it that way. I haven't even yet heard about users who crossed the testing
+> > stage of full nohz.
+> > 
+> > We'll probably extend it that way in the future. But likely not in a near future.
+> 
+> My guess is that Mike would be OK with making nohz_full choice of CPUs
+> still at boot time, but that he would like the CPUs that are not to be
+> in nohz_full state be able to opt out of the context-tracking overhead.
+> 
+> Mike, please let us all know if I am misunderstanding what you are
+> looking for.
 
-You meant target_intermediate() is the last line, right ?
+Yup, exactly.  As it sits, you couldn't possible ship nohz_full out to
+the real world in any other form than a specialty kernel.  There's no
+doubt in my mind that there are users out there who would love to have
+high performance rt and compute in the same box though.  I can imagine
+them lurking here and slobbering profusely ;-)
 
-Yeah, we can add that..
+-Mike
 
->>  2. Frequency Table Helpers
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> index 9bf12a2..f38f2f2 100644
->> --- a/drivers/cpufreq/cpufreq.c
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -1819,27 +1819,50 @@ EXPORT_SYMBOL(cpufreq_unregister_notifier);
->>  static int __target_index(struct cpufreq_policy *policy,
->>                           struct cpufreq_frequency_table *freq_table, int index)
->>  {
->> -       struct cpufreq_freqs freqs;
->> +       struct cpufreq_freqs freqs = {.old = policy->cur, .flags = 0};
->>         int retval = -EINVAL;
->>         bool notify;
->>
->>         notify = !(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION);
->> +       if (!notify)
->> +               goto skip_notify;
->
-> I'm personally not a fan of using goto here.  All you're trying to do
-> is avoiding a level of indentation?  If it really matters that much
-> then create a sub function.  IMHO goto should generally be reserved
-> for error handling.
-
-Yeah, I was trying that :) .. Another routine wouldn't be right here
-as the POST_NOTIFICATION will be handled in this routine only.
-
-I will try again to see if I can write some better code here, but wouldn't
-promise that :)
-
->> -       if (notify) {
->> -               freqs.old = policy->cur;
->> -               freqs.new = freq_table[index].frequency;
->> -               freqs.flags = 0;
->> +       /* Handle switching to intermediate frequency */
->> +       if (cpufreq_driver->get_intermediate) {
->> +               freqs.new = cpufreq_driver->get_intermediate(policy, index);
->
-> Would it be worth it to change this to?
->
-> intermediate = 0
-> if (cpufreq_driver->get_intermediate)
->   intermediate = cpufreq_driver->get_intermediate();
-> if (intermediate)
->
-> ...the idea being that a driver may use an intermediate frequency for
-> some transitions but not for all.  For instance: on tegra if you
-> happen to change to the exact clock frequency of the intermediate PLL
-> it just stays there.  There's no need for two notifications in that
-> case.  There may be other systems that can optimize some transitions
-> to totally skip the intermediate stage (maybe you've got an
-> non-glitching divider somewhere so you can optimize a transition from
-> 1.4GHz to 700MHz to go w/ no intermediate jump).
-
-Hmm, will try to fix that as well. Looks like a valid point.
-
->> -               pr_debug("%s: cpu: %d, oldfreq: %u, new freq: %u\n",
->> +               pr_debug("%s: cpu: %d, switching to intermediate freq: oldfreq: %u, intermediate freq: %u\n",
->>                                 __func__, policy->cpu, freqs.old, freqs.new);
->>
->>                 cpufreq_freq_transition_begin(policy, &freqs);
->> +               retval = cpufreq_driver->target_intermediate(policy, freqs.new);
->
-> It feels like you want to pass in "index" here too, just in case.  A
-> driver may need to make decisions about other clocks based on the
-> eventual final frequency.  They could cache it themselves from the
-> get_intermediate() call, but that seems ugly.
-
-I had index here initially, but then it looked like they may need to perform
-get_intermediate() again from this routine and so sending the intermediate
-freq is probably better. So, probably just wait for some drivers which may
-need index here ?
-
->> @@ -2361,7 +2384,8 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
->>             !(driver_data->setpolicy || driver_data->target_index ||
->>                     driver_data->target) ||
->>              (driver_data->setpolicy && (driver_data->target_index ||
->> -                   driver_data->target)))
->> +                   driver_data->target)) ||
->> +            (!!driver_data->get_intermediate ^ !!driver_data->target_intermediate))
->
-> I'm OK with the !! trick, but using ^ here seems more confusing.  Why
-> not use "!="?
->   (!!driver_data->get_intermediate != !!driver_data->target_intermediate))
-
-Will work as well :)
