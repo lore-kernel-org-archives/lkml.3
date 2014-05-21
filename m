@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaEUEwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 00:52:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38276 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548AbaEUEwD (ORCPT
+	id S1751131AbaEUFQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 01:16:17 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:43277 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaEUFQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 00:52:03 -0400
-Date: Wed, 21 May 2014 13:51:53 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fixes for 3.15-rc6
-Message-ID: <20140521045153.GA11245@kroah.com>
+	Wed, 21 May 2014 01:16:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140520152303.GA20352@lst.de>
+References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com>
+	<20140519151824.GA21762@lst.de>
+	<CACVXFVNprzhEpXGKze=A4T2b-y35vXRxRTOUqpywu+Et=t37Kw@mail.gmail.com>
+	<20140520152303.GA20352@lst.de>
+Date: Wed, 21 May 2014 13:16:14 +0800
+Message-ID: <CACVXFVNP--zj_-UtygxfXk7GvSXwKm2KMKFs=h9KsrL=ZzbWVQ@mail.gmail.com>
+Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
+ flush worker
+From: Ming Lei <tom.leiming@gmail.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 86281966c7395aa9a13a20c52e26005f5e142451:
+On Tue, May 20, 2014 at 11:23 PM, Christoph Hellwig <hch@lst.de> wrote:
+> On Tue, May 20, 2014 at 11:20:25AM +0800, Ming Lei wrote:
+>> - the conflict on the two structures just happens with flush
+>> requests because rq->requeue_work is only used to queue
+>> flush requests
+>
+> Once we get non-trivial block drivers we'll need to be able
+> to requeue arbitrary requests, that's why I added blk_mq_requeue_request.
 
-  Merge tag 'iio-fixes-for-3.15b' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2014-04-30 14:19:23 -0700)
+I am wondering if virtio-blk is trivial block driver, :-)
+And virtio-blk still supports requeuing with returning
+BLK_MQ_RQ_QUEUE_BUSY.
 
-are available in the git repository at:
+> The scsi-mq work that I plant to submit for the next merge window is
+> the prime example.
 
+It depends if one scsi-mq req has to requeue itself with rq->requeue_work
+inside its own .softirq_done_fn. If yes, we can't put call_single_data
+and requeue_work into one union simply. From you last scsi-mq post,
+looks the request may do that if I understand correctly.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ staging-3.15-rc6
+But scsi_cmnd has already one 'abort_work', and I am wondering
+why scsi-mq requeuing doesn't share its own requeue_work with
+abort_work, which seems doable since requeuing and aborting belong
+to different stage.
 
-for you to fetch changes up to bb4e506565cfc0a2f534dfda1fb7ca5c26f7a604:
+>
+> I'd really prefer to avoid breaking that use case if we can avoid it.
 
-  staging: rtl8723au: Do not reset wdev->iftype in netdev_close() (2014-05-16 15:23:11 -0700)
+This patch won't break the coming scsi-mq, and it is a fix.
 
-----------------------------------------------------------------
-Staging driver fixes for 3.15-rc6
+I'd like to figure out one patch to cover scsi-mq case if
+we can get that before 3.15 release since your 'respect-affinity'
+patch has enabled IPI at default already. Otherwise, we
+still have enough time to fix the issue for scsi-mq, don't we?
 
-Here are 5 staging driver fixes for 3.15-rc6 that resolve some reported
-issues.  They are for the imx and rtl8723au drivers.
+>
+>
+> Note that the flush code already is very nasy for blk-mq and this just
+> makes it worse.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I think the patch is clean and simple, with documenting the special
+conflict case clearly too.
 
-----------------------------------------------------------------
-Greg Kroah-Hartman (1):
-      Merge branch 'imx-drm-fixes-urgent' of git://ftp.arm.linux.org.uk/~rmk/linux-arm into staging-linus
+>
+> One fix that would also help to sort out some of the flush issues would
+> be to add a list of requests that need requeueing to the blk_mq context,
+> which we can add requeusts to from irq context.  The next time we run
 
-Jes Sorensen (2):
-      staging: rtl8723au: Use correct pipe type for USB interrupts
-      staging: rtl8723au: Do not reset wdev->iftype in netdev_close()
+That won't be easy to introduce a requeue_list for the purpose
+since we need to keep order of requests per blk-mq ctx.
 
-Philipp Zabel (1):
-      imx-drm: imx-drm-core: fix imx_drm_encoder_get_mux_id
+Also lockless list won't work since there are both
+'add_front'/'add_tail' requirement.
 
-Shawn Guo (2):
-      imx-drm: imx-drm-core: skip components whose parent device is disabled
-      imx-drm: imx-tve: correct DDC property name to 'ddc-i2c-bus'
+> hw contexts for the queue we'll pick them up in user context and insert
+> them.
 
- arch/arm/boot/dts/imx53-mba53.dts                | 2 +-
- drivers/staging/imx-drm/imx-drm-core.c           | 7 ++++++-
- drivers/staging/imx-drm/imx-tve.c                | 2 +-
- drivers/staging/rtl8723au/os_dep/os_intfs.c      | 2 --
- drivers/staging/rtl8723au/os_dep/usb_ops_linux.c | 2 +-
- 5 files changed, 9 insertions(+), 6 deletions(-)
+IMO, the requests can be inserted to ctx list directly from irq
+context, but with cost of spin_lock_irqsave(&ctx->lock) everywhere.
+
+Follows current ideas:
+1), this patch with scsi-mq sharing abort_work together?
+2), move requeue_work out of the union inside request
+3), spin_lock_irqsave(&ctx->lock) everywhere and requeue
+request directly to ctx without using work
+
+Any other ideas?
+
+Thanks,
+--
+Ming Lei
