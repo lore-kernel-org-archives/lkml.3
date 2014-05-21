@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaEUOb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:31:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:38415 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaEUOb4 convert rfc822-to-8bit (ORCPT
+	id S1752713AbaEUOcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 10:32:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59974 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480AbaEUOce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:31:56 -0400
-Message-ID: <537CB8DE.2050001@arm.com>
-Date: Wed, 21 May 2014 15:31:58 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 21 May 2014 10:32:34 -0400
+Date: Wed, 21 May 2014 07:32:29 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Thorsten Diehl <thorsten.diehl@de.ibm.com>
+Subject: Re: /proc/stat vs. failed order-4 allocation
+Message-ID: <20140521143229.GA32011@infradead.org>
+References: <20140521122521.GB7471@osiris>
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
-        "nm@ti.com" <nm@ti.com>,
-        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "len.brown@intel.com" <len.brown@intel.com>
-Subject: Re: [PATCH V2 5/7] cpufreq: imx6q: don't initialize opp table
-References: <cover.1400670427.git.viresh.kumar@linaro.org> <cc399206d57ef946d27a98203c6b0a247cd1b245.1400670427.git.viresh.kumar@linaro.org> <537CB328.6000400@arm.com> <20140521141622.GB27211@dragon>
-In-Reply-To: <20140521141622.GB27211@dragon>
-X-OriginalArrivalTime: 21 May 2014 14:31:53.0274 (UTC) FILETIME=[68EBE1A0:01CF7501]
-X-MC-Unique: 114052115315409701
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140521122521.GB7471@osiris>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 21, 2014 at 02:25:21PM +0200, Heiko Carstens wrote:
+> Hi all,
+> 
+> I'm just wondering why /proc/stat is a single_open() seq_file and not a
+> regular seq_file with an iterator (say 48 online cpus for each iteration
+> or something similar).
 
-
-On 21/05/14 15:16, Shawn Guo wrote:
-> On Wed, May 21, 2014 at 03:07:36PM +0100, Sudeep Holla wrote:
->>> @@ -376,7 +356,7 @@ static void __init imx6q_init_late(void)
->>>   		imx6q_cpuidle_init();
->>>
->>>   	if (IS_ENABLED(CONFIG_ARM_IMX6Q_CPUFREQ)) {
->>> -		imx6q_opp_init();
->>> +		imx6q_opp_check_speed_grading();
->>
->> [Query] Not exactly related to this patch, but asking it here to get clarified.
->>
->> This OPP limiting is done as part of late initcall and if the cpufreq driver is
->> built in the kernel, there will be a small window where the OPPs not supported
->> are still enabled ? Will that not be an issue if say performance governor is
->> selected by default.
->
-> Even if cpufreq driver is built in the kernel, it won't be probed until
-> platform_device_register(&imx6q_cpufreq_pdev) is called.  And we make
-> this call only after the OPP limiting.
->
-
-Ah right, I missed that. Thanks for clarifying.
-
-Regards,
-Sudeep
-
+Probably because no one sent a patch for it. I'm pretty sure it used the
+even more horrible old proc ops before and was converted in batch with
+various other files.
