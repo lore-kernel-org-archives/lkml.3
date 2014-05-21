@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbaEUNNQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:13:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30192 "EHLO mx1.redhat.com"
+	id S1752652AbaEUNOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:14:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264AbaEUNNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:13:08 -0400
+	id S1752381AbaEUNNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:13:15 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 12/22] perf tools: Add ->sort() member to struct sort_entry
-Date: Wed, 21 May 2014 15:12:34 +0200
-Message-Id: <1400677964-25160-13-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 17/22] perf tools: Get rid of obsolete hist_entry__sort_list
+Date: Wed, 21 May 2014 15:12:39 +0200
+Message-Id: <1400677964-25160-18-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,126 +21,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Currently, what the sort_entry does is just identifying hist entries
-so that they can be grouped properly.  However, with -F option
-support, it indeed needs to sort entries appropriately to be shown to
-users.  So add ->sort() member to do it.
+Now we moved to the perf_hpp_[_sort]_list so no need to keep the old
+hist_entry__sort_list and sort__first_dimension.  Also the
+hist_entry__sort_snprintf() can be gone as hist_entry__snprintf()
+provides the functionality.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-13-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-18-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/sort.c | 27 ++++++++++++++++++++++-----
- tools/perf/util/sort.h |  1 +
- 2 files changed, 23 insertions(+), 5 deletions(-)
+ tools/perf/ui/hist.c       | 36 +++++++++---------------------------
+ tools/perf/ui/stdio/hist.c | 22 +++++++++++++++-------
+ tools/perf/util/sort.c     | 35 +++++++++++++++++++----------------
+ 3 files changed, 43 insertions(+), 50 deletions(-)
 
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index b114c66..61cf31e 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -459,47 +459,29 @@ next:
+ 	}
+ }
+ 
+-int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
+-			      struct hists *hists)
+-{
+-	const char *sep = symbol_conf.field_sep;
+-	struct sort_entry *se;
+-	int ret = 0;
+-
+-	list_for_each_entry(se, &hist_entry__sort_list, list) {
+-		if (se->elide)
+-			continue;
+-
+-		ret += scnprintf(s + ret, size - ret, "%s", sep ?: "  ");
+-		ret += se->se_snprintf(he, s + ret, size - ret,
+-				       hists__col_len(hists, se->se_width_idx));
+-	}
+-
+-	return ret;
+-}
+-
+ /*
+  * See hists__fprintf to match the column widths
+  */
+ unsigned int hists__sort_list_width(struct hists *hists)
+ {
+ 	struct perf_hpp_fmt *fmt;
+-	struct sort_entry *se;
+-	int i = 0, ret = 0;
++	int ret = 0;
++	bool first = true;
+ 	struct perf_hpp dummy_hpp;
+ 
+ 	perf_hpp__for_each_format(fmt) {
+-		if (i)
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
++		if (first)
++			first = false;
++		else
+ 			ret += 2;
+ 
+ 		ret += fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
+ 	}
+ 
+-	list_for_each_entry(se, &hist_entry__sort_list, list)
+-		if (!se->elide)
+-			ret += 2 + hists__col_len(hists, se->se_width_idx);
+-
+-	if (verbose) /* Addr + origin */
++	if (verbose && sort__has_sym) /* Addr + origin */
+ 		ret += 3 + BITS_PER_LONG / 4;
+ 
+ 	return ret;
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index cfcd3f6..9f57991 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -183,7 +183,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 			 * the symbol. No need to print it otherwise it appears as
+ 			 * displayed twice.
+ 			 */
+-			if (!i++ && sort__first_dimension == SORT_SYM)
++			if (!i++ && field_order == NULL &&
++			    sort_order && !prefixcmp(sort_order, "sym"))
+ 				continue;
+ 			if (!printed) {
+ 				ret += callchain__fprintf_left_margin(fp, left_margin);
+@@ -296,13 +297,20 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
+ 	int left_margin = 0;
+ 	u64 total_period = hists->stats.total_period;
+ 
+-	if (sort__first_dimension == SORT_COMM) {
+-		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
+-							 typeof(*se), list);
+-		left_margin = hists__col_len(hists, se->se_width_idx);
+-		left_margin -= thread__comm_len(he->thread);
+-	}
++	if (field_order == NULL && (sort_order == NULL ||
++				    !prefixcmp(sort_order, "comm"))) {
++		struct perf_hpp_fmt *fmt;
++
++		perf_hpp__for_each_format(fmt) {
++			if (!perf_hpp__is_sort_entry(fmt))
++				continue;
+ 
++			/* must be 'comm' sort entry */
++			left_margin = fmt->width(fmt, NULL, hists_to_evsel(hists));
++			left_margin -= thread__comm_len(he->thread);
++			break;
++		}
++	}
+ 	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
+ }
+ 
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index b748b02..5414ba5 100644
+index 9bee728..d913206 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -99,6 +99,12 @@ sort__comm_collapse(struct hist_entry *left, struct hist_entry *right)
- 	return comm__str(right->comm) - comm__str(left->comm);
- }
+@@ -22,9 +22,6 @@ int		sort__has_sym = 0;
+ int		sort__has_dso = 0;
+ enum sort_mode	sort__mode = SORT_MODE__NORMAL;
  
-+static int64_t
-+sort__comm_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return strcmp(comm__str(right->comm), comm__str(left->comm));
-+}
-+
- static int hist_entry__comm_snprintf(struct hist_entry *he, char *bf,
- 				     size_t size, unsigned int width)
+-enum sort_type	sort__first_dimension;
+-
+-LIST_HEAD(hist_entry__sort_list);
+ 
+ static int repsep_snprintf(char *bf, size_t size, const char *fmt, ...)
  {
-@@ -109,6 +115,7 @@ struct sort_entry sort_comm = {
- 	.se_header	= "Command",
- 	.se_cmp		= sort__comm_cmp,
- 	.se_collapse	= sort__comm_collapse,
-+	.se_sort	= sort__comm_sort,
- 	.se_snprintf	= hist_entry__comm_snprintf,
- 	.se_width_idx	= HISTC_COMM,
- };
-@@ -122,7 +129,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- 	const char *dso_name_l, *dso_name_r;
+@@ -1190,7 +1187,7 @@ static int __sort_dimension__add_hpp_output(struct sort_dimension *sd)
+ 	return 0;
+ }
  
- 	if (!dso_l || !dso_r)
--		return cmp_null(dso_l, dso_r);
-+		return cmp_null(dso_r, dso_l);
- 
- 	if (verbose) {
- 		dso_name_l = dso_l->long_name;
-@@ -138,7 +145,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- static int64_t
- sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
+-static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
++static int __sort_dimension__add(struct sort_dimension *sd)
  {
--	return _sort__dso_cmp(left->ms.map, right->ms.map);
-+	return _sort__dso_cmp(right->ms.map, left->ms.map);
- }
+ 	if (sd->taken)
+ 		return 0;
+@@ -1201,10 +1198,6 @@ static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
+ 	if (sd->entry->se_collapse)
+ 		sort__need_collapse = 1;
  
- static int _hist_entry__dso_snprintf(struct map *map, char *bf,
-@@ -210,6 +217,15 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- 	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
- }
+-	if (list_empty(&hist_entry__sort_list))
+-		sort__first_dimension = idx;
+-
+-	list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+ 	sd->taken = 1;
  
-+static int64_t
-+sort__sym_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	if (!left->ms.sym || !right->ms.sym)
-+		return cmp_null(left->ms.sym, right->ms.sym);
-+
-+	return strcmp(right->ms.sym->name, left->ms.sym->name);
-+}
-+
- static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
- 				     u64 ip, char level, char *bf, size_t size,
- 				     unsigned int width)
-@@ -256,6 +272,7 @@ static int hist_entry__sym_snprintf(struct hist_entry *he, char *bf,
- struct sort_entry sort_sym = {
- 	.se_header	= "Symbol",
- 	.se_cmp		= sort__sym_cmp,
-+	.se_sort	= sort__sym_sort,
- 	.se_snprintf	= hist_entry__sym_snprintf,
- 	.se_width_idx	= HISTC_SYMBOL,
- };
-@@ -283,7 +300,7 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 					    map__rip_2objdump(map, right->ip));
+ 	return 0;
+@@ -1268,7 +1261,7 @@ int sort_dimension__add(const char *tok)
+ 			sort__has_dso = 1;
  		}
+ 
+-		return __sort_dimension__add(sd, i);
++		return __sort_dimension__add(sd);
  	}
--	return strcmp(left->srcline, right->srcline);
-+	return strcmp(right->srcline, left->srcline);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(hpp_sort_dimensions); i++) {
+@@ -1292,7 +1285,7 @@ int sort_dimension__add(const char *tok)
+ 		if (sd->entry == &sort_sym_from || sd->entry == &sort_sym_to)
+ 			sort__has_sym = 1;
+ 
+-		__sort_dimension__add(sd, i + __SORT_BRANCH_STACK);
++		__sort_dimension__add(sd);
+ 		return 0;
+ 	}
+ 
+@@ -1308,7 +1301,7 @@ int sort_dimension__add(const char *tok)
+ 		if (sd->entry == &sort_mem_daddr_sym)
+ 			sort__has_sym = 1;
+ 
+-		__sort_dimension__add(sd, i + __SORT_MEMORY_MODE);
++		__sort_dimension__add(sd);
+ 		return 0;
+ 	}
+ 
+@@ -1395,7 +1388,8 @@ static void sort_entry__setup_elide(struct sort_entry *se,
+ 
+ void sort__setup_elide(FILE *output)
+ {
+-	struct sort_entry *se;
++	struct perf_hpp_fmt *fmt;
++	struct hpp_sort_entry *hse;
+ 
+ 	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
+ 				"dso", output);
+@@ -1436,13 +1430,22 @@ void sort__setup_elide(FILE *output)
+ 	 * It makes no sense to elide all of sort entries.
+ 	 * Just revert them to show up again.
+ 	 */
+-	list_for_each_entry(se, &hist_entry__sort_list, list) {
+-		if (!se->elide)
++	perf_hpp__for_each_format(fmt) {
++		if (!perf_hpp__is_sort_entry(fmt))
++			continue;
++
++		hse = container_of(fmt, struct hpp_sort_entry, hpp);
++		if (!hse->se->elide)
+ 			return;
+ 	}
+ 
+-	list_for_each_entry(se, &hist_entry__sort_list, list)
+-		se->elide = false;
++	perf_hpp__for_each_format(fmt) {
++		if (!perf_hpp__is_sort_entry(fmt))
++			continue;
++
++		hse = container_of(fmt, struct hpp_sort_entry, hpp);
++		hse->se->elide = false;
++	}
  }
  
- static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
-@@ -311,7 +328,7 @@ sort__parent_cmp(struct hist_entry *left, struct hist_entry *right)
- 	if (!sym_l || !sym_r)
- 		return cmp_null(sym_l, sym_r);
- 
--	return strcmp(sym_l->name, sym_r->name);
-+	return strcmp(sym_r->name, sym_l->name);
- }
- 
- static int hist_entry__parent_snprintf(struct hist_entry *he, char *bf,
-@@ -1126,7 +1143,7 @@ __sort_dimension__alloc_hpp(struct sort_dimension *sd)
- 
- 	hse->hpp.cmp = sd->entry->se_cmp;
- 	hse->hpp.collapse = sd->entry->se_collapse ? : sd->entry->se_cmp;
--	hse->hpp.sort = hse->hpp.collapse;
-+	hse->hpp.sort = sd->entry->se_sort ? : hse->hpp.collapse;
- 
- 	INIT_LIST_HEAD(&hse->hpp.list);
- 	INIT_LIST_HEAD(&hse->hpp.sort_list);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 89e5057..f5a831c 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -182,6 +182,7 @@ struct sort_entry {
- 
- 	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
- 	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
-+	int64_t	(*se_sort)(struct hist_entry *, struct hist_entry *);
- 	int	(*se_snprintf)(struct hist_entry *he, char *bf, size_t size,
- 			       unsigned int width);
- 	u8	se_width_idx;
+ static int output_field_add(char *tok)
 -- 
 1.8.3.1
 
