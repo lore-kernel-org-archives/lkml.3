@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaEUSZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:25:24 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55501 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137AbaEUSZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:25:22 -0400
-Date: Wed, 21 May 2014 20:25:14 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
-Message-ID: <20140521182513.GA26285@earth.universe>
-References: <1399739870-13526-1-git-send-email-sre@kernel.org>
- <1399739870-13526-10-git-send-email-sre@kernel.org>
- <20140514215503.GM27426@atomide.com>
- <20140520003538.GD15793@atomide.com>
+	id S1753037AbaEUSZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:25:49 -0400
+Received: from p3plsmtpa09-06.prod.phx3.secureserver.net ([173.201.193.235]:43432
+	"EHLO p3plsmtpa09-06.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753008AbaEUSZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 14:25:48 -0400
+Date: Wed, 21 May 2014 11:25:43 -0700
+From: "Mark A. Greer" <mgreer@animalcreek.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: Re: bq24190: What's the correct API to turn boost mode (OTG) on
+ for the battery charger ?
+Message-ID: <20140521182543.GA28477@animalcreek.com>
+References: <2044381.o3QyvTfyIx@avalon>
+ <20140515220844.GA10762@animalcreek.com>
+ <1782446.TpztL69o3V@avalon>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140520003538.GD15793@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1782446.TpztL69o3V@avalon>
+Organization: Animal Creek Technologies, Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 16, 2014 at 12:35:34AM +0200, Laurent Pinchart wrote:
+> Hi Mark,
+> 
+> Thank you for the quick reply.
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Laurent.  Sorry for the delay.
 
-Hi,
+> On Thursday 15 May 2014 15:08:44 Mark A. Greer wrote:
+> > On Thu, May 15, 2014 at 10:29:26PM +0200, Laurent Pinchart wrote:
+> > > Hello,
+> > 
+> > [Adding Anton Vorontsov to CC list.]
+> > 
+> > Hi Laurent.
+> > 
+> > > I'm trying to enable battery charging on an OMAP4 board based on a twl6030
+> > > PMIC with external bq24190 battery charger and bq27510 fuel gauge.
+> > > 
+> > > The system has an OTG USB port that can be used to charge the battery, and
+> > > that can also be used in host mode. In that case the bq24190 needs to be
+> > > switched to boost mode to provide the +5V power supply from the battery.
+> > > 
+> > > The bq24190 has a charge configuration register field that supports charge
+> > > disabled, charge enabled and OTG (boost mode). The field is set by the
+> > > bq24190 driver in response to setting the charge type :
+> > > POWER_SUPPLY_CHARGE_TYPE_NONE will disable charing, and
+> > > POWER_SUPPLY_CHARGE_TYPE_TRICKLE and
+> > > POWER_SUPPLY_CHARGE_TYPE_FAST will enable it. However, OTG boost mode is
+> > > not supported.
+> > > 
+> > > 
+> > > The driver exposes most register fields as sysfs attributes (which doesn't
+> > > sound very safe to me, but that's another story). I can thus enable OTG
+> > > boost mode directly from userspace through the driver-specific API, but
+> > > that just bypasses the power supply API. I'm thus not very fond of that
+> > > solution.
+> >
+> > No, its not a good solution.  As indicated in the commit log, the sysfs
+> > entries are there because there are just so many fields that don't map
+> > well to the existing interface.
+> > 
+> > Maybe we should add support for a DT entry to enable exporting those
+> > fields(disabled by default)?
+> > 
+> > > Possibly due to my really basic (not to say nonexistent) knowledge of the
+> > > power supply subsystem I haven't found an API to expose this feature. I
+> > > was wondering if someone had given a though regarding how to implement
+> > > this properly.
+> > 
+> > What if we just added something like POWER_SUPPLY_CHARGE_TYPE_BOOST?
+> 
+> That was actually my first thought, and I assumed it would be rejected as 
+> boost mode is not a charge type but a discharge type :-)
 
-On Mon, May 19, 2014 at 05:35:39PM -0700, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [140514 14:57]:
-> > * Sebastian Reichel <sre@kernel.org> [140510 09:40]:
-> > > Add SSI device tree data for OMAP3 and Nokia N900.
-> >=20
-> > Picking this patch into omap-for-v3.16/dt thanks.
->=20
-> Just noticed that this patch seems to somehow break idle
-> modes on n900, so dropping both dts changes for now.
->=20
-> Basically the n900 debug LEDs won't ever go off with
-> these two dts patches enabled, even without the modem
-> drivers loaded. I did not dig deeper, but it's probably
-> something related to hwmod using this data for some
-> settings.
+Er, right.  :(
 
-Is hwmod data interpreted at all without the DT entries?
-The hwmod data may be wrong. The information from commit
-398917ce161e10d3c66afaefdb89c73c64c4b02d was simply
-interpolated from all information I found. The OMAP3
-public TRM does not contain *any* information about the
-ssi IP-Core.
+> This being said, I 
+> don't have enough experience with battery chargers to decide whether this is a 
+> good solution. If you believe it is, I'll trust you on that.
 
-> Sorry did not notice it earlier as I did not have the
-> PM regression fix patches merged with my testing branch.
+No, you're right, that isn't a good solution.
 
-I hoped to see working modem in 3.16, which will probably
-be used for the next Debian stable :(
+I don't see a really good fit anywhere.  The easiest thing may be to add
+a new POWER_SUPPLY_PROP_xxx power_supply_property member which can be set
+to flip it into boost mode but I'm not sure if that's really the right
+thing to do.
 
--- Sebastian
+I hope Anton will comment on this.
 
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> On a side note, is there any reference userspace implementation of a battery 
+> manager ? The vendor BSP I've received with the board hardcodes calls to the 
+> bq24190 in the MUSB driver to switch between OTG and trickle charge modes 
+> based on USB cable connection/disconnection events. That's pretty ugly, and I 
+> assume this should be handled in userspace - or is there a standard kernel 
+> infrastructure for that ? 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+I don't have a good feel for what's out there but the charger-manager may
+be a good place to start:
 
-iQIcBAEBCgAGBQJTfO+JAAoJENju1/PIO/qaa5wP/i+jGUtLwNgMyVplgZdMvC6W
-NzJnNZN6um2eipY5aHNXn6SdLPM+EqhopTPrsVopm01xXHjRAJxzHI2skSjQgnP7
-ipEIHRNceMr946NTJtP8YUGO04pOhu6HiXmsfqBp00LbWvFeGSTTMNhY308WU+LQ
-A/jvVilsfItfUvy1mG9ZYlDUGvpz8GptheTw3bPbZ4oW9XgnNiUWgfpvgbPkFu8n
-iw4hcBY5TLeLAcUEBSbpPXfy370h86PSvfmX9LmOTEKwNgtIMi7+dPl6vRjHUbIi
-H8dCdPlaRBOIUlqCTVfHqE8kJx628hI/6RJKYAWe/+LuWdzZrnY1lqgxidJUd2Xc
-bgB+2qammupvS6Xw3wv35cniUT3h8x0LrTIAHxK/7RiEzXRzj7PVX9N4ygv2Wk9Y
-SR3ZU8oAPld0xKOiDiaDX8LEt3AdD+f4Ok5KYhj5wKX4tRnP45NfOR6Vzg5tnFvg
-II1f+xWRvv7TtwnSekMWov2SzNwvblja1GuOnkULoAIJAPM+Bkrb1It98bqOTthO
-6VsXW2OSVcBNeUrkViNTo0mtgKtKglxE41lmdJ0kuGRjv/XPk0e+MY+afo2NBdnB
-uhuA53YHvpRs04xLt/RhdFcar15IfZw2YzyZpUYeEkWbFcPx6clTI948EqzmSW7b
-OHDamv85gjC5+n6ZDR8x
-=uNaS
------END PGP SIGNATURE-----
+Documentation/power/charger-manager.txt
+drivers/power/charger-manager.c
 
---Q68bSM7Ycu6FN28Q--
+HTH,
+
+Mark
+--
