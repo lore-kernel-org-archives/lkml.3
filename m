@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168AbaEUUOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 16:14:51 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55569 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357AbaEUUOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 16:14:50 -0400
-Date: Wed, 21 May 2014 16:14:48 -0400 (EDT)
-Message-Id: <20140521.161448.716446182526388511.davem@davemloft.net>
-To: davidn@davidnewall.com
-Cc: Valdis.Kletnieks@vt.edu, fw@strlen.de, stephen@networkplumber.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bridge@lists.linux-foundation.org
-Subject: Re: Revert 462fb2af9788a82a534f8184abfde31574e1cfa0 (bridge :
- Sanitize skb before it enters the IP stack)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <537C5F71.6000204@davidnewall.com>
-References: <537A12EA.4060604@davidnewall.com>
-	<14456.1400561749@turing-police.cc.vt.edu>
-	<537C5F71.6000204@davidnewall.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753232AbaEUUQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 16:16:42 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:42343 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752837AbaEUUQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 16:16:41 -0400
+Message-ID: <537D0989.6080108@mm-sol.com>
+Date: Wed, 21 May 2014 23:16:09 +0300
+From: Georgi Djakov <gdjakov@mm-sol.com>
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rvaswani@codeaurora.org, davidb@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1 1/4] ARM: dts: qcom: Add APQ8084 SoC support
+References: <1400684225-21381-1-git-send-email-gdjakov@mm-sol.com> <1400684225-21381-2-git-send-email-gdjakov@mm-sol.com> <537CE141.6010500@codeaurora.org>
+In-Reply-To: <537CE141.6010500@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 21 May 2014 13:14:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Newall <davidn@davidnewall.com>
-Date: Wed, 21 May 2014 17:40:25 +0930
-
-> On 20/05/14 14:25, Valdis.Kletnieks@vt.edu wrote:
->> So yes, we*do* need to do something sensible there - either frag the
->> packet
->> on the way out, or something.
+On 21.05.14, 20:24, Stephen Boyd wrote:
+> On 05/21/14 07:57, Georgi Djakov wrote:
+>> +
+>> +		L2: l2-cache {
+>> +			compatible = "qcom,arch-cache";
+>> +			cache-level = <2>;
+>> +			interrupts = <0 2 0x4>;
 > 
-> I think the problem is that a bridge cannot be used across
-> incompatible media.  That's the job of a router.
+> Let's leave out interrupts until the binding is accepted.
 > 
-> A bridge should act like a bridge, not a router.  Fragmenting the
-> packet is wrong; that's IP's job.  Dropping the packet is also
-> arguably wrong; that's the real device-driver's job.  What seems right
-> to me is to act like a bridge and forward packets by looking inside of
-> them *no more than is necessary*.  Looking beyond MAC address is
-> perhaps too much.
+>> +			qcom,saw = <&saw_l2>;
+>> +		};
+>> +	};
+>> +
+>> +	cpu-pmu {
+>> +		compatible = "qcom,krait-pmu";
+>> +		interrupts = <1 7 0xf04>;
+>> +	};
+>> +
+>> +	soc: soc {
+>> +		#address-cells = <1>;
+>> +		#size-cells = <1>;
+>> +		ranges;
+>> +		compatible = "simple-bus";
+>> +
+>> +		intc: interrupt-controller@f9000000 {
+>> +			compatible = "qcom,msm-qgic2";
+>> +			interrupt-controller;
+>> +			#interrupt-cells = <3>;
+>> +			reg = <0xf9000000 0x1000>,
+>> +			      <0xf9002000 0x1000>;
+>> +		};
+>> +
+>> +		timer {
+>> +			compatible = "arm,armv7-timer";
+>> +			interrupts = <1 2 0xf08>,
+>> +				     <1 3 0xf08>,
+>> +				     <1 4 0xf08>,
+>> +				     <1 1 0xf08>;
+>> +			clock-frequency = <19200000>;
+>> +		};
 > 
-> We can finish the job of processing IP options, or at least in this
-> scenario, but that seems wrong-headed and invites more work as more
-> problems are discovered; or we could remove the half-hearted attempt
-> it currently does and leave the bridge as a simple bridge.
+> Please move this timer node out of the soc container below the pmu.
 > 
-> This problem wouldn't occur if all devices in a bridge were required
-> to be compatible media; particularly identical MTU.
 
-I completely agree with you.
+Will do. Thanks for the comments!
 
-I also just want to state for the record, and I know some people will
-disagree with me, that I think the bridging netfilter layer should
-never have been integrated into the tree.
-
-And I've been saying this for more than a decade.
-
-It takes layering violations to a whole new level, and it's why we see
-problems like this.
-
-Besides this IP options issue, it also creates fake ipv4 routes, so
-every time someone tries to do anything non-trivial with the ipv4
-routing code the bridging netfilter fake route code had to be adjusted
-or else we'd get crashes.
-
-It has also held back many potential improvements to iptables in
-general over the years because it does so many things differently
-than the rest of the iptables modules.
-
-It stinks, we never should have added it, and now since we have people
-have been perversely convinced that doing stuff like this is actually
-sane.  It's not.
+BR,
+Georgi
