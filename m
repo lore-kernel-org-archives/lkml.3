@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaEURFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 13:05:11 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:7370 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336AbaEURFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 13:05:09 -0400
-Message-ID: <537CDCC2.6020209@hp.com>
-Date: Wed, 21 May 2014 13:05:06 -0400
-From: Linda Knippers <linda.knippers@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752690AbaEURFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 13:05:22 -0400
+Received: from smtp.pobox.com ([208.72.237.35]:63096 "EHLO smtp.pobox.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751336AbaEURFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 13:05:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=v0d2/OWLtacM8+l9elTQlCX8UQ3F0hYf
+	gF3cFzu6laUHu3HqIFNV61MLUwDvfoCnhHKgZWIda/7znEYXsQnENsA7xRd29pZT
+	02KIhLvj8M0nw3bnKiSzklyLMYurol86hDpue5cjqdiYkYXCNJks58blzDA3Z7vq
+	q0uPH1nK71g=
+From: Junio C Hamano <gitster@pobox.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v2.0.0-rc4
+References: <xmqqr43oq8q5.fsf@gitster.dls.corp.google.com>
+	<537bf50f27417_353e13c330846@nysa.notmuch>
+Date: Wed, 21 May 2014 10:05:07 -0700
+In-Reply-To: <537bf50f27417_353e13c330846@nysa.notmuch> (Felipe Contreras's
+	message of "Tue, 20 May 2014 19:36:31 -0500")
+Message-ID: <xmqqa9abqczg.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu/intel: Exclude devices using RMRRs from IOMMU API
- domains
-References: <20140514192620.7767.43842.stgit@bling.home>	<1400668716.13839.66.camel@shinybook.infradead.org> <1400678426.3289.396.camel@ul30vt.home>
-In-Reply-To: <1400678426.3289.396.camel@ul30vt.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 1136993A-E10A-11E3-BF41-9903E9FBB39C-77302942!pb-smtp0.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/21/2014 9:20 AM, Alex Williamson wrote:
-> On Wed, 2014-05-21 at 11:38 +0100, David Woodhouse wrote:
->> On Wed, 2014-05-14 at 13:27 -0600, Alex Williamson wrote:
->>> The user of the IOMMU API domain expects to have full control of
->>> the IOVA space for the domain.  RMRRs are fundamentally incompatible
->>> with that idea.  We can neither map the RMRR into the IOMMU API
->>> domain, nor can we guarantee that the device won't continue DMA with
->>> the area described by the RMRR as part of the new domain.  Therefore
->>> we must prevent such devices from being used by the IOMMU API.
->>
->> Ick, ick, ick. The more the ramifications of RMRRs become apparent, the
->> more I wish we'd just done the Right Thing™ and declared that firmware
->> SHALL NOT leave any device doing (IOMMU-visible) DMA after the OS takes
->> over. That way, if they wanted this kind of abomination then they'd have
->> to come up with a way of doing it differently. Hell, can't you do PCIe
->> transactions which claim to be already translated, and thus just bypass
->> the IOMMU?
->>
->> OK, rant over... 
->>
->> Why can't we map the RMRR into the IOMMU API domain? If we're setting up
->> a VM guest, that basically means we'd want to poke a hole in its memory
->> map and mark the RMRR-afflicted range as reserved or absent. It's
->> horrible, but *everything* about RMRRs is horrible. It's not impossible,
->> and it would allow us to give these devices away to guests. Don't we
->> sometimes *have* devices that we want to give to guests, that are
->> afflicted with RMRRs?
-> 
-> You're right, it is possible to assign devices with RMRRs, but in order
-> to do so we'd need to expose the RMRR areas for a device beyond the
-> inner workings of intel-iommu and mark those ranges as reserved in the
-> guest.  That alone makes hotplug of such devices into a guest
-> impossible.
-> 
-> Enabling such a use case also potentially provides an untrusted guest
-> with direct access to regions of platform memory that potentially allows
-> for untold platform specific exploits.
-> 
-> We currently have no visibility to RMRRs from the IOMMU API, so we can't
-> even attempt to do the above, nor can we guarantee that we have any
-> ability to make a device discontinue use of an RMRR area when it is
-> assigned to a VM domain.  Therefore the only safe thing to do is prevent
-> use of such devices by a VM domain.
-> 
->> There are discussions about RMRRs being (ab)used for more than their
->> existing brain-damaged purpose. Where we have a peripheral device that
->> will (mis)interpret certain address ranges as "local" rather than
->> forwarding transactions up towards main memory, we need to ensure that
->> such ranges are never used as virtual addresses. This has largely been
->> an invisible problem until we found a device where the affected range
->> matched the IOVA our DMA API uses by default. Using an RMRR has been
->> proposed as a simple way to achieve that... which means that you end up
->> not being able to assign *those* devices to IOMMU domains either.
->>
->> I do suspect it's going to lead to complaints... but I'm just not sure I
->> can bring myself to care. Sane designs don't require RMRRs. If someone
->> comes to me and complains that their HP storage controller or whatever
->> can't be assigned to a guest, I'm quite prepared to tell them to replace
->> it with something non-broken. Will you back me up when it happens?
-> 
-> Exactly, I have a hard time bringing myself to care about supporting
-> such devices.  Vendors that proliferate RMRR usage need to be aware of
-> the implications of RMRRs for all use cases of a device.  First and
-> foremost, we need to lock out devices with RMRRs because we have no
-> ability to either honor or disable RMRRs when used by the IOMMU API.  If
-> vendors that rely on RMRRs want to make such devices assignable by
-> providing interfaces to describe and map the area into a VM, or even a
-> mechanism to disable the RMRR, more power to them.  The current
-> situation is simply unsafe and needs to be prevented.  
+Felipe Contreras <felipe.contreras@gmail.com> writes:
 
-I care but I think this patch should go in until there is a better
-solution.
+> Junio C Hamano wrote:
+>
+>>  * The remote-helper interface to fast-import/fast-export via the
+>>    transport-helper has been tightened to avoid leaving the import
+>>    marks file from a failed/crashed run, as such a file that is out-of-
+>>    sync with reality confuses a later invocation of itself.
+>
+> Really? Where are the patches for that?
+>
+> I think it's fair to say the way the remote-helpers and transport-helper
+> has been handled for v2.0 has been a total disaster.
 
--- ljk
+Thanks for noticing.  The last-minute change of plans in the morning
+on the -rc release day did not help.  Will remove.
 
-> Thanks,
-> 
-> Alex
-> 
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
-> 
+Anything else I missed?
+
 
