@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619AbaEUWWD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:22:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42134 "EHLO mga09.intel.com"
+	id S1753655AbaEUWWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:22:19 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54044 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753373AbaEUWWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:22:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,882,1392192000"; 
-   d="scan'208";a="544523301"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
+	id S1753242AbaEUWWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 18:22:02 -0400
+Date: Thu, 22 May 2014 00:21:37 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Subject: RE: [RFC] x86_64: A real proposal for iret-less return to kernel
-Thread-Topic: [RFC] x86_64: A real proposal for iret-less return to kernel
-Thread-Index: AQHPdT5wRvlmui20OUO5csd5VXpJ+ZtMCOaA//+MFSCAAHmbAP//i7GA
-Date: Wed, 21 May 2014 22:18:33 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
- <1400639227.9759.21.camel@pippen.local.home>
- <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
- <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
- <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
- <20140521163315.GJ21205@pd.tnic>
+        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+Message-ID: <20140521222137.GN25130@pd.tnic>
+References: <20140521163315.GJ21205@pd.tnic>
  <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
- <20140521214845.GG25130@pd.tnic>
- <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
- <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
-In-Reply-To: <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+ <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
+ <20140521214319.GF25130@pd.tnic>
+ <537D1E8B.1010505@zytor.com>
+ <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
+ <20140521215411.GI25130@pd.tnic>
+ <537D21F2.8030702@zytor.com>
+ <20140521221121.GL25130@pd.tnic>
+ <537D2522.80702@zytor.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <537D2522.80702@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LMMETa022762
 
->> That TIF_MCE_NOTIFY prevents the return to user mode, and we end up in mce_notify_process().
->
-> Why is this necessary?
+On Wed, May 21, 2014 at 03:13:54PM -0700, H. Peter Anvin wrote:
+> Seems like a comment would be in order, though.
 
-The recovery path has to do more than just send a signal - it needs to walk processes and
-"mm"s to see which have mapped the physical address that the h/w told us has gone bad.
+Sure, I'll do a nice one once this discussions quiets down. :-)
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
