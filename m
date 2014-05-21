@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359AbaEUNNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:13:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2328 "EHLO mx1.redhat.com"
+	id S1752690AbaEUNPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:15:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35658 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273AbaEUNNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:13:11 -0400
+	id S1752273AbaEUNNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:13:14 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 14/22] perf top: Add --fields option to specify output fields
-Date: Wed, 21 May 2014 15:12:36 +0200
-Message-Id: <1400677964-25160-15-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 16/22] perf hists: Reset width of output fields with header length
+Date: Wed, 21 May 2014 15:12:38 +0200
+Message-Id: <1400677964-25160-17-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,83 +21,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-The --fields option is to allow user setup output field in any order.
-It can receive any sort keys and following (hpp) fields:
+Some fields missed to set default column length so it broke align in
+--stdio output.  Add perf_hpp__reset_width() to set it to a sane
+default value.
 
-  overhead, overhead_sys, overhead_us, sample and period
+Note that this change will ignore -w/--column-widths option for now.
 
-If guest profiling is enabled, overhead_guest_{sys,us} will be
-available too.
+Before:
+  $ perf report -F cpu,comm,overhead --stdio
+  ...
+  # CPU          Command  Overhead
+  #   ...............  ........
+  #
+    0          firefox     2.65%
+    0      kworker/0:0     1.45%
+    0          swapper     5.52%
+    0         synergys     0.92%
+    1          firefox     4.54%
 
-More more information, please see previous patch "perf report:
-Add -F option to specify output fields"
+After:
+  # CPU          Command  Overhead
+  # ...  ...............  ........
+  #
+      0          firefox     2.65%
+      0      kworker/0:0     1.45%
+      0          swapper     5.52%
+      0         synergys     0.92%
+      1          firefox     4.54%
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-15-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-17-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Documentation/perf-top.txt |  9 +++++++++
- tools/perf/builtin-top.c              | 15 +++++++++------
- 2 files changed, 18 insertions(+), 6 deletions(-)
+ tools/perf/ui/stdio/hist.c | 21 +++------------------
+ tools/perf/util/hist.h     |  1 +
+ tools/perf/util/sort.c     | 12 ++++++++++++
+ 3 files changed, 16 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index df86328..dcfa54c 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -116,6 +116,15 @@ Default is to monitor all CPUS.
- 	local_weight, abort, in_tx, transaction, overhead, sample, period.
- 	Please see description of --sort in the perf-report man page.
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index e3fdf4e..cfcd3f6 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -369,12 +369,10 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		      int max_cols, float min_pcnt, FILE *fp)
+ {
+ 	struct perf_hpp_fmt *fmt;
+-	struct sort_entry *se;
+ 	struct rb_node *nd;
+ 	size_t ret = 0;
+ 	unsigned int width;
+ 	const char *sep = symbol_conf.field_sep;
+-	const char *col_width = symbol_conf.col_width_list_str;
+ 	int nr_rows = 0;
+ 	char bf[96];
+ 	struct perf_hpp dummy_hpp = {
+@@ -387,22 +385,9 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
  
-+--fields=::
-+	Specify output field - multiple keys can be specified in CSV format.
-+	Following fields are available:
-+	overhead, overhead_sys, overhead_us, sample and period.
-+	Also it can contain any sort key(s).
+ 	init_rem_hits();
+ 
+-	list_for_each_entry(se, &hist_entry__sort_list, list) {
+-		if (se->elide)
+-			continue;
+-		width = strlen(se->se_header);
+-		if (symbol_conf.col_width_list_str) {
+-			if (col_width) {
+-				hists__set_col_len(hists, se->se_width_idx,
+-						   atoi(col_width));
+-				col_width = strchr(col_width, ',');
+-				if (col_width)
+-					++col_width;
+-			}
+-		}
+-		if (!hists__new_col_len(hists, se->se_width_idx, width))
+-			width = hists__col_len(hists, se->se_width_idx);
+-	}
 +
-+	By default, every sort keys not specified in --field will be appended
-+	automatically.
++	perf_hpp__for_each_format(fmt)
++		perf_hpp__reset_width(fmt, hists);
+ 
+ 	if (!show_header)
+ 		goto print_entries;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f67feb4..034db76 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -202,6 +202,7 @@ void perf_hpp__append_sort_keys(void);
+ bool perf_hpp__is_sort_entry(struct perf_hpp_fmt *format);
+ bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b);
+ bool perf_hpp__should_skip(struct perf_hpp_fmt *format);
++void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists);
+ 
+ typedef u64 (*hpp_field_fn)(struct hist_entry *he);
+ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 0fe7cbe..9bee728 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1089,6 +1089,18 @@ bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b)
+ 	return hse_a->se == hse_b->se;
+ }
+ 
++void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists)
++{
++	struct hpp_sort_entry *hse;
 +
- -n::
- --show-nr-samples::
- 	Show a column with the number of samples.
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 280945b..5b389ce 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1085,6 +1085,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
- 		   " Please refer the man page for the complete list."),
-+	OPT_STRING(0, "fields", &field_order, "key[,keys...]",
-+		   "output field(s): overhead, period, sample plus all of sort keys"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
-@@ -1138,17 +1140,18 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		usage_with_options(top_usage, options);
- 
- 	sort__mode = SORT_MODE__TOP;
-+	/* display thread wants entries to be collapsed in a different tree */
-+	sort__need_collapse = 1;
- 
- 	if (setup_sorting() < 0) {
--		parse_options_usage(top_usage, options, "s", 1);
-+		if (sort_order)
-+			parse_options_usage(top_usage, options, "s", 1);
-+		if (field_order)
-+			parse_options_usage(sort_order ? NULL : top_usage,
-+					    options, "fields", 0);
- 		goto out_delete_evlist;
- 	}
- 
--	/* display thread wants entries to be collapsed in a different tree */
--	sort__need_collapse = 1;
--
--	perf_hpp__init();
--
- 	if (top.use_stdio)
- 		use_browser = 0;
- 	else if (top.use_tui)
++	if (!perf_hpp__is_sort_entry(fmt))
++		return;
++
++	hse = container_of(fmt, struct hpp_sort_entry, hpp);
++	hists__new_col_len(hists, hse->se->se_width_idx,
++			   strlen(hse->se->se_header));
++}
++
+ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 			      struct perf_evsel *evsel)
+ {
 -- 
 1.8.3.1
 
