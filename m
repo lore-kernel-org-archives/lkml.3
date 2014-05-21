@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaEUROa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 13:14:30 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:43228 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaEURO3 (ORCPT
+	id S1752834AbaEURPz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 13:15:55 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:44320 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752605AbaEURPw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 13:14:29 -0400
-Date: Wed, 21 May 2014 19:12:11 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Cc: dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH v3 04/16] drm: sti: add I2C client driver for HDMI
-Message-ID: <20140521171209.GR2014@ulmo>
-References: <1400594186-8956-1-git-send-email-benjamin.gaignard@linaro.org>
- <1400594186-8956-5-git-send-email-benjamin.gaignard@linaro.org>
+	Wed, 21 May 2014 13:15:52 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko.stuebner@bq.com>
+To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, tglx@linutronix.de,
+        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
+        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
+        olof@lixom.net, sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
+        gregory.clement@free-electrons.com, arnd@arndb.de,
+        robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 2/6] dt-bindings: add mtk-timer bindings
+Date: Wed, 21 May 2014 19:18:59 +0200
+Message-ID: <1615424.OJcNQb1ONt@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <3a9b6824-e088-4774-b125-7a33b5a895dc@BN1AFFO11FD022.protection.gbl>
+References: <1400689583-21119-1-git-send-email-matthias.bgg@gmail.com> <1948139.7c1AZ80ZQt@phil> <3a9b6824-e088-4774-b125-7a33b5a895dc@BN1AFFO11FD022.protection.gbl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5xr6Gr0irOxp3+3c"
-Content-Disposition: inline
-In-Reply-To: <1400594186-8956-5-git-send-email-benjamin.gaignard@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Mittwoch, 21. Mai 2014, 09:53:57 schrieb Sören Brinkmann:
+> On Wed, 2014-05-21 at 06:54PM +0200, Heiko Stübner wrote:
+> > Am Mittwoch, 21. Mai 2014, 09:34:10 schrieb Sören Brinkmann:
+> > > Hi Matthias,
+> > > 
+> > > On Wed, 2014-05-21 at 06:26PM +0200, Matthias Brugger wrote:
+> > > > +		compatible = "mediatek,mtk6577-timer";
+> > > > +		reg = <0x10008000 0x80>;
+> > > > +		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
+> > > > +		clocks = <&system_clk>, <&rtc_clk>;
+> > > > +		clock-names = "system-clk", "rtc-clk";
+> > > 
+> > > I'm still not convinced that the timer IP calls its clock inputs this
+> > > way, but well.
+> > 
+> > Maybe this might convince you ;-)
+> > 
+> > "The GPT includes 5 32-bit timers and one 64-bit timer. Each timer has 4
+> > operation modes, which are ONE-SHOT,  REPEAT,  KEEP-GO and  FREERUN, and
+> > can operate on one of the 2 clock sources, RTC clock (32.768kHz) and
+> > system clock (13MHz)."
+> 
+> Is this copied from the timer data sheet or the SOC documentation?
 
---5xr6Gr0irOxp3+3c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That is from the processor datasheet containing the timer documentation.
+I don't think it's customary for soc vendors to provide additional individual 
+documentation for self-developed IPs contained in a SoC.
 
-On Tue, May 20, 2014 at 03:56:14PM +0200, Benjamin Gaignard wrote:
-> Add I2C client driver to retrieve EDID.
->=20
-> Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-> ---
->  drivers/gpu/drm/sti/Makefile  |  3 ++-
->  drivers/gpu/drm/sti/sti_ddc.c | 56 +++++++++++++++++++++++++++++++++++++=
-++++++
->  2 files changed, 58 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/gpu/drm/sti/sti_ddc.c
-
-With my comments about DDC in the previous patch addressed this can be
-completely dropped.
-
-Thierry
-
---5xr6Gr0irOxp3+3c
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfN5pAAoJEN0jrNd/PrOhyUkQAIEfBdd2oHqTS1Tnhtx3baaQ
-k30nPrf7zrkOyTfa0K4EGvocd5PjRNoxhDosJiF1QO5uSF8IZLiVfqGU6Ua8GFam
-iWuAxvqCRzYE2tSUMF/v1Vm4J5U3BlfzNM7r69AqPLcKDxpKS029lYCG0+NvovZ/
-A2X8/R8AoS6C7A2cG4N5TOKEo7HX09COvD2sH12s+lS8LOu5mfCBMa2EfRH6jzkh
-VO7BVB9CefLM18Ka94ZnZnJZZf+LciCBVzHJgFdm7yzw94k+qqQdZu2ZpFiYDP4S
-rY4VifP3lpXawFN5TEyXNB8vYAxZMTYIS6qlZ3mHIxCfZiHOzIQL9ECu+HP1LbZK
-8XNa69uW6BJ4cjLdXa02DUoD8QGOWzcvfTdRHa7BOySFN6a+gobgQjPn5VbWY93g
-L5dT5ayOi15cqgVAlvfQZBLUS30jTiVe83ac+7gnYixYcsAh/AzQGHfJZ8J63HUi
-pdWpHNXaP428oCuKIoHja2fwEhEogXMCsT5Oe/UcYNFXH1xNKHcOC0H4Mc2v0IWF
-P1aRXvx4VHPylWpantlwLRw/StNR+J3LGCRUlu+OSeDd3mJACsjMoIxMi+ReZ3O6
-GNIFonUXUYKPTlXm/j0kd/zQFN/g1T8a/7Z18YAE2IqqoIQ7RsOrRX8yCGBGxZoP
-mg3krCpn7SkFVyD1DPYN
-=xxVT
------END PGP SIGNATURE-----
-
---5xr6Gr0irOxp3+3c--
