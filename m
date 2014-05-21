@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaEUCEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 22:04:40 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:43376 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaEUCEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 22:04:39 -0400
-Message-ID: <1400637782.14703.32.camel@debian>
-Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
- to Per-CPU rather than only monarch CPU
-From: Chen Yucong <slaoub@gmail.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: tony.luck@intel.com, bp@alien8.de, ak@linux.intel.com,
-        ying.huang@intel.com, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org
-Date: Wed, 21 May 2014 10:03:02 +0800
-In-Reply-To: <537C040E.3040901@jp.fujitsu.com>
-References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
-	 <537C040E.3040901@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751554AbaEUCGS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 22:06:18 -0400
+Received: from mga14.intel.com ([192.55.52.115]:42261 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751147AbaEUCGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 22:06:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,877,1392192000"; 
+   d="scan'208";a="535209351"
+Message-ID: <537C0A12.70902@intel.com>
+Date: Wed, 21 May 2014 10:06:10 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: wsa@the-dreams.de, mika.westerberg@linux.intel.com, awilliam@redhat.com,
+        lenb@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [Patch V3 1/5] ACPICA: Export acpi_buffer_to_resource symbol
+References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <1400590764-11108-2-git-send-email-tianyu.lan@intel.com> <1782070.yxHZNBOPJ3@vostro.rjw.lan>
+In-Reply-To: <1782070.yxHZNBOPJ3@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-21 at 10:40 +0900, Hidetoshi Seto wrote:
-> (2014/05/20 11:11), Chen Yucong wrote:
-> > mces_seen is a Per-CPU variable which should only be accessed by Per-CPU as possible. So the
-> > clear operation of mces_seen should also be lcoal to Per-CPU rather than monarch CPU.
+On 2014年05月21日 05:24, Rafael J. Wysocki wrote:
+> On Tuesday, May 20, 2014 08:59:20 PM Lan Tianyu wrote:
+>> The acpi_buffer_to_resource is needed in i2c module
+>> to convert aml buffer to struct acpi_resource
+>>
+>> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 > 
-> I don't think it should be local.
-> Originally what we want to have here is memory to save mces_seen for each online cpus,
-> such as a global array like mces_seen[cpus]. But at same time we don't want to preallocate
-> big array enough for max possible cpus. So we use per-cpu store instead. 
-> 
-But mces_seen will just be updated by Per-CPU rather than monarch CPU.
-It is only read by monarch CPU.
-> > 
-> > Meanwhile, there is also a potential risk that mces_seen will not be be cleared if a timeout
-> > occors in mce_end for monarch CPU. As a reuslt, the stale value of mces_seen will reappear
-> > on the next mce.
-> 
-> In case if we decide panic in mce path, uncleared mces_seen can be referred from memory dump.
-> I suppose it will help trouble investigation.
-> 
-> > 
-> > Based on the above reasons, this patch distirbute the clear operation of mces_seen to Per-CPU
-> > rather than only monarch CPU.
-> 
-> "local" "occurs" "result" "distribute"
-> I recommend you to use spell-checker for your postings...
-Thanks very much for your suggestion, I will use a spell-cheker for my
-carelessness. 
+> This isn't necessary on top of current linux-next I believe?  If so,
+> please do not resend it any more.
 
-thx!
-cyc
+Yes, please ignore it and resending it is to facilitate some testers to
+the patchset. Ok. I will not resend it.
 
+> 
+>> ---
+>>  drivers/acpi/acpica/rscreate.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/acpi/acpica/rscreate.c b/drivers/acpi/acpica/rscreate.c
+>> index 75d3690..5828649 100644
+>> --- a/drivers/acpi/acpica/rscreate.c
+>> +++ b/drivers/acpi/acpica/rscreate.c
+>> @@ -112,6 +112,7 @@ acpi_buffer_to_resource(u8 *aml_buffer,
+>>  
+>>  	return (status);
+>>  }
+>> +ACPI_EXPORT_SYMBOL(acpi_buffer_to_resource);
+>>  
+>>  /*******************************************************************************
+>>   *
+>>
+> 
+
+
+-- 
+Best regards
+Tianyu Lan
