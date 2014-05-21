@@ -1,171 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392AbaEUPii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:38:38 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:34825 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076AbaEUPif (ORCPT
+	id S1752746AbaEUPi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:38:57 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58069 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641AbaEUPiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:38:35 -0400
+	Wed, 21 May 2014 11:38:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140520144446.GJ949@pengutronix.de>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
-	<1400169891-29546-2-git-send-email-tthayer@altera.com>
-	<20140516075344.GF949@pengutronix.de>
-	<CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
-	<20140519191206.GH949@pengutronix.de>
-	<CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
-	<CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
-	<20140520144446.GJ949@pengutronix.de>
-Date: Wed, 21 May 2014 10:38:34 -0500
-Message-ID: <CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
-From: Thor Thayer <tthayer.linux@gmail.com>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: Alan Tull <delicious.quinoa@gmail.com>, Thor Thayer <tthayer@altera.com>,
-        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
-        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
-        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Alan Tull <atull@altera.com>
+In-Reply-To: <537C6262.5030500@intel.com>
+References: <CAKx2Y1mzLesGFYz30fH8xCZTkvNGPUNYkHptYLYq_hVExoh_8g@mail.gmail.com>
+	<537C6262.5030500@intel.com>
+Date: Wed, 21 May 2014 08:38:54 -0700
+Message-ID: <CAKx2Y1k7WvCh4UYASzziKCLd-GcgfyZf7UbSBLOgzP16dczr2A@mail.gmail.com>
+Subject: Re: rmmod thermal, unable to handle kernel NULL pointer dereference
+From: Kui Zhang <kuizhang@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
-<s.trumtrar@pengutronix.de> wrote:
-> Hi!
->
-> On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
->> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
+Thanks, that fixed it.
+
+On Wed, May 21, 2014 at 1:22 AM, Aaron Lu <aaron.lu@intel.com> wrote:
+> On 05/21/2014 01:57 PM, Kui Zhang wrote:
+>> Hello,
 >>
->> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->> >>> >> new file mode 100644
->> >>> >> index 0000000..8f8746b
->> >>> >> --- /dev/null
->> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->> >>> >> @@ -0,0 +1,11 @@
->> >>> >> +Altera SOCFPGA SDRAM Controller
->> >>> >> +
->> >>> >> +Required properties:
->> >>> >> +- compatible : "altr,sdr-ctl";
->> >>> >> +- reg : Should contain 1 register ranges(address and length)
->> >>> >> +
->> >>> >> +Example:
->> >>> >> +     sdrctl@ffc25000 {
->> >>> >> +             compatible = "altr,sdr-ctl";
->> >>> >> +             reg = <0xffc25000 0x1000>;
->> >>> >> +     };
->> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
->> >>> >> index df43702..6ce912e 100644
->> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
->> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
->> >>> >> @@ -676,6 +676,11 @@
->> >>> >>                       clocks = <&l4_sp_clk>;
->> >>> >>               };
->> >>> >>
->> >>> >> +             sdrctl@ffc25000 {
->> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
->> >>> >                                                    ^^^^^^^^^^
->> >>> >
->> >>> > Get rid of that, too, please.
->> >>>
->> >>> Hi Steffan,
->> >>>
->> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
->> >>> that has the ECC enable bitfield also includes the DRAM configuration
->> >>> bitfields that other drivers will want to access (specifically the
->> >>> FPGA bridge needs this information). Since this register will be
->> >>> shared between drivers,  syscon seems like the best solution.
->> >>>
->> >>
->> >> Hm, from looking at the documentation of the ctrlcfg I can't really
->> >> understand which bits you would need for the FPGA brigde and why.
+>> I get following error when rmmod thermal.
 >>
->> Hi Steffen,
->>
->> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
->> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
->> allows an FPGA port to come out of reset (enables that port).  Has no
->> other effect on SDRAM configuration.
->>
->> >> That all sounds like stuff you would want to set for the specific
->> >> RAM you are dealing with on a specific board.
->> >> What bridge are you talking about? The SDRAM bridge?
->>
->> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
->> register the only register in the sdr that the bridge driver needs.
->>
+>> rmmod  thermal
+>> Killed
 >
-> So, what I suggested down ...
+> Thanks for the report. Here is a fix patch that should solve this
+> problem.
 >
->> >>
->> >> I can see the problem with the ECC enable, though.
->> >>
->> >> Regards,
->> >> Steffen
->> >>
->> >
->> >>> >                 sdrctl@ffc25000 {
->> >>> >                         compatible = "altr,sdr-ctl";
->> >>> >                         reg = <0xffc25000 0x1000>;
->> >>> >                         ranges;
->> >>> >
->> >>> >                         edac@ffc2502c {
->> >>> >                                 compatible = "altr,sdram-edac";
->> >>> >                                 reg = <0xffc2502c 0x50>;
->> >>> >                                 interrupts = <0 39 4>;
->> >>> >                         };
->> >>> >                 };
->> >>> >
->> >>> > Then we can later add:
->> >>> >
->> >>> >                         sdr-ports: ports@ffc2507c {
->> >>> >                                 #reset-cells = <1>;
->> >>> >                                 compatible = "altr,sdr-ports";
->> >>> >                                 reg = <0xffc2507c 0x10>;
->> >>> >                                 clocks = <&ddr_dqs_clk>;
->> >>> >                                 ...
->> >>> >                         };
->>
+> From: Aaron Lu <aaron.lu@intel.com>
+> Date: Wed, 21 May 2014 16:00:42 +0800
+> Subject: [PATCH] ACPI / thermal: fix workqueue destroy order
 >
-> ... here should work. No?! Just a simple driver that registers with the
-> reset-framework. I would add 0x7c to that driver and than that driver could
-> "configure" the port and let it out of reset.
+> When the thermal module is to be removed, we should destroy the wq
+> acpi_thermal_pm_queue after the ACPI driver's remove callback is
+> executed as we will need to flush the workqueue there, or a NULL pointer
+> access will be hit.
 >
-> I have done the same thing for the other 3 bridges, but am not finished yet.
-> Especially the GPV-stuff needs to at least be able to be added later if not now.
+> Reported-by: Kui Zhang <kuizhang@gmail.com>
+> Reference: http://www.spinics.net/lists/kernel/msg1747251.html
+> Cc: All applicable <stable@vger.kernel.org>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> ---
+>  drivers/acpi/thermal.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Regard,
-> Steffen
+> diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+> index c1e31a41f949..25bbc55dca89 100644
+> --- a/drivers/acpi/thermal.c
+> +++ b/drivers/acpi/thermal.c
+> @@ -1278,8 +1278,8 @@ static int __init acpi_thermal_init(void)
 >
+>  static void __exit acpi_thermal_exit(void)
+>  {
+> -       destroy_workqueue(acpi_thermal_pm_queue);
+>         acpi_bus_unregister_driver(&acpi_thermal_driver);
+> +       destroy_workqueue(acpi_thermal_pm_queue);
+>
+>         return;
+>  }
 > --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
-Hi Steffen!
-
-I'm not clear on how the EDAC driver will interact with the registers
-allocated to the SDRAM controller. If the group of registers from
-0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
-controller, how does the EDAC driver cleanly access that single
-register inside this range?
-
-Is the solution that I don't use request_region() (and therefore not
-request exclusive access) when setting up the SDRAM controller?
-
-If you could point me to your drivers for the other bridges that you
-reference, your code may answer my question.
-
-Thanks for your comments and insight.
-
-Thor
+> 1.9.0
+>
