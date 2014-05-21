@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaEUEZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 00:25:28 -0400
-Received: from fencepost.gnu.org ([208.118.235.10]:44748 "EHLO
-	fencepost.gnu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaEUEZ0 (ORCPT
+	id S1751215AbaEUE3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 00:29:55 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:65431 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761AbaEUE3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 00:25:26 -0400
-From: David Kastrup <dak@gnu.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v2.0.0-rc4
-References: <xmqqr43oq8q5.fsf@gitster.dls.corp.google.com>
-	<537bf50f27417_353e13c330846@nysa.notmuch>
-Date: Wed, 21 May 2014 06:25:24 +0200
-In-Reply-To: <537bf50f27417_353e13c330846@nysa.notmuch> (Felipe Contreras's
-	message of "Tue, 20 May 2014 19:36:31 -0500")
-Message-ID: <87tx8jahcb.fsf@fencepost.gnu.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 21 May 2014 00:29:53 -0400
+Message-ID: <1400646590.5158.43.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 21 May 2014 06:29:50 +0200
+In-Reply-To: <20140520172033.GE4570@linux.vnet.ibm.com>
+References: <1400123931.5175.38.camel@marge.simpson.net>
+	 <1400386954.5140.36.camel@marge.simpson.net>
+	 <20140518052039.GF4570@linux.vnet.ibm.com>
+	 <1400402201.5166.13.camel@marge.simpson.net>
+	 <20140518155815.GK4570@linux.vnet.ibm.com>
+	 <1400467481.5211.48.camel@marge.simpson.net>
+	 <20140519053401.GP4570@linux.vnet.ibm.com>
+	 <20140520145350.GC17741@localhost.localdomain>
+	 <20140520155324.GD4570@linux.vnet.ibm.com>
+	 <20140520162433.GE17741@localhost.localdomain>
+	 <20140520172033.GE4570@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe Contreras <felipe.contreras@gmail.com> writes:
+On Tue, 2014-05-20 at 10:20 -0700, Paul E. McKenney wrote: 
+> On Tue, May 20, 2014 at 06:24:36PM +0200, Frederic Weisbecker wrote:
+> > On Tue, May 20, 2014 at 08:53:24AM -0700, Paul E. McKenney wrote:
+> > > On Tue, May 20, 2014 at 04:53:52PM +0200, Frederic Weisbecker wrote:
+> 
+> [ . . . ]
+> 
+> > > > We'll probably extend it that way in the future. But likely not in a near future.
+> > > 
+> > > My guess is that Mike would be OK with making nohz_full choice of CPUs
+> > > still at boot time, but that he would like the CPUs that are not to be
+> > > in nohz_full state be able to opt out of the context-tracking overhead.
+> > 
+> > Ok that might be possible. Although still require a bit of complication.
+> > Lets wait for Mike input.
+> 
+> Sounds good!
+> 
+> Mike, would this do what you need?
 
-> Junio C Hamano wrote:
->
->>  * The remote-helper interface to fast-import/fast-export via the
->>    transport-helper has been tightened to avoid leaving the import
->>    marks file from a failed/crashed run, as such a file that is out-of-
->>    sync with reality confuses a later invocation of itself.
->
-> Really? Where are the patches for that?
+I don't _have_ a here and now need at all, I'm just looking at the
+possibilities.  For the users I'm aware of here and now, I'm pretty sure
+they'd be tickled pink with it as it sits ('course tickled pink will
+quickly become "I see a 1.073us perturbation once every three weeks").
 
-The following seems related:
+-Mike 
 
-commit 10e1feebb454d99eb6644cc53b94255f40e6fe9c
-Author: Junio C Hamano <gitster@pobox.com>
-Date:   Wed May 14 12:06:35 2014 -0700
-
-    Revert "Merge branch 'fc/transport-helper-sync-error-fix'"
-    
-    This reverts commit d508e4a8e2391ae2596403b6478d01cf3d5f928f,
-    reversing changes made to e42552135a2a396f37053a89f44952ea907870b2.
-    
-    The author of the original topic says he broke the upcoming 2.0
-    release with something that relates to "synchronization crash
-    regression" while refusing to give further specifics, so this would
-    unfortunately be the safest option for the upcoming release.
-    
-    Signed-off-by: Junio C Hamano <gitster@pobox.com>
-
-
--- 
-David Kastrup
