@@ -1,114 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaEUHPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 03:15:33 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:43830
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750972AbaEUHPb convert rfc822-to-8bit (ORCPT
+	id S1751429AbaEUHZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 03:25:00 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:19849 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750865AbaEUHY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 03:15:31 -0400
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
-        "Rickard Strandqvist" <rickard_strandqvist@spectrumdigital.se>,
-        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "Rob Herring" <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
-	dereference
-Thread-Topic: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
-	dereference
-Thread-Index: AQHPdKjpYr6pXPlsTkyFEE04O0cV/JtKjDEg
-Date: Wed, 21 May 2014 07:15:28 +0000
-Message-ID: <687709ad1a974bf5a2508b2e78b316d3@BL2PR03MB468.namprd03.prod.outlook.com>
-References: <1400347004-25368-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <28189d9037d244729e10f7b1a22005c5@BLUPR03MB566.namprd03.prod.outlook.com>
-In-Reply-To: <28189d9037d244729e10f7b1a22005c5@BLUPR03MB566.namprd03.prod.outlook.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-forefront-prvs: 0218A015FA
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(13464003)(52604005)(51704005)(189002)(199002)(377454003)(101416001)(31966008)(54356999)(77096999)(224303002)(74502001)(87936001)(4396001)(77982001)(76576001)(21056001)(86362001)(50986999)(81542001)(33646001)(64706001)(46102001)(224313003)(80022001)(99286001)(76176999)(83322001)(85852003)(66066001)(2656002)(74662001)(81342001)(15975445006)(99396002)(74316001)(19580405001)(83072002)(76482001)(92566001)(20776003)(19580395003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB561;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Varun.Sethi@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 May 2014 03:24:59 -0400
+X-IronPort-AV: E=Sophos;i="4.98,878,1392134400"; 
+   d="scan'208";a="30806698"
+Message-ID: <537C55C4.70706@cn.fujitsu.com>
+Date: Wed, 21 May 2014 15:29:08 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/5] workqueue: Allow changing attributions of ordered
+ workqueues
+References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com> <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/17/2014 12:16 AM, Frederic Weisbecker wrote:
+
+> @@ -3708,6 +3712,13 @@ static void rcu_free_pwq(struct rcu_head *rcu)
+>  			container_of(rcu, struct pool_workqueue, rcu));
+>  }
+>  
+> +static struct pool_workqueue *oldest_pwq(struct workqueue_struct *wq)
+> +{
+> +	return list_last_entry(&wq->pwqs, struct pool_workqueue, pwqs_node);
+> +}
+> +
+> +static void pwq_adjust_max_active(struct pool_workqueue *pwq);
 
 
-> -----Original Message-----
-> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> bounces@lists.linux-foundation.org] On Behalf Of
-> Bharat.Bhushan@freescale.com
-> Sent: Wednesday, May 21, 2014 9:28 AM
-> To: Rickard Strandqvist; Joerg Roedel; Grant Likely
-> Cc: devicetree@vger.kernel.org; iommu@lists.linux-foundation.org; Rob
-> Herring; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
-> dereference
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> > bounces@lists.linux-foundation.org] On Behalf Of Rickard Strandqvist
-> > Sent: Saturday, May 17, 2014 10:47 PM
-> > To: Joerg Roedel; Grant Likely
-> > Cc: devicetree@vger.kernel.org; iommu@lists.linux-foundation.org; Rob
-> > Herring; linux-kernel@vger.kernel.org; Rickard Strandqvist
-> > Subject: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
-> > dereference
-> >
-> > There is otherwise a risk of a possible null pointer dereference.
-> 
-> You are right.
-[Sethi Varun-B16395] Thanks for pointing out the issue.
-> 
-> >
-> > Was largely found by using a static code analysis program called
-> cppcheck.
-> >
-> > Signed-off-by: Rickard Strandqvist
-> > <rickard_strandqvist@spectrumdigital.se>
-> 
-> Reviewed-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-Acknowledged-by: Varun Sethi <Varun.Sethi@freescale.com>
+Hi, Tejun,
 
-> > ---
-> >  drivers/iommu/fsl_pamu.c |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c index
-> > cba0498..b99dd88 100644
-> > --- a/drivers/iommu/fsl_pamu.c
-> > +++ b/drivers/iommu/fsl_pamu.c
-> > @@ -592,8 +592,7 @@ found_cpu_node:
-> >  		/* advance to next node in cache hierarchy */
-> >  		node = of_find_node_by_phandle(*prop);
-> >  		if (!node) {
-> > -			pr_debug("Invalid node for cache hierarchy %s\n",
-> > -				node->full_name);
-> > +			pr_debug("Invalid node for cache hierarchy\n");
-> >  			return ~(u32)0;
-> >  		}
-> >  	}
-> > --
-> > 1.7.10.4
-> >
-> > _______________________________________________
-> > iommu mailing list
-> > iommu@lists.linux-foundation.org
-> > https://lists.linuxfoundation.org/mailman/listinfo/iommu
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+Should we reorder the pwq_adjust_max_active() to avoid this declare?
+(Move pwq_adjust_max_active() to the place just before rcu_free_pwq())
+
+Thanks,
+Lai
+
+> +
+>  /*
+>   * Scheduled on system_wq by put_pwq() when an unbound pwq hits zero refcnt
+>   * and needs to be destroyed.
+> @@ -3723,14 +3734,12 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+>  	if (WARN_ON_ONCE(!(wq->flags & WQ_UNBOUND)))
+>  		return;
+>  
+> -	/*
+> -	 * Unlink @pwq.  Synchronization against wq->mutex isn't strictly
+> -	 * necessary on release but do it anyway.  It's easier to verify
+> -	 * and consistent with the linking path.
+> -	 */
+>  	mutex_lock(&wq->mutex);
+>  	list_del_rcu(&pwq->pwqs_node);
+>  	is_last = list_empty(&wq->pwqs);
+> +	/* try to activate the oldest pwq when needed */
+> +	if (!is_last && (wq->flags & __WQ_ORDERED))
+> +		pwq_adjust_max_active(oldest_pwq(wq));
+>  	mutex_unlock(&wq->mutex);
+>  
+>  	mutex_lock(&wq_pool_mutex);
