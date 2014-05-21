@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaEUUoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 16:44:20 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:16353 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629AbaEUUoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 16:44:17 -0400
-Message-ID: <1400704507.18128.23.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the
- DAX page fault handler
-From: Toshi Kani <toshi.kani@hp.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, willy@linux.intel.com
-Date: Wed, 21 May 2014 14:35:07 -0600
-In-Reply-To: <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-	 <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1753096AbaEUU6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 16:58:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41885 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801AbaEUU6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 16:58:01 -0400
+Message-ID: <537D133A.8020005@zytor.com>
+Date: Wed, 21 May 2014 13:57:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>, linux-arch@vger.kernel.org,
+        arnd@arndb.de, linux-kernel@vger.kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org
+Subject: Re: [PATCH 26/27] x86: Use common bits from generic tlb.h
+References: <1400093999-18703-1-git-send-email-richard@nod.at> <1400093999-18703-27-git-send-email-richard@nod.at>
+In-Reply-To: <1400093999-18703-27-git-send-email-richard@nod.at>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-03-23 at 15:08 -0400, Matthew Wilcox wrote:
- :
-> +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> +			get_block_t get_block)
-> +{
- :
-> +	error = dax_get_pfn(inode, &bh, &pfn);
-> +	if (error > 0)
-> +		error = vm_insert_mixed(vma, vaddr, pfn);
-> +	mutex_unlock(&mapping->i_mmap_mutex);
-> +
-> +	if (page) {
-> +		delete_from_page_cache(page);
-> +		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
-> +							PAGE_CACHE_SIZE, 0);
-> +		unlock_page(page);
-> +		page_cache_release(page);
+On 05/14/2014 11:59 AM, Richard Weinberger wrote:
+> It is no longer needed to define them on our own.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/x86/include/asm/tlb.h | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/tlb.h b/arch/x86/include/asm/tlb.h
+> index c779730..f4c76d6 100644
+> --- a/arch/x86/include/asm/tlb.h
+> +++ b/arch/x86/include/asm/tlb.h
+> @@ -1,10 +1,6 @@
+>  #ifndef _ASM_X86_TLB_H
+>  #define _ASM_X86_TLB_H
+>  
+> -#define tlb_start_vma(tlb, vma) do { } while (0)
+> -#define tlb_end_vma(tlb, vma) do { } while (0)
+> -#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
+> -
+>  #define tlb_flush(tlb)							\
+>  {									\
+>  	if (!tlb->fullmm && !tlb->need_flush_all) 			\
+> 
 
-Hi Matthew,
+Quite trivial, obviously.
 
-I am seeing a problem in this code path, where it deletes a page cache
-page mapped to a hole. Sometimes, page->_mapcount is 0, not -1, which
-leads __delete_from_page_cache(), called from delete_from_page_cache(),
-to hit the following BUG_ON.
-
-  BUG_ON(page_mapped(page))
-
-I suppose such page has a shared mapping. Does this code need to take
-care of replacing shared mappings in such case?
-
-Thanks,
--Toshi
-
-
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
 
