@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaEUVss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:48:48 -0400
-Received: from smtp.pobox.com ([208.72.237.35]:50172 "EHLO smtp.pobox.com"
+	id S1753509AbaEUVtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:49:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37146 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239AbaEUVso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:48:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=dhbaEghc56An+33/ADguT79suAXvSj0v
-	LLc/wjQJ2p15rodKih2NeruLfOZ6DdXBMuF1r6wNfSFSLeVApTczFxHK7R3dPl1Z
-	c8pEHwCHYt9lg9uZnZTNHgy1QMRIFqq1RHj2D3A3CG54xA9SCa8sR14BVsA6Psx0
-	H1MuyHqb87I=
-From: Junio C Hamano <gitster@pobox.com>
-To: Richard Hansen <rhansen@bbn.com>
-Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v2.0.0-rc4
-References: <xmqqr43oq8q5.fsf@gitster.dls.corp.google.com>
-	<537D1B05.6030209@bbn.com>
-Date: Wed, 21 May 2014 14:48:38 -0700
-In-Reply-To: <537D1B05.6030209@bbn.com> (Richard Hansen's message of "Wed, 21
-	May 2014 17:30:45 -0400")
-Message-ID: <xmqqsio2olah.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753239AbaEUVtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:49:09 -0400
+Date: Wed, 21 May 2014 23:48:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+Message-ID: <20140521214845.GG25130@pd.tnic>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+ <1400639227.9759.21.camel@pippen.local.home>
+ <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
+ <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
+ <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
+ <20140521163315.GJ21205@pd.tnic>
+ <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
+ <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: ABF0B9C0-E131-11E3-9157-9903E9FBB39C-77302942!pb-smtp0.pobox.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Hansen <rhansen@bbn.com> writes:
-
->>  * The shell prompt script (in contrib/), when using the PROMPT_COMMAND
->>    interface, used an unsafe construct when showing the branch name in
->>    $PS1.
->>    (merge 8976500 rh/prompt-pcmode-avoid-eval-on-refname later to maint).
+On Wed, May 21, 2014 at 02:35:59PM -0700, Andy Lutomirski wrote:
+> If RIPV is set but we interrupted *kernel* code, SIGBUS doesn't seem
+> like the right solution anyway.
 >
-> That commit has been merged to maint and is in v1.9.3.
->
-> Also, 1e4119c (git-prompt.sh: don't assume the shell expands the value
-> of PS1) is a fix that is in v2.0.0-rc4 but not v1.9.x.  Maybe add
-> something like:
->
->  * The shell prompt script (in contrib/), when using Zsh and the
->    precmd() interface, printed ${__git_ps1_branch_name} in the prompt
->    instead of the branch name (regression in v1.9.3).
->    (merge 1e4119c rh/prompt-pcmode-avoid-eval-on-refname later to
->    maint).
+> Are there any machine check exceptions for which it makes sense to
+> continue right where we left off without a signal?  Is CMIC such a
+> beast?  Can CMIC be delivered when interrupts are off?
 
-Yes, already done this morning but not yet ready to be pushed out.
+I think you mean CMCI and that's not even reported with a MCE exception
+- there's a separate APIC interrupt for that.
 
-Thanks.
+I think this signal thing is for killing processes which have poisoned
+memory but this memory can contained within that process and the
+physical page frame can be poisoned so that it doesn't get used ever
+again. In any case, this is an example for an uncorrectable error which
+needs action from us but doesn't necessarily have to kill the whole
+machine.
+
+This is supposed to be more graceful instead of consuming the corrupted
+data and sending it out to disk.
+
+But sending signals from #MC context is definitely a bad idea. I think
+we had addressed this with irq_work at some point but my memory is very
+hazy.
+
+@Tony: this is something we need to take a look at soonish.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
