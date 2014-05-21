@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaEUVnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:43:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45108 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178AbaEUVnB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:43:01 -0400
-Date: Thu, 22 May 2014 06:43:08 +0900 (JST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-cc: linux-kernel@vger.kernel.org, shawn@churchofgit.com,
-        akpm@linux-foundation.org, avagin@openvz.org, xemul@parallels.com,
-        vdavydov@parallels.com
-Subject: Re: [patch 3/3] timerfd: Implement write method
-In-Reply-To: <20140428213301.507657833@openvz.org>
-Message-ID: <alpine.DEB.2.02.1405220642100.9695@ionos.tec.linutronix.de>
-References: <20140428212517.200264067@openvz.org> <20140428213301.507657833@openvz.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753845AbaEUVnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:43:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34061 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753287AbaEUVnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:43:43 -0400
+Date: Wed, 21 May 2014 23:43:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+Message-ID: <20140521214319.GF25130@pd.tnic>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+ <1400639227.9759.21.camel@pippen.local.home>
+ <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
+ <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
+ <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
+ <20140521163315.GJ21205@pd.tnic>
+ <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
+ <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014, Cyrill Gorcunov wrote:
-> +
-> +static ssize_t timerfd_write(struct file *file, const char __user *buf,
-> +			     size_t count, loff_t *ppos)
-> +{
-> +	struct timerfd_ctx *ctx = file->private_data;
-> +	u64 ticks = 0;
-> +
-> +	if (count < sizeof(ticks))
-> +		return -EINVAL;
-> +
-> +	if (get_user(ticks, (u64 __user *) buf))
-> +		return -EFAULT;
-> +
-> +	spin_lock_irq(&ctx->wqh.lock);
-> +	ctx->ticks = ticks;
+On Thu, May 22, 2014 at 06:37:26AM +0900, Linus Torvalds wrote:
+> Seriously. If an NMI is interrupted by an MCE, you might as well
+> consider the machine dead. Don't worry about it. We may or may not
+> recover, but it is *not* our problem.
 
-So what wakes a potential waiter in read/poll?
+I certainly like this way of handling it. We can even issue a nice
+banner saying something like "You're f*cked - go change hw."
 
-Thanks,
+:-)
 
-	tglx
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
