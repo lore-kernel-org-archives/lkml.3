@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaEUMQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 08:16:43 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:62962 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827AbaEUMQm (ORCPT
+	id S1752204AbaEUMW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 08:22:26 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:54378 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaEUMWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 08:16:42 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: robdclark@gmail.com, airlied@gmail.com, daniel.vetter@ffwll.ch,
-        hughd@google.com, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH] drm/gem: remove obsolete BUG_ON
-Date: Wed, 21 May 2014 14:16:26 +0200
-Message-Id: <1400674586-17968-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Wed, 21 May 2014 08:22:24 -0400
+Date: Wed, 21 May 2014 20:22:13 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Fixes for 3.15
+Message-ID: <20140521122213.GA24102@gondor.apana.org.au>
+References: <20120126024342.GA12492@gondor.apana.org.au>
+ <20120823083242.GA23102@gondor.apana.org.au>
+ <20121109093005.GA25632@gondor.apana.org.au>
+ <20130328082841.GA7425@gondor.apana.org.au>
+ <20131203124129.GA12067@gondor.apana.org.au>
+ <20131209115705.GA1361@gondor.apana.org.au>
+ <20140101061016.GA22579@gondor.apana.org.au>
+ <20140203125944.GA31446@gondor.apana.org.au>
+ <20140413233411.GA19019@gondor.apana.org.au>
+ <20140513110233.GA21743@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140513110233.GA21743@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The shmem subsystem supports relocating pages on swap-in in case it was
-loaded into the wrong zone. This was implemented 2 years ago in:
+Hi Linus:
 
-    commit bde05d1ccd512696b09db9dd2e5f33ad19152605
-    Author: Hugh Dickins <hughd@google.com>
-    Date:   Tue May 29 15:06:38 2012 -0700
+This push fixes a NULL pointer dereference on allocation failure
+in caam, as well as a regression in the ctr mode on s390 that was
+added with the recent concurrency fixes.
 
-        shmem: replace page if mapping excludes its zone
+Please pull from
 
-If a driver requires pages to be in a specific zone, they _must_ set the
-correct GFP flags (like __GFP_DMA32) in mapping_gfp_mask(mapping). shmem
-will make sure that any page leaving the swap-cache is located in a
-compatible zone.
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- drivers/gpu/drm/drm_gem.c | 19 -------------------
- 1 file changed, 19 deletions(-)
+or
 
-diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
-index 9909bef..a6146ab 100644
---- a/drivers/gpu/drm/drm_gem.c
-+++ b/drivers/gpu/drm/drm_gem.c
-@@ -473,25 +473,6 @@ struct page **drm_gem_get_pages(struct drm_gem_object *obj, gfp_t gfpmask)
- 		if (IS_ERR(p))
- 			goto fail;
- 		pages[i] = p;
--
--		/* There is a hypothetical issue w/ drivers that require
--		 * buffer memory in the low 4GB.. if the pages are un-
--		 * pinned, and swapped out, they can end up swapped back
--		 * in above 4GB.  If pages are already in memory, then
--		 * shmem_read_mapping_page_gfp will ignore the gfpmask,
--		 * even if the already in-memory page disobeys the mask.
--		 *
--		 * It is only a theoretical issue today, because none of
--		 * the devices with this limitation can be populated with
--		 * enough memory to trigger the issue.  But this BUG_ON()
--		 * is here as a reminder in case the problem with
--		 * shmem_read_mapping_page_gfp() isn't solved by the time
--		 * it does become a real issue.
--		 *
--		 * See this thread: http://lkml.org/lkml/2011/7/11/238
--		 */
--		BUG_ON((gfpmask & __GFP_DMA32) &&
--				(page_to_pfn(p) >= 0x00100000UL));
- 	}
- 
- 	return pages;
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Harald Freudenberger (1):
+      crypto: s390 - fix aes,des ctr mode concurrency finding.
+
+Horia Geanta (1):
+      crypto: caam - add allocation failure handling in SPRINTFCAT macro
+
+ arch/s390/crypto/aes_s390.c |    3 +++
+ arch/s390/crypto/des_s390.c |    3 +++
+ drivers/crypto/caam/error.c |   10 +++++++---
+ 3 files changed, 13 insertions(+), 3 deletions(-)
+
+Thanks,
 -- 
-1.9.3
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
