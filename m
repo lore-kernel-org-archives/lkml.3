@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaEUHZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 03:25:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48964 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaEUHZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 03:25:34 -0400
-Date: Wed, 21 May 2014 10:24:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: josh@joshtriplett.org
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Manu Gupta <manugupt1@gmail.com>
-Subject: Re: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c:  Fix for
- possible null pointer dereference
-Message-ID: <20140521072450.GT15585@mwanda>
-References: <1400621477-7603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <537BE4BB.4010308@lwfinger.net>
- <20140520235756.GA23550@cloud>
+	id S1751911AbaEUH01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 03:26:27 -0400
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:9524
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751824AbaEUH00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 03:26:26 -0400
+Date: Wed, 21 May 2014 15:10:14 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>, <jimwall@q.com>,
+        <brian@crystalfontz.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dt: imx28-cfa10036: introduce a regulator for mmc0
+Message-ID: <20140521071011.GA20050@dragon>
+References: <1400166768-18801-1-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140520235756.GA23550@cloud>
+In-Reply-To: <1400166768-18801-1-git-send-email-alexandre.belloni@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130451298261079782;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(189002)(199002)(51704005)(81342001)(97756001)(81542001)(50986999)(99396002)(76176999)(50466002)(23726002)(77096999)(86362001)(64706001)(54356999)(77982001)(20776003)(47776003)(80022001)(46102001)(74502001)(31966008)(74662001)(76482001)(83506001)(21056001)(92726001)(6806004)(4396001)(83072002)(85852003)(19580395003)(46406003)(83322001)(87936001)(44976005)(19580405001)(33716001)(92566001)(102836001)(33656002)(57986005);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB414;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:gate-az5.freescale.com;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0218A015FA
+Authentication-Results: spf=softfail (sender IP is 192.88.158.246)
+ smtp.mailfrom=shawn.guo@linaro.org; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 04:57:56PM -0700, josh@joshtriplett.org wrote:
-> On Tue, May 20, 2014 at 06:26:51PM -0500, Larry Finger wrote:
-> > On 05/20/2014 04:31 PM, Rickard Strandqvist wrote:
-> > >There is otherwise a risk of a possible null pointer dereference.
-> > >
-> > >Was largely found by using a static code analysis program called cppcheck.
-> > >
-> > >Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> > >---
-> > >  drivers/staging/rtl8188eu/os_dep/usb_intf.c |  127 ++++++++++++++-------------
-> > >  1 file changed, 66 insertions(+), 61 deletions(-)
-> > 
-> > Although cppcheck's analysis is correct, pointer padapter can never
-> > be null in any of these routines. In routine rtw_drv_init(),
-> > rtw_usb_if1_init() is called to allocate memory for struct adapter
-> > for the driver. If that fails, none of these other routines will
-> > ever be called as the driver will not be loaded.
-> > 
-> > If it is deemed better to fill the code with needless tests because
-> > some static checker points out a place like this, that is OK with
-> > me, but I do not see the point.
+On Thu, May 15, 2014 at 05:12:48PM +0200, Alexandre Belloni wrote:
+> The PWM3 pinmux configuration conflicts with gpio 3.28. Introduce a regulator
+> for mmc0 so that it conflicts with the pwm driver and fails gracefully. The
+> kernel will then able to access mmc0 normally.
 > 
-> If it's an invariant of the code that padapter cannot ever be NULL, then
-> that seems perfectly fine to rely on, and the tool just needs fixing or
-> silencing.  At most, it might be helpful to add annotations like GCC's
-> "nonnull", if that helps the checker and the compiler generate more
-> useful warnings.
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-The tool is complaining that the existing checks for NULL don't make
-sense.  Rickard changed them to cover all the dereferences but really we
-should just remove the checks.
-
-Btw, speaking of GCC, it now silently removes inconsistent NULL
-checking.  It takes the opposite of the normall kernel programmer
-approach of adding checks everywhere.  :P  The glibc people recently
-annotated qsort() to say that the function pointer can't be NULL even
-though this "worked" in the past.  Hillarity!
-
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61236
-
-regards,
-dan carpenter
-
+Applied, thanks.
