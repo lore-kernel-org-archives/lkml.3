@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaEUJtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:49:00 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:64258 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaEUJs6 (ORCPT
+	id S1751243AbaEUJyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:54:49 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:56460 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaEUJys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:48:58 -0400
-Date: Wed, 21 May 2014 10:48:52 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL] mfd: Second IB for Mark (regulator)
-Message-ID: <20140521094852.GH6679@lee--X1>
-References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
+	Wed, 21 May 2014 05:54:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398295293-11033-1-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <537C7680.7050305@arm.com>
+References: <60d825e8bfe01f8a5ff98fffaf51ffbf04c7d175.1400480033.git.viresh.kumar@linaro.org>
+	<ca7cc76c49806ce1ac8f9617fa4266cfc29d1ea1.1400480592.git.viresh.kumar@linaro.org>
+	<537C7348.7060202@arm.com>
+	<CAKohpo=F5gSPvVSAX=qePnudxiuKWLKGTZy8vd80=MJxESWJZQ@mail.gmail.com>
+	<537C7680.7050305@arm.com>
+Date: Wed, 21 May 2014 15:24:47 +0530
+Message-ID: <CAKohpom_1cwXLM0FxkwtY_h3harjZ=XQfZgwtwoN4QDgs_pqQw@mail.gmail.com>
+Subject: Re: [PATCH Resend] driver/core: cpu: initialize opp table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
+        "pavel@ucw.cz" <pavel@ucw.cz>, "nm@ti.com" <nm@ti.com>,
+        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
+On 21 May 2014 15:18, Sudeep Holla <sudeep.holla@arm.com> wrote:
+>> Why do we need to return anything? Let that function have return type
+>> 'void'?
+>
+>
+> Hmm, don't we still need to throw error if DT has invalid OPP ?
+> It doesn't may sense to me if no errors is returned and still CPUFreq fails
+> later.
 
-  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
+I wasn't sure if we should fail CPU's registration if it had bad OPPs.
+Maybe just print a good message and go ahead. CPU is usable atleast :)
 
-are available in the git repository at:
+>> Also would it make sense to move this into it as well?
+>>
+>> cpu->dev.of_node = of_get_cpu_node(num, NULL);
+>>
+>
+> I don't quite understand what you mean here ?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-regulator-v3.16-1
-
-for you to fetch changes up to c6466950e917890be3050171f6745ccb9d91d35f:
-
-  regulator: bcm590xx: Add support for regulators on secondary I2C slave (2014-05-21 10:40:16 +0100)
-
-----------------------------------------------------------------
-Immutable branch between MFD and Regulator due for v3.16 merge-window.
-
-----------------------------------------------------------------
-Doug Anderson (2):
-      mfd: tps65090: Don't tell child devices we have an IRQ if we don't
-      mfd: tps65090: Stop caching most registers
-
-Matt Porter (3):
-      mfd: bcm590xx: Update binding with additional BCM59056 regulators
-      mfd: bcm590xx: Add support for secondary I2C slave address
-      regulator: bcm590xx: Add support for regulators on secondary I2C slave
-
- Documentation/devicetree/bindings/mfd/bcm590xx.txt |  4 +-
- drivers/mfd/bcm590xx.c                             | 60 ++++++++++----
- drivers/mfd/tps65090.c                             | 41 ++++++----
- drivers/power/tps65090-charger.c                   | 11 ---
- drivers/regulator/bcm590xx-regulator.c             | 92 +++++++++++++++++++---
- include/linux/mfd/bcm590xx.h                       |  9 ++-
- include/linux/mfd/tps65090.h                       | 14 ++++
- 7 files changed, 176 insertions(+), 55 deletions(-)
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This piece of code was added by you earlier to register_cpu(). As this was
+also DT specific, should I move this as well to the new routine we are creating?
