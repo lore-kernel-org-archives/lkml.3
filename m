@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaEUF4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 01:56:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60591 "EHLO
+	id S1752031AbaEUF46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 01:56:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60528 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaEUF4U (ORCPT
+	with ESMTP id S1750979AbaEUFzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 01:56:20 -0400
-Date: Tue, 20 May 2014 22:55:52 -0700
-From: tip-bot for Jean Pihet <tipbot@zytor.com>
-Message-ID: <tip-97eac381b113932bd7bd4a5c3c68b18e9ff7a2a0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        will.deacon@arm.com, jean.pihet@linaro.org, acme@kernel.org,
-        namhyung@kernel.org, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org, will.deacon@arm.com,
-        a.p.zijlstra@chello.nl, jean.pihet@linaro.org, acme@kernel.org,
-        namhyung@kernel.org, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1400229672-16104-4-git-send-email-jean.pihet@linaro.org>
-References: <1400229672-16104-4-git-send-email-jean.pihet@linaro.org>
+	Wed, 21 May 2014 01:55:09 -0400
+Date: Tue, 20 May 2014 22:54:40 -0700
+From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
+Message-ID: <tip-67d6259dd021006ade25d67b045ad2089b5aba96@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+In-Reply-To: <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+References: <1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add libdw DWARF post unwind support for ARM
-Git-Commit-ID: 97eac381b113932bd7bd4a5c3c68b18e9ff7a2a0
+Subject: [tip:perf/core] perf sched:
+  Remove nr_state_machine_bugs in perf latency
+Git-Commit-ID: 67d6259dd021006ade25d67b045ad2089b5aba96
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,93 +32,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  97eac381b113932bd7bd4a5c3c68b18e9ff7a2a0
-Gitweb:     http://git.kernel.org/tip/97eac381b113932bd7bd4a5c3c68b18e9ff7a2a0
-Author:     Jean Pihet <jean.pihet@linaro.org>
-AuthorDate: Fri, 16 May 2014 10:41:12 +0200
+Commit-ID:  67d6259dd021006ade25d67b045ad2089b5aba96
+Gitweb:     http://git.kernel.org/tip/67d6259dd021006ade25d67b045ad2089b5aba96
+Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+AuthorDate: Tue, 13 May 2014 10:38:21 +0900
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Fri, 16 May 2014 11:39:29 +0200
+CommitDate: Fri, 16 May 2014 09:17:36 +0200
 
-perf tools: Add libdw DWARF post unwind support for ARM
+perf sched: Remove nr_state_machine_bugs in perf latency
 
-Adding libdw DWARF post unwind support, which is part
-of elfutils-devel/libdw-dev package from version 0.158.
+As we do not use .success in sched_wakeup event any more, then
+we can not guarantee that the task when wakeup event happen is
+out of run queue. So the message of nr_state_machine_bugs is
+not correct.
 
-The new code is contained in unwin-libdw.c object, and
-implements unwind__get_entries unwind interface function.
-
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Reviewed-by: Will Deacon <will.deacon@arm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1400229672-16104-4-git-send-email-jean.pihet@linaro.org
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/1399945101-21736-1-git-send-email-yangds.fnst@cn.fujitsu.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/arch/arm/Makefile            |  5 +++++
- tools/perf/arch/arm/util/unwind-libdw.c | 36 +++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+)
+ tools/perf/builtin-sched.c | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
-index 221f21d..09d6215 100644
---- a/tools/perf/arch/arm/Makefile
-+++ b/tools/perf/arch/arm/Makefile
-@@ -4,6 +4,11 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
- ifndef NO_LIBUNWIND
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
-+endif
-+ifndef NO_LIBDW_DWARF_UNWIND
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libdw.o
-+endif
-+ifndef NO_DWARF_UNWIND
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
- endif
-diff --git a/tools/perf/arch/arm/util/unwind-libdw.c b/tools/perf/arch/arm/util/unwind-libdw.c
-new file mode 100644
-index 0000000..b4176c6
---- /dev/null
-+++ b/tools/perf/arch/arm/util/unwind-libdw.c
-@@ -0,0 +1,36 @@
-+#include <elfutils/libdwfl.h>
-+#include "../../util/unwind-libdw.h"
-+#include "../../util/perf_regs.h"
-+
-+bool libdw__arch_set_initial_registers(Dwfl_Thread *thread, void *arg)
-+{
-+	struct unwind_info *ui = arg;
-+	struct regs_dump *user_regs = &ui->sample->user_regs;
-+	Dwarf_Word dwarf_regs[PERF_REG_ARM_MAX];
-+
-+#define REG(r) ({						\
-+	Dwarf_Word val = 0;					\
-+	perf_reg_value(&val, user_regs, PERF_REG_ARM_##r);	\
-+	val;							\
-+})
-+
-+	dwarf_regs[0]  = REG(R0);
-+	dwarf_regs[1]  = REG(R1);
-+	dwarf_regs[2]  = REG(R2);
-+	dwarf_regs[3]  = REG(R3);
-+	dwarf_regs[4]  = REG(R4);
-+	dwarf_regs[5]  = REG(R5);
-+	dwarf_regs[6]  = REG(R6);
-+	dwarf_regs[7]  = REG(R7);
-+	dwarf_regs[8]  = REG(R8);
-+	dwarf_regs[9]  = REG(R9);
-+	dwarf_regs[10] = REG(R10);
-+	dwarf_regs[11] = REG(FP);
-+	dwarf_regs[12] = REG(IP);
-+	dwarf_regs[13] = REG(SP);
-+	dwarf_regs[14] = REG(LR);
-+	dwarf_regs[15] = REG(PC);
-+
-+	return dwfl_thread_state_registers(thread, 0, PERF_REG_ARM_MAX,
-+					   dwarf_regs);
-+}
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index a3320f1..0b4fe53 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -149,7 +149,6 @@ struct perf_sched {
+ 	unsigned long	 nr_runs;
+ 	unsigned long	 nr_timestamps;
+ 	unsigned long	 nr_unordered_timestamps;
+-	unsigned long	 nr_state_machine_bugs;
+ 	unsigned long	 nr_context_switch_bugs;
+ 	unsigned long	 nr_events;
+ 	unsigned long	 nr_lost_chunks;
+@@ -1032,12 +1031,18 @@ static int latency_wakeup_event(struct perf_sched *sched,
+ 	atom = list_entry(atoms->work_list.prev, struct work_atom, list);
+ 
+ 	/*
++	 * As we do not guarantee the wakeup event happens when
++	 * task is out of run queue, also may happen when task is
++	 * on run queue and wakeup only change ->state to TASK_RUNNING,
++	 * then we should not set the ->wake_up_time when wake up a
++	 * task which is on run queue.
++	 *
+ 	 * You WILL be missing events if you've recorded only
+ 	 * one CPU, or are only looking at only one, so don't
+-	 * make useless noise.
++	 * skip in this case.
+ 	 */
+ 	if (sched->profile_cpu == -1 && atom->state != THREAD_SLEEPING)
+-		sched->nr_state_machine_bugs++;
++		return 0;
+ 
+ 	sched->nr_timestamps++;
+ 	if (atom->sched_out_time > timestamp) {
+@@ -1496,14 +1501,6 @@ static void print_bad_events(struct perf_sched *sched)
+ 			(double)sched->nr_lost_events/(double)sched->nr_events * 100.0,
+ 			sched->nr_lost_events, sched->nr_events, sched->nr_lost_chunks);
+ 	}
+-	if (sched->nr_state_machine_bugs && sched->nr_timestamps) {
+-		printf("  INFO: %.3f%% state machine bugs (%ld out of %ld)",
+-			(double)sched->nr_state_machine_bugs/(double)sched->nr_timestamps*100.0,
+-			sched->nr_state_machine_bugs, sched->nr_timestamps);
+-		if (sched->nr_lost_events)
+-			printf(" (due to lost events?)");
+-		printf("\n");
+-	}
+ 	if (sched->nr_context_switch_bugs && sched->nr_timestamps) {
+ 		printf("  INFO: %.3f%% context switch bugs (%ld out of %ld)",
+ 			(double)sched->nr_context_switch_bugs/(double)sched->nr_timestamps*100.0,
