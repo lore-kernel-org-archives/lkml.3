@@ -1,200 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaEULWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:22:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44875 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaEULWc (ORCPT
+	id S1752716AbaEULXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:23:18 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:19048 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaEULXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:22:32 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <computersforpeace@gmail.com>
-CC: <pekon@ti.com>, <ezequiel.garcia@free-electrons.com>,
-        <robertcnelson@gmail.com>, <jg1.han@samsung.com>,
-        <dwmw2@infradead.org>, <javier@dowhile0.org>, <nsekhar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 14/16] ARM: OMAP: gpmc: Update DT binding documentation
-Date: Wed, 21 May 2014 14:21:02 +0300
-Message-ID: <1400671264-10702-15-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400671264-10702-1-git-send-email-rogerq@ti.com>
-References: <1400671264-10702-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 21 May 2014 07:23:15 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-01-537c8ca07a13
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v4 3/3] clk: s2mps11: Add support for S2MPS14 clocks
+Date: Wed, 21 May 2014 13:23:01 +0200
+Message-id: <1400671381-14792-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1400671381-14792-1-git-send-email-k.kozlowski@samsung.com>
+References: <1400671381-14792-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xa7oLe2qCDWa5WGycsZ7V4vULQ4uz
+	TW/YLe5/PcpocXnXHDaLGef3MVmsPXKX3eLphItsFutnvGZx4PS4c20Pm0ffllWMHp83yQUw
+	R3HZpKTmZJalFunbJXBlzP79nKngq2HFp//vGRsYb2h0MXJySAiYSPxZtIwNwhaTuHBvPZDN
+	xSEksJRR4vPLD+wQTh+TxN3PK1hAqtgEjCU2L18C1iEikCsxv3EVWAezQDeTxOWOXUwgCWEB
+	F4nr86axg9gsAqoSh5sbwGxeAXeJLZv3MkKsk5M4eWwyK4jNKeAh8at5HZgtBFTTcGA+4wRG
+	3gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQoLqyw7GxcesDjEKcDAq8fAKXK0OFmJN
+	LCuuzD3EKMHBrCTCe6yiJliINyWxsiq1KD++qDQntfgQIxMHp1QDo7TZ5icuvQ9Cd5xQXXU3
+	+LNpwf6e3HkVdh1vJM/Ha/y/kO28a2XTpNzkvMvf3+TLBL6cn/OgtuX6Zs0J4REbbl/W3/r/
+	7Qnj10s+GlWpmEsI3U6PaltTXPdnY9iqE8XdJ+L/v9Zd/Vx1Bb97VIfzNQuj/wfd7G9cd800
+	PWYqkz13k0NF7iUtTyWW4oxEQy3mouJEAHxB/dIIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The meaning of ranges and how address mapping is done has changed.
-Ranges should now contain 2 ranges
-  - GPMC I/O map. ~1GB. This map will be partitioned among the
-    chip select (CS) nodes
-  - GPMC register map. This is common for all the CS nodes
-    and is shared only by the NAND controller.
+This patch adds support for S2MPS14 PMIC clocks (BT and AP) to the
+s2mps11 clock driver.
 
-Chip select (CS) number is no longer specified via reg property. Instead
-it is specified via the gpmc,cs property in the CS node.
-
-gpmc,nand boolean property added to specify whether a NAND device is
-interfaced to the CS.
-gpmc,device-width property is made mandatory.
-
-The CS node must have a child device node for each device attached to
-that chip select. Properties for that child are GPMC agnostic.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Acked-by: Mike Turquette <mturquette@linaro.org>
 ---
- Documentation/devicetree/bindings/bus/ti-gpmc.txt | 109 ++++++++++++++++------
- 1 file changed, 81 insertions(+), 28 deletions(-)
+ drivers/clk/Kconfig       |  8 +++---
+ drivers/clk/clk-s2mps11.c | 64 +++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 52 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/bus/ti-gpmc.txt b/Documentation/devicetree/bindings/bus/ti-gpmc.txt
-index 704be93..ca92efb 100644
---- a/Documentation/devicetree/bindings/bus/ti-gpmc.txt
-+++ b/Documentation/devicetree/bindings/bus/ti-gpmc.txt
-@@ -1,8 +1,6 @@
- Device tree bindings for OMAP general purpose memory controllers (GPMC)
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 6f56d3a4f010..8f9ce8ba036d 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -65,12 +65,12 @@ config COMMON_CLK_SI570
+ 	  clock generators.
  
--The actual devices are instantiated from the child nodes of a GPMC node.
--
--Required properties:
-+GPMC node - Required properties:
+ config COMMON_CLK_S2MPS11
+-	tristate "Clock driver for S2MPS11/S5M8767 MFD"
++	tristate "Clock driver for S2MPS1X/S5M8767 MFD"
+ 	depends on MFD_SEC_CORE
+ 	---help---
+-	  This driver supports S2MPS11/S5M8767 crystal oscillator clock. These
+-	  multi-function devices have 3 fixed-rate oscillators, clocked at
+-	  32KHz each.
++	  This driver supports S2MPS11/S2MPS14/S5M8767 crystal oscillator
++	  clock. These multi-function devices have two (S2MPS14) or three
++	  (S2MPS11, S5M8767) fixed-rate oscillators, clocked at 32KHz each.
  
-  - compatible:		Should be set to one of the following:
+ config CLK_TWL6040
+ 	tristate "External McPDM functional clock from twl6040"
+diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+index 23ffd89c4023..9b7b5859a420 100644
+--- a/drivers/clk/clk-s2mps11.c
++++ b/drivers/clk/clk-s2mps11.c
+@@ -1,7 +1,7 @@
+ /*
+  * clk-s2mps11.c - Clock driver for S2MPS11.
+  *
+- * Copyright (C) 2013 Samsung Electornics
++ * Copyright (C) 2013,2014 Samsung Electornics
+  *
+  * This program is free software; you can redistribute  it and/or modify it
+  * under  the terms of  the GNU General  Public License as published by the
+@@ -13,10 +13,6 @@
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+  */
  
-@@ -16,22 +14,39 @@ Required properties:
- 			(see the example below)
-  - ti,hwmods:		Should be set to "ti,gpmc" until the DT transition is
- 			completed.
-- - #address-cells:	Must be set to 2 to allow memory address translation
-- - #size-cells:		Must be set to 1 to allow CS address passing
-+ - interrupts:		Interrupt resource specifier for GPMC interrupt.
-+ - #address-cells:	Must be set to 2 to allow memory address translation.
-+			1 for range selection and 1 for child's resource address.
-+ - #size-cells:		Must be set to 1 to allow child's resource size.
-  - gpmc,num-cs:		The maximum number of chip-select lines that controller
- 			can support.
-  - gpmc,num-waitpins:	The maximum number of wait pins that controller can
- 			support.
-- - ranges:		Must be set up to reflect the memory layout with four
--			integer values for each chip-select line in use:
--
--			   <cs-number> 0 <physical address of mapping> <size>
--
--			Currently, calculated values derived from the contents
--			of the per-CS register GPMC_CONFIG7 (as set up by the
--			bootloader) are used for the physical address decoding.
--			As this will change in the future, filling correct
--			values here is a requirement.
-+ - ranges:		Should contain 2 ranges
-+			- GPMC I/O map. ~1GB. This map will be partitioned among
-+			the chip select (CS) nodes
-+			- GPMC register map. This is common for all the CS nodes
-+			and is shared only by the NAND controller.
-+
-+The GPMC node must contain Chip Select (CS) child nodes representing the
-+chip selects in use.
-+
-+CS node - Required properties:
-+
-+ - reg:			Resource specifier specifying the CS partition start address
-+			and size. Start address must be 16MB aligned. Size has to be
-+			one of 16MB, 32MB, 64MB, 128MB and 256MB.
-+ - #address-cells:	Must be set to 2 to allow memory address translation.
-+			1 for range selection and 1 for child's resource address.
-+ - #size-cells:		Must be set to 1 to allow child's resource size.
-+ - ranges:		Must be present for 1:1 address translation of child nodes.
-+
-+ - gpmc,cs:		Chip select number. 0 to (gpmc,num-cs - 1)
-+ - gpmc,device-width:	Total width of device(s) connected to a GPMC
-+			chip-select in bytes. The GPMC supports 8-bit
-+			and 16-bit devices and so this property must be
-+			1 or 2.
-+ - gpmc,nand:		Boolean. Must be present if CS contains NAND device child.
+ #include <linux/module.h>
+@@ -27,6 +23,7 @@
+ #include <linux/clk-provider.h>
+ #include <linux/platform_device.h>
+ #include <linux/mfd/samsung/s2mps11.h>
++#include <linux/mfd/samsung/s2mps14.h>
+ #include <linux/mfd/samsung/s5m8767.h>
+ #include <linux/mfd/samsung/core.h>
  
- Timing properties for child nodes. All are optional and default to 0.
+@@ -126,7 +123,21 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
+ 	},
+ };
  
-@@ -95,10 +110,6 @@ GPMC chip-select settings properties for child nodes. All are optional.
- - gpmc,burst-wrap	Enables wrap bursting
- - gpmc,burst-read	Enables read page/burst mode
- - gpmc,burst-write	Enables write page/burst mode
--- gpmc,device-width	Total width of device(s) connected to a GPMC
--			chip-select in bytes. The GPMC supports 8-bit
--			and 16-bit devices and so this property must be
--			1 or 2.
- - gpmc,mux-add-data	Address and data multiplexing configuration.
- 			Valid values are 1 for address-address-data
- 			multiplexing mode and 2 for address-data
-@@ -114,17 +125,59 @@ GPMC chip-select settings properties for child nodes. All are optional.
- 
- Example for an AM33xx board:
- 
--	gpmc: gpmc@50000000 {
--		compatible = "ti,am3352-gpmc";
--		ti,hwmods = "gpmc";
--		reg = <0x50000000 0x2000>;
--		interrupts = <100>;
-+gpmc@50000000 {
-+	compatible = "ti,am3352-gpmc";
-+	ti,hwmods = "gpmc";
-+	reg = <0x50000000 0x36b>;
-+	interrupts = <100>;
- 
--		gpmc,num-cs = <8>;
--		gpmc,num-waitpins = <2>;
-+	gpmc,num-cs = <8>;
-+	gpmc,num-waitpins = <2>;
-+	#address-cells = <2>;
-+	#size-cells = <1>;
-+
-+	ranges = <0 0 0x00000000 0x1FFFFFFF	/* GPMC I/O space 512MB */
-+		  1 0 0x50000000 0x36b>;	/* register space */
-+
-+	cs0 {
- 		#address-cells = <2>;
- 		#size-cells = <1>;
--		ranges = <0 0 0x08000000 0x10000000>; /* CS0 @addr 0x8000000, size 0x10000000 */
-+		reg = <0 0 0x1000000>;  /* CS0 partition, 16 MB */
-+		ranges;
-+
-+		gpmc,cs = <0>;
-+		gpmc,device-width = <2>;	/* 16-bit */
-+		gpmc,nand;
-+
-+		gpmc,cs-on-ns = <0>;
-+		gpmc,cs-rd-off-ns = <36>;
-+		gpmc,cs-wr-off-ns = <36>;
-+		gpmc,adv-on-ns = <6>;
-+		gpmc,adv-rd-off-ns = <24>;
-+		gpmc,adv-wr-off-ns = <36>;
-+		gpmc,oe-on-ns = <6>;
-+		gpmc,oe-off-ns = <48>;
-+		gpmc,we-on-ns = <6>;
-+		gpmc,we-off-ns = <30>;
-+		gpmc,rd-cycle-ns = <72>;
-+		gpmc,wr-cycle-ns = <72>;
-+		gpmc,access-ns = <54>;
-+		gpmc,wr-access-ns = <30>;
-+
-+		nand@0,0 {
-+			compatible = "ti,omap2-nand";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			reg = <0 0 4		/* Nand I/O */
-+			       1 0 0x36b>;	/* GPMC registers */
-+			interrupts = <20>;
-+
-+			ti,nand-cs = <0>;
-+			nand-bus-width = <16>;
-+			...
-+		};
- 
--		/* child nodes go here */
- 	};
-+
-+	/* Other CS nodes and their children if present */
+-static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
++static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
++	[S2MPS11_CLK_AP] = {
++		.name = "s2mps14_ap",
++		.ops = &s2mps11_clk_ops,
++		.flags = CLK_IS_ROOT,
++	},
++	[S2MPS11_CLK_BT] = {
++		.name = "s2mps14_bt",
++		.ops = &s2mps11_clk_ops,
++		.flags = CLK_IS_ROOT,
++	},
 +};
++
++static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev,
++		struct clk_init_data *clks_init)
+ {
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+ 	struct device_node *clk_np;
+@@ -141,9 +152,12 @@ static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
+-	for (i = 0; i < S2MPS11_CLKS_NUM; i++)
++	for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
++		if (!clks_init[i].name)
++			continue; /* Skip clocks not present in some devices */
+ 		of_property_read_string_index(clk_np, "clock-output-names", i,
+-				&s2mps11_clks_init[i].name);
++				&clks_init[i].name);
++	}
+ 
+ 	return clk_np;
+ }
+@@ -153,6 +167,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+ 	struct s2mps11_clk *s2mps11_clks, *s2mps11_clk;
+ 	unsigned int s2mps11_reg;
++	struct clk_init_data *clks_init;
+ 	int i, ret = 0;
+ 	u32 val;
+ 
+@@ -168,26 +183,34 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+ 	if (!clk_table)
+ 		return -ENOMEM;
+ 
+-	/* Store clocks of_node in first element of s2mps11_clks array */
+-	s2mps11_clks->clk_np = s2mps11_clk_parse_dt(pdev);
+-	if (IS_ERR(s2mps11_clks->clk_np))
+-		return PTR_ERR(s2mps11_clks->clk_np);
+-
+ 	switch(platform_get_device_id(pdev)->driver_data) {
+ 	case S2MPS11X:
+ 		s2mps11_reg = S2MPS11_REG_RTC_CTRL;
++		clks_init = s2mps11_clks_init;
++		break;
++	case S2MPS14X:
++		s2mps11_reg = S2MPS14_REG_RTCCTRL;
++		clks_init = s2mps14_clks_init;
+ 		break;
+ 	case S5M8767X:
+ 		s2mps11_reg = S5M8767_REG_CTRL1;
++		clks_init = s2mps11_clks_init;
+ 		break;
+ 	default:
+ 		dev_err(&pdev->dev, "Invalid device type\n");
+ 		return -EINVAL;
+ 	};
+ 
++	/* Store clocks of_node in first element of s2mps11_clks array */
++	s2mps11_clks->clk_np = s2mps11_clk_parse_dt(pdev, clks_init);
++	if (IS_ERR(s2mps11_clks->clk_np))
++		return PTR_ERR(s2mps11_clks->clk_np);
++
+ 	for (i = 0; i < S2MPS11_CLKS_NUM; i++, s2mps11_clk++) {
++		if (!clks_init[i].name)
++			continue; /* Skip clocks not present in some devices */
+ 		s2mps11_clk->iodev = iodev;
+-		s2mps11_clk->hw.init = &s2mps11_clks_init[i];
++		s2mps11_clk->hw.init = &clks_init[i];
+ 		s2mps11_clk->mask = 1 << i;
+ 		s2mps11_clk->reg = s2mps11_reg;
+ 
+@@ -220,8 +243,12 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+ 		clkdev_add(s2mps11_clk->lookup);
+ 	}
+ 
+-	for (i = 0; i < S2MPS11_CLKS_NUM; i++)
++	for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
++		/* Skip clocks not present on S2MPS14 */
++		if (!clks_init[i].name)
++			continue;
+ 		clk_table[i] = s2mps11_clks[i].clk;
++	}
+ 
+ 	clk_data.clks = clk_table;
+ 	clk_data.clk_num = S2MPS11_CLKS_NUM;
+@@ -254,14 +281,19 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+ 	/* Drop the reference obtained in s2mps11_clk_parse_dt */
+ 	of_node_put(s2mps11_clks[0].clk_np);
+ 
+-	for (i = 0; i < S2MPS11_CLKS_NUM; i++)
++	for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
++		/* Skip clocks not present on S2MPS14 */
++		if (!s2mps11_clks[i].lookup)
++			continue;
+ 		clkdev_drop(s2mps11_clks[i].lookup);
++	}
+ 
+ 	return 0;
+ }
+ 
+ static const struct platform_device_id s2mps11_clk_id[] = {
+ 	{ "s2mps11-clk", S2MPS11X},
++	{ "s2mps14-clk", S2MPS14X},
+ 	{ "s5m8767-clk", S5M8767X},
+ 	{ },
+ };
 -- 
-1.8.3.2
+1.9.1
 
