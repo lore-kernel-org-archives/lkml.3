@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaEUQgg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:36:36 -0400
-Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:7220
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752076AbaEUQge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:36:34 -0400
-Date: Wed, 21 May 2014 09:34:10 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <rdunlap@infradead.org>,
-        <linux@arm.linux.org.uk>, <daniel.lezcano@linaro.org>,
-        <tglx@linutronix.de>, <thierry.reding@gmail.com>,
-        <florian.vaussard@epfl.ch>, <jic23@kernel.org>, <jason@lakedaemon.net>,
-        <andrew@lunn.ch>, <silvio.fricke@gmail.com>, <heiko.stuebner@bq.com>,
-        <olof@lixom.net>, <sebastian.hesselbarth@gmail.com>,
-        <sboyd@codeaurora.org>, <gregory.clement@free-electrons.com>,
-        <arnd@arndb.de>, <robherring2@gmail.com>, <marc.zyngier@arm.com>,
-        <maxime.ripard@free-electrons.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 2/6] dt-bindings: add mtk-timer bindings
-References: <1400689583-21119-1-git-send-email-matthias.bgg@gmail.com>
- <1400689583-21119-3-git-send-email-matthias.bgg@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1400689583-21119-3-git-send-email-matthias.bgg@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <63a3ee29-aa23-4137-9c0c-5b2bdd75a68f@BN1BFFO11FD014.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(377424004)(51704005)(24454002)(189002)(199002)(81342001)(81542001)(92566001)(92726001)(80022001)(85852003)(54356999)(85182001)(87936001)(21056001)(83072002)(44976005)(31696002)(86362001)(70736001)(76176999)(23676002)(19580395003)(46102001)(50986999)(4396001)(83506001)(74662001)(74502001)(77982001)(53416003)(102836001)(99396002)(31966008)(20776003)(74316001)(47776003)(50466002)(19580405001)(33646001)(76482001)(64706001)(79102001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB012;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+	id S1752334AbaEUQk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:40:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29492 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781AbaEUQk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 12:40:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,880,1392192000"; 
+   d="scan'208";a="544339459"
+Subject: Re: [PATCH] sched: Reduce the rate of needless idle load balancing
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Russ Anderson <rja@sgi.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1400634953.26709.42.camel@joe-AO725>
+References: <1400617046.2970.270.camel@schen9-DESK>
+	 <CAGQ1y=5cwk+-Ztv8kXod+QexwEqQ0U6wPdMDBLL66rcF_cukLA@mail.gmail.com>
+	 <1400619550.2970.274.camel@schen9-DESK>
+	 <1400619878.2970.276.camel@schen9-DESK>
+	 <1400634953.26709.42.camel@joe-AO725>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 May 2014 09:37:47 -0700
+Message-ID: <1400690267.2970.287.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthias,
-
-On Wed, 2014-05-21 at 06:26PM +0200, Matthias Brugger wrote:
-> Add binding documentation for the General Porpose Timer driver of
-
-Typo: Purpose
-
-> the Mediatek SoCs.
+On Tue, 2014-05-20 at 18:15 -0700, Joe Perches wrote:
+> On Tue, 2014-05-20 at 14:04 -0700, Tim Chen wrote:
+> > On Tue, 2014-05-20 at 13:59 -0700, Tim Chen wrote:
+> > > On Tue, 2014-05-20 at 13:51 -0700, Jason Low wrote:
+> > > > On Tue, May 20, 2014 at 1:17 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > > > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> []
+> > > > If we want to do idle load balancing only when it is due for a
+> > > > balance, shouldn't the above just be "if (time_after(jiffies,
+> > > > rq->next_balance))"?
+> > > 
+> > > If rq->next_balance and jiffies are equal, then
+> > > time_after(jiffies, rq->next_balance) check will be false and
+> > > you will not do balance.  But actually you want to balance
+> > > for this case so the jiffies+1 was used.
+> > 
+> > So maybe I should switch the check to 
+> > if (time_before(rq->next_balance, jiffies))
 > 
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-> ---
->  .../devicetree/bindings/timer/mediatek,mtk-timer.txt   | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+> time_after_eq() or time_is_after_eq_jiffies()
 > 
-> diff --git a/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-> new file mode 100644
-> index 0000000..7d909f7
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-> @@ -0,0 +1,18 @@
-> +Mediatek MT6577, MT6572 and MT6589 Timers
-> +---------------------------------------
-> +
-> +Required properties:
-> +- compatible: Should be "mediatek,mtk6577-timer"
-> +- reg: Should contain location and length for timers register.
-> +- clocks: Clocks driving the timer hardware. This list shoud include two
-> +	clocks. The order is system clock and as second clock the RTC clock.
-> +
-> +Examples:
-> +
-> +	timer {
+> 
 
-The node name should be timer@0x10008000
+I prefer time_after_eq to keep the code style consistent with the
+rest of the code in fair.c.
 
-> +		compatible = "mediatek,mtk6577-timer";
-> +		reg = <0x10008000 0x80>;
-> +		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
-> +		clocks = <&system_clk>, <&rtc_clk>;
-> +		clock-names = "system-clk", "rtc-clk";
+Tim
 
-I'm still not convinced that the timer IP calls its clock inputs this
-way, but well.
-
-Other than that ACK.
-
-	Sören
