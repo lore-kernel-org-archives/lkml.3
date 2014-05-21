@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113AbaEUNM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:12:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64764 "EHLO mx1.redhat.com"
+	id S1752246AbaEUNNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:13:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29719 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaEUNM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:12:56 -0400
+	id S1752188AbaEUNND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:13:03 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 04/22] perf tools: Support event grouping in hpp ->sort()
-Date: Wed, 21 May 2014 15:12:26 +0200
-Message-Id: <1400677964-25160-5-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 08/22] perf tools: Allow hpp fields to be sort keys
+Date: Wed, 21 May 2014 15:12:30 +0200
+Message-Id: <1400677964-25160-9-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,105 +21,224 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Move logic of hist_entry__sort_on_period to __hpp__sort() in order to
-support event group report.
+Add overhead{,_sys,_us,_guest_sys,_guest_us}, sample and period sort
+keys so that they can be selected with --sort/-s option.
+
+  $ perf report -s period,comm --stdio
+  ...
+  # Overhead        Period          Command
+  # ........  ............  ...............
+  #
+      47.06%           152          swapper
+      13.93%            45  qemu-system-arm
+      12.38%            40         synergys
+       3.72%            12          firefox
+       2.48%             8            xchat
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-9-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/hist.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 58 insertions(+), 6 deletions(-)
+ tools/perf/Documentation/perf-diff.txt   |  5 ++--
+ tools/perf/Documentation/perf-report.txt |  9 ++++++++
+ tools/perf/Documentation/perf-top.txt    |  5 ++--
+ tools/perf/builtin-diff.c                |  3 ++-
+ tools/perf/builtin-report.c              |  6 ++---
+ tools/perf/builtin-top.c                 |  4 ++--
+ tools/perf/ui/hist.c                     |  9 ++++++--
+ tools/perf/util/sort.c                   | 39 ++++++++++++++++++++++++++++++++
+ 8 files changed, 67 insertions(+), 13 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index fbfa119..b3b8aba 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -50,7 +50,8 @@ OPTIONS
+ 
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol.
++	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
++	Please see description of --sort in the perf-report man page.
+ 
+ -t::
+ --field-separator=::
+@@ -202,4 +203,4 @@ If specified the 'Weighted diff' column is displayed with value 'd' computed as:
+ 
+ SEE ALSO
+ --------
+-linkperf:perf-record[1]
++linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 09af662..9babe91 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -79,6 +79,15 @@ OPTIONS
+ 	abort cost. This is the global weight.
+ 	- local_weight: Local weight version of the weight above.
+ 	- transaction: Transaction abort flags.
++	- overhead: Overhead percentage of sample
++	- overhead_sys: Overhead percentage of sample running in system mode
++	- overhead_us: Overhead percentage of sample running in user mode
++	- overhead_guest_sys: Overhead percentage of sample running in system mode
++	on guest machine
++	- overhead_guest_us: Overhead percentage of sample running in user mode on
++	guest machine
++	- sample: Number of sample
++	- period: Raw number of event count of sample
+ 
+ 	By default, comm, dso and symbol keys are used.
+ 	(i.e. --sort comm,dso,symbol)
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 64ed79c..df86328 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -113,7 +113,8 @@ Default is to monitor all CPUS.
+ -s::
+ --sort::
+ 	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
+-	local_weight, abort, in_tx, transaction
++	local_weight, abort, in_tx, transaction, overhead, sample, period.
++	Please see description of --sort in the perf-report man page.
+ 
+ -n::
+ --show-nr-samples::
+@@ -212,4 +213,4 @@ Pressing any unmapped key displays a menu, and prompts for input.
+ 
+ SEE ALSO
+ --------
+-linkperf:perf-stat[1], linkperf:perf-list[1]
++linkperf:perf-stat[1], linkperf:perf-list[1], linkperf:perf-report[1]
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index f3b10dc..b60c711 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -741,7 +741,8 @@ static const struct option options[] = {
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+ 		   "separator for columns, no spaces will be added between "
+ 		   "columns '.' is reserved."),
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 89c9528..d0180d5 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -699,10 +699,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "header-only", &report.header_only,
+ 		    "Show only data header."),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
+-		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
+-		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
+-		   "snoop, locked, abort, in_tx, transaction"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 37d3046..4fef1e4 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1083,8 +1083,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
+-		   " abort, in_tx, transaction"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index a6eea66..0299385 100644
+index e7ac794..24116a4 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -116,6 +116,62 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	return ret;
+@@ -346,8 +346,13 @@ void perf_hpp__init(void)
+ 	int i;
+ 
+ 	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-		INIT_LIST_HEAD(&perf_hpp__format[i].list);
+-		INIT_LIST_HEAD(&perf_hpp__format[i].sort_list);
++		struct perf_hpp_fmt *fmt = &perf_hpp__format[i];
++
++		INIT_LIST_HEAD(&fmt->list);
++
++		/* sort_list may be linked by setup_sorting() */
++		if (fmt->sort_list.next == NULL)
++			INIT_LIST_HEAD(&fmt->sort_list);
+ 	}
+ 
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index b2829f9..916652a 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1028,6 +1028,26 @@ static struct sort_dimension memory_sort_dimensions[] = {
+ 
+ #undef DIM
+ 
++struct hpp_dimension {
++	const char		*name;
++	struct perf_hpp_fmt	*fmt;
++	int			taken;
++};
++
++#define DIM(d, n) { .name = n, .fmt = &perf_hpp__format[d], }
++
++static struct hpp_dimension hpp_sort_dimensions[] = {
++	DIM(PERF_HPP__OVERHEAD, "overhead"),
++	DIM(PERF_HPP__OVERHEAD_SYS, "overhead_sys"),
++	DIM(PERF_HPP__OVERHEAD_US, "overhead_us"),
++	DIM(PERF_HPP__OVERHEAD_GUEST_SYS, "overhead_guest_sys"),
++	DIM(PERF_HPP__OVERHEAD_GUEST_US, "overhead_guest_us"),
++	DIM(PERF_HPP__SAMPLES, "sample"),
++	DIM(PERF_HPP__PERIOD, "period"),
++};
++
++#undef DIM
++
+ struct hpp_sort_entry {
+ 	struct perf_hpp_fmt hpp;
+ 	struct sort_entry *se;
+@@ -1115,6 +1135,16 @@ static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
+ 	return 0;
  }
  
-+static int field_cmp(u64 field_a, u64 field_b)
++static int __hpp_dimension__add(struct hpp_dimension *hd)
 +{
-+	if (field_a > field_b)
-+		return 1;
-+	if (field_a < field_b)
-+		return -1;
++	if (!hd->taken) {
++		hd->taken = 1;
++
++		perf_hpp__register_sort_field(hd->fmt);
++	}
 +	return 0;
 +}
 +
-+static int __hpp__sort(struct hist_entry *a, struct hist_entry *b,
-+		       hpp_field_fn get_field)
-+{
-+	s64 ret;
-+	int i, nr_members;
-+	struct perf_evsel *evsel;
-+	struct hist_entry *pair;
-+	u64 *fields_a, *fields_b;
-+
-+	ret = field_cmp(get_field(a), get_field(b));
-+	if (ret || !symbol_conf.event_group)
-+		return ret;
-+
-+	evsel = hists_to_evsel(a->hists);
-+	if (!perf_evsel__is_group_event(evsel))
-+		return ret;
-+
-+	nr_members = evsel->nr_members;
-+	fields_a = calloc(sizeof(*fields_a), nr_members);
-+	fields_b = calloc(sizeof(*fields_b), nr_members);
-+
-+	if (!fields_a || !fields_b)
-+		goto out;
-+
-+	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
-+		evsel = hists_to_evsel(pair->hists);
-+		fields_a[perf_evsel__group_idx(evsel)] = get_field(pair);
-+	}
-+
-+	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
-+		evsel = hists_to_evsel(pair->hists);
-+		fields_b[perf_evsel__group_idx(evsel)] = get_field(pair);
-+	}
-+
-+	for (i = 1; i < nr_members; i++) {
-+		ret = field_cmp(fields_a[i], fields_b[i]);
-+		if (ret)
-+			break;
-+	}
-+
-+out:
-+	free(fields_a);
-+	free(fields_b);
-+
-+	return ret;
-+}
-+
- #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
- static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
- 			       struct perf_hpp *hpp,			\
-@@ -195,9 +251,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- #define __HPP_SORT_FN(_type, _field)						\
- static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
- {										\
--	s64 __a = he_get_##_field(a);						\
--	s64 __b = he_get_##_field(b);						\
--	return __a - __b;							\
-+	return __hpp__sort(a, b, he_get_##_field);				\
- }
+ int sort_dimension__add(const char *tok)
+ {
+ 	unsigned int i;
+@@ -1144,6 +1174,15 @@ int sort_dimension__add(const char *tok)
+ 		return __sort_dimension__add(sd, i);
+ 	}
  
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
-@@ -217,9 +271,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- #define __HPP_SORT_RAW_FN(_type, _field)					\
- static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
- {										\
--	s64 __a = he_get_raw_##_field(a);					\
--	s64 __b = he_get_raw_##_field(b);					\
--	return __a - __b;							\
-+	return __hpp__sort(a, b, he_get_raw_##_field);				\
- }
- 
++	for (i = 0; i < ARRAY_SIZE(hpp_sort_dimensions); i++) {
++		struct hpp_dimension *hd = &hpp_sort_dimensions[i];
++
++		if (strncasecmp(tok, hd->name, strlen(tok)))
++			continue;
++
++		return __hpp_dimension__add(hd);
++	}
++
+ 	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++) {
+ 		struct sort_dimension *sd = &bstack_sort_dimensions[i];
  
 -- 
 1.8.3.1
