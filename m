@@ -1,141 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaEUGXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 02:23:41 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:48913 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaEUGXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 02:23:40 -0400
+	id S1751033AbaEUG1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 02:27:04 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1182 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750721AbaEUG1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 02:27:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
+   d="scan'208";a="434868361"
+Date: Wed, 21 May 2014 11:41:25 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, dmaengine@vger.kernel.org
+Subject: Re: [PATCH 1/2] dmaengine: omap: hide filter_fn for built-in
+ drivers
+Message-ID: <20140521061125.GN21128@intel.com>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+ <1399560990-1402858-1-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-Date: Tue, 20 May 2014 23:23:39 -0700
-Message-ID: <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-From: Austin Schuh <austin@peloton-tech.com>
-To: linux-kernel@vger.kernel.org
-Cc: xfs <xfs@oss.sgi.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 7:29 PM, Austin Schuh <austin@peloton-tech.com> wrote:
-> Hi,
->
-> I am observing a filesystem lockup with XFS on a CONFIG_PREEMPT_RT
-> patched kernel.  I have currently only triggered it using dpkg.  Dave
-> Chinner on the XFS mailing list suggested that it was a rt-kernel
-> workqueue issue as opposed to a XFS problem after looking at the
-> kernel messages.
->
-> The only modification to the kernel besides the RT patch is that I
-> have applied tglx's "genirq: Sanitize spurious interrupt detection of
-> threaded irqs" patch.
+On Thu, May 08, 2014 at 04:56:12PM +0200, Arnd Bergmann wrote:
+> It is not possible to reference the omap_dma_filter_fn filter
+> function from a built-in driver if the dmaengine driver itself
+> is a loadable module, which is a valid configuration otherwise.
+> 
+> This provides only the dummy alternative if the function
+> is referenced by a built-in driver to allow a successful
+> build. The filter function is only required by ATAGS based
+> platforms, which will continue to be broken after this change
+> for the bogus configuration. When booting from DT, with the
+> dma channels correctly listed there, it will work fine.
 
-I upgraded to 3.14.3-rt4, and the problem still persists.
+Applied, both thanks
 
-I turned on event tracing and tracked it down further.  I'm able to
-lock it up by scping a new kernel debian package to /tmp/ on the
-machine.  scp is locking the inode, and then scheduling
-xfs_bmapi_allocate_worker in the work queue.  The work then never gets
-run.  The kworkers then lock up waiting for the inode lock.
+-- 
+~Vinod
 
-Here are the relevant events from the trace.  ffff8803e9f10288
-(blk_delay_work) gets run later on in the trace, but ffff8803b4c158d0
-(xfs_bmapi_allocate_worker) never does.  The kernel then warns about
-blocked tasks 120 seconds later.
-
-
-             scp-5393  [001] ....1..   148.883383: xfs_writepage: dev
-8:5 ino 0xd8e pgoff 0x4a3e000 size 0x16af02b0 offset 0 length 0
-delalloc 1 unwritten 0
-             scp-5393  [001] ....1..   148.883383: xfs_ilock_nowait:
-dev 8:5 ino 0xd8e flags ILOCK_SHARED caller xfs_map_blocks
-             scp-5393  [001] ....1..   148.883384: xfs_iunlock: dev
-8:5 ino 0xd8e flags ILOCK_SHARED caller xfs_map_blocks
-             scp-5393  [001] ....1..   148.883386: xfs_log_reserve:
-dev 8:5 type STRAT_WRITE t_ocnt 2 t_cnt 2 t_curr_res 112332 t_unit_res
-112332 t_flags XLOG_TIC_INITED|XLOG_TIC_PERM_RESERV reserveq empty
-writeq empty grant_reserve_cycle 57 grant_reserve_bytes 9250852
-grant_write_cycle 57 grant_write_bytes 9250852 curr_cycle 57
-curr_block 18031 tail_cycle 57 tail_block 17993
-             scp-5393  [001] ....1..   148.883386:
-xfs_log_reserve_exit: dev 8:5 type STRAT_WRITE t_ocnt 2 t_cnt 2
-t_curr_res 112332 t_unit_res 112332 t_flags
-XLOG_TIC_INITED|XLOG_TIC_PERM_RESERV reserveq empty writeq empty
-grant_reserve_cycle 57 grant_reserve_bytes 9475516 grant_write_cycle
-57 grant_write_bytes 9475516 curr_cycle 57 curr_block 18031 tail_cycle
-57 tail_block 17993
-             scp-5393  [001] ....1..   148.883386: xfs_ilock: dev 8:5
-ino 0xd8e flags ILOCK_EXCL caller xfs_iomap_write_allocate
-             scp-5393  [001] ....1.3   148.883390:
-workqueue_queue_work: work struct=ffff8803b4c158d0
-function=xfs_bmapi_allocate_worker workqueue=ffff8803ea85dc00
-req_cpu=512 cpu=1
-             scp-5393  [001] ....1.3   148.883390:
-workqueue_activate_work: work struct ffff8803b4c158d0
-             scp-5393  [001] ....1.4   148.883396:
-workqueue_queue_work: work struct=ffff8803e9f10288
-function=blk_delay_work workqueue=ffff8803ecf96200 req_cpu=512 cpu=1
-             scp-5393  [001] ....1.4   148.883396:
-workqueue_activate_work: work struct ffff8803e9f10288
-             scp-5393  [001] dN..3.4   148.883399: sched_wakeup:
-comm=kworker/1:1H pid=573 prio=100 success=1 target_cpu=001
-             scp-5393  [001] dN..3.4   148.883400: sched_stat_runtime:
-comm=scp pid=5393 runtime=32683 [ns] vruntime=658862317 [ns]
-             scp-5393  [001] d...3.4   148.883400: sched_switch:
-prev_comm=scp prev_pid=5393 prev_prio=120 prev_state=R+ ==>
-next_comm=kworker/1:1H next_pid=573 next_prio=100
-
-    irq/44-ahci-273   [000] d...3.5   148.883647: sched_wakeup:
-comm=kworker/0:2 pid=732 prio=120 success=1 target_cpu=000
-    irq/44-ahci-273   [000] d...3..   148.883667: sched_switch:
-prev_comm=irq/44-ahci prev_pid=273 prev_prio=49 prev_state=S ==>
-next_comm=kworker/0:2 next_pid=732 next_prio=120
-    kworker/0:2-732   [000] ....1..   148.883674:
-workqueue_execute_start: work struct ffff8800aea30cb8: function
-xfs_end_io
-    kworker/0:2-732   [000] ....1..   148.883674: xfs_ilock: dev 8:5
-ino 0xd8e flags ILOCK_EXCL caller xfs_setfilesize
-    kworker/0:2-732   [000] d...3..   148.883677: sched_stat_runtime:
-comm=kworker/0:2 pid=732 runtime=11392 [ns] vruntime=46907654869 [ns]
-    kworker/0:2-732   [000] d...3..   148.883679: sched_switch:
-prev_comm=kworker/0:2 prev_pid=732 prev_prio=120 prev_state=D ==>
-next_comm=swapper/0 next_pid=0 next_prio=120
-
-   kworker/1:1-99    [001] ....1..   148.884208:
-workqueue_execute_start: work struct ffff8800aea30c20: function
-xfs_end_io
-    kworker/1:1-99    [001] ....1..   148.884208: xfs_ilock: dev 8:5
-ino 0xd8e flags ILOCK_EXCL caller xfs_setfilesize
-    kworker/1:1-99    [001] d...3..   148.884210: sched_stat_runtime:
-comm=kworker/1:1 pid=99 runtime=36705 [ns] vruntime=48354424724 [ns]
-    kworker/1:1-99    [001] d...3..   148.884211: sched_switch:
-prev_comm=kworker/1:1 prev_pid=99 prev_prio=120 prev_state=R+ ==>
-next_comm=swapper/1 next_pid=0 next_prio=120
-
-  kworker/u16:4-296   [001] ....1..   151.560358:
-workqueue_execute_start: work struct ffff8803e9f10660: function
-bdi_writeback_workfn
-  kworker/u16:4-296   [001] ....1..   151.560389:
-workqueue_execute_end: work struct ffff8803e9f10660
-  kworker/u16:4-296   [001] d...3..   151.560398: sched_stat_runtime:
-comm=kworker/u16:4 pid=296 runtime=51174 [ns] vruntime=48345513312
-[ns]
-  kworker/u16:4-296   [001] d...3..   151.560403: sched_switch:
-prev_comm=kworker/u16:4 prev_pid=296 prev_prio=120 prev_state=R+ ==>
-next_comm=swapper/1 next_pid=0 next_prio=120
-
-
-I have a peak_pci can card in the machine that is consuming about 1.5
-CPU cores because it is not connected to a CAN bus and gets error
-interrupts every time it tries to send and resend.  If I disable the
-card (ifconfig can0 down; ifconfig can1 down), I have a lot more
-trouble reproducing the lockup.
-
-Any ideas why the scheduled work is never getting run?
-
-Thanks,
-Austin
