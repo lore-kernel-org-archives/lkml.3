@@ -1,169 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbaEULPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:15:33 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:33494 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbaEULPb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:15:31 -0400
+	id S1752213AbaEULSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:18:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52646 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751018AbaEULSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:18:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,879,1392192000"; 
+   d="asc'?scan'208";a="544171888"
+Date: Wed, 21 May 2014 16:32:32 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v7] DMA: sun6i: Add driver for the Allwinner A31 DMA
+ controller
+Message-ID: <20140521110232.GP21128@intel.com>
+References: <20140430070408.GR32284@intel.com>
+ <20140513134258.GA29258@lukather>
+ <20140521053105.GI21128@intel.com>
+ <20140521085829.GP27329@lukather>
 MIME-Version: 1.0
-In-Reply-To: <CA+sq2CejJFg--0rS1arr4Sactp-ssENB8Y3g4b61JPGPBCms=A@mail.gmail.com>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
-	<CA+sq2Ccok5wtKjCZUkBhhj3WsiqFAoMgHK7LY210aBtMku+8SA@mail.gmail.com>
-	<20140516132451.GK967@e106497-lin.cambridge.arm.com>
-	<CA+sq2CejJFg--0rS1arr4Sactp-ssENB8Y3g4b61JPGPBCms=A@mail.gmail.com>
-Date: Wed, 21 May 2014 16:45:29 +0530
-Message-ID: <CA+sq2Ccp0_4hgbbWa27bkYcqiXY6Ckr8eckWnHwANvhWNo97fg@mail.gmail.com>
-Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
-From: Sunil Kovvuri <sunil.kovvuri@gmail.com>
-To: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "kdb@lurndal.org" <kdb@lurndal.org>,
-        "yu.zhao@intel.com" <yu.zhao@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/2994txjAzEdQwm5"
+Content-Disposition: inline
+In-Reply-To: <20140521085829.GP27329@lukather>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liviu,
 
-Sorry for the trouble.
-I got why 'res->parent' is not set in my case.
-Basically my SR-IOV device has fixed resources, so resources will not
-be allocated/assigned and hence parent resource is not set.
-I will move the resource claiming to host controller driver as a fixup
-so that parent resource hierarchy is set.
+--/2994txjAzEdQwm5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the support.
+On Wed, May 21, 2014 at 10:58:29AM +0200, Maxime Ripard wrote:
+> On Wed, May 21, 2014 at 11:01:05AM +0530, Vinod Koul wrote:
+> > On Tue, May 13, 2014 at 03:42:58PM +0200, Maxime Ripard wrote:
+> > > Hi Vinod,
+> > >=20
+> > > On Wed, Apr 30, 2014 at 12:34:08PM +0530, Vinod Koul wrote:
+> > > > > +
+> > > > > +static int sun6i_dma_terminate_all(struct sun6i_vchan *vchan)
+> > > > > +{
+> > > > > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(vchan->vc.chan.=
+device);
+> > > > > +	struct sun6i_pchan *pchan =3D vchan->phy;
+> > > > > +	unsigned long flags;
+> > > > > +	LIST_HEAD(head);
+> > > > > +
+> > > > > +	spin_lock(&sdev->lock);
+> > > > > +	list_del_init(&vchan->node);
+> > > > > +	spin_unlock(&sdev->lock);
+> > > > > +
+> > > > > +	spin_lock_irqsave(&vchan->vc.lock, flags);
+> > > > > +
+> > > > > +	vchan_get_all_descriptors(&vchan->vc, &head);
+> > > > > +
+> > > > > +	if (pchan) {
+> > > > > +		writel(DMA_CHAN_ENABLE_STOP, pchan->base + DMA_CHAN_ENABLE);
+> > > > > +		writel(DMA_CHAN_PAUSE_RESUME, pchan->base + DMA_CHAN_PAUSE);
+> > > > > +
+> > > > > +		vchan->phy =3D NULL;
+> > > > > +		pchan->vchan =3D NULL;
+> > > > > +		pchan->desc =3D NULL;
+> > > > > +		pchan->done =3D NULL;
+> > > > > +	}
+> > > > > +
+> > > > > +	spin_unlock_irqrestore(&vchan->vc.lock, flags);
+> > > > > +
+> > > > > +	vchan_dma_desc_free_list(&vchan->vc, &head);
+> > > >=20
+> > > > shouldn't you kill the tasklet as well here?
+> > >=20
+> > > Just to be clear, which tasklet? vchan's or the driver's?
+> > You need to take care of both. But I suspect if we ensure irq is not tr=
+iggered
+> > and any pending ones are completed you can simply kill both of the task=
+lets
+> > happily. See the fixes merged in dmaengine last cycle (hint: patchlog s=
+hows what
+> > we need to do)
+>=20
+> I still don't get why I should kill the driver tasklet in terminate_all.
+>=20
+> The tasklet is common to all the channels, if you kill it, you'll
+> prevent it from scheduling while other channels might have had a need
+> for it to actually run.
+I think I was under the impression that your tasklet is per channel, If tha=
+t is
+not the case it makes no sense then for this case
+>=20
+> About the commits themselves, I guess you talk about 9068b032 and
+> ccc7aad0. Both these commits only fix the remove path, not the
+> terminate_all one, and both these drivers are not doing anything
+> related to the tasklet in terminate_all.
+Yup as you would have noticed these were not per channel as well
 
-Regards,
-Sunil.
+>=20
+> > Btw just noticed, you *should* use dmaengine: as the subsytem name on t=
+he patch
+> > series...
+>=20
+> Ok, I will.
+Thanks
 
+--=20
+~Vinod
 
-On Fri, May 16, 2014 at 11:12 PM, Sunil Kovvuri <sunil.kovvuri@gmail.com> wrote:
-> Hi Liviu,
->
-> Issue may not be only with SR-IOV resources.
->
-> I am not an expert with Linux PCI core. But i am trying to understand
-> how even for a non SR-IOV capable device's resource, gets a parent
-> associated with it.
->
-> When a PCI device driver calls pci_enable_device() which inturn calls
-> 'arch/arm64/kernel/pci.c' pcibios_enable_device() which uses Linux PCI core
-> API 'pci_enable_resources'. This API checks 'res->parent' for all
-> valid resources
-> before enabling them, otherwise it fails.
->                 if (!r->parent) {
->                         dev_err(&dev->dev, "device not available "
->                                 "(can't reserve %pR)\n", r);
->                         return -EINVAL;
->                 }
->
-> Can you please let me know where this hierarchy is being set for
-> 'pcibios_enable_resources' to work.
->
-> I could only find request_resource() API which sets the parent and
-> pci_claim_resource() uses this.
->
-> Thanks,
-> Sunil.
->
-> On Fri, May 16, 2014 at 6:54 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
->> Hi Sunil,
->>
->> On Fri, May 16, 2014 at 11:33:04AM +0100, Sunil Kovvuri wrote:
->>> Hi Liviu,
->>>
->>> I am using your ARM64 PCIe patches to write a PCIe host controller
->>> driver for our SOC. I am facing an issue with SR-IOV capable device.
->>>
->>> Consider an PCI Express endpoint connected to a PCI Express
->>> Root Port.  The PCI Express endpoint provides PCI-SIG SR-IOV
->>> capabilities with a single physical function and a large number
->>> of virtual functions.  The Root Port contains a pci-pci bridge in
->>> between it and the SR-IOV device.
->>>
->>> When the SR-IOV capable device's driver tries to enable sriov
->>> (pci_enable_sriov()) it fails to create/add PCI device for each
->>> virtual function reporting  "not enough MMIO resources for SR-IOV".
->>>
->>> In sriov_enable() (drivers/pci/iov.c)
->>>
->>>  296        for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
->>>  297                 bars |= (1 << (i + PCI_IOV_RESOURCES));
->>>  298                 res = dev->resource + PCI_IOV_RESOURCES + i;
->>>  299                 if (res->parent)
->>>  300                         nres++;
->>>  301         }
->>>  302         if (nres != iov->nres) {
->>>  303                 dev_err(&dev->dev, "not enough MMIO resources for
->>>  SR-IOV\n");
->>>  304                 return -ENOMEM;
->>>  305         }
->>>
->>> Here its checking if physical function's IOV resource has a parent or not.
->>> Which is pci-pci bridge in this case. Otherwise it doesn't consider
->>> that resource.
->>>
->>> Added below api to your patch.
->>> This will try to claim a resource while creating a PCI device which
->>> inturn sets 'res->parent'.
->>>
->>> Let me know if this is okay.
->>>
->>> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
->>> index 9f29c9a..fbfb48f 100644
->>> --- a/arch/arm64/kernel/pci.c
->>> +++ b/arch/arm64/kernel/pci.c
->>> @@ -125,6 +125,21 @@ resource_size_t pcibios_align_resource(void
->>> *data, const struct resource *res,
->>>         return res->start;
->>>  }
->>>
->>> +int pcibios_add_device(struct pci_dev *pdev)
->>> +{
->>> +        unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
->>> +        struct resource *res;
->>> +
->>> +        for (i = 0; i < PCI_NUM_RESOURCES; i++) {
->>> +                res = &pdev->resource[i];
->>> +                if (res->parent || !(res->flags & type_mask))
->>> +                        continue;
->>> +                pci_claim_resource(pdev, i);
->>> +        }
->>> +
->>>
->>
->> I would like not to have to add your patch in this file as I am trying to
->> remove it entirely. I don't have an SR-IOV capable device in my setup so
->> I am not able to debug your problem, but could you have a go and try to
->> figure out why the SR-IOV resources do not get a parent associated with
->> when they get created?
->>
->> Many thanks,
->> Liviu
->>
->>
->> --
->> ====================
->> | I would like to |
->> | fix the world,  |
->> | but they're not |
->> | giving me the   |
->>  \ source code!  /
->>   ---------------
->>     ¯\_(ツ)_/¯
->>
+--/2994txjAzEdQwm5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfIfIAAoJEHwUBw8lI4NHyjAP/jCMyCH/kBWP6zWna4ZZc94T
+ZfpXUb2NDd/6CRkgaC/7iPQJmuL35vgo0j5P5M2EysoysJH+ekNMfP+t6ATuPigg
+kQNww3MsrrXb+n5l1M+RWDOp9M9OFi7C6tw0qxAx7K8PHcUmmTuP6DGIb5RhUVdQ
+QJr7UB772v4GJITJOj3eflPuN7gluesw4pwOM4//kAalAO8GseltT+pG3EsnXDml
+gphQlicZMSA74nCsae/2KRihsIh6GaG7mEqbtl7atxlIuSIOTmADx1FjCsYDuUZB
++v2ORH8u/cZsfpXjpzXAFYnsRnhY1gFHPu+myyrUG4Ruv6QzkUtT9L0p2wA2yXd4
+Zt0WbAiQnWiLscrhtaLn/OLZY2bv9OgWB+y92N/nli2PKJ+8b9WY+Vma/0o8V9T1
+RUBRJQCgrVMu9/1IFPWQ2jK4US07Eq/wrepQtzqd9AhvP4oifXF+RGTUq0aWDdq3
+jXpk+Ud+R/C41bSvC9Rmet07QarVw9oVHf81ZOwIDgPOcES6XdQYn4UVb4wh89JA
+z4Asx1Kguuw9vy98leG0yg+Lo8oD0nqiKP0XqmQGs0cwlVsNc0A97SebKKD+7tsy
+VE47dKjsqyxEx+qWd5ioqLqnrxmmmDYAt6U28RpSiEXv2e9v13vR1h+V9DNRYxgv
+LZEuXLh39DrTqBytq6GO
+=Qiiy
+-----END PGP SIGNATURE-----
+
+--/2994txjAzEdQwm5--
