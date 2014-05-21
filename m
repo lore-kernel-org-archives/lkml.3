@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaEUSKP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:10:15 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:64210 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751018AbaEUSKO (ORCPT
+	id S1752861AbaEUSMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:12:05 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:61882 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaEUSMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:10:14 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AugLAJzqfFNbsHTp/2dsb2JhbABZgwmCRahABAEBAQEBAQUBgzqWdoEMF3SCZhwjGIECJBOIRQHWTBeFVYh5hEcBA489ijABixWID4M6Ow
-Date: Wed, 21 May 2014 20:10:10 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 1/1] lib/crc32.c: remove unnecessary __constant
-Message-Id: <20140521201010.a85463efcbfbaf46b61acae5@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 May 2014 14:12:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 21 May 2014 11:11:41 -0700
+Message-ID: <CALCETrUNWAU238xRZQ5zJwwQBArCHNzm=xsDBw4_LWGgGPjAuQ@mail.gmail.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+To: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use cpu_to_le32 instead of __constant_cpu_to_le32
+On Tue, May 20, 2014 at 5:53 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Here's a real proposal for iret-less return.  If this is correct, then
+> NMIs will never nest, which will probably delete a lot more scariness
+> than is added by the code I'm describing.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- lib/crc32.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+OK, here's a case where I'm wrong.  An NMI interrupts userspace on a
+16-bit stack.  The return from NMI goes through the espfix code.
+Something interrupts while on the espfix stack.  Boom!  Neither return
+style is particularly good.
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 70f00ca..21a7b2135 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -33,13 +33,13 @@
- #include "crc32defs.h"
- 
- #if CRC_LE_BITS > 8
--# define tole(x) ((__force u32) __constant_cpu_to_le32(x))
-+# define tole(x) ((__force u32) cpu_to_le32(x))
- #else
- # define tole(x) (x)
- #endif
- 
- #if CRC_BE_BITS > 8
--# define tobe(x) ((__force u32) __constant_cpu_to_be32(x))
-+# define tobe(x) ((__force u32) cpu_to_be32(x))
- #else
- # define tobe(x) (x)
- #endif
--- 
-1.9.1
+More generally, if we got interrupted while on the espfix stack, we
+need to return back there using IRET.  Fortunately, re-enabling NMIs
+there in harmless, since we've already switched off the NMI stack.
+
+This makes me think that maybe the logic should be turned around: have
+some RIP ranges on which the kernel stack might be invalid (which
+includes the espfix code and some of the syscall code) and use IRET
+only on return from NMI, return to nonstandard CS, and return to these
+special ranges.  The NMI code just needs to never so any of this stuff
+unless it switches off the NMI stack first.
+
+For this to work reliably, we'll probably have to change CS before
+calling into EFI code.  That should be straightforward.
+
+--Andy
