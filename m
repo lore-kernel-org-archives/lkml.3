@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaEUTSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:18:55 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:57928 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173AbaEUTSx (ORCPT
+	id S1753249AbaEUTTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:19:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48150 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012AbaEUTTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:18:53 -0400
-Date: Wed, 21 May 2014 15:18:50 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/5] workqueue: Allow changing attributions of ordered
- workqueues
-Message-ID: <20140521191850.GD5259@htj.dyndns.org>
-References: <1400257015-28222-1-git-send-email-fweisbec@gmail.com>
- <1400257015-28222-2-git-send-email-fweisbec@gmail.com>
- <537C55C4.70706@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537C55C4.70706@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 21 May 2014 15:19:14 -0400
+Date: Wed, 21 May 2014 12:19:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/1] ptrace: task_clear_jobctl_trapping()->wake_up_bit()
+ needs mb()
+Message-Id: <20140521121912.28188135b8e450cbee62fa27@linux-foundation.org>
+In-Reply-To: <20140521092932.GH30445@twins.programming.kicks-ass.net>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+	<1399974350-11089-20-git-send-email-mgorman@suse.de>
+	<20140513125313.GR23991@suse.de>
+	<20140513141748.GD2485@laptop.programming.kicks-ass.net>
+	<20140514161152.GA2615@redhat.com>
+	<20140514161755.GQ30445@twins.programming.kicks-ass.net>
+	<20140516135116.GA19210@redhat.com>
+	<20140516135137.GB19210@redhat.com>
+	<20140521092932.GH30445@twins.programming.kicks-ass.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Wed, 21 May 2014 11:29:32 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
 
-On Wed, May 21, 2014 at 03:29:08PM +0800, Lai Jiangshan wrote:
-> Should we reorder the pwq_adjust_max_active() to avoid this declare?
-> (Move pwq_adjust_max_active() to the place just before rcu_free_pwq())
+> On Fri, May 16, 2014 at 03:51:37PM +0200, Oleg Nesterov wrote:
+> > __wake_up_bit() checks waitqueue_active() and thus the caller needs
+> > mb() as wake_up_bit() documents, fix task_clear_jobctl_trapping().
+> > 
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> 
+> Seeing how you are one of the ptrace maintainers, how do you want this
+> routed? Does Andrew pick this up, do I stuff it somewhere?
 
-Yeah, sure.  Sounds good to me.
-
-Thanks.
-
--- 
-tejun
+Thanks, I grabbed it.  ptrace has been pretty quiet lately.
