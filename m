@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959AbaEUXUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 19:20:45 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35740 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919AbaEUXUn (ORCPT
+	id S1752702AbaEUXWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 19:22:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43325 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882AbaEUXWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 19:20:43 -0400
-Date: Thu, 22 May 2014 00:20:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-samsung-soc@vger.kernel.org, tiwai@suse.de, perex@perex.cz,
-        lgirdwood@gmail.com, sbkim73@samsung.com, kgene.kim@samsung.com
-Message-ID: <20140521232026.GZ12304@sirena.org.uk>
-References: <1400642540-24375-1-git-send-email-tushar.behera@linaro.org>
- <1400642540-24375-2-git-send-email-tushar.behera@linaro.org>
+	Wed, 21 May 2014 19:22:03 -0400
+Date: Wed, 21 May 2014 16:21:47 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-78d683e838a60ec4ba4591cca4364cba84a9e626@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <2eee21791bb36a0a408c5c2bdb382a9e6a41ca4a.1400538962.git.luto@amacapital.net>
+References: <2eee21791bb36a0a408c5c2bdb382a9e6a41ca4a.1400538962.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] mm, fs: Add vm_ops->
+ name as an alternative to arch_vma_name
+Git-Commit-ID: 78d683e838a60ec4ba4591cca4364cba84a9e626
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z8HeKkXK+YwaFz6Y"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1400642540-24375-2-git-send-email-tushar.behera@linaro.org>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] ASoC: samsung: Use devm_snd_soc_register_card
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  78d683e838a60ec4ba4591cca4364cba84a9e626
+Gitweb:     http://git.kernel.org/tip/78d683e838a60ec4ba4591cca4364cba84a9e626
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Mon, 19 May 2014 15:58:32 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 20 May 2014 11:36:31 -0700
 
---z8HeKkXK+YwaFz6Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+mm, fs: Add vm_ops->name as an alternative to arch_vma_name
 
-On Wed, May 21, 2014 at 08:52:17AM +0530, Tushar Behera wrote:
-> Replace snd_soc_register_card with devm_snd_soc_register_card.
-> With this change, we can delete the empty remove functions.
+arch_vma_name sucks.  It's a silly hack, and it's annoying to
+implement correctly.  In fact, AFAICS, even the straightforward x86
+implementation is incorrect (I suspect that it breaks if the vdso
+mapping is split or gets remapped).
 
-Applied all, thanks.
+This adds a new vm_ops->name operation that can replace it.  The
+followup patches will remove all uses of arch_vma_name on x86,
+fixing a couple of annoyances in the process.
 
---z8HeKkXK+YwaFz6Y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/2eee21791bb36a0a408c5c2bdb382a9e6a41ca4a.1400538962.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ fs/binfmt_elf.c    | 8 ++++++++
+ fs/proc/task_mmu.c | 6 ++++++
+ include/linux/mm.h | 6 ++++++
+ 3 files changed, 20 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfTS3AAoJELSic+t+oim9bMMP/3PXJ4O2W+8D+lV0FfY7yWr/
-D2wVUxBYnHeSbeU3RXazcDDt5pOkl6gn8KndR3h/FdaXXZjqETB6RIYgLauxbpQ5
-MWMkwptggMnNSxGZMg31tUMAjUAqpvebtsUwfNVWpNlPyqf6m9OLl72sCLwnxsws
-G4gGjx7fwCoVlACXRcVZId+DM4DWGM91ad/NRsWuQm52T3Mi41sZJC9EKeHTg0y7
-R6ChVmwjcR9JYD0GkQ6LUKxLlSCu9Nhc7Vk+2ibgoTJmxqaM1SeSnciN2XCQFgDG
-onPjmJuurnrD3KCy08uQaP9mJAMSTFpF9bQXdktu8twIdiOnvd7VPQMtbp4iI197
-ICWgLj7dku4jhHM5Ahuu6v9hp4dIl1EArNK48xC4fzm4Z5xxwFS/uROwEuk+iGj6
-X/sBb/pZJhwOrkPuOXPJvhImoxMFKvBILeRLJXjHNhkLjUNdfQOWPJgs2s3c3jJx
-OQth3wwnre6aISHtm9x8m6ACp5C37P3auFNrKbkY8CGd1xrtoxDI+QM0r7k3tjL9
-dR3RYm2EQtZ4lVFnI611BGbsVTJcbFAIvgpWXAzpDufBikmrOy96jvVC7KJ7HNm6
-zXoxtX/toB0z/zNaZxhjcrFidBsyAHBo5x397qLx3mRejy9nZfIZEM5J8taB4Cf9
-1lcOKbquMnT350DH45gN
-=SRMu
------END PGP SIGNATURE-----
-
---z8HeKkXK+YwaFz6Y--
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index aa3cb62..df9ea41 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1108,6 +1108,14 @@ static bool always_dump_vma(struct vm_area_struct *vma)
+ 	/* Any vsyscall mappings? */
+ 	if (vma == get_gate_vma(vma->vm_mm))
+ 		return true;
++
++	/*
++	 * Assume that all vmas with a .name op should always be dumped.
++	 * If this changes, a new vm_ops field can easily be added.
++	 */
++	if (vma->vm_ops && vma->vm_ops->name && vma->vm_ops->name(vma))
++		return true;
++
+ 	/*
+ 	 * arch_vma_name() returns non-NULL for special architecture mappings,
+ 	 * such as vDSO sections.
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 442177b..9b2f5d6 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -300,6 +300,12 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+ 		goto done;
+ 	}
+ 
++	if (vma->vm_ops && vma->vm_ops->name) {
++		name = vma->vm_ops->name(vma);
++		if (name)
++			goto done;
++	}
++
+ 	name = arch_vma_name(vma);
+ 	if (!name) {
+ 		pid_t tid;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index bf9811e..63f8d4e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -239,6 +239,12 @@ struct vm_operations_struct {
+ 	 */
+ 	int (*access)(struct vm_area_struct *vma, unsigned long addr,
+ 		      void *buf, int len, int write);
++
++	/* Called by the /proc/PID/maps code to ask the vma whether it
++	 * has a special name.  Returning non-NULL will also cause this
++	 * vma to be dumped unconditionally. */
++	const char *(*name)(struct vm_area_struct *vma);
++
+ #ifdef CONFIG_NUMA
+ 	/*
+ 	 * set_policy() op must add a reference to any non-NULL @new mempolicy
