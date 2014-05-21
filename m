@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281AbaEUK3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 06:29:50 -0400
-Received: from sauhun.de ([89.238.76.85]:46908 "EHLO pokefinder.org"
+	id S1752114AbaEUKei (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 06:34:38 -0400
+Received: from sauhun.de ([89.238.76.85]:46940 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752232AbaEUK3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 06:29:45 -0400
-Date: Wed, 21 May 2014 12:29:16 +0200
+	id S1751724AbaEUKeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 06:34:36 -0400
+Date: Wed, 21 May 2014 12:34:32 +0200
 From: Wolfram Sang <wsa@the-dreams.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: olof@lixom.net, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: mux: Add more warnings to i2c-arb-gpio-challenge
- docs
-Message-ID: <20140521102916.GL2708@katana>
-References: <1398792651-27115-1-git-send-email-dianders@chromium.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-i2c@vger.kernel.org, naveenkrishna.ch@gmail.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, sjg@chromium.org,
+        linux-kernel@vger.kernel.org, cpgs@samsung.com, broonie@kernel.org,
+        t.figa@samsung.com
+Subject: Re: [PATCH] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
+Message-ID: <20140521103432.GM2708@katana>
+References: <1398675598-25991-1-git-send-email-ch.naveen@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lHuqAdgBYNjQz/wy"
+	protocol="application/pgp-signature"; boundary="00sTfE/IIAT5d2r5"
 Content-Disposition: inline
-In-Reply-To: <1398792651-27115-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1398675598-25991-1-git-send-email-ch.naveen@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lHuqAdgBYNjQz/wy
+--00sTfE/IIAT5d2r5
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Apr 29, 2014 at 10:30:51AM -0700, Doug Anderson wrote:
-> This adds some more warnings to the i2c-arb-gpio-challenge docs to
-> help encourage people not to use it in their designs unless they have
-> no choice.
+On Mon, Apr 28, 2014 at 02:29:58PM +0530, Naveen Krishna Chatradhi wrote:
+> HSI2C module on Exynos5260 differs from current modules in
+> following ways:
+> 1.  HSI2C on Exynos5260 has fifo_depth of 16bytes
+> 2.  Module needs to be reset as a part of init sequence.
 >=20
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Hence, Following changes are involved.
+> 1. Add a new compatible string and Updates the Documentation dt bindings.
+> 2. Introduce a variant struct to support the changes in H/W
+> 3. Reset the module during init. Thus, bringing the module back
+> to default state irrespective of what firmware did with it.
+>=20
+> Signed-off-by: Naveen Krishna Chatradhi <ich.naveen@samsung.com>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
 
-Woha, you forgot to add the i2c list. It nearly slipped through.
-Luckily, I found it nonetheless :) Applied to for-next, thanks!
+=2E..
+
+> -		fifo_ctl |=3D HSI2C_RXFIFO_TRIGGER_LEVEL(HSI2C_DEF_TXFIFO_LVL);
+> +		trig_lvl =3D (i2c->msg->len > i2c->variant->fifo_depth) ?
+> +			(i2c->variant->fifo_depth * 3/4) : i2c->msg->len;
+> +		fifo_ctl |=3D HSI2C_RXFIFO_TRIGGER_LEVEL(trig_lvl);
+> +
+
+Dunno why checkpatch missed the 'space around operator' issue, yet I
+fixed it here...
+
+Applied to for-next, thanks!
 
 
---lHuqAdgBYNjQz/wy
+--00sTfE/IIAT5d2r5
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTfH/8AAoJEBQN5MwUoCm29HgQAINpfBjhm47mPkMwwwWq0IL0
-lT9P2jq9Ad1P0ixLa4nju4n6W/nNonGEVMCzZKBOT/AAZADYU8gczsU5a+2tBlR/
-r63HFipAPOhuNz2a2DslzsrvXGETcTaxBXRNgeyEgrtuA2ZuCROUnK17efDlVlEJ
-hnIMD3nrNJvJ77+mKAGvFkpz+6bP9E8uCcplho5NZbAqnf1CKh7Weqsr45nfp56U
-Y3qW1A1RiAhGMuMCYAtD5HoKO9zRnecX/Kvv0PXakYOCbhygEH+vQxo0AdsAEYTM
-ZJNymbAPjjEsSjASQ2JulwMD//KJ4Pn7F+xYik8ZulLNw9JVubq2YFkXVRidE4V3
-Mz/7816uI/O0K9MpdLtqQX53UrhwOqQ0vEHgtmRCeKIFpeP2AX4iNesG/h/K7rJg
-0vniJcqUs/iJnAlAnQQ3ez0ryT2oeBCHzWKAAuYiux8FHof2DIoVHhWzneymutkO
-+Y/sEB9SWAW1KpYvFOUTIspAixKiRg7TDO9PQk5W4cRwvp3Q/sed3nYDXkHRXNOt
-IfJsdvO9e+D7pPP+wl+iBNte2MLe0gvr/dQN3gGwrzMsd3tz662IqLJTsqsBMPbm
-9iZSzsbeujtnjLMyrLS6VY23SOKORCMqvwExnMDl3hBTqvd9xM5prxOZUZQLZqgJ
-2NbFXMay5tRPXMum2NgA
-=itao
+iQIcBAEBAgAGBQJTfIE4AAoJEBQN5MwUoCm2YF0P/0EFkN+wHA4u0tnxLbjfCXiT
+mvz+QdM0aDBfnZ94TzkuDIYdDfH79QHG6goj0co6w33MqMS++E8tHhFO+7cFF5Ol
+dkto2A0nJNHnqoC8hmvCoL9MaqTSsVrcOhWgrRcaxKj4CC8nQnJj+BkLgsf+PCXY
+tfJEEwO+7N9Z7eWokF3Vyr/uzLEDPgkSgCsJLLvNNaAxNB8OGCpMPpHnNkL7eWdL
+KqlkDqqvGTIpQZ4yJFTEE5RDMmACB+XzVrKF4L3Fu7ZwEZaKgOmlImo8qKAyRfeE
+Pt0gLxSGQZyM0nlK+P16Fmk4cB96gwBJKzOAX956NltuEe0ykh0mR4Xzstczeb/G
+hkD3R7XeYHYQ+6vDBvGlR3kZjYvWaUnfEiUGVaj+8lTQmaKqZbBESc25r3D93MsI
++D+BZ13CsGs1Q6sJAdYiH2D3ujdy80V8wtgUBAMyXTZNAVhd5sFF2wbhNn3AZlwO
+TGXs8oBWu4IMqRvjcdH7Me2PAHVdP62miN7Gq3PFoyrMgSB1PX213JoJvE0ccCP1
+CCSLdJq8ittMeiF0EhqWnq40xQMd0E6c518B6fd8rSNH2G586CCu6qHNdsddrbAw
+NdAt0uKX4t/TBcQJiZVJDahDGQ+pvz13tv2zVApZqZ4/XrBjKFfwmJhpVtaK9Bhg
+2OUAzmXWRBZ+EEwOUppr
+=2qMU
 -----END PGP SIGNATURE-----
 
---lHuqAdgBYNjQz/wy--
+--00sTfE/IIAT5d2r5--
