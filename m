@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaEUQIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:08:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40866 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336AbaEUQIn (ORCPT
+	id S1752663AbaEUQIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:08:55 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:56731 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaEUQIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:08:43 -0400
-Date: Wed, 21 May 2014 18:08:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
- lookups in unlock_page fastpath v5
-Message-ID: <20140521160837.GH2485@laptop.programming.kicks-ass.net>
-References: <1399974350-11089-20-git-send-email-mgorman@suse.de>
- <20140513125313.GR23991@suse.de>
- <20140513141748.GD2485@laptop.programming.kicks-ass.net>
- <20140514161152.GA2615@redhat.com>
- <20140514192945.GA10830@redhat.com>
- <20140515104808.GF23991@suse.de>
- <20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
- <20140521121501.GT23991@suse.de>
- <20140521130223.GE2485@laptop.programming.kicks-ass.net>
- <20140521153357.GW23991@suse.de>
+	Wed, 21 May 2014 12:08:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, santosh.shilimkar@ti.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        grant.likely@linaro.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        grygorii.strashko@ti.com, olof@lixom.net, w-kwok2@ti.com,
+        sboyd@codeaurora.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, m-karicheri2@ti.com
+Subject: Re: [Patch v4 2/5] Power: reset: add bindings for keystone reset driver
+Date: Wed, 21 May 2014 18:07:40 +0200
+Message-ID: <13696681.6eGQ96hCX4@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <537CCE5A.7030909@ti.com>
+References: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com> <5023955.Vhmhn25HgF@wuerfel> <537CCE5A.7030909@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140521153357.GW23991@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QFj/8Y4R4dGuiVn8gJLwyRcgor5kwQ6Spv9M3QRN/dr
+ J3GeLvausA0ol8/oBeMSQCjy7UxDDrmLrDJaRCW+UfTYU5Y5sP
+ cNNr2DBqRxfHMXFhk2Rlc18ZgTUJECqpwNjTUrwcS6ltzjqa6z
+ LdRDK1t8wV4uix03eHkSP+D+Ls8Vg66Eo8PjSkXJlguL80tRKW
+ 5l5+gB0GLcnpAFqINtfYmYcazPxc6vkyyOVSWrFDNpw+/dLO06
+ anD5kN8AuiEZzzp3HCiogW6n56tr9lGRojqWt/XGuQHuZj8HUl
+ R4cCR4d8Say0JxYCKJq5j/K0dwuhFYZpYfXyo9sSNcVbvfGhGY
+ SJ9thGPhqW6NiHku9yZQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 04:33:57PM +0100, Mel Gorman wrote:
-> > > +__prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait,
-> > > +			struct page *page, int state, bool exclusive)
-> > >  {
-> > >  	unsigned long flags;
-> > >  
-> > > +	if (page && !PageWaiters(page))
-> > > +		SetPageWaiters(page);
-> > > +	if (list_empty(&wait->task_list)) {
-> > > +		if (exclusive) {
-> > > +			wait->flags |= WQ_FLAG_EXCLUSIVE;
-> > > +			__add_wait_queue_tail(q, wait);
-> > > +		} else {
-> > 
-> > I'm fairly sure we've just initialized the wait thing to 0, so clearing
-> > the bit would be superfluous.
-> > 
+On Wednesday 21 May 2014 19:03:38 Ivan Khoronzhuk wrote:
 > 
-> I assume you mean the clearing of WQ_FLAG_EXCLUSIVE. It may or may not be
-> superflous. If it's an on-stack wait_queue_t initialised with DEFINE_WAIT()
-> then it's redundant. If it's a wait_queue_t that is being reused and
-> sometimes used for exclusive waits and other times for non-exclusive
-> waits then it's required. The API allows this to happen so I see no harm
-> is clearing the flag like the old code did. Am I missing your point?
-
-Yeah, I'm not aware of any other users except the on-stack kind, but
-you're right.
-
-Maybe we should stick an object_is_on_stack() test in there to see if
-anything falls out, something for a rainy afternoon perhaps..
-
-> > > +void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, int bit)
-> > > +{
-> > > +	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
-> > > +	unsigned long flags;
-> > > +
-> > > +	spin_lock_irqsave(&wqh->lock, flags);
-> > > +	if (waitqueue_active(wqh))
-> > > +		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
-> > > +	else
-> > > +		ClearPageWaiters(page);
-> > > +	spin_unlock_irqrestore(&wqh->lock, flags);
-> > > +}
-> > 
-> > Seeing how word is always going to be &page->flags, might it make sense
-> > to remove that argument?
-> > 
+> I've slightly confused where should I add these bindings.
+> The main pll controller mostly used by clk driver....
+> As its register set is used also by reset driver it's logically to put 
+> it to bindings/mfd,
+> but pll controller in mfd it's strange....
 > 
-> The wait_queue was defined on-stack with DEFINE_WAIT_BIT which uses
-> wake_bit_function() as a wakeup function and that thing consumes both the
-> page->flags and the bit number it's interested in. This is used for both
-> PG_writeback and PG_locked so assumptions cannot really be made about
-> the value.
+> Could you please help to decide where should it be?.
 
-Well, both PG_flags come from the same &page->flags word, right? But
-yeah, if we ever decide to grow the page frame with another flags word
-we'd be in trouble :-)
+Put it into Documentation/devicetree/bindings/clock/keystone-pll.txt
 
-In any case I don't feel too strongly about either of these points.
+	Arnd
