@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524AbaEUJKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:10:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49927 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaEUJKv (ORCPT
+	id S1751616AbaEUJMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:12:34 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:35253 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbaEUJMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:10:51 -0400
-Message-ID: <537C6D95.4040803@gmail.com>
-Date: Wed, 21 May 2014 17:10:45 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 21 May 2014 05:12:32 -0400
+Date: Wed, 21 May 2014 10:12:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patrice.chotard@st.com, kernel@stlinux.com
+Subject: Re: [PATCH 3/3] ARM: sti: stih41x: Provide a proper header for this
+ DTSI file
+Message-ID: <20140521091227.GA6679@lee--X1>
+References: <1400660415-14720-1-git-send-email-lee.jones@linaro.org>
+ <1400660415-14720-3-git-send-email-lee.jones@linaro.org>
+ <537C64A6.4050409@st.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFtQQVRDSF0gYXJjaC91bmljb3JlMzIva2VybmU=?=
- =?UTF-8?B?bC9zZXR1cC5jOiBhZGQgZ2VuZXJpYyAnc2NyZWVuX2luZm8nIHRvIGF2b2lkIGM=?=
- =?UTF-8?B?b21waWxpbmcgZmFpbHVyZQ==?=
-References: <902561559.40766.1400659266944.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <902561559.40766.1400659266944.JavaMail.root@bj-mail03.pku.edu.cn>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <537C64A6.4050409@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 05/21/2014 04:01 PM, 管雪涛 wrote:
+> >Also explicitly include STiH416 Clk bindings instead of relying on
+> >inheriting them from other DTSI files which we happen to include.
+> >
+> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >---
+> >  arch/arm/boot/dts/stih41x.dtsi | 8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> >
+> >diff --git a/arch/arm/boot/dts/stih41x.dtsi b/arch/arm/boot/dts/stih41x.dtsi
+> >index f5b9898..32730e5 100644
+> >--- a/arch/arm/boot/dts/stih41x.dtsi
+> >+++ b/arch/arm/boot/dts/stih41x.dtsi
+> >@@ -1,3 +1,11 @@
+> >+/*
+> >+ * Copyright (C) 2014 STMicroelectronics Limited.
+> >+ *
+> >+ * This program is free software; you can redistribute it and/or modify
+> >+ * it under the terms of the GNU General Public License version 2 as
+> >+ * publishhed by the Free Software Foundation.
+> >+ */
+> >+#include "stih416-clock.dtsi"
 > 
-> ----- Chen Gang <gang.chen.5i5j@gmail.com> 写道：
->> Add generic 'screen_info' just like another architectures have done
->> (e.g. tile, sh, score, ia64, hexagon, and cris).
->>
->> The related error (with allmodconfig under unicore32):
->>
->>     LD      init/built-in.o
->>   drivers/built-in.o: In function `vgacon_save_screen':
->>   powercap_sys.c:(.text+0x21788): undefined reference to `screen_info'
->>   drivers/built-in.o: In function `vgacon_resize':
->>   powercap_sys.c:(.text+0x21b54): undefined reference to `screen_info'
->>   drivers/built-in.o: In function `vgacon_switch':
->>   powercap_sys.c:(.text+0x21cb4): undefined reference to `screen_info'
->>   drivers/built-in.o: In function `vgacon_init':
->>   powercap_sys.c:(.text+0x2296c): undefined reference to `screen_info'
->>   drivers/built-in.o: In function `vgacon_startup':
->>   powercap_sys.c:(.text+0x22e80): undefined reference to `screen_info'
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  arch/unicore32/kernel/setup.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/arch/unicore32/kernel/setup.c b/arch/unicore32/kernel/setup.c
->> index 87adbf5..94bc4bc 100644
->> --- a/arch/unicore32/kernel/setup.c
->> +++ b/arch/unicore32/kernel/setup.c
->> @@ -53,6 +53,8 @@ struct stack {
->>  
->>  static struct stack stacks[NR_CPUS];
->>  
->> +struct screen_info screen_info;
->> +
-> 
-> could be as following if it's only used by vga console:
-> 
-> +#ifdef CONFIG_VGA_CONSOLE
-> +struct screen_info screen_info;
-> +#endif
-> 
+> Nack.
+> As discussed on IRC, this dtsi file is included by stih415.dtsi.
+> In this case, we want to include stih415-clocks.dtsi instead.
 
-Yeah, I shall send patch v2 for it (within this week). And also thank
-you for your review the other patches.
++1 resubmitted.
 
-BTW: I guess, it only leaves 2 kernel related issues for allmodconfig:
+> >  / {
+> >  	#address-cells = <1>;
+> >  	#size-cells = <1>;
+> >
 
- - one for 'find_first*', 'cpuc_coherent_kern_range' and 'pm_power_off'.
-   I guess, we can export their symbol explicitly to fix this issue.
-
- - the other for additional 'clk_*' which are needed when HAVE_CLK.
-   I guess, just "copy/past" the other platforms' implementation is OK.
-
-The related errors:
-
-  ERROR: "clk_round_rate" [sound/spi/snd-at73c213.ko] undefined!
-  ERROR: "clk_set_parent" [sound/soc/jz4740/snd-soc-jz4740-i2s.ko] undefined!
-  ERROR: "clk_round_rate" [sound/soc/fsl/snd-soc-fsl-ssi.ko] undefined!
-  ERROR: "clk_round_rate" [sound/soc/fsl/snd-soc-fsl-spdif.ko] undefined!
-  ERROR: "find_first_bit" [sound/soc/codecs/snd-soc-uda1380.ko] undefined!
-  ERROR: "find_first_zero_bit" [net/sctp/sctp.ko] undefined!
-  ERROR: "find_first_bit" [net/phonet/phonet.ko] undefined!
-  ERROR: "find_first_zero_bit" [net/nfc/nfc.ko] undefined!
-  ERROR: "find_first_zero_bit" [net/netfilter/nf_tables.ko] undefined!
-  ERROR: "find_first_bit" [net/mac80211/mac80211.ko] undefined!
-  ERROR: "find_first_zero_bit" [net/bridge/bridge.ko] undefined!
-  ERROR: "find_first_bit" [net/bridge/bridge.ko] undefined!
-  ERROR: "find_first_zero_bit" [fs/reiserfs/reiserfs.ko] undefined!
-  ERROR: "find_first_bit" [fs/ocfs2/ocfs2.ko] undefined!
-  ERROR: "find_first_zero_bit" [fs/ocfs2/cluster/ocfs2_nodemanager.ko] undefined!
-  ERROR: "find_first_bit" [fs/ocfs2/cluster/ocfs2_nodemanager.ko] undefined!
-  ERROR: "find_first_zero_bit" [fs/nfs/nfsv4.ko] undefined!
-  ERROR: "find_first_zero_bit" [fs/minix/minix.ko] undefined!
-  ERROR: "find_first_bit" [fs/hfsplus/hfsplus.ko] undefined!
-  ERROR: "find_first_zero_bit" [fs/gfs2/gfs2.ko] undefined!
-  ERROR: "find_first_zero_bit" [fs/bfs/bfs.ko] undefined!
-  ERROR: "find_first_zero_bit" [drivers/uwb/uwb.ko] undefined!
-  ...
-
-Thanks.
 -- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
