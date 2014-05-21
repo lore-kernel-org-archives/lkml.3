@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430AbaEUB1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 21:27:39 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20989 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751288AbaEUB1g (ORCPT
+	id S1751517AbaEUBav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 21:30:51 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:62179 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaEUBat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 21:27:36 -0400
+	Tue, 20 May 2014 21:30:49 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 96.249.243.124
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+zdsSL11lwCwfjBiLkQArSJPAD8qTjrm8=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 194E357B85D
-Date: Tue, 20 May 2014 21:27:16 -0400
+X-MHO-User: U2FsdGVkX18NPPAoZbdwhLW+TBdUDG+R1eNc3+m3Wwc=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 3209F57B8D3
+Date: Tue, 20 May 2014 21:30:27 -0400
 From: Jason Cooper <jason@lakedaemon.net>
 To: Florian Fainelli <f.fainelli@gmail.com>
 Cc: arm@kernel.org, Brian Norris <computersforpeace@gmail.com>,
@@ -26,275 +26,58 @@ Cc: arm@kernel.org, Brian Norris <computersforpeace@gmail.com>,
         "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
         open list <linux-kernel@vger.kernel.org>,
         linux-arm-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 1/2] irqchip: add Broadcom Set Top Box Level-2
- interrupt controller
-Message-ID: <20140521012716.GC8664@titan.lakedaemon.net>
+Subject: Re: [PATCH RESEND 2/2] Documentation: add Broadcom STB Level-2
+ interrupt controller binding
+Message-ID: <20140521013027.GD8664@titan.lakedaemon.net>
 References: <1400613229-19049-1-git-send-email-f.fainelli@gmail.com>
- <1400613229-19049-2-git-send-email-f.fainelli@gmail.com>
+ <1400613229-19049-3-git-send-email-f.fainelli@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400613229-19049-2-git-send-email-f.fainelli@gmail.com>
+In-Reply-To: <1400613229-19049-3-git-send-email-f.fainelli@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Florian,
-
-On Tue, May 20, 2014 at 12:13:48PM -0700, Florian Fainelli wrote:
-> This patch adds support for the Level-2 interrupt controller hardware
-> found in Broadcom Set Top Box System-on-a-Chip devices. This interrupt
-> controller is implemented using the generic IRQ chip driver with
-> separate enable and disable registers.
+On Tue, May 20, 2014 at 12:13:49PM -0700, Florian Fainelli wrote:
+> This patch adds the Device Tree binding document for the Broadcom
+> Set-top-box Level 2 interrupt controller hardware.
 > 
 > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 > Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 > ---
->  drivers/irqchip/Kconfig          |   6 ++
->  drivers/irqchip/Makefile         |   1 +
->  drivers/irqchip/irq-brcmstb-l2.c | 200 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 207 insertions(+)
->  create mode 100644 drivers/irqchip/irq-brcmstb-l2.c
+>  .../bindings/interrupt-controller/brcm,l2-intc.txt | 29 ++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
 > 
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index d770f7406631..bbb746e35500 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -30,6 +30,12 @@ config ARM_VIC_NR
->  	  The maximum number of VICs available in the system, for
->  	  power management.
->  
-> +config BRCMSTB_L2_IRQ
-> +	bool
-> +	depends on ARM
-> +	select GENERIC_IRQ_CHIP
-> +	select IRQ_DOMAIN
-> +
->  config DW_APB_ICTL
->  	bool
->  	select IRQ_DOMAIN
-> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-> index f180f8d5fb7b..62a13e5ef98f 100644
-> --- a/drivers/irqchip/Makefile
-> +++ b/drivers/irqchip/Makefile
-> @@ -29,3 +29,4 @@ obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
->  obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
->  obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
->  obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
-> +obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
-> diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
 > new file mode 100644
-> index 000000000000..336f0ae5591a
+> index 000000000000..448273a30a11
 > --- /dev/null
-> +++ b/drivers/irqchip/irq-brcmstb-l2.c
-> @@ -0,0 +1,200 @@
-> +/*
-> + * Generic Broadcom Set Top Box Level 2 Interrupt controller driver
-> + *
-> + * Copyright (C) 2014 Broadcom Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> + * GNU General Public License for more details.
-> + */
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
+> @@ -0,0 +1,29 @@
+> +Broadcom Generic Level 2 Interrupt Controller
 > +
-> +#define pr_fmt(fmt)	KBUILD_MODNAME	": " fmt
+> +Required properties:
 > +
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/of.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/io.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/irqchip.h>
-> +#include <linux/irqchip/chained_irq.h>
+> +- compatible: should be "brcm,l2-intc"
+> +- reg: specifies the base physical address and size of the registers
+> +- interrupt-controller: identifies the node as an interrupt controller
+> +- #interrupt-cells: specifies the number of cells needed to encode an
+> +  interrupt source. Should be 1.
+> +- interrupt-parent: specifies the phandle to the parent interrupt controller
+> +  this controller is cacaded from
+> +- interrupts: specifies the interrupt line in the interrupt-parent irq space
+> +  to be used for cascading
 > +
-> +#include <asm/mach/irq.h>
+> +Optional properties:
 > +
-> +#include "irqchip.h"
-> +
-> +/* Register offsets in the L2 interrupt controller */
-> +#define CPU_STATUS	0x00
-> +#define CPU_SET		0x04
-> +#define CPU_CLEAR	0x08
-> +#define CPU_MASK_STATUS	0x0c
-> +#define CPU_MASK_SET	0x10
-> +#define CPU_MASK_CLEAR	0x14
-> +
-> +/* L2 intc private data structure */
-> +struct brcmstb_l2_intc_data {
-> +	int parent_irq;
-> +	void __iomem *base;
-> +	struct irq_domain *domain;
-> +	bool can_wake;
-> +	u32 saved_mask; /* for suspend/resume */
-> +};
-> +
-> +static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
-> +{
-> +	struct brcmstb_l2_intc_data *b = irq_desc_get_handler_data(desc);
-> +	struct irq_chip *chip = irq_get_chip(irq);
-> +	u32 status;
-> +
-> +	chained_irq_enter(chip, desc);
-> +
-> +	status = __raw_readl(b->base + CPU_STATUS) &
-> +		~(__raw_readl(b->base + CPU_MASK_STATUS));
-> +
-> +	if (status == 0) {
-> +		do_bad_IRQ(irq, desc);
-> +		goto out;
-> +	}
-> +
-> +	do {
-> +		irq = ffs(status) - 1;
-> +		/* ack at our level */
-> +		__raw_writel(1 << irq, b->base + CPU_CLEAR);
-> +		status &= ~(1 << irq);
-> +		generic_handle_irq(irq_find_mapping(b->domain, irq));
-> +	} while (status);
-> +out:
-> +	chained_irq_exit(chip, desc);
-> +}
-> +
-> +static void brcmstb_l2_intc_suspend(struct irq_data *d)
-> +{
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> +	struct brcmstb_l2_intc_data *b = gc->private;
-> +
-> +	irq_gc_lock(gc);
-> +	/* Save the current mask */
-> +	b->saved_mask = __raw_readl(b->base + CPU_MASK_STATUS);
-> +
-> +	if (b->can_wake) {
-> +		/* Program the wakeup mask */
-> +		__raw_writel(~gc->wake_active, b->base + CPU_MASK_SET);
-> +		__raw_writel(gc->wake_active, b->base + CPU_MASK_CLEAR);
-> +	}
-> +	irq_gc_unlock(gc);
-> +}
-> +
-> +static void brcmstb_l2_intc_resume(struct irq_data *d)
-> +{
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> +	struct brcmstb_l2_intc_data *b = gc->private;
-> +
-> +	irq_gc_lock(gc);
-> +	/* Clear unmasked non-wakeup interrupts */
-> +	__raw_writel(~b->saved_mask & ~gc->wake_active, b->base + CPU_CLEAR);
-> +
-> +	/* Restore the saved mask */
-> +	__raw_writel(b->saved_mask, b->base + CPU_MASK_SET);
-> +	__raw_writel(~b->saved_mask, b->base + CPU_MASK_CLEAR);
-> +	irq_gc_unlock(gc);
-> +}
-> +
-> +int __init brcmstb_l2_intc_of_init(struct device_node *np,
-> +					struct device_node *parent)
-> +{
-> +	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-> +	struct brcmstb_l2_intc_data *data;
-> +	struct irq_chip_generic *gc;
-> +	struct irq_chip_type *ct;
-> +	int ret;
-> +
-> +	data = kzalloc(sizeof(*data), GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	data->base = of_iomap(np, 0);
-> +	if (!data->base) {
-> +		pr_err("failed to remap intc L2 registers\n");
-> +		return -ENOMEM;
-> +	}
+> +- brcm,irq-can-wake: If present, this means the L2 controller can be used as a
+> +  wakeup source for system suspend/resume.
 
-You're mixing error handling techniques here.  Please choose one or the
-other.  If you choose goto's, you need to jump to free(data), below.
-
-> +
-> +	/* Disable all interrupts by default */
-> +	__raw_writel(0xffffffff, data->base + CPU_MASK_SET);
-> +	__raw_writel(0xffffffff, data->base + CPU_CLEAR);
-> +
-> +	data->parent_irq = irq_of_parse_and_map(np, 0);
-> +	if (data->parent_irq < 0) {
-> +		pr_err("failed to find parent interrupt\n");
-> +		ret = data->parent_irq;
-> +		goto out_unmap;
-> +	}
-> +
-> +	data->domain = irq_domain_add_linear(np, 32,
-> +				&irq_generic_chip_ops, NULL);
-> +	if (!data->domain) {
-> +		ret = -ENOMEM;
-> +		goto out_unmap;
-> +	}
-> +
-> +	/* Allocate a single Generic IRQ chip for this node */
-> +	ret = irq_alloc_domain_generic_chips(data->domain, 32, 1,
-> +				np->full_name, handle_level_irq, clr, 0, 0);
-> +	if (ret) {
-> +		pr_err("failed to allocate generic irq chip\n");
-> +		goto out_free_domain;
-> +	}
-> +
-> +	/* Set the IRQ chaining logic */
-> +	irq_set_handler_data(data->parent_irq, data);
-> +	irq_set_chained_handler(data->parent_irq, brcmstb_l2_intc_irq_handle);
-> +
-> +	gc = irq_get_domain_generic_chip(data->domain, 0);
-> +	gc->reg_base = data->base;
-> +	gc->private = data;
-> +	ct = gc->chip_types;
-> +
-> +	ct->chip.irq_ack = irq_gc_ack_set_bit;
-> +	ct->regs.ack = CPU_CLEAR;
-> +
-> +	ct->chip.irq_mask = irq_gc_mask_disable_reg;
-> +	ct->regs.disable = CPU_MASK_SET;
-> +
-> +	ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
-> +	ct->regs.enable = CPU_MASK_CLEAR;
-> +
-> +	ct->chip.irq_suspend = brcmstb_l2_intc_suspend;
-> +	ct->chip.irq_resume = brcmstb_l2_intc_resume;
-> +
-> +	if (of_property_read_bool(np, "brcm,irq-can-wake")) {
-> +		data->can_wake = true;
-> +		/* This IRQ chip can wake the system, set all child interrupts
-> +		 * in wake_enabled mask
-> +		 */
-> +		gc->wake_enabled = 0xffffffff;
-> +		ct->chip.irq_set_wake = irq_gc_set_wake;
-> +	}
-> +
-> +	pr_info("registered L2 intc (mem: 0x%p, parent irq: %d)\n",
-> +			data->base, data->parent_irq);
-> +
-> +	return 0;
-> +
-> +out_free_domain:
-> +	irq_domain_remove(data->domain);
-> +out_unmap:
-> +	iounmap(data->base);
-
-out_free_data:
-> +	kfree(data);
-> +	return ret;
-> +}
-> +IRQCHIP_DECLARE(brcmstb_l2_intc, "brcm,l2-intc", brcmstb_l2_intc_of_init);
+Do we need a vendor-specific property here?  I'd much prefer to see a
+generic implementation.
 
 thx,
 
