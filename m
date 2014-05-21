@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaEUWwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:52:35 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62637 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753255AbaEUWwe (ORCPT
+	id S1753443AbaEUWwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:52:41 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:55048 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255AbaEUWwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:52:34 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Bd4ZRbscL0G1eYUJifogP
-Date: Wed, 21 May 2014 15:52:26 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: FanWu <fwu@marvell.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Chao Xie <cxie4@marvell.com>,
-        Yilu Mao <ylmao@marvell.com>, Ning Jiang <njiang1@marvell.com>,
-        Xiaofan Tian <tianxf@marvell.com>, Fangsuo Wu <fswu@marvell.com>
-Subject: Re: [PATCH] pinctrl: add params in disable_setting for different
- usage
-Message-ID: <20140521225226.GE14520@atomide.com>
-References: <1400032874-3423-1-git-send-email-fwu@marvell.com>
- <CACRpkdaTX_SyWXrpysaJGLee+SnLPxdQQkvE-5Xy+OmHCcseVw@mail.gmail.com>
- <53766CA7.8000507@wwwdotorg.org>
- <53797279.1010109@marvell.com>
- <537A6FB5.80905@wwwdotorg.org>
- <537AC661.7010400@marvell.com>
- <537BA20A.3080109@wwwdotorg.org>
- <537C4605.2090203@marvell.com>
+	Wed, 21 May 2014 18:52:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537C4605.2090203@marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140521224816.GP25130@pd.tnic>
+References: <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
+ <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
+ <20140521214845.GG25130@pd.tnic> <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
+ <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
+ <CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3281198D@ORSMSX114.amr.corp.intel.com>
+ <CALCETrXxEAwJ33bF7FeRLeCbE7BfMn==OsFsoorW_NWFLxwuew@mail.gmail.com> <20140521224816.GP25130@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 21 May 2014 15:52:16 -0700
+Message-ID: <CALCETrV+8_p5bkeK7zQZ8r8Cq182eYdUNmh72y_vH_4SND-irw@mail.gmail.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* FanWu <fwu@marvell.com> [140520 23:23]:
-> To remove the HW disable function in pinmux_disable_setting is no effect for
-> our SoC platform. I am just not sure whether it has effect for other
-> platform just as I described before.
-> If there is no vendor using the HW disabling operation, I also agree to
-> remove this. :)
-> 
-> Could you please give your suggestion about this topic ?
+On Wed, May 21, 2014 at 3:48 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, May 21, 2014 at 03:39:11PM -0700, Andy Lutomirski wrote:
+>> But if we get a new MCE in here, it will be an MCE from kernel context
+>> and it's fatal. So, yes, we'll clobber the stack, but we'll never
+>> return (unless tolerant is set to something insane), so who cares?
+>
+> Ok, but we still have to do the work before returning to the process. So
+> if not mce_notify_process() how else are you suggesting we do this?
 
-I agree with Stephen that we should remove the disable as at least
-for the SoCs that I've dealt with there is no disable setting. The
-closest I can think of is the safe mode that some omaps have, but
-that too is just one mode. And disabling input logic can be done
-separately from the mux mode typically.
+I'm suggesting that you re-enable interrupts and do the work in
+do_machine_check.  I think it'll just work.  It might pay to set a
+flag so that you panic very loudly if do_machine_check recurses.
 
-Regards,
+I suspect that, if the hardware is generating machine checks while
+doing memory poisoning, the hardware is broken enough that even
+panicking might not work, though :)
 
-Tony
+--Andy
