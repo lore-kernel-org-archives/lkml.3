@@ -1,248 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaEUCl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 22:41:26 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58293 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaEUClZ (ORCPT
+	id S1751612AbaEUCn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 22:43:27 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53713 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaEUCn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 22:41:25 -0400
-Message-ID: <537C1252.3090900@gmail.com>
-Date: Tue, 20 May 2014 19:41:22 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 20 May 2014 22:43:26 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <537C12BC.6080408@jp.fujitsu.com>
+Date: Wed, 21 May 2014 11:43:08 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        David Daney <david.daney@cavium.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Subject: Re: [PATCH 2/3] of: Make of_find_node_by_path() handle /aliases
-References: <1399993115-21552-1-git-send-email-grant.likely@linaro.org> <1399993115-21552-3-git-send-email-grant.likely@linaro.org> <53757D25.1060005@gmail.com> <20140516105444.C1DB7C42277@trevor.secretlab.ca> <20140518092730.109AAC40B8A@trevor.secretlab.ca>
-In-Reply-To: <20140518092730.109AAC40B8A@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chen Yucong <slaoub@gmail.com>
+CC: tony.luck@intel.com, bp@alien8.de, ak@linux.intel.com,
+        ying.huang@intel.com, linux-kernel@vger.kernel.org,
+        linux-edac@vger.kernel.org
+Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
+ to Per-CPU rather than only monarch CPU
+References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>	 <537C040E.3040901@jp.fujitsu.com> <1400637782.14703.32.camel@debian>
+In-Reply-To: <1400637782.14703.32.camel@debian>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/18/2014 2:27 AM, Grant Likely wrote:
-
-> On Fri, 16 May 2014 11:54:44 +0100, Grant Likely <grant.likely@linaro.org> wrote:
-
->> On Thu, 15 May 2014 19:51:17 -0700, Frank Rowand <frowand.list@gmail.com> wrote:
-
->>> On 5/13/2014 7:58 AM, Grant Likely wrote:
-
->>>> Make of_find_node_by_path() handle aliases as prefixes. To make this
-
->>>> work the name search is refactored to search by path component instead
-
->>>> of by full string. This should be a more efficient search, and it makes
-
->>>> it possible to start a search at a subnode of a tree.
-
->>>>
-
->>>> Signed-off-by: David Daney <david.daney@cavium.com>
-
->>>> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-
->>>> [grant.likely: Rework to not require allocating at runtime]
-
->>>> Acked-by: Rob Herring <robh@kernel.org>
-
->>>> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-
->>>> ---
-
->>>>  drivers/of/base.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++----
-
->>>>  1 file changed, 56 insertions(+), 4 deletions(-)
-
->>>>
-
->>>> diff --git a/drivers/of/base.c b/drivers/of/base.c
-
->>>> index 6e240698353b..60089b9a3014 100644
-
->>>> --- a/drivers/of/base.c
-
->>>> +++ b/drivers/of/base.c
-
->>>> @@ -771,9 +771,38 @@ struct device_node *of_get_child_by_name(const struct device_node *node,
-
->>>>  }
-
->>>>  EXPORT_SYMBOL(of_get_child_by_name);
-
->>>>  
-
->>>> +static struct device_node *__of_find_node_by_path(struct device_node *parent,
-
->>>> +						const char *path)
-
->>>> +{
-
->>>> +	struct device_node *child;
-
->>>> +	int len = strchrnul(path, '/') - path;
-
->>>> +
-
->>>> +	if (!len)
-
->>>> +		return parent;
-
->>>
-
->>> (!len) is true if the the final character of the path passed into of_find_node_by_path()
-
->>> was "/".  Strictly speaking, ->full_name will never end with "/", so the return value
-
->>> should be NULL, indicating that the match fails.
-
+(2014/05/21 11:03), Chen Yucong wrote:
+> On Wed, 2014-05-21 at 10:40 +0900, Hidetoshi Seto wrote:
+>> (2014/05/20 11:11), Chen Yucong wrote:
+>>> mces_seen is a Per-CPU variable which should only be accessed by Per-CPU as possible. So the
+>>> clear operation of mces_seen should also be lcoal to Per-CPU rather than monarch CPU.
 >>
-
->> Ah, good catch. I should add a test case for that.
-
-> 
-
-> In my testing this looks okay. The while loop that calls into
-
-> __of_find_node_by_path() looks like this:
-
-> 
-
-> 	while (np && *path == '/') {
-
-> 		path++; /* Increment past '/' delimiter */
-
-> 		np = __of_find_node_by_path(np, path);
-
-> 		path = strchrnul(path, '/');
-
-> 	}
-
-> 
-
-> If the path ends with a '/', then the loop will go around one more time.
-
-> The pointer will be incremented to point at the null character and len
-
-> will be null because strchrnul() will point at the last item.
-
-
-
-Yes, that was my point.  The old version of of_find_node_by_path() would not
-
-find a match if the path ended with a "/" (unless the full path was "/").
-
-This patch series changes the behavior to be a match.
-
-
-I will reply to this email with an additional patch that restores the
-
-original behavior.
-
-
-If you move the additional test cases you provide below and the test cases
-
-in patch 3 to the beginning of the series, you can see the before and after
-
-behavior of adding patch 1 and patch 2.
-
-
-> 
-
-> I've added a couple of test cases to make sure it works correctly:
-
-> 
-
-> diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-
-> index a9d00e8c17ea..10900b18fc06 100644
-
-> --- a/drivers/of/selftest.c
-
-> +++ b/drivers/of/selftest.c
-
-> @@ -40,6 +40,12 @@ static void __init of_selftest_find_node_by_name(void)
-
->  	 	"find /testcase-data failed\n");
-
->  	of_node_put(np);
-
->  
-
-> +	/* Test if trailing '/' works */
-
-> +	np = of_find_node_by_path("/testcase-data/");
-
-> +	selftest(np && !strcmp("/testcase-data", np->full_name),
-
-> +	 	"find /testcase-data/ failed\n");
-
-> +	of_node_put(np);
-
-> +
-
->  	np = of_find_node_by_path("/testcase-data/phandle-tests/consumer-a");
-
->  	selftest(np && !strcmp("/testcase-data/phandle-tests/consumer-a", np->full_name),
-
->  	 	"find /testcase-data/phandle-tests/consumer-a failed\n");
-
-> @@ -50,6 +56,12 @@ static void __init of_selftest_find_node_by_name(void)
-
->  	 	"find testcase-alias failed\n");
-
->  	of_node_put(np);
-
->  
-
-> +	/* Test if trailing '/' works on aliases */
-
-> +	np = of_find_node_by_path("testcase-alias/");
-
-> +	selftest(np && !strcmp("/testcase-data", np->full_name),
-
-> +	 	"find testcase-alias/ failed\n");
-
-> +	of_node_put(np);
-
-> +
-
->  	np = of_find_node_by_path("testcase-alias/phandle-tests/consumer-a");
-
->  	selftest(np && !strcmp("/testcase-data/phandle-tests/consumer-a", np->full_name),
-
->  	 	"find testcase-alias/phandle-tests/consumer-a failed\n");
-
-> 
-
-> g.
-
-> 
-
-> 
-
+>> I don't think it should be local.
+>> Originally what we want to have here is memory to save mces_seen for each online cpus,
+>> such as a global array like mces_seen[cpus]. But at same time we don't want to preallocate
+>> big array enough for max possible cpus. So we use per-cpu store instead. 
 >>
+> But mces_seen will just be updated by Per-CPU rather than monarch CPU.
+> It is only read by monarch CPU.
 
->>>
+Because mce status registers are per-cpu and monarch cannot access subjects' registers
+directly, all subjects read it's status for monarch, store the status to memory for monarch,
+and then monarch gather all status to make decision for all.
 
->>>> +
+At last monarch kindly clear gathered status for all.
+It will be one of important steps to ready for next mce events.
 
->>>> +	for_each_child_of_node(parent, child) {
-
->>>> +		const char *name = strrchr(child->full_name, '/');
-
->>>> +		if (WARN(!name, "malformed device_node %s\n", child->full_name))
-
->>>> +			continue;
-
->>>> +		name++;
+I think you should clarify why "distributing the clear operation" is required here.
+What is the benefit?
 
 
-< snip >
+Thanks,
+H.Seto
 
