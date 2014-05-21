@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaEUKth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 06:49:37 -0400
-Received: from sauhun.de ([89.238.76.85]:47044 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbaEUKtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 06:49:36 -0400
-Date: Wed, 21 May 2014 12:49:30 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Baruch Siach <baruch@tkos.co.il>,
-        Wan ZongShun <mcuos.com@gmail.org>, linux-kernel@vger.kernel.org,
-        Marek Vasut <marek.vasut@gmail.com>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c/nuc900: fix ancient build error
-Message-ID: <20140521104929.GP2708@katana>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-11-git-send-email-arnd@arndb.de>
- <20140514162725.GG12911@katana>
- <4944869.eRrWyMmW4d@wuerfel>
- <20140514191749.GA25709@katana>
+	id S1752246AbaEUKuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 06:50:21 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:44915 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaEUKuU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 06:50:20 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TRkqPRiqIDKgfg/F"
-Content-Disposition: inline
-In-Reply-To: <20140514191749.GA25709@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397587118-1214-3-git-send-email-dh.herrmann@gmail.com>
+References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com>
+	<1397587118-1214-3-git-send-email-dh.herrmann@gmail.com>
+Date: Wed, 21 May 2014 14:50:19 +0400
+Message-ID: <CALYGNiM5dVhW9rp8Xpbu=DpENobUtRpRNTteJXbg1s99_STNiw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] shm: add memfd_create() syscall
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        =?UTF-8?Q?Kristian_H=C3=B8gsberg?= <krh@bitplanet.net>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 15, 2014 at 10:38 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
+> that you can pass to mmap(). It can support sealing and avoids any
+> connection to user-visible mount-points. Thus, it's not subject to quotas
+> on mounted file-systems, but can be used like malloc()'ed memory, but
+> with a file-descriptor to it.
+>
+> memfd_create() does not create a front-FD, but instead returns the raw
+> shmem file, so calls like ftruncate() can be used. Also calls like fstat()
+> will return proper information and mark the file as regular file. If you
+> want sealing, you can specify MFD_ALLOW_SEALING. Otherwise, sealing is not
+> support (like on all other regular files).
+>
+> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
+> subject to quotas and alike.
+>
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+> ---
 
---TRkqPRiqIDKgfg/F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+<cut>
 
-On Wed, May 14, 2014 at 09:17:49PM +0200, Wolfram Sang wrote:
->=20
-> > For the moment, I'd leave this up to Wan ZongShun. He has in the past
-> > at least replied to emails about the platform, even though there hasn't
-> > been any new development.
->=20
-> Agreed. Let's wait for his response. If there is none, I'll think about
-> removing the driver.
->=20
+> +++ b/include/linux/syscalls.h
+> @@ -802,6 +802,7 @@ asmlinkage long sys_timerfd_settime(int ufd, int flags,
+>  asmlinkage long sys_timerfd_gettime(int ufd, struct itimerspec __user *otmr);
+>  asmlinkage long sys_eventfd(unsigned int count);
+>  asmlinkage long sys_eventfd2(unsigned int count, int flags);
+> +asmlinkage long sys_memfd_create(const char *uname_ptr, u64 size, u64 flags);
 
-Wan ZongShun, final call before this driver gets removed next week.
+Is it right to use u64 here? I think arguments sould be 'loff_t' and 'int'.
 
-
---TRkqPRiqIDKgfg/F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfIS5AAoJEBQN5MwUoCm2wasQAInDYBvfhxgwh6mjTeBXbuWw
-2yEoa7vFMQjN4mPQ3mBGaXF7ub1ZsoBrBG9waGhA4d2VP5GF3A9efji1aqvw49m/
-+3tvQqie0yh56M6AISKKY9UNsqzqW9tb7tox6W1VP86KY2OFvDtZMU+RgwZURVV3
-UTqo4lx6rT+Xr/yjOyWT/f7imCZI8pkhJR1sSQIHNUHcMrRieZBQRoURtTydj1Zl
-NsgWWSfbSBAqSIKFTcT7ylPpK9b3/7NVINDQnpLxsadJQZ3GxVWpGsfKur3jFmy0
-Q2/NsYqBXnSZW8ptmAKb+Os1qsaVk07ljZlg2z0G7LbJPlMCfraHradCgAZKojUc
-RHknkXoZqofqhbDDjOTnAuXznmxhVgXoE9Tvfh7RaUSmpy4Vb5CjEM3hsISrfPY+
-Ulv0KDPKZzp2kM5jFh3UwZOEF11FwijtF09Ldt57r/Wv33NaxPpJNrwRGDYcWvLB
-vQPTlFxvVFRE5mnHUoYX91WdaeduGVfaNOcck4N/Z0zyVlsACpqzNFlk3dh2SfHm
-6YbNkuEFzLsDAhXVojGiSvcHLxQhpPtBZbPWwK6vpPoI4FpYqyuW0p9cLFP2stYu
-ta4wbMPkkePT8J1ftL2weBwqpFxCKgZk+FxZiy9iViGBWqZlGQbEuaXY7fSrqFuO
-/SHYjl4r6rbX7sLK027G
-=B0sq
------END PGP SIGNATURE-----
-
---TRkqPRiqIDKgfg/F--
+>  asmlinkage long sys_fallocate(int fd, int mode, loff_t offset, loff_t len);
+>  asmlinkage long sys_old_readdir(unsigned int, struct old_linux_dirent __user *, unsigned int);
+>  asmlinkage long sys_pselect6(int, fd_set __user *, fd_set __user *,
