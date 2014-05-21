@@ -1,141 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaEUOB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:01:56 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:60400 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaEUOBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:01:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Dave Martin <Dave.Martin@arm.com>, linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        iommu@lists.linux-foundation.org, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Date: Wed, 21 May 2014 16:01:41 +0200
-Message-ID: <4994892.2gk6QRjAPD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140521105034.GA2014@ulmo>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com> <5371868.4QO1YJ0hU2@wuerfel> <20140521105034.GA2014@ulmo>
+	id S1752385AbaEUOCT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 10:02:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4788 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349AbaEUOCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 10:02:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,880,1392192000"; 
+   d="scan'208";a="535464342"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC 2/2] perf: add AUX area to ring buffer for raw data streams
+In-Reply-To: <20140520095102.GV2485@laptop.programming.kicks-ass.net>
+References: <1400166510-9234-1-git-send-email-alexander.shishkin@linux.intel.com> <1400166510-9234-3-git-send-email-alexander.shishkin@linux.intel.com> <20140519085854.GW30445@twins.programming.kicks-ass.net> <87bnuuylha.fsf@ashishki-desk.ger.corp.intel.com> <20140520095102.GV2485@laptop.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 21 May 2014 17:02:10 +0300
+Message-ID: <8761kzz0v1.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:U78BR3FLfkNjyxJUthcMef1XQR4xl2KgySiDSY9YtJ/
- NvbBpBpA3uNnujcEJhiDhcYqOgL7b/GlpzRN4OTz0FsfdeXT6Q
- 6EVGWRXgVeB7Qg7N1zqFTeYfWulX5+YQgZs75Qa9bGtbzvEK6w
- Ll1tTsOh+1+JvB8uc47ZA6K1N9alP2NxK8UkepmwBi92YwqGBn
- EKpbGm2oChk1UVffc+j8uLLZvtqRNpWr4DWc8iKr7enC9XEAn6
- 50427bs1MLuGDxFcZvLmfOqSUpFesg2XMqin00Hx44BMLw0mKs
- N9bB1ur9RfxJU7c/eEQnx+K570B1xGb1IxsAYOQbdDw7fD9uCq
- fhXphnuf5OEkowC1DZtM=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 May 2014 12:50:38 Thierry Reding wrote:
-> On Wed, May 21, 2014 at 11:36:32AM +0200, Arnd Bergmann wrote:
-> > On Wednesday 21 May 2014 11:00:38 Thierry Reding wrote:
-> > > On Wed, May 21, 2014 at 10:50:38AM +0200, Arnd Bergmann wrote:
-> > > > On Wednesday 21 May 2014 10:26:11 Thierry Reding wrote:
-> > 
-> > > > > > > For determining dma masks, it is the output address that it
-> > > > > > > important.  Santosh's code can probably be taught to handle this,
-> > > > > > > if given an additional traversal rule for following "iommus"
-> > > > > > > properties.  However, deploying an IOMMU whose output address size
-> > > > > > > is smaller than the 
-> > > > > > 
-> > > > > > Something seems to be missing here. I don't think we want to handle
-> > > > > > the case where the IOMMU output cannot the entire memory address
-> > > > > > space. If necessary, that would mean using both an IOMMU driver
-> > > > > > and swiotlb, but I think it's a reasonable assumption that hardware
-> > > > > > isn't /that/ crazy.
-> > > > > 
-> > > > > Similarily, should the IOMMU not be treated like any other device here?
-> > > > > Its DMA mask should determine what address range it can access.
-> > > > 
-> > > > Right. But for that we need a dma-ranges property in the parent of the
-> > > > iommu, just so the mask can be set correctly and we don't have to
-> > > > rely on the 32-bit fallback case.
-> > > 
-> > > Shouldn't the IOMMU driver be the one to set the DMA mask for the device
-> > > in exactly the same way that other drivers override the 32-bit default?
-> > 
-> > The IOMMU driver could /ask/ for an appropriate mask based on its internal
-> > design, but if you have an IOMMU with a 64-bit output address connected
-> > to a 32-bit bus, that should fail.
-> 
-> Are there real use-cases where that really happens? I guess if we need
-> that the correct thing would be to bitwise AND both the DMA mask of the
-> IOMMU device (as set by the driver) with that derived from the IOMMU's
-> parent bus' dma-ranges property.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-It would be unusual for an IOMMU to need this, but it's how the DMA
-mask is supposed to work for normal devices. As mentioned before, I
-would probably just error out if we ever encounter such an IOMMU.
+> On Mon, May 19, 2014 at 03:57:37PM +0300, Alexander Shishkin wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>
+>> > I'm not entirely thrilled to expose it to the PMU like this.. I realize
+>> > you want this in order to get physically contiguous pages.
+>> 
+>> Hmm, I guess we can have code in perf core to carry out the allocation
+>> according to, say, contstraint flags and pass the page array down to the
+>> PMU if that sounds like a cleaner thing to do?
+>> 
+>> > Are you aware of allocation constraints for other architectures?
+>> 
+>> Somewhat. ARM's trace memory controller supports both scatter-gather and
+>> a plain contiguous buffer, I haven't found evidence of one being
+>> available while the other one isn't, so I'm inclined to assume that if
+>> it can write to system memory, it supports SG.
+>
+> I've just added a patch from Vince Weaver:
+>
+>   http://lkml.kernel.org/r/alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu
+>
+> That adds pmu::capabilities, I suppose we could start with something
+> like:
+>
+>   PERF_PMU_CAP_AUX_BROKEN_SG
+>
+> which would make the allocator attempt to fill the AUX buffer with as
+> big a chunks of contiguous memory as is available.
 
-> > Note that it's not obvious what the IOMMU's DMA mask actually means.
-> > It clearly has to be the mask that is used for allocating the IO page
-> > tables, but it wouldn't normally be used in the path that allocates
-> > pages on behalf of a DMA master attached to the IOMMU, because that
-> > allocation is performed by the code that looks at the other device's
-> > dma mask.
-> 
-> Interesting. If a DMA buffer is allocated using the master's DMA mask
-> wouldn't that cause breakage if the IOMMU and master's DMA masks don't
-> match. It seems to me like the right thing to do for buffer allocation
-> is to use the IOMMU's DMA mask if a device uses the IOMMU for
-> translation and use the device's DMA mask when determining to what I/O
-> virtual address to map that buffer.
+Ok, how about this (on top of the previous patch):
 
-Unfortunately not all code agrees regarding how dma mask is actually
-interpreted. The most important use is within the dma_map_ops, and
-that is aware of the IOMMU. The dma_map_ops use that to decide what
-IOVA (bus address) to generate that is usable for the device, normally
-this would be a 32-bit range.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 9643450..e2a6b6b 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -278,15 +278,15 @@ struct pmu {
+ 	void (*flush_branch_stack)	(void);
+ 
+ 	/*
+-	 * Allocate AUX space buffer: return an array of @nr_pages pages to be
+-	 * mapped to userspace that will also be passed to ->free_aux.
++	 * Set up pmu-private data structures for an AUX area
+ 	 */
+-	void *(*alloc_aux)		(int cpu, int nr_pages, bool overwrite,
++	void *(*setup_aux)		(int cpu, void **pages,
++					 int nr_pages, bool overwrite,
+ 					 struct perf_event_mmap_page *user_page);
+ 					/* optional */
+ 
+ 	/*
+-	 * Free AUX buffer
++	 * Free pmu-private AUX data structures
+ 	 */
+ 	void (*free_aux)		(void *aux); /* optional */
+ 
+@@ -300,6 +300,7 @@ struct pmu {
+  * struct pmu::capabilities flags
+  */
+ #define PERF_PMU_CAP_NO_INTERRUPT	1
++#define PERF_PMU_CAP_AUX_BROKEN_SG	2
+ 
+ /**
+  * enum perf_event_active_state - the states of a event
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index ea51cfb..a06d7fe 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -41,6 +41,7 @@ struct ring_buffer {
+ 	atomic_t			aux_mmap_count;
+ 	unsigned long			aux_mmap_locked;
+ 	void				**aux_pages;
++	void				*aux_priv;
+ 	void				(*free_aux)(void *aux);
+ 
+ 	struct perf_event_mmap_page	*user_page;
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 5935cb2..7f166f2 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -244,32 +244,96 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
+ 	spin_lock_init(&rb->event_lock);
+ }
+ 
++#define PERF_AUX_GFP	(GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY)
++
++static struct page *rb_alloc_aux_page(int node, int order)
++{
++	struct page *page;
++
++	if (order > MAX_ORDER)
++		order = MAX_ORDER;
++
++	do {
++		page = alloc_pages_node(node, PERF_AUX_GFP, order);
++	} while (!page && order--);
++
++	if (page && order) {
++		/*
++		 * Communicate the allocation size to the driver
++		 */
++		split_page(page, order);
++		SetPagePrivate(page);
++		set_page_private(page, order);
++	}
++
++	return page;
++}
++
++static void rb_free_aux_page(struct ring_buffer *rb, int idx)
++{
++	struct page *page = virt_to_page(rb->aux_pages[idx]);
++
++	ClearPagePrivate(page);
++	page->mapping = NULL;
++	__free_page(page);
++}
++
+ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 		 pgoff_t pgoff, int nr_pages, int flags)
+ {
+ 	bool overwrite = !!(flags & RING_BUFFER_WRITABLE);
++	int pg, node = (event->cpu == -1) ? -1 : cpu_to_node(event->cpu);
++	int order = 0;
+ 
+-	if (!event->pmu->alloc_aux)
++	if (!event->pmu->setup_aux)
+ 		return -ENOTSUPP;
+ 
+-	rb->aux_pages = event->pmu->alloc_aux(event->cpu, nr_pages, overwrite,
+-					      rb->user_page);
++	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_BROKEN_SG)
++		order = get_order(nr_pages * PAGE_SIZE);
++
++	rb->aux_pages = kzalloc_node(nr_pages * sizeof(void *), GFP_KERNEL, node);
+ 	if (!rb->aux_pages)
+ 		return -ENOMEM;
+ 
++	for (pg = 0; pg < nr_pages;) {
++		struct page *page;
++		int last;
++
++		page = rb_alloc_aux_page(node, order);
++		if (!page)
++			goto err;
++
++		for (last = pg + (1 << page_private(page)); pg < last; pg++)
++			rb->aux_pages[pg] = page_address(page++);
++	}
++
++	rb->aux_priv = event->pmu->setup_aux(event->cpu, rb->aux_pages, nr_pages,
++					     overwrite, rb->user_page);
++	if (!rb->aux_priv) {
++		rb_free_aux(rb);
++		return -EINVAL;
++	}
++
+ 	rb->free_aux = event->pmu->free_aux;
+ 	rb->aux_pgoff = pgoff;
+ 	rb->aux_nr_pages = nr_pages;
+ 
+ 	return 0;
++err:
++	for (; pg >= 0; pg--)
++		rb_free_aux_page(rb, pg);
++
++	return -ENOMEM;
+ }
+ 
+ void rb_free_aux(struct ring_buffer *rb)
+ {
+-	if (WARN_ON_ONCE(!rb->free_aux))
+-		return;
++	int pg;
++
++	for (pg = 0; pg < rb->aux_nr_pages; pg++)
++		rb_free_aux_page(rb, pg);
+ 
+-	rb->free_aux(rb->aux_pages);
++	rb->free_aux(rb->aux_priv);
+ 	rb->aux_nr_pages = 0;
+ }
+ 
+>> > That appears to be missing a is_power_of_2(aux_size) check.
+>> >
+>> > The problem with not having that is that since
+>> > perf_event_mmap_page::aux_{head,tail} are of Z mod 2^64 but your actual
+>> > {head,tail} are of Z mod aux_size, you need aux_size to be a full
+>> > divider of 2^64 or otherwise you get wrapping issues at the overflow.
+>> >
+>> > Having it them all 2^n makes the divider trivial.
+>> 
+>> I left it out so that the PMU callback could decide if it wants to do
+>> the math or not. Maybe it can also be a constraint flag or is it not
+>> worth it at all?
+>
+> I'd start with the most constrained model -- that is add the power of
+> two test -- and worry about relaxing it if it turns out its really
+> needed.
 
-When driver code looks at the dma mask of the device itself to make
-an allocation decision without taking the IOMMU or swiotlb into
-account, things can indeed go wrong.
+Makes sense, I'll put it back.
 
-Russell has recently done a good cleanup of various issues around
-dma masks, and I can't find any drivers that get this wrong.
-However, there is an issue with the two or three subsystems using
-"PCI_DMA_BUS_IS_PHYS" to decide how they should treat high buffers
-coming from user space that get passed to hardware.
-
-If the SCSI layer or the network layer find the horribly misnamed
-PCI_DMA_BUS_IS_PHYS (which is hardcoded to "1" on ARM32), they
-will create copy in low memory for any data that is above
-the device dma_mask (SCSI) or above max_low_pfn (network).
-
-This is not normally a bug, and won't hurt for the swiotlb case,
-but will give us worse performance for the IOMMU case, and
-we should probably change this code to calculate the boundary
-per device by calling a function from dma_map_ops.
-
-We also really need to implement swiotlb support on ARM32 to deal
-with any other device (besides SCSI and network) that does not
-have an IOMMU but wants to use the streaming DMA API on pages
-outside of the dma_mask. We already have this case on shmobile.
-
-> Obviously if we always assume that IOMMU hardware is sane and can always
-> access at least the whole memory then this isn't an issue. But what if a
-> device can do DMA to a 64-bit address space, but the IOMMU can only
-> address 32 bits. If the device's DMA mask is used for allocations, then
-> buffers could reside beyond the 4 GiB boundary that the IOMMU can
-> address, so effectively the IOMMU wouldn't be able to write to those
-> buffers.
-
-The mask of the device is not even an issue here, it's more the general
-case of passing a buffer outside of the IOMMU's upstream bus DMA mask
-into a driver connected to the IOMMU.
-
-	Arnd
+Regards,
+--
+Alex
