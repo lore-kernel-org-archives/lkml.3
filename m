@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaEUOaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:30:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33515 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076AbaEUO25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:28:57 -0400
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
-        <arnd@arndb.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <grant.likely@linaro.org>
-CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
-        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v4 3/5] ARM: keystone: remove redundant reset stuff
-Date: Wed, 21 May 2014 17:27:32 +0300
-Message-ID: <1400682454-24535-4-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com>
+	id S1752698AbaEUOb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 10:31:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38415 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaEUOb4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 10:31:56 -0400
+Message-ID: <537CB8DE.2050001@arm.com>
+Date: Wed, 21 May 2014 15:31:58 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
+        "nm@ti.com" <nm@ti.com>,
+        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>
+Subject: Re: [PATCH V2 5/7] cpufreq: imx6q: don't initialize opp table
+References: <cover.1400670427.git.viresh.kumar@linaro.org> <cc399206d57ef946d27a98203c6b0a247cd1b245.1400670427.git.viresh.kumar@linaro.org> <537CB328.6000400@arm.com> <20140521141622.GB27211@dragon>
+In-Reply-To: <20140521141622.GB27211@dragon>
+X-OriginalArrivalTime: 21 May 2014 14:31:53.0274 (UTC) FILETIME=[68EBE1A0:01CF7501]
+X-MC-Unique: 114052115315409701
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove reset stuff in flavour of using keystone reset driver:
-driver/power/reset/keystone-reset.c
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- arch/arm/mach-keystone/keystone.c | 34 ----------------------------------
- 1 file changed, 34 deletions(-)
 
-diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
-index 59b8383..1f9ae89 100644
---- a/arch/arm/mach-keystone/keystone.c
-+++ b/arch/arm/mach-keystone/keystone.c
-@@ -26,11 +26,6 @@
- 
- #include "keystone.h"
- 
--#define PLL_RESET_WRITE_KEY_MASK		0xffff0000
--#define PLL_RESET_WRITE_KEY			0x5a69
--#define PLL_RESET				BIT(16)
--
--static void __iomem *keystone_rstctrl;
- static struct notifier_block platform_nb;
- static unsigned long keystone_dma_pfn_offset __read_mostly;
- 
-@@ -55,16 +50,6 @@ static int keystone_platform_notifier(struct notifier_block *nb,
- 
- static void __init keystone_init(void)
- {
--	struct device_node *node;
--
--	node = of_find_compatible_node(NULL, NULL, "ti,keystone-reset");
--	if (WARN_ON(!node))
--		pr_warn("ti,keystone-reset node undefined\n");
--
--	keystone_rstctrl = of_iomap(node, 0);
--	if (WARN_ON(!keystone_rstctrl))
--		pr_warn("ti,keystone-reset iomap error\n");
--
- 	keystone_pm_runtime_init();
- 	if (platform_nb.notifier_call)
- 		bus_register_notifier(&platform_bus_type, &platform_nb);
-@@ -123,24 +108,6 @@ static const char *keystone_match[] __initconst = {
- 	NULL,
- };
- 
--void keystone_restart(enum reboot_mode mode, const char *cmd)
--{
--	u32 val;
--
--	BUG_ON(!keystone_rstctrl);
--
--	/* Enable write access to RSTCTRL */
--	val = readl(keystone_rstctrl);
--	val &= PLL_RESET_WRITE_KEY_MASK;
--	val |= PLL_RESET_WRITE_KEY;
--	writel(val, keystone_rstctrl);
--
--	/* Reset the SOC */
--	val = readl(keystone_rstctrl);
--	val &= ~PLL_RESET;
--	writel(val, keystone_rstctrl);
--}
--
- DT_MACHINE_START(KEYSTONE, "Keystone")
- #if defined(CONFIG_ZONE_DMA) && defined(CONFIG_ARM_LPAE)
- 	.dma_zone_size	= SZ_2G,
-@@ -148,6 +115,5 @@ DT_MACHINE_START(KEYSTONE, "Keystone")
- 	.smp		= smp_ops(keystone_smp_ops),
- 	.init_machine	= keystone_init,
- 	.dt_compat	= keystone_match,
--	.restart	= keystone_restart,
- 	.init_meminfo   = keystone_init_meminfo,
- MACHINE_END
--- 
-1.8.3.2
+On 21/05/14 15:16, Shawn Guo wrote:
+> On Wed, May 21, 2014 at 03:07:36PM +0100, Sudeep Holla wrote:
+>>> @@ -376,7 +356,7 @@ static void __init imx6q_init_late(void)
+>>>   		imx6q_cpuidle_init();
+>>>
+>>>   	if (IS_ENABLED(CONFIG_ARM_IMX6Q_CPUFREQ)) {
+>>> -		imx6q_opp_init();
+>>> +		imx6q_opp_check_speed_grading();
+>>
+>> [Query] Not exactly related to this patch, but asking it here to get clarified.
+>>
+>> This OPP limiting is done as part of late initcall and if the cpufreq driver is
+>> built in the kernel, there will be a small window where the OPPs not supported
+>> are still enabled ? Will that not be an issue if say performance governor is
+>> selected by default.
+>
+> Even if cpufreq driver is built in the kernel, it won't be probed until
+> platform_device_register(&imx6q_cpufreq_pdev) is called.  And we make
+> this call only after the OPP limiting.
+>
+
+Ah right, I missed that. Thanks for clarifying.
+
+Regards,
+Sudeep
 
