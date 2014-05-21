@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597AbaEUVvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:51:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39821 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565AbaEUVvT (ORCPT
+	id S1753386AbaEUVxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:53:17 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:65526 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaEUVxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:51:19 -0400
+	Wed, 21 May 2014 17:53:15 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:fd1f:c4dc:b681:cd4a:92c0]
-In-Reply-To: <20140521214255.GL3582@piout.net>
-References: <1400059162-630-1-git-send-email-nicolas.ferre@atmel.com>
-	<20140520055041.GO18956@quad.lixom.net>
-	<537B727C.5080404@atmel.com>
-	<20140520164746.GA601@quad.lixom.net>
-	<537C7D25.6060705@atmel.com>
-	<20140521211105.GD24341@quad.lixom.net>
-	<20140521214255.GL3582@piout.net>
-Date: Wed, 21 May 2014 14:51:18 -0700
-Message-ID: <CAOesGMgwW+zY-yyozEiCED+hryxBWPX7soqt78z0MBz1w-AVqw@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: DT for 3.16 #2
-From: Olof Johansson <olof@lixom.net>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
+In-Reply-To: <20140521214845.GG25130@pd.tnic>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+ <1400639227.9759.21.camel@pippen.local.home> <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
+ <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz> <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
+ <20140521163315.GJ21205@pd.tnic> <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
+ <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com> <20140521214845.GG25130@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 21 May 2014 14:52:55 -0700
+Message-ID: <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Tony Luck <tony.luck@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 2:42 PM, Alexandre Belloni
-<alexandre.belloni@free-electrons.com> wrote:
-> Hi,
->
-> On 21/05/2014 at 14:11:05 -0700, Olof Johansson wrote :
->> > This directory is flat, the board names are chosen by companies and
->> > people that we do not control, a user tend to like finding his preferred
->> > board dtb file unchanged from a kernel revision to another...
->> > Well all this lead me to think that we don't have to loose too much time
->> > thinking about a new strict convention for this file naming or changing
->> > all this once again just for the sake of it.
->> >
->> > Other SoC maintainers beautifully designed from the beginning the naming
->> > scheme of their DT files, fine. AT91 did not and forgive me but when
->> > opening arch/arm/boot/dts/Makefile file and seeing some file names, I'm
->> > not ashamed. Moreover, now that I said to everybody since 3.10 to prefix
->> > their *board* name with "at91-", I have to say something else, I don't
->> > think it is worth it.
+On Wed, May 21, 2014 at 2:48 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, May 21, 2014 at 02:35:59PM -0700, Andy Lutomirski wrote:
+>> If RIPV is set but we interrupted *kernel* code, SIGBUS doesn't seem
+>> like the right solution anyway.
 >>
->> I don't agree with everything above, but it's not worth arguing for the
->> sake of arguing. :) I think we can tweak what you're doing now and get
->> things to work well by merging new dts files with at91-<soc>-board.dts
->> as the name. As mentioned, don't worry about the existing files. This
->> shouldn't be a significiant change to what you've been telling people
->> since 3.10 to cause much confusion.
->>
+>> Are there any machine check exceptions for which it makes sense to
+>> continue right where we left off without a signal?  Is CMIC such a
+>> beast?  Can CMIC be delivered when interrupts are off?
 >
-> I'm not sure we should keep the at91 prefix. The sama5d3 series is not
-> at91.
-
-*headdesk* It's part of mach-at91. For all intents and purposes, the label fits.
-
-> I would suggest using <soc>-<vendor>-<board> in the future, like what is
-> done for mvebu, berlin and some omap3 and freescale boards. I would
-> however make an exception for the evaluation kits and keep the current
-> "<soc>ek" name (else we would get sama5d3-atmel-sama5d3ek).
-
-Nack on this as a hard rule. As long as there's a vendor or (large
-family) SoC prefix I don't care about the rest of the structure.
-Really, let's not waste time on it at this time.
-
-> I also got confused by the at91- prefix when looking for a few dts files
-> but I think it is too late to rename now or maybe we could do it all at
-> once for a long term release (provided we know which one it will be).
+> I think you mean CMCI and that's not even reported with a MCE exception
+> - there's a separate APIC interrupt for that.
 >
-> For reference, the list of files that would need renaming:
-> animeo_ip.dts
-> at91-ariag25.dts
-> at91-cosino.dtsi
-> at91-cosino_mega2560.dts
-> at91-foxg20.dts
-> at91-qil_a9260.dts
-> ethernut5.dts
-> ge863-pro3.dtsi
-> kizbox.dts
-> mpa1600.dts
-> pm9g45.dts
-> tny_a9260.dts
-> tny_a9263.dts
-> tny_a9g20.dts
-> usb_a9260.dts
-> usb_a9263.dts
-> usb_a9g20_common.dtsi
-> aks-cdu.dts
-> evk-pro3.dts
-> at91-sama5d3_xplained.dts
+> I think this signal thing is for killing processes which have poisoned
+> memory but this memory can contained within that process and the
+> physical page frame can be poisoned so that it doesn't get used ever
+> again. In any case, this is an example for an uncorrectable error which
+> needs action from us but doesn't necessarily have to kill the whole
+> machine.
+>
+> This is supposed to be more graceful instead of consuming the corrupted
+> data and sending it out to disk.
+>
+> But sending signals from #MC context is definitely a bad idea. I think
+> we had addressed this with irq_work at some point but my memory is very
+> hazy.
 
-The DTS name is somewhat irritating in that installers and other
-environments (my own tester included) rely on file names. There's been
-a bunch of discussion about this in the past, but at the end of the
-day, you end up irritating people when you rename the resulting dtbs.
+Why is it a problem if user_mode_vm(regs)?  Conversely, why is sending
+a signal a remotely reasonable thing to do if !user_mode_vm(regs)?
 
-As long as we don't keep adding random names beyond those, we should be OK.
-
-
--Olof
+--Andy
