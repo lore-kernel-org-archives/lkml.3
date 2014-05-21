@@ -1,298 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaEUIVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:21:21 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62248 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaEUIVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:21:16 -0400
+	id S1751943AbaEUIXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:23:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33795 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972AbaEUIXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 04:23:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
+   d="scan'208";a="535326349"
+Message-ID: <537C6262.5030500@intel.com>
+Date: Wed, 21 May 2014 16:22:58 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1400639194-3743-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1400639194-3743-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1400639194-3743-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Wed, 21 May 2014 12:21:15 +0400
-Message-ID: <CALYGNiPKiKAyZm0miM1LCvMRMeNCz=zg6ToR1ZhJ-eQ0c_treg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] radix-tree: add end_index to support ranged iteration
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>
+To: Kui Zhang <kuizhang@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: rmmod thermal, unable to handle kernel NULL pointer dereference
+References: <CAKx2Y1mzLesGFYz30fH8xCZTkvNGPUNYkHptYLYq_hVExoh_8g@mail.gmail.com>
+In-Reply-To: <CAKx2Y1mzLesGFYz30fH8xCZTkvNGPUNYkHptYLYq_hVExoh_8g@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 6:26 AM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> It's useful if we can run only over a specific index range of radix trees,
-> which this patch does. This patch changes only radix_tree_for_each_slot()
-> and radix_tree_for_each_tagged(), because we need it only for them for now.
+On 05/21/2014 01:57 PM, Kui Zhang wrote:
+> Hello,
+> 
+> I get following error when rmmod thermal.
+> 
+> rmmod  thermal
+> Killed
 
-NAK, I don't see how this is usefull. Main users don't need this.
-Barely used argument don't makes complicated macro easier.
-radix_tree_next_slot() is perfomance-critical. I'm not sure that
-compiler can throw out
-your checks if the end is -1, since it stored in structure which is
-passed into function.
+Thanks for the report. Here is a fix patch that should solve this
+problem.
 
-Just write something like this where needed.
+From: Aaron Lu <aaron.lu@intel.com>
+Date: Wed, 21 May 2014 16:00:42 +0800
+Subject: [PATCH] ACPI / thermal: fix workqueue destroy order
 
-radix_tree_for_each_slot(..) {
-   if (iter.index > end)
-      goto out;
-   <...>
-   if (iter.index == end)
-      goto out;
-}
-out:
+When the thermal module is to be removed, we should destroy the wq
+acpi_thermal_pm_queue after the ACPI driver's remove callback is
+executed as we will need to flush the workqueue there, or a NULL pointer
+access will be hit.
 
-Probably this migh be hidden in a macro as well.
-There is simple way to abort iterating: set next_index to zero and
-break inner loop.
+Reported-by: Kui Zhang <kuizhang@gmail.com>
+Reference: http://www.spinics.net/lists/kernel/msg1747251.html
+Cc: All applicable <stable@vger.kernel.org>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+---
+ drivers/acpi/thermal.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
-> ChangeLog:
-> - rebased onto v3.15-rc5, which has e a few new caller of radix_tree_for_each_slot(),
->   so apply this change them too.
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  drivers/gpu/drm/qxl/qxl_ttm.c |  2 +-
->  include/linux/radix-tree.h    | 27 ++++++++++++++++++++-------
->  kernel/irq/irqdomain.c        |  2 +-
->  lib/radix-tree.c              |  8 ++++----
->  mm/filemap.c                  |  8 ++++----
->  5 files changed, 30 insertions(+), 17 deletions(-)
->
-> diff --git v3.15-rc5.orig/drivers/gpu/drm/qxl/qxl_ttm.c v3.15-rc5/drivers/gpu/drm/qxl/qxl_ttm.c
-> index d52c27527b9a..d807e66fe308 100644
-> --- v3.15-rc5.orig/drivers/gpu/drm/qxl/qxl_ttm.c
-> +++ v3.15-rc5/drivers/gpu/drm/qxl/qxl_ttm.c
-> @@ -398,7 +398,7 @@ static int qxl_sync_obj_wait(void *sync_obj,
->                 struct radix_tree_iter iter;
->                 int release_id;
->
-> -               radix_tree_for_each_slot(slot, &qfence->tree, &iter, 0) {
-> +               radix_tree_for_each_slot(slot, &qfence->tree, &iter, 0, ~0UL) {
->                         struct qxl_release *release;
->
->                         release_id = iter.index;
-> diff --git v3.15-rc5.orig/include/linux/radix-tree.h v3.15-rc5/include/linux/radix-tree.h
-> index 33170dbd9db4..88258c34371f 100644
-> --- v3.15-rc5.orig/include/linux/radix-tree.h
-> +++ v3.15-rc5/include/linux/radix-tree.h
-> @@ -312,6 +312,7 @@ static inline void radix_tree_preload_end(void)
->   * @index:     index of current slot
->   * @next_index:        next-to-last index for this chunk
->   * @tags:      bit-mask for tag-iterating
-> + * @end_index:  last index to be scanned
->   *
->   * This radix tree iterator works in terms of "chunks" of slots.  A chunk is a
->   * subinterval of slots contained within one radix tree leaf node.  It is
-> @@ -324,6 +325,7 @@ struct radix_tree_iter {
->         unsigned long   index;
->         unsigned long   next_index;
->         unsigned long   tags;
-> +       unsigned long   end_index;
->  };
->
->  #define RADIX_TREE_ITER_TAG_MASK       0x00FF  /* tag index in lower byte */
-> @@ -335,10 +337,12 @@ struct radix_tree_iter {
->   *
->   * @iter:      pointer to iterator state
->   * @start:     iteration starting index
-> + * @end:       iteration ending index
->   * Returns:    NULL
->   */
->  static __always_inline void **
-> -radix_tree_iter_init(struct radix_tree_iter *iter, unsigned long start)
-> +radix_tree_iter_init(struct radix_tree_iter *iter, unsigned long start,
-> +                       unsigned long end)
->  {
->         /*
->          * Leave iter->tags uninitialized. radix_tree_next_chunk() will fill it
-> @@ -350,6 +354,7 @@ radix_tree_iter_init(struct radix_tree_iter *iter, unsigned long start)
->          */
->         iter->index = 0;
->         iter->next_index = start;
-> +       iter->end_index = end;
->         return NULL;
->  }
->
-> @@ -399,6 +404,8 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
->                 iter->tags >>= 1;
->                 if (likely(iter->tags & 1ul)) {
->                         iter->index++;
-> +                       if (iter->index > iter->end_index)
-> +                               return NULL;
->                         return slot + 1;
->                 }
->                 if (!(flags & RADIX_TREE_ITER_CONTIG) && likely(iter->tags)) {
-> @@ -406,6 +413,8 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
->
->                         iter->tags >>= offset;
->                         iter->index += offset + 1;
-> +                       if (iter->index > iter->end_index)
-> +                               return NULL;
->                         return slot + offset + 1;
->                 }
->         } else {
-> @@ -414,6 +423,8 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
->                 while (size--) {
->                         slot++;
->                         iter->index++;
-> +                       if (iter->index > iter->end_index)
-> +                               return NULL;
->                         if (likely(*slot))
->                                 return slot;
->                         if (flags & RADIX_TREE_ITER_CONTIG) {
-> @@ -438,7 +449,7 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
->   * Locks can be released and reacquired between iterations.
->   */
->  #define radix_tree_for_each_chunk(slot, root, iter, start, flags)      \
-> -       for (slot = radix_tree_iter_init(iter, start) ;                 \
-> +       for (slot = radix_tree_iter_init(iter, start, ~0UL) ;           \
->               (slot = radix_tree_next_chunk(root, iter, flags)) ;)
->
->  /**
-> @@ -461,11 +472,12 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
->   * @root:      the struct radix_tree_root pointer
->   * @iter:      the struct radix_tree_iter pointer
->   * @start:     iteration starting index
-> + * @end:       iteration ending index
->   *
->   * @slot points to radix tree slot, @iter->index contains its index.
->   */
-> -#define radix_tree_for_each_slot(slot, root, iter, start)              \
-> -       for (slot = radix_tree_iter_init(iter, start) ;                 \
-> +#define radix_tree_for_each_slot(slot, root, iter, start, end)         \
-> +       for (slot = radix_tree_iter_init(iter, start, end) ;            \
->              slot || (slot = radix_tree_next_chunk(root, iter, 0)) ;    \
->              slot = radix_tree_next_slot(slot, iter, 0))
->
-> @@ -480,7 +492,7 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
->   * @slot points to radix tree slot, @iter->index contains its index.
->   */
->  #define radix_tree_for_each_contig(slot, root, iter, start)            \
-> -       for (slot = radix_tree_iter_init(iter, start) ;                 \
-> +       for (slot = radix_tree_iter_init(iter, start, ~0UL) ;           \
->              slot || (slot = radix_tree_next_chunk(root, iter,          \
->                                 RADIX_TREE_ITER_CONTIG)) ;              \
->              slot = radix_tree_next_slot(slot, iter,                    \
-> @@ -493,12 +505,13 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
->   * @root:      the struct radix_tree_root pointer
->   * @iter:      the struct radix_tree_iter pointer
->   * @start:     iteration starting index
-> + * @end:       iteration ending index
->   * @tag:       tag index
->   *
->   * @slot points to radix tree slot, @iter->index contains its index.
->   */
-> -#define radix_tree_for_each_tagged(slot, root, iter, start, tag)       \
-> -       for (slot = radix_tree_iter_init(iter, start) ;                 \
-> +#define radix_tree_for_each_tagged(slot, root, iter, start, end, tag)  \
-> +       for (slot = radix_tree_iter_init(iter, start, end) ;            \
->              slot || (slot = radix_tree_next_chunk(root, iter,          \
->                               RADIX_TREE_ITER_TAGGED | tag)) ;          \
->              slot = radix_tree_next_slot(slot, iter,                    \
-> diff --git v3.15-rc5.orig/kernel/irq/irqdomain.c v3.15-rc5/kernel/irq/irqdomain.c
-> index f14033700c25..55fc49b412e1 100644
-> --- v3.15-rc5.orig/kernel/irq/irqdomain.c
-> +++ v3.15-rc5/kernel/irq/irqdomain.c
-> @@ -571,7 +571,7 @@ static int virq_debug_show(struct seq_file *m, void *private)
->         mutex_lock(&irq_domain_mutex);
->         list_for_each_entry(domain, &irq_domain_list, link) {
->                 int count = 0;
-> -               radix_tree_for_each_slot(slot, &domain->revmap_tree, &iter, 0)
-> +               radix_tree_for_each_slot(slot, &domain->revmap_tree, &iter, 0, ~0UL)
->                         count++;
->                 seq_printf(m, "%c%-16s  %6u  %10u  %10u  %s\n",
->                            domain == irq_default_domain ? '*' : ' ', domain->name,
-> diff --git v3.15-rc5.orig/lib/radix-tree.c v3.15-rc5/lib/radix-tree.c
-> index 9599aa72d7a0..531fba8a81db 100644
-> --- v3.15-rc5.orig/lib/radix-tree.c
-> +++ v3.15-rc5/lib/radix-tree.c
-> @@ -1007,7 +1007,7 @@ radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
->         if (unlikely(!max_items))
->                 return 0;
->
-> -       radix_tree_for_each_slot(slot, root, &iter, first_index) {
-> +       radix_tree_for_each_slot(slot, root, &iter, first_index, ~0UL) {
->                 results[ret] = indirect_to_ptr(rcu_dereference_raw(*slot));
->                 if (!results[ret])
->                         continue;
-> @@ -1049,7 +1049,7 @@ radix_tree_gang_lookup_slot(struct radix_tree_root *root,
->         if (unlikely(!max_items))
->                 return 0;
->
-> -       radix_tree_for_each_slot(slot, root, &iter, first_index) {
-> +       radix_tree_for_each_slot(slot, root, &iter, first_index, ~0UL) {
->                 results[ret] = slot;
->                 if (indices)
->                         indices[ret] = iter.index;
-> @@ -1086,7 +1086,7 @@ radix_tree_gang_lookup_tag(struct radix_tree_root *root, void **results,
->         if (unlikely(!max_items))
->                 return 0;
->
-> -       radix_tree_for_each_tagged(slot, root, &iter, first_index, tag) {
-> +       radix_tree_for_each_tagged(slot, root, &iter, first_index, ~0UL, tag) {
->                 results[ret] = indirect_to_ptr(rcu_dereference_raw(*slot));
->                 if (!results[ret])
->                         continue;
-> @@ -1123,7 +1123,7 @@ radix_tree_gang_lookup_tag_slot(struct radix_tree_root *root, void ***results,
->         if (unlikely(!max_items))
->                 return 0;
->
-> -       radix_tree_for_each_tagged(slot, root, &iter, first_index, tag) {
-> +       radix_tree_for_each_tagged(slot, root, &iter, first_index, ~0UL, tag) {
->                 results[ret] = slot;
->                 if (++ret == max_items)
->                         break;
-> diff --git v3.15-rc5.orig/mm/filemap.c v3.15-rc5/mm/filemap.c
-> index 000a220e2a41..d684e4cffe96 100644
-> --- v3.15-rc5.orig/mm/filemap.c
-> +++ v3.15-rc5/mm/filemap.c
-> @@ -1118,7 +1118,7 @@ unsigned find_get_entries(struct address_space *mapping,
->
->         rcu_read_lock();
->  restart:
-> -       radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
-> +       radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start, ~0UL) {
->                 struct page *page;
->  repeat:
->                 page = radix_tree_deref_slot(slot);
-> @@ -1180,7 +1180,7 @@ unsigned find_get_pages(struct address_space *mapping, pgoff_t start,
->
->         rcu_read_lock();
->  restart:
-> -       radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
-> +       radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start, ~0UL) {
->                 struct page *page;
->  repeat:
->                 page = radix_tree_deref_slot(slot);
-> @@ -1324,7 +1324,7 @@ unsigned find_get_pages_tag(struct address_space *mapping, pgoff_t *index,
->         rcu_read_lock();
->  restart:
->         radix_tree_for_each_tagged(slot, &mapping->page_tree,
-> -                                  &iter, *index, tag) {
-> +                                  &iter, *index, ~0UL, tag) {
->                 struct page *page;
->  repeat:
->                 page = radix_tree_deref_slot(slot);
-> @@ -2023,7 +2023,7 @@ void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
->         pte_t *pte;
->
->         rcu_read_lock();
-> -       radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, vmf->pgoff) {
-> +       radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, vmf->pgoff, ~0UL) {
->                 if (iter.index > vmf->max_pgoff)
->                         break;
->  repeat:
-> --
-> 1.9.0
->
+diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+index c1e31a41f949..25bbc55dca89 100644
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -1278,8 +1278,8 @@ static int __init acpi_thermal_init(void)
+ 
+ static void __exit acpi_thermal_exit(void)
+ {
+-	destroy_workqueue(acpi_thermal_pm_queue);
+ 	acpi_bus_unregister_driver(&acpi_thermal_driver);
++	destroy_workqueue(acpi_thermal_pm_queue);
+ 
+ 	return;
+ }
+-- 
+1.9.0
+
