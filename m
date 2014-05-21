@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaEUTeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:34:12 -0400
-Received: from mail.windriver.com ([147.11.1.11]:50744 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaEUTeL (ORCPT
+	id S1752897AbaEUTet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:34:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48255 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629AbaEUTes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:34:11 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] perf: delete unused variable tmp to fix new build warning
-Date: Wed, 21 May 2014 15:33:07 -0400
-Message-Id: <1400700787-11759-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.2.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 21 May 2014 15:34:48 -0400
+Date: Wed, 21 May 2014 12:34:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [PATCH] mm: /prom/pid/clear_refs: avoid split_huge_page()
+Message-Id: <20140521123446.ae45fa676cae27fffbd96cfd@linux-foundation.org>
+In-Reply-To: <1400699062-20123-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1400699062-20123-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 3a497f48637e2aac17eabb84a17f8ac5216028fc [tip:perf/core]
-("perf: Simplify perf_event_exit_task_context()") deleted the
-code that was using tmp but not the declaration of it, causing:
+On Wed, 21 May 2014 22:04:22 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
-kernel/events/core.c:7434:35: warning: unused variable ‘tmp’ [-Wunused-variable]
+> Currently we split all THP pages on any clear_refs request. It's not
+> necessary. We can handle this on PMD level.
+> 
+> One side effect is that soft dirty will potentially see more dirty
+> memory, since we will mark whole THP page dirty at once.
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- kernel/events/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This clashes pretty badly with
+http://ozlabs.org/~akpm/mmots/broken-out/clear_refs-redefine-callback-functions-for-page-table-walker.patch
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 49ac18c..244d70a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7432,7 +7432,7 @@ __perf_event_exit_task(struct perf_event *child_event,
- 
- static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
- {
--	struct perf_event *child_event, *tmp;
-+	struct perf_event *child_event;
- 	struct perf_event_context *child_ctx;
- 	unsigned long flags;
- 
--- 
-1.8.2.3
+> Sanity checked with CRIU test suite. More testing is required.
 
+Will you be doing that testing or was this a request for Cyrill & co to
+help?
+
+Perhaps this is post-3.15 material.
