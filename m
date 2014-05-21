@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaEULWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:22:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53419 "EHLO bear.ext.ti.com"
+	id S1752678AbaEULWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:22:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53430 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752531AbaEULW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:22:26 -0400
+	id S1752606AbaEULWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:22:34 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>, <computersforpeace@gmail.com>
 CC: <pekon@ti.com>, <ezequiel.garcia@free-electrons.com>,
@@ -14,9 +14,9 @@ CC: <pekon@ti.com>, <ezequiel.garcia@free-electrons.com>,
         <linux-omap@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 03/16] ARM: OMAP2+: gmpc: add gpmc_generic_init()
-Date: Wed, 21 May 2014 14:20:51 +0300
-Message-ID: <1400671264-10702-4-git-send-email-rogerq@ti.com>
+Subject: [RFC PATCH 15/16] mtd: nand: omap: Update DT binding documentation
+Date: Wed, 21 May 2014 14:21:03 +0300
+Message-ID: <1400671264-10702-16-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400671264-10702-1-git-send-email-rogerq@ti.com>
 References: <1400671264-10702-1-git-send-email-rogerq@ti.com>
@@ -26,118 +26,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function populates platform data for the specified Chip Select.
-It should be called by board init code.
+Add compatible id and other mandatory properties.
+Remove deprecated 'elm_id' property as it is no longer used.
+
+Update usage example.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/gpmc.c | 69 ++++++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/gpmc.h |  6 ++++
- 2 files changed, 75 insertions(+)
+ .../devicetree/bindings/mtd/gpmc-nand.txt          | 86 +++++++++++-----------
+ 1 file changed, 42 insertions(+), 44 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 9fe8c94..6b4a322 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -115,6 +115,8 @@
-  */
- #define	GPMC_NR_IRQ		2
+diff --git a/Documentation/devicetree/bindings/mtd/gpmc-nand.txt b/Documentation/devicetree/bindings/mtd/gpmc-nand.txt
+index 5e1f31b..49ef190 100644
+--- a/Documentation/devicetree/bindings/mtd/gpmc-nand.txt
++++ b/Documentation/devicetree/bindings/mtd/gpmc-nand.txt
+@@ -1,19 +1,22 @@
+-Device tree bindings for GPMC connected NANDs
++Device tree bindings for Texas Instruments GPMC connected NANDs
  
-+static struct gpmc_omap_platform_data gpmc_pdata;
-+
- struct gpmc_client_irq	{
- 	unsigned		irq;
- 	u32			bitmask;
-@@ -1787,6 +1789,73 @@ static int __init omap_gpmc_init(void)
- }
- omap_postcore_initcall(omap_gpmc_init);
+-GPMC connected NAND (found on OMAP boards) are represented as child nodes of
+-the GPMC controller with a name of "nand".
+-
+-All timing relevant properties as well as generic gpmc child properties are
+-explained in a separate documents - please refer to
+-Documentation/devicetree/bindings/bus/ti-gpmc.txt
++The TI GPMC NAND node is usually present as a child node of the GPMC controller
++node's Chip Select (CS) node. Documentation/devicetree/bindings/bus/ti-gpmc.txt
  
-+/**
-+ * gpmc_generic_init - Initialize platform data for a Chip Select
-+ *
-+ * @cs		chip select number
-+ * @type	GPMC_OMAP_TYPE
-+ * @settings	GPMC settings
-+ * @device_timings	device timings for device on this CS
-+ * @gpmc_timings	GPMC timings
-+ * @pdev	platform device for the device on this CS
-+ * @pdata_size	platform data size for the platform device
-+ */
-+int gpmc_generic_init(int cs, enum gpmc_omap_type type,
-+		      struct gpmc_settings *settings,
-+		      struct gpmc_device_timings *device_timings,
-+		      struct gpmc_timings *gpmc_timings,
-+		      struct platform_device *pdev, unsigned pdata_size)
-+{
-+	struct gpmc_settings *gpmc_s;
-+	struct gpmc_device_timings *gpmc_dev_t;
-+	struct gpmc_timings *gpmc_t;
+ For NAND specific properties such as ECC modes or bus width, please refer to
+ Documentation/devicetree/bindings/mtd/nand.txt
+ 
+-
+ Required properties:
+ 
+- - reg:		The CS line the peripheral is connected to
++ - compatible:		"ti,omap2-nand"
++ - reg:			Should contain 2 resource specifiers
++			- range, base offset and length of the NAND I/O space
++			The CS line the peripheral is connected to.
++			- range, base offset and length of the GPMC register
++			space.
++ - ti,nand-cs:		Chip select number used for the NAND device. Must match
++			the chip select used for the parent Chip Select node.
++ - interrupts:		Interrupt resource specifier for GPMC interrupt.
+ 
+ Optional properties:
+ 
+@@ -36,7 +39,6 @@ Optional properties:
+ 		"prefetch-dma"		Prefetch enabled sDMA mode
+ 		"prefetch-irq"		Prefetch enabled irq mode
+ 
+- - elm_id:	<deprecated> use "ti,elm-id" instead
+  - ti,elm-id:	Specifies phandle of the ELM devicetree node.
+ 		ELM is an on-chip hardware engine on TI SoC which is used for
+ 		locating ECC errors for BCHx algorithms. SoC devices which have
+@@ -48,45 +50,41 @@ For inline partiton table parsing (optional):
+  - #address-cells: should be set to 1
+  - #size-cells: should be set to 1
+ 
+-Example for an AM33xx board:
++Example for an OMAP3 board:
 +
-+	if (cs >= GPMC_CS_NUM) {
-+		pr_err("%s: Invalid cs specified. Max CS = %d\n",
-+		       __func__, GPMC_CS_NUM);
-+		return -EINVAL;
++gpmc {
++	...
++	ranges = <0 0 0x30000000 0x3FFFFFFF     /* I/O space */
++		  1 0 0x6e000000 0x02d4>;       /* register space */
++	...
+ 
+-	gpmc: gpmc@50000000 {
+-		compatible = "ti,am3352-gpmc";
+-		ti,hwmods = "gpmc";
+-		reg = <0x50000000 0x1000000>;
+-		interrupts = <100>;
+-		gpmc,num-cs = <8>;
+-		gpmc,num-waitpins = <2>;
+-		#address-cells = <2>;
+-		#size-cells = <1>;
+-		ranges = <0 0 0x08000000 0x2000>;	/* CS0: NAND */
+-		elm_id = <&elm>;
++	cs0 {	/* chip select 0 */
++		...
++		reg = <0 0 0x1000000>;  /* CS0 partition, 16 MB min */
++		ranges;
++		...
+ 
+ 		nand@0,0 {
+-			reg = <0 0 0>; /* CS0, offset 0 */
++			compatible = "ti,omap2-nand";
++			reg = <0 0 4            /* Nand I/O */
++			       1 0 0x2d4>;      /* GPMC registers */
++			interrupts = <20>;
++
++			ti,nand-cs = <0>;
+ 			nand-bus-width = <16>;
+-			ti,nand-ecc-opt = "bch8";
+-			ti,nand-xfer-type = "polled";
+-
+-			gpmc,sync-clk-ps = <0>;
+-			gpmc,cs-on-ns = <0>;
+-			gpmc,cs-rd-off-ns = <44>;
+-			gpmc,cs-wr-off-ns = <44>;
+-			gpmc,adv-on-ns = <6>;
+-			gpmc,adv-rd-off-ns = <34>;
+-			gpmc,adv-wr-off-ns = <44>;
+-			gpmc,we-off-ns = <40>;
+-			gpmc,oe-off-ns = <54>;
+-			gpmc,access-ns = <64>;
+-			gpmc,rd-cycle-ns = <82>;
+-			gpmc,wr-cycle-ns = <82>;
+-			gpmc,wr-access-ns = <40>;
+-			gpmc,wr-data-mux-bus-ns = <0>;
++			ti,nand-ecc-opt = "ham1";
+ 
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+ 
+-			/* partitions go here */
+-		};
+-	};
+-
++			partition@0 {
++				label = "X-Loader";
++				reg = <0 0x80000>;
++			};
++			partition@80000 {
++				label = "U-Boot";
++				reg = <0x80000 0x1e0000>;
++                        };
++		}
 +	}
-+
-+	if (gpmc_pdata.cs[cs].valid) {
-+		pr_err("%s: cs %d already requested, ignoring new request\n",
-+		       __func__, cs);
-+		return -EINVAL;
-+	}
-+
-+	if (settings) {
-+		gpmc_s = kmemdup(settings, sizeof(*settings), GFP_KERNEL);
-+		if (!gpmc_s)
-+			return -ENOMEM;
-+
-+		gpmc_pdata.cs[cs].settings = gpmc_s;
-+	}
-+
-+	if (device_timings) {
-+		gpmc_dev_t = kmemdup(device_timings, sizeof(*device_timings),
-+				     GFP_KERNEL);
-+		if (!gpmc_dev_t)
-+			return -ENOMEM;
-+
-+		gpmc_pdata.cs[cs].device_timings = gpmc_dev_t;
-+	}
-+
-+	if (gpmc_timings) {
-+		gpmc_t = kmemdup(gpmc_timings, sizeof(*gpmc_timings),
-+				 GFP_KERNEL);
-+		if (!gpmc_t)
-+			return -ENOMEM;
-+
-+		gpmc_pdata.cs[cs].gpmc_timings = gpmc_t;
-+	}
-+
-+	gpmc_pdata.cs[cs].type = type;
-+	gpmc_pdata.cs[cs].pdev = pdev;
-+	gpmc_pdata.cs[cs].pdata_size = pdata_size;
-+	gpmc_pdata.cs[cs].valid = true;
-+
-+	return 0;
 +}
-+
- static irqreturn_t gpmc_handle_irq(int irq, void *dev)
- {
- 	int i;
-diff --git a/arch/arm/mach-omap2/gpmc.h b/arch/arm/mach-omap2/gpmc.h
-index 681977f..c18b022 100644
---- a/arch/arm/mach-omap2/gpmc.h
-+++ b/arch/arm/mach-omap2/gpmc.h
-@@ -100,5 +100,11 @@ extern void omap3_gpmc_restore_context(void);
- extern int gpmc_configure(int cmd, int wval);
- extern void gpmc_read_settings_dt(struct device_node *np,
- 				  struct gpmc_settings *p);
-+extern int gpmc_generic_init(int cs, enum gpmc_omap_type type,
-+			     struct gpmc_settings *settings,
-+			     struct gpmc_device_timings *device_timings,
-+			     struct gpmc_timings *gpmc_timings,
-+			     struct platform_device *pdev,
-+			     unsigned pdata_size);
- 
- #endif
 -- 
 1.8.3.2
 
