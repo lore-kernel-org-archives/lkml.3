@@ -1,175 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaEUR0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 13:26:53 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:34431 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbaEUR0w (ORCPT
+	id S1752957AbaEUR1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 13:27:20 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35542 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447AbaEUR1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 13:26:52 -0400
-Date: Wed, 21 May 2014 19:24:33 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Cc: dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH v3 05/16] drm: sti: add HDA driver
-Message-ID: <20140521172429.GS2014@ulmo>
-References: <1400594186-8956-1-git-send-email-benjamin.gaignard@linaro.org>
- <1400594186-8956-6-git-send-email-benjamin.gaignard@linaro.org>
+	Wed, 21 May 2014 13:27:19 -0400
+Date: Wed, 21 May 2014 18:27:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, s-anna@ti.com,
+        loic.pallardy@st.com, lftan.linux@gmail.com, slapdau@yahoo.com.au,
+        courtney.cavin@sonymobile.com, robherring2@gmail.com, arnd@arndb.de,
+        joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
+        ks.giri@samsung.com, Jassi Brar <jaswinder.singh@linaro.org>
+Message-ID: <20140521172701.GV12304@sirena.org.uk>
+References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
+ <1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bk6L21jbBNK7V1Rv"
+	protocol="application/pgp-signature"; boundary="bnwoLX+t3cc59+J0"
 Content-Disposition: inline
-In-Reply-To: <1400594186-8956-6-git-send-email-benjamin.gaignard@linaro.org>
+In-Reply-To: <1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
+X-Cookie: You will be successful in your work.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Bk6L21jbBNK7V1Rv
+--bnwoLX+t3cc59+J0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, May 20, 2014 at 03:56:15PM +0200, Benjamin Gaignard wrote:
-> Add driver to support analog TV ouput.
+On Thu, May 15, 2014 at 11:41:00AM +0530, Jassi Brar wrote:
+> Introduce common framework for client/protocol drivers and
+> controller drivers of Inter-Processor-Communication (IPC).
 
-Unfortunate that this has the same abbreviation as High-Definition
-Audio...
+This looks pretty nice, though I do have a few *very* small nits beyond
+those Arnd had.
 
-> diff --git a/drivers/gpu/drm/sti/sti_hda.c b/drivers/gpu/drm/sti/sti_hda.c
-[...]
-> +/* Video DACs control */
-> +#define VIDEO_DACS_CONTROL_MASK         0x0FFF
-> +#define VIDEO_DACS_CONTROL_SYSCFG2535   0x085C /* for stih416 */
-> +#define DAC_CFG_HD_OFF_SHIFT            5
-> +#define DAC_CFG_HD_OFF_MASK             (0x7 << DAC_CFG_HD_OFF_SHIFT)
-> +#define VIDEO_DACS_CONTROL_SYSCFG5072   0x0120 /* for stih407 */
+> +	if (chan->cl->tx_block && chan->active_req) {
+> +		int ret;
+> +		init_completion(&chan->tx_complete);
 
-syscfg is starting to look more and more like it could be a syscon
-driver or some other specialized, platform-specific driver.
+reinit_completion().
 
-> +/* Index (in supported modes table) of the preferred video mode */
-> +#define HDA_PREF_MODE_IDX               0
+> +	if (!cl->tx_tout) /* wait for ever */
+> +		cl->tx_tout =3D msecs_to_jiffies(3600000);
+> +	else
+> +		cl->tx_tout =3D msecs_to_jiffies(cl->tx_tout);
 
-I don't think this symbolic name is particularly useful.
+Is the default wait for ever the best timeout - I'm not sure it's best
+=66rom a defensiveness point of view.  It should be fine either way,
+it's just a matter of taste.
 
-> +/* Reference to the hda device */
-> +struct device *hda_dev;
+> +	ret =3D chan->mbox->ops->startup(chan);
+> +	if (ret) {
+> +		pr_err("Unable to startup the chan\n");
 
-This shouldn't be needed.
+Perhaps print the error codes?  Might be helpful to users.
 
-> +static void sti_hda_configure_awg(struct sti_hda *hda, u32 *awg_instr, int nb)
-> +{
-> +	int i;
-
-unsigned
-
-> +/*
-> + * Get modes
-> + *
-> + * @drm_connector: pointer on the drm connector
-> + *
-> + * Return number of modes
-> + */
-> +static int sti_hda_get_modes(struct drm_connector *drm_connector)
-> +{
-> +	struct drm_device *dev = drm_connector->dev;
-> +	struct drm_display_mode *mode;
-> +	int i, count;
-
-unsigned for i. count should probably stay signed since DRM uses that
-throughout.
-
+> +	/* The queued TX requests are simply aborted, no callbacks are made */
+> +	spin_lock_irqsave(&chan->lock, flags);
+> +	chan->cl =3D NULL;
+> +	chan->active_req =3D NULL;
+> +	if (chan->txdone_method =3D=3D (TXDONE_BY_POLL | TXDONE_BY_ACK))
+> +		chan->txdone_method =3D TXDONE_BY_POLL;
 > +
-> +	DRM_DEBUG_DRIVER("\n");
-> +
-> +	for (i = 0, count = 0; i < ARRAY_SIZE(hda_supported_modes); i++) {
+> +	module_put(chan->mbox->dev->driver->owner);
+> +	spin_unlock_irqrestore(&chan->lock, flags);
 
-You can initialize count when it's declared to make the loop more
-idiomatic.
+Is the module_put() safe in atomic context?
 
-> +		mode = drm_mode_duplicate(dev, &hda_supported_modes[i].mode);
-> +		if (!mode)
-> +			continue;
-> +		mode->vrefresh = drm_mode_vrefresh(mode);
-> +
-> +		/* Set the preferred mode */
-> +		if (i == HDA_PREF_MODE_IDX)
-> +			mode->type |= DRM_MODE_TYPE_PREFERRED;
-> +
-> +		drm_mode_probed_add(drm_connector, mode);
-> +		count++;
-> +	}
-> +
-> +	drm_mode_sort(&drm_connector->modes);
-> +
-> +	return count;
-> +}
-> +
-> +
-
-Gratuituous newline.
-
-> +static int sti_hda_probe(struct platform_device *pdev)
-> +{
-[...]
-> +}
-> +
-> +static int sti_hda_remove(struct platform_device *pdev)
-> +{
-[...]
-> +}
-> +
-> +static struct of_device_id hda_match_types[] = {
-> +	{
-> +	 .compatible = "st,stih416-hda",
-> +	 },
-> +	{
-> +	 .compatible = "st,stih407-hda",
-> +	 },
-> +	{ /* end node */ }
-> +};
-> +MODULE_DEVICE_TABLE(of, hda_match_types);
-> +
-> +struct platform_driver sti_hda_driver = {
-> +	.driver = {
-> +		   .name = "sti-hda",
-> +		   .owner = THIS_MODULE,
-> +		   .of_match_table = hda_match_types,
-> +		   },
-> +	.probe = sti_hda_probe,
-> +	.remove = sti_hda_remove,
-> +};
-> +
-> +module_platform_driver(sti_hda_driver);
-> +
-> +MODULE_LICENSE("GPL");
-
-Same comments here as for all previous patches.
-
-Thierry
-
---Bk6L21jbBNK7V1Rv
-Content-Type: application/pgp-signature
+--bnwoLX+t3cc59+J0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTfOFNAAoJEN0jrNd/PrOh14gP+wcFMErGwKVBLhpPZK197iqE
-t/gGJizx4feR/IRotLN+e4rjBKwBWbHR4FoarSJImJZIFNAVOx+YvadJAKmse0xm
-iiJqa9RTOSbce6/12HM3481VZ0PzlA6O7EdQATj5a7LQ5d1za2FKzzYwbkkMaXmr
-uqEFrcuhAf9D7gIuEZXXeA0E+R5I/LksbmPouN0CzDFzMhj8kvtwoD8rFFF2PKBX
-W13CrXbchqTCLubYUVDl0effmwVyJrk3QvSMCpcBbyBwp9iZ0uop9Mzu7VPZuVZB
-ZsIdb43Wfadtm/kmO6qqfinVbY14fdh6no/Mo5gBppII+awkuP65wejefyKk2jmn
-nDWT68HQPhw+AOxi9eGNKLaLIhf8MlbABa/K/nj+8qPwIwDrZBnJKQRF2RcCg9c1
-jR7dOr6mILHMAg3LZApQSSHLOdD2EMrai8siAqGRHXIx8VKLVlEkXtMuW2Wcsxig
-FKuwDpQjPBCYPjsCu/YlFBkn6YzoLMeF2qv2wyitbinxGa+1QDtERrZvCejND9EC
-A6B7A8NUNbAORWIZ8+ViUqi50w39FXblzo8WLGWuhSE1y/y7pyedywpruPGKVO57
-qOIEf6KCJHox+P9WWPcca77aqwFjMVP+Fkh52kj1Z8BQlE6VaIU4mMRCenQJkLFE
-wpise+mDNGGepc2FcqZw
-=zLn8
+iQIcBAEBAgAGBQJTfOHiAAoJELSic+t+oim9N30P/36gHpXHVbJI6IlRMNuhE4La
+l2uOWjNC2x+p+9EYAKWsTwJsgrA6UZdpAs6Yzy7QagNtz141uuUgGewvtRFnlBCO
+2ogvfiG01BXhduqGM1E/VXI3hCmGAwIzsskZ5mw7xMTHRhxXWRJzLpOYt7QEvQCJ
+KOFU7WnP8n74k6TwhTaxqROAxb/jXkoSCC0vXY/hjBhCeVdhPu0Kl7ZbvCaBkvh3
+X/7HfFzSsRObBloQ1FyM/CKBRRKKHHiEdpkz1j68ROk6+h24DF8kq9z1XDqRRPTo
++o3WC0dhhFywMjcm9k+qiCZgNO+b4i7JUjz4x/0f/cEnbF/P3O5+2OGnzjIZRVKx
+cVekp7qkP8OHnbr+YoWIiiUO0JtSuSuPqlpReI7MuZGDcM3g2/S6s8lmUa10iScs
+8ckEc+ezuS+j+kODHXwduL0bP0p3l9Gu0Sj9vQ1Oo3/79INYLj0iaEXOYyzjw7CB
+6CH/VuZBLRSiIPv0TvaP7Qz5NhsGL3mZn2SeJfGc5Hm7CCT4n955C+EJbjC/i1zH
+i6RWelXFwcD0A+oQaGYBtg2h6g1zR2z3YvACJ72MjddgBkEuW8JQIuEfBJBeH9v8
+dfS0fMWWnV9LSfORQVADDehj32aguIoBoL5HZnoXX5Apzj8RSmOf64pEgC88VeQI
+GarCW/dGouBlbQhvMn5s
+=c5Rv
 -----END PGP SIGNATURE-----
 
---Bk6L21jbBNK7V1Rv--
+--bnwoLX+t3cc59+J0--
