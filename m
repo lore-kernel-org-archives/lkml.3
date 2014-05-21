@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaEUVlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:41:07 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41703 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439AbaEUVjN (ORCPT
+	id S1753702AbaEUVlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:41:40 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:39612 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418AbaEUVjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:39:13 -0400
+	Wed, 21 May 2014 17:39:08 -0400
 From: Florian Fainelli <f.fainelli@gmail.com>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
@@ -21,9 +21,9 @@ Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         linux-kernel@vger.kernel.org (open list),
         linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
-Subject: [PATCH RESEND net-next 5/9] fs_enet: use the new fixed PHY helpers
-Date: Wed, 21 May 2014 14:38:47 -0700
-Message-Id: <1400708331-18088-6-git-send-email-f.fainelli@gmail.com>
+Subject: [PATCH RESEND net-next 3/9] net: bcmgenet: use the new fixed PHY helpers
+Date: Wed, 21 May 2014 14:38:45 -0700
+Message-Id: <1400708331-18088-4-git-send-email-f.fainelli@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
 References: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
@@ -39,43 +39,49 @@ scheme.
 
 Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 ---
- drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/broadcom/genet/bcmmii.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-index dc80db41d6b3..d602711e00e9 100644
---- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-+++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-@@ -792,10 +792,6 @@ static int fs_init_phy(struct net_device *dev)
- 	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link, 0,
- 				iface);
- 	if (!phydev) {
--		phydev = of_phy_connect_fixed_link(dev, &fs_adjust_link,
--						   iface);
--	}
--	if (!phydev) {
- 		dev_err(&dev->dev, "Could not attach to PHY\n");
- 		return -ENODEV;
+diff --git a/drivers/net/ethernet/broadcom/genet/bcmmii.c b/drivers/net/ethernet/broadcom/genet/bcmmii.c
+index 4608673beaff..add8d8596084 100644
+--- a/drivers/net/ethernet/broadcom/genet/bcmmii.c
++++ b/drivers/net/ethernet/broadcom/genet/bcmmii.c
+@@ -298,6 +298,7 @@ int bcmgenet_mii_config(struct net_device *dev)
+ static int bcmgenet_mii_probe(struct net_device *dev)
+ {
+ 	struct bcmgenet_priv *priv = netdev_priv(dev);
++	struct device_node *dn = priv->pdev->dev.of_node;
+ 	struct phy_device *phydev;
+ 	unsigned int phy_flags;
+ 	int ret;
+@@ -307,15 +308,19 @@ static int bcmgenet_mii_probe(struct net_device *dev)
+ 		return 0;
  	}
-@@ -1029,9 +1025,15 @@ static int fs_enet_probe(struct platform_device *ofdev)
- 	fpi->use_napi = 1;
- 	fpi->napi_weight = 17;
- 	fpi->phy_node = of_parse_phandle(ofdev->dev.of_node, "phy-handle", 0);
--	if ((!fpi->phy_node) && (!of_get_property(ofdev->dev.of_node, "fixed-link",
--						  NULL)))
--		goto out_free_fpi;
-+	if (!fpi->phy_node) {
-+		if (of_phy_is_fixed_link(ofdev->dev.of_node)) {
-+			err = of_phy_register_fixed_link(ofdev->dev.of_node);
-+			if (err)
-+				goto out_free_fpi;
+ 
+-	if (priv->phy_dn)
+-		phydev = of_phy_connect(dev, priv->phy_dn,
+-					bcmgenet_mii_setup, 0,
+-					priv->phy_interface);
+-	else
+-		phydev = of_phy_connect_fixed_link(dev,
+-					bcmgenet_mii_setup,
+-					priv->phy_interface);
++	/* In the case of a fixed PHY, the DT node associated
++	 * to the PHY is the Ethernet MAC DT node.
++	 */
++	if (of_phy_is_fixed_link(dn)) {
++		ret = of_phy_register_fixed_link(dn);
++		if (ret)
++			return ret;
 +
-+			fpi->phy_node = ofdev->dev.of_node;
-+		}
++		priv->phy_dn = dn;
 +	}
  
- 	if (of_device_is_compatible(ofdev->dev.of_node, "fsl,mpc5125-fec")) {
- 		phy_connection_type = of_get_property(ofdev->dev.of_node,
++	phydev = of_phy_connect(dev, priv->phy_dn, bcmgenet_mii_setup, 0,
++				priv->phy_interface);
+ 	if (!phydev) {
+ 		pr_err("could not attach to PHY\n");
+ 		return -ENODEV;
 -- 
 1.9.1
 
