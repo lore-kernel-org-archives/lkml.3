@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaEUVuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:50:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49860 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198AbaEUVuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:50:02 -0400
-Date: Wed, 21 May 2014 14:50:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+	id S1753365AbaEUVux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:50:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54155 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752629AbaEUVuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:50:52 -0400
+Date: Wed, 21 May 2014 23:50:49 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Borislav Petkov <bp@alien8.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
- lookups in unlock_page fastpath v5
-Message-Id: <20140521145000.f130f8779f7641d0d8afcace@linux-foundation.org>
-In-Reply-To: <20140521213354.GL2485@laptop.programming.kicks-ass.net>
-References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
-	<1399974350-11089-20-git-send-email-mgorman@suse.de>
-	<20140513125313.GR23991@suse.de>
-	<20140513141748.GD2485@laptop.programming.kicks-ass.net>
-	<20140514161152.GA2615@redhat.com>
-	<20140514192945.GA10830@redhat.com>
-	<20140515104808.GF23991@suse.de>
-	<20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
-	<20140521121501.GT23991@suse.de>
-	<20140521142622.049d0b3af5fc94912d5a1472@linux-foundation.org>
-	<20140521213354.GL2485@laptop.programming.kicks-ass.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+In-Reply-To: <537D1E8B.1010505@zytor.com>
+Message-ID: <alpine.LNX.2.00.1405212348140.12047@pobox.suse.cz>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com> <1400639227.9759.21.camel@pippen.local.home> <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com> <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
+ <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com> <20140521163315.GJ21205@pd.tnic> <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz> <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com> <20140521214319.GF25130@pd.tnic>
+ <537D1E8B.1010505@zytor.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 May 2014 23:33:54 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
+On Wed, 21 May 2014, H. Peter Anvin wrote:
 
-> On Wed, May 21, 2014 at 02:26:22PM -0700, Andrew Morton wrote:
-> > > +static inline void
-> > > +__prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait,
-> > > +			struct page *page, int state, bool exclusive)
-> > 
-> > Putting MM stuff into core waitqueue code is rather bad.  I really
-> > don't know how I'm going to explain this to my family.
+> > I certainly like this way of handling it. We can even issue a nice
+> > banner saying something like "You're f*cked - go change hw."
 > 
-> Right, so we could avoid all that and make the functions in mm/filemap.c
-> rather large and opencode a bunch of wait.c stuff.
-> 
+> Actually, it would be a lot better to panic than deadlock (HA systems
+> tend to have something in place to catch the panic and/or reboot).  Any
+> way we can see if the CPU is already holding that lock and panic in that
+> case?
 
-The world won't end if we do it Mel's way and it's probably the most
-efficient.  But ugh.  This stuff does raise the "it had better be a
-useful patch" bar.
+Well, spin_trylock() and then either spin_unlock() and proceed sending 
+the signal, otherwise panic().
 
-> Which is pretty much what I initially pseudo proposed.
-
-Alternative solution is not to merge the patch ;)
-
-> > > +		__ClearPageWaiters(page);
-> > 
-> > We're freeing the page - if someone is still waiting on it then we have
-> > a huge bug?  It's the mysterious collision thing again I hope?
-> 
-> Yeah, so we only clear that bit when at 'unlock' we find there are no
-> more pending waiters, so if the last unlock still had a waiter, we'll
-> leave the bit set.
-
-Confused.  If the last unlock had a waiter, that waiter will get woken
-up so there are no waiters any more, so the last unlock clears the flag.
-
-um, how do we determine that there are no more waiters?  By looking at
-the waitqueue.  But that waitqueue is hashed, so it may contain waiters
-for other pages so we're screwed?  But we could just go and wake up the
-other-page waiters anyway and still clear PG_waiters?
-
-um2, we're using exclusive waitqueues so we can't (or don't) wake all
-waiters, so we're screwed again?
-
-(This process is proving to be a hard way of writing Mel's changelog btw).
-
-If I'm still on track here, what happens if we switch to wake-all so we
-can avoid the dangling flag?  I doubt if there are many collisions on
-that hash table?
-
-If there *are* a lot of collisions, I bet it's because a great pile of
-threads are all waiting on the same page.  If they're trying to lock
-that page then wake-all is bad.  But if they're just waiting for IO
-completion (probable) then it's OK.
-
-I'll stop now.
+-- 
+Jiri Kosina
+SUSE Labs
