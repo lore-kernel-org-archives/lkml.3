@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaEULWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:22:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36796 "EHLO arroyo.ext.ti.com"
+	id S1752503AbaEULWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:22:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:62154 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395AbaEULWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:22:04 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <computersforpeace@gmail.com>
-CC: <pekon@ti.com>, <ezequiel.garcia@free-electrons.com>,
-        <robertcnelson@gmail.com>, <jg1.han@samsung.com>,
-        <dwmw2@infradead.org>, <javier@dowhile0.org>, <nsekhar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [RFC PATCH 07/16] ARM: OMAP2+: nand: Update gpmc_nand_init() to use generic_gpmc_init()
-Date: Wed, 21 May 2014 14:20:55 +0300
-Message-ID: <1400671264-10702-8-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400671264-10702-1-git-send-email-rogerq@ti.com>
-References: <1400671264-10702-1-git-send-email-rogerq@ti.com>
+	id S1751425AbaEULWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:22:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,879,1392192000"; 
+   d="scan'208";a="434970007"
+Date: Wed, 21 May 2014 16:36:37 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Christopher Freeman <cfreeman@nvidia.com>, ldewangan@nvidia.com,
+        swarren@nvidia.com, dan.j.williams@intel.com,
+        dmaengine@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 0/3] Tegra DMA residue improvements
+Message-ID: <20140521110637.GQ21128@intel.com>
+References: <1399411343-12222-1-git-send-email-cfreeman@nvidia.com>
+ <20140521055213.GK21128@intel.com>
+ <537C4EAB.1040802@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537C4EAB.1040802@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function should only be called by board init code for
-legacy boot.
+On Wed, May 21, 2014 at 08:58:51AM +0200, Lars-Peter Clausen wrote:
+> On 05/21/2014 07:52 AM, Vinod Koul wrote:
+> >On Tue, May 06, 2014 at 02:22:20PM -0700, Christopher Freeman wrote:
+> >>A collection of patches to improve Tegra's DMA residual reporting
+> >>
+> >>Christopher Freeman (3):
+> >>   dma: tegra: finer granularity residual for tx_status
+> >>   dma: tegra: change interrupt-related log levels
+> >>   dma: tegra: avoid int overflow for transferred count
+> >Can you pls use the *right* subsystem name...
+> >
+> 
+> Without you saying what the right subsystem name is, I think it is
+> not that obvious what it is:
+ah... the subsystem name and ML name is dmaengine
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/mach-omap2/gpmc-nand.c | 79 ++++++++---------------------------------
- 1 file changed, 14 insertions(+), 65 deletions(-)
+> 
+> git log --format="%s" --no-merges drivers/dma/ | grep '^[a-zA-Z]\+'
+> -o | sort | uniq -c | sort -n
+> 
+> 381 dma
+> 509 dmaengine
+> 
+> So there is a bias towards 'dmaengine', but if you only look at
+> recent commits there is a bias towards 'dma'.
+And thats what i am getting annoyed at :) Yes ppl please use dmaengine only
+I think I will stop accepting patches with "dma" now and improve the stats
+here...
 
-diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
-index 4349e82..d536575 100644
---- a/arch/arm/mach-omap2/gpmc-nand.c
-+++ b/arch/arm/mach-omap2/gpmc-nand.c
-@@ -25,8 +25,11 @@
- #define	NAND_IO_SIZE	4
- 
- static struct resource gpmc_nand_resource[] = {
-+/* GPMC driver will fixup all the resources, see gpmc_probe_legacy () */
- 	{
- 		.flags		= IORESOURCE_MEM,
-+		.start          = 0,
-+		.end            = NAND_IO_SIZE - 1,
- 	},
- 	{
- 		.flags		= IORESOURCE_IRQ,
-@@ -72,89 +75,35 @@ static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
- 		return 0;
- }
- 
--/* This function will go away once the device-tree convertion is complete */
--static void gpmc_set_legacy(struct omap_nand_platform_data *gpmc_nand_data,
--			    struct gpmc_settings *s)
--{
--	/* Enable RD PIN Monitoring Reg */
--	if (gpmc_nand_data->dev_ready) {
--		s->wait_on_read = true;
--		s->wait_on_write = true;
--	}
--
--	if (gpmc_nand_data->devsize == NAND_BUSWIDTH_16)
--		s->device_width = GPMC_DEVWIDTH_16BIT;
--	else
--		s->device_width = GPMC_DEVWIDTH_8BIT;
--}
--
- int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
- 		   struct gpmc_timings *gpmc_t)
- {
- 	int err	= 0;
- 	struct gpmc_settings s;
--	struct device *dev = &gpmc_nand_device.dev;
- 
- 	memset(&s, 0, sizeof(struct gpmc_settings));
--
- 	gpmc_nand_device.dev.platform_data = gpmc_nand_data;
- 
--	err = gpmc_cs_request(gpmc_nand_data->cs, NAND_IO_SIZE,
--				(unsigned long *)&gpmc_nand_resource[0].start);
--	if (err < 0) {
--		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
--			gpmc_nand_data->cs, err);
--		return err;
--	}
--
--	gpmc_nand_resource[0].end = gpmc_nand_resource[0].start +
--							NAND_IO_SIZE - 1;
--
--	gpmc_nand_resource[1].start =
--				gpmc_get_client_irq(GPMC_IRQ_FIFOEVENTENABLE);
--	gpmc_nand_resource[2].start =
--				gpmc_get_client_irq(GPMC_IRQ_COUNT_EVENT);
--
--	if (gpmc_t) {
--		err = gpmc_cs_set_timings(gpmc_nand_data->cs, gpmc_t);
--		if (err < 0) {
--			dev_err(dev, "Unable to set gpmc timings: %d\n", err);
--			return err;
--		}
--	}
--
--	if (gpmc_nand_data->of_node)
--		gpmc_read_settings_dt(gpmc_nand_data->of_node, &s);
-+	/* GPMC settings */
-+	if (gpmc_nand_data->devsize == NAND_BUSWIDTH_16)
-+		s.device_width = GPMC_DEVWIDTH_16BIT;
- 	else
--		gpmc_set_legacy(gpmc_nand_data, &s);
-+		s.device_width = GPMC_DEVWIDTH_8BIT;
- 
- 	s.device_nand = true;
- 
--	err = gpmc_cs_program_settings(gpmc_nand_data->cs, &s);
--	if (err < 0)
--		goto out_free_cs;
--
--	err = gpmc_configure(GPMC_CONFIG_WP, 0);
--	if (err < 0)
--		goto out_free_cs;
--
--	gpmc_update_nand_reg(&gpmc_nand_data->reg, gpmc_nand_data->cs);
--
- 	if (!gpmc_hwecc_bch_capable(gpmc_nand_data->ecc_opt)) {
--		dev_err(dev, "Unsupported NAND ECC scheme selected\n");
-+		pr_err("%s: Unsupported NAND ECC scheme selected\n", __func__);
- 		return -EINVAL;
- 	}
- 
--	err = platform_device_register(&gpmc_nand_device);
--	if (err < 0) {
--		dev_err(dev, "Unable to register NAND device\n");
--		goto out_free_cs;
-+	err = gpmc_generic_init(gpmc_nand_data->cs, GPMC_OMAP_TYPE_NAND, &s,
-+				NULL, gpmc_t, &gpmc_nand_device,
-+				sizeof(*gpmc_nand_data));
-+	if (err) {
-+		pr_err("%s: gpmc_generic_init() failed %d\n", __func__, err);
-+		return err;
- 	}
- 
- 	return 0;
--
--out_free_cs:
--	gpmc_cs_free(gpmc_nand_data->cs);
--
--	return err;
- }
 -- 
-1.8.3.2
+~Vinod
 
+> 
+> git log v3.6..HEAD --format="%s" --no-merges drivers/dma/ | grep
+> '^[a-zA-Z]\+' -o | sort | uniq -c | sort -n
+> 
+> 181 dmaengine
+> 248 dma
+> 
+> - Lars
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
