@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaEUQGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:06:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49739 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600AbaEUQGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:06:34 -0400
-Message-ID: <537CCEC1.1070801@ti.com>
-Date: Wed, 21 May 2014 19:05:21 +0300
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752149AbaEUQIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:08:12 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:49708 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaEUQIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 12:08:10 -0400
+X-Auth-Info: SDB1h4c9xwuu5EzsxTkZPAt+FpTJzKiVDCWWhsL+sbs=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: fix typo 'CONFIG_PMAC'
+References: <1400617498.4912.66.camel@x220>
+X-Yow: Look!  A ladder!  Maybe it leads to heaven, or a sandwich!
+Date: Wed, 21 May 2014 18:08:04 +0200
+In-Reply-To: <1400617498.4912.66.camel@x220> (Paul Bolle's message of "Tue, 20
+	May 2014 22:24:58 +0200")
+Message-ID: <874n0j3yjf.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <grant.likely@linaro.org>, <rdunlap@infradead.org>,
-        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>, <olof@lixom.net>,
-        <w-kwok2@ti.com>, <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>
-Subject: Re: [Patch v4 4/5] ARM: dts: keystone: update reset node to work
- with reset driver
-References: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com> <1400682454-24535-5-git-send-email-ivan.khoronzhuk@ti.com> <15259908.YoiO6LMEzV@wuerfel>
-In-Reply-To: <15259908.YoiO6LMEzV@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Paul Bolle <pebolle@tiscali.nl> writes:
 
-On 05/21/2014 05:50 PM, Arnd Bergmann wrote:
-> On Wednesday 21 May 2014 17:27:33 Ivan Khoronzhuk wrote:
->> The keystone driver requires the next additional properties:
->>
->> "ti,syscon-pll" - syscon register range used to access pll controller
->>                    registers in order to use reset control registers.
->> "ti,syscon-dev" - syscon register range used to access device state
->>                    control registers in order to use mux block
->>                    registers for all watchdogs.
->>
->> "ti,wdt_list"   - option to declare what watchdog are used to reboot
->>                    the SoC, so set "0" WDT as default.
->>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> Same comment as what I had for the binding: it's not a register range
-> any more, but a phandle for a device.
+> Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
+> perf_event_do_pending") added a check for CONFIG_PMAC were a check for
+> CONFIG_PPC_PMAC was clearly intended.
 >
->> ---
->>   arch/arm/boot/dts/keystone.dtsi | 4 +++-
->>   1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
->> index 8b899ba..783da60 100644
->> --- a/arch/arm/boot/dts/keystone.dtsi
->> +++ b/arch/arm/boot/dts/keystone.dtsi
->> @@ -78,7 +78,9 @@
->>   
->>                  rstctrl: reset-controller {
->>                          compatible = "ti,keystone-reset";
->> -                       reg = <0x023100e8 4>;   /* pll reset control reg */
->> +                       ti,syscon-pll = <&pllctrl>;
->> +                       ti,syscon-dev = <&devctrl>;
->> +                       ti,wdt_list = <0>;
->>                  };
->>   
-> I don't see a definition for the two labels, so this will cause a
-> build error. It makes sense to add them in the same patch.
+> Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested. Needs testing on 32 bit powermac, I guess.
 >
-> 	Arnd
+> This typo was introduced in v2.6.36. No one noticed because very few
+> people still use 32 bit powermacs?
 
-Thanks,
+How does that bug manifest itself?
 
-I'll correct
+Andreas.
 
 -- 
-Regards,
-Ivan Khoronzhuk
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
