@@ -1,178 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343AbaEUONr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:13:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46544 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaEUONp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:13:45 -0400
-Message-ID: <537CB493.9090706@suse.cz>
-Date: Wed, 21 May 2014 16:13:39 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752340AbaEUOQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 10:16:45 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:52746
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751395AbaEUOQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 10:16:44 -0400
+Date: Wed, 21 May 2014 22:16:24 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
+        "nm@ti.com" <nm@ti.com>,
+        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>
+Subject: Re: [PATCH V2 5/7] cpufreq: imx6q: don't initialize opp table
+Message-ID: <20140521141622.GB27211@dragon>
+References: <cover.1400670427.git.viresh.kumar@linaro.org>
+ <cc399206d57ef946d27a98203c6b0a247cd1b245.1400670427.git.viresh.kumar@linaro.org>
+ <537CB328.6000400@arm.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock
- and need_sched() contention
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>	<1400233673-11477-1-git-send-email-vbabka@suse.cz> <20140519163741.55998ce65534ed73d913ee2c@linux-foundation.org>
-In-Reply-To: <20140519163741.55998ce65534ed73d913ee2c@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <537CB328.6000400@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130451554009184256;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(24454002)(51704005)(99396002)(44976005)(6806004)(102836001)(77982001)(92726001)(69596002)(81342001)(81542001)(50986999)(57986005)(76176999)(54356999)(87936001)(85852003)(77096999)(83072002)(86362001)(81156002)(21056001)(74502001)(64706001)(31966008)(74662001)(4396001)(46406003)(20776003)(47776003)(80022001)(83506001)(76482001)(97756001)(79102001)(50466002)(92566001)(46102001)(33656002)(84676001)(97736001)(68736004)(33716001)(23726002)(32563001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB415;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0218A015FA
+Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
+ smtp.mailfrom=shawn.guo@linaro.org; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 01:37 AM, Andrew Morton wrote:
-> On Fri, 16 May 2014 11:47:53 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
+On Wed, May 21, 2014 at 03:07:36PM +0100, Sudeep Holla wrote:
+> >@@ -376,7 +356,7 @@ static void __init imx6q_init_late(void)
+> >  		imx6q_cpuidle_init();
+> >
+> >  	if (IS_ENABLED(CONFIG_ARM_IMX6Q_CPUFREQ)) {
+> >-		imx6q_opp_init();
+> >+		imx6q_opp_check_speed_grading();
 > 
->> Compaction uses compact_checklock_irqsave() function to periodically check for
->> lock contention and need_resched() to either abort async compaction, or to
->> free the lock, schedule and retake the lock. When aborting, cc->contended is
->> set to signal the contended state to the caller. Two problems have been
->> identified in this mechanism.
->>
->> First, compaction also calls directly cond_resched() in both scanners when no
->> lock is yet taken. This call either does not abort async compaction, or set
->> cc->contended appropriately. This patch introduces a new compact_should_abort()
->> function to achieve both. In isolate_freepages(), the check frequency is
->> reduced to once by SWAP_CLUSTER_MAX pageblocks to match what the migration
->> scanner does in the preliminary page checks. In case a pageblock is found
->> suitable for calling isolate_freepages_block(), the checks within there are
->> done on higher frequency.
->>
->> Second, isolate_freepages() does not check if isolate_freepages_block()
->> aborted due to contention, and advances to the next pageblock. This violates
->> the principle of aborting on contention, and might result in pageblocks not
->> being scanned completely, since the scanning cursor is advanced. This patch
->> makes isolate_freepages_block() check the cc->contended flag and abort.
->>
->> In case isolate_freepages() has already isolated some pages before aborting
->> due to contention, page migration will proceed, which is OK since we do not
->> want to waste the work that has been done, and page migration has own checks
->> for contention. However, we do not want another isolation attempt by either
->> of the scanners, so cc->contended flag check is added also to
->> compaction_alloc() and compact_finished() to make sure compaction is aborted
->> right after the migration.
+> [Query] Not exactly related to this patch, but asking it here to get clarified.
 > 
-> What are the runtime effect of this change?
-> 
->> Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> What did Joonsoo report?  Perhaps this is the same thing..
+> This OPP limiting is done as part of late initcall and if the cpufreq driver is
+> built in the kernel, there will be a small window where the OPPs not supported
+> are still enabled ? Will that not be an issue if say performance governor is
+> selected by default.
 
-Updated log message:
+Even if cpufreq driver is built in the kernel, it won't be probed until
+platform_device_register(&imx6q_cpufreq_pdev) is called.  And we make
+this call only after the OPP limiting.
 
-Compaction uses compact_checklock_irqsave() function to periodically check for
-lock contention and need_resched() to either abort async compaction, or to
-free the lock, schedule and retake the lock. When aborting, cc->contended is
-set to signal the contended state to the caller. Two problems have been
-identified in this mechanism.
-
-First, compaction also calls directly cond_resched() in both scanners when no
-lock is yet taken. This call either does not abort async compaction, or set
-cc->contended appropriately. This patch introduces a new compact_should_abort()
-function to achieve both. In isolate_freepages(), the check frequency is
-reduced to once by SWAP_CLUSTER_MAX pageblocks to match what the migration
-scanner does in the preliminary page checks. In case a pageblock is found
-suitable for calling isolate_freepages_block(), the checks within there are
-done on higher frequency.
-
-Second, isolate_freepages() does not check if isolate_freepages_block()
-aborted due to contention, and advances to the next pageblock. This violates
-the principle of aborting on contention, and might result in pageblocks not
-being scanned completely, since the scanning cursor is advanced. This problem
-has been noticed in the code by Joonsoo Kim when reviewing related patches.
-This patch makes isolate_freepages_block() check the cc->contended flag and
-abort.
-
-In case isolate_freepages() has already isolated some pages before aborting
-due to contention, page migration will proceed, which is OK since we do not
-want to waste the work that has been done, and page migration has own checks
-for contention. However, we do not want another isolation attempt by either
-of the scanners, so cc->contended flag check is added also to
-compaction_alloc() and compact_finished() to make sure compaction is aborted
-right after the migration.
-
-The outcome of the patch should be reduced lock contention by async compaction
-and lower latencies for higher-order allocations where direct compaction is
-involved.
-
->>
->> ...
->>
->> @@ -718,9 +739,11 @@ static void isolate_freepages(struct zone *zone,
->>   		/*
->>   		 * This can iterate a massively long zone without finding any
->>   		 * suitable migration targets, so periodically check if we need
->> -		 * to schedule.
->> +		 * to schedule, or even abort async compaction.
->>   		 */
->> -		cond_resched();
->> +		if (!(block_start_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
->> +						&& compact_should_abort(cc))
-> 
-> This seems rather gratuitously inefficient and isn't terribly clear.
-> What's wrong with
-> 
-> 	if ((++foo % SWAP_CLUSTER_MAX) == 0 && compact_should_abort(cc))
-
-It's a new variable and it differs from how isolate_migratepages_range() does this.
-But yeah, I might change it later there as well. There it makes even more sense.
-E.g. when skipping whole pageblock there, pfn % SWAP_CLUSTER_MAX will be always zero
-so the periodicity varies.
- 
-> ?
-> 
-> (Assumes that SWAP_CLUSTER_MAX is power-of-2 and that the compiler will
-> use &)
- 
-I hoped that compiler would be smart enough about SWAP_CLUSTER_MAX * pageblock_nr_pages
-as well, as those are constants and also power-of-2. But I didn't check the assembly.
-
------8<-----
-From: Vlastimil Babka <vbabka@suse.cz>
-Date: Wed, 21 May 2014 16:07:21 +0200
-Subject: [PATCH] 
- mm-compaction-properly-signal-and-act-upon-lock-and-need_sched-contention-fix
-
-Use a separate counter variable (not pfn) to trigger abort checks.
-
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- mm/compaction.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index bbe6a26..23c7439 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -779,6 +779,7 @@ static void isolate_freepages(struct zone *zone,
- 	unsigned long block_start_pfn;	/* start of current pageblock */
- 	unsigned long block_end_pfn;	/* end of current pageblock */
- 	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
-+	unsigned long nr_blocks_scanned = 0; /* for periodical abort checks */
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
- 
-@@ -813,7 +814,7 @@ static void isolate_freepages(struct zone *zone,
- 		 * suitable migration targets, so periodically check if we need
- 		 * to schedule, or even abort async compaction.
- 		 */
--		if (!(block_start_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-+		if ((++nr_blocks_scanned % SWAP_CLUSTER_MAX) == 0
- 						&& compact_should_abort(cc))
- 			break;
- 
--- 
-1.8.4.5
-
-
-
+Shawn
