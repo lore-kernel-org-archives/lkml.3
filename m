@@ -1,142 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaEULSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:18:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52646 "EHLO mga09.intel.com"
+	id S1752075AbaEULVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:21:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36783 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018AbaEULSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:18:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,879,1392192000"; 
-   d="asc'?scan'208";a="544171888"
-Date: Wed, 21 May 2014 16:32:32 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v7] DMA: sun6i: Add driver for the Allwinner A31 DMA
- controller
-Message-ID: <20140521110232.GP21128@intel.com>
-References: <20140430070408.GR32284@intel.com>
- <20140513134258.GA29258@lukather>
- <20140521053105.GI21128@intel.com>
- <20140521085829.GP27329@lukather>
+	id S1750861AbaEULVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:21:48 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <computersforpeace@gmail.com>
+CC: <pekon@ti.com>, <ezequiel.garcia@free-electrons.com>,
+        <robertcnelson@gmail.com>, <jg1.han@samsung.com>,
+        <dwmw2@infradead.org>, <javier@dowhile0.org>, <nsekhar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [RFC PATCH 00/16] OMAP: GPMC: Restructure OMAP GPMC driver (NAND)
+Date: Wed, 21 May 2014 14:20:48 +0300
+Message-ID: <1400671264-10702-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/2994txjAzEdQwm5"
-Content-Disposition: inline
-In-Reply-To: <20140521085829.GP27329@lukather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---/2994txjAzEdQwm5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The existing OMAP GPMC driver has been suffering from ad-hoc architecture
+with no clear separation between GPMC driver, Chip Select timing/settings and
+Memory Device driver. The device tree implementation also reflects the same
+issues.
 
-On Wed, May 21, 2014 at 10:58:29AM +0200, Maxime Ripard wrote:
-> On Wed, May 21, 2014 at 11:01:05AM +0530, Vinod Koul wrote:
-> > On Tue, May 13, 2014 at 03:42:58PM +0200, Maxime Ripard wrote:
-> > > Hi Vinod,
-> > >=20
-> > > On Wed, Apr 30, 2014 at 12:34:08PM +0530, Vinod Koul wrote:
-> > > > > +
-> > > > > +static int sun6i_dma_terminate_all(struct sun6i_vchan *vchan)
-> > > > > +{
-> > > > > +	struct sun6i_dma_dev *sdev =3D to_sun6i_dma_dev(vchan->vc.chan.=
-device);
-> > > > > +	struct sun6i_pchan *pchan =3D vchan->phy;
-> > > > > +	unsigned long flags;
-> > > > > +	LIST_HEAD(head);
-> > > > > +
-> > > > > +	spin_lock(&sdev->lock);
-> > > > > +	list_del_init(&vchan->node);
-> > > > > +	spin_unlock(&sdev->lock);
-> > > > > +
-> > > > > +	spin_lock_irqsave(&vchan->vc.lock, flags);
-> > > > > +
-> > > > > +	vchan_get_all_descriptors(&vchan->vc, &head);
-> > > > > +
-> > > > > +	if (pchan) {
-> > > > > +		writel(DMA_CHAN_ENABLE_STOP, pchan->base + DMA_CHAN_ENABLE);
-> > > > > +		writel(DMA_CHAN_PAUSE_RESUME, pchan->base + DMA_CHAN_PAUSE);
-> > > > > +
-> > > > > +		vchan->phy =3D NULL;
-> > > > > +		pchan->vchan =3D NULL;
-> > > > > +		pchan->desc =3D NULL;
-> > > > > +		pchan->done =3D NULL;
-> > > > > +	}
-> > > > > +
-> > > > > +	spin_unlock_irqrestore(&vchan->vc.lock, flags);
-> > > > > +
-> > > > > +	vchan_dma_desc_free_list(&vchan->vc, &head);
-> > > >=20
-> > > > shouldn't you kill the tasklet as well here?
-> > >=20
-> > > Just to be clear, which tasklet? vchan's or the driver's?
-> > You need to take care of both. But I suspect if we ensure irq is not tr=
-iggered
-> > and any pending ones are completed you can simply kill both of the task=
-lets
-> > happily. See the fixes merged in dmaengine last cycle (hint: patchlog s=
-hows what
-> > we need to do)
->=20
-> I still don't get why I should kill the driver tasklet in terminate_all.
->=20
-> The tasklet is common to all the channels, if you kill it, you'll
-> prevent it from scheduling while other channels might have had a need
-> for it to actually run.
-I think I was under the impression that your tasklet is per channel, If tha=
-t is
-not the case it makes no sense then for this case
->=20
-> About the commits themselves, I guess you talk about 9068b032 and
-> ccc7aad0. Both these commits only fix the remove path, not the
-> terminate_all one, and both these drivers are not doing anything
-> related to the tasklet in terminate_all.
-Yup as you would have noticed these were not per channel as well
+The purpose of this series is to clean up the OMAP GPMC driver architecture,
+provide a cleaner device tree implementation and finally move the gpmc driver
+out of arch/arm/mach-omap2 so that it can be used by other non-OMAP
+TI platforms.
 
->=20
-> > Btw just noticed, you *should* use dmaengine: as the subsytem name on t=
-he patch
-> > series...
->=20
-> Ok, I will.
-Thanks
+This series tries to solve the problem as follows
 
---=20
-~Vinod
+For non-DT boot:
+- Create a GPMC platform data structure that holds chip select
+  information as well as child platform device
+- Board files will build this structure using a helper function
+  gpmc_generic_init()
+- GPMC driver will configure the chip select region and create the
+  platform device for each chip select region. Introduce gpmc_probe_legacy()
+  for this purpose.
 
---/2994txjAzEdQwm5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+For DT boot:
+- The GPMC controller node should have a chip select (CS) node for each used
+  chip select. The CS node must have a child device node for each device
+  attached to that chip select. Properties for that child are GPMC agnostic.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+  i.e.
+	gpmc {
+		cs0 {
+			nand0 {
+			}
+		};
 
-iQIcBAEBAgAGBQJTfIfIAAoJEHwUBw8lI4NHyjAP/jCMyCH/kBWP6zWna4ZZc94T
-ZfpXUb2NDd/6CRkgaC/7iPQJmuL35vgo0j5P5M2EysoysJH+ekNMfP+t6ATuPigg
-kQNww3MsrrXb+n5l1M+RWDOp9M9OFi7C6tw0qxAx7K8PHcUmmTuP6DGIb5RhUVdQ
-QJr7UB772v4GJITJOj3eflPuN7gluesw4pwOM4//kAalAO8GseltT+pG3EsnXDml
-gphQlicZMSA74nCsae/2KRihsIh6GaG7mEqbtl7atxlIuSIOTmADx1FjCsYDuUZB
-+v2ORH8u/cZsfpXjpzXAFYnsRnhY1gFHPu+myyrUG4Ruv6QzkUtT9L0p2wA2yXd4
-Zt0WbAiQnWiLscrhtaLn/OLZY2bv9OgWB+y92N/nli2PKJ+8b9WY+Vma/0o8V9T1
-RUBRJQCgrVMu9/1IFPWQ2jK4US07Eq/wrepQtzqd9AhvP4oifXF+RGTUq0aWDdq3
-jXpk+Ud+R/C41bSvC9Rmet07QarVw9oVHf81ZOwIDgPOcES6XdQYn4UVb4wh89JA
-z4Asx1Kguuw9vy98leG0yg+Lo8oD0nqiKP0XqmQGs0cwlVsNc0A97SebKKD+7tsy
-VE47dKjsqyxEx+qWd5ioqLqnrxmmmDYAt6U28RpSiEXv2e9v13vR1h+V9DNRYxgv
-LZEuXLh39DrTqBytq6GO
-=Qiiy
------END PGP SIGNATURE-----
+		cs1 {
+			nor0 {
+			}
+		}
+		...
+	};
 
---/2994txjAzEdQwm5--
+- The meaning of ranges and how address mapping is done has changed.
+  Ranges should now contain 2 ranges
+  - GPMC I/O map. This map will be partitioned among the
+    chip select (CS) nodes.
+  - GPMC register map. This is common for all the CS nodes.
+    
+- Chip select (CS) number is no longer specified via reg property. Instead
+  it is specified via the gpmc,cs property in the CS node.
+
+For NAND:
+- Move interrupt handling from GPMC driver to NAND driver. GPMC driver has nothing to do
+  with interrupts.
+- Expose GPMC register space to NAND driver. Both GPMC and NAND drivers share the same
+  register space but don't use the same registers so it is safe. A clear partitioning couldn't
+  be done since the GPMC config registers are interleaved with the NAND registers.
+- Add compatible id. Move NAND DT parsing code from GPMC to NAND driver.
+
+For now the series only addresses the OMAP NAND driver. I'm working at the moment
+to fix other GPMC tied drivers as well (onenand, smc91x, smsc91xx, usb-tusb6010).
+
+Tested on:
+- omap3-beagle
+
+NOTE: This series is only for review and most likely breaks everything apart from NAND on beagle board.
+I hope to get review comments early so that I can avoid any major rework.
+
+Thanks.
+
+--
+cheers,
+-roger
+
+Roger Quadros (16):
+  ARM: OMAP2+: gpmc: Add platform data
+  ARM: OMAP2+: gpmc: Add gpmc timings and settings to platform data
+  ARM: OMAP2+: gmpc: add gpmc_generic_init()
+  ARM: OMAP2+: gpmc: use platform data to configure CS space and
+    poplulate device
+  ARM: OMAP2+: gpmc: Use low level read/write for context save/restore
+  ARM: OMAP2+: gpmc: add NAND specific setup
+  ARM: OMAP2+: nand: Update gpmc_nand_init() to use generic_gpmc_init()
+  mtd: nand: omap: Fix build warning
+  mtd: nand: omap: Move IRQ handling from GPMC to NAND driver
+  mtd: nand: omap: Move gpmc_update_nand_reg to nand driver
+  mtd: nand: omap: Move NAND write protect code from GPMC to NAND driver
+  mtd: nand: omap: Copy platform data parameters to omap_nand_info data
+  mtd: nand: omap: True device tree support
+  ARM: OMAP: gpmc: Update DT binding documentation
+  mtd: nand: omap: Update DT binding documentation
+  ARM: dts: omap3-beagle: Add NAND device
+
+ Documentation/devicetree/bindings/bus/ti-gpmc.txt  | 109 ++-
+ .../devicetree/bindings/mtd/gpmc-nand.txt          |  86 ++-
+ arch/arm/boot/dts/omap3-beagle.dts                 |  66 ++
+ arch/arm/mach-omap2/gpmc-nand.c                    |  85 +--
+ arch/arm/mach-omap2/gpmc.c                         | 781 +++++++++++----------
+ arch/arm/mach-omap2/gpmc.h                         | 151 +---
+ arch/arm/mach-omap2/io.c                           |   2 +
+ drivers/mtd/nand/omap2.c                           | 365 ++++++++--
+ include/linux/platform_data/gpmc-omap.h            | 168 +++++
+ include/linux/platform_data/mtd-nand-omap2.h       |  10 +-
+ 10 files changed, 1103 insertions(+), 720 deletions(-)
+ create mode 100644 include/linux/platform_data/gpmc-omap.h
+
+-- 
+1.8.3.2
+
