@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaEUPWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:22:45 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:43617 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694AbaEUPWo (ORCPT
+	id S1752539AbaEUPYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:24:22 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:54420 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaEUPYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:22:44 -0400
+	Wed, 21 May 2014 11:24:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dmaengine@vger.kernel.org, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        andriy.shevchenko@intel.com
+Subject: Re: [PATCH v8 0/2] Add support for the Allwinner A31 DMA Controller
+Date: Wed, 21 May 2014 17:23:41 +0200
+Message-ID: <4828893.NoTbcUXQEt@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400685357-508-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1400685357-508-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140521145857.GA5880@suse.cz>
-References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
- <20140429100345.3f76a5bd@gandalf.local.home> <alpine.LNX.2.00.1405211540080.20534@pobox.suse.cz>
- <20140521142055.GH21205@pd.tnic> <20140521145857.GA5880@suse.cz>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 May 2014 08:22:22 -0700
-Message-ID: <CALCETrWayHx6X1pwfF=ze_SWc7Uso25M+XA0_YrAPoC4_Dq9ug@mail.gmail.com>
-Subject: Re: 64bit x86: NMI nesting still buggy?
-To: Vojtech Pavlik <vojtech@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>, Salman Qazi <sqazi@google.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        Ingo Molnar <mingo@elte.hu>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Petr Tesarik <ptesarik@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:c4Pw/QjBmcMrQ2X/dJ6Jdvm1G45WUSFFpO6h6pPiYB2
+ zmyFwovu0ajhAxbN0/sShkctZBfLVFuiMguqvWFFYmqCy5XIws
+ 9xOVGKkns1+3CU7+f5o3ECaUyTPCa4DuasYWpTPCsvbAdB2ryG
+ 8dbwMow/gEiUSVnyuEyr9o6rHeQIpSFDj7tEF7fbZk+3uSsmgr
+ FVnJL0Yb4LDREGJinrtPWV23T5h8Vfh5tnXkZJ7hhk1iymRyZr
+ 1FPf9d4KSI9TIm3vGHLDddoNES8Svf5qp+GgY2+ffVMZ+g9wxG
+ lfGlgNIUud01jOVOBQtc44i0OmLhh5aYYk4/pRDfaF4y5IoVg2
+ dw+iypP12oLYKEnkWiRM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 21, 2014 7:58 AM, "Vojtech Pavlik" <vojtech@suse.cz> wrote:
->
-> On Wed, May 21, 2014 at 04:20:55PM +0200, Borislav Petkov wrote:
-> > On Wed, May 21, 2014 at 03:42:24PM +0200, Jiri Kosina wrote:
-> > > Alright, Andy's iret optimization efforts do immediately bring a
-> > > followup question -- why is this not a problem with iret-based return
-> > > from #MC possibly interrupting NMI?
-> >
-> > Yeah, and frankly, I don't see this nesting fun at all protected against
-> > a #MC interrupting it at any point actually. Because once the #MC
-> > handler returns, it goes into paranoid_exit and that place doesn't
-> > account for NMIs at all, AFAICS.
-> >
-> > Which would mean:
-> >
-> > * NMI goes off
-> > * MCE happens, we switch to machine_check which is paranoidzeroentry
-> > * #MC handler is done -> paranoid_exit -> IRET
-> > -> boom! Or if not "boom", at least, the NMI gets forgotten.
-> >
-> > Am I missing something?
->
-> I think to get a full BOOM you need a bit more complex process, namely:
->
->         * NMI triggered
->         * NMI handler starts
->         * MCE happens
->         * Second NMI triggered and queued
->         * handler done, IRET
->         * Second NMI handler starts and overwrites NMI return address on stack
->         * Second NMI handler ends
->         * First NMI handler ends and goes into an infinite IRET loop, always
->           returning to the beginning of itself
->
-> But you do have all the ingredients.
->
-> And I don't see any other way out than not calling IRET for MCEs.
+On Wednesday 21 May 2014 17:15:54 Maxime Ripard wrote:
+> Changes from v7:
+>   - select DMA_OF, since we're only relying on DT
+> 
 
-The MCE handler could detect this and fiddle with the IST entry.  This
-sounds considerably uglier than returning via RET, though.
+I missed the discussion about this issue, but it seems wrong to me.
+DMA_OF is currently enabled if we have both DMAENGINE and OF turned on.
 
---Andy
+If OF is disabled but DMA_OF gets selected by DMA_SUN6I, what happens?
 
->
-> --
-> Vojtech Pavlik
-> Director SUSE Labs
+	Arnd
