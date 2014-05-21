@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaEUQIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:08:12 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:49708 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaEUQIK (ORCPT
+	id S1752426AbaEUQIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:08:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40866 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336AbaEUQIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:08:10 -0400
-X-Auth-Info: SDB1h4c9xwuu5EzsxTkZPAt+FpTJzKiVDCWWhsL+sbs=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc: fix typo 'CONFIG_PMAC'
-References: <1400617498.4912.66.camel@x220>
-X-Yow: Look!  A ladder!  Maybe it leads to heaven, or a sandwich!
-Date: Wed, 21 May 2014 18:08:04 +0200
-In-Reply-To: <1400617498.4912.66.camel@x220> (Paul Bolle's message of "Tue, 20
-	May 2014 22:24:58 +0200")
-Message-ID: <874n0j3yjf.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 21 May 2014 12:08:43 -0400
+Date: Wed, 21 May 2014 18:08:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
+ lookups in unlock_page fastpath v5
+Message-ID: <20140521160837.GH2485@laptop.programming.kicks-ass.net>
+References: <1399974350-11089-20-git-send-email-mgorman@suse.de>
+ <20140513125313.GR23991@suse.de>
+ <20140513141748.GD2485@laptop.programming.kicks-ass.net>
+ <20140514161152.GA2615@redhat.com>
+ <20140514192945.GA10830@redhat.com>
+ <20140515104808.GF23991@suse.de>
+ <20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
+ <20140521121501.GT23991@suse.de>
+ <20140521130223.GE2485@laptop.programming.kicks-ass.net>
+ <20140521153357.GW23991@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140521153357.GW23991@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle <pebolle@tiscali.nl> writes:
+On Wed, May 21, 2014 at 04:33:57PM +0100, Mel Gorman wrote:
+> > > +__prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait,
+> > > +			struct page *page, int state, bool exclusive)
+> > >  {
+> > >  	unsigned long flags;
+> > >  
+> > > +	if (page && !PageWaiters(page))
+> > > +		SetPageWaiters(page);
+> > > +	if (list_empty(&wait->task_list)) {
+> > > +		if (exclusive) {
+> > > +			wait->flags |= WQ_FLAG_EXCLUSIVE;
+> > > +			__add_wait_queue_tail(q, wait);
+> > > +		} else {
+> > 
+> > I'm fairly sure we've just initialized the wait thing to 0, so clearing
+> > the bit would be superfluous.
+> > 
+> 
+> I assume you mean the clearing of WQ_FLAG_EXCLUSIVE. It may or may not be
+> superflous. If it's an on-stack wait_queue_t initialised with DEFINE_WAIT()
+> then it's redundant. If it's a wait_queue_t that is being reused and
+> sometimes used for exclusive waits and other times for non-exclusive
+> waits then it's required. The API allows this to happen so I see no harm
+> is clearing the flag like the old code did. Am I missing your point?
 
-> Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
-> perf_event_do_pending") added a check for CONFIG_PMAC were a check for
-> CONFIG_PPC_PMAC was clearly intended.
->
-> Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested. Needs testing on 32 bit powermac, I guess.
->
-> This typo was introduced in v2.6.36. No one noticed because very few
-> people still use 32 bit powermacs?
+Yeah, I'm not aware of any other users except the on-stack kind, but
+you're right.
 
-How does that bug manifest itself?
+Maybe we should stick an object_is_on_stack() test in there to see if
+anything falls out, something for a rainy afternoon perhaps..
 
-Andreas.
+> > > +void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, int bit)
+> > > +{
+> > > +	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
+> > > +	unsigned long flags;
+> > > +
+> > > +	spin_lock_irqsave(&wqh->lock, flags);
+> > > +	if (waitqueue_active(wqh))
+> > > +		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
+> > > +	else
+> > > +		ClearPageWaiters(page);
+> > > +	spin_unlock_irqrestore(&wqh->lock, flags);
+> > > +}
+> > 
+> > Seeing how word is always going to be &page->flags, might it make sense
+> > to remove that argument?
+> > 
+> 
+> The wait_queue was defined on-stack with DEFINE_WAIT_BIT which uses
+> wake_bit_function() as a wakeup function and that thing consumes both the
+> page->flags and the bit number it's interested in. This is used for both
+> PG_writeback and PG_locked so assumptions cannot really be made about
+> the value.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Well, both PG_flags come from the same &page->flags word, right? But
+yeah, if we ever decide to grow the page frame with another flags word
+we'd be in trouble :-)
+
+In any case I don't feel too strongly about either of these points.
