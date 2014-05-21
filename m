@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327AbaEUNNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:13:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268AbaEUNNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:13:09 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 13/22] perf report/tui: Fix a bug when --fields/sort is given
-Date: Wed, 21 May 2014 15:12:35 +0200
-Message-Id: <1400677964-25160-14-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
-References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
+	id S1752746AbaEUNQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:16:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43030 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729AbaEUNQU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:16:20 -0400
+Message-ID: <537CA726.5060909@arm.com>
+Date: Wed, 21 May 2014 14:16:22 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
+        "nm@ti.com" <nm@ti.com>,
+        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>
+Subject: Re: [PATCH V2 1/7] opp: remove -ENOSYS from dummy implementation
+ of of_init_opp_table()
+References: <cover.1400670427.git.viresh.kumar@linaro.org> <ddf99132a9b2a6aabef61cba20fffbbf56ec0985.1400670427.git.viresh.kumar@linaro.org>
+In-Reply-To: <ddf99132a9b2a6aabef61cba20fffbbf56ec0985.1400670427.git.viresh.kumar@linaro.org>
+X-OriginalArrivalTime: 21 May 2014 13:16:17.0567 (UTC) FILETIME=[D96DEAF0:01CF74F6]
+X-MC-Unique: 114052114161711901
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+Hi Viresh,
 
-The hists__filter_entries() function is called when down arrow key is
-pressed for navigating through the entries in TUI.  It has a check for
-filtering out entries that have very small overhead (under min_pcnt).
+$subject perhaps should be "replace/remove -EINVAL.." instead of "remove
+-ENOSYS ..."
 
-However it just assumed the entries are sorted by the overhead so when
-it saw such a small overheaded entry, it just stopped navigating as an
-optimization.  But it's not true anymore due to new --fields and
---sort optoin behavior and this case users cannot go down to a next
-entry if ther's an entry with small overhead in-between.
+On 21/05/14 12:09, Viresh Kumar wrote:
+> When any of CONFIG_PM_OPP or CONFIG_OF isn't enabled we have a dummy
+> implementation of of_init_opp_table() routine, it returns -EINVAL currently.
+> -EINVAL can be returned from other places within the real implementations of
+> of_init_opp_table() and so caller wouldn't be able to differentiate between
+> those two cases.
+>
+> Make it return -ENOSYS instead for better handling.
+>
+[Nit] How about "it's more appropriate to return -ENOSYS as since the function
+is not implemented" ?
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-14-git-send-email-namhyung@kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+Otherwise it looks fine to me.
+Reviewed-by: Sudeep Holla <sudeep.holla@arm.com>
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 92d128f..169224c 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -812,10 +812,7 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
- 		if (total)
- 			percent = h->stat.period * 100.0 / total;
- 
--		if (percent < min_pcnt)
--			return NULL;
--
--		if (!h->filtered)
-+		if (!h->filtered && percent >= min_pcnt)
- 			return nd;
- 
- 		nd = rb_next(nd);
--- 
-1.8.3.1
+> Suggested-by: Sudeep Holla <sudeep.holla@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>   include/linux/pm_opp.h | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
+> index 0330217..6668150 100644
+> --- a/include/linux/pm_opp.h
+> +++ b/include/linux/pm_opp.h
+> @@ -112,7 +112,7 @@ int of_init_opp_table(struct device *dev);
+>   #else
+>   static inline int of_init_opp_table(struct device *dev)
+>   {
+> -	return -EINVAL;
+> +	return -ENOSYS;
+>   }
+>   #endif
+>
+>
 
