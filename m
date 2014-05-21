@@ -1,400 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaEULMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 07:12:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32584 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254AbaEULMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 07:12:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,879,1392192000"; 
-   d="scan'208";a="535389834"
-Date: Wed, 21 May 2014 16:26:52 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Robin Gong <b38343@freescale.com>
-Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, andriy.shevchenko@linux.jf.intel.com
-Subject: Re: [PATCH v3] dma: imx-sdma: add support for sdma memory copy
-Message-ID: <20140521105652.GO21128@intel.com>
-References: <1399342368-15217-1-git-send-email-b38343@freescale.com>
+	id S1752302AbaEULPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 07:15:33 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:33494 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaEULPb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 07:15:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399342368-15217-1-git-send-email-b38343@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+sq2CejJFg--0rS1arr4Sactp-ssENB8Y3g4b61JPGPBCms=A@mail.gmail.com>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+	<CA+sq2Ccok5wtKjCZUkBhhj3WsiqFAoMgHK7LY210aBtMku+8SA@mail.gmail.com>
+	<20140516132451.GK967@e106497-lin.cambridge.arm.com>
+	<CA+sq2CejJFg--0rS1arr4Sactp-ssENB8Y3g4b61JPGPBCms=A@mail.gmail.com>
+Date: Wed, 21 May 2014 16:45:29 +0530
+Message-ID: <CA+sq2Ccp0_4hgbbWa27bkYcqiXY6Ckr8eckWnHwANvhWNo97fg@mail.gmail.com>
+Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
+From: Sunil Kovvuri <sunil.kovvuri@gmail.com>
+To: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "kdb@lurndal.org" <kdb@lurndal.org>,
+        "yu.zhao@intel.com" <yu.zhao@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 06, 2014 at 10:12:48AM +0800, Robin Gong wrote:
-> add "device_prep_dma_memcpy" and "device_prep_dma_sg" for memory copy by sdma.
-> 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
-> 
-> ---
-> change:
-> --v3:
->   1. remove redundant check for bus width
-> 
-> --v2:
->   1. correct some printk format, such as %pad for dma_addr_t
->   2. split duplicated code in prep_dma_memcpy and prep_dma_sg to make code clean.
-> 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
-> ---
->  drivers/dma/imx-sdma.c |  250 ++++++++++++++++++++++++++++++++++++-----------
->  1 files changed, 191 insertions(+), 59 deletions(-)
-> 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index 4e79183..9abc164 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -229,6 +229,7 @@ struct sdma_context_data {
->  } __attribute__ ((packed));
->  
->  #define NUM_BD (int)(PAGE_SIZE / sizeof(struct sdma_buffer_descriptor))
-> +#define SDMA_BD_MAX_CNT	(0xfffc) /* align with 4 bytes */
->  
->  struct sdma_engine;
->  
-> @@ -260,6 +261,7 @@ struct sdma_channel {
->  	unsigned int			pc_from_device, pc_to_device;
->  	unsigned long			flags;
->  	dma_addr_t			per_address;
-> +	unsigned int                    pc_to_pc;
->  	unsigned long			event_mask[2];
->  	unsigned long			watermark_level;
->  	u32				shp_addr, per_addr;
-> @@ -694,6 +696,7 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
->  
->  	sdmac->pc_from_device = 0;
->  	sdmac->pc_to_device = 0;
-> +	sdmac->pc_to_pc = 0;
->  
->  	switch (peripheral_type) {
->  	case IMX_DMATYPE_MEMORY:
-> @@ -763,6 +766,7 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
->  
->  	sdmac->pc_from_device = per_2_emi;
->  	sdmac->pc_to_device = emi_2_per;
-> +	sdmac->pc_to_pc = emi_2_emi;
->  }
->  
->  static int sdma_load_context(struct sdma_channel *sdmac)
-> @@ -775,11 +779,12 @@ static int sdma_load_context(struct sdma_channel *sdmac)
->  	int ret;
->  	unsigned long flags;
->  
-> -	if (sdmac->direction == DMA_DEV_TO_MEM) {
-> +	if (sdmac->direction == DMA_DEV_TO_MEM)
->  		load_address = sdmac->pc_from_device;
-> -	} else {
-> +	else if (sdmac->direction == DMA_MEM_TO_MEM)
-> +		load_address = sdmac->pc_to_pc;
-> +	else
-else is not proper here as enum defines one more field. So else-if would be apt.
+Hi Liviu,
 
->  		load_address = sdmac->pc_to_device;
-> -	}
->  
->  	if (load_address < 0)
->  		return load_address;
-> @@ -1010,99 +1015,203 @@ static void sdma_free_chan_resources(struct dma_chan *chan)
->  	clk_disable(sdma->clk_ahb);
->  }
->  
-> -static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
-> -		struct dma_chan *chan, struct scatterlist *sgl,
-> -		unsigned int sg_len, enum dma_transfer_direction direction,
-> -		unsigned long flags, void *context)
-> +static int sdma_transfer_init(struct sdma_channel *sdmac,
-> +			      enum dma_transfer_direction direction)
-> +{
-> +	int ret = 0;
-> +
-> +	sdmac->status = DMA_IN_PROGRESS;
-> +	sdmac->buf_tail = 0;
-> +	sdmac->flags = 0;
-> +	sdmac->direction = direction;
-> +
-> +	ret = sdma_load_context(sdmac);
-> +	if (ret)
-> +		return ret;
-> +
-> +	sdmac->chn_count = 0;
-> +
-> +	return ret;
-> +}
-> +
-> +static int check_bd_buswidth(struct sdma_buffer_descriptor *bd,
-> +			     struct sdma_channel *sdmac, int count,
-> +			     dma_addr_t dma_dst, dma_addr_t dma_src)
-> +{
-> +	int ret = 0;
-> +
-> +	switch (sdmac->word_size) {
-> +	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-> +		bd->mode.command = 0;
-> +		if ((count | dma_dst | dma_src) & 3)
-> +			ret = -EINVAL;
-> +		break;
-> +	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-> +		bd->mode.command = 2;
-> +		if ((count | dma_dst | dma_src) & 1)
-> +			ret = -EINVAL;
-> +		break;
-> +	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-> +		bd->mode.command = 1;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return ret;
-> +}
-This looks like a code reorg change, perhpas another patch?
+Sorry for the trouble.
+I got why 'res->parent' is not set in my case.
+Basically my SR-IOV device has fixed resources, so resources will not
+be allocated/assigned and hence parent resource is not set.
+I will move the resource claiming to host controller driver as a fixup
+so that parent resource hierarchy is set.
 
-> +
-> +static struct dma_async_tx_descriptor *sdma_prep_memcpy(
-> +		struct dma_chan *chan, dma_addr_t dma_dst,
-> +		dma_addr_t dma_src, size_t len, unsigned long flags)
->  {
->  	struct sdma_channel *sdmac = to_sdma_chan(chan);
->  	struct sdma_engine *sdma = sdmac->sdma;
-> -	int ret, i, count;
->  	int channel = sdmac->channel;
-> -	struct scatterlist *sg;
-> +	size_t count;
-> +	int i = 0, param;
-> +	struct sdma_buffer_descriptor *bd;
->  
-> -	if (sdmac->status == DMA_IN_PROGRESS)
-> +	if (!chan || !len || sdmac->status == DMA_IN_PROGRESS)
->  		return NULL;
-> -	sdmac->status = DMA_IN_PROGRESS;
->  
-> -	sdmac->flags = 0;
-> -
-> -	sdmac->buf_tail = 0;
-> +	if (len >= NUM_BD * SDMA_BD_MAX_CNT) {
-> +		dev_err(sdma->dev, "channel%d: maximum bytes exceeded:%zu > %d\n"
-> +			, channel, len, NUM_BD * SDMA_BD_MAX_CNT);
-> +		goto err_out;
-> +	}
->  
-> -	dev_dbg(sdma->dev, "setting up %d entries for channel %d.\n",
-> -			sg_len, channel);
-> +	dev_dbg(sdma->dev, "memcpy: %pad->%pad, len=%zu, channel=%d.\n",
-> +		&dma_src, &dma_dst, len, channel);
->  
-> -	sdmac->direction = direction;
-> -	ret = sdma_load_context(sdmac);
-> -	if (ret)
-> +	if (sdma_transfer_init(sdmac, DMA_MEM_TO_MEM))
->  		goto err_out;
->  
-> -	if (sg_len > NUM_BD) {
-> +	do {
-> +		count = min_t(size_t, len, SDMA_BD_MAX_CNT);
-> +		bd = &sdmac->bd[i];
-> +		bd->buffer_addr = dma_src;
-> +		bd->ext_buffer_addr = dma_dst;
-> +		bd->mode.count = count;
-> +
-> +		if (check_bd_buswidth(bd, sdmac, count, dma_dst, dma_src))
-> +			goto err_out;
-> +
-> +		dma_src += count;
-> +		dma_dst += count;
-> +		len -= count;
-> +		i++;
-> +
-> +		param = BD_DONE | BD_EXTD | BD_CONT;
-> +		/* last bd */
-> +		if (!len) {
-> +			param |= BD_INTR;
-> +			param |= BD_LAST;
-> +			param &= ~BD_CONT;
-> +		}
-> +
-> +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%u %s%s\n",
-> +				i, count, bd->buffer_addr,
-> +				param & BD_WRAP ? "wrap" : "",
-> +				param & BD_INTR ? " intr" : "");
-> +
-> +		bd->mode.status = param;
-> +		sdmac->chn_count += count;
-> +	} while (len);
-> +
-> +	sdmac->num_bd = i;
-> +	sdma->channel_control[channel].current_bd_ptr = sdmac->bd_phys;
-> +
-> +	return &sdmac->desc;
-> +err_out:
-> +	sdmac->status = DMA_ERROR;
-> +	return NULL;
-> +}
-> +
-> +/*
-> + * Please ensure dst_nents no smaller than src_nents , also every sg_len of
-> + * dst_sg node no smaller than src_sg. To simply things, please use the same
-> + * size of dst_sg as src_sg.
-> + */
-> +static struct dma_async_tx_descriptor *sdma_prep_sg(
-> +		struct dma_chan *chan,
-> +		struct scatterlist *dst_sg, unsigned int dst_nents,
-> +		struct scatterlist *src_sg, unsigned int src_nents,
-> +		enum dma_transfer_direction direction)
-> +{
-> +	struct sdma_channel *sdmac = to_sdma_chan(chan);
-> +	struct sdma_engine *sdma = sdmac->sdma;
-> +	int ret, i, count;
-> +	int channel = sdmac->channel;
-> +	struct scatterlist *sg_src = src_sg, *sg_dst = dst_sg;
-> +
-> +	if (sdmac->status == DMA_IN_PROGRESS)
-> +		return NULL;
-> +
-> +	dev_dbg(sdma->dev, "setting up %d entries for channel %d.\n",
-> +			src_nents, channel);
-> +
-> +	if (src_nents > NUM_BD) {
->  		dev_err(sdma->dev, "SDMA channel %d: maximum number of sg exceeded: %d > %d\n",
-> -				channel, sg_len, NUM_BD);
-> -		ret = -EINVAL;
-> +				channel, src_nents, NUM_BD);
->  		goto err_out;
->  	}
->  
-> -	sdmac->chn_count = 0;
-> -	for_each_sg(sgl, sg, sg_len, i) {
-> +	if (sdma_transfer_init(sdmac, direction))
-> +		goto err_out;
-> +
-> +	for_each_sg(src_sg, sg_src, src_nents, i) {
->  		struct sdma_buffer_descriptor *bd = &sdmac->bd[i];
->  		int param;
->  
-> -		bd->buffer_addr = sg->dma_address;
-> +		bd->buffer_addr = sg_src->dma_address;
->  
-> -		count = sg_dma_len(sg);
-> +		if (direction == DMA_MEM_TO_MEM) {
-> +			BUG_ON(!sg_dst);
-why should this be direction specfic?
+Thanks for the support.
 
-> +			bd->ext_buffer_addr = sg_dst->dma_address;
-> +		}
-> +
-> +		count = sg_dma_len(sg_src);
->  
-> -		if (count > 0xffff) {
-> +		if (count > SDMA_BD_MAX_CNT) {
->  			dev_err(sdma->dev, "SDMA channel %d: maximum bytes for sg entry exceeded: %d > %d\n",
-> -					channel, count, 0xffff);
-> -			ret = -EINVAL;
-> +					channel, count, SDMA_BD_MAX_CNT);
->  			goto err_out;
->  		}
->  
->  		bd->mode.count = count;
->  		sdmac->chn_count += count;
->  
-> -		if (sdmac->word_size > DMA_SLAVE_BUSWIDTH_4_BYTES) {
-> -			ret =  -EINVAL;
-> -			goto err_out;
-> -		}
-> +		if (direction == DMA_MEM_TO_MEM)
-> +			ret = check_bd_buswidth(bd, sdmac, count,
-> +						sg_dst->dma_address,
-> +						sg_src->dma_address);
-> +		else
-> +			ret = check_bd_buswidth(bd, sdmac, count, 0,
-> +						sg_src->dma_address);
->  
-> -		switch (sdmac->word_size) {
-> -		case DMA_SLAVE_BUSWIDTH_4_BYTES:
-> -			bd->mode.command = 0;
-> -			if (count & 3 || sg->dma_address & 3)
-> -				return NULL;
-> -			break;
-> -		case DMA_SLAVE_BUSWIDTH_2_BYTES:
-> -			bd->mode.command = 2;
-> -			if (count & 1 || sg->dma_address & 1)
-> -				return NULL;
-> -			break;
-> -		case DMA_SLAVE_BUSWIDTH_1_BYTE:
-> -			bd->mode.command = 1;
-> -			break;
-> -		default:
-> -			return NULL;
-> -		}
-> +		if (ret)
-> +			goto err_out;
->  
->  		param = BD_DONE | BD_EXTD | BD_CONT;
->  
-> -		if (i + 1 == sg_len) {
-> +		if (i + 1 == src_nents) {
->  			param |= BD_INTR;
->  			param |= BD_LAST;
->  			param &= ~BD_CONT;
->  		}
->  
-> -		dev_dbg(sdma->dev, "entry %d: count: %d dma: %#llx %s%s\n",
-> -				i, count, (u64)sg->dma_address,
-> +		dev_dbg(sdma->dev, "entry %d: count: %d dma: %pad %s%s\n",
-> +				i, count, &sg_src->dma_address,
->  				param & BD_WRAP ? "wrap" : "",
->  				param & BD_INTR ? " intr" : "");
->  
->  		bd->mode.status = param;
-> +		if (direction == DMA_MEM_TO_MEM)
-> +			sg_dst = sg_next(sg_dst);
->  	}
->  
-> -	sdmac->num_bd = sg_len;
-> +	sdmac->num_bd = src_nents;
->  	sdma->channel_control[channel].current_bd_ptr = sdmac->bd_phys;
->  
->  	return &sdmac->desc;
-> @@ -1111,6 +1220,24 @@ err_out:
->  	return NULL;
->  }
->  
-> +static struct dma_async_tx_descriptor *sdma_prep_memcpy_sg(
-> +		struct dma_chan *chan,
-> +		struct scatterlist *dst_sg, unsigned int dst_nents,
-> +		struct scatterlist *src_sg, unsigned int src_nents,
-> +		unsigned long flags)
-> +{
-> +	return sdma_prep_sg(chan, dst_sg, dst_nents, src_sg, src_nents,
-> +			   DMA_MEM_TO_MEM);
-> +}
-> +
-> +static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
-> +		struct dma_chan *chan, struct scatterlist *sgl,
-> +		unsigned int sg_len, enum dma_transfer_direction direction,
-> +		unsigned long flags, void *context)
-> +{
-> +	return sdma_prep_sg(chan, NULL, 0, sgl, sg_len, direction);
-> +}
-> +
->  static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
->  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> @@ -1143,9 +1270,9 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
->  		goto err_out;
->  	}
->  
-> -	if (period_len > 0xffff) {
-> -		dev_err(sdma->dev, "SDMA channel %d: maximum period size exceeded: %d > %d\n",
-> -				channel, period_len, 0xffff);
-> +	if (period_len > SDMA_BD_MAX_CNT) {
-> +		dev_err(sdma->dev, "SDMA channel %d: maximum period size exceeded: %zu > %d\n",
-> +				channel, period_len, SDMA_BD_MAX_CNT);
-this macro change should have been another patch too...
+Regards,
+Sunil.
 
 
--- 
-~Vinod
+On Fri, May 16, 2014 at 11:12 PM, Sunil Kovvuri <sunil.kovvuri@gmail.com> wrote:
+> Hi Liviu,
+>
+> Issue may not be only with SR-IOV resources.
+>
+> I am not an expert with Linux PCI core. But i am trying to understand
+> how even for a non SR-IOV capable device's resource, gets a parent
+> associated with it.
+>
+> When a PCI device driver calls pci_enable_device() which inturn calls
+> 'arch/arm64/kernel/pci.c' pcibios_enable_device() which uses Linux PCI core
+> API 'pci_enable_resources'. This API checks 'res->parent' for all
+> valid resources
+> before enabling them, otherwise it fails.
+>                 if (!r->parent) {
+>                         dev_err(&dev->dev, "device not available "
+>                                 "(can't reserve %pR)\n", r);
+>                         return -EINVAL;
+>                 }
+>
+> Can you please let me know where this hierarchy is being set for
+> 'pcibios_enable_resources' to work.
+>
+> I could only find request_resource() API which sets the parent and
+> pci_claim_resource() uses this.
+>
+> Thanks,
+> Sunil.
+>
+> On Fri, May 16, 2014 at 6:54 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+>> Hi Sunil,
+>>
+>> On Fri, May 16, 2014 at 11:33:04AM +0100, Sunil Kovvuri wrote:
+>>> Hi Liviu,
+>>>
+>>> I am using your ARM64 PCIe patches to write a PCIe host controller
+>>> driver for our SOC. I am facing an issue with SR-IOV capable device.
+>>>
+>>> Consider an PCI Express endpoint connected to a PCI Express
+>>> Root Port.  The PCI Express endpoint provides PCI-SIG SR-IOV
+>>> capabilities with a single physical function and a large number
+>>> of virtual functions.  The Root Port contains a pci-pci bridge in
+>>> between it and the SR-IOV device.
+>>>
+>>> When the SR-IOV capable device's driver tries to enable sriov
+>>> (pci_enable_sriov()) it fails to create/add PCI device for each
+>>> virtual function reporting  "not enough MMIO resources for SR-IOV".
+>>>
+>>> In sriov_enable() (drivers/pci/iov.c)
+>>>
+>>>  296        for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+>>>  297                 bars |= (1 << (i + PCI_IOV_RESOURCES));
+>>>  298                 res = dev->resource + PCI_IOV_RESOURCES + i;
+>>>  299                 if (res->parent)
+>>>  300                         nres++;
+>>>  301         }
+>>>  302         if (nres != iov->nres) {
+>>>  303                 dev_err(&dev->dev, "not enough MMIO resources for
+>>>  SR-IOV\n");
+>>>  304                 return -ENOMEM;
+>>>  305         }
+>>>
+>>> Here its checking if physical function's IOV resource has a parent or not.
+>>> Which is pci-pci bridge in this case. Otherwise it doesn't consider
+>>> that resource.
+>>>
+>>> Added below api to your patch.
+>>> This will try to claim a resource while creating a PCI device which
+>>> inturn sets 'res->parent'.
+>>>
+>>> Let me know if this is okay.
+>>>
+>>> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
+>>> index 9f29c9a..fbfb48f 100644
+>>> --- a/arch/arm64/kernel/pci.c
+>>> +++ b/arch/arm64/kernel/pci.c
+>>> @@ -125,6 +125,21 @@ resource_size_t pcibios_align_resource(void
+>>> *data, const struct resource *res,
+>>>         return res->start;
+>>>  }
+>>>
+>>> +int pcibios_add_device(struct pci_dev *pdev)
+>>> +{
+>>> +        unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
+>>> +        struct resource *res;
+>>> +
+>>> +        for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+>>> +                res = &pdev->resource[i];
+>>> +                if (res->parent || !(res->flags & type_mask))
+>>> +                        continue;
+>>> +                pci_claim_resource(pdev, i);
+>>> +        }
+>>> +
+>>>
+>>
+>> I would like not to have to add your patch in this file as I am trying to
+>> remove it entirely. I don't have an SR-IOV capable device in my setup so
+>> I am not able to debug your problem, but could you have a go and try to
+>> figure out why the SR-IOV resources do not get a parent associated with
+>> when they get created?
+>>
+>> Many thanks,
+>> Liviu
+>>
+>>
+>> --
+>> ====================
+>> | I would like to |
+>> | fix the world,  |
+>> | but they're not |
+>> | giving me the   |
+>>  \ source code!  /
+>>   ---------------
+>>     ¯\_(ツ)_/¯
+>>
