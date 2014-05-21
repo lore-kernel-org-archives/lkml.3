@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaEUJqu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:46:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60401 "EHLO mail.skyhub.de"
+	id S1752491AbaEUJs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:48:27 -0400
+Received: from mail.aswsp.com ([193.34.35.150]:27996 "EHLO mail.aswsp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023AbaEUJqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:46:49 -0400
-Date: Wed, 21 May 2014 11:46:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-Message-ID: <20140521094626.GB21205@pd.tnic>
-References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
- <1400639227.9759.21.camel@pippen.local.home>
- <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
+	id S1752434AbaEUJsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 05:48:25 -0400
+From: Victor Lambret <victor.lambret.ext@parrot.com>
+To: Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Victor Lambret <victor.lambret.ext@parrot.com>
+Subject: [PATCH] videobuf2-core: remove duplicated code
+Date: Wed, 21 May 2014 11:48:43 +0200
+Message-ID: <1400665723-21695-1-git-send-email-victor.lambret.ext@parrot.com>
+X-Mailer: git-send-email 2.0.0.rc2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [46.218.109.88]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 07:39:31PM -0700, Andy Lutomirski wrote:
-> So the issue here is that we can have an NMI followed immediately by
-> an MCE.
+Remove duplicated test of buffer presence at streamon
 
-That part might need clarification for me: #MC is higher prio interrupt
-than NMI so a machine check exception can interrupt the NMI handler at
-any point.
+Signed-off-by: Victor Lambret <victor.lambret.ext@parrot.com>
+---
+ drivers/media/v4l2-core/videobuf2-core.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-But you're talking only about the small window when nmi_mce_nest_count
-hasn't been incremented yet, right? I.e., this:
-
-"The result is that the only interrupt that can happen with
-`nmi_mce_nest_count == 0` in NMI context is an MCE at the beginning or
-end of the NMI handler."
-
-Correct?
-
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index f9059bb..b731b66 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -2067,10 +2067,6 @@ static int vb2_internal_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!q->num_buffers) {
+-		dprintk(1, "streamon: no buffers have been allocated\n");
+-		return -EINVAL;
+-	}
+ 	if (q->num_buffers < q->min_buffers_needed) {
+ 		dprintk(1, "streamon: need at least %u allocated buffers\n",
+ 				q->min_buffers_needed);
 -- 
-Regards/Gruss,
-    Boris.
+2.0.0.rc2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
