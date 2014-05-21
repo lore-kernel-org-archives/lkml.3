@@ -1,162 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaEUKRP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 06:17:15 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:60909 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaEUKRN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 06:17:13 -0400
-Message-ID: <537C7D25.6060705@atmel.com>
-Date: Wed, 21 May 2014 12:17:09 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751787AbaEUKYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 06:24:09 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:46561 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751066AbaEUKYH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 06:24:07 -0400
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 06:24:07 EDT
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, <arm@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: DT for 3.16 #2
-References: <1400059162-630-1-git-send-email-nicolas.ferre@atmel.com> <20140520055041.GO18956@quad.lixom.net> <537B727C.5080404@atmel.com> <20140520164746.GA601@quad.lixom.net>
-In-Reply-To: <20140520164746.GA601@quad.lixom.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <2643156.2tkLFqgYFg@sigyn>
+References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
+ <1c6140633925b0838b7627e071e80761.squirrel@mungewell.org> <537BFEBF.8010601@logitech.com>
+ <2643156.2tkLFqgYFg@sigyn>
+From: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Date: Wed, 21 May 2014 12:17:26 +0200
+Message-ID: <CAE7qMrrH5Yeya9gKx+gbi1w39mJoEj9xw4mh3D86dLaKsWWLSQ@mail.gmail.com>
+Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
+To: =?UTF-8?B?TWljaGFsIE1hbMO9?= <madcatxster@devoid-pointer.net>
+Cc: Roland Bosa <rbosa@logitech.com>, Simon Wood <simon@mungewell.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Elias Vanderstuyft <elias.vds@gmail.com>, anssi.hannula@iki.fi
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/05/2014 18:47, Olof Johansson :
-> Hi,
-> 
-> On Tue, May 20, 2014 at 05:19:24PM +0200, Nicolas Ferre wrote:
->> On 20/05/2014 07:50, Olof Johansson :
->>> On Wed, May 14, 2014 at 11:19:22AM +0200, Nicolas Ferre wrote:
->>>> Arnd, Olof, Kevin,
->>>>
->>>> More DT material for AT91. Some fixes that apply on what was merged for 3.15
->>>> but that are not very critical.
->>>> The other patches are feature additions to old or very recent product/board:
->>>> at91sam9261 or sama5d3 Xplained.
->>>>
->>>> Thanks, best regards,
->>>>
->>>> The following changes since commit 27a96a0364787d2b41d2a72d08143d95263e1b07:
->>>>
->>>>   ARM: at91: sama5d3: clock for ssc from rk pin (2014-04-18 22:43:44 +0200)
->>>>
->>>> are available in the git repository at:
->>>>
->>>>   git://github.com/at91linux/linux-at91.git tags/at91-dt2
->>>>
->>>> for you to fetch changes up to a93f9c88b7701d1c4c3b22d39d64a408f000a6ef:
->>>>
->>>>   ARM: at91/dt: at91-sama5d3_xplained: add the regulator device node (2014-05-12 16:48:54 +0200)
->>>
->>> Merged, but:
->>>
->>>>  arch/arm/boot/dts/at91-sama5d3_xplained.dts |  62 +++++++++++++++
->>>>  arch/arm/boot/dts/at91sam9261.dtsi          | 114 ++++++++++++++++++++++++++--
->>>>  arch/arm/boot/dts/at91sam9rl.dtsi           |   7 +-
->>>>  arch/arm/boot/dts/sama5d3.dtsi              |  78 +++++++++++++++++++
->>>
->>> Grmbl. I remember being somewhat annoyed that you didn't use at91 prefix
->>> when you introduced the sama5d3 dtsi files, but please don't start using
->>> it on a random board like this, especially when other boards just use
->>> the sama5d3_<board>.dts format.
->>
->> Well, I don't understand completely. Since our discussion during 3.10
->> merge window ([GIT PULL] at91: DT changes for 3.10 #2), I try to conform
->> to this rule:
->>
->> 1/ all pre-3.10 and 3.10 device tree file names stay unchanged
->> -> sama5d3.dti (SoC)
->> -> sama5d35ek.dts (board)
->>
->> 2/ all *SoC* DT files conform to their marking:
->> at91sam9263.dtsi
->> at91sam9rl.dtsi
->> sama5d3.dtsi, sama5d36.dtsi
->> sama5d4.dtsi, sama5d46.dtsi (maybe in the future, who knows...)
->>
->> 3/ all post-3.10 *boards* have the "at91-" prefix, whether they are
->> populated with sam9 or sama5:
->> at91-ariag25.dts (since 3.10, using a at91sam9g25)
->> at91-qil_a9260.dts (since 3.14, using at91sam9260)
->> at91-sama5d3_xplained.dts (since 3.14, using sama5d36)
->>
->> The rule for AT91 has never been to prefix the board DT filename with
->> the name of the SoC or SoC family.
-> 
-> So, going back and looking at the discussion from a year ago, I think the
-> disconnect was in what consistency we were looking for. Yes, we would have
-> preferred to prefix the sama5d3* dts/dtsis with at91, and you even
-> offered to do it. ;-) But I think even more important for sanity is
-> to stay consistent with how we handle all platforms, which is that the
-> board dts files are prefixed with the SoC name.
-> 
-> In the past, we've had cases where this didn't happen, but these days we have
-> tried to be very consistent on it. I.e. omap3*, exynos<##>*, etc.
+Elias, Simon, Michal,
 
-Okay, but once again, I tried to deal with the existing files, not break
-any user's habit, before any convention had been clearly established,
-and now... we are reaching a deadlock having to re-consider again our DT
-filenames?
+It is unfortunate that we didn't get back to  you in 2013 when you
+asked for help in reverse engineering, oftentimes we have conflicting
+priorities and a particular request may be left laying around for some
+time before being addressed. But please, don't hesitate to re-kick us
+if you feel we are not being reactive.
 
-> So, if you have at91- as a prefix, have the SoC as the second component. But
-> that gets awkward too, so I would juts use the current SoC dtsi as the prefix
-> at91sam9263-<boardname>.dts, or sama5d35_<boardname>.dts.
-> 
->>> Care to fix this up in time for 3.16 merge window?
->>
->> Well, I do not know what to fix as the files were already present in
->> mainline before this kernel revision and that I am a little bit
->> reluctant to change file names after they are merged in mainline.
->>
->> Now, can we keep the current policy described above (somehow weird, I
->> admit) for future SoCs and boards?
-> 
-> It is unfortunate that I didn't catch this for 3.14 so that name has been
-> there in a release. I guess the least disruptive thing for now would be
-> to change over to use the SoC dtsi prefix for any new board files from
-> here on out, and treat at91-sama5d3_xplained as a one-time thing.
+Let me clearly say that our intentions are to disclose as much
+information as possible and to help the community in having great
+support to all our hardware across all platforms. We have zero problem
+with being asked for information.
 
-That is not only about sama5d3, what about sam9-based boards? Several of
-them already have this "at91-" prefix (and not a soc prefix).
+Many thanks,
+-nestor
 
-So this will introduce another temporary naming convention for these
-files which are actually used by people: everyone will be puzzled.
 
-Okay, there are two ways to escape this situation:
-1/ change nothing and conform to what I stated above. It is more like
-   finding a rationale to an existing situation than a real neat
-   policy, but hey, "nobody's perfect".
-2/ change *everything* in AT91 DT file naming with a schema that
-   we will have to validate with care (<soc family> or <soc>,
-   "_" or "-", what about boards with modules, etc.).
-   That will certainly disturb many of our users without a real benefit.
 
-This directory is flat, the board names are chosen by companies and
-people that we do not control, a user tend to like finding his preferred
-board dtb file unchanged from a kernel revision to another...
-Well all this lead me to think that we don't have to loose too much time
-thinking about a new strict convention for this file naming or changing
-all this once again just for the sake of it.
 
-Other SoC maintainers beautifully designed from the beginning the naming
-scheme of their DT files, fine. AT91 did not and forgive me but when
-opening arch/arm/boot/dts/Makefile file and seeing some file names, I'm
-not ashamed. Moreover, now that I said to everybody since 3.10 to prefix
-their *board* name with "at91-", I have to say something else, I don't
-think it is worth it.
-
-Bye,
--- 
-Nicolas Ferre
+On Wed, May 21, 2014 at 4:13 AM, Michal Malý
+<madcatxster@devoid-pointer.net> wrote:
+>
+> On Tuesday 20 of May 2014 18:17:51 Roland Bosa wrote:
+> >
+> > The file format of an IFR is probably easily deducible. There's a lot of
+> > textual clues to parameters and the values are also written out in
+> > string form.
+> >
+> > I don't have a FEdit file at hand, but I suppose it will be similar.
+>
+> I believe that Elias successfully reverse engineered the effect file format
+> produced by FEdit. There is no support for this kind of prefabricated effects
+> in the Linux FF API.
+>
+> > > I assume that most AAA games, would implement these through some middle
+> > > layer. I think that is probably via Steam using SDL2 haptic API, we have
+> > > been testing against SDL2's 'testhaptic'.
+> >
+> > I wasn't aware of this layer. I must read up on it. It sounds like a
+> > simple way to access force feedback - I guess a game developer should
+> > shed some light on this...
+> >
+> >
+> > > Do you see another path (which we should be supporting/testing)?
+> >
+> > Nope, not at this time.
+> >
+> > > There was some discussion about rate limiting the USB packets to the
+> > > wheel, and how to deal if app updates too quickly. Is there an upper limit
+> > > for the wheel itself, or is it just the USB 'pipe' which is the limiting
+> > > factor?
+> >
+> > On the Windows side we send 125 reports/sec. The entire simulation loop
+> > runs with a 8ms resolution. I assume this value was chosen for some
+> > hardware constraints back in the days, but it has proven to be a good
+> > compromise for simulated periodics and physics constraints.
+>
+> Our current code uses 8 msecs delay as well.
+>
+> > In any case, the USB traffic should be decoupled from the app. Any force
+> > updates should only change state in the ff-memless[-next] driver. Any
+> > change there should trickle down to a 'slot' representation of the
+> > device. If there's any change in the slots, the device is marked as
+> > 'dirty' and USB transfers are scheduled to send the latest state to the
+> > physical device.
+> >
+> > The scheduling should keep track of how many requests are in-flight and
+> > delay writing the next output, until the previous one has completed.
+>
+> The approach I had in mind would keep track of the last effect that made it to
+> the device and the last effect that arrived from userspace. This would be
+> stored for each effect slot. An update would be scheduled at the desired update
+> rate. The updating routine would figure out the state change between last
+> update and "now", send the required data to the device and reschedule itself.
+> The routine could check if there are any USB transfers still running and
+> reschedule itself immediately.
+>
+> > Question back to the community: are there APIs in the USB layer to check
+> > for presence of in-progress requests? Can one add a 'completion'
+> > callback to a request, that gets invoked on completion/cancellation?
+>
+> For instance "usb_submit_urb()" can have a completion handler that is called
+> once the transfer is done. The current code uses "hid_hw_request()" which is
+> asynchronous and doesn't report anything back.
+>
+> Proper decoupling of the userspace and driver is the only important thing that
+> is missing from the current code.
+>
+> Michal
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
