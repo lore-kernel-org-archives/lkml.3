@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaEUQ0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:26:46 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:49699 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaEUQ0n (ORCPT
+	id S1752693AbaEUQ04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:26:56 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:48135 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbaEUQ0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:26:43 -0400
+	Wed, 21 May 2014 12:26:50 -0400
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -21,9 +21,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5 3/6] vendor-prefixes: add prefix for Mediaktek Inc.
-Date: Wed, 21 May 2014 18:26:20 +0200
-Message-Id: <1400689583-21119-4-git-send-email-matthias.bgg@gmail.com>
+Subject: [PATCH v5 6/6] arm: mediatek: add dts for Aquaris5 mobile phone
+Date: Wed, 21 May 2014 18:26:23 +0200
+Message-Id: <1400689583-21119-7-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1400689583-21119-1-git-send-email-matthias.bgg@gmail.com>
 References: <1400689583-21119-1-git-send-email-matthias.bgg@gmail.com>
@@ -31,23 +31,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Aquaris5 is a mobile phone based on the MT6589 SoC.
+
 Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
 ---
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/boot/dts/mt6589-aquaris5.dts | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+ create mode 100644 arch/arm/boot/dts/mt6589-aquaris5.dts
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index abc3080..73f9e4c 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -75,6 +75,7 @@ linux	Linux-specific binding
- lsi	LSI Corp. (LSI Logic)
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
-+mediatek	MediaTek Inc.
- microchip	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
- moxa	Moxa
+diff --git a/arch/arm/boot/dts/mt6589-aquaris5.dts b/arch/arm/boot/dts/mt6589-aquaris5.dts
+new file mode 100644
+index 0000000..443b446
+--- /dev/null
++++ b/arch/arm/boot/dts/mt6589-aquaris5.dts
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (c) 2014 MundoReader S.L.
++ * Author: Matthias Brugger <matthias.bgg@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++/dts-v1/;
++#include "mt6589.dtsi"
++
++/ {
++	model = "bq Aquaris5";
++
++	memory {
++		reg = <0x80000000 0x40000000>;
++	};
++};
 -- 
 1.8.1.2
 
