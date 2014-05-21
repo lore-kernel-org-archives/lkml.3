@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757AbaEUVl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:41:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45072 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725AbaEUVlv (ORCPT
+	id S1753825AbaEUVmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:42:43 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:48934 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352AbaEUVjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:41:51 -0400
-Date: Thu, 22 May 2014 06:41:57 +0900 (JST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-cc: linux-kernel@vger.kernel.org, shawn@churchofgit.com,
-        akpm@linux-foundation.org, avagin@openvz.org, xemul@parallels.com,
-        vdavydov@parallels.com
-Subject: Re: [patch 1/3] timerfd: Implement show_fdinfo method
-In-Reply-To: <20140428213301.304637183@openvz.org>
-Message-ID: <alpine.DEB.2.02.1405220641240.9695@ionos.tec.linutronix.de>
-References: <20140428212517.200264067@openvz.org> <20140428213301.304637183@openvz.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 21 May 2014 17:39:07 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        Vitaly Bordug <vbordug@ru.mvista.com>, Li Yang <leoli@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Aida Mynzhasova <aida.mynzhasova@skitlab.ru>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Claudiu Manoil <claudiu.manoil@freescale.com>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list),
+        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
+Subject: [PATCH RESEND net-next 2/9] Documentation: devicetree: net: refer to fixed-link.txt
+Date: Wed, 21 May 2014 14:38:44 -0700
+Message-Id: <1400708331-18088-3-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
+References: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014, Cyrill Gorcunov wrote:
->  
-> +static int timerfd_show(struct seq_file *m, struct file *file)
-> +{
-> +	struct timerfd_ctx *ctx = file->private_data;
-> +	struct itimerspec t;
-> +
-> +	spin_lock_irq(&ctx->wqh.lock);
-> +	t.it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
-> +	t.it_interval = ktime_to_timespec(ctx->tintv);
-> +	spin_unlock_irq(&ctx->wqh.lock);
-> +
-> +	return seq_printf(m,
-> +			  "clockid: %d\n"
-> +			  "ticks: %llu\n"
-> +			  "settime flags: 0%o\n"
-> +			  "it_value: (%llu, %llu)\n"
-> +			  "it_interval: (%llu, %llu)\n",
-> +			  ctx->clockid, (unsigned long long)ctx->ticks,
-> +			  ctx->settime_flags,
-> +			  (unsigned long long)t.it_value.tv_sec,
-> +			  (unsigned long long)t.it_value.tv_nsec,
-> +			  (unsigned long long)t.it_interval.tv_sec,
-> +			  (unsigned long long)t.it_interval.tv_nsec);
-> +}
+Update the Freescale TSEC PHY, Broadcom GENET & SYSTEMPORT Device Tree
+binding documentation to refer to the fixed-link Device Tree binding in
+fixed-link.txt.
 
-Shouldn't this depend on CONFIG_PROCFS?
+Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+ Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt   | 2 +-
+ Documentation/devicetree/bindings/net/broadcom-systemport.txt | 2 +-
+ Documentation/devicetree/bindings/net/fsl-tsec-phy.txt        | 5 +----
+ 3 files changed, 3 insertions(+), 6 deletions(-)
 
->  static const struct file_operations timerfd_fops = {
->  	.release	= timerfd_release,
->  	.poll		= timerfd_poll,
->  	.read		= timerfd_read,
->  	.llseek		= noop_llseek,
-> +	.show_fdinfo	= timerfd_show,
->  };
->  
->  static int timerfd_fget(int fd, struct fd *p)
-> 
-> 
+diff --git a/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt b/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
+index f2febb94550e..451fef26b4df 100644
+--- a/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
++++ b/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
+@@ -24,7 +24,7 @@ Optional properties:
+ - fixed-link: When the GENET interface is connected to a MoCA hardware block or
+   when operating in a RGMII to RGMII type of connection, or when the MDIO bus is
+   voluntarily disabled, this property should be used to describe the "fixed link".
+-  See Documentation/devicetree/bindings/net/fsl-tsec-phy.txt for information on
++  See Documentation/devicetree/bindings/net/fixed-link.txt for information on
+   the property specifics
+ 
+ Required child nodes:
+diff --git a/Documentation/devicetree/bindings/net/broadcom-systemport.txt b/Documentation/devicetree/bindings/net/broadcom-systemport.txt
+index 1b7600e022dd..c183ea90d9bc 100644
+--- a/Documentation/devicetree/bindings/net/broadcom-systemport.txt
++++ b/Documentation/devicetree/bindings/net/broadcom-systemport.txt
+@@ -8,7 +8,7 @@ Required properties:
+ - local-mac-address: Ethernet MAC address (48 bits) of this adapter
+ - phy-mode: Should be a string describing the PHY interface to the
+   Ethernet switch/PHY, see Documentation/devicetree/bindings/net/ethernet.txt
+-- fixed-link: see Documentation/devicetree/bindings/net/fsl-tsec-phy.txt for
++- fixed-link: see Documentation/devicetree/bindings/net/fixed-link.txt for
+   the property specific details
+ 
+ Optional properties:
+diff --git a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
+index 737cdef4f903..be6ea8960f20 100644
+--- a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
++++ b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
+@@ -42,10 +42,7 @@ Properties:
+     interrupt.  For TSEC and eTSEC devices, the first interrupt is
+     transmit, the second is receive, and the third is error.
+   - phy-handle : See ethernet.txt file in the same directory.
+-  - fixed-link : <a b c d e> where a is emulated phy id - choose any,
+-    but unique to the all specified fixed-links, b is duplex - 0 half,
+-    1 full, c is link speed - d#10/d#100/d#1000, d is pause - 0 no
+-    pause, 1 pause, e is asym_pause - 0 no asym_pause, 1 asym_pause.
++  - fixed-link : See fixed-link.txt in the same directory.
+   - phy-connection-type : See ethernet.txt file in the same directory.
+     This property is only really needed if the connection is of type
+     "rgmii-id", as all other connection types are detected by hardware.
+-- 
+1.9.1
+
