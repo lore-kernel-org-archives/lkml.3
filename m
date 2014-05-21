@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaEUTDN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:03:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26217 "EHLO mx1.redhat.com"
+	id S1753200AbaEUTDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:03:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51659 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159AbaEUTDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:03:12 -0400
-Date: Wed, 21 May 2014 15:02:25 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Elliott@hp.com, fweisbec@gmail.com, dave.hansen@linux.intel.com
-Subject: Re: [PATCH 1/6] x86, nmi:  Implement delayed irq_work mechanism to
- handle lost NMIs
-Message-ID: <20140521190225.GC50500@redhat.com>
-References: <1400181949-157170-1-git-send-email-dzickus@redhat.com>
- <1400181949-157170-2-git-send-email-dzickus@redhat.com>
- <20140521102934.GZ2485@laptop.programming.kicks-ass.net>
- <20140521164525.GY50500@redhat.com>
- <20140521175149.GI2485@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140521175149.GI2485@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752642AbaEUTDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 15:03:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,881,1392192000"; 
+   d="scan'208";a="544422945"
+Subject: Re: [RFC PATCH] mutex: Documentation rewrite
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
+        waiman.long@hp.com, jason.low2@hp.com, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
+References: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 May 2014 12:02:56 -0700
+Message-ID: <1400698977.2970.308.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 07:51:49PM +0200, Peter Zijlstra wrote:
-> On Wed, May 21, 2014 at 12:45:25PM -0400, Don Zickus wrote:
-> > > > +	/*
-> > > > +	 * Can't use send_IPI_self here because it will
-> > > > +	 * send an NMI in IRQ context which is not what
-> > > > +	 * we want.  Create a cpumask for local cpu and
-> > > > +	 * force an IPI the normal way (not the shortcut).
-> > > > +	 */
-> > > > +	bitmap_zero(nmi_mask, NR_CPUS);
-> > > > +	mask = to_cpumask(nmi_mask);
-> > > > +	cpu_set(smp_processor_id(), *mask);
-> > > > +
-> > > > +	__this_cpu_xchg(nmi_delayed_work_pending, true);
-> > > 
-> > > Why is this xchg and not __this_cpu_write() ?
-> > > 
-> > > > +	apic->send_IPI_mask(to_cpumask(nmi_mask), NMI_VECTOR);
-> > > 
-> > > What's wrong with apic->send_IPI_self(NMI_VECTOR); ?
-> > 
-> > I tried to explain that in my comment above.  IPI_self uses the shortcut
-> > method to send IPIs which means the NMI_VECTOR will be delivered in IRQ
-> > context _not_ NMI context. :-(  This is why I do the whole silly dance.
+On Wed, 2014-05-21 at 10:41 -0700, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
 > 
-> I'm still not getting it, probably because I don't know how these APICs
-> really work, but the way I read both the comment and your explanation
-> here is that we get an NMI nested in the IRQ context we called it from,
-> which is pretty much exactly what we want.
-
-Um, ok.  I think my concern with that is an NMI nested in IRQ context
-could be interrupted by a real NMI. I believe that would cause nmi_enter()
-to barf among other bad things in the nmi code.
-
+> Our mutexes have gone a long ways since the original implementation
+> back in 2005/2006. However, the mutex-design.txt document is still
+> stuck in the past, to the point where most of the information there
+> is practically useless and, more important, simply incorrect. This
+> patch pretty much rewrites it to resemble what we have nowadays.
 > 
-> > I am open to better options.  We might be able to patch IPI_self but I am
-> > not sure why it didn't special case the NMI_VECTOR to begin with (like the
-> > other handlers seem to do).
+> Since regular semaphores are almost much extinct in the kernel
+> (most users now rely on mutexes or rwsems), it no longer makes
+> sense to have such a close comparison, which was copied from most
+> of the cover letter when Ingo introduced the generic mutex subsystem.
 > 
-> cpumask_of(cpu) gives the right mask.
-
-Ok. Thanks.
-
-<snip>
-
-> > Now oddly enough there were situations were the NMI happened and it found
-> > a PMI event.  So my patch re-queued the irq_work (after clearing the
-> > 'flag' based on problem 1 above).  However, the PMI and self IPI happened
-> > at roughly the same time, such that after the IRET of the PMI NMI, the
-> > 'dummy' NMI is immediately executed (think back-to-back NMIs).
-> > 
-> > This NMI is supposed to be the 'dummy' NMI caught below with the 'flag'
-> > set.  However, the 'flag' was cleared upon re-queue of the previous PMI
-> > NMI.  This leads to a periodic unknown NMI. Ooops.
-> > 
-> > I tried to workaround this by checking the IRQ_BUSY flag and not clear it
-> > in that case.
+> While users who really want to learn more about kernel mutexes can
+> go and read the code, I have marked this RFC since I'm sure more gory
+> details can be included. Also, ww_mutexes are intentionally left out,
+> leaving things as generic as possible.
 > 
-> OK, so this is the part I got lost in and didn't see.
-> 
-> So a comment in the handler between setting the flag and raising the IPI
-> might be a good idea..
+> Comments welcome!
 
-Ok. I can do that.
+Thanks for doing this.
 
-> 
-> > So both my problems center around what guarantees does irq_work have to
-> > stay on the same cpu?
-> 
-> Well, none as you used a global irq_work, so all cpus will now contend
-> on it on every NMI trying to queue it :-(
+> +
+> +(iii) slowpath: last resource, if the lock is still unable to be acquired
 
-Yes, I was stuck between using a per-cpu implementation in which every dummy
-NMI grabs the spin lock in the nmi handlers, or a global lock.  I tried
-the global lock.
-
-I thought the irq_work lock seemed less contended because it was only read
-once before being acted upon (for a cacheline seperate from actual nmi work).
-
-Whereas a spin lock in the nmi handlers seems to keep reading the lock
-until it owns it thus slowing down useful work for the handler that owns
-the lock (because of the cache contention).
-
-I could be wrong though.
+change "last resource" to "last resort"
 
 
-> 
-> Didn't we have a problem with NMIs touching global cachelines before?
-> 
-> Wasn't that one of Dave Hansen's problems?
+>  
+>  Disadvantages
+>  -------------
+>  
+> -The stricter mutex API means you cannot use mutexes the same way you
+> -can use semaphores: e.g. they cannot be used from an interrupt context,
+> -nor can they be unlocked from a different context that which acquired
+> -it. [ I'm not aware of any other (e.g. performance) disadvantages from
+> -using mutexes at the moment, please let me know if you find any. ]
+> -
 
-That might have been the regular port 0x61 spin locks that we added to
-support bsp hot plugging.
+Should we keep this instead of deleting it?  It is still true we
+cannot use mutex from an interrupt context.
 
-> 
-> > Or better yet, is there a different way to solve this problem?
-> 
-> Lemme think about that...
-
-Of course oddly enough, the external NMIs are only routed to cpu0 right
-now.  So having any non-cpu0 read them would be unexpected.  As a result
-the global spin locks are added overhead in the off-chance the bsp cpu
-disappears for some reason.
-
-Perhaps just remove those global spin locks and keep a global variable of
-which cpu gets to read the external NMIs.  Then upon hot plugging of the
-bsp cpu (or the cpu that is setup to read the external NMI), a new cpu is
-chosen and a dummy NMI is sent to handle the case an NMI is dropped during
-the transition.
-
-This would keep things fast in the normal path and be slow in the hotplug
-path (which is rare anyway).  Then we could back to one queue again
-(instead of the two queues I am proposing here).
-
-Just an idea to spark conversation.
-
-Cheers,
-Don
+Tim
 
