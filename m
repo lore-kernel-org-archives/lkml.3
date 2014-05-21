@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaEUWAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:00:01 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:45958 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbaEUV77 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:59:59 -0400
+	id S1753810AbaEUWBJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:01:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42557 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342AbaEUWBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 18:01:08 -0400
+Message-ID: <537D21F2.8030702@zytor.com>
+Date: Wed, 21 May 2014 15:00:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140521215547.GJ25130@pd.tnic>
-References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
- <1400639227.9759.21.camel@pippen.local.home> <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
- <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz> <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
- <20140521163315.GJ21205@pd.tnic> <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
- <20140521214845.GG25130@pd.tnic> <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
- <20140521215547.GJ25130@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 May 2014 14:59:38 -0700
-Message-ID: <CALCETrWR+PqM6SxzqoRwghPgihjQCJ74VCN5AsAq3Kja64uCTg@mail.gmail.com>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+To: Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Tony Luck <tony.luck@intel.com>
+        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+References: <1400639227.9759.21.camel@pippen.local.home> <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com> <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz> <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com> <20140521163315.GJ21205@pd.tnic> <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz> <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com> <20140521214319.GF25130@pd.tnic> <537D1E8B.1010505@zytor.com> <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com> <20140521215411.GI25130@pd.tnic>
+In-Reply-To: <20140521215411.GI25130@pd.tnic>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 2:55 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, May 21, 2014 at 02:52:55PM -0700, Andy Lutomirski wrote:
->> Why is it a problem if user_mode_vm(regs)?  Conversely, why is sending
->> a signal a remotely reasonable thing to do if !user_mode_vm(regs)?
->
-> Let me quote Jiri:
->
-> (1) task sends signal to itself
-> (2) it acquires sighand->siglock so that it's able to queue the signal
-> (3) MCE triggers
+On 05/21/2014 02:54 PM, Borislav Petkov wrote:
+> On Wed, May 21, 2014 at 02:47:03PM -0700, Andy Lutomirski wrote:
+>> Is there anything actually wrong with just panicking if
+>> !user_mode_vm(regs)?  That would make this a lot more sane.
+> 
+> It does that already - mce_severity().
+> 
 
-...and !user_mode_vm(regs), and hence we're IN_KERNEL, and we should
-presumably just panic instead of trying to send a signal.
+So this is not a problem then.
 
-I missed the IN_KERNEL thing because I didn't realize that ->cs was
-copied to struct mce.
+	-hpa
 
---Andy
