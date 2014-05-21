@@ -1,100 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767AbaEUHOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 03:14:44 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:49047
+	id S1751867AbaEUHPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 03:15:33 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:43830
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751005AbaEUHOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 03:14:42 -0400
-From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
-To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <michal.simek@xilinx.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: [PATCH v8 1/2] can: Add xilinx CAN device tree bindings documentation.
-Date: Wed, 21 May 2014 12:29:16 +0530
-X-Mailer: git-send-email 1.7.4
-X-RCIS-Action: ALLOW
-Message-ID: <59325214-bd7e-4b98-bc0f-c38a9104203b@BL2FFO11FD019.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(199002)(189002)(87936001)(88136002)(21056001)(93916002)(74662001)(87286001)(47776003)(92566001)(20776003)(64706001)(76482001)(33646001)(77156001)(74502001)(86362001)(31696002)(62966002)(31966008)(83072002)(50466002)(89996001)(53416003)(19580395003)(102836001)(80022001)(99396002)(4396001)(70736001)(81342001)(46102001)(85852003)(50986999)(48376002)(81542001)(92726001)(77982001)(50226001)(2201001)(74316001)(44976005)(19580405001)(83322001);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB066;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+	id S1750972AbaEUHPb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 03:15:31 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
+        "Rickard Strandqvist" <rickard_strandqvist@spectrumdigital.se>,
+        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "Rob Herring" <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
+	dereference
+Thread-Topic: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
+	dereference
+Thread-Index: AQHPdKjpYr6pXPlsTkyFEE04O0cV/JtKjDEg
+Date: Wed, 21 May 2014 07:15:28 +0000
+Message-ID: <687709ad1a974bf5a2508b2e78b316d3@BL2PR03MB468.namprd03.prod.outlook.com>
+References: <1400347004-25368-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <28189d9037d244729e10f7b1a22005c5@BLUPR03MB566.namprd03.prod.outlook.com>
+In-Reply-To: <28189d9037d244729e10f7b1a22005c5@BLUPR03MB566.namprd03.prod.outlook.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.169.1]
+x-forefront-prvs: 0218A015FA
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(13464003)(52604005)(51704005)(189002)(199002)(377454003)(101416001)(31966008)(54356999)(77096999)(224303002)(74502001)(87936001)(4396001)(77982001)(76576001)(21056001)(86362001)(50986999)(81542001)(33646001)(64706001)(46102001)(224313003)(80022001)(99286001)(76176999)(83322001)(85852003)(66066001)(2656002)(74662001)(81342001)(15975445006)(99396002)(74316001)(19580405001)(83072002)(76482001)(92566001)(20776003)(19580395003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB561;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Varun.Sethi@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add xilinx CAN bindings documentation.
-
-Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
----
-Changes for v8:
-- None.
-Changes for v7:
-- Split the devicetree bindings doc as a seperate patch
----
- .../devicetree/bindings/net/can/xilinx_can.txt     |   44 ++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
-
-diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-new file mode 100644
-index 0000000..fe38847
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-@@ -0,0 +1,44 @@
-+Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
-+---------------------------------------------------------
-+
-+Required properties:
-+- compatible		: Should be "xlnx,zynq-can-1.0" for Zynq CAN
-+			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
-+			  controllers.
-+- reg			: Physical base address and size of the Axi CAN/Zynq
-+			  CANPS registers map.
-+- interrupts		: Property with a value describing the interrupt
-+			  number.
-+- interrupt-parent	: Must be core interrupt controller
-+- clock-names		: List of input clock names - "can_clk", "pclk"
-+			  (For CANPS), "can_clk" , "s_axi_aclk"(For AXI CAN)
-+			  (See clock bindings for details).
-+- clocks		: Clock phandles (see clock bindings for details).
-+- tx-fifo-depth		: Can Tx fifo depth.
-+- rx-fifo-depth		: Can Rx fifo depth.
-+
-+
-+Example:
-+
-+For Zynq CANPS Dts file:
-+	zynq_can_0: can@e0008000 {
-+			compatible = "xlnx,zynq-can-1.0";
-+			clocks = <&clkc 19>, <&clkc 36>;
-+			clock-names = "can_clk", "pclk";
-+			reg = <0xe0008000 0x1000>;
-+			interrupts = <0 28 4>;
-+			interrupt-parent = <&intc>;
-+			tx-fifo-depth = <0x40>;
-+			rx-fifo-depth = <0x40>;
-+		};
-+For Axi CAN Dts file:
-+	axi_can_0: axi-can@40000000 {
-+			compatible = "xlnx,axi-can-1.00.a";
-+			clocks = <&clkc 0>, <&clkc 1>;
-+			clock-names = "can_clk","s_axi_aclk" ;
-+			reg = <0x40000000 0x10000>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 59 1>;
-+			tx-fifo-depth = <0x40>;
-+			rx-fifo-depth = <0x40>;
-+		};
--- 
-1.7.4
 
 
+> -----Original Message-----
+> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> bounces@lists.linux-foundation.org] On Behalf Of
+> Bharat.Bhushan@freescale.com
+> Sent: Wednesday, May 21, 2014 9:28 AM
+> To: Rickard Strandqvist; Joerg Roedel; Grant Likely
+> Cc: devicetree@vger.kernel.org; iommu@lists.linux-foundation.org; Rob
+> Herring; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
+> dereference
+> 
+> 
+> 
+> > -----Original Message-----
+> > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> > bounces@lists.linux-foundation.org] On Behalf Of Rickard Strandqvist
+> > Sent: Saturday, May 17, 2014 10:47 PM
+> > To: Joerg Roedel; Grant Likely
+> > Cc: devicetree@vger.kernel.org; iommu@lists.linux-foundation.org; Rob
+> > Herring; linux-kernel@vger.kernel.org; Rickard Strandqvist
+> > Subject: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
+> > dereference
+> >
+> > There is otherwise a risk of a possible null pointer dereference.
+> 
+> You are right.
+[Sethi Varun-B16395] Thanks for pointing out the issue.
+> 
+> >
+> > Was largely found by using a static code analysis program called
+> cppcheck.
+> >
+> > Signed-off-by: Rickard Strandqvist
+> > <rickard_strandqvist@spectrumdigital.se>
+> 
+> Reviewed-by: Bharat Bhushan <bharat.bhushan@freescale.com>
+Acknowledged-by: Varun Sethi <Varun.Sethi@freescale.com>
+
+> > ---
+> >  drivers/iommu/fsl_pamu.c |    3 +--
+> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c index
+> > cba0498..b99dd88 100644
+> > --- a/drivers/iommu/fsl_pamu.c
+> > +++ b/drivers/iommu/fsl_pamu.c
+> > @@ -592,8 +592,7 @@ found_cpu_node:
+> >  		/* advance to next node in cache hierarchy */
+> >  		node = of_find_node_by_phandle(*prop);
+> >  		if (!node) {
+> > -			pr_debug("Invalid node for cache hierarchy %s\n",
+> > -				node->full_name);
+> > +			pr_debug("Invalid node for cache hierarchy\n");
+> >  			return ~(u32)0;
+> >  		}
+> >  	}
+> > --
+> > 1.7.10.4
+> >
+> > _______________________________________________
+> > iommu mailing list
+> > iommu@lists.linux-foundation.org
+> > https://lists.linuxfoundation.org/mailman/listinfo/iommu
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
