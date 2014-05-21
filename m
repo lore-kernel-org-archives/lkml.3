@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaEUXke (ORCPT <rfc822;w@1wt.eu>);
+	id S1753927AbaEUXkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 19:40:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28602 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753511AbaEUXke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 May 2014 19:40:34 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54350 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752306AbaEUXkc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 19:40:32 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Ips Gandhi <inderpal.s@samsung.com>, Pavel Machek <pavel@ucw.cz>,
-        Nishanth Menon <nm@ti.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Sudeep Holla <sudeep.holla@arm.com>
-Subject: Re: [PATCH Resend] driver/core: cpu: initialize opp table
-Date: Thu, 22 May 2014 01:57:29 +0200
-Message-ID: <2173444.bOnmhZJafF@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpokaBo96h4axsntJz8b6q9VE7Z_GfQvfuQ85HEFi8r4V4w@mail.gmail.com>
-References: <60d825e8bfe01f8a5ff98fffaf51ffbf04c7d175.1400480033.git.viresh.kumar@linaro.org> <4765191.0FhyvSGyvF@vostro.rjw.lan> <CAKohpokaBo96h4axsntJz8b6q9VE7Z_GfQvfuQ85HEFi8r4V4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,883,1392192000"; 
+   d="scan'208";a="544560799"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Subject: RE: [RFC] x86_64: A real proposal for iret-less return to kernel
+Thread-Topic: [RFC] x86_64: A real proposal for iret-less return to kernel
+Thread-Index: AQHPdT5wRvlmui20OUO5csd5VXpJ+ZtMCOaA//+MFSCAAHmbAP//i7GAgAB3ZAD//4s2oAAPHlmAAABRNgAADkH6oP//k0EAgABy/7D//5OAgIAAc9mQ
+Date: Wed, 21 May 2014 23:40:02 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F32811CE2@ORSMSX114.amr.corp.intel.com>
+References: <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
+	<CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
+	<20140521214845.GG25130@pd.tnic>
+	<CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
+	<CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
+	<CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F3281198D@ORSMSX114.amr.corp.intel.com>
+	<CALCETrXxEAwJ33bF7FeRLeCbE7BfMn==OsFsoorW_NWFLxwuew@mail.gmail.com>
+	<20140521224816.GP25130@pd.tnic>
+	<3908561D78D1C84285E8C5FCA982C28F32811B92@ORSMSX114.amr.corp.intel.com>
+	<CALCETrVfas7s_F1bFnJou=ymra5zmc3DTeiEm+DDjKJg+J=0qg@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F32811C5F@ORSMSX114.amr.corp.intel.com>
+ <CA+55aFwXTME_Ge53xKjyM35mVQ+gmvDPwTLa5kR5zAMnNTFSbQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwXTME_Ge53xKjyM35mVQ+gmvDPwTLa5kR5zAMnNTFSbQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LNejHo023098
 
-On Tuesday, May 20, 2014 08:08:11 AM Viresh Kumar wrote:
-> On 20 May 2014 02:43, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > What about
-> >
-> >         if (error)
-> >                 return error;
-> >
-> > and then you'd save an indentation level?
-> 
-> Yes.
-> 
-> > Anyway, I find adding of_node* stuff directly to the driver core this way
-> > kind of disgusting as there still are platforms that don't use it.
-> >
-> > Can we have a call to a function that will change into an empty stub on such
-> > platforms here, please?
-> 
-> Okay. But can you explain a bit more about how and where those stubs
-> would be implemented?
+> MCE is frankly misdesigned. It's a piece of shit, and any of the
+> hardware designers that claim that what they do is for system
+> stability are out to lunch. This is a prime example of what *NOT* to
+> do, and how you can actually spread what was potentially a localized
+> and recoverable error, and make it global and unrecoverable.
 
-In a header file included by cpu.c.  Something like
+Latest SDM (version 050 from late February this year) describes how
+this is going to be fixed. Recoverable machine checks are going to be
+thread local. But current silicon still has the broadcast behavior ...
+silicon development pipeline is very long :-(
 
-#if defined(CONFIG_OF) && defined(CONFIG_PM_OPP)
-<function header>
-#else
-static inline <stub>
-#endif
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
