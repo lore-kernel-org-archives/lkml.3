@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853AbaEUWLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:11:53 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38328 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753376AbaEUWLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:11:49 -0400
-Date: Thu, 22 May 2014 00:11:21 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-Message-ID: <20140521221121.GL25130@pd.tnic>
-References: <alpine.LRH.2.00.1405211450410.27739@twin.jikos.cz>
- <CALCETrXO9EyWs5hykkAO2wU8udW0WE9AHfvjGog7s9ydPf4iEw@mail.gmail.com>
- <20140521163315.GJ21205@pd.tnic>
- <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
- <20140521214319.GF25130@pd.tnic>
- <537D1E8B.1010505@zytor.com>
- <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
- <20140521215411.GI25130@pd.tnic>
- <537D21F2.8030702@zytor.com>
+	id S1753869AbaEUWMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:12:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45387 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742AbaEUWMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 18:12:23 -0400
+Date: Thu, 22 May 2014 07:12:30 +0900 (JST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: linux-kernel@vger.kernel.org, shawn@churchofgit.com,
+        akpm@linux-foundation.org, avagin@openvz.org, xemul@parallels.com,
+        vdavydov@parallels.com
+Subject: Re: [patch 3/3] timerfd: Implement write method
+In-Reply-To: <20140521215707.GH12819@moon>
+Message-ID: <alpine.DEB.2.02.1405220658530.9695@ionos.tec.linutronix.de>
+References: <20140428212517.200264067@openvz.org> <20140428213301.507657833@openvz.org> <alpine.DEB.2.02.1405220642100.9695@ionos.tec.linutronix.de> <20140521215707.GH12819@moon>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <537D21F2.8030702@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 03:00:18PM -0700, H. Peter Anvin wrote:
-> So this is not a problem then.
+On Thu, 22 May 2014, Cyrill Gorcunov wrote:
+> On Thu, May 22, 2014 at 06:43:08AM +0900, Thomas Gleixner wrote:
+> > On Tue, 29 Apr 2014, Cyrill Gorcunov wrote:
+> > > +static ssize_t timerfd_write(struct file *file, const char __user *buf,
+> > > +			     size_t count, loff_t *ppos)
+> > > +{
+> > > +	struct timerfd_ctx *ctx = file->private_data;
+> > > +	u64 ticks = 0;
+> > > +
+> > > +	if (count < sizeof(ticks))
+> > > +		return -EINVAL;
+> > > +
+> > > +	if (get_user(ticks, (u64 __user *) buf))
+> > > +		return -EFAULT;
+> > > +
+> > > +	spin_lock_irq(&ctx->wqh.lock);
+> > > +	ctx->ticks = ticks;
+> > 
+> > So what wakes a potential waiter in read/poll?
+> 
+> Why should it? You mean the scenario when timer is armed then
+> someone writes nonzero @ticks and we should wake waiters?
+> The idea was to setup this ticks on timer restore without
+> waking anyone. If it breaks the logic of timerfd in general,
+> then sure I need to rework. Hm?
 
-Yeah, f'get it - it is all good at that front. :-)
+There is a world outside of checkpoint/restore, really.
 
--- 
-Regards/Gruss,
-    Boris.
+So what's the semantics of that write function? We really want to have
+that agreed on and documented in the man page.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Right now the write will just update the ticks and nothing else. So
+what if there is a waiter already? What if there is a timer armed?
+
+Can you please describe how checkpoint/restore is going to use all of
+this. How is the timer restored and how/when is the reader which was
+waiting in read/poll at the time of suspend reattached to it.
+
+Thanks,
+
+	tglx
