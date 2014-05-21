@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbaEUIZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:25:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39469 "EHLO mx2.suse.de"
+	id S1752134AbaEUI01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:26:27 -0400
+Received: from sauhun.de ([89.238.76.85]:46099 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073AbaEUIZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:25:33 -0400
-Message-ID: <537C62F7.10409@suse.de>
-Date: Wed, 21 May 2014 10:25:27 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1750883AbaEUI0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 04:26:25 -0400
+Date: Wed, 21 May 2014 10:26:21 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Kaushal Butala <kaushalkernelmailinglist@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH-v2] SMBus block read support to imx_i2c
+Message-ID: <20140521082621.GF2708@katana>
+References: <20140402083046.GB8753@dragon>
+ <1396616170-6659-1-git-send-email-kaushalkernelmailinglist@gmail.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org
-CC: kvm@vger.kernel.org, konrad.wilk@oracle.com, kim.phillips@linaro.org,
-        gregkh@linuxfoundation.org, stuart.yoder@freescale.com,
-        libvir-list@redhat.com, iommu@lists.linux-foundation.org,
-        christoffer.dall@linaro.org, tech@virtualopensystems.com,
-        kvmarm@lists.cs.columbia.edu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PCI: Introduce new device binding path using pci_dev.driver_override
-References: <20140520145136.28232.90707.stgit@bling.home>
-In-Reply-To: <20140520145136.28232.90707.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i3lJ51RuaGWuFYNw"
+Content-Disposition: inline
+In-Reply-To: <1396616170-6659-1-git-send-email-kaushalkernelmailinglist@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 20.05.14 16:53, Alex Williamson wrote:
-> The driver_override field allows us to specify the driver for a device
-> rather than relying on the driver to provide a positive match of the
-> device.  This shortcuts the existing process of looking up the vendor
-> and device ID, adding them to the driver new_id, binding the device,
-> then removing the ID, but it also provides a couple advantages.
->
-> First, the above existing process allows the driver to bind to any
-> device matching the new_id for the window where it's enabled.  This is
-> often not desired, such as the case of trying to bind a single device
-> to a meta driver like pci-stub or vfio-pci.  Using driver_override we
-> can do this deterministically using:
->
-> echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
->
-> Previously we could not invoke drivers_probe after adding a device
-> to new_id for a driver as we get non-deterministic behavior whether
-> the driver we intend or the standard driver will claim the device.
-> Now it becomes a deterministic process, only the driver matching
-> driver_override will probe the device.
->
-> To return the device to the standard driver, we simply clear the
-> driver_override and reprobe the device:
->
-> echo > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
->
-> Another advantage to this approach is that we can specify a driver
-> override to force a specific binding or prevent any binding.  For
-> instance when an IOMMU group is exposed to userspace through VFIO
-> we require that all devices within that group are owned by VFIO.
-> However, devices can be hot-added into an IOMMU group, in which case
-> we want to prevent the device from binding to any driver (override
-> driver = "none") or perhaps have it automatically bind to vfio-pci.
-> With driver_override it's a simple matter for this field to be set
-> internally when the device is first discovered to prevent driver
-> matches.
->
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+--i3lJ51RuaGWuFYNw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Alexander Graf <agraf@suse.de>
+On Fri, Apr 04, 2014 at 02:56:10PM +0200, Kaushal Butala wrote:
+> The smbus block read is not currently supported for imx i2c devices.
+> This patchset adds the support to imx i2c bus so that blocks of data
+> can be read using SMbus block reads.(using i2c_smbus_read_block_data()
+> function from the i2c_core.c.). Tested with 3.10.9 kernel.
+>=20
+> Reviewed-by: Shawn Guo <shawn.guo@freescale.com>
+>=20
+> Signed-off-by: Kaushal Butala <kaushalkernelmailinglist@gmail.com>
+> ---
+> v2:
+> Updated after review comments from Shawn Guo. Removed unnecessary parenth=
+esis
+> around 'block_data'.
+>=20
 
-I suppose Konrad's RB stays as well?
+Applied to for-next, thanks!
 
 
-Alex
+--i3lJ51RuaGWuFYNw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfGMsAAoJEBQN5MwUoCm2lcAP/jjdMdzV/3TT/D55D8Qz2UD5
+dWH5vvWFJiJ4csIt2gl3NrhGMxoswUV1sweoIVmySWQhK4HYPNQaILye4R+zY0ru
+1hq/7WFeDgalJXYQGC/5YFZWby3DVFYWmMKcfU5z/8YlsNPXkb8wYBh/D3cEX7Fg
+k/QNl1OZ47GOJ96iODDr6jYGCo6ekcHGx9AoaDUJd2Fpa4pyoyU/aZXDGE93eeRk
+2MBNhQdi/+EetldYx5GLfStLFf+arU3kaA/QBjyQzWdXZsroF9yK+rCJ8hlG+uk8
+GJEUCO6ljBShRJcs3zQ4XB5YZaX8EEpPob1DXRoq13iYxQPAudr6VPR4/svuG5lY
+wJ0mn93/BaakV8VUSPINM8Fp6Cplz0y0xIVinoh4vB7wu/tGMm+ms7kU2lzuFIxq
+5MjxznKTeghucbAi0zXwGLkNBWlxim7LyCBLZ6Y6IAnMITDkQRo4wlM+wDipFC/v
+dxApcGtLWPYp9q0R42Qoqe0/MNIv+nw3LN03oOEqQF3oRJMHNVLXjtiHSy2J1TzD
+97S7NcUBhBak0tkvxkgBwFxg1bOm6Ys4C2ah67XWz07FxdxpjHVIp3beQoU5i7QK
+W8r9nAv/6xTwKP/SwwJZ2sB7P36NBuhYJh0O5L6Cmke+zRbONcLefR53NUjCBrPY
+9pLZBJ5MrYkhJaOlNaxq
+=PjCS
+-----END PGP SIGNATURE-----
+
+--i3lJ51RuaGWuFYNw--
