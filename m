@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825AbaEUVmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:42:43 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:48934 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352AbaEUVjH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753410AbaEUVjH (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 21 May 2014 17:39:07 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46063 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaEUVjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:39:04 -0400
 From: Florian Fainelli <f.fainelli@gmail.com>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
@@ -21,70 +21,60 @@ Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         linux-kernel@vger.kernel.org (open list),
         linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
-Subject: [PATCH RESEND net-next 2/9] Documentation: devicetree: net: refer to fixed-link.txt
-Date: Wed, 21 May 2014 14:38:44 -0700
-Message-Id: <1400708331-18088-3-git-send-email-f.fainelli@gmail.com>
+Subject: [PATCH RESEND 0/9 net-next] net: of_phy_connect_fixed_link removal
+Date: Wed, 21 May 2014 14:38:42 -0700
+Message-Id: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
-References: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the Freescale TSEC PHY, Broadcom GENET & SYSTEMPORT Device Tree
-binding documentation to refer to the fixed-link Device Tree binding in
-fixed-link.txt.
+Hi all,
 
-Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
----
- Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt   | 2 +-
- Documentation/devicetree/bindings/net/broadcom-systemport.txt | 2 +-
- Documentation/devicetree/bindings/net/fsl-tsec-phy.txt        | 5 +----
- 3 files changed, 3 insertions(+), 6 deletions(-)
+This patch set removes of_phy_connect_fixed_link() from the tree now that
+we have a better solution for dealing with fixed PHY (emulated PHY) devices
+for drivers that require them.
 
-diff --git a/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt b/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
-index f2febb94550e..451fef26b4df 100644
---- a/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
-+++ b/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
-@@ -24,7 +24,7 @@ Optional properties:
- - fixed-link: When the GENET interface is connected to a MoCA hardware block or
-   when operating in a RGMII to RGMII type of connection, or when the MDIO bus is
-   voluntarily disabled, this property should be used to describe the "fixed link".
--  See Documentation/devicetree/bindings/net/fsl-tsec-phy.txt for information on
-+  See Documentation/devicetree/bindings/net/fixed-link.txt for information on
-   the property specifics
- 
- Required child nodes:
-diff --git a/Documentation/devicetree/bindings/net/broadcom-systemport.txt b/Documentation/devicetree/bindings/net/broadcom-systemport.txt
-index 1b7600e022dd..c183ea90d9bc 100644
---- a/Documentation/devicetree/bindings/net/broadcom-systemport.txt
-+++ b/Documentation/devicetree/bindings/net/broadcom-systemport.txt
-@@ -8,7 +8,7 @@ Required properties:
- - local-mac-address: Ethernet MAC address (48 bits) of this adapter
- - phy-mode: Should be a string describing the PHY interface to the
-   Ethernet switch/PHY, see Documentation/devicetree/bindings/net/ethernet.txt
--- fixed-link: see Documentation/devicetree/bindings/net/fsl-tsec-phy.txt for
-+- fixed-link: see Documentation/devicetree/bindings/net/fixed-link.txt for
-   the property specific details
- 
- Optional properties:
-diff --git a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-index 737cdef4f903..be6ea8960f20 100644
---- a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-+++ b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-@@ -42,10 +42,7 @@ Properties:
-     interrupt.  For TSEC and eTSEC devices, the first interrupt is
-     transmit, the second is receive, and the third is error.
-   - phy-handle : See ethernet.txt file in the same directory.
--  - fixed-link : <a b c d e> where a is emulated phy id - choose any,
--    but unique to the all specified fixed-links, b is duplex - 0 half,
--    1 full, c is link speed - d#10/d#100/d#1000, d is pause - 0 no
--    pause, 1 pause, e is asym_pause - 0 no asym_pause, 1 asym_pause.
-+  - fixed-link : See fixed-link.txt in the same directory.
-   - phy-connection-type : See ethernet.txt file in the same directory.
-     This property is only really needed if the connection is of type
-     "rgmii-id", as all other connection types are detected by hardware.
+First two patches update the 'fixed-link' Device Tree binding and drivers to
+refere to it.
+
+Patches 3 to 7 update the in-tree network drivers that use
+of_phy_connect_fixed_link()
+
+Patch 8 removes of_phy_connect_fixed_link
+
+Patch 9 removes the PowerPC code that parsed the 'fixed-link' property.
+
+Patch 9 can be merged via the net-next tree if the PowerPC folks ack it,
+but it really has to be merged after the first 8 patches in order to avoid
+breakage.
+
+Florian Fainelli (9):
+  Documentation: devicetree: add old and deprecated 'fixed-link'
+  Documentation: devicetree: net: refer to fixed-link.txt
+  net: bcmgenet: use the new fixed PHY helpers
+  net: systemport: use the new fixed PHY helpers
+  fs_enet: use the new fixed PHY helpers
+  gianfar: use the new fixed PHY helpers
+  ucc_geth: use the new fixed PHY helpers
+  of: mdio: remove of_phy_connect_fixed_link
+  powerpc/fsl: fsl_soc: remove 'fixed-link' parsing code
+
+ .../devicetree/bindings/net/broadcom-bcmgenet.txt  |  2 +-
+ .../bindings/net/broadcom-systemport.txt           |  2 +-
+ .../devicetree/bindings/net/fixed-link.txt         | 12 +++++++
+ .../devicetree/bindings/net/fsl-tsec-phy.txt       |  5 +--
+ arch/powerpc/sysdev/fsl_soc.c                      | 32 ------------------
+ drivers/net/ethernet/broadcom/bcmsysport.c         | 17 ++++++++--
+ drivers/net/ethernet/broadcom/bcmsysport.h         |  1 +
+ drivers/net/ethernet/broadcom/genet/bcmmii.c       | 21 +++++++-----
+ .../net/ethernet/freescale/fs_enet/fs_enet-main.c  | 16 +++++----
+ drivers/net/ethernet/freescale/gianfar.c           | 14 ++++++--
+ drivers/net/ethernet/freescale/ucc_geth.c          | 14 ++++++--
+ drivers/of/of_mdio.c                               | 38 ----------------------
+ include/linux/of_mdio.h                            | 10 ------
+ 13 files changed, 75 insertions(+), 109 deletions(-)
+
 -- 
 1.9.1
 
