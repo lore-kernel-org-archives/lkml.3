@@ -1,394 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaEUIDq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:03:46 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:42498
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751837AbaEUIDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:03:39 -0400
-From: <hongbo.zhang@freescale.com>
-To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>
-CC: <leo.li@freescale.com>, <scottwood@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v5 3/3] DMA: Freescale: change descriptor release process for supporting async_tx
-Date: Wed, 21 May 2014 16:03:03 +0800
-Message-ID: <1400659383-6555-4-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400659383-6555-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1400659383-6555-1-git-send-email-hongbo.zhang@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(81542001)(4396001)(99396002)(64706001)(92566001)(86152002)(92726001)(2201001)(68736004)(50226001)(77156001)(20776003)(81342001)(36756003)(69596002)(102836001)(80022001)(97736001)(87286001)(74502001)(76482001)(31966008)(74662001)(81156002)(47776003)(83322001)(89996001)(551934003)(86362001)(575784001)(19580395003)(6806004)(76176999)(88136002)(33646001)(44976005)(77982001)(46102001)(50466002)(50986999)(93916002)(19580405001)(62966002)(87936001)(85852003)(77096999)(83072002)(48376002)(21056001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB299;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1751944AbaEUIGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:06:36 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:36659 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaEUIGc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 04:06:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=hongbo.zhang@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAKohpo=UgVoBL2xNBwe_AoqtCOYj4Rcc=vHh2kb=64UHLjjiAw@mail.gmail.com>
+References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com>
+	<1400651502-23703-1-git-send-email-inderpal.s@samsung.com>
+	<CAKohpo=UgVoBL2xNBwe_AoqtCOYj4Rcc=vHh2kb=64UHLjjiAw@mail.gmail.com>
+Date: Wed, 21 May 2014 13:36:31 +0530
+X-Google-Sender-Auth: C3BYCBdgKdC2ZwzZojSdVRQfrMM
+Message-ID: <CAOqmu80zZ3u+XUUaDedpNoziaSVZ_Qbc38yhy4aYVSF1riSfHQ@mail.gmail.com>
+Subject: Re: [PATCH v2] PM / OPP: Implement opp_remove and free_opp_table functions
+From: Inderpal Singh <inderpal.s@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Pavel Machek <pavel@ucw.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On Wed, May 21, 2014 at 1:25 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 21 May 2014 11:21, Inderpal Singh <inderpal.s@samsung.com> wrote:
+>> At the driver unloading time the associated opps and its table may need
+>> to be deleted. Otherwise it amounts to memory leak. The existing
+>> OPP library does not have provision to do so.
+>>
+>> Hence this patch implements the required functions to free the same.
+>>
+>> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+>> ---
+>> Changes in v2:
+>>         - As suggested by Nishanth, added support to remove a single OPP
+>>           for non-DT users
+>>         - Added an internal helper function to avoid the code duplication
+>>           between opp_remove and free_opp_table functions
+>>
+>>  drivers/base/power/opp.c | 122 ++++++++++++++++++++++++++++++++++++++++++++++-
+>>  include/linux/pm_opp.h   |  14 +++++-
+>>  2 files changed, 134 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+>> index faae9cf..22adef3 100644
+>> --- a/drivers/base/power/opp.c
+>> +++ b/drivers/base/power/opp.c
+>> @@ -89,6 +89,7 @@ struct device_opp {
+>>         struct device *dev;
+>>         struct srcu_notifier_head head;
+>>         struct list_head opp_list;
+>> +       struct rcu_head head_rcu;
+>
+> This isn't used ...
 
-Fix the potential risk when enable config NET_DMA and ASYNC_TX. Async_tx is
-lack of support in current release process of dma descriptor, all descriptors
-will be released whatever is acked or no-acked by async_tx, so there is a
-potential race condition when dma engine is uesd by others clients (e.g. when
-enable NET_DMA to offload TCP).
+Its being used in opp_remove_and_free function to free dev_opp with kfree_rcu.
 
-In our case, a race condition which is raised when use both of talitos and
-dmaengine to offload xor is because napi scheduler will sync all pending
-requests in dma channels, it affects the process of raid operations due to
-ack_tx is not checked in fsl dma. The no-acked descriptor is freed which is
-submitted just now, as a dependent tx, this freed descriptor trigger
-BUG_ON(async_tx_test_ack(depend_tx)) in async_tx_submit().
+>
+>>  };
+>>
+>>  /*
+>> @@ -427,7 +428,6 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+>>                                 __func__);
+>>                         return -ENOMEM;
+>>                 }
+>> -
+>
+> Unrelated change.
 
-TASK = ee1a94a0[1390] 'md0_raid5' THREAD: ecf40000 CPU: 0
-GPR00: 00000001 ecf41ca0 ee44/921a94a0 0000003f 00000001 c00593e4 00000000 00000001
-GPR08: 00000000 a7a7a7a7 00000001 045/920000002 42028042 100a38d4 ed576d98 00000000
-GPR16: ed5a11b0 00000000 2b162000 00000200 046/920000000 2d555000 ed3015e8 c15a7aa0
-GPR24: 00000000 c155fc40 00000000 ecb63220 ecf41d28 e47/92f640bb0 ef640c30 ecf41ca0
-NIP [c02b048c] async_tx_submit+0x6c/0x2b4
-LR [c02b068c] async_tx_submit+0x26c/0x2b4
-Call Trace:
-[ecf41ca0] [c02b068c] async_tx_submit+0x26c/0x2b448/92 (unreliable)
-[ecf41cd0] [c02b0a4c] async_memcpy+0x240/0x25c
-[ecf41d20] [c0421064] async_copy_data+0xa0/0x17c
-[ecf41d70] [c0421cf4] __raid_run_ops+0x874/0xe10
-[ecf41df0] [c0426ee4] handle_stripe+0x820/0x25e8
-[ecf41e90] [c0429080] raid5d+0x3d4/0x5b4
-[ecf41f40] [c04329b8] md_thread+0x138/0x16c
-[ecf41f90] [c008277c] kthread+0x8c/0x90
-[ecf41ff0] [c0011630] kernel_thread+0x4c/0x68
+Ahhh, missed it. Thanks for pointing.
 
-Another modification in this patch is the change of completed descriptors,
-there is a potential risk which caused by exception interrupt, all descriptors
-in ld_running list are seemed completed when an interrupt raised, it works fine
-under normal condition, but if there is an exception occured, it cannot work as
-our excepted. Hardware should not be depend on s/w list, the right way is to
-read current descriptor address register to find the last completed descriptor.
-If an interrupt is raised by an error, all descriptors in ld_running should not
-be seemed finished, or these unfinished descriptors in ld_running will be
-released wrongly.
-
-A simple way to reproduce:
-Enable dmatest first, then insert some bad descriptors which can trigger
-Programming Error interrupts before the good descriptors. Last, the good
-descriptors will be freed before they are processsed because of the exception
-intrerrupt.
-
-Note: the bad descriptors are only for simulating an exception interrupt.  This
-case can illustrate the potential risk in current fsl-dma very well.
-
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
- drivers/dma/fsldma.c |  197 ++++++++++++++++++++++++++++++++++++--------------
- drivers/dma/fsldma.h |   17 ++++-
- 2 files changed, 159 insertions(+), 55 deletions(-)
-
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 465f16d..d5d6885 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -466,6 +466,88 @@ static struct fsl_desc_sw *fsl_dma_alloc_descriptor(struct fsldma_chan *chan)
- }
- 
- /**
-+ * fsldma_clean_completed_descriptor - free all descriptors which
-+ * has been completed and acked
-+ * @chan: Freescale DMA channel
-+ *
-+ * This function is used on all completed and acked descriptors.
-+ * All descriptors should only be freed in this function.
-+ */
-+static void fsldma_clean_completed_descriptor(struct fsldma_chan *chan)
-+{
-+	struct fsl_desc_sw *desc, *_desc;
-+
-+	/* Run the callback for each descriptor, in order */
-+	list_for_each_entry_safe(desc, _desc, &chan->ld_completed, node)
-+		if (async_tx_test_ack(&desc->async_tx))
-+			fsl_dma_free_descriptor(chan, desc);
-+}
-+
-+/**
-+ * fsldma_run_tx_complete_actions - cleanup a single link descriptor
-+ * @chan: Freescale DMA channel
-+ * @desc: descriptor to cleanup and free
-+ * @cookie: Freescale DMA transaction identifier
-+ *
-+ * This function is used on a descriptor which has been executed by the DMA
-+ * controller. It will run any callbacks, submit any dependencies.
-+ */
-+static dma_cookie_t fsldma_run_tx_complete_actions(struct fsldma_chan *chan,
-+		struct fsl_desc_sw *desc, dma_cookie_t cookie)
-+{
-+	struct dma_async_tx_descriptor *txd = &desc->async_tx;
-+	dma_cookie_t ret = cookie;
-+
-+	BUG_ON(txd->cookie < 0);
-+
-+	if (txd->cookie > 0) {
-+		ret = txd->cookie;
-+
-+		/* Run the link descriptor callback function */
-+		if (txd->callback) {
-+			chan_dbg(chan, "LD %p callback\n", desc);
-+			txd->callback(txd->callback_param);
-+		}
-+	}
-+
-+	/* Run any dependencies */
-+	dma_run_dependencies(txd);
-+
-+	return ret;
-+}
-+
-+/**
-+ * fsldma_clean_running_descriptor - move the completed descriptor from
-+ * ld_running to ld_completed
-+ * @chan: Freescale DMA channel
-+ * @desc: the descriptor which is completed
-+ *
-+ * Free the descriptor directly if acked by async_tx api, or move it to
-+ * queue ld_completed.
-+ */
-+static void fsldma_clean_running_descriptor(struct fsldma_chan *chan,
-+		struct fsl_desc_sw *desc)
-+{
-+	/* Remove from the list of transactions */
-+	list_del(&desc->node);
-+
-+	/*
-+	 * the client is allowed to attach dependent operations
-+	 * until 'ack' is set
-+	 */
-+	if (!async_tx_test_ack(&desc->async_tx)) {
-+		/*
-+		 * Move this descriptor to the list of descriptors which is
-+		 * completed, but still awaiting the 'ack' bit to be set.
-+		 */
-+		list_add_tail(&desc->node, &chan->ld_completed);
-+		return;
-+	}
-+
-+	dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
-+}
-+
-+/**
-  * fsl_chan_xfer_ld_queue - transfer any pending transactions
-  * @chan : Freescale DMA channel
-  *
-@@ -533,31 +615,58 @@ static void fsl_chan_xfer_ld_queue(struct fsldma_chan *chan)
- }
- 
- /**
-- * fsldma_cleanup_descriptor - cleanup and free a single link descriptor
-+ * fsldma_cleanup_descriptors - cleanup link descriptors which are completed
-+ * and move them to ld_completed to free until flag 'ack' is set
-  * @chan: Freescale DMA channel
-- * @desc: descriptor to cleanup and free
-  *
-- * This function is used on a descriptor which has been executed by the DMA
-- * controller. It will run any callbacks, submit any dependencies, and then
-- * free the descriptor.
-+ * This function is used on descriptors which have been executed by the DMA
-+ * controller. It will run any callbacks, submit any dependencies, then
-+ * free these descriptors if flag 'ack' is set.
-  */
--static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
--				      struct fsl_desc_sw *desc)
-+static void fsldma_cleanup_descriptors(struct fsldma_chan *chan)
- {
--	struct dma_async_tx_descriptor *txd = &desc->async_tx;
-+	struct fsl_desc_sw *desc, *_desc;
-+	dma_cookie_t cookie = 0;
-+	dma_addr_t curr_phys = get_cdar(chan);
-+	int seen_current = 0;
- 
--	/* Run the link descriptor callback function */
--	if (txd->callback) {
--		chan_dbg(chan, "LD %p callback\n", desc);
--		txd->callback(txd->callback_param);
-+	fsldma_clean_completed_descriptor(chan);
-+
-+	/* Run the callback for each descriptor, in order */
-+	list_for_each_entry_safe(desc, _desc, &chan->ld_running, node) {
-+		/*
-+		 * do not advance past the current descriptor loaded into the
-+		 * hardware channel, subsequent descriptors are either in
-+		 * process or have not been submitted
-+		 */
-+		if (seen_current)
-+			break;
-+
-+		/*
-+		 * stop the search if we reach the current descriptor and the
-+		 * channel is busy
-+		 */
-+		if (desc->async_tx.phys == curr_phys) {
-+			seen_current = 1;
-+			if (!dma_is_idle(chan))
-+				break;
-+		}
-+
-+		cookie = fsldma_run_tx_complete_actions(chan, desc, cookie);
-+
-+		fsldma_clean_running_descriptor(chan, desc);
- 	}
- 
--	/* Run any dependencies */
--	dma_run_dependencies(txd);
-+	/*
-+	 * Start any pending transactions automatically
-+	 *
-+	 * In the ideal case, we keep the DMA controller busy while we go
-+	 * ahead and free the descriptors below.
-+	 */
-+	fsl_chan_xfer_ld_queue(chan);
- 
--	dma_descriptor_unmap(txd);
--	chan_dbg(chan, "LD %p free\n", desc);
--	dma_pool_free(chan->desc_pool, desc, txd->phys);
-+	if (cookie > 0)
-+		chan->common.completed_cookie = cookie;
- }
- 
- /**
-@@ -627,8 +736,10 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
- 
- 	chan_dbg(chan, "free all channel resources\n");
- 	spin_lock_bh(&chan->desc_lock);
-+	fsldma_cleanup_descriptors(chan);
- 	fsldma_free_desc_list(chan, &chan->ld_pending);
- 	fsldma_free_desc_list(chan, &chan->ld_running);
-+	fsldma_free_desc_list(chan, &chan->ld_completed);
- 	spin_unlock_bh(&chan->desc_lock);
- 
- 	dma_pool_destroy(chan->desc_pool);
-@@ -865,6 +976,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
- 		/* Remove and free all of the descriptors in the LD queue */
- 		fsldma_free_desc_list(chan, &chan->ld_pending);
- 		fsldma_free_desc_list(chan, &chan->ld_running);
-+		fsldma_free_desc_list(chan, &chan->ld_completed);
- 		chan->idle = true;
- 
- 		spin_unlock_bh(&chan->desc_lock);
-@@ -923,6 +1035,17 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
- 					dma_cookie_t cookie,
- 					struct dma_tx_state *txstate)
- {
-+	struct fsldma_chan *chan = to_fsl_chan(dchan);
-+	enum dma_status ret;
-+
-+	ret = dma_cookie_status(dchan, cookie, txstate);
-+	if (ret == DMA_COMPLETE)
-+		return ret;
-+
-+	spin_lock_bh(&chan->desc_lock);
-+	fsldma_cleanup_descriptors(chan);
-+	spin_unlock_bh(&chan->desc_lock);
-+
- 	return dma_cookie_status(dchan, cookie, txstate);
- }
- 
-@@ -1000,51 +1123,18 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
- static void dma_do_tasklet(unsigned long data)
- {
- 	struct fsldma_chan *chan = (struct fsldma_chan *)data;
--	struct fsl_desc_sw *desc, *_desc;
--	LIST_HEAD(ld_cleanup);
- 
- 	chan_dbg(chan, "tasklet entry\n");
- 
- 	spin_lock_bh(&chan->desc_lock);
- 
--	/* update the cookie if we have some descriptors to cleanup */
--	if (!list_empty(&chan->ld_running)) {
--		dma_cookie_t cookie;
--
--		desc = to_fsl_desc(chan->ld_running.prev);
--		cookie = desc->async_tx.cookie;
--		dma_cookie_complete(&desc->async_tx);
--
--		chan_dbg(chan, "completed_cookie=%d\n", cookie);
--	}
--
--	/*
--	 * move the descriptors to a temporary list so we can drop the lock
--	 * during the entire cleanup operation
--	 */
--	list_splice_tail_init(&chan->ld_running, &ld_cleanup);
--
- 	/* the hardware is now idle and ready for more */
- 	chan->idle = true;
- 
--	/*
--	 * Start any pending transactions automatically
--	 *
--	 * In the ideal case, we keep the DMA controller busy while we go
--	 * ahead and free the descriptors below.
--	 */
--	fsl_chan_xfer_ld_queue(chan);
--	spin_unlock_bh(&chan->desc_lock);
--
--	/* Run the callback for each descriptor, in order */
--	list_for_each_entry_safe(desc, _desc, &ld_cleanup, node) {
--
--		/* Remove from the list of transactions */
--		list_del(&desc->node);
-+	/* Run all cleanup for descriptors which have been completed */
-+	fsldma_cleanup_descriptors(chan);
- 
--		/* Run all cleanup for this descriptor */
--		fsldma_cleanup_descriptor(chan, desc);
--	}
-+	spin_unlock_bh(&chan->desc_lock);
- 
- 	chan_dbg(chan, "tasklet exit\n");
- }
-@@ -1228,6 +1318,7 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
- 	spin_lock_init(&chan->desc_lock);
- 	INIT_LIST_HEAD(&chan->ld_pending);
- 	INIT_LIST_HEAD(&chan->ld_running);
-+	INIT_LIST_HEAD(&chan->ld_completed);
- 	chan->idle = true;
- #ifdef CONFIG_PM
- 	chan->pm_state = RUNNING;
-diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
-index f2e0c4d..239c20c 100644
---- a/drivers/dma/fsldma.h
-+++ b/drivers/dma/fsldma.h
-@@ -149,8 +149,21 @@ struct fsldma_chan {
- 	char name[8];			/* Channel name */
- 	struct fsldma_chan_regs __iomem *regs;
- 	spinlock_t desc_lock;		/* Descriptor operation lock */
--	struct list_head ld_pending;	/* Link descriptors queue */
--	struct list_head ld_running;	/* Link descriptors queue */
-+	/*
-+	 * Descriptors which are queued to run, but have not yet been
-+	 * submitted to the hardware for execution
-+	 */
-+	struct list_head ld_pending;
-+	/*
-+	 * Descriptors which are currently being executed by the hardware
-+	 */
-+	struct list_head ld_running;
-+	/*
-+	 * Descriptors which have finished execution by the hardware. These
-+	 * descriptors have already had their cleanup actions run. They are
-+	 * waiting for the ACK bit to be set by the async_tx API.
-+	 */
-+	struct list_head ld_completed;	/* Link descriptors queue */
- 	struct dma_chan common;		/* DMA common channel */
- 	struct dma_pool *desc_pool;	/* Descriptors pool */
- 	struct device *dev;		/* Channel device */
--- 
-1.7.9.5
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
