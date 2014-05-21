@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaEUIdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:33:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26839 "EHLO mga11.intel.com"
+	id S1752059AbaEUIgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:36:41 -0400
+Received: from sauhun.de ([89.238.76.85]:46175 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867AbaEUIda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:33:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
-   d="scan'208";a="535330149"
-Message-ID: <537C64D7.4010900@intel.com>
-Date: Wed, 21 May 2014 16:33:27 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1751238AbaEUIgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 04:36:40 -0400
+Date: Wed, 21 May 2014 10:36:35 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Richard Leitner <me@g0hl1n.net>
+Cc: r.marek@assembler.cz, jdelvare@suse.de, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: busses: ali1563: fix checkpatch.pl issues
+Message-ID: <20140521083635.GI2708@katana>
+References: <1397216684-6332-1-git-send-email-me@g0hl1n.net>
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Kui Zhang <kuizhang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
-References: <CAKx2Y1mzLesGFYz30fH8xCZTkvNGPUNYkHptYLYq_hVExoh_8g@mail.gmail.com> <537C6262.5030500@intel.com>
-In-Reply-To: <537C6262.5030500@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PWfwoUCx3AFJRUBq"
+Content-Disposition: inline
+In-Reply-To: <1397216684-6332-1-git-send-email-me@g0hl1n.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 04:22 PM, Aaron Lu wrote:
-> On 05/21/2014 01:57 PM, Kui Zhang wrote:
->> Hello,
->>
->> I get following error when rmmod thermal.
->>
->> rmmod  thermal
->> Killed
 
-While dealing with this problem, I found another problem that also
-results in a kernel crash on thermal module removal:
+--PWfwoUCx3AFJRUBq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Apr 11, 2014 at 01:44:44PM +0200, Richard Leitner wrote:
+> Fixed most checkpatch.pl issues
+>=20
+> Signed-off-by: Richard Leitner <me@g0hl1n.net>
+> Reviewed-by: Jean Delvare <jdelvare@suse.de>
+
+Applied to for-next, thanks!
 
 
-From: Aaron Lu <aaron.lu@intel.com>
-Date: Wed, 21 May 2014 16:05:38 +0800
-Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
+--PWfwoUCx3AFJRUBq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
-to decide if we need to create the temp_crit attribute file but we just
-check if tz->ops->get_crit_temp exists to decide if we need to remove
-that attribute file. Some ACPI thermal zone doesn't have a valid critical
-trip point and that would result in removing a non-existent device file
-on thermal module unload.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-Cc: All applicable <stable@vger.kernel.org>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
----
- drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
- 1 file changed, 18 insertions(+), 15 deletions(-)
+iQIcBAEBAgAGBQJTfGWTAAoJEBQN5MwUoCm2JBYP/2+UelOQo5WyvHiRXAe2jKDQ
+jtZ82B+8ENQoA7q7LGDGV8t1ARfgz7vS2vKDj+8QNj9H5bQJJ5eQ3Oa3w7k+2Ujt
+rqXVBqNlyiSlY3FHb4BYJXKxvhHxGr4IcOoGUvtQEolZxVHvRBv5PxZ3iEBSubQ4
+TbCNQAuw6+zH+NR41nZs5PMfDjcVBS7saM6CcDampgSfJs11vvX5gpiWHIqqK41g
+1HYeBUsn44+aoNO/EpNYVo8737hlMVwBqi0F/ULz+DzH9NBylf3b2k7KxGDEn0jc
+xNfLlVim0hrioUJofX/O4G3HQq+FRnlAUjxnJyQzHhdPNgc2XsldV6qdtK/DT7Ef
+KhfglAqg2dYwfS1Y4UQeLL4WshoIR7BLbPLgi3ZXOYIjBJa+QoH3dvAJ+C/OBgu7
+VyQcgEa3taU1QMg3Wup4aw9hm6A6mjV+qV8rejX1iUhHigpr/kEd33nnwxBJERHg
+0j9PJXiUhzMtvdik6ryg7uieEFNyCFJPfRQ1K7evBFJqMfM+Khqh9Kh6UJpDNioJ
+LeMW5ozeKupV0Ux1Ag2ucgxSxz+PcT9Xy/87X2tq9xuo91LpxOMXySBpG64E58aa
+jCNZUfCI2xGccNXH7s1OhbgGlzDPpuloBdhln33r7pfoNXaywSE0sNKwL5+5dXrl
+FD+VEVMXoRwv5KBHFHqk
+=Jr9Q
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
-index fdb07199d9c2..1967bee4f076 100644
---- a/drivers/thermal/thermal_hwmon.c
-+++ b/drivers/thermal/thermal_hwmon.c
-@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
- 	return NULL;
- }
- 
-+static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
-+{
-+	unsigned long temp;
-+	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
-+}
-+
- int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- {
- 	struct thermal_hwmon_device *hwmon;
-@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- 	if (result)
- 		goto free_temp_mem;
- 
--	if (tz->ops->get_crit_temp) {
--		unsigned long temperature;
--		if (!tz->ops->get_crit_temp(tz, &temperature)) {
--			snprintf(temp->temp_crit.name,
--				 sizeof(temp->temp_crit.name),
-+	if (thermal_zone_crit_temp_valid(tz)) {
-+		snprintf(temp->temp_crit.name,
-+				sizeof(temp->temp_crit.name),
- 				"temp%d_crit", hwmon->count);
--			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
--			temp->temp_crit.attr.attr.mode = 0444;
--			temp->temp_crit.attr.show = temp_crit_show;
--			sysfs_attr_init(&temp->temp_crit.attr.attr);
--			result = device_create_file(hwmon->device,
--						    &temp->temp_crit.attr);
--			if (result)
--				goto unregister_input;
--		}
-+		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-+		temp->temp_crit.attr.attr.mode = 0444;
-+		temp->temp_crit.attr.show = temp_crit_show;
-+		sysfs_attr_init(&temp->temp_crit.attr.attr);
-+		result = device_create_file(hwmon->device,
-+					    &temp->temp_crit.attr);
-+		if (result)
-+			goto unregister_input;
- 	}
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
-@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
- 	}
- 
- 	device_remove_file(hwmon->device, &temp->temp_input.attr);
--	if (tz->ops->get_crit_temp)
-+	if (thermal_zone_crit_temp_valid(tz))
- 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
--- 
-1.9.0
-
+--PWfwoUCx3AFJRUBq--
