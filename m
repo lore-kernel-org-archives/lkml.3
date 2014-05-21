@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaEUNRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:17:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15910 "EHLO mx1.redhat.com"
+	id S1752824AbaEUNRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:17:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19401 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157AbaEUNNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752149AbaEUNNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 May 2014 09:13:01 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 07/22] perf ui: Get rid of callback from __hpp__fmt()
-Date: Wed, 21 May 2014 15:12:29 +0200
-Message-Id: <1400677964-25160-8-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 05/22] perf tools: Use hpp formats to sort final output
+Date: Wed, 21 May 2014 15:12:27 +0200
+Message-Id: <1400677964-25160-6-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,239 +21,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-The callback was used by TUI for determining color of folded sign
-using percent of first field/column. But it cannot be used anymore
-since it now support dynamic reordering of output field.
-
-So move the logic to the hist_browser__show_entry().
+Convert output sorting function to use ->sort hpp functions.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-8-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c | 62 ++++++++++++++++--------------------------
- tools/perf/ui/gtk/hists.c      |  2 +-
- tools/perf/ui/hist.c           | 28 ++++++-------------
- tools/perf/util/hist.h         |  4 +--
- 4 files changed, 34 insertions(+), 62 deletions(-)
+ tools/perf/util/hist.c | 62 +++++++-------------------------------------------
+ 1 file changed, 8 insertions(+), 54 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 847de11..37c5188 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -616,35 +616,6 @@ struct hpp_arg {
- 	bool current_entry;
- };
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 38373c9..c99ae4d 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -564,64 +564,18 @@ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
+ 	}
+ }
  
--static int __hpp__overhead_callback(struct perf_hpp *hpp, bool front)
--{
--	struct hpp_arg *arg = hpp->ptr;
+-/*
+- * reverse the map, sort on period.
+- */
 -
--	if (arg->current_entry && arg->b->navkeypressed)
--		ui_browser__set_color(arg->b, HE_COLORSET_SELECTED);
--	else
--		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
--
--	if (front) {
--		if (!symbol_conf.use_callchain)
--			return 0;
--
--		slsmg_printf("%c ", arg->folded_sign);
--		return 2;
--	}
--
+-static int period_cmp(u64 period_a, u64 period_b)
++static int hist_entry__sort(struct hist_entry *a, struct hist_entry *b)
+ {
+-	if (period_a > period_b)
+-		return 1;
+-	if (period_a < period_b)
+-		return -1;
 -	return 0;
 -}
 -
--static int __hpp__color_callback(struct perf_hpp *hpp, bool front __maybe_unused)
+-static int hist_entry__sort_on_period(struct hist_entry *a,
+-				      struct hist_entry *b)
 -{
--	struct hpp_arg *arg = hpp->ptr;
+-	int ret;
+-	int i, nr_members;
+-	struct perf_evsel *evsel;
+-	struct hist_entry *pair;
+-	u64 *periods_a, *periods_b;
 -
--	if (!arg->current_entry || !arg->b->navkeypressed)
--		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
--	return 0;
--}
+-	ret = period_cmp(a->stat.period, b->stat.period);
+-	if (ret || !symbol_conf.event_group)
+-		return ret;
 -
- static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
- {
- 	struct hpp_arg *arg = hpp->ptr;
-@@ -665,7 +636,7 @@ static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
- 	return ret;
- }
- 
--#define __HPP_COLOR_PERCENT_FN(_type, _field, _cb)			\
-+#define __HPP_COLOR_PERCENT_FN(_type, _field)				\
- static u64 __hpp_get_##_field(struct hist_entry *he)			\
- {									\
- 	return he->stat._field;						\
-@@ -676,15 +647,15 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
- 				struct perf_hpp *hpp,			\
- 				struct hist_entry *he)			\
- {									\
--	return __hpp__fmt(hpp, he, __hpp_get_##_field, _cb, " %6.2f%%",	\
-+	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %6.2f%%",	\
- 			  __hpp__slsmg_color_printf, true);		\
- }
- 
--__HPP_COLOR_PERCENT_FN(overhead, period, __hpp__overhead_callback)
--__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys, __hpp__color_callback)
--__HPP_COLOR_PERCENT_FN(overhead_us, period_us, __hpp__color_callback)
--__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys, __hpp__color_callback)
--__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us, __hpp__color_callback)
-+__HPP_COLOR_PERCENT_FN(overhead, period)
-+__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
-+__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
-+__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
-+__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
- 
- #undef __HPP_COLOR_PERCENT_FN
- 
-@@ -729,7 +700,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 
- 	if (row_offset == 0) {
- 		struct hpp_arg arg = {
--			.b 		= &browser->b,
-+			.b		= &browser->b,
- 			.folded_sign	= folded_sign,
- 			.current_entry	= current_entry,
- 		};
-@@ -742,11 +713,24 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 		ui_browser__gotorc(&browser->b, row, 0);
- 
- 		perf_hpp__for_each_format(fmt) {
--			if (!first) {
-+			if (current_entry && browser->b.navkeypressed) {
-+				ui_browser__set_color(&browser->b,
-+						      HE_COLORSET_SELECTED);
-+			} else {
-+				ui_browser__set_color(&browser->b,
-+						      HE_COLORSET_NORMAL);
-+			}
-+
-+			if (first) {
-+				if (symbol_conf.use_callchain) {
-+					slsmg_printf("%c ", folded_sign);
-+					width -= 2;
-+				}
-+				first = false;
-+			} else {
- 				slsmg_printf("  ");
- 				width -= 2;
- 			}
--			first = false;
- 
- 			if (fmt->color) {
- 				width -= fmt->color(fmt, &hpp, entry);
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index d5c336e..2237245 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -43,7 +43,7 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 				       struct perf_hpp *hpp,			\
- 				       struct hist_entry *he)			\
- {										\
--	return __hpp__fmt(hpp, he, he_get_##_field, NULL, " %6.2f%%",		\
-+	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
- 			  __percent_color_snprintf, true);			\
- }
- 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 400437e..e7ac794 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -16,20 +16,15 @@
- })
- 
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, hpp_callback_fn callback,
--	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent)
-+	       hpp_field_fn get_field, const char *fmt,
-+	       hpp_snprint_fn print_fn, bool fmt_percent)
- {
--	int ret = 0;
-+	int ret;
- 	struct hists *hists = he->hists;
- 	struct perf_evsel *evsel = hists_to_evsel(hists);
- 	char *buf = hpp->buf;
- 	size_t size = hpp->size;
- 
--	if (callback) {
--		ret = callback(hpp, true);
--		advance_hpp(hpp, ret);
+-	evsel = hists_to_evsel(a->hists);
+-	nr_members = evsel->nr_members;
+-	if (nr_members <= 1)
+-		return ret;
+-
+-	periods_a = zalloc(sizeof(periods_a) * nr_members);
+-	periods_b = zalloc(sizeof(periods_b) * nr_members);
+-
+-	if (!periods_a || !periods_b)
+-		goto out;
+-
+-	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
+-		evsel = hists_to_evsel(pair->hists);
+-		periods_a[perf_evsel__group_idx(evsel)] = pair->stat.period;
 -	}
 -
- 	if (fmt_percent) {
- 		double percent = 0.0;
- 		u64 total = hists__total_period(hists);
-@@ -37,9 +32,9 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 		if (total)
- 			percent = 100.0 * get_field(he) / total;
+-	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
+-		evsel = hists_to_evsel(pair->hists);
+-		periods_b[perf_evsel__group_idx(evsel)] = pair->stat.period;
+-	}
++	struct perf_hpp_fmt *fmt;
++	int64_t cmp = 0;
  
--		ret += hpp__call_print_fn(hpp, print_fn, fmt, percent);
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, percent);
- 	} else
--		ret += hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
- 
- 	if (perf_evsel__is_group_event(evsel)) {
- 		int prev_idx, idx_delta;
-@@ -99,13 +94,6 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 		}
+-	for (i = 1; i < nr_members; i++) {
+-		ret = period_cmp(periods_a[i], periods_b[i]);
+-		if (ret)
++	perf_hpp__for_each_format(fmt) {
++		cmp = fmt->sort(a, b);
++		if (cmp)
+ 			break;
  	}
  
--	if (callback) {
--		int __ret = callback(hpp, false);
+-out:
+-	free(periods_a);
+-	free(periods_b);
 -
--		advance_hpp(hpp, __ret);
--		ret += __ret;
--	}
--
- 	/*
- 	 * Restore original buf and size as it's where caller expects
- 	 * the result will be saved.
-@@ -235,7 +223,7 @@ static u64 he_get_##_field(struct hist_entry *he)				\
- static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	return __hpp__fmt(hpp, he, he_get_##_field, NULL, " %6.2f%%",		\
-+	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
- 			  hpp_color_scnprintf, true);				\
+-	return ret;
++	return cmp;
  }
  
-@@ -244,7 +232,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
--	return __hpp__fmt(hpp, he, he_get_##_field, NULL, fmt,			\
-+	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
- 			  hpp_entry_scnprintf, true);				\
- }
+ static void hists__reset_filter_stats(struct hists *hists)
+@@ -669,7 +623,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
+ 		parent = *p;
+ 		iter = rb_entry(parent, struct hist_entry, rb_node);
  
-@@ -264,7 +252,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
--	return __hpp__fmt(hpp, he, he_get_raw_##_field, NULL, fmt,		\
-+	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt,			\
- 			  hpp_entry_scnprintf, false);				\
- }
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index e76d323..76bb72e 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -203,8 +203,8 @@ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
- typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- 
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, hpp_callback_fn callback,
--	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent);
-+	       hpp_field_fn get_field, const char *fmt,
-+	       hpp_snprint_fn print_fn, bool fmt_percent);
- 
- static inline void advance_hpp(struct perf_hpp *hpp, int inc)
- {
+-		if (hist_entry__sort_on_period(he, iter) > 0)
++		if (hist_entry__sort(he, iter) > 0)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
 -- 
 1.8.3.1
 
