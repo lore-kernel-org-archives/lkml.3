@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602AbaEUVkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:40:42 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:51004 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaEUVjQ (ORCPT
+	id S1753653AbaEUVlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:41:07 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41703 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439AbaEUVjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:39:16 -0400
+	Wed, 21 May 2014 17:39:13 -0400
 From: Florian Fainelli <f.fainelli@gmail.com>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
@@ -21,9 +21,9 @@ Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         linux-kernel@vger.kernel.org (open list),
         linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
-Subject: [PATCH RESEND net-next 7/9] ucc_geth: use the new fixed PHY helpers
-Date: Wed, 21 May 2014 14:38:49 -0700
-Message-Id: <1400708331-18088-8-git-send-email-f.fainelli@gmail.com>
+Subject: [PATCH RESEND net-next 5/9] fs_enet: use the new fixed PHY helpers
+Date: Wed, 21 May 2014 14:38:47 -0700
+Message-Id: <1400708331-18088-6-git-send-email-f.fainelli@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
 References: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com>
@@ -39,41 +39,43 @@ scheme.
 
 Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 ---
- drivers/net/ethernet/freescale/ucc_geth.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
-index c8299c31b21f..fab39e295441 100644
---- a/drivers/net/ethernet/freescale/ucc_geth.c
-+++ b/drivers/net/ethernet/freescale/ucc_geth.c
-@@ -1728,9 +1728,6 @@ static int init_phy(struct net_device *dev)
- 
- 	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link, 0,
- 				priv->phy_interface);
--	if (!phydev)
--		phydev = of_phy_connect_fixed_link(dev, &adjust_link,
--						   priv->phy_interface);
+diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+index dc80db41d6b3..d602711e00e9 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
++++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+@@ -792,10 +792,6 @@ static int fs_init_phy(struct net_device *dev)
+ 	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link, 0,
+ 				iface);
  	if (!phydev) {
+-		phydev = of_phy_connect_fixed_link(dev, &fs_adjust_link,
+-						   iface);
+-	}
+-	if (!phydev) {
  		dev_err(&dev->dev, "Could not attach to PHY\n");
  		return -ENODEV;
-@@ -3790,6 +3787,17 @@ static int ucc_geth_probe(struct platform_device* ofdev)
- 	ug_info->uf_info.irq = irq_of_parse_and_map(np, 0);
- 
- 	ug_info->phy_node = of_parse_phandle(np, "phy-handle", 0);
-+	if (!ug_info->phy_node) {
-+		/* In the case of a fixed PHY, the DT node associated
-+		 * to the PHY is the Ethernet MAC DT node.
-+		 */
-+		if (of_phy_is_fixed_link(np)) {
-+			err = of_phy_register_fixed_link(np);
+ 	}
+@@ -1029,9 +1025,15 @@ static int fs_enet_probe(struct platform_device *ofdev)
+ 	fpi->use_napi = 1;
+ 	fpi->napi_weight = 17;
+ 	fpi->phy_node = of_parse_phandle(ofdev->dev.of_node, "phy-handle", 0);
+-	if ((!fpi->phy_node) && (!of_get_property(ofdev->dev.of_node, "fixed-link",
+-						  NULL)))
+-		goto out_free_fpi;
++	if (!fpi->phy_node) {
++		if (of_phy_is_fixed_link(ofdev->dev.of_node)) {
++			err = of_phy_register_fixed_link(ofdev->dev.of_node);
 +			if (err)
-+				return err;
++				goto out_free_fpi;
++
++			fpi->phy_node = ofdev->dev.of_node;
 +		}
-+		ug_info->phy_node = np;
 +	}
  
- 	/* Find the TBI PHY node.  If it's not there, we don't support SGMII */
- 	ug_info->tbi_node = of_parse_phandle(np, "tbi-handle", 0);
+ 	if (of_device_is_compatible(ofdev->dev.of_node, "fsl,mpc5125-fec")) {
+ 		phy_connection_type = of_get_property(ofdev->dev.of_node,
 -- 
 1.9.1
 
