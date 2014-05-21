@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaEUD6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 23:58:21 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:39632
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751322AbaEUD6T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 23:58:19 -0400
-From: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "Rob Herring" <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
- dereference
-Thread-Topic: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer
- dereference
-Thread-Index: AQHPdItTuP5Dqz0NcE2Tsh9PkDTo5JtKaEOA
-Date: Wed, 21 May 2014 03:58:15 +0000
-Message-ID: <28189d9037d244729e10f7b1a22005c5@BLUPR03MB566.namprd03.prod.outlook.com>
-References: <1400347004-25368-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1400347004-25368-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-forefront-prvs: 0218A015FA
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(199002)(189002)(377454003)(51704005)(13464003)(81342001)(76176999)(101416001)(86362001)(54356999)(76576001)(33646001)(50986999)(15975445006)(74316001)(81542001)(92566001)(99396002)(77096999)(83072002)(4396001)(31966008)(19580395003)(77982001)(99286001)(76482001)(83322001)(74502001)(87936001)(64706001)(66066001)(20776003)(21056001)(74662001)(79102001)(85852003)(46102001)(2656002)(80022001)(19580405001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB568;H:BLUPR03MB566.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Bharat.Bhushan@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750960AbaEUEAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 00:00:48 -0400
+Received: from mga14.intel.com ([192.55.52.115]:30320 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761AbaEUEAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 00:00:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
+   d="scan'208";a="535240312"
+Date: Wed, 21 May 2014 09:15:13 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Hongbo Zhang <hongbo.zhang@freescale.com>
+Cc: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        "leo.li@freescale.com" <leo.li@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "scottwood@freescale.com" <scottwood@freescale.com>,
+        "vkoul@infradead.org" <vkoul@infradead.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v4 8/8] DMA: Freescale: add suspend resume functions
+ for DMA driver
+Message-ID: <20140521034513.GF21128@intel.com>
+References: <1397809071-5353-1-git-send-email-hongbo.zhang@freescale.com>
+ <1397809071-5353-9-git-send-email-hongbo.zhang@freescale.com>
+ <20140502164604.GB32284@intel.com>
+ <536614E7.9050301@freescale.com>
+ <1399451493.2677.11.camel@smile.fi.intel.com>
+ <536B53E5.30506@freescale.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536B53E5.30506@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> bounces@lists.linux-foundation.org] On Behalf Of Rickard Strandqvist
-> Sent: Saturday, May 17, 2014 10:47 PM
-> To: Joerg Roedel; Grant Likely
-> Cc: devicetree@vger.kernel.org; iommu@lists.linux-foundation.org; Rob Herring;
-> linux-kernel@vger.kernel.org; Rickard Strandqvist
-> Subject: [PATCH] iommu: fsl_pamu.c: Fix for possible null pointer dereference
+On Thu, May 08, 2014 at 05:52:37PM +0800, Hongbo Zhang wrote:
 > 
-> There is otherwise a risk of a possible null pointer dereference.
-
-You are right. 
-
+> On 05/07/2014 04:31 PM, Shevchenko, Andriy wrote:
+> >On Sun, 2014-05-04 at 18:22 +0800, Hongbo Zhang wrote:
+> >>On 05/03/2014 12:46 AM, Vinod Koul wrote:
+> >>>On Fri, Apr 18, 2014 at 04:17:51PM +0800, hongbo.zhang@freescale.com wrote:
+> >>>>From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> >>>>
+> >>>>This patch adds suspend resume functions for Freescale DMA driver.
+> >>>>.prepare callback is used to stop further descriptors from being added into the
+> >>>>pending queue, and also issue pending queues into execution if there is any.
+> >>>>.suspend callback makes sure all the pending jobs are cleaned up and all the
+> >>>>channels are idle, and save the mode registers.
+> >>>>.resume callback re-initializes the channels by restore the mode registers.
+> >>>>
+> >>>>+
+> >>>>+static const struct dev_pm_ops fsldma_pm_ops = {
+> >>>>+	.prepare	= fsldma_prepare,
+> >>>>+	.suspend	= fsldma_suspend,
+> >>>>+	.resume		= fsldma_resume,
+> >>>>+};
+> >>>I think this is not correct. We discussed this sometime back on list. The
+> >>>DMAengine drivers should use late resume and early suspend to ensure they get
+> >>>suspended after clients (who should use normal ones) and resume before them
+> >>>
+> >>OK, will update it like this:
+> >>use .suspend to take place of current .prepare
+> >Could you remove this at all?
+> >
+> >Answering to your previous statements I could say that.
+> >Device drivers (DMAc users) that don't implement .suspend callback are
+> >on their own with troubles, you have not to care about them in the DMA
+> >driver.
 > 
-> Was largely found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> Thanks for pointing out this issue.
+> Then how to handle the descriptors in the pending list if there is any?
+> a. let them finished.
+>     but if the DMA user has already suspended prior DMA controller,
+> it is meaningless somehow and may even ask for trouble.
+> b. don't touch them.
+>     after resume these pending descriptors could be executed, it is
+> also meaningless because the resumed DMA user may in different state
+> from before being suspended.
+> c. delete them.
+>     should we do this? is is a bit crude?
+> d. return a non-success value
+>     then the whole suspend process is reversed, e.g. suspend fails.
+> I've looked through some dma drivers, most of them is in case b.
+Yes and that makese sense.
 
-Reviewed-by: Bharat Bhushan <bharat.bhushan@freescale.com>
+In calssic suspend case we maybe in middle so graceful behaviour would be to for
+client to PAUSE or terminate and then suspend followed by DMA suspend.
+You need to rely on client doing the right thing here
 
-
-Thanks
--Bharat
-
-> ---
->  drivers/iommu/fsl_pamu.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iommu/fsl_pamu.c b/drivers/iommu/fsl_pamu.c index
-> cba0498..b99dd88 100644
-> --- a/drivers/iommu/fsl_pamu.c
-> +++ b/drivers/iommu/fsl_pamu.c
-> @@ -592,8 +592,7 @@ found_cpu_node:
->  		/* advance to next node in cache hierarchy */
->  		node = of_find_node_by_phandle(*prop);
->  		if (!node) {
-> -			pr_debug("Invalid node for cache hierarchy %s\n",
-> -				node->full_name);
-> +			pr_debug("Invalid node for cache hierarchy\n");
->  			return ~(u32)0;
->  		}
->  	}
-> --
-> 1.7.10.4
-> 
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+-- 
+~Vinod
