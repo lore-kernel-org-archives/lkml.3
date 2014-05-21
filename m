@@ -1,157 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaEUHdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 03:33:52 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:63326 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaEUHdu (ORCPT
+	id S1751975AbaEUHfM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 03:35:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34601 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaEUHfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 03:33:50 -0400
+	Wed, 21 May 2014 03:35:10 -0400
+Date: Wed, 21 May 2014 09:34:57 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Michal Simek <michal.simek@xilinx.com>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
+Message-ID: <20140521073457.GD31687@pengutronix.de>
+References: <1400106655-22465-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1400106655-22465-3-git-send-email-soren.brinkmann@xilinx.com>
+ <20140515073816.GI16662@pengutronix.de>
+ <91822600-39d0-4e71-b0f5-9eda35b76ec0@BN1AFFO11FD016.protection.gbl>
+ <20140519161949.GG16662@pengutronix.de>
+ <db8633e5-01a9-4d3a-80e8-74e23a456d52@BN1BFFO11FD051.protection.gbl>
+ <20140520073358.GJ16662@pengutronix.de>
+ <4bb5f44a-60bb-4e34-8f88-f91b8419be8d@BL2FFO11FD050.protection.gbl>
+ <537B957B.5010001@codeaurora.org>
+ <668683e3-856e-4f30-9b11-8f3e91e12d1d@BL2FFO11FD038.protection.gbl>
 MIME-Version: 1.0
-In-Reply-To: <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-	<CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-Date: Wed, 21 May 2014 09:33:49 +0200
-Message-ID: <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Austin Schuh <austin@peloton-tech.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, xfs <xfs@oss.sgi.com>,
-        rt-users <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <668683e3-856e-4f30-9b11-8f3e91e12d1d@BL2FFO11FD038.protection.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing RT folks
+Hello,
 
-On Wed, May 21, 2014 at 8:23 AM, Austin Schuh <austin@peloton-tech.com> wrote:
-> On Tue, May 13, 2014 at 7:29 PM, Austin Schuh <austin@peloton-tech.com> wrote:
->> Hi,
->>
->> I am observing a filesystem lockup with XFS on a CONFIG_PREEMPT_RT
->> patched kernel.  I have currently only triggered it using dpkg.  Dave
->> Chinner on the XFS mailing list suggested that it was a rt-kernel
->> workqueue issue as opposed to a XFS problem after looking at the
->> kernel messages.
->>
->> The only modification to the kernel besides the RT patch is that I
->> have applied tglx's "genirq: Sanitize spurious interrupt detection of
->> threaded irqs" patch.
->
-> I upgraded to 3.14.3-rt4, and the problem still persists.
->
-> I turned on event tracing and tracked it down further.  I'm able to
-> lock it up by scping a new kernel debian package to /tmp/ on the
-> machine.  scp is locking the inode, and then scheduling
-> xfs_bmapi_allocate_worker in the work queue.  The work then never gets
-> run.  The kworkers then lock up waiting for the inode lock.
->
-> Here are the relevant events from the trace.  ffff8803e9f10288
-> (blk_delay_work) gets run later on in the trace, but ffff8803b4c158d0
-> (xfs_bmapi_allocate_worker) never does.  The kernel then warns about
-> blocked tasks 120 seconds later.
->
->
->              scp-5393  [001] ....1..   148.883383: xfs_writepage: dev
-> 8:5 ino 0xd8e pgoff 0x4a3e000 size 0x16af02b0 offset 0 length 0
-> delalloc 1 unwritten 0
->              scp-5393  [001] ....1..   148.883383: xfs_ilock_nowait:
-> dev 8:5 ino 0xd8e flags ILOCK_SHARED caller xfs_map_blocks
->              scp-5393  [001] ....1..   148.883384: xfs_iunlock: dev
-> 8:5 ino 0xd8e flags ILOCK_SHARED caller xfs_map_blocks
->              scp-5393  [001] ....1..   148.883386: xfs_log_reserve:
-> dev 8:5 type STRAT_WRITE t_ocnt 2 t_cnt 2 t_curr_res 112332 t_unit_res
-> 112332 t_flags XLOG_TIC_INITED|XLOG_TIC_PERM_RESERV reserveq empty
-> writeq empty grant_reserve_cycle 57 grant_reserve_bytes 9250852
-> grant_write_cycle 57 grant_write_bytes 9250852 curr_cycle 57
-> curr_block 18031 tail_cycle 57 tail_block 17993
->              scp-5393  [001] ....1..   148.883386:
-> xfs_log_reserve_exit: dev 8:5 type STRAT_WRITE t_ocnt 2 t_cnt 2
-> t_curr_res 112332 t_unit_res 112332 t_flags
-> XLOG_TIC_INITED|XLOG_TIC_PERM_RESERV reserveq empty writeq empty
-> grant_reserve_cycle 57 grant_reserve_bytes 9475516 grant_write_cycle
-> 57 grant_write_bytes 9475516 curr_cycle 57 curr_block 18031 tail_cycle
-> 57 tail_block 17993
->              scp-5393  [001] ....1..   148.883386: xfs_ilock: dev 8:5
-> ino 0xd8e flags ILOCK_EXCL caller xfs_iomap_write_allocate
->              scp-5393  [001] ....1.3   148.883390:
-> workqueue_queue_work: work struct=ffff8803b4c158d0
-> function=xfs_bmapi_allocate_worker workqueue=ffff8803ea85dc00
-> req_cpu=512 cpu=1
->              scp-5393  [001] ....1.3   148.883390:
-> workqueue_activate_work: work struct ffff8803b4c158d0
->              scp-5393  [001] ....1.4   148.883396:
-> workqueue_queue_work: work struct=ffff8803e9f10288
-> function=blk_delay_work workqueue=ffff8803ecf96200 req_cpu=512 cpu=1
->              scp-5393  [001] ....1.4   148.883396:
-> workqueue_activate_work: work struct ffff8803e9f10288
->              scp-5393  [001] dN..3.4   148.883399: sched_wakeup:
-> comm=kworker/1:1H pid=573 prio=100 success=1 target_cpu=001
->              scp-5393  [001] dN..3.4   148.883400: sched_stat_runtime:
-> comm=scp pid=5393 runtime=32683 [ns] vruntime=658862317 [ns]
->              scp-5393  [001] d...3.4   148.883400: sched_switch:
-> prev_comm=scp prev_pid=5393 prev_prio=120 prev_state=R+ ==>
-> next_comm=kworker/1:1H next_pid=573 next_prio=100
->
->     irq/44-ahci-273   [000] d...3.5   148.883647: sched_wakeup:
-> comm=kworker/0:2 pid=732 prio=120 success=1 target_cpu=000
->     irq/44-ahci-273   [000] d...3..   148.883667: sched_switch:
-> prev_comm=irq/44-ahci prev_pid=273 prev_prio=49 prev_state=S ==>
-> next_comm=kworker/0:2 next_pid=732 next_prio=120
->     kworker/0:2-732   [000] ....1..   148.883674:
-> workqueue_execute_start: work struct ffff8800aea30cb8: function
-> xfs_end_io
->     kworker/0:2-732   [000] ....1..   148.883674: xfs_ilock: dev 8:5
-> ino 0xd8e flags ILOCK_EXCL caller xfs_setfilesize
->     kworker/0:2-732   [000] d...3..   148.883677: sched_stat_runtime:
-> comm=kworker/0:2 pid=732 runtime=11392 [ns] vruntime=46907654869 [ns]
->     kworker/0:2-732   [000] d...3..   148.883679: sched_switch:
-> prev_comm=kworker/0:2 prev_pid=732 prev_prio=120 prev_state=D ==>
-> next_comm=swapper/0 next_pid=0 next_prio=120
->
->    kworker/1:1-99    [001] ....1..   148.884208:
-> workqueue_execute_start: work struct ffff8800aea30c20: function
-> xfs_end_io
->     kworker/1:1-99    [001] ....1..   148.884208: xfs_ilock: dev 8:5
-> ino 0xd8e flags ILOCK_EXCL caller xfs_setfilesize
->     kworker/1:1-99    [001] d...3..   148.884210: sched_stat_runtime:
-> comm=kworker/1:1 pid=99 runtime=36705 [ns] vruntime=48354424724 [ns]
->     kworker/1:1-99    [001] d...3..   148.884211: sched_switch:
-> prev_comm=kworker/1:1 prev_pid=99 prev_prio=120 prev_state=R+ ==>
-> next_comm=swapper/1 next_pid=0 next_prio=120
->
->   kworker/u16:4-296   [001] ....1..   151.560358:
-> workqueue_execute_start: work struct ffff8803e9f10660: function
-> bdi_writeback_workfn
->   kworker/u16:4-296   [001] ....1..   151.560389:
-> workqueue_execute_end: work struct ffff8803e9f10660
->   kworker/u16:4-296   [001] d...3..   151.560398: sched_stat_runtime:
-> comm=kworker/u16:4 pid=296 runtime=51174 [ns] vruntime=48345513312
-> [ns]
->   kworker/u16:4-296   [001] d...3..   151.560403: sched_switch:
-> prev_comm=kworker/u16:4 prev_pid=296 prev_prio=120 prev_state=R+ ==>
-> next_comm=swapper/1 next_pid=0 next_prio=120
->
->
-> I have a peak_pci can card in the machine that is consuming about 1.5
-> CPU cores because it is not connected to a CAN bus and gets error
-> interrupts every time it tries to send and resend.  If I disable the
-> card (ifconfig can0 down; ifconfig can1 down), I have a lot more
-> trouble reproducing the lockup.
->
-> Any ideas why the scheduled work is never getting run?
->
-> Thanks,
-> Austin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Tue, May 20, 2014 at 02:48:20PM -0700, Sören Brinkmann wrote:
+> On Tue, 2014-05-20 at 10:48AM -0700, Stephen Boyd wrote:
+> > On 05/20/14 09:01, Sören Brinkmann wrote:
+> > >
+> > >>>>> +{
+> > >>>>> +	unsigned long lower, upper, cur, lower_last, upper_last;
+> > >>>>> +
+> > >>>>> +	lower = clk_round_rate(clk, rate);
+> > >>>>> +	if (lower >= rate)
+> > >>>>> +		return lower;
+> > >>>> Is the >-case worth a warning?
+> > >>> No, it's correct behavior. If you request a rate that is way lower than what the
+> > >>> clock can generate, returning something larger is perfectly valid, IMHO.
+> > >>> Which reveals one problem in this whole discussion. The API does not
+> > >>> require clk_round_rate() to round down. It is actually an implementation
+> > >>> choice that had been made for clk-divider.
+> > >> I'm sure it's more than an implementation choice for clk-divider. But I
+> > >> don't find any respective documentation (but I didn't try hard).
+> > > A similar discussion - without final conclusion:
+> > > https://lkml.org/lkml/2010/7/14/260
+> > >
+> > >
+> > 
+> > Please call this new API something like clk_find_nearest_rate() or
+> > something. clk_round_rate() is supposed to return the rate that will be
+> > set if you call clk_set_rate() with the same arguments. It's up to the
+> > implementation to decide if that means rounding the rate up or down or
+> > to the nearest value.
+> 
+> Sounds good to me. Are there any cases of clocks that round up? I think
+> that case would not be handled correctly. But I also don't see a use
+> case for such an implementation.
+I don't really care which semantic (i.e. round up, round down or round
+closest) is picked, but I'd vote that all should pick up the same. I
+think the least surprising definition is to choose rounding down and add
+the function that is under discussion here to get a nearest match.
 
+So I suggest:
 
+	- if round_rate is given a rate that is smaller than the
+	  smallest available rate, return 0
+	- add WARN_ONCE to round_rate and set_rate if they return with a
+	  rate bigger than requested
+	- change the return values to unsigned long
+
+Do we also need a round_up implementation?
+
+Mike? Russell? Any thoughts from your side?
+
+Best regards
+Uwe
 
 -- 
-Thanks,
-//richard
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
