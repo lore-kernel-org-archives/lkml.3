@@ -1,345 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196AbaEUNND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:13:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaEUNM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:12:59 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 06/22] perf tools: Consolidate output field handling to hpp format routines
-Date: Wed, 21 May 2014 15:12:28 +0200
-Message-Id: <1400677964-25160-7-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
-References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
+	id S1752804AbaEUNRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:17:20 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:57178 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaEUNRR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:17:17 -0400
+Date: Wed, 21 May 2014 15:17:12 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, robdclark@gmail.com, airlied@gmail.com,
+        daniel.vetter@ffwll.ch, hughd@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/gem: remove obsolete BUG_ON
+Message-ID: <20140521131712.GG14357@phenom.ffwll.local>
+Mail-Followup-To: David Herrmann <dh.herrmann@gmail.com>,
+	dri-devel@lists.freedesktop.org, robdclark@gmail.com,
+	airlied@gmail.com, hughd@google.com, linux-kernel@vger.kernel.org
+References: <1400674586-17968-1-git-send-email-dh.herrmann@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400674586-17968-1-git-send-email-dh.herrmann@gmail.com>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+On Wed, May 21, 2014 at 02:16:26PM +0200, David Herrmann wrote:
+> The shmem subsystem supports relocating pages on swap-in in case it was
+> loaded into the wrong zone. This was implemented 2 years ago in:
+> 
+>     commit bde05d1ccd512696b09db9dd2e5f33ad19152605
+>     Author: Hugh Dickins <hughd@google.com>
+>     Date:   Tue May 29 15:06:38 2012 -0700
+> 
+>         shmem: replace page if mapping excludes its zone
+> 
+> If a driver requires pages to be in a specific zone, they _must_ set the
+> correct GFP flags (like __GFP_DMA32) in mapping_gfp_mask(mapping). shmem
+> will make sure that any page leaving the swap-cache is located in a
+> compatible zone.
+> 
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 
-Until now the hpp and sort functions do similar jobs different ways.
-Since the sort functions converted/wrapped to hpp formats it can do
-the job in a uniform way.
+Imo the BUG_ON is nice since we want to make sure this never blows up. We
+have a similar one in i915_gem.c since we do have platforms with 32bit
+limits that support more than 4G or ram.
 
-The perf_hpp__sort_list has a list of hpp formats to sort entries and
-the perf_hpp__list has a list of hpp formats to print output result.
+Imo better to update the comment and state that this is fixed now, but
+better be paranoid.
+-Daniel
+> ---
+>  drivers/gpu/drm/drm_gem.c | 19 -------------------
+>  1 file changed, 19 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
+> index 9909bef..a6146ab 100644
+> --- a/drivers/gpu/drm/drm_gem.c
+> +++ b/drivers/gpu/drm/drm_gem.c
+> @@ -473,25 +473,6 @@ struct page **drm_gem_get_pages(struct drm_gem_object *obj, gfp_t gfpmask)
+>  		if (IS_ERR(p))
+>  			goto fail;
+>  		pages[i] = p;
+> -
+> -		/* There is a hypothetical issue w/ drivers that require
+> -		 * buffer memory in the low 4GB.. if the pages are un-
+> -		 * pinned, and swapped out, they can end up swapped back
+> -		 * in above 4GB.  If pages are already in memory, then
+> -		 * shmem_read_mapping_page_gfp will ignore the gfpmask,
+> -		 * even if the already in-memory page disobeys the mask.
+> -		 *
+> -		 * It is only a theoretical issue today, because none of
+> -		 * the devices with this limitation can be populated with
+> -		 * enough memory to trigger the issue.  But this BUG_ON()
+> -		 * is here as a reminder in case the problem with
+> -		 * shmem_read_mapping_page_gfp() isn't solved by the time
+> -		 * it does become a real issue.
+> -		 *
+> -		 * See this thread: http://lkml.org/lkml/2011/7/11/238
+> -		 */
+> -		BUG_ON((gfpmask & __GFP_DMA32) &&
+> -				(page_to_pfn(p) >= 0x00100000UL));
+>  	}
+>  
+>  	return pages;
+> -- 
+> 1.9.3
+> 
 
-To have a backward compatibility, it automatically adds 'overhead'
-field in front of sort list.  And then all of fields in sort list
-added to the output list (if it's not already there).
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/n/tip-7g3h86woz2sckg3h1lj42ygj@git.kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 31 ++++++++++++++----------
- tools/perf/ui/gtk/hists.c      | 31 ------------------------
- tools/perf/ui/hist.c           | 26 ++++++++++++++++++++
- tools/perf/ui/stdio/hist.c     | 55 +++++++++++++-----------------------------
- tools/perf/util/hist.c         |  2 +-
- tools/perf/util/hist.h         |  1 +
- 6 files changed, 63 insertions(+), 83 deletions(-)
-
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index b0861e3..847de11 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -760,8 +760,8 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 		if (!browser->b.navkeypressed)
- 			width += 1;
- 
--		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
--		slsmg_write_nstring(s, width);
-+		slsmg_write_nstring("", width);
-+
- 		++row;
- 		++printed;
- 	} else
-@@ -1104,27 +1104,32 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 				       struct hist_entry *he, FILE *fp)
- {
- 	char s[8192];
--	double percent;
- 	int printed = 0;
- 	char folded_sign = ' ';
-+	struct perf_hpp hpp = {
-+		.buf = s,
-+		.size = sizeof(s),
-+	};
-+	struct perf_hpp_fmt *fmt;
-+	bool first = true;
-+	int ret;
- 
- 	if (symbol_conf.use_callchain)
- 		folded_sign = hist_entry__folded(he);
- 
--	hist_entry__sort_snprintf(he, s, sizeof(s), browser->hists);
--	percent = (he->stat.period * 100.0) / browser->hists->stats.total_period;
--
- 	if (symbol_conf.use_callchain)
- 		printed += fprintf(fp, "%c ", folded_sign);
- 
--	printed += fprintf(fp, " %5.2f%%", percent);
--
--	if (symbol_conf.show_nr_samples)
--		printed += fprintf(fp, " %11u", he->stat.nr_events);
--
--	if (symbol_conf.show_total_period)
--		printed += fprintf(fp, " %12" PRIu64, he->stat.period);
-+	perf_hpp__for_each_format(fmt) {
-+		if (!first) {
-+			ret = scnprintf(hpp.buf, hpp.size, "  ");
-+			advance_hpp(&hpp, ret);
-+		} else
-+			first = false;
- 
-+		ret = fmt->entry(fmt, &hpp, he);
-+		advance_hpp(&hpp, ret);
-+	}
- 	printed += fprintf(fp, "%s\n", rtrim(s));
- 
- 	if (folded_sign == '-')
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 91f10f3..d5c336e 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -153,7 +153,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	struct perf_hpp_fmt *fmt;
- 	GType col_types[MAX_COLUMNS];
- 	GtkCellRenderer *renderer;
--	struct sort_entry *se;
- 	GtkTreeStore *store;
- 	struct rb_node *nd;
- 	GtkWidget *view;
-@@ -172,16 +171,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	perf_hpp__for_each_format(fmt)
- 		col_types[nr_cols++] = G_TYPE_STRING;
- 
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		if (se->elide)
--			continue;
--
--		if (se == &sort_sym)
--			sym_col = nr_cols;
--
--		col_types[nr_cols++] = G_TYPE_STRING;
--	}
--
- 	store = gtk_tree_store_newv(nr_cols, col_types);
- 
- 	view = gtk_tree_view_new();
-@@ -199,16 +188,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 							    col_idx++, NULL);
- 	}
- 
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		if (se->elide)
--			continue;
--
--		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
--							    -1, se->se_header,
--							    renderer, "text",
--							    col_idx++, NULL);
--	}
--
- 	for (col_idx = 0; col_idx < nr_cols; col_idx++) {
- 		GtkTreeViewColumn *column;
- 
-@@ -253,16 +232,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
- 		}
- 
--		list_for_each_entry(se, &hist_entry__sort_list, list) {
--			if (se->elide)
--				continue;
--
--			se->se_snprintf(h, s, ARRAY_SIZE(s),
--					hists__col_len(hists, se->se_width_idx));
--
--			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
--		}
--
- 		if (symbol_conf.use_callchain && sort__has_sym) {
- 			if (callchain_param.mode == CHAIN_GRAPH_REL)
- 				total = h->stat.period;
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 0299385..400437e 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -354,6 +354,14 @@ LIST_HEAD(perf_hpp__sort_list);
- 
- void perf_hpp__init(void)
- {
-+	struct list_head *list;
-+	int i;
-+
-+	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
-+		INIT_LIST_HEAD(&perf_hpp__format[i].list);
-+		INIT_LIST_HEAD(&perf_hpp__format[i].sort_list);
-+	}
-+
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 
- 	if (symbol_conf.show_cpu_utilization) {
-@@ -371,6 +379,13 @@ void perf_hpp__init(void)
- 
- 	if (symbol_conf.show_total_period)
- 		perf_hpp__column_enable(PERF_HPP__PERIOD);
-+
-+	/* prepend overhead field for backward compatiblity.  */
-+	list = &perf_hpp__format[PERF_HPP__OVERHEAD].sort_list;
-+	if (list_empty(list))
-+		list_add(list, &perf_hpp__sort_list);
-+
-+	perf_hpp__setup_output_field();
- }
- 
- void perf_hpp__column_register(struct perf_hpp_fmt *format)
-@@ -389,6 +404,17 @@ void perf_hpp__column_enable(unsigned col)
- 	perf_hpp__column_register(&perf_hpp__format[col]);
- }
- 
-+void perf_hpp__setup_output_field(void)
-+{
-+	struct perf_hpp_fmt *fmt;
-+
-+	/* append sort keys to output field */
-+	perf_hpp__for_each_sort_list(fmt) {
-+		if (list_empty(&fmt->list))
-+			perf_hpp__column_register(fmt);
-+	}
-+}
-+
- int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
- 			      struct hists *hists)
- {
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 9eccf7f..49e2e4a 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -306,8 +306,7 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
- 	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
- }
- 
--static int hist_entry__period_snprintf(struct perf_hpp *hpp,
--				       struct hist_entry *he)
-+static int hist_entry__snprintf(struct hist_entry *he, struct perf_hpp *hpp)
- {
- 	const char *sep = symbol_conf.field_sep;
- 	struct perf_hpp_fmt *fmt;
-@@ -353,8 +352,7 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 	if (size == 0 || size > bfsz)
- 		size = hpp.size = bfsz;
- 
--	ret = hist_entry__period_snprintf(&hpp, he);
--	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
-+	hist_entry__snprintf(he, &hpp);
- 
- 	ret = fprintf(fp, "%s\n", bf);
- 
-@@ -386,28 +384,9 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 
- 	init_rem_hits();
- 
--	if (!show_header)
--		goto print_entries;
--
--	fprintf(fp, "# ");
--
--	perf_hpp__for_each_format(fmt) {
--		if (!first)
--			fprintf(fp, "%s", sep ?: "  ");
--		else
--			first = false;
--
--		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
--		fprintf(fp, "%s", bf);
--	}
--
- 	list_for_each_entry(se, &hist_entry__sort_list, list) {
- 		if (se->elide)
- 			continue;
--		if (sep) {
--			fprintf(fp, "%c%s", *sep, se->se_header);
--			continue;
--		}
- 		width = strlen(se->se_header);
- 		if (symbol_conf.col_width_list_str) {
- 			if (col_width) {
-@@ -420,7 +399,21 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		}
- 		if (!hists__new_col_len(hists, se->se_width_idx, width))
- 			width = hists__col_len(hists, se->se_width_idx);
--		fprintf(fp, "  %*s", width, se->se_header);
-+	}
-+
-+	if (!show_header)
-+		goto print_entries;
-+
-+	fprintf(fp, "# ");
-+
-+	perf_hpp__for_each_format(fmt) {
-+		if (!first)
-+			fprintf(fp, "%s", sep ?: "  ");
-+		else
-+			first = false;
-+
-+		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
-+		fprintf(fp, "%s", bf);
- 	}
- 
- 	fprintf(fp, "\n");
-@@ -447,20 +440,6 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 			fprintf(fp, ".");
- 	}
- 
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		unsigned int i;
--
--		if (se->elide)
--			continue;
--
--		fprintf(fp, "  ");
--		width = hists__col_len(hists, se->se_width_idx);
--		if (width == 0)
--			width = strlen(se->se_header);
--		for (i = 0; i < width; i++)
--			fprintf(fp, ".");
--	}
--
- 	fprintf(fp, "\n");
- 	if (max_rows && ++nr_rows >= max_rows)
- 		goto out;
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index c99ae4d..ae13c2d 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -569,7 +569,7 @@ static int hist_entry__sort(struct hist_entry *a, struct hist_entry *b)
- 	struct perf_hpp_fmt *fmt;
- 	int64_t cmp = 0;
- 
--	perf_hpp__for_each_format(fmt) {
-+	perf_hpp__for_each_sort_list(fmt) {
- 		cmp = fmt->sort(a, b);
- 		if (cmp)
- 			break;
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index eee154a..e76d323 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -196,6 +196,7 @@ void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
- void perf_hpp__register_sort_field(struct perf_hpp_fmt *format);
-+void perf_hpp__setup_output_field(void);
- 
- typedef u64 (*hpp_field_fn)(struct hist_entry *he);
- typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
 -- 
-1.8.3.1
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
