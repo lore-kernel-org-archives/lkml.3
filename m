@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaEUJcm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:32:42 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:49628 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaEUJcj (ORCPT
+	id S1751842AbaEUJfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:35:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59481 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaEUJfE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:32:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>
-Subject: Re: [PATCH] devicetree: Add generic IOMMU device tree bindings
-Date: Wed, 21 May 2014 11:32:23 +0200
-Message-ID: <11242680.PQytQQqlPJ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140521090244.GB19268@ulmo>
-References: <1400242998-437-1-git-send-email-thierry.reding@gmail.com> <4506822.XX7GrvtHhk@wuerfel> <20140521090244.GB19268@ulmo>
+	Wed, 21 May 2014 05:35:04 -0400
+Message-ID: <537C7348.7060202@arm.com>
+Date: Wed, 21 May 2014 10:35:04 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aTZf/Ubwd6rHgiPW3rS6LRtD8WTJQGWXs14VunuDauv
- 8KNqs0Gktg+HokwHedQfmS3uGqinByKUGPTLr01bfG0tEJLmge
- VfqU2DsIoHkgS/xQ3kJPtI68sjA76wAVjLlhoMmG8Nog7rKjfn
- GEnRqupkdnsBo3x8I76OHzS2Inx4iLmhDtYRFveRCbfOQ6gBZP
- VEPwQzenTRuOhBLvJy0cNpHQKJXZan8yNfj6pCWNOm+v/uV8Oy
- c4jLKggkJqY4iSeZ4HXjO98SG0w+3NKZqpntWZ3Oj1QPBMoK8H
- V3PpmwmHTIpXJm3QiXTCiQuzA6yp/dRlrFESaeWGcVqwZYoKCs
- vEoLURPU3aD3pS88zNYQ=
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        "inderpal.s@samsung.com" <inderpal.s@samsung.com>,
+        "pavel@ucw.cz" <pavel@ucw.cz>, "nm@ti.com" <nm@ti.com>,
+        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH Resend] driver/core: cpu: initialize opp table
+References: <60d825e8bfe01f8a5ff98fffaf51ffbf04c7d175.1400480033.git.viresh.kumar@linaro.org> <ca7cc76c49806ce1ac8f9617fa4266cfc29d1ea1.1400480592.git.viresh.kumar@linaro.org>
+In-Reply-To: <ca7cc76c49806ce1ac8f9617fa4266cfc29d1ea1.1400480592.git.viresh.kumar@linaro.org>
+X-OriginalArrivalTime: 21 May 2014 09:35:00.0768 (UTC) FILETIME=[EFD72A00:01CF74D7]
+X-MC-Unique: 114052110350111801
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 May 2014 11:02:45 Thierry Reding wrote:
-> On Wed, May 21, 2014 at 10:54:42AM +0200, Arnd Bergmann wrote:
+
+
+On 19/05/14 07:29, Viresh Kumar wrote:
+> All drivers expecting CPU's OPPs from device tree initialize OPP table using
+> of_init_opp_table() and there is nothing driver specific in that. They all do it
+> in the same way adding to code redundancy.
 >
-> > Right. As long as we always unmap the buffers from the IOMMU after they
-> > have stopped being in use, it's very unlikely that even a broken device
-> > driver causes a DMA into some bus address that happens to be mapped for
-> > another device.
-> 
-> I think that if buffers remain mapped in the IOMMU when they have been
-> deallocated that should be considered a bug.
+> It would be better if we can get rid of code redundancy by initializing CPU OPPs
+> from core code for all CPUs that have a "operating-points" property defined in
+> their node.
+>
+> This patch initializes OPPs as soon as CPU device is registered in
+> register_cpu().
+>
 
-You could see it as a performance optimization in some cases, e.g. when you
-cannot flush individual IOTLBs or doing so is expensive, and you just keep
-assigning new addresses until every one has been used, then you do a global
-IOTLB flush once. Obviously you have to maintain the IO page tables correctly.
+This is really nice getting rid of all duplicate code.
 
-	Arnd
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Sudeep Holla <sudeep.holla@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> V1-V2:
+> A colleague spotted some extra debug prints in my first mail :(
+>
+> Replace
+> + pr_err("****%s: failed to init OPP table for cpu%d, err: %d\n",
+> with
+> + pr_err("%s: failed to init OPP table for cpu%d, err: %d\n",
+>
+>   drivers/base/cpu.c | 14 ++++++++++++--
+>   1 file changed, 12 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 006b1bc..74ce944 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -16,6 +16,7 @@
+>   #include <linux/acpi.h>
+>   #include <linux/of.h>
+>   #include <linux/cpufeature.h>
+> +#include <linux/pm_opp.h>
+>
+>   #include "base.h"
+>
+> @@ -349,11 +350,20 @@ int register_cpu(struct cpu *cpu, int num)
+>   	if (cpu->hotpluggable)
+>   		cpu->dev.groups = hotplugable_cpu_attr_groups;
+>   	error = device_register(&cpu->dev);
+> -	if (!error)
+> +	if (!error) {
+>   		per_cpu(cpu_sys_devices, num) = &cpu->dev;
+> -	if (!error)
+>   		register_cpu_under_node(num, cpu_to_node(num));
+>
+> +		/* Initialize CPUs OPP table */
+> +		if (of_node_get(cpu->dev.of_node)) {
+> +			error = of_init_opp_table(&cpu->dev);
+> +			if (error && error != -ENODEV)
+
+As Rafael mentioned it's better to have a wrapper function to hide these
+details. You should consider the fact that of_init_opp_table returns -EINVAL if
+CONFIG_PM_OPP not defined as well as when the list is invalid in the DT.
+IMO we can return -ENOSYS if not implemented(i.e. !CONFIG_PM_OPP)
+
+> +				pr_err("%s: failed to init OPP table for cpu%d, err: %d\n",
+> +					__func__, num, error);
+> +			of_node_put(cpu->dev.of_node);
+> +		}
+> +	}
+> +
+>   	return error;
+>   }
+>
+
+Regards,
+Sudeep
+
+
