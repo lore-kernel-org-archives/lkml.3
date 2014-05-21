@@ -1,167 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaEUNNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:13:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64354 "EHLO mx1.redhat.com"
+	id S1752478AbaEUNNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:13:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39980 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489AbaEUNNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:13:24 -0400
+	id S1751395AbaEUNNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:13:18 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Michael Lentine <mlentine@google.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 22/22] perf tools: Add automatic remapping of Android libraries
-Date: Wed, 21 May 2014 15:12:44 +0200
-Message-Id: <1400677964-25160-23-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 19/22] perf tests: Factor out print_hists_*()
+Date: Wed, 21 May 2014 15:12:41 +0200
+Message-Id: <1400677964-25160-20-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 References: <1400677964-25160-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Lentine <mlentine@google.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-This patch automatically adjusts the path of MMAP records
-associated with Android system libraries.
+Those print helper functions can be reused by later hist test cases so
+factor them out to a common location.
 
-The Android system is organized with system libraries found in
-/system/lib and user libraries in /data/app-lib. On the host system
-(not running Android), system libraries can be found in the downloaded
-NDK directory under ${NDK_ROOT}/platforms/${APP_PLATFORM}/arch-${ARCH}/usr/lib
-and the user libraries are installed under libs/${APP_ABI} within
-the apk build directory. This patch makes running the reporting
-tools possible on the host system using the libraries from the NDK.
-
-Signed-off-by: Michael Lentine <mlentine@google.com>
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1400579330-5043-3-git-send-email-eranian@google.com
-[ fixed 'space required before the open parenthesis' checkpatch.pl errors ]
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1400480762-22852-20-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/map.c | 95 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 94 insertions(+), 1 deletion(-)
+ tools/perf/tests/hists_common.c | 57 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/hists_common.h |  3 +++
+ tools/perf/tests/hists_filter.c | 37 ++++----------------------
+ tools/perf/tests/hists_link.c   | 29 +--------------------
+ 4 files changed, 66 insertions(+), 60 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index ba5f5c0c..8ccbb32 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -32,6 +32,93 @@ static inline int is_no_dso_memory(const char *filename)
- 	       !strcmp(filename, "[heap]");
+diff --git a/tools/perf/tests/hists_common.c b/tools/perf/tests/hists_common.c
+index 44655b3..040a85b 100644
+--- a/tools/perf/tests/hists_common.c
++++ b/tools/perf/tests/hists_common.c
+@@ -146,3 +146,60 @@ out:
+ 	machine__delete(machine);
+ 	return NULL;
+ }
++
++void print_hists_in(struct hists *hists)
++{
++	int i = 0;
++	struct rb_root *root;
++	struct rb_node *node;
++
++	if (sort__need_collapse)
++		root = &hists->entries_collapsed;
++	else
++		root = hists->entries_in;
++
++	pr_info("----- %s --------\n", __func__);
++	node = rb_first(root);
++	while (node) {
++		struct hist_entry *he;
++
++		he = rb_entry(node, struct hist_entry, rb_node_in);
++
++		if (!he->filtered) {
++			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
++				i, thread__comm_str(he->thread),
++				he->ms.map->dso->short_name,
++				he->ms.sym->name, he->stat.period);
++		}
++
++		i++;
++		node = rb_next(node);
++	}
++}
++
++void print_hists_out(struct hists *hists)
++{
++	int i = 0;
++	struct rb_root *root;
++	struct rb_node *node;
++
++	root = &hists->entries;
++
++	pr_info("----- %s --------\n", __func__);
++	node = rb_first(root);
++	while (node) {
++		struct hist_entry *he;
++
++		he = rb_entry(node, struct hist_entry, rb_node);
++
++		if (!he->filtered) {
++			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
++				i, thread__comm_str(he->thread),
++				he->ms.map->dso->short_name,
++				he->ms.sym->name, he->stat.period);
++		}
++
++		i++;
++		node = rb_next(node);
++	}
++}
+diff --git a/tools/perf/tests/hists_common.h b/tools/perf/tests/hists_common.h
+index 2528b8f..1415ae6 100644
+--- a/tools/perf/tests/hists_common.h
++++ b/tools/perf/tests/hists_common.h
+@@ -41,4 +41,7 @@ struct machines;
+  */
+ struct machine *setup_fake_machine(struct machines *machines);
+ 
++void print_hists_in(struct hists *hists);
++void print_hists_out(struct hists *hists);
++
+ #endif /* __PERF_TESTS__HISTS_COMMON_H__ */
+diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
+index 4617a8b..13c8cf4 100644
+--- a/tools/perf/tests/hists_filter.c
++++ b/tools/perf/tests/hists_filter.c
+@@ -98,33 +98,6 @@ out:
+ 	return TEST_FAIL;
  }
  
-+static inline int is_android_lib(const char *filename)
-+{
-+	return !strncmp(filename, "/data/app-lib", 13) ||
-+	       !strncmp(filename, "/system/lib", 11);
-+}
-+
-+static inline bool replace_android_lib(const char *filename, char *newfilename)
-+{
-+	const char *libname;
-+	char *app_abi;
-+	size_t app_abi_length, new_length;
-+	size_t lib_length = 0;
-+
-+	libname  = strrchr(filename, '/');
-+	if (libname)
-+		lib_length = strlen(libname);
-+
-+	app_abi = getenv("APP_ABI");
-+	if (!app_abi)
-+		return false;
-+
-+	app_abi_length = strlen(app_abi);
-+
-+	if (!strncmp(filename, "/data/app-lib", 13)) {
-+		char *apk_path;
-+
-+		if (!app_abi_length)
-+			return false;
-+
-+		new_length = 7 + app_abi_length + lib_length;
-+
-+		apk_path = getenv("APK_PATH");
-+		if (apk_path) {
-+			new_length += strlen(apk_path) + 1;
-+			if (new_length > PATH_MAX)
-+				return false;
-+			snprintf(newfilename, new_length,
-+				 "%s/libs/%s/%s", apk_path, app_abi, libname);
-+		} else {
-+			if (new_length > PATH_MAX)
-+				return false;
-+			snprintf(newfilename, new_length,
-+				 "libs/%s/%s", app_abi, libname);
-+		}
-+		return true;
-+	}
-+
-+	if (!strncmp(filename, "/system/lib/", 11)) {
-+		char *ndk, *app;
-+		const char *arch;
-+		size_t ndk_length;
-+		size_t app_length;
-+
-+		ndk = getenv("NDK_ROOT");
-+		app = getenv("APP_PLATFORM");
-+
-+		if (!(ndk && app))
-+			return false;
-+
-+		ndk_length = strlen(ndk);
-+		app_length = strlen(app);
-+
-+		if (!(ndk_length && app_length && app_abi_length))
-+			return false;
-+
-+		arch = !strncmp(app_abi, "arm", 3) ? "arm" :
-+		       !strncmp(app_abi, "mips", 4) ? "mips" :
-+		       !strncmp(app_abi, "x86", 3) ? "x86" : NULL;
-+
-+		if (!arch)
-+			return false;
-+
-+		new_length = 27 + ndk_length +
-+			     app_length + lib_length
-+			   + strlen(arch);
-+
-+		if (new_length > PATH_MAX)
-+			return false;
-+		snprintf(newfilename, new_length,
-+			"%s/platforms/%s/arch-%s/usr/lib/%s",
-+			ndk, app, arch, libname);
-+
-+		return true;
-+	}
-+	return false;
-+}
-+
- void map__init(struct map *map, enum map_type type,
- 	       u64 start, u64 end, u64 pgoff, struct dso *dso)
+-static void print_hists(struct hists *hists)
+-{
+-	int i = 0;
+-	struct rb_root *root;
+-	struct rb_node *node;
+-
+-	root = &hists->entries;
+-
+-	pr_info("----- %s --------\n", __func__);
+-	node = rb_first(root);
+-	while (node) {
+-		struct hist_entry *he;
+-
+-		he = rb_entry(node, struct hist_entry, rb_node);
+-
+-		if (!he->filtered) {
+-			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
+-				i, thread__comm_str(he->thread),
+-				he->ms.map->dso->short_name,
+-				he->ms.sym->name, he->stat.period);
+-		}
+-
+-		i++;
+-		node = rb_next(node);
+-	}
+-}
+-
+ int test__hists_filter(void)
  {
-@@ -59,8 +146,9 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 	if (map != NULL) {
- 		char newfilename[PATH_MAX];
- 		struct dso *dso;
--		int anon, no_dso, vdso;
-+		int anon, no_dso, vdso, android;
+ 	int err = TEST_FAIL;
+@@ -169,7 +142,7 @@ int test__hists_filter(void)
  
-+		android = is_android_lib(filename);
- 		anon = is_anon_memory(filename);
- 		vdso = is_vdso_map(filename);
- 		no_dso = is_no_dso_memory(filename);
-@@ -75,6 +163,11 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 			filename = newfilename;
+ 		if (verbose > 2) {
+ 			pr_info("Normal histogram\n");
+-			print_hists(hists);
++			print_hists_out(hists);
  		}
  
-+		if (android) {
-+			if (replace_android_lib(filename, newfilename))
-+				filename = newfilename;
-+		}
-+
- 		if (vdso) {
- 			pgoff = 0;
- 			dso = vdso__dso_findnew(dsos__list);
+ 		TEST_ASSERT_VAL("Invalid nr samples",
+@@ -193,7 +166,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for thread filter\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+@@ -222,7 +195,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for dso filter\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+@@ -257,7 +230,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for symbol filter\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+@@ -284,7 +257,7 @@ int test__hists_filter(void)
+ 
+ 		if (verbose > 2) {
+ 			pr_info("Histogram for all filters\n");
+-			print_hists(hists);
++			print_hists_out(hists);
+ 		}
+ 
+ 		/* normal stats should be invariant */
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index b009bbf..4e783db 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -268,33 +268,6 @@ static int validate_link(struct hists *leader, struct hists *other)
+ 	return __validate_link(leader, 0) || __validate_link(other, 1);
+ }
+ 
+-static void print_hists(struct hists *hists)
+-{
+-	int i = 0;
+-	struct rb_root *root;
+-	struct rb_node *node;
+-
+-	if (sort__need_collapse)
+-		root = &hists->entries_collapsed;
+-	else
+-		root = hists->entries_in;
+-
+-	pr_info("----- %s --------\n", __func__);
+-	node = rb_first(root);
+-	while (node) {
+-		struct hist_entry *he;
+-
+-		he = rb_entry(node, struct hist_entry, rb_node_in);
+-
+-		pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
+-			i, thread__comm_str(he->thread), he->ms.map->dso->short_name,
+-			he->ms.sym->name, he->stat.period);
+-
+-		i++;
+-		node = rb_next(node);
+-	}
+-}
+-
+ int test__hists_link(void)
+ {
+ 	int err = -1;
+@@ -336,7 +309,7 @@ int test__hists_link(void)
+ 		hists__collapse_resort(&evsel->hists, NULL);
+ 
+ 		if (verbose > 2)
+-			print_hists(&evsel->hists);
++			print_hists_in(&evsel->hists);
+ 	}
+ 
+ 	first = perf_evlist__first(evlist);
 -- 
 1.8.3.1
 
