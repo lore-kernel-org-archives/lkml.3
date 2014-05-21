@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaEUPTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 11:19:04 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46278 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaEUPTC convert rfc822-to-8bit (ORCPT
+	id S1752773AbaEUPTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 11:19:35 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:53644 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaEUPTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 11:19:02 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH v1 3/4] ARM: qcom: Add APQ8084-MTP board to mach-qcom
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1400684225-21381-4-git-send-email-gdjakov@mm-sol.com>
-Date: Wed, 21 May 2014 10:18:53 -0500
+	Wed, 21 May 2014 11:19:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Georgi Djakov <gdjakov@mm-sol.com>
 Cc: linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        sboyd@codeaurora.org, rvaswani@codeaurora.org, davidb@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A6B00F86-FFD3-4FEF-B39E-EAA511565B80@codeaurora.org>
-References: <1400684225-21381-1-git-send-email-gdjakov@mm-sol.com> <1400684225-21381-4-git-send-email-gdjakov@mm-sol.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-X-Mailer: Apple Mail (2.1874)
+        galak@codeaurora.org, sboyd@codeaurora.org, rvaswani@codeaurora.org,
+        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1 4/4] ARM: debug: qcom: Add APQ8084 DEBUG_LL UART support
+Date: Wed, 21 May 2014 17:18:52 +0200
+Message-ID: <4365639.JcFl1cP048@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400684225-21381-5-git-send-email-gdjakov@mm-sol.com>
+References: <1400684225-21381-1-git-send-email-gdjakov@mm-sol.com> <1400684225-21381-5-git-send-email-gdjakov@mm-sol.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:B553I9x26yiUA5Ql2vdcAT8Z8Eb6j0btpfnGtU7WvS1
+ gLNHuMWeA2d+dLfh1sK+IDiB8BBfHwcO+PrV4yPoRsNpMqUnpz
+ 5IPc8eflwcOQBuHDm59Y3/cQWR4pq3VTaFPmockaPVB1W/iHqP
+ JeNcm5sBSOrd1CsbahShXR7ToXo10rQO5JoTu9yvG3RHpl+Ebj
+ W0Fc4LEWgCv4WNwKdalNg4gW5L3lB6On21Y+O3PgEWtJiatvo/
+ C+pQEzE/9HojVMROAfW8qzRKwGRBcIXczMO7GFparJKJ8RjCUm
+ wVQpyJb546NVaKob5JjBDeI0yr3EhEmRvjAJV/A5PuKwjTGGCe
+ 10wGtmTZ5awa63N0Q8so=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On May 21, 2014, at 9:57 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
-
-> Add board compatibility string to the board machine descriptors.
+On Wednesday 21 May 2014 17:57:05 Georgi Djakov wrote:
 > 
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> ---
-> arch/arm/mach-qcom/board.c |    1 +
-> 1 file changed, 1 insertion(+)
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index eab8ecb..91d5184 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -101,6 +101,15 @@ choice
+>                 bool "Kernel low-level debugging on 9263 and 9g45"
+>                 depends on HAVE_AT91_DBGU1
+>  
+> +       config DEBUG_APQ8084_UART
+> +               bool "Kernel low-level debugging messages via APQ8084 UART"
+> +               depends on ARCH_QCOM
+> +               select MSM_HAS_DEBUG_UART_HS
+> +               select DEBUG_MSM_UART
+> +               help
+> +                 Say Y here if you want the debug print routines to direct
+> +                 their output to the serial port on Qualcomm APQ8084 devices.
+> +
+>         config DEBUG_BCM2835
+>                 bool "Kernel low-level debugging on BCM2835 PL011 UART"
+>                 depends on ARCH_BCM2835
+> diff --git a/arch/arm/include/debug/msm.S b/arch/arm/include/debug/msm.S
+> index 9d653d4..178636d 100644
+> --- a/arch/arm/include/debug/msm.S
+> +++ b/arch/arm/include/debug/msm.S
+> @@ -36,6 +36,11 @@
+>  #define MSM_DEBUG_UART_PHYS    MSM_UART3_PHYS
+>  #endif
+>  
+> +#ifdef CONFIG_DEBUG_APQ8084_UART
+> +#define MSM_DEBUG_UART_BASE    0xFA75E000
+> +#define MSM_DEBUG_UART_PHYS    0xF995E000
+> +#endif
+> +
+>  #ifdef CONFIG_DEBUG_MSM8660_UART
+>  #define MSM_DEBUG_UART_BASE    0xF0040000
+>  #define MSM_DEBUG_UART_PHYS    0x19C40000
 > 
-> diff --git a/arch/arm/mach-qcom/board.c b/arch/arm/mach-qcom/board.c
-> index bae617e..ae0a405 100644
-> --- a/arch/arm/mach-qcom/board.c
-> +++ b/arch/arm/mach-qcom/board.c
-> @@ -18,6 +18,7 @@ static const char * const qcom_dt_match[] __initconst = {
-> 	"qcom,msm8660-surf",
-> 	"qcom,msm8960-cdp",
-> 	"qcom,apq8074-dragonboard",
-> +	"qcom,apq8084-mtp",
-> 	NULL
-> };
-> 
-> -- 
-> 1.7.9.5
-> 
 
-Let’s just make this “qcom,apq8084” to cover other future apq8084 based boards.
+Maybe we should move debug/msm.S over to use
+CONFIG_DEBUG_UART_PHYS/CONFIG_DEBUG_UART_VIRT now?
 
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+	Arnd
