@@ -1,243 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbaEUNcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 09:32:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45671 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022AbaEUNco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 09:32:44 -0400
-Message-ID: <537CA89B.6050803@suse.de>
-Date: Wed, 21 May 2014 15:22:35 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Michael Mueller <mimu@linux.vnet.ibm.com>
-CC: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
+	id S1752411AbaEUNcw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 09:32:52 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:27476 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273AbaEUNct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 09:32:49 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-22-537caaff1ab8
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Rafael J. Wysocki'" <rjw@rjwysocki.net>
+Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Andreas Faerber <afaerber@suse.de>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: [Qemu-devel] [PATCH v1 RFC 6/6] KVM: s390: add cpu model support
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>	<1399993114-15333-7-git-send-email-mimu@linux.vnet.ibm.com>	<5375FFB8.90504@suse.de>	<20140516173907.3b1c4efa@bee>	<53767590.2090605@suse.de>	<20140519125339.09840b9e@bee>	<5379EF78.9040209@suse.de>	<20140519161811.5a17bc66@bee>	<537A19F8.4060209@suse.de>	<20140519190318.6f92c1bd@bee>	<537A6608.8000608@suse.de>	<20140520120218.38eb7181@bee>	<537B2A0F.1030706@suse.de> <20140521145652.197bff21@bee>
-In-Reply-To: <20140521145652.197bff21@bee>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "'Jonghwan Choi'" <jhbird.choi@samsung.com>,
+        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
+        "'Viresh Kumar'" <viresh.kumar@linaro.org>
+References: <20140519125124.6504764d@canb.auug.org.au>
+ <1911725.FzcK6v311f@vostro.rjw.lan>
+ <013b01cf73c2$5bbe1fb0$133a5f10$@samsung.com>
+ <3571098.myqhuVX7FX@vostro.rjw.lan>
+In-reply-to: <3571098.myqhuVX7FX@vostro.rjw.lan>
+Subject: RE: linux-next: manual merge of the pm tree with the samsung tree
+Date: Wed, 21 May 2014 22:32:47 +0900
+Message-id: <036a01cf74f9$275d2c10$76178430$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIIb85tTBjRSQiHf0XUouzoyVElVAHpY+vKAqTXd1oDBrskZpqcat0g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zfd3/q2qCDWbMU7C4/uU5q8WSZm6L
+	y7vmsFkcXNjGaHHm9CVWi617r7JbbPzq4cDu0XjjBpvHnWt72Dy2XG1n8ejbsorR4/MmuQDW
+	KC6blNSczLLUIn27BK6MB78WMBbs4qyYvPYRUwPjfPYuRk4OCQETia2/X7NC2GISF+6tZ+ti
+	5OIQEljGKHHhyCYWmKI/cz8xQSQWMUqcejQHquovo8Tv6fuYQarYBDQkDr9/BjZWREBXouve
+	LLBuZoFXjBKfGoIhGjYxSpx7uQOsiFPAQGL7ob1MILawgJfE17VtQHdwcLAIqErcuaoNEuYV
+	sJS4/m8DO4QtKPFj8j2omeoSk+YtYoaw5SU2r3nLDHGpgsSOs68ZIW5wk1g15ydUvYjEvhfv
+	GCFqXrJLPF/iAGKzCAhIfJt8iAVkrYSArMSmA1BjJCUOrrjBMoFRYhaSzbOQbJ6FZPMsJBsW
+	MLKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAiJ3d4djLcPWB9iTAZaP5FZSjQ5Hxj7eSXx
+	hsZmRhamJqbGRuaWZqQJK4nzJj1MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAeNzl4Sef
+	V4vz/zk05t1RMzJw5Ystz1RIu7NCYnVL3L9vM5rdAs3evwgTmHTtIeeTTdauFmycL+oWsjg/
+	vvnayS7qo3RsodA7RxPPx1qxRtOuaJtUhFzUKvRqvrVbq0ZsY/jv/2tYzW+x1spV+4VFOdWf
+	Z34w84f4ytW87csv+6z30rj89qGdEktxRqKhFnNRcSIAIbdWPvMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t9jAd3/q2qCDa69kLa4/uU5q8WSZm6L
+	y7vmsFkcXNjGaHHm9CVWi617r7JbbPzq4cDu0XjjBpvHnWt72Dy2XG1n8ejbsorR4/MmuQDW
+	qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygK5QU
+	yhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGQ9+LWAs2MVZMXntI6YGxvns
+	XYycHBICJhJ/5n5igrDFJC7cW8/WxcjFISSwiFHi1KM5UM5fRonf0/cxg1SxCWhIHH7/DKxb
+	REBXouveLBYQm1ngFaPEp4ZgiIZNjBLnXu4AK+IUMJDYfmgv2AphAS+Jr2vbWLsYOThYBFQl
+	7lzVBgnzClhKXP+3gR3CFpT4Mfke1Ex1iUnzFjFD2PISm9e8ZYa4VEFix9nXjBA3uEmsmvMT
+	ql5EYt+Ld4wTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZG
+	cGp4JrWDcWWDxSFGAQ5GJR7eBUXVwUKsiWXFlbmHGCU4mJVEeI2n1gQL8aYkVlalFuXHF5Xm
+	pBYfYkwGenQis5Rocj4wbeWVxBsam5gZWRqZWRiZmJuTJqwkznug1TpQSCA9sSQ1OzW1ILUI
+	ZgsTB6dUA+OSpY9Ybl9vWCn/xCtCxdL49WMxuX8V7KF8SwxuTGou2f/ogZrL8V89Jx/sPVfr
+	8+PZ3YfvTR8+3KH2utQ7d2uW8ez7/isXVrvPe9Sir91jGKPHZ/dt/QfbuE2zLLpX+bxyzjnF
+	U19y/XNW19Xs+XO1mjxme7k9NOvMlBcX27hi/5ovR5lNv8xWYinOSDTUYi4qTgQAlUKuh1ED	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rafael J. Wysocki wrote:
+> 
+> On Tuesday, May 20, 2014 09:27:58 AM Kukjin Kim wrote:
+> > Rafael J. Wysocki wrote:
+> > >
+> > > On Monday, May 19, 2014 12:51:24 PM Stephen Rothwell wrote:
+> > > >
+> > > > --Sig_/n+GoYBpTr9ERl.sTIEYr/Og
+> > > > Content-Type: text/plain; charset=US-ASCII
+> > > > Content-Transfer-Encoding: quoted-printable
+> > > >
+> > > > Hi Rafael,
+> > > >
+> > > > Today's linux-next merge of the pm tree got conflicts in
+> > > > drivers/cpufreq/exynos-cpufreq.c and drivers/cpufreq/exynos-cpufreq.h
+> > > > between commit 2b07f4085479 ("cpufreq: exynos: Fix the compile error")
+> > > > from the samsung tree and commit e5eaa445b0dc ("cpufreq: exynos: Use
+> > > > dev_err/info function instead of pr_err/info") from the pm tree.
+> > > >
+> > > > I fixed it up (see below) and can carry the fix as necessary (no
+> action
+> > > > is required).
+> > >
+> > > Thanks for fixing that Stephen!
+> > >
+> > Same here ;-)
+> >
+> > > Kukjin, are you going to handle all Exynos cpufreq commits in the future?
+> > >
+> > If you're OK, would be better to us I think.
+> 
+> OK, I'll leave them to you, then.  Please ask Viresh for ACKs if needed. :-)
+> 
+I will.
 
-On 21.05.14 14:56, Michael Mueller wrote:
-> On Tue, 20 May 2014 12:10:23 +0200
-> Alexander Graf <agraf@suse.de> wrote:
->
->> On 20.05.14 12:02, Michael Mueller wrote:
->>> On Mon, 19 May 2014 22:14:00 +0200
->>> Alexander Graf <agraf@suse.de> wrote:
->>>
->>>> On 19.05.14 19:03, Michael Mueller wrote:
->>>>> On Mon, 19 May 2014 16:49:28 +0200
->>>>> Alexander Graf <agraf@suse.de> wrote:
->>>>>
->> [...]
->>
->>>>>>> What user and thus also user space wants depends on other factors:
->>>>>>>
->>>>>>> 1. reliability
->>>>>>> 2. performance
->>>>>>> 3. availability
->>>>>>>
->>>>>>> It's not features, that's what programmers want.
->>>>>>>
->>>>>>> That's why I have designed the model and migration capability around the hardware
->>>>>>> and not around the software features and don't allow them to be enabled currently
->>>>>>> together.
->>>>>>>
->>>>>>> A software feature is a nice add on that is helpful for evaluation or development
->>>>>>> purpose. There is few space for it on productions systems.
->>>>>>>
->>>>>>> One option that I currently see to make software implemented facility migration
->>>>>>> capable is to calculate some kind of hash value derived from the full set of
->>>>>>> active software facilities. That value can be compared with pre-calculated
->>>>>>> values also stored in the supported model table of qemu. This value could be
->>>>>>> seen like a virtual model extension that has to match like the model name.
->>>>>>>
->>>>>>> But I have said it elsewhere already, a soft facility should be an exception and
->>>>>>> not the rule.
->>>>>>>
->>>>>>>>>> So all we need is a list of "features the guest sees available" which is
->>>>>>>>>> the same as "features user space wants the guest to see" which then gets
->>>>>>>>>> masked through "features the host can do in hardware".
->>>>>>>>>>
->>>>>>>>>> For emulation we can just check on the global feature availability on
->>>>>>>>>> whether we should emulate them or not.
->>>>>>>>>>
->>>>>>>>>>>> Also, if user space wants to make sure that its feature list is actually
->>>>>>>>>>>> workable on the host kernel, it needs to set and get the features again
->>>>>>>>>>>> and then compare that with the ones it set? That's different from x86's
->>>>>>>>>>>> cpuid implementation but probably workable.
->>>>>>>>>>> User space will probe what facilities are available and match them with the predefined
->>>>>>>>>>> cpu model set. Only those models which use a partial or full subset of the hard/host
->>>>>>>>>>> facility list are selectable.
->>>>>>>>>> Why?
->>>>>>>>> If a host does not offer the features required for a model it is not able to
->>>>>>>>> run efficiently.
->>>>>>>>>
->>>>>>>>>> Please take a look at how x86 does cpuid masking :).
->>>>>>>>>>
->>>>>>>>>> In fact, I'm not 100% convinced that it's a good idea to link cpuid /
->>>>>>>>>> feature list exposure to the guest and actual feature implementation
->>>>>>>>>> inside the guest together. On POWER there is a patch set pending that
->>>>>>>>>> implements these two things separately - admittedly mostly because
->>>>>>>>>> hardware sucks and we can't change the PVR.
->>>>>>>>> That is maybe the big difference with s390. The cpuid in the S390 case is not
->>>>>>>>> directly comparable with the processor version register of POWER.
->>>>>>>>>
->>>>>>>>> In the S390 world we have a well defined CPU model room spanned by the machine
->>>>>>>>> type and its GA count. Thus we can define a bijective mapping between
->>>>>>>>> (type, ga) <-> (cpuid, ibc, facility set). From type and ga we form the model
->>>>>>>>> name which BTW is meaningful also for a human user.
->>>>>>>> Same thing as POWER.
->>>>>>>>
->>>>>>>>> By means of this name, a management interface (libvirt) will draw decisions if
->>>>>>>>> migration to a remote hypervisor is a good idea or not. For that it just needs
->>>>>>>>> to compare if the current model of the guest on the source hypervisor
->>>>>>>>> ("query-cpu-model"), is contained in the supported model list of the target
->>>>>>>>> hypervisor ("query-cpu-definitions").
->>>>>>>> I don't think this works, since QEMU should always return all the cpu
->>>>>>>> definitions it's aware of on query-cpu-definitions, not just the ones
->>>>>>>> that it thinks may be compatible with the host at a random point in time.
->>>>>>> It does not return model names that it thinks they are compatible at some point
->>>>>>> in time. In s390 mode, it returns all definitions (CPU models) that a given host
->>>>>>> system is capable to run. Together with the CPU model run by the guest, some upper
->>>>>>> management interface knows if the hypervisor supports the required CPU model and
->>>>>>> uses a guest definition with the same CPU model on the target hypervisor.
->>>>>>>
->>>>>>> The information for that is taken from the model table which QEMU builds up during
->>>>>>> startup time. This list limits the command line selectable CPU models as well.
->>>>>> This makes s390 derive from the way x86 handles things. NAK.
->>>>> One second, that goes a little fast here :-). x86 returns a list they support which happens
->>>>> to be the full list they define and s390 does logically the same because we know that
->>>>> certain models are not supported due to probing. BTW that happens only if you run Qemu on
->>>>> back level hardware and that is perfectly correct.
->>>> It's not what other architectures do and I'd hate to see s390 deviate
->>>> just because.
->>> Only these four architectures implement the query and they all differ a little...
->>>
->>> target-arm/helper.c:CpuDefinitionInfoList *arch_query_cpu_definitions(Error **errp)
->>> target-i386/cpu.c:CpuDefinitionInfoList *arch_query_cpu_definitions(Error **errp)
->>> target-ppc/translate_init.c:CpuDefinitionInfoList *arch_query_cpu_definitions(Error **errp)
->>> target-s390x/cpu.c:CpuDefinitionInfoList *arch_query_cpu_definitions(Error **errp)
->>>
->>> arm walks through a list of all ARM CPU types
->>> list = object_class_get_list(TYPE_ARM_CPU, false);
->>> and returns the CpuDefinitionInfoList derived from that one to one
->>>
->>> i386 loops over the static builtin_x86_defs[] array to retrieve the model names,
->>> they don't even use the CPU class model as source
->>>
->>> ppc walks through a list of all POWER CPU types
->>> list = object_class_get_list(TYPE_POWERPC_CPU, false);
->>> and then extends the produced list by all defined aliases
->>>
->>> and s390x finally also walks through the defined S390 CPU types
->>> list = object_class_get_list(TYPE_S390_CPU, false);
->>> but drops those which are not usable (!is_active)
->>> Just consider them as not defined. I actually would undefine
->>> them if I knew how.
->>>
->>> Also the commands comment says "list of supported virtual CPU definitions" and the s390
->>> list contains all supported models, that's no contradiction.
->> So IMHO we can either
->>
->>     a) change the definition of query_cpu_definitions to only return CPUs
->> that are executable with KVM on a given machine (probably a bad idea) or
-> no that is context dependent, yes in KVM case, no in TCG case. Actually for the TCG case one
-> would also report only those which can be emulated and not all.
-
-Yup, we're already in a messy position there today with -cpu host which 
-we only expose if KVM is available.
-
->
->>     b) return not only the CPU type, but also a hint whether it's
->> available with KVM or
-> That is also changing the semantics
->
->>     c) add a parameter to query_cpu_definitions to say "only return KVM
->> runnable CPUs" or
-> That optional parameter is not used by libvirt
-
-Well, we're trying to fix a generic bug here, so maybe it should be used ;).
-
->
->>     d) introduce a new query_kvm_cpu_definitions qmp command
-> The criterion is not KVM here, it is "supported by the current Qemu in conjuction with the given
-> host and kernel".
-
-Only for KVM. For TCG it would be "supported by the current QEMU TCG 
-engine on a given host". Maybe we'll implement transactional memory 
-support in TCG one day but require host transactional memory support for it?
-
-> If I compare the command with it's use on the Qemu Page
-> (http://wiki.qemu.org/Features/CPUModels) it says: "Requirement: libvirt needs to know which CPU
-> models are available to be used with the "-cpu" option. Current solution: libvirt uses QMP
-> query-cpu-definitions command."
->
->>> ##
->>> # @query-cpu-definitions:
->>> #
->>> # Return a list of supported virtual CPU definitions
->>> #
->>> # Returns: a list of CpuDefInfo
->>>
->>>>> The migration compatibility test is pretty much ARCH dependent. I looked into the
->>>>> libvirt implementation and as one can see every architecture has its own implementation
->>>>> there (libvirt/src/cpu/cpu_<arch>.c).
->>>> So here's my question again. How does x86 evaluate whether a target
->>>> machine is compatible with a source machine?
->>> Will again look into that during the afternoon...
->> Yes, please. Someone else must have solved this before :).
-> Well, in my eyes it was newer solved for x86! The issue is that libvirt has its one x86 model and
-> feature code, independent from Qemu's model and feature implementation. You might know
-> libvirt's cpu_map.xml file where in the meantime also POWER started to add a hand-full of model
-> names. That's their source, they even use asm instructions to identify the local CPU and to
-> derive a model list they (libvirt) think to support. x86 requires alone more the 2500 lines of
-> code to implement its from qemu deviating model space. There is no test like the one that I
-> suggest that guarantees a priori a target hypervisor is capable to run a specific CPU model until
-> it fails.
-
-Ok, maybe it's about time to start moving that code over into QEMU then. 
-Maybe not. But this is not something you and me can just decide for s390 
-alone - I want this solved for everyone.
-
->
-> x86 basically calculates a cpu model to be used from it's domain xml cpu statements, the cpuid
-> that it retrieves by itself and the feature definitions in the cpu_map.xml. During migartion
-> the domain xml is just copied without any change to the model. And eventually qemu startup might
-> fail.
->
-> That cpu_map.xml configuration is obsolete for other architectures like s390 and also for arm.
->
-> The usable cpu model name space is retrieved by "virsh cpu-models s390x" which in our case is
-> taken from libvirt's qemu capabilities cache which gets filled by "query-cpu-definitions" during
-> libvirtd's startup time.
->
-> In addition we add a test at some point in libvirt's qemuDomainMigrateBegin() phase where we
-> verify the remote hypervisor is suitable to run the current domain's CPU model and to prepare
-> the destination domain XML where the CPU model might differ from the local.
->
-> Assume the local domain XML specifies host as current model, then the test will retrieve the
-> normalized model name by means of "query-cpu-model" and and use it to verify it with the
-> remote Qemu cpu model capabilities (sitting in the remote Qemu capabilities cache) and choose
-> the remote domain XML CPU model accordingly.
-
-All of that sounds very reasonable. So now we only have to work on 
-making that fit into the whole picture, not into a tiny s390 corner case.
-
-
-Alex
+Thanks,
+Kukjin
 
