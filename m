@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaEUCNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 22:13:45 -0400
-Received: from imap.devoid-pointer.net ([31.31.77.140]:33081 "EHLO
-	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaEUCNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 22:13:44 -0400
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
-To: Roland Bosa <rbosa@logitech.com>
-Cc: simon@mungewell.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi
-Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
-Date: Wed, 21 May 2014 04:13:40 +0200
-Message-ID: <2643156.2tkLFqgYFg@sigyn>
-User-Agent: KMail/4.13.1 (Linux/3.14.1-1-my-rd; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <537BFEBF.8010601@logitech.com>
-References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net> <1c6140633925b0838b7627e071e80761.squirrel@mungewell.org> <537BFEBF.8010601@logitech.com>
+	id S1751598AbaEUCOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 22:14:55 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:43273
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751011AbaEUCOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 22:14:54 -0400
+From: Huang Shijie <b32955@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <linux-serial@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Huang Shijie <b32955@freescale.com>
+Subject: [PATCH 1/2 bugfix] serial: imx: reset the uart port all the time
+Date: Wed, 21 May 2014 08:56:28 +0800
+Message-ID: <1400633789-31979-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.8
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(20776003)(4396001)(93916002)(50986999)(19580395003)(92726001)(85852003)(87286001)(83322001)(50226001)(33646001)(92566001)(79102001)(50466002)(77096999)(48376002)(44976005)(6806004)(87936001)(36756003)(64706001)(89996001)(88136002)(83072002)(31966008)(77982001)(99396002)(47776003)(19580405001)(74502001)(81542001)(77156001)(62966002)(102836001)(76482001)(80022001)(74662001)(46102001)(21056001)(81342001)(42262001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB422;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:gate-az5.freescale.com;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-Forefront-PRVS: 0218A015FA
+Authentication-Results: spf=fail (sender IP is 192.88.158.246)
+ smtp.mailfrom=shijie.huang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 of May 2014 18:17:51 Roland Bosa wrote:
-> 
-> The file format of an IFR is probably easily deducible. There's a lot of
-> textual clues to parameters and the values are also written out in
-> string form.
-> 
-> I don't have a FEdit file at hand, but I suppose it will be similar.
+Current code resets the uart port only when it supports the irda mode.
+In actually, we also need to reset the uart port in the non-irda mode.
+A hang was caught in the following case:
 
-I believe that Elias successfully reverse engineered the effect file format 
-produced by FEdit. There is no support for this kind of prefabricated effects 
-in the Linux FF API.
+    UART A transmits data to the other end. But the transmission maybe
+    terminated. In some corner case, the TX FIFO maybe not empty.
 
-> > I assume that most AAA games, would implement these through some middle
-> > layer. I think that is probably via Steam using SDL2 haptic API, we have
-> > been testing against SDL2's 'testhaptic'.
-> 
-> I wasn't aware of this layer. I must read up on it. It sounds like a
-> simple way to access force feedback - I guess a game developer should
-> shed some light on this...
->
->
-> > Do you see another path (which we should be supporting/testing)?
-> 
-> Nope, not at this time.
-> 
-> > There was some discussion about rate limiting the USB packets to the
-> > wheel, and how to deal if app updates too quickly. Is there an upper limit
-> > for the wheel itself, or is it just the USB 'pipe' which is the limiting
-> > factor?
-> 
-> On the Windows side we send 125 reports/sec. The entire simulation loop
-> runs with a 8ms resolution. I assume this value was chosen for some
-> hardware constraints back in the days, but it has proven to be a good
-> compromise for simulated periodics and physics constraints.
+The kernel will hang at the imx_set_termios():
+	............................................................
+	while (!(readl(sport->port.membase + USR2) & USR2_TXDC))
+		barrier();
+	............................................................
 
-Our current code uses 8 msecs delay as well.
+This patch resets the uart port all the time in the imx_startup().
+And fix the hang.
 
-> In any case, the USB traffic should be decoupled from the app. Any force
-> updates should only change state in the ff-memless[-next] driver. Any
-> change there should trickle down to a 'slot' representation of the
-> device. If there's any change in the slots, the device is marked as
-> 'dirty' and USB transfers are scheduled to send the latest state to the
-> physical device.
-> 
-> The scheduling should keep track of how many requests are in-flight and
-> delay writing the next output, until the previous one has completed.
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/tty/serial/imx.c |   22 ++++++++++------------
+ 1 files changed, 10 insertions(+), 12 deletions(-)
 
-The approach I had in mind would keep track of the last effect that made it to 
-the device and the last effect that arrived from userspace. This would be 
-stored for each effect slot. An update would be scheduled at the desired update 
-rate. The updating routine would figure out the state change between last 
-update and "now", send the required data to the device and reschedule itself. 
-The routine could check if there are any USB transfers still running and 
-reschedule itself immediately.
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 3b6c1a2..64901d0 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1070,7 +1070,7 @@ static void imx_disable_dma(struct imx_port *sport)
+ static int imx_startup(struct uart_port *port)
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
+-	int retval;
++	int retval, i;
+ 	unsigned long flags, temp;
+ 
+ 	retval = clk_prepare_enable(sport->clk_per);
+@@ -1098,17 +1098,15 @@ static int imx_startup(struct uart_port *port)
+ 
+ 	writel(temp & ~UCR4_DREN, sport->port.membase + UCR4);
+ 
+-	if (USE_IRDA(sport)) {
+-		/* reset fifo's and state machines */
+-		int i = 100;
+-		temp = readl(sport->port.membase + UCR2);
+-		temp &= ~UCR2_SRST;
+-		writel(temp, sport->port.membase + UCR2);
+-		while (!(readl(sport->port.membase + UCR2) & UCR2_SRST) &&
+-		    (--i > 0)) {
+-			udelay(1);
+-		}
+-	}
++	/* Reset fifo's and state machines */
++	i = 100;
++
++	temp = readl(sport->port.membase + UCR2);
++	temp &= ~UCR2_SRST;
++	writel(temp, sport->port.membase + UCR2);
++
++	while (!(readl(sport->port.membase + UCR2) & UCR2_SRST) && (--i > 0))
++		udelay(1);
+ 
+ 	/*
+ 	 * Allocate the IRQ(s) i.MX1 has three interrupts whereas later
+-- 
+1.7.8
 
-> Question back to the community: are there APIs in the USB layer to check
-> for presence of in-progress requests? Can one add a 'completion'
-> callback to a request, that gets invoked on completion/cancellation?
-
-For instance "usb_submit_urb()" can have a completion handler that is called 
-once the transfer is done. The current code uses "hid_hw_request()" which is 
-asynchronous and doesn't report anything back.
-
-Proper decoupling of the userspace and driver is the only important thing that 
-is missing from the current code.
-
-Michal
