@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaEUDqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 23:46:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58929 "EHLO
+	id S1751689AbaEUDqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 23:46:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58930 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbaEUDp6 (ORCPT
+	with ESMTP id S1751500AbaEUDp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 23:45:58 -0400
-Date: Tue, 20 May 2014 20:45:36 -0700
+	Tue, 20 May 2014 23:45:59 -0400
+Date: Tue, 20 May 2014 20:45:47 -0700
 From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-1b1ded57a4f2f4420b4de7c395d1b841d8b3c41a@git.kernel.org>
+Message-ID: <tip-65cef1311d5d212fd3d48a43678536dc878ca288@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, bp@suse.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1400525957-11525-2-git-send-email-bp@alien8.de>
-References: <1400525957-11525-2-git-send-email-bp@alien8.de>
+In-Reply-To: <1400525957-11525-3-git-send-email-bp@alien8.de>
+References: <1400525957-11525-3-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86, boot:
-  Carve out early cmdline parsing function
-Git-Commit-ID: 1b1ded57a4f2f4420b4de7c395d1b841d8b3c41a
+Subject: [tip:x86/microcode] x86, microcode: Add a disable chicken bit
+Git-Commit-ID: 65cef1311d5d212fd3d48a43678536dc878ca288
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,141 +31,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1b1ded57a4f2f4420b4de7c395d1b841d8b3c41a
-Gitweb:     http://git.kernel.org/tip/1b1ded57a4f2f4420b4de7c395d1b841d8b3c41a
+Commit-ID:  65cef1311d5d212fd3d48a43678536dc878ca288
+Gitweb:     http://git.kernel.org/tip/65cef1311d5d212fd3d48a43678536dc878ca288
 Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Mon, 19 May 2014 20:59:16 +0200
+AuthorDate: Mon, 19 May 2014 20:59:17 +0200
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 20 May 2014 20:21:24 -0700
+CommitDate: Tue, 20 May 2014 20:21:27 -0700
 
-x86, boot: Carve out early cmdline parsing function
+x86, microcode: Add a disable chicken bit
 
-Carve out early cmdline parsing function into .../lib/cmdline.c so it
-can be used by early code in the kernel proper as well.
-
-Adapted from arch/x86/boot/cmdline.c.
+Add a cmdline param which disables the microcode loader. This is useful
+mostly in debugging situations where we want to turn off microcode
+loading, both early from the initrd and late, as a means to be able to
+rule out its influence on the machine.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1400525957-11525-2-git-send-email-bp@alien8.de
+Link: http://lkml.kernel.org/r/1400525957-11525-3-git-send-email-bp@alien8.de
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/include/asm/cmdline.h |  6 +++
- arch/x86/lib/Makefile          |  2 +-
- arch/x86/lib/cmdline.c         | 84 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 91 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/microcode.h           |  1 +
+ arch/x86/kernel/cpu/microcode/core.c       |  6 +++++
+ arch/x86/kernel/cpu/microcode/core_early.c | 37 ++++++++++++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
 
-diff --git a/arch/x86/include/asm/cmdline.h b/arch/x86/include/asm/cmdline.h
-new file mode 100644
-index 0000000..e01f7f7
---- /dev/null
-+++ b/arch/x86/include/asm/cmdline.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_X86_CMDLINE_H
-+#define _ASM_X86_CMDLINE_H
-+
-+int cmdline_find_option_bool(const char *cmdline_ptr, const char *option);
-+
-+#endif /* _ASM_X86_CMDLINE_H */
-diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-index eabcb6e..4d4f96a 100644
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -16,7 +16,7 @@ clean-files := inat-tables.c
+diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
+index b59827e..64dc362 100644
+--- a/arch/x86/include/asm/microcode.h
++++ b/arch/x86/include/asm/microcode.h
+@@ -25,6 +25,7 @@ struct cpu_signature {
+ struct device;
  
- obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
+ enum ucode_state { UCODE_ERROR, UCODE_OK, UCODE_NFOUND };
++extern bool dis_ucode_ldr;
  
--lib-y := delay.o misc.o
-+lib-y := delay.o misc.o cmdline.o
- lib-y += thunk_$(BITS).o
- lib-y += usercopy_$(BITS).o usercopy.o getuser.o putuser.o
- lib-y += memcpy_$(BITS).o
-diff --git a/arch/x86/lib/cmdline.c b/arch/x86/lib/cmdline.c
-new file mode 100644
-index 0000000..422db00
---- /dev/null
-+++ b/arch/x86/lib/cmdline.c
-@@ -0,0 +1,84 @@
-+/*
-+ * This file is part of the Linux kernel, and is made available under
-+ * the terms of the GNU General Public License version 2.
-+ *
-+ * Misc librarized functions for cmdline poking.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/ctype.h>
-+#include <asm/setup.h>
+ struct microcode_ops {
+ 	enum ucode_state (*request_microcode_user) (int cpu,
+diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+index 15c9876..dd9d619 100644
+--- a/arch/x86/kernel/cpu/microcode/core.c
++++ b/arch/x86/kernel/cpu/microcode/core.c
+@@ -97,6 +97,9 @@ MODULE_LICENSE("GPL");
+ 
+ static struct microcode_ops	*microcode_ops;
+ 
++bool dis_ucode_ldr;
++module_param(dis_ucode_ldr, bool, 0);
 +
-+static inline int myisspace(u8 c)
-+{
-+	return c <= ' ';	/* Close enough approximation */
-+}
-+
-+/**
-+ * Find a boolean option (like quiet,noapic,nosmp....)
-+ *
-+ * @cmdline: the cmdline string
-+ * @option: option string to look for
-+ *
-+ * Returns the position of that @option (starts counting with 1)
-+ * or 0 on not found.
-+ */
-+int cmdline_find_option_bool(const char *cmdline, const char *option)
-+{
-+	char c;
-+	int len, pos = 0, wstart = 0;
-+	const char *opptr = NULL;
-+	enum {
-+		st_wordstart = 0,	/* Start of word/after whitespace */
-+		st_wordcmp,	/* Comparing this word */
-+		st_wordskip,	/* Miscompare, skip */
-+	} state = st_wordstart;
-+
-+	if (!cmdline)
-+		return -1;      /* No command line */
-+
-+	len = min_t(int, strlen(cmdline), COMMAND_LINE_SIZE);
-+	if (!len)
+ /*
+  * Synchronization.
+  *
+@@ -546,6 +549,9 @@ static int __init microcode_init(void)
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	int error;
+ 
++	if (dis_ucode_ldr)
 +		return 0;
 +
-+	while (len--) {
-+		c = *(char *)cmdline++;
-+		pos++;
+ 	if (c->x86_vendor == X86_VENDOR_INTEL)
+ 		microcode_ops = init_intel_microcode();
+ 	else if (c->x86_vendor == X86_VENDOR_AMD)
+diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
+index be7f851..5f28a64 100644
+--- a/arch/x86/kernel/cpu/microcode/core_early.c
++++ b/arch/x86/kernel/cpu/microcode/core_early.c
+@@ -17,9 +17,11 @@
+  *	2 of the License, or (at your option) any later version.
+  */
+ #include <linux/module.h>
++#include <asm/microcode.h>
+ #include <asm/microcode_intel.h>
+ #include <asm/microcode_amd.h>
+ #include <asm/processor.h>
++#include <asm/cmdline.h>
+ 
+ #define QCHAR(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
+ #define CPUID_INTEL1 QCHAR('G', 'e', 'n', 'u')
+@@ -72,10 +74,33 @@ static int x86_family(void)
+ 	return x86;
+ }
+ 
++static bool __init check_loader_disabled_bsp(void)
++{
++#ifdef CONFIG_X86_32
++	const char *cmdline = (const char *)__pa_nodebug(boot_command_line);
++	const char *opt	    = "dis_ucode_ldr";
++	const char *option  = (const char *)__pa_nodebug(opt);
++	bool *res = (bool *)__pa_nodebug(&dis_ucode_ldr);
 +
-+		switch (state) {
-+		case st_wordstart:
-+			if (!c)
-+				return 0;
-+			else if (myisspace(c))
-+				break;
++#else /* CONFIG_X86_64 */
++	const char *cmdline = boot_command_line;
++	const char *option  = "dis_ucode_ldr";
++	bool *res = &dis_ucode_ldr;
++#endif
 +
-+			state = st_wordcmp;
-+			opptr = option;
-+			wstart = pos;
-+			/* fall through */
++	if (cmdline_find_option_bool(cmdline, option))
++		*res = true;
 +
-+		case st_wordcmp:
-+			if (!*opptr)
-+				if (!c || myisspace(c))
-+					return wstart;
-+				else
-+					state = st_wordskip;
-+			else if (!c)
-+				return 0;
-+			else if (c != *opptr++)
-+				state = st_wordskip;
-+			else if (!len)		/* last word and is matching */
-+				return wstart;
-+			break;
-+
-+		case st_wordskip:
-+			if (!c)
-+				return 0;
-+			else if (myisspace(c))
-+				state = st_wordstart;
-+			break;
-+		}
-+	}
-+
-+	return 0;	/* Buffer overrun */
++	return *res;
 +}
++
+ void __init load_ucode_bsp(void)
+ {
+ 	int vendor, x86;
+ 
++	if (check_loader_disabled_bsp())
++		return;
++
+ 	if (!have_cpuid_p())
+ 		return;
+ 
+@@ -96,10 +121,22 @@ void __init load_ucode_bsp(void)
+ 	}
+ }
+ 
++static bool check_loader_disabled_ap(void)
++{
++#ifdef CONFIG_X86_32
++	return __pa_nodebug(dis_ucode_ldr);
++#else
++	return dis_ucode_ldr;
++#endif
++}
++
+ void load_ucode_ap(void)
+ {
+ 	int vendor, x86;
+ 
++	if (check_loader_disabled_ap())
++		return;
++
+ 	if (!have_cpuid_p())
+ 		return;
+ 
