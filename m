@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaEUTDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 15:03:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51659 "EHLO mga02.intel.com"
+	id S1753207AbaEUTE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 15:04:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23458 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642AbaEUTDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 15:03:42 -0400
+	id S1752891AbaEUTEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 15:04:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,881,1392192000"; 
-   d="scan'208";a="544422945"
-Subject: Re: [RFC PATCH] mutex: Documentation rewrite
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
-        waiman.long@hp.com, jason.low2@hp.com, aswin@hp.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
-References: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 May 2014 12:02:56 -0700
-Message-ID: <1400698977.2970.308.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="542907480"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: [PATCH] mm: /prom/pid/clear_refs: avoid split_huge_page()
+Date: Wed, 21 May 2014 22:04:22 +0300
+Message-Id: <1400699062-20123-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-21 at 10:41 -0700, Davidlohr Bueso wrote:
-> From: Davidlohr Bueso <davidlohr@hp.com>
-> 
-> Our mutexes have gone a long ways since the original implementation
-> back in 2005/2006. However, the mutex-design.txt document is still
-> stuck in the past, to the point where most of the information there
-> is practically useless and, more important, simply incorrect. This
-> patch pretty much rewrites it to resemble what we have nowadays.
-> 
-> Since regular semaphores are almost much extinct in the kernel
-> (most users now rely on mutexes or rwsems), it no longer makes
-> sense to have such a close comparison, which was copied from most
-> of the cover letter when Ingo introduced the generic mutex subsystem.
-> 
-> While users who really want to learn more about kernel mutexes can
-> go and read the code, I have marked this RFC since I'm sure more gory
-> details can be included. Also, ww_mutexes are intentionally left out,
-> leaving things as generic as possible.
-> 
-> Comments welcome!
+Currently we split all THP pages on any clear_refs request. It's not
+necessary. We can handle this on PMD level.
 
-Thanks for doing this.
+One side effect is that soft dirty will potentially see more dirty
+memory, since we will mark whole THP page dirty at once.
 
-> +
-> +(iii) slowpath: last resource, if the lock is still unable to be acquired
+Sanity checked with CRIU test suite. More testing is required.
 
-change "last resource" to "last resort"
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Dave Hansen <dave.hansen@intel.com>
+---
+ fs/proc/task_mmu.c | 46 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 43 insertions(+), 3 deletions(-)
 
-
->  
->  Disadvantages
->  -------------
->  
-> -The stricter mutex API means you cannot use mutexes the same way you
-> -can use semaphores: e.g. they cannot be used from an interrupt context,
-> -nor can they be unlocked from a different context that which acquired
-> -it. [ I'm not aware of any other (e.g. performance) disadvantages from
-> -using mutexes at the moment, please let me know if you find any. ]
-> -
-
-Should we keep this instead of deleting it?  It is still true we
-cannot use mutex from an interrupt context.
-
-Tim
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 442177b1119a..9f5ae29f3037 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -716,10 +716,10 @@ struct clear_refs_private {
+ 	enum clear_refs_types type;
+ };
+ 
++#ifdef CONFIG_MEM_SOFT_DIRTY
+ static inline void clear_soft_dirty(struct vm_area_struct *vma,
+ 		unsigned long addr, pte_t *pte)
+ {
+-#ifdef CONFIG_MEM_SOFT_DIRTY
+ 	/*
+ 	 * The soft-dirty tracker uses #PF-s to catch writes
+ 	 * to pages, so write-protect the pte as well. See the
+@@ -741,9 +741,34 @@ static inline void clear_soft_dirty(struct vm_area_struct *vma,
+ 		vma->vm_flags &= ~VM_SOFTDIRTY;
+ 
+ 	set_pte_at(vma->vm_mm, addr, pte, ptent);
+-#endif
+ }
+ 
++static inline void clear_soft_dirty_pmd(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t *pmdp)
++{
++	pmd_t pmd = *pmdp;
++
++	pmd = pmd_wrprotect(pmd);
++	pmd = pmd_clear_flags(pmd, _PAGE_SOFT_DIRTY);
++
++	if (vma->vm_flags & VM_SOFTDIRTY)
++		vma->vm_flags &= ~VM_SOFTDIRTY;
++
++	set_pmd_at(vma->vm_mm, addr, pmdp, pmd);
++}
++
++#else
++static inline void clear_soft_dirty(struct vm_area_struct *vma,
++		unsigned long addr, pte_t *pte)
++{
++}
++
++static inline void clear_soft_dirty_pmd(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t *pmdp)
++{
++}
++#endif
++
+ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 				unsigned long end, struct mm_walk *walk)
+ {
+@@ -753,7 +778,22 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 	spinlock_t *ptl;
+ 	struct page *page;
+ 
+-	split_huge_page_pmd(vma, addr, pmd);
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
++		if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
++			clear_soft_dirty_pmd(vma, addr, pmd);
++			spin_unlock(ptl);
++			return 0;
++		}
++
++		page = pmd_page(*pmd);
++
++		/* Clear accessed and referenced bits. */
++		pmdp_test_and_clear_young(vma, addr, pmd);
++		ClearPageReferenced(page);
++		spin_unlock(ptl);
++		return 0;
++	}
++
+ 	if (pmd_trans_unstable(pmd))
+ 		return 0;
+ 
+-- 
+2.0.0.rc2
 
