@@ -1,151 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbaEUQ0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 12:26:38 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53027 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaEUQ0g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 12:26:36 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, matthias.bgg@gmail.com,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5 0/6] arm: Add basic support for Mediatek Cortex-A7 SoCs
-Date: Wed, 21 May 2014 18:26:17 +0200
-Message-Id: <1400689583-21119-1-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752811AbaEUQa1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 12:30:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57088 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752149AbaEUQa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 12:30:26 -0400
+Date: Wed, 21 May 2014 18:30:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+Message-ID: <20140521163002.GI21205@pd.tnic>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+ <1400639227.9759.21.camel@pippen.local.home>
+ <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
+ <20140521094626.GB21205@pd.tnic>
+ <CALCETrWkAnSe6kzha5+MmnZn+YT+rBrmu0vz+9Pr94uUjh9dDQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrWkAnSe6kzha5+MmnZn+YT+rBrmu0vz+9Pr94uUjh9dDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fifth round for the Mediatek basic support patches.
+On Wed, May 21, 2014 at 08:21:08AM -0700, Andy Lutomirski wrote:
+> On May 21, 2014 2:46 AM, "Borislav Petkov" <bp@alien8.de> wrote:
+> >
+> > On Tue, May 20, 2014 at 07:39:31PM -0700, Andy Lutomirski wrote:
+> > > So the issue here is that we can have an NMI followed immediately by
+> > > an MCE.
+> >
+> > That part might need clarification for me: #MC is higher prio interrupt
+> > than NMI so a machine check exception can interrupt the NMI handler at
+> > any point.
+> 
+> Except that NMI can interrupt #MC at any point as well, I think.
 
-I changed the compatible string to the first SoC known which integrates the
-timer.
+No, #MC is higher prio than NMI, actually even the highest along with
+RESET#. And come to think of it, all exceptions which have a higher prio
+than NMI should touch that nmi_mce_nest_count thing.
 
-I kept the minimal machine file. The debate about it is ongoing and up to now
-minimal machine files are not removed [0]. This file will probably disappear
-when Robs patch [1] or a similar approach gets accepted.
+See Table 8-8 here:
 
-[0] https://lkml.org/lkml/2014/4/23/833
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-November/208878.html
+http://amd-dev.wpengine.netdna-cdn.com/wordpress/media/2012/10/24593_APM_v21.pdf
 
----
-This patch set adds basic support for the Mediatek Cortex-A7 SoCs.
-Support is quite basic, as the only component working up to now are the
-timers.
+That's the prios before 3, i.e. the NMI one.
 
-The patch series is build against torvalds/master tree.
+HOWEVER, this all is spoken with the assumption that higher prio
+interrupts can interrupt the NMI handler too at the first instruction
+boundary they've been recognized.
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+The text is talking about simultaneous interrupts and not about
+interrupt handler preemption.
 
-Changes for v5:
-1. Clocksource timer
-- Change the compatible string to mt6577
+But it must be because Steve wouldn't be dealing with exceptions in the
+NMI handler and nested NMIs otherwise...
 
-2. Timer DT bindings
-- Change compatible string to mt6577
-
-
-Changes for v4:
-1. Clocksource timer
-- use cpu_possible_mask
-
-2. Timer DT bindings
-- Delete comments about the frequency of the clocks
-- Add clock-names for the input clocks
-
-3. Basic SoC support
-- add clock-names for the timer
-- rename the label of the clocks nodes
-
-
-Changes for v3:
-1. Clocksource timer
-- Set cpu_mask_all and irq in clock_event_device
-- Use device private structure for driver specific values
-
-2. Timer DT bindings
-- Define order of the clock phandles
-- Fix typos
-
-3. Basic SoC support
-- DTS: set gic to a15-gic
-- DTS: order by physical address
-- Remove call to dt_init function
-
-
-Changes for v2:
-1. Clocksource timer
-- Delete unused parts for sched_clock_source
-- Use irq_request instead of setup_irq
-- Remove unused SMP parts
-- Fix some style issues
-- use of_address_to resource and request_mem_region
-- delete use of named clock
-- select CLKSRC_MMIO in driver Kconfig
-
-2. DT bindings
-- delete named clock bindings
-
-3. Basic SoC support
-- Clean-up Kconfig
-- Add documentation of the SoC compatible property 
-- DTS: rename SoC file to mt6589.dts
-- DTS: Delete not present cache controller
-- DTS: Add missing GICv2 properties
-- DTS: Change clock names
-- DTS: Add Aquaris5 board
-
-4. Add earlyprintk
-- patch droped until serial driver is available
-
-5. Add support for Aquaris5 mobile phone
-
----
-
-Matthias Brugger (6):
-  clocksource: Add support for the Mediatek SoCs
-  dt-bindings: add mtk-timer bindings
-  vendor-prefixes: add prefix for Mediaktek Inc.
-  arm: add basic support for Mediatek MT6589 boards
-  dt-bindings: add documentation for Mediatek SoC
-  arm: mediatek: add dts for Aquaris5 mobile phone
-
- .../devicetree/bindings/arm/mediatek-mt65xx.txt    |   8 +
- .../bindings/timer/mediatek,mtk-timer.txt          |  18 ++
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- arch/arm/Kconfig                                   |   2 +
- arch/arm/Makefile                                  |   1 +
- arch/arm/boot/dts/mt6589-aquaris5.dts              |  25 ++
- arch/arm/boot/dts/mt6589.dtsi                      |  94 ++++++++
- arch/arm/mach-mediatek/Kconfig                     |   6 +
- arch/arm/mach-mediatek/Makefile                    |   1 +
- arch/arm/mach-mediatek/mediatek.c                  |  32 +++
- drivers/clocksource/Kconfig                        |   4 +
- drivers/clocksource/Makefile                       |   1 +
- drivers/clocksource/mtk_timer.c                    | 263 +++++++++++++++++++++
- 13 files changed, 456 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
- create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
- create mode 100644 arch/arm/boot/dts/mt6589-aquaris5.dts
- create mode 100644 arch/arm/boot/dts/mt6589.dtsi
- create mode 100644 arch/arm/mach-mediatek/Kconfig
- create mode 100644 arch/arm/mach-mediatek/Makefile
- create mode 100644 arch/arm/mach-mediatek/mediatek.c
- create mode 100644 drivers/clocksource/mtk_timer.c
+Hmmm.
 
 -- 
-1.8.1.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
