@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaEUU7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 16:59:05 -0400
-Received: from mail.eperm.de ([89.247.134.16]:40300 "EHLO mail.eperm.de"
+	id S1753339AbaEUU7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 16:59:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32339 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629AbaEUU7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 16:59:04 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, aquini@redhat.com,
-        jeremy.wayne.powell@gmail.com, clemens@ladisch.de, pwalten@au1.ibm.com,
-        joe@perches.com
-Subject: Re: [PATCH v7 1/6] SP800-90A Deterministic Random Bit Generator
-Date: Wed, 21 May 2014 22:17:30 +0200
-Message-ID: <1463834.NEeonhXFuP@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <4917794.FPSphFc8Fa@myon.chronox.de>
-References: <16102625.1uoi9eJz6k@myon.chronox.de> <4917794.FPSphFc8Fa@myon.chronox.de>
+	id S1752713AbaEUU7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 16:59:32 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH 3.15] MIPS: Add new AUDIT_ARCH token for the N32 ABI on MIPS64
+Date: Wed, 21 May 2014 16:59:22 -0400
+Message-ID: <1683789.b73kOmCp2z@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.13.1 (Linux/3.14.4-gentoo; KDE/4.13.1; x86_64; ; )
+In-Reply-To: <2398159.J868kTHAKn@sifl>
+References: <1397550996-14805-1-git-send-email-markos.chandras@imgtec.com> <1398177636-10442-1-git-send-email-markos.chandras@imgtec.com> <2398159.J868kTHAKn@sifl>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -25,30 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 21. Mai 2014, 06:18:58 schrieb Stephan Mueller:
+On Monday, May 12, 2014 02:53:05 PM Paul Moore wrote:
+> On Tuesday, April 22, 2014 03:40:36 PM Markos Chandras wrote:
+> > A MIPS64 kernel may support ELF files for all 3 MIPS ABIs
+> > (O32, N32, N64). Furthermore, the AUDIT_ARCH_MIPS{,EL}64 token
+> > does not provide enough information about the ABI for the 64-bit
+> > process. As a result of which, userland needs to use complex
+> > seccomp filters to decide whether a syscall belongs to the o32 or n32
+> > or n64 ABI. Therefore, a new arch token for MIPS64/n32 is added so it
+> > can be used by seccomp to explicitely set syscall filters for this ABI.
+> > 
+> > Link: http://sourceforge.net/p/libseccomp/mailman/message/32239040/
+> > Cc: Andy Lutomirski <luto@amacapital.net>
+> > Cc: Eric Paris <eparis@redhat.com>
+> > Cc: Paul Moore <pmoore@redhat.com>
+> > Cc: Ralf Baechle <ralf@linux-mips.org>
+> > Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+> > ---
+> > Ralf, can we please have this in 3.15 (Assuming it's ACK'd)?
+> > 
+> > Thanks a lot!
+> > ---
+> > 
+> >  arch/mips/include/asm/syscall.h |  2 ++
+> >  include/uapi/linux/audit.h      | 12 ++++++++++++
+> >  2 files changed, 14 insertions(+)
+> 
+> [NOTE: Adding lkml to the To line to hopefully spur discussion/acceptance as
+> this *really* should be in 3.15]
+> 
+> I'm re-replying to this patch and adding lkml to the To line because I
+> believe it is very important we get this patch into 3.15.  For those who
+> don't follow the MIPS architecture very closely, the upcoming 3.15 is the
+> first release to include support for seccomp filters, the latest generation
+> of syscall filtering which used a BPF based filter language.  For reason
+> that are easy to understand, the syscall filters are ABI specific (e.g.
+> syscall tables, word length, endianness) and those generating syscall
+> filters in userspace (e.g. libseccomp) need to take great care to ensure
+> that the generated filters take the ABI into account and fail safely in the
+> case where a different ABI is used (e.g. x86, x86_64, x32).
+> 
+> The patch below corrects, what is IMHO, an omission in the original MIPS
+> seccomp filter patch, allowing userspace to easily separate MIPS and MIPS64.
+> Without this patch we will be forced to handle MIPS/MIPS64 like we handle
+> x86_64/x32 which is a royal pain and not something I want to have deal with
+> again.
+> 
+> Further, while I don't want to speak for the audit folks, it is my
+> understanding that they want this patch for similar reasons.
+> 
+> Please merge this patch for 3.15 or at least provide some feedback as to why
+> this isn't a viable solution for upstream.  Once 3.15 ships, fixing this
+> will require breaking the MIPS ABI which isn't something any of us want.
+> 
+> Thanks,
+> -Paul
 
-Hi,
+*Bump*
 
-> +/*
-> + * Tests as defined in 11.3.2 in addition to the cipher tests: testing
-> + * of the error handling.
-> + *
-> + * Note: testing of failing seed source as defined in 11.3.2 is not
-> applicable + * as seed source of get_random_bytes does not fail.
-> + *
-> + * Note 2: There is no sensible way of testing the reseed counter
-> + * enforcement, so skip it.
-> + */
-> +static inline int __init drbg_healthcheck_sanity(void)
-> +{
-> +#ifdef CONFIG_CRYPTO_FIPS
-> +	unsigned int len = 0;
+I don't know what else needs to be done to get some action on this and we're 
+running out of time for 3.15.
 
-This variable must be signed int as otherwise the BUG_ON checks will always 
-fail. This error is a leftover from the return code change of drbg_generate(). 
-It will be fixed in the next release.
-
-Ciao
-Stephan
 -- 
-| Cui bono? |
+paul moore
+security and virtualization @ redhat
+
