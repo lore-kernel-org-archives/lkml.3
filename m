@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842AbaEUJR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:17:59 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:6089 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbaEUJR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752044AbaEUJSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:18:18 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:65062 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaEUJR5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 May 2014 05:17:57 -0400
-Date: Wed, 21 May 2014 11:17:50 +0200
-From: Antonio Ospite <ao2@ao2.it>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org,
-        Daniel Ribeiro <drwyrm@gmail.com>,
-        Ilya Petrov <ilya.muromec@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: Re: [PATCH] input: pcap2: avoid calling mutex_lock() in irq handler
-Message-Id: <20140521111750.6e0fddfcc65522f9f3b70b66@ao2.it>
-In-Reply-To: <20140406202436.GA16739@core.coreip.homeip.net>
-References: <1396731290-7062-1-git-send-email-khoroshilov@ispras.ru>
-	<20140406202436.GA16739@core.coreip.homeip.net>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Date: Wed, 21 May 2014 10:17:51 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jay Aurabind <mail@aurabindo.in>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: Re: [PATCH V2] mfd: abx500-core: Fix compiler warning larger stack
+ frame
+Message-ID: <20140521091751.GC6679@lee--X1>
+References: <536E1543.3090107@aurabindo.in>
+ <20140520152054.GB24991@lee--X1>
+ <537C447D.7070406@aurabindo.in>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537C447D.7070406@aurabindo.in>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Apr 2014 13:24:36 -0700
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-
-> On Sun, Apr 06, 2014 at 12:54:50AM +0400, Alexey Khoroshilov wrote:
-> > pcap_keys_handler() calls ezx_pcap_read() that calls mutex_lock().
-> > pcap_keys_handler() is registered as nonthreaded irq handler,
-> > that means sleeping function is called in irq handler.
-> > 
-> > The patch makes a switch to threaded irq handling.
-> > Compile tested only.
-> > 
-> > Found by Linux Driver Verification project (linuxtesting.org).
-> > 
-> > Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> > ---
-> >  drivers/input/misc/pcap_keys.c | 10 ++++++----
-> >  1 file changed, 6 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/input/misc/pcap_keys.c b/drivers/input/misc/pcap_keys.c
-> > index cd230365166e..2a10f3a30969 100644
-> > --- a/drivers/input/misc/pcap_keys.c
-> > +++ b/drivers/input/misc/pcap_keys.c
-> > @@ -79,13 +79,15 @@ static int pcap_keys_probe(struct platform_device *pdev)
-> >  	if (err)
-> >  		goto fail_allocate;
-> >  
-> > -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
-> > -			pcap_keys_handler, 0, "Power key", pcap_keys);
-> > +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_ONOFF),
-> > +				   NULL, pcap_keys_handler, 0,
-> > +				   "Power key", pcap_keys);
-> >  	if (err)
-> >  		goto fail_register;
-> >  
-> > -	err = request_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
-> > -			pcap_keys_handler, 0, "Headphone button", pcap_keys);
-> > +	err = request_threaded_irq(pcap_to_irq(pcap_keys->pcap, PCAP_IRQ_MIC),
-> > +				   NULL, pcap_keys_handler, 0,
-> > +				   "Headphone button", pcap_keys);
+> Change from V1 -> V2: Fix a potential null pointer dereference as reported by kbuild test robot <fengguang.wu@intel.com>.
 > 
-> So I guess we do need threaded IRQ here, but I do not see the pcap's
-> irqchip specifying IRQCHIP_ONESHOT_SAFE so I do not think
-> request_threaded_irq() without IRQF_ONESHOT would succeed.
+> Inorder to report the kzalloc failure, I have just used a pr_debug statement. If it looks ugly, should I change the function's return value to int and give out an -ENOMEM ?
+
+Yes, please do that - and obviously add the checks to the calling code.
+
+> From 6615c7a995a6bb4dcf4c1e9ac59bca823ec821a5 Mon Sep 17 00:00:00 2001
+> From: Aurabindo J <mail@aurabindo.in>
+> Date: Wed, 21 May 2014 11:18:10 +0530
+> Subject: [PATCH] mfd: abx500-core: Fix compiler warning larger stack frame
 > 
-> Can someone test the change to be sure?
->
+> On systems with CONFIG_FRAME_WARN=1024, compiler warns the allocation of
+> an object of struct device on stack. Make the allocation dynamically to
+> fix the warning.
+> 
+> Signed-off-by: Aurabindo J <mail@aurabindo.in>
+> ---
+>  drivers/mfd/abx500-core.c | 19 ++++++++++++-------
+>  1 file changed, 12 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/mfd/abx500-core.c b/drivers/mfd/abx500-core.c
+> index f3a15aa..5e5098d 100644
+> --- a/drivers/mfd/abx500-core.c
+> +++ b/drivers/mfd/abx500-core.c
+> @@ -154,16 +154,21 @@ EXPORT_SYMBOL(abx500_startup_irq_enabled);
+>  void abx500_dump_all_banks(void)
+>  {
+>  	struct abx500_ops *ops;
+> -	struct device dummy_child = {NULL};
+> +	struct device *dummy_child;
+>  	struct abx500_device_entry *dev_entry;
+>  
+> -	list_for_each_entry(dev_entry, &abx500_list, list) {
+> -		dummy_child.parent = dev_entry->dev;
+> -		ops = &dev_entry->ops;
+> +	dummy_child = kzalloc(sizeof(struct device), GFP_KERNEL);
+> +	if (dummy_child != NULL) {
+> +		list_for_each_entry(dev_entry, &abx500_list, list) {
+> +			dummy_child->parent = dev_entry->dev;
+> +			ops = &dev_entry->ops;
+>  
+> -		if ((ops != NULL) && (ops->dump_all_banks != NULL))
+> -			ops->dump_all_banks(&dummy_child);
+> -	}
+> +			if ((ops != NULL) && (ops->dump_all_banks != NULL))
+> +				ops->dump_all_banks(dummy_child);
+> +		}
+> +		kfree(dummy_child);
+> +	} else
+> +		pr_debug("kzalloc failure in abx500_dump_all_banks\n");
+>  }
+>  EXPORT_SYMBOL(abx500_dump_all_banks);
+>  
 
-Tested-by: Antonio Ospite <ao2@ao2.it>
 
-I confirm the keys still work fine with the patch applied on a 3.2
-kernel. I cannot test on a newer version for now.
-
-Sorry for the delay.
-
-Ciao ciao,
-   Antonio
 
 -- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
