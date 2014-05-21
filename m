@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaEUWm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:42:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50120 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342AbaEUWmy (ORCPT
+	id S1752324AbaEUWrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:47:20 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:63641 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaEUWrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:42:54 -0400
-Date: Wed, 21 May 2014 15:42:50 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 0/4] pagecache scanning with /proc/kpagecache
-Message-Id: <20140521154250.95bc3520ad8d192d95efe39b@linux-foundation.org>
-In-Reply-To: <1400639194-3743-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1400639194-3743-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 May 2014 18:47:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <537AEF2D.9040207@intel.com>
+References: <537AEF2D.9040207@intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 21 May 2014 15:46:58 -0700
+Message-ID: <CALCETrVFbo1yb7FyCH1Y=pHb89VPt9ycx0C-wv2A7h=CzwwdGA@mail.gmail.com>
+Subject: Re: [x86, vdso] cfda7bb9ecb: +14.7% will-it-scale.per_thread_ops
+To: Jet Chen <jet.chen@intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 22:26:30 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On Mon, May 19, 2014 at 10:59 PM, Jet Chen <jet.chen@intel.com> wrote:
+> Hi Andy,
+>
+> FYI, we noticed the below changes on
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/vdso
+> commit cfda7bb9ecbf9d96264bb5bade33a842966d1062 ("x86, vdso: Move syscall
+> and sysenter setup into kernel/cpu/common.c")
 
-> This patchset adds a new procfs interface to extrace information about
-> pagecache status. In-kernel tool tools/vm/page-types.c has already some
-> code for pagecache scanning without kernel's help, but it's not free
-> from measurement-disturbance, so here I'm suggesting another approach.
+This is really strange.  That change shouldn't have any effect except
+that some kernels might boot a cycle or two faster.
 
-I'm not seeing much explanation of why you think the kernel needs this.
-The overall justification for a change is terribly important so please
-do spend some time on it.
+>
+> test case: nhm4/will-it-scale/sched_yield
+>
+> 3d7ee969bffcc98  cfda7bb9ecbf9d96264bb5bad
+> ---------------  -------------------------
+>     5497021 ~ 0%     +14.7%    6303424 ~ 0%  TOTAL
+> will-it-scale.per_thread_ops
+>        0.54 ~ 0%      +5.6%       0.57 ~ 0%  TOTAL will-it-scale.scalability
+>     6209483 ~ 0%      +1.6%    6305917 ~ 0%  TOTAL
+> will-it-scale.per_process_ops
+>        2455 ~ 5%     +16.9%       2870 ~ 5%  TOTAL cpuidle.C1-NHM.usage
+>        8829 ~ 7%     +15.2%      10169 ~10%  TOTAL
+> slabinfo.kmalloc-64.active_objs
+>       24.13 ~12%     +48.9%      35.93 ~14%  TOTAL time.user_time
+>         393 ~ 0%      -3.0%        382 ~ 1%  TOTAL time.system_time
+>
 
-As I don't *really* know what the patch is for, I can't comment a lot
-further, but...
+Is this a speedup or a slowdown?
 
-
-A much nicer interface would be for us to (finally!) implement
-fincore(), perhaps with an enhanced per-present-page payload which
-presents the info which you need (although we don't actually know what
-that info is!).
-
-This would require open() - it appears to be a requirement that the
-caller not open the file, but no reason was given for this.
-
-Requiring open() would address some of the obvious security concerns,
-but it will still be possible for processes to poke around and get some
-understanding of the behaviour of other processes.  Careful attention
-should be paid to this aspect of any such patchset.
-
-
+--Andy
