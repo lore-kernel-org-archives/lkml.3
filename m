@@ -1,172 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452AbaEUJp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:45:57 -0400
-Received: from mx10.pku.edu.cn ([162.105.129.173]:36116 "EHLO mail.pku.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752427AbaEUJpz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:45:55 -0400
-X-Greylist: delayed 668 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 May 2014 05:45:54 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -307.363
-Date: Wed, 21 May 2014 17:34:42 +0800 (CST)
-From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: JBottomley@parallels.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1315378557.42303.1400664882967.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <536C2D2B.6090501@gmail.com>
-Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_[PATCH_v2]_[PATCH]_drive?=
- =?utf-8?Q?rs:_scsi:_mvsas:_fix_compili?=
- =?utf-8?Q?ng_issue_by_adding_'MVS=5F'_for_"enum_pci=5Finterrupt=5Fcause"?=
+	id S1752471AbaEUJqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:46:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60401 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023AbaEUJqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 05:46:49 -0400
+Date: Wed, 21 May 2014 11:46:26 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
+Message-ID: <20140521094626.GB21205@pd.tnic>
+References: <CALCETrXudJ8BkNF_M-r4O40XLN+PnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com>
+ <1400639227.9759.21.camel@pippen.local.home>
+ <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [162.105.129.95]
+Content-Disposition: inline
+In-Reply-To: <CALCETrU34B6XMmxcN2ix1bhnPFVRp5vNjyjxXMGYiOERZD483A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I checked these two files, and this patch looks good.
-And, I'll put it into unicore32 repo.
+On Tue, May 20, 2014 at 07:39:31PM -0700, Andy Lutomirski wrote:
+> So the issue here is that we can have an NMI followed immediately by
+> an MCE.
 
-Reviewed-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+That part might need clarification for me: #MC is higher prio interrupt
+than NMI so a machine check exception can interrupt the NMI handler at
+any point.
 
+But you're talking only about the small window when nmi_mce_nest_count
+hasn't been incremented yet, right? I.e., this:
 
------ Chen Gang <gang.chen.5i5j@gmail.com> 写道：
-> The direct cause is IRQ_SPI is already defined as a macro in unicore32
-> architecture (also, blackfin and mips architectures define it). The
-> related error (unicore32  with allmodconfig)
-> 
->     CC [M]  drivers/scsi/mvsas/mv_94xx.o
->   In file included from drivers/scsi/mvsas/mv_94xx.c:27:
->   drivers/scsi/mvsas/mv_94xx.h:176: error: expected identifier before numeric constant
-> 
-> And IRQ_SAS_A and IRQ_SAS_B are used as 'u32' (although "enum
-> pci_interrupt_cause" is not used directly, now).
-> 
-> All together, need add 'MVS_' for "enum pci_interrupt_cause".
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  drivers/scsi/mvsas/mv_94xx.c | 10 ++++----
->  drivers/scsi/mvsas/mv_94xx.h | 58 ++++++++++++++++++++++----------------------
->  2 files changed, 34 insertions(+), 34 deletions(-)
-> 
-> diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
-> index 1e4479f..9270d15 100644
-> --- a/drivers/scsi/mvsas/mv_94xx.c
-> +++ b/drivers/scsi/mvsas/mv_94xx.c
-> @@ -564,7 +564,7 @@ static void mvs_94xx_interrupt_enable(struct mvs_info *mvi)
->  	u32 tmp;
->  
->  	tmp = mr32(MVS_GBL_CTL);
-> -	tmp |= (IRQ_SAS_A | IRQ_SAS_B);
-> +	tmp |= (MVS_IRQ_SAS_A | MVS_IRQ_SAS_B);
->  	mw32(MVS_GBL_INT_STAT, tmp);
->  	writel(tmp, regs + 0x0C);
->  	writel(tmp, regs + 0x10);
-> @@ -580,7 +580,7 @@ static void mvs_94xx_interrupt_disable(struct mvs_info *mvi)
->  
->  	tmp = mr32(MVS_GBL_CTL);
->  
-> -	tmp &= ~(IRQ_SAS_A | IRQ_SAS_B);
-> +	tmp &= ~(MVS_IRQ_SAS_A | MVS_IRQ_SAS_B);
->  	mw32(MVS_GBL_INT_STAT, tmp);
->  	writel(tmp, regs + 0x0C);
->  	writel(tmp, regs + 0x10);
-> @@ -596,7 +596,7 @@ static u32 mvs_94xx_isr_status(struct mvs_info *mvi, int irq)
->  	if (!(mvi->flags & MVF_FLAG_SOC)) {
->  		stat = mr32(MVS_GBL_INT_STAT);
->  
-> -		if (!(stat & (IRQ_SAS_A | IRQ_SAS_B)))
-> +		if (!(stat & (MVS_IRQ_SAS_A | MVS_IRQ_SAS_B)))
->  			return 0;
->  	}
->  	return stat;
-> @@ -606,8 +606,8 @@ static irqreturn_t mvs_94xx_isr(struct mvs_info *mvi, int irq, u32 stat)
->  {
->  	void __iomem *regs = mvi->regs;
->  
-> -	if (((stat & IRQ_SAS_A) && mvi->id == 0) ||
-> -			((stat & IRQ_SAS_B) && mvi->id == 1)) {
-> +	if (((stat & MVS_IRQ_SAS_A) && mvi->id == 0) ||
-> +			((stat & MVS_IRQ_SAS_B) && mvi->id == 1)) {
->  		mw32_f(MVS_INT_STAT, CINT_DONE);
->  
->  		spin_lock(&mvi->lock);
-> diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
-> index 487aa6f..14e1974 100644
-> --- a/drivers/scsi/mvsas/mv_94xx.h
-> +++ b/drivers/scsi/mvsas/mv_94xx.h
-> @@ -150,35 +150,35 @@ enum chip_register_bits {
->  
->  enum pci_interrupt_cause {
->  	/*  MAIN_IRQ_CAUSE (R10200) Bits*/
-> -	IRQ_COM_IN_I2O_IOP0            = (1 << 0),
-> -	IRQ_COM_IN_I2O_IOP1            = (1 << 1),
-> -	IRQ_COM_IN_I2O_IOP2            = (1 << 2),
-> -	IRQ_COM_IN_I2O_IOP3            = (1 << 3),
-> -	IRQ_COM_OUT_I2O_HOS0           = (1 << 4),
-> -	IRQ_COM_OUT_I2O_HOS1           = (1 << 5),
-> -	IRQ_COM_OUT_I2O_HOS2           = (1 << 6),
-> -	IRQ_COM_OUT_I2O_HOS3           = (1 << 7),
-> -	IRQ_PCIF_TO_CPU_DRBL0          = (1 << 8),
-> -	IRQ_PCIF_TO_CPU_DRBL1          = (1 << 9),
-> -	IRQ_PCIF_TO_CPU_DRBL2          = (1 << 10),
-> -	IRQ_PCIF_TO_CPU_DRBL3          = (1 << 11),
-> -	IRQ_PCIF_DRBL0                 = (1 << 12),
-> -	IRQ_PCIF_DRBL1                 = (1 << 13),
-> -	IRQ_PCIF_DRBL2                 = (1 << 14),
-> -	IRQ_PCIF_DRBL3                 = (1 << 15),
-> -	IRQ_XOR_A                      = (1 << 16),
-> -	IRQ_XOR_B                      = (1 << 17),
-> -	IRQ_SAS_A                      = (1 << 18),
-> -	IRQ_SAS_B                      = (1 << 19),
-> -	IRQ_CPU_CNTRL                  = (1 << 20),
-> -	IRQ_GPIO                       = (1 << 21),
-> -	IRQ_UART                       = (1 << 22),
-> -	IRQ_SPI                        = (1 << 23),
-> -	IRQ_I2C                        = (1 << 24),
-> -	IRQ_SGPIO                      = (1 << 25),
-> -	IRQ_COM_ERR                    = (1 << 29),
-> -	IRQ_I2O_ERR                    = (1 << 30),
-> -	IRQ_PCIE_ERR                   = (1 << 31),
-> +	MVS_IRQ_COM_IN_I2O_IOP0        = (1 << 0),
-> +	MVS_IRQ_COM_IN_I2O_IOP1        = (1 << 1),
-> +	MVS_IRQ_COM_IN_I2O_IOP2        = (1 << 2),
-> +	MVS_IRQ_COM_IN_I2O_IOP3        = (1 << 3),
-> +	MVS_IRQ_COM_OUT_I2O_HOS0       = (1 << 4),
-> +	MVS_IRQ_COM_OUT_I2O_HOS1       = (1 << 5),
-> +	MVS_IRQ_COM_OUT_I2O_HOS2       = (1 << 6),
-> +	MVS_IRQ_COM_OUT_I2O_HOS3       = (1 << 7),
-> +	MVS_IRQ_PCIF_TO_CPU_DRBL0      = (1 << 8),
-> +	MVS_IRQ_PCIF_TO_CPU_DRBL1      = (1 << 9),
-> +	MVS_IRQ_PCIF_TO_CPU_DRBL2      = (1 << 10),
-> +	MVS_IRQ_PCIF_TO_CPU_DRBL3      = (1 << 11),
-> +	MVS_IRQ_PCIF_DRBL0             = (1 << 12),
-> +	MVS_IRQ_PCIF_DRBL1             = (1 << 13),
-> +	MVS_IRQ_PCIF_DRBL2             = (1 << 14),
-> +	MVS_IRQ_PCIF_DRBL3             = (1 << 15),
-> +	MVS_IRQ_XOR_A                  = (1 << 16),
-> +	MVS_IRQ_XOR_B                  = (1 << 17),
-> +	MVS_IRQ_SAS_A                  = (1 << 18),
-> +	MVS_IRQ_SAS_B                  = (1 << 19),
-> +	MVS_IRQ_CPU_CNTRL              = (1 << 20),
-> +	MVS_IRQ_GPIO                   = (1 << 21),
-> +	MVS_IRQ_UART                   = (1 << 22),
-> +	MVS_IRQ_SPI                    = (1 << 23),
-> +	MVS_IRQ_I2C                    = (1 << 24),
-> +	MVS_IRQ_SGPIO                  = (1 << 25),
-> +	MVS_IRQ_COM_ERR                = (1 << 29),
-> +	MVS_IRQ_I2O_ERR                = (1 << 30),
-> +	MVS_IRQ_PCIE_ERR               = (1 << 31),
->  };
->  
->  union reg_phy_cfg {
-> -- 
-> 1.9.2.459.g68773ac
+"The result is that the only interrupt that can happen with
+`nmi_mce_nest_count == 0` in NMI context is an MCE at the beginning or
+end of the NMI handler."
 
+Correct?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
