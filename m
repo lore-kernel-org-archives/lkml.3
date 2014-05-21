@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaEUCPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 May 2014 22:15:15 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:43273
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751542AbaEUCOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 May 2014 22:14:55 -0400
-From: Huang Shijie <b32955@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-serial@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH 2/2] serial: imx: remove the redandunt code
-Date: Wed, 21 May 2014 08:56:29 +0800
-Message-ID: <1400633789-31979-2-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1400633789-31979-1-git-send-email-b32955@freescale.com>
-References: <1400633789-31979-1-git-send-email-b32955@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(81156002)(20776003)(4396001)(76176999)(93916002)(50986999)(19580395003)(92726001)(85852003)(87286001)(69596002)(83322001)(50226001)(33646001)(68736004)(92566001)(79102001)(50466002)(77096999)(48376002)(44976005)(6806004)(87936001)(36756003)(84676001)(64706001)(89996001)(88136002)(83072002)(31966008)(77982001)(99396002)(47776003)(19580405001)(74502001)(81542001)(77156001)(62966002)(97736001)(102836001)(76482001)(80022001)(74662001)(46102001)(21056001)(81342001)(42262001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB422;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1751742AbaEUCQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 May 2014 22:16:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1785 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067AbaEUCQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 May 2014 22:16:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,877,1392192000"; 
+   d="scan'208";a="543970540"
+Message-ID: <537C0C6D.4030203@intel.com>
+Date: Wed, 21 May 2014 10:16:13 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 0218A015FA
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=shijie.huang@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: wsa@the-dreams.de, mika.westerberg@linux.intel.com, awilliam@redhat.com,
+        lenb@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
+References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <6169981.jIBZPeBvRE@vostro.rjw.lan>
+In-Reply-To: <6169981.jIBZPeBvRE@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the imx_startup(), we will reset the uart port which will reset all
-the FIFOs, including the URXD.
+On 2014年05月21日 05:25, Rafael J. Wysocki wrote:
+> On Tuesday, May 20, 2014 08:59:19 PM Lan Tianyu wrote:
+>> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
+>> region. It allows ACPI aml code able to access such kind of devices to
+>> implement some ACPI standard method.
+>>
+>> On the Asus T100TA, Bios use GenericSerialBus operation region to access
+>> i2c device to get battery info. So battery function depends on the I2C
+>> operation region support. Here is the bug link.
+>> https://bugzilla.kernel.org/show_bug.cgi?id=69011
+>>
+>> Change since V2:
+>>         Drop patchs of adding I2C smbus quick read/write and word/block
+>> process call functions because not find machines supporting such protocols
+>> so far and can't test these functions.
+>>         Merge patchs of "I2C ACPI related code clear up" and "Add CONFIG_I2C_ACPI
+>> config"
+>> 	Patch 2: Add acpi_bus_detach_private_data() function to detach data from
+>> ACPI handle and replace ACPI_ERROR() with acpi_handle_debug() to avoid some redundant
+>> error log.  
+>>
+>> Change since V1:
+>>        Fix some code style issues. Change prefix i2c_acpi to acpi_i2c.
+>> Move ACPI related code in the i2c core to i2c-acpi.c. Add CONFIG_I2C_ACPI
+>> and make i2c core built-in when it's set to avoid i2c ACPI operation region
+>> being removed.
+>>
+>> Lan Tianyu (5):
+>>   ACPICA: Export acpi_buffer_to_resource symbol
+> 
+> Redundant?
 
-So the code to clear the RX FIFO is redandunt. Just remove it.
+Yes.
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/tty/serial/imx.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+> 
+>>   ACPI: Add acpi_bus_attach_private_data() to facilitate to attach data
+>>     to ACPI handle
+>>   ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private
+>>     data
+> 
+> I can take the above two regardless of the I2C material below I guess?
 
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index 64901d0..febf400 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -1161,15 +1161,6 @@ static int imx_startup(struct uart_port *port)
- 		temp |= UCR2_IRTS;
- 	writel(temp, sport->port.membase + UCR2);
- 
--	if (USE_IRDA(sport)) {
--		/* clear RX-FIFO */
--		int i = 64;
--		while ((--i > 0) &&
--			(readl(sport->port.membase + URXD0) & URXD_CHARRDY)) {
--			barrier();
--		}
--	}
--
- 	if (!is_imx1_uart(sport)) {
- 		temp = readl(sport->port.membase + UCR3);
- 		temp |= IMX21_UCR3_RXDMUXSEL;
+Yes.
+
+> 
+>>   I2C/ACPI: Add i2c ACPI operation region support
+>>   I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI config
+>>
+>>  drivers/acpi/acpica/rscreate.c |   1 +
+>>  drivers/acpi/bus.c             |  28 +++-
+>>  drivers/acpi/thermal.c         |  11 +-
+>>  drivers/i2c/Kconfig            |  18 +-
+>>  drivers/i2c/Makefile           |   5 +-
+>>  drivers/i2c/i2c-acpi.c         | 362 +++++++++++++++++++++++++++++++++++++++++
+>>  drivers/i2c/i2c-core.c         |  97 +----------
+>>  include/acpi/acpi_bus.h        |   2 +
+>>  include/linux/acpi.h           |  11 ++
+>>  include/linux/i2c.h            |  12 ++
+>>  10 files changed, 439 insertions(+), 108 deletions(-)
+>>  create mode 100644 drivers/i2c/i2c-acpi.c
+>>
+>>
+> 
+
+
 -- 
-1.7.8
-
+Best regards
+Tianyu Lan
