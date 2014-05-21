@@ -1,107 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaEUGVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 02:21:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30249 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202AbaEUGV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 02:21:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
-   d="scan'208";a="515251736"
-Date: Wed, 21 May 2014 11:35:49 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Williams, Dan J" <dan.j.williams@intel.com>
-Subject: Re: [PATCH 2/2] dmaengine: sa11x0: remove broken #ifdef
-Message-ID: <20140521060548.GM21128@intel.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-2-git-send-email-arnd@arndb.de>
- <1399565317.9018.4.camel@smile.fi.intel.com>
+	id S1751655AbaEUGWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 02:22:25 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:1960 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750865AbaEUGWX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 02:22:23 -0400
+Message-ID: <537C4605.2090203@marvell.com>
+Date: Wed, 21 May 2014 14:21:57 +0800
+From: FanWu <fwu@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399565317.9018.4.camel@smile.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        ext Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, Chao Xie <cxie4@marvell.com>,
+        Yilu Mao <ylmao@marvell.com>, Ning Jiang <njiang1@marvell.com>,
+        Xiaofan Tian <tianxf@marvell.com>, Fangsuo Wu <fswu@marvell.com>
+Subject: Re: [PATCH] pinctrl: add params in disable_setting for different
+ usage
+References: <1400032874-3423-1-git-send-email-fwu@marvell.com> <CACRpkdaTX_SyWXrpysaJGLee+SnLPxdQQkvE-5Xy+OmHCcseVw@mail.gmail.com> <53766CA7.8000507@wwwdotorg.org> <53797279.1010109@marvell.com> <537A6FB5.80905@wwwdotorg.org> <537AC661.7010400@marvell.com> <537BA20A.3080109@wwwdotorg.org>
+In-Reply-To: <537BA20A.3080109@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-21_02:2014-05-20,2014-05-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405210089
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 09:38:37PM +0530, Shevchenko, Andriy wrote:
-> On Thu, 2014-05-08 at 16:56 +0200, Arnd Bergmann wrote:
-> > The sa11x0_dma_pm_ops unconditionally reference sa11x0_dma_resume
-> > and sa11x0_dma_suspend, which currently breaks if CONFIG_PM_SLEEP
-> > is disabled.
-> > 
-> > There is probably a better way to remove the reference in this
-> > case, but the safe choice is to have the suspend/resume code always
-> > built in the driver.
-> 
-> Maybe you could create a macro in pm.h for *_noirq version of
-> suspend/resume? However, like we discussed with Vinod it's much better
-> to use suspend_late/resume_early for DMAC device drivers, though I have
-> no idea if it works for sa11x0.
-It should work as the guidance is not client/controller specfic. But I think
-thats not the point here as the fix is not related to how suspend is
-implemented..
+On 05/21/2014 02:42 AM, Stephen Warren wrote:
+> On 05/19/2014 09:05 PM, FanWu wrote:
+>> On 05/20/2014 04:55 AM, Stephen Warren wrote:
+>>> On 05/18/2014 08:54 PM, FanWu wrote:
+>>>> On 05/17/2014 03:53 AM, Stephen Warren wrote:
+>>>>> On 05/16/2014 10:21 AM, Linus Walleij wrote:
+>>>>>> On Wed, May 14, 2014 at 4:01 AM,  <fwu@marvell.com> wrote:
+>>>>>>
+>>>>>>> From: Fan Wu <fwu@marvell.com>
+>>>>>>>
+>>>>>>> The patch added params in disable_setting to differ the two possible
+>>>>>>> usage,
+>>>>>>> 1.Only want to disable the pin setting in SW aspect, param can be
+>>>>>>> set to "0"
+>>>>>>> 2.Want to disable the pin setting in both HW and SW aspect, param
+>>>>>>> can be set to "1";
+>>>>>>>
+>>>>>>> The reason why to do this is that:
+>>>>>>> To avoid duplicated enable_setting operation without disabling
+>>>>>>> operation which will
+>>>>>>> let Pin's desc->mux_usecount keep being added.
+>>>>>>>
+>>>>>>> In the following case, the issue can be reproduced:
+>>>>>>> 1)There is a driver need to switch Pin state dynamicly, E.g. b/t
+>>>>>>> "sleep" and
+>>>>>>> "default" state
+>>>>>>> 2)The Pin setting configuration in the two state is same, like the
+>>>>>>> following one:
+>>>>>>> component a {
+>>>>>>>            pinctrl-names = "default", "sleep";
+>>>>>>>            pinctrl-0 = <&a_grp_setting &c_grp_setting>;
+>>>>>>>            pinctrl-1 = <&b_grp_setting &c_grp_setting>;
+>>>>>>> }
+>>>>>>> The "c_grp_setting" config node is totaly same, maybe like following
+>>>>>>> one:
+>>>>>>
+>>>>>> Hm this is a quite interesting thing if we can get it in place, but
+>>>>>> I need Stephen's consent, also Tony should have a look at this as
+>>>>>> I know he's had the same problem as you in pinctrl-single.
+>>>>>
+>>>>> I only briefly looked at the patch, but it probably solves/hides the
+>>>>> immediate problem.
+>>>>>
+>>>>> However, rather than doing this, why not just remove
+>>>>> pinmux_disable_setting() completely. It doesn't make sense to
+>>>>> "disable a
+>>>>> mux selection" (some value is always selected in the mux register
+>>>>> field)
+>>>>> any more than it does to "disable a drive strength selection". We don't
+>>>>> have a pinconf_disable_setting(), and couldn't really add one if we
+>>>>> wanted. For consistency, let's just remove pinmux_disable_setting(). Do
+>>>>> you agree?
+>>>>>
+>>>>
+>>>> Dear, Stephen and Guys,
+>>>>
+>>>> Sorry for late due to some personal affairs in Weekend time.
+>>>>
+>>>> I don't think it is a proper way to remove pinmux_disable_setting
+>>>> directly without changing any other code, like no change on the code in
+>>>> pinmux_enable_setting.
+>>>>
+>>>> Talking about the pinmux_disable_operation, in SW aspect, we also need
+>>>> to consider the "pinmux_enable_setting" operation.
+>>>> For the "pinmux_enable_setting" operation, there is some SW level code
+>>>> logic, like pin_request.
+>>>> Do you think it is a acceptable way to remove the SW level code logic
+>>>> from the "pinmux_enable_setting" path, because there will be no
+>>>> corresponding operation in reverse order in pinmux_disable_setting after
+>>>> applying our possible change?
+>>>
+>>> No, I don't think we should remove the SW aspects of
+>>> pinmux_enable_setting(). The pinctrl core currently tracks which pinctrl
+>>> state "owns" each pingroup's mux, so that different pinctrl states can't
+>>> both attempt to configure a pingroup's mux setting. We need to keep all
+>>> the SW aspects of mux enable/disable. All I'm proposing removing is the
+>>> HW-programming parts of pinmux_disable_setting().
+>>>
+>>>> At least, I think this way may be a considerable change in Pinmux
+>>>> framework, right?
+>>>
+>>> Yes, removing all of pinmux_en/disable_setting would be a considerable
+>>> and likely inappropriate change.
+>>>
+>>>> Talking about HW aspect,
+>>>> I think the solution you mentioned is indeed a good way to solve the
+>>>> problem for some HW vendor's SoC chip, but may be not that intact
+>>>> solution.
+>>>>
+>>>> In my understanding, the pinmux operation, like enabling and disabling,
+>>>> is to change pin's(pins') multi-function from funcion_M to function_N.
+>>>> And, the "pinconf" enabling function is used to change the attributes of
+>>>> the pin, like Pull_Up/Down, DriveStrength(Low/Medium/Fast) and etc.
+>>>>
+>>>> The pinmux disabling operation will be called in the following case in
+>>>> current pinmux framework:
+>>>> 1. when pin(s) is/are freed or error handler when configure it(them) and
+>>>> finally the pin will be changed to a disabled/safe state if defined by
+>>>> vendor.
+>>>> 2. in the pinctrl_select_state function
+>>>>
+>>>> The item 2# is just the thing we talked about in this loop and we reach
+>>>> agreement that the item 2# is not useful.
+>>>>
+>>>> I think the item 1# is still useful for some vendor if they defined the
+>>>> disabled/safe multi-function for a pin. They may expect the pin is
+>>>> changed to the disabled/safe state for saving power or some security
+>>>> reason.
+>>>
+>>> The only time item #1 above would happen is an error case. If there's an
+>>> error, there shouldn't be any expectation for the specific state of the
+>>> pinmux. If this intermediate state is illegal, then that's a problem in
+>>> an of itself; the HW is going to be in that state for some (admittedly
+>>> small) amount of time while the pinmux is being programmed, error or no
+>>> error, hence all the intermediate states had better be legal. I think
+>>> it's fine if the HW programming is simply left in whatever partial state
+>>> the code managed to get to. It's quite unlikely there's any "safe" state
+>>> that's /meaningfully/ better for a pin to be in once an error is
+>>> detected.
+>>>
+>>>> Thus, I think we should keep the disable_pinmux_setting in pinmux code.
+>>>>
+>>>> Do you think what I mentioned is an acceptable and not that aggressive
+>>>> solution?
+>>>
+>>> Not really.
+>>>
+>>>> Please correct me if anything wrong.
+>>>>
+>>>>
+>>>>
+>>>> For another topics:
+>>>> 1. There is no disable_pinconf: I think this is a issue. When the pin's
+>>>> mux setting is changed, the pinconf setting should also be changed, at
+>>>> least, the pinmux code here should offer the user a chance(interface) to
+>>>> decide whether to change the pinconf setting. Thus, we may need to add
+>>>> pinconf disable function.
+>>>
+>>> pinctrl already allows any config options to be changed along with the
+>>> mux option.
+>>>
+>>> The only reason any mux or config option is ever changed is in response
+>>> to selecting a new pinctrl state. Hence, I don't think you ever want to
+>>> "disable" either a mux or config option. Rather, you simply want to
+>>> "enable" or "select" or "program" the mux/config options in the new
+>>> state. Any mux/config option that needs to differ between states should
+>>> simply be listed in all the states, so that when the state is entered,
+>>> the appropriate HW programming is performed.
+>>>
+>>>> 2. If the vendor use pinctrl-single driver, the
+>>>> "pinctrl-single,function-off" implementation is not useful in practical
+>>>> usage. The "pinctrl-single,function-off" is parsed when pinctrl-single
+>>>> driver probe phase and the instance setting of
+>>>> "pinctrl-single,function-off" will be used for all pins setting.
+>>>> Practically, I think different pins may have different disabled/safe.
+>>>
+>>> I'm not sure what you're asking here.
+>>>
+>>
+>> Dear Stephen,
+>>
+>> I think we have reached the agreement that the HW operation should be
+>> avoided in disable_pinmux_setting. Just a little difference, I insist
+>> that the HW operation should only should be removed sometimes not always.
+>>
+>> I think the disable_pinmux_setting is not only called by the error
+>> handler but also the
+>> "pinctrl_put=>pinctrl_release=>...=>"pinctrl_free_setting" call stack
+>> when there is no any alive user to use this pin.
+>> In this case,
+>> the pinmux_disable_setting will try to put the pin to a fixed and final
+>> state, not intermediate state, and should offer the vendor's driver an
+>> interface to place the pin to the unused(disabled/safe) state(HW aspect).
+>>
+>> Thus, I think we should remove HW operation in pinmux_disabl_setting
+>> only for some cases, just same as what I mentioned in my patch.
+>>
+>> Did I got anything wrong ?
+>
+> Like I said, I think there's really not much point in doing that, and
+> it'll just make the code more complicated than it needs to be.
+>
+> However, if LinusW is OK taking that patch, I don't have any problem
+> with it; that change won't cause any problems on any HW platform I have.
+>
 
--- 
-~Vinod
 
-> 
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: dmaengine@vger.kernel.org
-> > Cc: Vinod Koul <vinod.koul@intel.com>
-> > Cc: Dan Williams <dan.j.williams@intel.com>
-> > ---
-> >  drivers/dma/sa11x0-dma.c | 4 ----
-> >  1 file changed, 4 deletions(-)
-> > 
-> > diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
-> > index ab26d46..5ebdfbc 100644
-> > --- a/drivers/dma/sa11x0-dma.c
-> > +++ b/drivers/dma/sa11x0-dma.c
-> > @@ -113,11 +113,9 @@ struct sa11x0_dma_phy {
-> >  	struct sa11x0_dma_desc	*txd_load;
-> >  	unsigned		sg_done;
-> >  	struct sa11x0_dma_desc	*txd_done;
-> > -#ifdef CONFIG_PM_SLEEP
-> >  	u32			dbs[2];
-> >  	u32			dbt[2];
-> >  	u32			dcsr;
-> > -#endif
-> >  };
-> >  
-> >  struct sa11x0_dma_dev {
-> > @@ -984,7 +982,6 @@ static int sa11x0_dma_remove(struct platform_device *pdev)
-> >  	return 0;
-> >  }
-> >  
-> > -#ifdef CONFIG_PM_SLEEP
-> >  static int sa11x0_dma_suspend(struct device *dev)
-> >  {
-> >  	struct sa11x0_dma_dev *d = dev_get_drvdata(dev);
-> > @@ -1054,7 +1051,6 @@ static int sa11x0_dma_resume(struct device *dev)
-> >  
-> >  	return 0;
-> >  }
-> > -#endif
-> >  
-> >  static const struct dev_pm_ops sa11x0_dma_pm_ops = {
-> >  	.suspend_noirq = sa11x0_dma_suspend,
-> 
-> 
-> -- 
-> Andy Shevchenko <andriy.shevchenko@intel.com>
-> Intel Finland Oy
+Dear Stephen, Linus and Guys,
 
--- 
+To remove the HW disable function in pinmux_disable_setting is no effect 
+for our SoC platform. I am just not sure whether it has effect for other 
+platform just as I described before.
+If there is no vendor using the HW disabling operation, I also agree to 
+remove this. :)
+
+Could you please give your suggestion about this topic ?
+
