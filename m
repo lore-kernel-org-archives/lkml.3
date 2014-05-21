@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaEUIdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 04:33:21 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:52347 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750861AbaEUIdT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 04:33:19 -0400
-Message-ID: <537C64A6.4050409@st.com>
-Date: Wed, 21 May 2014 10:32:38 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751992AbaEUIdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 04:33:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26839 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867AbaEUIda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 04:33:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,878,1392192000"; 
+   d="scan'208";a="535330149"
+Message-ID: <537C64D7.4010900@intel.com>
+Date: Wed, 21 May 2014 16:33:27 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <patrice.chotard@st.com>
-Cc: <kernel@stlinux.com>
-Subject: Re: [PATCH 3/3] ARM: sti: stih41x: Provide a proper header for this
- DTSI file
-References: <1400660415-14720-1-git-send-email-lee.jones@linaro.org> <1400660415-14720-3-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1400660415-14720-3-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Zhang Rui <rui.zhang@intel.com>
+CC: Kui Zhang <kuizhang@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>
+Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
+References: <CAKx2Y1mzLesGFYz30fH8xCZTkvNGPUNYkHptYLYq_hVExoh_8g@mail.gmail.com> <537C6262.5030500@intel.com>
+In-Reply-To: <537C6262.5030500@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-21_02:2014-05-21,2014-05-21,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On 05/21/2014 04:22 PM, Aaron Lu wrote:
+> On 05/21/2014 01:57 PM, Kui Zhang wrote:
+>> Hello,
+>>
+>> I get following error when rmmod thermal.
+>>
+>> rmmod  thermal
+>> Killed
 
-On 05/21/2014 10:20 AM, Lee Jones wrote:
-> Also explicitly include STiH416 Clk bindings instead of relying on
-> inheriting them from other DTSI files which we happen to include.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->   arch/arm/boot/dts/stih41x.dtsi | 8 ++++++++
->   1 file changed, 8 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/stih41x.dtsi b/arch/arm/boot/dts/stih41x.dtsi
-> index f5b9898..32730e5 100644
-> --- a/arch/arm/boot/dts/stih41x.dtsi
-> +++ b/arch/arm/boot/dts/stih41x.dtsi
-> @@ -1,3 +1,11 @@
-> +/*
-> + * Copyright (C) 2014 STMicroelectronics Limited.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * publishhed by the Free Software Foundation.
-> + */
-> +#include "stih416-clock.dtsi"
+While dealing with this problem, I found another problem that also
+results in a kernel crash on thermal module removal:
 
-Nack.
-As discussed on IRC, this dtsi file is included by stih415.dtsi.
-In this case, we want to include stih415-clocks.dtsi instead.
 
-Regards,
-Maxime
->   / {
->   	#address-cells = <1>;
->   	#size-cells = <1>;
->
+From: Aaron Lu <aaron.lu@intel.com>
+Date: Wed, 21 May 2014 16:05:38 +0800
+Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
+
+We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
+to decide if we need to create the temp_crit attribute file but we just
+check if tz->ops->get_crit_temp exists to decide if we need to remove
+that attribute file. Some ACPI thermal zone doesn't have a valid critical
+trip point and that would result in removing a non-existent device file
+on thermal module unload.
+
+Cc: All applicable <stable@vger.kernel.org>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+---
+ drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
+ 1 file changed, 18 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
+index fdb07199d9c2..1967bee4f076 100644
+--- a/drivers/thermal/thermal_hwmon.c
++++ b/drivers/thermal/thermal_hwmon.c
+@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
+ 	return NULL;
+ }
+ 
++static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
++{
++	unsigned long temp;
++	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
++}
++
+ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ {
+ 	struct thermal_hwmon_device *hwmon;
+@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	if (result)
+ 		goto free_temp_mem;
+ 
+-	if (tz->ops->get_crit_temp) {
+-		unsigned long temperature;
+-		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+-			snprintf(temp->temp_crit.name,
+-				 sizeof(temp->temp_crit.name),
++	if (thermal_zone_crit_temp_valid(tz)) {
++		snprintf(temp->temp_crit.name,
++				sizeof(temp->temp_crit.name),
+ 				"temp%d_crit", hwmon->count);
+-			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+-			temp->temp_crit.attr.attr.mode = 0444;
+-			temp->temp_crit.attr.show = temp_crit_show;
+-			sysfs_attr_init(&temp->temp_crit.attr.attr);
+-			result = device_create_file(hwmon->device,
+-						    &temp->temp_crit.attr);
+-			if (result)
+-				goto unregister_input;
+-		}
++		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
++		temp->temp_crit.attr.attr.mode = 0444;
++		temp->temp_crit.attr.show = temp_crit_show;
++		sysfs_attr_init(&temp->temp_crit.attr.attr);
++		result = device_create_file(hwmon->device,
++					    &temp->temp_crit.attr);
++		if (result)
++			goto unregister_input;
+ 	}
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
+@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	}
+ 
+ 	device_remove_file(hwmon->device, &temp->temp_input.attr);
+-	if (tz->ops->get_crit_temp)
++	if (thermal_zone_crit_temp_valid(tz))
+ 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
+-- 
+1.9.0
+
