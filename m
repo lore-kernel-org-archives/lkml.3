@@ -1,159 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaEUJFD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 05:05:03 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:43487 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaEUJE6 (ORCPT
+	id S1752188AbaEUJIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 05:08:30 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:27678 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaEUJIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 05:04:58 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        swarren@nvidia.com, dianders@chromium.org, linux@arm.linux.org.uk,
-        nicolas.pitre@linaro.org, thomas.abraham@linaro.org,
-        pdeschrijver@nvidia.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V4 3/3] cpufreq: Tegra: implement intermediate frequency callbacks
-Date: Wed, 21 May 2014 14:29:31 +0530
-Message-Id: <dc2702973028425e3ded689a6da227658fb914c4.1400662383.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
-References: <cover.1400662383.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1400662383.git.viresh.kumar@linaro.org>
-References: <cover.1400662383.git.viresh.kumar@linaro.org>
+	Wed, 21 May 2014 05:08:21 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-5c-537c6d03dc13
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>
+Cc: "'Chris Ball'" <cjb@laptop.org>, "'Sonny Rao'" <sonnyrao@chromium.org>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'sunil joshi'" <joshi@samsung.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Yuvaraj Kumar C D'" <yuvaraj.cd@gmail.com>, chris@printf.net,
+        ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1400623670-2657-1-git-send-email-dianders@chromium.org>
+In-reply-to: <1400623670-2657-1-git-send-email-dianders@chromium.org>
+Subject: RE: [PATCH v2] mmc: dw_mmc: Make sure we don't get stuck when we get
+ an error
+Date: Wed, 21 May 2014 18:08:19 +0900
+Message-id: <001601cf74d4$3547a410$9fd6ec30$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac90eBtNVnNipEghRGmCtddOh0fNNwAWjkTQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+ZsS5zbk2wQcd8GYsJl7czWmx/vZHN
+	4uyyg2wWr478YLK48auN1eL7ri/sFr0LrrJZXN41h83iyP9+RosZ5/cxWTw5M5PRYv2M1ywW
+	x9eGWzw82s3qwOcxu+Eii8fOWXfZPQ5dWcvocefaHjaPG68WMnn0bVnF6PF5k1wAexSXTUpq
+	TmZZapG+XQJXxv6ZbewFa+Ur/ra8Y2tg3CjexcjJISFgInFpcy8bhC0mceHeeiCbi0NIYBmj
+	xPLli9hgihbubmCCSExnlNj1YiJU1R9GiWn9CxhBqtgEtCT+vnnD3MXIwSEiEC6x96YKSA2z
+	wEZmiRnntrGD1AgJuEhc/rSTDaSGU8BV4sGDKJCwsECExNPdzWAlLAKqEqvvTWQFKeEVsJW4
+	c4sXJMwrICjxY/I9FhCbWcBA4v2sPlYIW15i85q3YFslBNQlHv3VBQmLCBhJTNvUDVUuIrHv
+	xTtGkGskBLZwSFzYuxdqlYDEt8mHWCB6ZSU2HWCGeFdS4uCKGywTGCVmIdk8C8nmWUg2z0Ky
+	YgEjyypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MkJTQv4Px7gHrQ4zJQOsnMkuJJucDU0pe
+	SbyhsZmRhamJqbGRuaUZacJK4rz3HyYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBk3LDq
+	zq8bX4yXyl/Y79hky/X4/rWTWuVbqj6dsrEL2V5y3ueEtf03zyMnrufFPUsva+bfunD68ezd
+	H4MqXZ+yB/zu+Won1n/z1KkNc5aFyR4KPlMdsJBp09OyFZrbDRtSYpl5Sg7xr7BrOOvxbMJC
+	hkLlVOv8Yxk/F5/fv8rixFzT3xnz7y7zUmIpzkg01GIuKk4EAGYRxi4fAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJKsWRmVeSWpSXmKPExsVy+t9jQV3m3Jpgg47zYhYTLm9ntNj+eiOb
+	xdllB9ksXh35wWRx41cbq8X3XV/YLXoXXGWzuLxrDpvFkf/9jBYzzu9jsnhyZiajxfoZr1ks
+	jq8Nt3h4tJvVgc9jdsNFFo+ds+6yexy6spbR4861PWweN14tZPLo27KK0ePzJrkA9qgGRpuM
+	1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoJuVFMoSc0qB
+	QgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBn7Z7axF6yVr/jb8o6tgXGjeBcjJ4eE
+	gInEwt0NTBC2mMSFe+vZuhi5OIQEpjNK7HoxEcr5wygxrX8BI0gVm4CWxN83b5i7GDk4RATC
+	JfbeVAGpYRbYyCwx49w2dpAaIQEXicufdrKB1HAKuEo8eBAFEhYWiJB4ursZrIRFQFVi9b2J
+	rCAlvAK2Endu8YKEeQUEJX5MvscCYjMLGEi8n9XHCmHLS2xe8xZsq4SAusSjv7ogYREBI4lp
+	m7qhykUk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefn
+	bmIEJ5xn0jsYVzVYHGIU4GBU4uFdUFQdLMSaWFZcmXuIUYKDWUmE90pETbAQb0piZVVqUX58
+	UWlOavEhxmSgPycyS4km5wOTYV5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1KzU1ML
+	UotgtjBxcEo1MC6/e+DgwQ2P3m9RXi0R/ELBMfcnz9ZXr9sOxrDFZK5bd+W/O+vdRE6vCpbI
+	nSJ5LNMUT1c97zZtPJz+Lbzriv8UoXW/+FRCPAJKDVxfPytTb+U0EGzao5aaGmHeu1l5Su+B
+	DUY76sreLWnpbo+48ea0s+Q3lXUqKYp2Xb7ZV/NcdkvU/0yeo8RSnJFoqMVcVJwIAE89grh8	AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra had always been switching to intermediate frequency (pll_p_clk) since
-ever. CPUFreq core has better support for handling notifications for these
-frequencies and so we can adapt Tegra's driver to it.
+On Wed, May 21, 2014, Doug Anderson wrote:
+> If we happened to get a data error at just the wrong time the dw_mmc
+> driver could get into a state where it would never complete its
+> request.  That would leave the caller just hanging there.
+> 
+> We fix this two ways and both of the two fixes on their own appear to
+> fix the problems we've seen:
+> 
+> 1. Fix a race in the tasklet where the interrupt setting the data
+>    error happens _just after_ we check for it, then we get a
+>    EVENT_XFER_COMPLETE.  We fix this by repeating a bit of code.
+> 2. Fix it so that if we detect that we've got an error in the "data
+>    busy" state and we're not going to do anything else we end the
+>    request and unblock anyone waiting.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
 
-Also do a WARN() if clk_set_parent() fails while moving back to pll_x as we
-should have atleast restored to earlier frequency on error.
+It will be applied after "mmc: dw_mmc: change to use recommended reset procedure"
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/tegra-cpufreq.c | 81 ++++++++++++++++++++++++-----------------
- 1 file changed, 47 insertions(+), 34 deletions(-)
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index 6e774c6..a64b970 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -46,7 +46,24 @@ static struct clk *pll_x_clk;
- static struct clk *pll_p_clk;
- static struct clk *emc_clk;
- 
--static int tegra_cpu_clk_set_rate(unsigned long rate)
-+static unsigned int
-+tegra_get_intermediate(struct cpufreq_policy *policy, unsigned int index)
-+{
-+	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
-+
-+	/*
-+	 * Don't switch to intermediate freq if:
-+	 * - we are already at it, i.e. policy->cur == ifreq
-+	 * - index corresponds to ifreq
-+	 */
-+	if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
-+		return 0;
-+
-+	return ifreq;
-+}
-+
-+static int
-+tegra_target_intermediate(struct cpufreq_policy *policy, unsigned int index)
- {
- 	int ret;
- 
-@@ -57,28 +74,9 @@ static int tegra_cpu_clk_set_rate(unsigned long rate)
- 	clk_prepare_enable(pll_x_clk);
- 
- 	ret = clk_set_parent(cpu_clk, pll_p_clk);
--	if (ret) {
--		pr_err("Failed to switch cpu to clock pll_p\n");
--		goto out;
--	}
--
--	if (rate == clk_get_rate(pll_p_clk))
--		goto out;
--
--	ret = clk_set_rate(pll_x_clk, rate);
--	if (ret) {
--		pr_err("Failed to change pll_x to %lu\n", rate);
--		goto out;
--	}
--
--	ret = clk_set_parent(cpu_clk, pll_x_clk);
--	if (ret) {
--		pr_err("Failed to switch cpu to clock pll_x\n");
--		goto out;
--	}
-+	if (ret)
-+		clk_disable_unprepare(pll_x_clk);
- 
--out:
--	clk_disable_unprepare(pll_x_clk);
- 	return ret;
- }
- 
-@@ -98,10 +96,23 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
- 	else
- 		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
- 
--	ret = tegra_cpu_clk_set_rate(rate * 1000);
-+	/* target freq == pll_p */
-+	if (rate * 1000 == clk_get_rate(pll_p_clk)) {
-+		ret = tegra_target_intermediate(policy, index);
-+		goto disable_pll_x;
-+	}
-+
-+	ret = clk_set_rate(pll_x_clk, rate * 1000);
-+	/* Restore to earlier frequency on error, i.e. pll_x */
- 	if (ret)
--		pr_err("cpu-tegra: Failed to set cpu frequency to %lu kHz\n",
--			rate);
-+		pr_err("Failed to change pll_x to %lu\n", rate);
-+
-+	ret = clk_set_parent(cpu_clk, pll_x_clk);
-+	/* This shouldn't fail while changing or restoring */
-+	WARN_ON(ret);
-+
-+disable_pll_x:
-+	clk_disable_unprepare(pll_x_clk);
- 
- 	return ret;
- }
-@@ -137,16 +148,18 @@ static int tegra_cpu_exit(struct cpufreq_policy *policy)
- }
- 
- static struct cpufreq_driver tegra_cpufreq_driver = {
--	.flags		= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
--	.verify		= cpufreq_generic_frequency_table_verify,
--	.target_index	= tegra_target,
--	.get		= cpufreq_generic_get,
--	.init		= tegra_cpu_init,
--	.exit		= tegra_cpu_exit,
--	.name		= "tegra",
--	.attr		= cpufreq_generic_attr,
-+	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-+	.verify			= cpufreq_generic_frequency_table_verify,
-+	.get_intermediate	= tegra_get_intermediate,
-+	.target_intermediate	= tegra_target_intermediate,
-+	.target_index		= tegra_target,
-+	.get			= cpufreq_generic_get,
-+	.init			= tegra_cpu_init,
-+	.exit			= tegra_cpu_exit,
-+	.name			= "tegra",
-+	.attr			= cpufreq_generic_attr,
- #ifdef CONFIG_PM
--	.suspend	= cpufreq_generic_suspend,
-+	.suspend		= cpufreq_generic_suspend,
- #endif
- };
- 
--- 
-2.0.0.rc2
+Thanks,
+Seungwon Jeon
+
+> ---
+> Changes in v2:
+> - Removed TODO
+> - Set cmd to NULL before calling dw_mci_request_end()
+> 
+>  drivers/mmc/host/dw_mmc.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 46 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index cced599..54ec8b0 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -1318,6 +1318,14 @@ static void dw_mci_tasklet_func(unsigned long priv)
+>  			/* fall through */
+> 
+>  		case STATE_SENDING_DATA:
+> +			/*
+> +			 * We could get a data error and never a transfer
+> +			 * complete so we'd better check for it here.
+> +			 *
+> +			 * Note that we don't really care if we also got a
+> +			 * transfer complete; stopping the DMA and sending an
+> +			 * abort won't hurt.
+> +			 */
+>  			if (test_and_clear_bit(EVENT_DATA_ERROR,
+>  					       &host->pending_events)) {
+>  				dw_mci_stop_dma(host);
+> @@ -1331,7 +1339,29 @@ static void dw_mci_tasklet_func(unsigned long priv)
+>  				break;
+> 
+>  			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
+> +
+> +			/*
+> +			 * Handle an EVENT_DATA_ERROR that might have shown up
+> +			 * before the transfer completed.  This might not have
+> +			 * been caught by the check above because the interrupt
+> +			 * could have gone off between the previous check and
+> +			 * the check for transfer complete.
+> +			 *
+> +			 * Technically this ought not be needed assuming we
+> +			 * get a DATA_COMPLETE eventually (we'll notice the
+> +			 * error and end the request), but it shouldn't hurt.
+> +			 *
+> +			 * This has the advantage of sending the stop command.
+> +			 */
+> +			if (test_and_clear_bit(EVENT_DATA_ERROR,
+> +					       &host->pending_events)) {
+> +				dw_mci_stop_dma(host);
+> +				send_stop_abort(host, data);
+> +				state = STATE_DATA_ERROR;
+> +				break;
+> +			}
+>  			prev_state = state = STATE_DATA_BUSY;
+> +
+>  			/* fall through */
+> 
+>  		case STATE_DATA_BUSY:
+> @@ -1354,6 +1384,22 @@ static void dw_mci_tasklet_func(unsigned long priv)
+>  				/* stop command for open-ended transfer*/
+>  				if (data->stop)
+>  					send_stop_abort(host, data);
+> +			} else {
+> +				/*
+> +				 * If we don't have a command complete now we'll
+> +				 * never get one since we just reset everything;
+> +				 * better end the request.
+> +				 *
+> +				 * If we do have a command complete we'll fall
+> +				 * through to the SENDING_STOP command and
+> +				 * everything will be peachy keen.
+> +				 */
+> +				if (!test_bit(EVENT_CMD_COMPLETE,
+> +					      &host->pending_events)) {
+> +					host->cmd = NULL;
+> +					dw_mci_request_end(host, mrq);
+> +					goto unlock;
+> +				}
+>  			}
+> 
+>  			/*
+> --
+> 1.9.1.423.g4596e3a
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
