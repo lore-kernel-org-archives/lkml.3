@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaEUKD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 06:03:56 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:35767 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaEUKDy (ORCPT
+	id S1752362AbaEUKDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 06:03:52 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52241 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933AbaEUKBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 06:03:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140404125249.GC10526@twins.programming.kicks-ass.net>
-References: <1396527168-3929-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-	<20140404125249.GC10526@twins.programming.kicks-ass.net>
-Date: Wed, 21 May 2014 18:03:53 +0800
-Message-ID: <CA+qeAOp5G94n5d1wOGe876d1HkSTVxN9hVbr9jLhGmSGvsAtJA@mail.gmail.com>
-Subject: Re: [PATCH] sched: fix tracepoint in scheduler.
-From: Dongsheng Yang <dongsheng081251@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 21 May 2014 06:01:55 -0400
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, benh@kernel.crashing.org
+Subject: [V6 07/11] powerpc, perf: Change the name of HW PMU branch filter tracking variable
+Date: Wed, 21 May 2014 15:29:52 +0530
+Message-Id: <1400666396-1682-8-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052110-4790-0000-0000-0000018A105D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter, did you forget to take this patch? :-)
+This patch simply changes the name of the variable from 'bhrb_filter' to
+'bhrb_hw_filter' in order to add one more variable which will track SW
+filters in generic powerpc book3s code which will be implemented in the
+subsequent patch. This patch does not change any functionality.
 
-On Fri, Apr 4, 2014 at 8:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Apr 03, 2014 at 08:12:48PM +0800, Dongsheng Yang wrote:
->> In function set_task_cpu(), if cpu == new_cpu,
->> there is no migration happen. But current trace point
->> will raise a migration trace event.
->>
->> This patch change trace point to right place,
->> only when migration really happen, an event will
->> be threw out.
->
-> Yeah its there so we can see pointless 'migrations'.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ arch/powerpc/perf/core-book3s.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index 66bea54..1d7e909 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -47,7 +47,7 @@ struct cpu_hw_events {
+ 	int n_txn_start;
+ 
+ 	/* BHRB bits */
+-	u64				bhrb_filter;	/* BHRB HW branch filter */
++	u64				bhrb_hw_filter;	/* BHRB HW branch filter */
+ 	int				bhrb_users;
+ 	void				*bhrb_context;
+ 	struct	perf_branch_stack	bhrb_stack;
+@@ -1298,7 +1298,7 @@ static void power_pmu_enable(struct pmu *pmu)
+ 
+ 	mb();
+ 	if (cpuhw->bhrb_users)
+-		ppmu->config_bhrb(cpuhw->bhrb_filter);
++		ppmu->config_bhrb(cpuhw->bhrb_hw_filter);
+ 
+ 	write_mmcr0(cpuhw, mmcr0);
+ 
+@@ -1405,7 +1405,7 @@ nocheck:
+  out:
+ 	if (has_branch_stack(event)) {
+ 		power_pmu_bhrb_enable(event);
+-		cpuhw->bhrb_filter = ppmu->bhrb_filter_map(
++		cpuhw->bhrb_hw_filter = ppmu->bhrb_filter_map(
+ 					event->attr.branch_sample_type);
+ 	}
+ 
+@@ -1788,10 +1788,10 @@ static int power_pmu_event_init(struct perf_event *event)
+ 	err = power_check_constraints(cpuhw, events, cflags, n + 1);
+ 
+ 	if (has_branch_stack(event)) {
+-		cpuhw->bhrb_filter = ppmu->bhrb_filter_map(
++		cpuhw->bhrb_hw_filter = ppmu->bhrb_filter_map(
+ 					event->attr.branch_sample_type);
+ 
+-		if(cpuhw->bhrb_filter == -1)
++		if(cpuhw->bhrb_hw_filter == -1)
+ 			return -EOPNOTSUPP;
+ 	}
+ 
+-- 
+1.7.11.7
+
