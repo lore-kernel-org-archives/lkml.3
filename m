@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaEUVHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 17:07:47 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:47728 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837AbaEUVHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 17:07:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1683789.b73kOmCp2z@sifl>
-References: <1397550996-14805-1-git-send-email-markos.chandras@imgtec.com>
- <1398177636-10442-1-git-send-email-markos.chandras@imgtec.com>
- <2398159.J868kTHAKn@sifl> <1683789.b73kOmCp2z@sifl>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 May 2014 14:07:24 -0700
-Message-ID: <CALCETrW7qsVmTGSfw8rjpUAUjigK=Qyi8P2LSb_BOmwfRkc+xg@mail.gmail.com>
-Subject: Re: [PATCH 3.15] MIPS: Add new AUDIT_ARCH token for the N32 ABI on MIPS64
-To: Paul Moore <pmoore@redhat.com>
-Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
+	id S1753353AbaEUVJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 17:09:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56141 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751786AbaEUVJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 17:09:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,882,1392192000"; 
+   d="scan'208";a="435218094"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Chen Yucong <slaoub@gmail.com>
+CC: "bp@alien8.de" <bp@alien8.de>, "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+Subject: RE: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
+ to Per-CPU rather than only monarch CPU
+Thread-Topic: [PATCH v2] x86/mce: Distirbute the clear operation of
+ mces_seen to Per-CPU rather than only monarch CPU
+Thread-Index: AQHPc9EexFpBbtkln0+oVFnaZ6Q3e5tKuQIAgAAGTACAAAs0AIAACkoAgAAEgACAAKhUQA==
+Date: Wed, 21 May 2014 21:09:45 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F328115FD@ORSMSX114.amr.corp.intel.com>
+References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
+		 <537C040E.3040901@jp.fujitsu.com> <1400637782.14703.32.camel@debian>
+	 <537C12BC.6080408@jp.fujitsu.com> <1400642398.14703.42.camel@debian>
+ <537C1F24.8000604@jp.fujitsu.com>
+In-Reply-To: <537C1F24.8000604@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4LL9sRQ022212
 
-On Wed, May 21, 2014 at 1:59 PM, Paul Moore <pmoore@redhat.com> wrote:
-> On Monday, May 12, 2014 02:53:05 PM Paul Moore wrote:
->> On Tuesday, April 22, 2014 03:40:36 PM Markos Chandras wrote:
->> > A MIPS64 kernel may support ELF files for all 3 MIPS ABIs
->> > (O32, N32, N64). Furthermore, the AUDIT_ARCH_MIPS{,EL}64 token
->> > does not provide enough information about the ABI for the 64-bit
->> > process. As a result of which, userland needs to use complex
->> > seccomp filters to decide whether a syscall belongs to the o32 or n32
->> > or n64 ABI. Therefore, a new arch token for MIPS64/n32 is added so it
->> > can be used by seccomp to explicitely set syscall filters for this ABI.
->> >
->> > Link: http://sourceforge.net/p/libseccomp/mailman/message/32239040/
->> > Cc: Andy Lutomirski <luto@amacapital.net>
->> > Cc: Eric Paris <eparis@redhat.com>
->> > Cc: Paul Moore <pmoore@redhat.com>
->> > Cc: Ralf Baechle <ralf@linux-mips.org>
->> > Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
->> > ---
->> > Ralf, can we please have this in 3.15 (Assuming it's ACK'd)?
->> >
->> > Thanks a lot!
->> > ---
->> >
->> >  arch/mips/include/asm/syscall.h |  2 ++
->> >  include/uapi/linux/audit.h      | 12 ++++++++++++
->> >  2 files changed, 14 insertions(+)
->>
->> [NOTE: Adding lkml to the To line to hopefully spur discussion/acceptance as
->> this *really* should be in 3.15]
->>
->> I'm re-replying to this patch and adding lkml to the To line because I
->> believe it is very important we get this patch into 3.15.  For those who
->> don't follow the MIPS architecture very closely, the upcoming 3.15 is the
->> first release to include support for seccomp filters, the latest generation
->> of syscall filtering which used a BPF based filter language.  For reason
->> that are easy to understand, the syscall filters are ABI specific (e.g.
->> syscall tables, word length, endianness) and those generating syscall
->> filters in userspace (e.g. libseccomp) need to take great care to ensure
->> that the generated filters take the ABI into account and fail safely in the
->> case where a different ABI is used (e.g. x86, x86_64, x32).
->>
->> The patch below corrects, what is IMHO, an omission in the original MIPS
->> seccomp filter patch, allowing userspace to easily separate MIPS and MIPS64.
->> Without this patch we will be forced to handle MIPS/MIPS64 like we handle
->> x86_64/x32 which is a royal pain and not something I want to have deal with
->> again.
->>
->> Further, while I don't want to speak for the audit folks, it is my
->> understanding that they want this patch for similar reasons.
->>
->> Please merge this patch for 3.15 or at least provide some feedback as to why
->> this isn't a viable solution for upstream.  Once 3.15 ships, fixing this
->> will require breaking the MIPS ABI which isn't something any of us want.
->>
->> Thanks,
->> -Paul
+>> mce_regin, which is only called by monarch CPU, can be used for system
+>> panics as quickly as possible if there is a truly data corrupting error.
+>> But Monarch CPU don't have to help all other CPU to clean mces_clean.
+>> One advantage of Per-CPU is the isolation of errors propagation, being
+>> so, why do not we clean mces_seen by Per-CPU?
 >
-> *Bump*
->
-> I don't know what else needs to be done to get some action on this and we're
-> running out of time for 3.15.
+> What kind of error propagations are you expecting/concerning here?
+> Could you explain the problem more in detail?
 
-Reply to Linus' next -rc email.
+Please do give us more detail on the scenario that you see that would
+make your new version behave better.
 
---Andy
+I'm sure the current code has no races w.r.t. clearing mces_seen. The
+monarch clears them all in mce_reign() before clearing mce_executing
+at the foot of mce_end() and allowing the others to run again.
+
+Your code has the monarch release all the other cpus from the spinloop
+in mce_end() so they will all rush together through the final lines of
+do_machine_check().  Some of them will have work to do if they saw
+errors - they may have to send signals, or log the error. Others can
+fly directly to the end of do_machine_check() and clear MCG_STATUS
+and return to executing whatever code was interrupted.
+
+So it is possible that some processors will be out doing things that can
+generate another machine check, before others have finished their
+tasks and got to the point to clear mces_seen.(*)
+
+-Tony
+
+(*) maybe that doesn't matter because they haven't zeroed MCG_STATUS
+yet - so this second machine check will force those cpus to shutdown. See MCIP
+description in "15.3.1.2 IA32_MCG_STATUS_MSR" section of software
+developer manual.
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
