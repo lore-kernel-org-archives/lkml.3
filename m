@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaEUUMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 16:12:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48564 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245AbaEUUL7 (ORCPT
+	id S1753168AbaEUUOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 16:14:51 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55569 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357AbaEUUOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 16:11:59 -0400
-Date: Wed, 21 May 2014 13:11:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock
- and need_sched() contention
-Message-Id: <20140521131157.3a092c5f9d8b6b5d467f8928@linux-foundation.org>
-In-Reply-To: <537CB493.9090706@suse.cz>
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
-	<1400233673-11477-1-git-send-email-vbabka@suse.cz>
-	<20140519163741.55998ce65534ed73d913ee2c@linux-foundation.org>
-	<537CB493.9090706@suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 21 May 2014 16:14:50 -0400
+Date: Wed, 21 May 2014 16:14:48 -0400 (EDT)
+Message-Id: <20140521.161448.716446182526388511.davem@davemloft.net>
+To: davidn@davidnewall.com
+Cc: Valdis.Kletnieks@vt.edu, fw@strlen.de, stephen@networkplumber.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bridge@lists.linux-foundation.org
+Subject: Re: Revert 462fb2af9788a82a534f8184abfde31574e1cfa0 (bridge :
+ Sanitize skb before it enters the IP stack)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <537C5F71.6000204@davidnewall.com>
+References: <537A12EA.4060604@davidnewall.com>
+	<14456.1400561749@turing-police.cc.vt.edu>
+	<537C5F71.6000204@davidnewall.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 21 May 2014 13:14:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 May 2014 16:13:39 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
+From: David Newall <davidn@davidnewall.com>
+Date: Wed, 21 May 2014 17:40:25 +0930
 
-> >>
-> >> ...
-> >>
-> >> @@ -718,9 +739,11 @@ static void isolate_freepages(struct zone *zone,
-> >>   		/*
-> >>   		 * This can iterate a massively long zone without finding any
-> >>   		 * suitable migration targets, so periodically check if we need
-> >> -		 * to schedule.
-> >> +		 * to schedule, or even abort async compaction.
-> >>   		 */
-> >> -		cond_resched();
-> >> +		if (!(block_start_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-> >> +						&& compact_should_abort(cc))
-> > 
-> > This seems rather gratuitously inefficient and isn't terribly clear.
-> > What's wrong with
-> > 
-> > 	if ((++foo % SWAP_CLUSTER_MAX) == 0 && compact_should_abort(cc))
+> On 20/05/14 14:25, Valdis.Kletnieks@vt.edu wrote:
+>> So yes, we*do* need to do something sensible there - either frag the
+>> packet
+>> on the way out, or something.
 > 
-> It's a new variable and it differs from how isolate_migratepages_range() does this.
-> But yeah, I might change it later there as well. There it makes even more sense.
-> E.g. when skipping whole pageblock there, pfn % SWAP_CLUSTER_MAX will be always zero
-> so the periodicity varies.
->  
-> > ?
-> > 
-> > (Assumes that SWAP_CLUSTER_MAX is power-of-2 and that the compiler will
-> > use &)
->  
-> I hoped that compiler would be smart enough about SWAP_CLUSTER_MAX * pageblock_nr_pages
-> as well, as those are constants and also power-of-2. But I didn't check the assembly.
+> I think the problem is that a bridge cannot be used across
+> incompatible media.  That's the job of a router.
+> 
+> A bridge should act like a bridge, not a router.  Fragmenting the
+> packet is wrong; that's IP's job.  Dropping the packet is also
+> arguably wrong; that's the real device-driver's job.  What seems right
+> to me is to act like a bridge and forward packets by looking inside of
+> them *no more than is necessary*.  Looking beyond MAC address is
+> perhaps too much.
+> 
+> We can finish the job of processing IP options, or at least in this
+> scenario, but that seems wrong-headed and invites more work as more
+> problems are discovered; or we could remove the half-hearted attempt
+> it currently does and leave the bridge as a simple bridge.
+> 
+> This problem wouldn't occur if all devices in a bridge were required
+> to be compatible media; particularly identical MTU.
 
-Always check the assembly!  Just a quick `size mm/compaction.o' is
-enough tell if you're on the right track.
+I completely agree with you.
 
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -779,6 +779,7 @@ static void isolate_freepages(struct zone *zone,
->  	unsigned long block_start_pfn;	/* start of current pageblock */
->  	unsigned long block_end_pfn;	/* end of current pageblock */
->  	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
-> +	unsigned long nr_blocks_scanned = 0; /* for periodical abort checks */
->  	int nr_freepages = cc->nr_freepages;
->  	struct list_head *freelist = &cc->freepages;
->  
-> @@ -813,7 +814,7 @@ static void isolate_freepages(struct zone *zone,
->  		 * suitable migration targets, so periodically check if we need
->  		 * to schedule, or even abort async compaction.
->  		 */
-> -		if (!(block_start_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))
-> +		if ((++nr_blocks_scanned % SWAP_CLUSTER_MAX) == 0
->  						&& compact_should_abort(cc))
->  			break;
+I also just want to state for the record, and I know some people will
+disagree with me, that I think the bridging netfilter layer should
+never have been integrated into the tree.
 
-This change actually makes the code worse, and the .o file gets larger.
+And I've been saying this for more than a decade.
 
-For some stupid reason we went and make pageblock_nr_pages all lower
-case but surprise surprise, it's actually a literal constant.  So the
-compiler does the multiplication at compile time and converts the
-modulus operation into a bitwise AND.  Duh.
+It takes layering violations to a whole new level, and it's why we see
+problems like this.
 
+Besides this IP options issue, it also creates fake ipv4 routes, so
+every time someone tries to do anything non-trivial with the ipv4
+routing code the bridging netfilter fake route code had to be adjusted
+or else we'd get crashes.
+
+It has also held back many potential improvements to iptables in
+general over the years because it does so many things differently
+than the rest of the iptables modules.
+
+It stinks, we never should have added it, and now since we have people
+have been perversely convinced that doing stuff like this is actually
+sane.  It's not.
