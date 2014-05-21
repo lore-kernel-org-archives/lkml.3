@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbaEUO25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 10:28:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54754 "EHLO comal.ext.ti.com"
+	id S1752681AbaEUOaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 10:30:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33515 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018AbaEUO2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 10:28:55 -0400
+	id S1752076AbaEUO25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 10:28:57 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
         <arnd@arndb.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
@@ -17,63 +17,91 @@ CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v4 0/5] Introduce keystone reset driver
-Date: Wed, 21 May 2014 17:27:29 +0300
-Message-ID: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [Patch v4 3/5] ARM: keystone: remove redundant reset stuff
+Date: Wed, 21 May 2014 17:27:32 +0300
+Message-ID: <1400682454-24535-4-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1400682454-24535-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches introduce keystone reset driver.
+Remove reset stuff in flavour of using keystone reset driver:
+driver/power/reset/keystone-reset.c
 
-The keystone SoC can be rebooted in several ways. By external reset
-pin, by soft and by watchdogs. This driver allows software reset and reset
-by one of the watchdogs. Also added opportunity to set soft/hard reset type.
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ arch/arm/mach-keystone/keystone.c | 34 ----------------------------------
+ 1 file changed, 34 deletions(-)
 
-Based on linux-next/master
-
-v4..v3
-  Power: reset: keystone-reset: introduce keystone reset driver
-  	- change to use syscon framework
-  	- change to use regmap to access registers
-  Power: reset: add bindings for keystone reset driver
-  	- deleted properties "reg", "reg-names"
-	- added properties "ti,syscon-pll", "ti,syscon-dev"
-  ARM: dts: keystone: update reset node to work with reset driver
-  	- deleted properties "reg", "reg-names"
-	- added properties "ti,syscon-pll", "ti,syscon-dev"
-
-v2..v3
-  Power: reset: keystone-reset: introduce keystone reset driver
-	- no functional changes, only sanity
-  Power: reset: add bindings for keystone reset driver
-  	- corrected WDT numeration in examples
-	- extended description of wdt_list property
-
-v1..v2
-	- re basedon on v3.15-rc1 without changes
-
-Ivan Khoronzhuk (5):
-  Power: reset: keystone-reset: introduce keystone reset driver
-  Power: reset: add bindings for keystone reset driver
-  ARM: keystone: remove redundant reset stuff
-  ARM: dts: keystone: update reset node to work with reset driver
-  ARM: keystone: enable reset driver support
-
- .../bindings/power/reset/keystone-reset.txt        |  66 +++++++++
- arch/arm/boot/dts/keystone.dtsi                    |   4 +-
- arch/arm/configs/keystone_defconfig                |   3 +
- arch/arm/mach-keystone/keystone.c                  |  34 -----
- drivers/power/reset/Kconfig                        |   8 ++
- drivers/power/reset/Makefile                       |   1 +
- drivers/power/reset/keystone-reset.c               | 153 +++++++++++++++++++++
- 7 files changed, 234 insertions(+), 35 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
- create mode 100644 drivers/power/reset/keystone-reset.c
-
+diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
+index 59b8383..1f9ae89 100644
+--- a/arch/arm/mach-keystone/keystone.c
++++ b/arch/arm/mach-keystone/keystone.c
+@@ -26,11 +26,6 @@
+ 
+ #include "keystone.h"
+ 
+-#define PLL_RESET_WRITE_KEY_MASK		0xffff0000
+-#define PLL_RESET_WRITE_KEY			0x5a69
+-#define PLL_RESET				BIT(16)
+-
+-static void __iomem *keystone_rstctrl;
+ static struct notifier_block platform_nb;
+ static unsigned long keystone_dma_pfn_offset __read_mostly;
+ 
+@@ -55,16 +50,6 @@ static int keystone_platform_notifier(struct notifier_block *nb,
+ 
+ static void __init keystone_init(void)
+ {
+-	struct device_node *node;
+-
+-	node = of_find_compatible_node(NULL, NULL, "ti,keystone-reset");
+-	if (WARN_ON(!node))
+-		pr_warn("ti,keystone-reset node undefined\n");
+-
+-	keystone_rstctrl = of_iomap(node, 0);
+-	if (WARN_ON(!keystone_rstctrl))
+-		pr_warn("ti,keystone-reset iomap error\n");
+-
+ 	keystone_pm_runtime_init();
+ 	if (platform_nb.notifier_call)
+ 		bus_register_notifier(&platform_bus_type, &platform_nb);
+@@ -123,24 +108,6 @@ static const char *keystone_match[] __initconst = {
+ 	NULL,
+ };
+ 
+-void keystone_restart(enum reboot_mode mode, const char *cmd)
+-{
+-	u32 val;
+-
+-	BUG_ON(!keystone_rstctrl);
+-
+-	/* Enable write access to RSTCTRL */
+-	val = readl(keystone_rstctrl);
+-	val &= PLL_RESET_WRITE_KEY_MASK;
+-	val |= PLL_RESET_WRITE_KEY;
+-	writel(val, keystone_rstctrl);
+-
+-	/* Reset the SOC */
+-	val = readl(keystone_rstctrl);
+-	val &= ~PLL_RESET;
+-	writel(val, keystone_rstctrl);
+-}
+-
+ DT_MACHINE_START(KEYSTONE, "Keystone")
+ #if defined(CONFIG_ZONE_DMA) && defined(CONFIG_ARM_LPAE)
+ 	.dma_zone_size	= SZ_2G,
+@@ -148,6 +115,5 @@ DT_MACHINE_START(KEYSTONE, "Keystone")
+ 	.smp		= smp_ops(keystone_smp_ops),
+ 	.init_machine	= keystone_init,
+ 	.dt_compat	= keystone_match,
+-	.restart	= keystone_restart,
+ 	.init_meminfo   = keystone_init_meminfo,
+ MACHINE_END
 -- 
 1.8.3.2
 
