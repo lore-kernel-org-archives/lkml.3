@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaEURgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 13:36:41 -0400
-Received: from ring0.de ([5.45.105.125]:57856 "EHLO ring0.de"
+	id S1753108AbaEURhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 13:37:15 -0400
+Received: from ring0.de ([5.45.105.125]:57832 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998AbaEURgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 13:36:38 -0400
+	id S1752966AbaEURgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 13:36:35 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
@@ -20,9 +20,9 @@ Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         Sebastian Reichel <sre@kernel.org>
-Subject: [PATCHv4 4/4] DTS: ARM: OMAP3-N900: Add tsc2005 support
-Date: Wed, 21 May 2014 19:36:14 +0200
-Message-Id: <1400693774-21306-5-git-send-email-sre@kernel.org>
+Subject: [PATCHv4 3/4] Documentation: dt: Document TSC2005 DT binding
+Date: Wed, 21 May 2014 19:36:13 +0200
+Message-Id: <1400693774-21306-4-git-send-email-sre@kernel.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1400693774-21306-1-git-send-email-sre@kernel.org>
 References: <1400693774-21306-1-git-send-email-sre@kernel.org>
@@ -30,26 +30,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the tsc2005 touchscreen
-to the Nokia N900 DTS file.
+Add devicetree binding documentation for TSC2005 touchscreen.
 
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Acked-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 Signed-off-by: Sebastian Reichel <sre@kernel.org>
 ---
- arch/arm/boot/dts/omap3-n900.dts | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ .../bindings/input/touchscreen/tsc2005.txt         | 42 ++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
 
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 1a57b61..cb8ed2d5 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -580,9 +580,24 @@
- 	 * Also... order in the device tree actually matters here.
- 	 */
- 	tsc2005@0 {
--		compatible = "tsc2005";
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt b/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
+new file mode 100644
+index 0000000..4b641c7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
+@@ -0,0 +1,42 @@
++* Texas Instruments tsc2005 touchscreen controller
++
++Required properties:
++ - compatible		      : "ti,tsc2005"
++ - reg			      : SPI device address
++ - spi-max-frequency	      : Maximal SPI speed
++ - interrupts		      : IRQ specifier
++ - reset-gpios		      : GPIO specifier
++ - vio-supply                 : Regulator specifier
++
++Optional properties:
++ - ti,x-plate-ohms	      : integer, resistance of the touchscreen's X plates
++				in ohm (defaults to 280)
++ - ti,esd-recovery-timeout-ms : integer, if the touchscreen does not respond after
++				the configured time (in milli seconds), the driver
++				will reset it. This is disabled by default.
++ - properties defined in touchscreen.txt
++
++Example:
++
++&mcspi1 {
++	tsc2005@0 {
 +		compatible = "ti,tsc2005";
- 		spi-max-frequency = <6000000>;
- 		reg = <0>;
++		spi-max-frequency = <6000000>;
++		reg = <0>;
 +
 +		vio-supply = <&vio>;
 +
@@ -65,9 +86,8 @@ index 1a57b61..cb8ed2d5 100644
 +
 +		ti,x-plate-ohms = <280>;
 +		ti,esd-recovery-timeout-ms = <8000>;
- 	};
- 
- 	acx565akm@2 {
++	};
++}
 -- 
 2.0.0.rc2
 
