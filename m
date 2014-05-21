@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaEUSSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 14:18:04 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35458 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaEUSSC (ORCPT
+	id S1752947AbaEUSS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 14:18:58 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:65037 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaEUSS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 14:18:02 -0400
-Date: Wed, 21 May 2014 20:17:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        gong.chen@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Elliott@hp.com, thomas.mingarelli@hp.com
-Subject: Re: [PATCH 5/6] x86, nmi: Move default external NMI handler to its
- own routine
-Message-ID: <20140521181756.GJ2485@laptop.programming.kicks-ass.net>
-References: <1400181949-157170-1-git-send-email-dzickus@redhat.com>
- <1400181949-157170-6-git-send-email-dzickus@redhat.com>
- <20140521103846.GA2485@laptop.programming.kicks-ass.net>
- <20140521164848.GZ50500@redhat.com>
+	Wed, 21 May 2014 14:18:56 -0400
+Message-ID: <537CEE13.5040908@cogentembedded.com>
+Date: Wed, 21 May 2014 22:18:59 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140521164848.GZ50500@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, santosh.shilimkar@ti.com
+CC: devicetree@vger.kernel.org, grygorii.strashko@ti.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, m-karicheri2@ti.com, galak@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch] ARM: dts: keystone: add pll controller syscon entry
+References: <1400681875-24432-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1400681875-24432-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 12:48:48PM -0400, Don Zickus wrote:
-> On Wed, May 21, 2014 at 12:38:46PM +0200, Peter Zijlstra wrote:
-> > On Thu, May 15, 2014 at 03:25:48PM -0400, Don Zickus wrote:
-> > > Now that we have setup an NMI subtye called NMI_EXT, there is really
-> > > no need to hard code the default external NMI handler in the main
-> > > nmi handler routine.
-> > > 
-> > > Move it to a proper function and register it on boot.  This change is
-> > > just code movement.
-> > > 
-> > > In addition, update the hpwdt to allow it to unregister the default
-> > > handler on its registration (and vice versa).  This allows the driver
-> > > to take control of that io port (which it ultimately wanted to do
-> > > originally), but in a cleaner way.
-> > 
-> > wanting that is one thing, but is it also a sane thing? You don't do
-> > thing just because drivers want it.
-> 
-> Heh. I understand.
-> 
-> Today, I have hacked up the SERR and IOCHK handlers to give hpwdt the
-> chance to do its 'magic' bios call to collect information before
-> panic'ing.
-> 
-> I was trying to clean things up by removing those hacks, but I guess I can
-> see your point, there is no guarantee they handle the hardware correctly.
-> :-/
+Hello.
 
-So while I'll leave the decision to the x86 people, I find the changelog
-entirely devoid of a good reason to do this.
+On 05/21/2014 06:17 PM, Ivan Khoronzhuk wrote:
 
-An in my personal opinion any hardware that triggers non detectable NMIs
-is just plain broken.
+> The pll controller register set includes sets of registers with
+> different purposes, so it's logically to add syscon entry to be able
+> to access them from appropriate places.
+
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+
+> Based on linux-next/master
+
+>   arch/arm/boot/dts/keystone.dtsi | 5 +++++
+>   1 file changed, 5 insertions(+)
+
+> diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
+> index d9f99e7..5e67c5b 100644
+> --- a/arch/arm/boot/dts/keystone.dtsi
+> +++ b/arch/arm/boot/dts/keystone.dtsi
+> @@ -66,6 +66,11 @@
+>   		ranges = <0x0 0x0 0x0 0xc0000000>;
+>   		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+>
+> +		pllctrl: pll_controller {
+
+   I think it's better to follow the pattern established by "reset-controller" 
+and use hyphen ISO dash in the node name. This is also a common practice to 
+use hyphens in the device trees overall.
+
+> +			compatible = "ti,keystone-pllctrl", "syscon";
+> +			reg = <0x2310000 0x200>;
+> +		};
+> +
+>   		rstctrl: reset-controller {
+>   			compatible = "ti,keystone-reset";
+>   			reg = <0x023100e8 4>;	/* pll reset control reg */
+>
+
+WBR, Sergei
+
