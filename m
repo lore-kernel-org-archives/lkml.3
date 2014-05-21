@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaEUXSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 19:18:03 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:58047 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaEUXR7 (ORCPT
+	id S1753301AbaEUXSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 19:18:10 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:36463 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbaEUXSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 19:17:59 -0400
-Subject: [PATCH V5 0/4] x86/pci Fix numa_node info for AMD hostbridge and
- misc clean up
+	Wed, 21 May 2014 19:18:06 -0400
+Subject: [PATCH V5 1/4] x86/PCI: Warn if we have to "guess" host bridge node
+ information
 To: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Robert Richter <rric@kernel.org>, Daniel J Blueman <daniel@numascale.com>,
@@ -17,10 +17,10 @@ Cc: Robert Richter <rric@kernel.org>, Daniel J Blueman <daniel@numascale.com>,
         Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
         linux-pci@vger.kernel.org, Borislav Petkov <bp@suse.de>,
         Myron Stowe <myron.stowe@redhat.com>
-Date: Wed, 21 May 2014 17:17:57 -0600
-Message-ID: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <1399567461-15928-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1399567461-15928-1-git-send-email-suravee.suthikulpanit@amd.com>
+Date: Wed, 21 May 2014 17:18:03 -0600
+Message-ID: <20140521231803.26447.42420.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,55 +29,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[resending because I forgot to copy the lists, sorry guys]
+From: Myron Stowe <myron.stowe@redhat.com>
 
-Hi Suravee,
+The vast majority of platforms are not supplying ACPI _PXM (proximity)
+information corresponding to host bridge (PNP0A03/PNP0A08) devices
+resulting in sysfs "numa_node" values of -1 (NUMA_NO_NODE):
 
-Sorry it took me so long to get to these patches.  Here's my proposal.  I
-reordered them and added some comments in the code and changelogs, but I
-think your patches look fine as-is.
+  # for i in /sys/devices/pci0000\:00/*/numa_node; do cat $i; done | uniq
+  -1
 
-So I just need comments on these two significant changes:
+  # find /sys/ -name "numa_node" | while read fname; do cat $fname; \
+    done | uniq
+  -1
 
-  1) I added a patch to stop enabling ECS after Fam16h, because that's
-  another case of CPU-dependent code that we should not need to keep
-  carrying.  I don't think there are any post-Fam16h CPUs yet, but I
-  certainly don't want to do anything that will keep them from working when
-  they do arrive.  It would be useful if somebody could test this on
-  current platforms by tweaking the patch so we don't enable ECS on Fam15h.
+AMD based platforms provide a fall-back for this situation via amd_bus.c.
+These platforms snoop out the information by directly reading specific
+registers from the Northbridge and caching them via alloc_pci_root_info().
 
-  2) I dropped the quirk_amd_nb_node() removal.  I could be convinced
-  otherwise, but I don't really object to the quirk because it is already
-  explicitly limited to specific devices, and removing it will change
-  things in sysfs.  I think the changes would be harmless as far as the
-  kernel is concerned, since there are no drivers for these devices.  But
-  Andreas added the quirk because of complaints, so apparently somebody is
-  looking at what's in sysfs, and I don't want to get the same complaints
-  again by removing it.  However, I will certainly ask questions if I see
-  the quirk being extended to more devices.
+Later during boot processing when host bridges are discovered -
+pci_acpi_scan_root() - the kernel looks for their corresponding ACPI _PXM
+method - drivers/acpi/numa.c::acpi_get_node().  If the BIOS supplied a _PXM
+method then that node (proximity) value is associated.  If the BIOS did not
+supply a _PXM method *and* the platform is AMD-based, the fall-back cached
+values obtained directly from the Northbridge are used; otherwise,
+"NUMA_NO_NODE" is associated.
 
-The AMD BKDG does say the BIOS should provide an MCFG table (sec 2.8 of
-42301), so I think it provides guidance matching the intent of my "stop
-enabling ECS" patch.  But the BKDG doesn't mention _PXM at all.  Is there
-any chance you could squeeze in a mention of that, so BIOS writers know
-that they *should* provide it?  I want to avoid more fire-drills in the
-future.
+There are a number of issues with this fall-back mechanism the most notable
+being that amd_bus.c extracts a 3-bit number from a CPU register and uses
+it as the node number.  The node numbers used by Linux are logical and
+there's no reason they need to be identical to settings in the CPU
+registers.  So if we have some node information obtained in the normal way
+(from _PXM, SLIT, SRAT, etc.) and some from amd_bus.c, there's no reason to
+believe they will be compatible.
 
-Bjorn
+This patch warns when this situation occurs:
 
+  pci_root PNP0A08:00: [Firmware Bug]: no _PXM; falling back to node 0 from hardware (may be inconsistent with ACPI node numbers)
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=72051
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
+ arch/x86/pci/acpi.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Bjorn Helgaas (1):
-      x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 01edac6c5e18..5075371ab593 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -489,8 +489,12 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	}
+ 
+ 	node = acpi_get_node(device->handle);
+-	if (node == NUMA_NO_NODE)
++	if (node == NUMA_NO_NODE) {
+ 		node = x86_pci_root_bus_node(busnum);
++		if (node != 0 && node != NUMA_NO_NODE)
++			dev_info(&device->dev, FW_BUG "no _PXM; falling back to node %d from hardware (may be inconsistent with ACPI node numbers)\n",
++				node);
++	}
+ 
+ 	if (node != NUMA_NO_NODE && !node_online(node))
+ 		node = NUMA_NO_NODE;
 
-Myron Stowe (1):
-      x86/PCI: Warn if we have to "guess" host bridge node information
-
-Suravee Suthikulpanit (2):
-      x86/PCI: Work around AMD Fam15h BIOSes that fail to provide _PXM
-      x86/PCI: Clean up and mark early_root_info_init() as deprecated
-
-
- arch/x86/pci/acpi.c    |    6 +++
- arch/x86/pci/amd_bus.c |   87 +++++++++++++++++++++++++++++++-----------------
- 2 files changed, 62 insertions(+), 31 deletions(-)
