@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaEUWwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 18:52:41 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:55048 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaEUWwh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 18:52:37 -0400
+	id S1753524AbaEUWwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 18:52:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50812 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752469AbaEUWwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 18:52:50 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <jg1.han@samsung.com>, <xobs@kosagi.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>
+CC: Murali Karicheri <m-karicheri2@ti.com>, Mohit Kumar <mohit.kumar@st.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>
+Subject: [RFC PATCH] pcie-designware: DT documentation update to clarify DT properties
+Date: Wed, 21 May 2014 18:52:29 -0400
+Message-ID: <1400712749-6490-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20140521224816.GP25130@pd.tnic>
-References: <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CALCETrVPVcyTd8FYV90DPhKvGW1GhHxkUPObpXK69AhwwqLi1w@mail.gmail.com>
- <20140521214845.GG25130@pd.tnic> <CALCETrUr75gGj3E5cSZdGRpX-wd6pDzDruMGave+GbnpWaptRA@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F328116D8@ORSMSX114.amr.corp.intel.com>
- <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
- <CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3281198D@ORSMSX114.amr.corp.intel.com>
- <CALCETrXxEAwJ33bF7FeRLeCbE7BfMn==OsFsoorW_NWFLxwuew@mail.gmail.com> <20140521224816.GP25130@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 May 2014 15:52:16 -0700
-Message-ID: <CALCETrV+8_p5bkeK7zQZ8r8Cq182eYdUNmh72y_vH_4SND-irw@mail.gmail.com>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 3:48 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, May 21, 2014 at 03:39:11PM -0700, Andy Lutomirski wrote:
->> But if we get a new MCE in here, it will be an MCE from kernel context
->> and it's fatal. So, yes, we'll clobber the stack, but we'll never
->> return (unless tolerant is set to something insane), so who cares?
->
-> Ok, but we still have to do the work before returning to the process. So
-> if not mce_notify_process() how else are you suggesting we do this?
+Current documentation is not clear enough about the mandatory bindings
+to be present in the device node of a snps,dw-pcie compatible pcie
+controller. In some cases the property is not present in all drivers.
+For example pcie_bus is specified as a clock, but only one of the driver
+uses it. This patch attempts to make the documentation consistent with
+current implementation so that it is clear enough for anyone who develops
+a dw-pcie compatible pcie driver.
 
-I'm suggesting that you re-enable interrupts and do the work in
-do_machine_check.  I think it'll just work.  It might pay to set a
-flag so that you panic very loudly if do_machine_check recurses.
+CC: Mohit Kumar <mohit.kumar@st.com>
+CC: Jingoo Han <jg1.han@samsung.com>
+CC: Pratyush Anand <pratyush.anand@st.com>
+CC: Richard Zhu <r65037@freescale.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Marek Vasut <marex@denx.de>
 
-I suspect that, if the hardware is generating machine checks while
-doing memory poisoning, the hardware is broken enough that even
-panicking might not work, though :)
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+---
+ .../devicetree/bindings/pci/designware-pcie.txt    |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---Andy
+diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt b/Documentation/devicetree/bindings/pci/designware-pcie.txt
+index d6fae13..8b9dc52 100644
+--- a/Documentation/devicetree/bindings/pci/designware-pcie.txt
++++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
+@@ -4,12 +4,14 @@ Required properties:
+ - compatible: should contain "snps,dw-pcie" to identify the
+ 	core, plus an identifier for the specific instance, such
+ 	as "samsung,exynos5440-pcie" or "fsl,imx6q-pcie".
+-- reg: base addresses and lengths of the pcie controller,
+-	the phy controller, additional register for the phy controller.
++- reg: base addresses and lengths of the pcie controller.
++    index 0 - base address and length of RC's config space.
++    index 1 and above: additional registers for the PCI controller
++    that are specific to an implementation.
+ - interrupts: interrupt values for level interrupt,
+ 	pulse interrupt, special interrupt.
+-- clocks: from common clock binding: handle to pci clock.
+-- clock-names: from common clock binding: should be "pcie" and "pcie_bus".
++- clocks: from common clock binding: handle to list of pci clock.
++- clock-names: from common clock binding: pci clock names: "pcie"
+ - #address-cells: set to <3>
+ - #size-cells: set to <2>
+ - device_type: set to "pci"
+-- 
+1.7.9.5
+
