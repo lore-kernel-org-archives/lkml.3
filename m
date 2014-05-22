@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaEVH1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 03:27:09 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:51250 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209AbaEVH1G (ORCPT
+	id S1754057AbaEVH1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 03:27:52 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:59908 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876AbaEVH1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 03:27:06 -0400
+	Thu, 22 May 2014 03:27:49 -0400
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, benh@kernel.crashing.org,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH V6 1/4] perf: Add new conditional branch filter PERF_SAMPLE_BRANCH_COND
-Date: Thu, 22 May 2014 12:50:07 +0530
-Message-Id: <1400743210-32289-1-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [PATCH V6 4/4] perf, documentation: Description for conditional branch filter
+Date: Thu, 22 May 2014 12:50:10 +0530
+Message-Id: <1400743210-32289-4-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1400743210-32289-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1400743210-32289-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052207-5490-0000-0000-000000210CDE
+x-cbid: 14052207-1396-0000-0000-000004E4AEE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
-will extend the existing perf ABI. This will filter branches which are
-conditional. Various architectures can provide this functionality either
-with HW filtering support (if present) or with SW filtering of captured
-branch instructions.
+Adding documentation support for conditional branch filter.
 
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 Reviewed-by: Stephane Eranian <eranian@google.com>
 Reviewed-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/uapi/linux/perf_event.h | 3 ++-
+ tools/perf/Documentation/perf-record.txt | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 853bc1c..696f69b4 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -163,8 +163,9 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
- 	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
- 	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
-+	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index c71b0f3..d460049 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -184,9 +184,10 @@ following filters are defined:
+ 	- in_tx: only when the target is in a hardware transaction
+ 	- no_tx: only when the target is not in a hardware transaction
+ 	- abort_tx: only when the target is a hardware transaction abort
++	- cond: conditional branches
  
--	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
- };
- 
- #define PERF_SAMPLE_BRANCH_PLM_ALL \
+ +
+-The option requires at least one branch type among any, any_call, any_ret, ind_call.
++The option requires at least one branch type among any, any_call, any_ret, ind_call, cond.
+ The privilege levels may be omitted, in which case, the privilege levels of the associated
+ event are applied to the branch filter. Both kernel (k) and hypervisor (hv) privilege
+ levels are subject to permissions.  When sampling on multiple events, branch stack sampling
 -- 
 1.7.11.7
 
