@@ -1,195 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaEVVQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 17:16:27 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:43402 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaEVVQ0 (ORCPT
+	id S1752497AbaEVVRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 17:17:00 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:34153 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097AbaEVVQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 17:16:26 -0400
-X-Originating-IP: 173.246.103.110
-Date: Thu, 22 May 2014 14:16:17 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Manu Gupta <manugupt1@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c:  Fix to remove
- null pointer checks that could never happen
-Message-ID: <20140522211617.GB11775@jtriplet-mobl1>
-References: <1400788682-10787-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400788682-10787-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 22 May 2014 17:16:59 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: sdhci-dove: use mmc_of_parse() and remove card_tasklet CD handler
+Date: Fri, 23 May 2014 00:16:52 +0200
+Message-Id: <1400797012-32106-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 09:58:02PM +0200, Rickard Strandqvist wrote:
-> Removal of null pointer checks that could never happen
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Commit f8ec589b86f6
+  "mmc: sdhci-dove: allow GPIOs to be used for card detection on Dove"
+added a gpio based card detect interrupt handler that was hooked up
+into card_tasket.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Commit 3560db8e247a
+  "mmc: sdhci: push card_tasklet into threaded irq handler"
+now removed that very card_tasklet causing sdhci-dove to fail on build
+with:
+drivers/mmc/host/sdhci-dove.c: In function 'sdhci_dove_carddetect_irq':
+drivers/mmc/host/sdhci-dove.c:42:24: error: 'struct sdhci_host' has no member named 'card_tasklet'
 
->  drivers/staging/rtl8188eu/os_dep/usb_intf.c |  110 +++++++++++++--------------
->  1 file changed, 52 insertions(+), 58 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> index 2e49cd5..3454e1b 100644
-> --- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> +++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-> @@ -396,49 +396,47 @@ int rtw_hw_suspend(struct adapter *padapter)
->  		goto error_exit;
->  	}
->  
-> -	if (padapter) { /* system suspend */
-> -		LeaveAllPowerSaveMode(padapter);
-> +	/* system suspend */
-> +	LeaveAllPowerSaveMode(padapter);
->  
-> -		DBG_88E("==> rtw_hw_suspend\n");
-> -		_enter_pwrlock(&pwrpriv->lock);
-> -		pwrpriv->bips_processing = true;
-> -		/* s1. */
-> -		if (pnetdev) {
-> -			netif_carrier_off(pnetdev);
-> -			rtw_netif_stop_queue(pnetdev);
-> -		}
-> +	DBG_88E("==> rtw_hw_suspend\n");
-> +	_enter_pwrlock(&pwrpriv->lock);
-> +	pwrpriv->bips_processing = true;
-> +	/* s1. */
-> +	if (pnetdev) {
-> +		netif_carrier_off(pnetdev);
-> +		rtw_netif_stop_queue(pnetdev);
-> +	}
->  
-> -		/* s2. */
-> -		rtw_disassoc_cmd(padapter, 500, false);
-> +	/* s2. */
-> +	rtw_disassoc_cmd(padapter, 500, false);
->  
-> -		/* s2-2.  indicate disconnect to os */
-> -		{
-> -			struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
-> +	/* s2-2.  indicate disconnect to os */
-> +	{
-> +		struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
->  
-> -			if (check_fwstate(pmlmepriv, _FW_LINKED)) {
-> -				_clr_fwstate_(pmlmepriv, _FW_LINKED);
-> +		if (check_fwstate(pmlmepriv, _FW_LINKED)) {
-> +			_clr_fwstate_(pmlmepriv, _FW_LINKED);
->  
-> -				rtw_led_control(padapter, LED_CTL_NO_LINK);
-> +			rtw_led_control(padapter, LED_CTL_NO_LINK);
->  
-> -				rtw_os_indicate_disconnect(padapter);
-> +			rtw_os_indicate_disconnect(padapter);
->  
-> -				/* donnot enqueue cmd */
-> -				rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_DISCONNECT, 0);
-> -			}
-> +			/* donnot enqueue cmd */
-> +			rtw_lps_ctrl_wk_cmd(padapter, LPS_CTRL_DISCONNECT, 0);
->  		}
-> -		/* s2-3. */
-> -		rtw_free_assoc_resources(padapter, 1);
-> +	}
-> +	/* s2-3. */
-> +	rtw_free_assoc_resources(padapter, 1);
->  
-> -		/* s2-4. */
-> -		rtw_free_network_queue(padapter, true);
-> -		rtw_ips_dev_unload(padapter);
-> -		pwrpriv->rf_pwrstate = rf_off;
-> -		pwrpriv->bips_processing = false;
-> +	/* s2-4. */
-> +	rtw_free_network_queue(padapter, true);
-> +	rtw_ips_dev_unload(padapter);
-> +	pwrpriv->rf_pwrstate = rf_off;
-> +	pwrpriv->bips_processing = false;
-> +
-> +	_exit_pwrlock(&pwrpriv->lock);
->  
-> -		_exit_pwrlock(&pwrpriv->lock);
-> -	} else {
-> -		goto error_exit;
-> -	}
->  	return 0;
->  
->  error_exit:
-> @@ -452,35 +450,32 @@ int rtw_hw_resume(struct adapter *padapter)
->  	struct net_device *pnetdev = padapter->pnetdev;
->  
->  
-> -	if (padapter) { /* system resume */
-> -		DBG_88E("==> rtw_hw_resume\n");
-> -		_enter_pwrlock(&pwrpriv->lock);
-> -		pwrpriv->bips_processing = true;
-> -		rtw_reset_drv_sw(padapter);
-> +	/* system resume */
-> +	DBG_88E("==> rtw_hw_resume\n");
-> +	_enter_pwrlock(&pwrpriv->lock);
-> +	pwrpriv->bips_processing = true;
-> +	rtw_reset_drv_sw(padapter);
->  
-> -		if (pm_netdev_open(pnetdev, false) != 0) {
-> -			_exit_pwrlock(&pwrpriv->lock);
-> -			goto error_exit;
-> -		}
-> +	if (pm_netdev_open(pnetdev, false) != 0) {
-> +		_exit_pwrlock(&pwrpriv->lock);
-> +		goto error_exit;
-> +	}
->  
-> -		netif_device_attach(pnetdev);
-> -		netif_carrier_on(pnetdev);
-> +	netif_device_attach(pnetdev);
-> +	netif_carrier_on(pnetdev);
->  
-> -		if (!netif_queue_stopped(pnetdev))
-> -			netif_start_queue(pnetdev);
-> -		else
-> -			netif_wake_queue(pnetdev);
-> +	if (!netif_queue_stopped(pnetdev))
-> +		netif_start_queue(pnetdev);
-> +	else
-> +		netif_wake_queue(pnetdev);
->  
-> -		pwrpriv->bkeepfwalive = false;
-> -		pwrpriv->brfoffbyhw = false;
-> +	pwrpriv->bkeepfwalive = false;
-> +	pwrpriv->brfoffbyhw = false;
->  
-> -		pwrpriv->rf_pwrstate = rf_on;
-> -		pwrpriv->bips_processing = false;
-> +	pwrpriv->rf_pwrstate = rf_on;
-> +	pwrpriv->bips_processing = false;
->  
-> -		_exit_pwrlock(&pwrpriv->lock);
-> -	} else {
-> -		goto error_exit;
-> -	}
-> +	_exit_pwrlock(&pwrpriv->lock);
->  
->  
->  	return 0;
-> @@ -591,8 +586,7 @@ int rtw_resume_process(struct adapter *padapter)
->  
->  	_enter_pwrlock(&pwrpriv->lock);
->  	rtw_reset_drv_sw(padapter);
-> -	if (pwrpriv)
-> -		pwrpriv->bkeepfwalive = false;
-> +	pwrpriv->bkeepfwalive = false;
->  
->  	DBG_88E("bkeepfwalive(%x)\n", pwrpriv->bkeepfwalive);
->  	if (pm_netdev_open(pnetdev, true) != 0)
-> -- 
-> 1.7.10.4
-> 
+To fix both the build error and get a working gpio card detection without
+card_tasklet, replace sdhci_get_of_property() with more recent
+mmc_of_parse(). It takes care of gpio-based card detect passed through DT
+already and allows to remove the offending code sections dealing with
+removed card_tasklet.
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+This patch is based on todays mmc-next and fixes a build error there.
+
+Cc: Chris Ball <chris@printf.net>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/mmc/host/sdhci-dove.c | 74 +++----------------------------------------
+ 1 file changed, 5 insertions(+), 69 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
+index 0d315f4496c8..e6278ec007d7 100644
+--- a/drivers/mmc/host/sdhci-dove.c
++++ b/drivers/mmc/host/sdhci-dove.c
+@@ -21,28 +21,17 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/err.h>
+-#include <linux/gpio.h>
+ #include <linux/io.h>
+ #include <linux/mmc/host.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+-#include <linux/of_gpio.h>
+ 
+ #include "sdhci-pltfm.h"
+ 
+ struct sdhci_dove_priv {
+ 	struct clk *clk;
+-	int gpio_cd;
+ };
+ 
+-static irqreturn_t sdhci_dove_carddetect_irq(int irq, void *data)
+-{
+-	struct sdhci_host *host = data;
+-
+-	tasklet_schedule(&host->card_tasklet);
+-	return IRQ_HANDLED;
+-}
+-
+ static u16 sdhci_dove_readw(struct sdhci_host *host, int reg)
+ {
+ 	u16 ret;
+@@ -60,8 +49,6 @@ static u16 sdhci_dove_readw(struct sdhci_host *host, int reg)
+ 
+ static u32 sdhci_dove_readl(struct sdhci_host *host, int reg)
+ {
+-	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+-	struct sdhci_dove_priv *priv = pltfm_host->priv;
+ 	u32 ret;
+ 
+ 	ret = readl(host->ioaddr + reg);
+@@ -71,14 +58,6 @@ static u32 sdhci_dove_readl(struct sdhci_host *host, int reg)
+ 		/* Mask the support for 3.0V */
+ 		ret &= ~SDHCI_CAN_VDD_300;
+ 		break;
+-	case SDHCI_PRESENT_STATE:
+-		if (gpio_is_valid(priv->gpio_cd)) {
+-			if (gpio_get_value(priv->gpio_cd) == 0)
+-				ret |= SDHCI_CARD_PRESENT;
+-			else
+-				ret &= ~SDHCI_CARD_PRESENT;
+-		}
+-		break;
+ 	}
+ 	return ret;
+ }
+@@ -117,28 +96,9 @@ static int sdhci_dove_probe(struct platform_device *pdev)
+ 
+ 	priv->clk = devm_clk_get(&pdev->dev, NULL);
+ 
+-	if (pdev->dev.of_node) {
+-		priv->gpio_cd = of_get_named_gpio(pdev->dev.of_node,
+-						  "cd-gpios", 0);
+-	} else {
+-		priv->gpio_cd = -EINVAL;
+-	}
+-
+-	if (gpio_is_valid(priv->gpio_cd)) {
+-		ret = gpio_request(priv->gpio_cd, "sdhci-cd");
+-		if (ret) {
+-			dev_err(&pdev->dev, "card detect gpio request failed: %d\n",
+-				ret);
+-			return ret;
+-		}
+-		gpio_direction_input(priv->gpio_cd);
+-	}
+-
+ 	host = sdhci_pltfm_init(pdev, &sdhci_dove_pdata, 0);
+-	if (IS_ERR(host)) {
+-		ret = PTR_ERR(host);
+-		goto err_sdhci_pltfm_init;
+-	}
++	if (IS_ERR(host))
++		return PTR_ERR(host);
+ 
+ 	pltfm_host = sdhci_priv(host);
+ 	pltfm_host->priv = priv;
+@@ -146,39 +106,20 @@ static int sdhci_dove_probe(struct platform_device *pdev)
+ 	if (!IS_ERR(priv->clk))
+ 		clk_prepare_enable(priv->clk);
+ 
+-	sdhci_get_of_property(pdev);
++	ret = mmc_of_parse(host->mmc);
++	if (ret)
++		goto err_sdhci_add;
+ 
+ 	ret = sdhci_add_host(host);
+ 	if (ret)
+ 		goto err_sdhci_add;
+ 
+-	/*
+-	 * We must request the IRQ after sdhci_add_host(), as the tasklet only
+-	 * gets setup in sdhci_add_host() and we oops.
+-	 */
+-	if (gpio_is_valid(priv->gpio_cd)) {
+-		ret = request_irq(gpio_to_irq(priv->gpio_cd),
+-				  sdhci_dove_carddetect_irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+-				  mmc_hostname(host->mmc), host);
+-		if (ret) {
+-			dev_err(&pdev->dev, "card detect irq request failed: %d\n",
+-				ret);
+-			goto err_request_irq;
+-		}
+-	}
+-
+ 	return 0;
+ 
+-err_request_irq:
+-	sdhci_remove_host(host, 0);
+ err_sdhci_add:
+ 	if (!IS_ERR(priv->clk))
+ 		clk_disable_unprepare(priv->clk);
+ 	sdhci_pltfm_free(pdev);
+-err_sdhci_pltfm_init:
+-	if (gpio_is_valid(priv->gpio_cd))
+-		gpio_free(priv->gpio_cd);
+ 	return ret;
+ }
+ 
+@@ -190,11 +131,6 @@ static int sdhci_dove_remove(struct platform_device *pdev)
+ 
+ 	sdhci_pltfm_unregister(pdev);
+ 
+-	if (gpio_is_valid(priv->gpio_cd)) {
+-		free_irq(gpio_to_irq(priv->gpio_cd), host);
+-		gpio_free(priv->gpio_cd);
+-	}
+-
+ 	if (!IS_ERR(priv->clk))
+ 		clk_disable_unprepare(priv->clk);
+ 
+-- 
+1.9.1
+
