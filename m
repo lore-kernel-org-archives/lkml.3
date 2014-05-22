@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaEVUze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:55:34 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:57455 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751039AbaEVUzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:55:33 -0400
-Message-ID: <1400792131.16407.33.camel@x220>
-Subject: [PATCH] mfd: db8500-prcmu: remove check for
- CONFIG_DBX500_PRCMU_DEBUG
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 22 May 2014 22:55:31 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 May 2014 20:55:32.0005 (UTC) FILETIME=[2B913D50:01CF7600]
-X-RcptDomain: vger.kernel.org
+	id S1751577AbaEVU4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:56:43 -0400
+Received: from mout.gmx.net ([212.227.17.22]:63403 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956AbaEVU4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 16:56:41 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: rjw@rjwysocki.net
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] acpi: Use time_before() for time comparison
+Date: Thu, 22 May 2014 22:56:36 +0200
+Message-Id: <1400792196-28477-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:xV6zoTsu47Jn8ahJcum/HIrOP/JEwbWriCNPGQ73x5WNlKO67WF
+ mI17I+ISIc/fIGr0+Fyz4aojSrGIJKvMLoVE81R/15rhCz5TmLff6U4dDkv5r9TTogct53o
+ 4Rl9UZfL92DUzZLBRcfkV+JLqXfx1OJCwm//Y6BB//FC/drA1fmBmQCWx7+KeyKMKeK1B7U
+ X7tiSsrqb5YqibHo3CepA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A check for CONFIG_DBX500_PRCMU_DEBUG was added in v3.6. But there's no
-Kconfig symbol DBX500_PRCMU_DEBUG. So remove this check.
+To be future-proof and for better readability the time comparisons are modified
+to use time_before() instead of plain, error-prone math.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 ---
-Untested. Note that db8500_prcmu_debug_dump() is nowhere to be found in
-the tree.
+ drivers/acpi/acpi_pad.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-This check has been in the tree for less than two years. Am I being
-impatient here?
-
- drivers/mfd/db8500-prcmu.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 7694e0700d34..c248bde367ab 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -2303,9 +2303,6 @@ int prcmu_ac_wake_req(void)
+diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
+index 37d7302..0a3bbf5 100644
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -156,12 +156,13 @@ static int power_saving_thread(void *data)
  
- 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
- 			msecs_to_jiffies(5000))) {
--#if defined(CONFIG_DBX500_PRCMU_DEBUG)
--		db8500_prcmu_debug_dump(__func__, true, true);
--#endif
- 		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
- 			__func__);
- 		ret = -EFAULT;
+ 	while (!kthread_should_stop()) {
+ 		int cpu;
+-		u64 expire_time;
++		unsigned long expire_time;
+ 
+ 		try_to_freeze();
+ 
+ 		/* round robin to cpus */
+-		if (last_jiffies + round_robin_time * HZ < jiffies) {
++		expire_time = last_jiffies + round_robin_time * HZ;
++		if (time_before(expire_time, jiffies)) {
+ 			last_jiffies = jiffies;
+ 			round_robin_cpu(tsk_index);
+ 		}
+@@ -200,7 +201,7 @@ static int power_saving_thread(void *data)
+ 					CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+ 			local_irq_enable();
+ 
+-			if (jiffies > expire_time) {
++			if (time_before(expire_time, jiffies)) {
+ 				do_sleep = 1;
+ 				break;
+ 			}
 -- 
-1.9.0
+1.7.10.4
 
