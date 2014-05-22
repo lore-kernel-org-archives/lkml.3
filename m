@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaEVXIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:08:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753201AbaEVXIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:08:11 -0400
-Subject: [PATCH v4 07/16] PCI: Add quirks for ASMedia and Tundra bridges
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
-        eddy0596@gmail.com, linux@horizon.com
-Date: Thu, 22 May 2014 17:08:07 -0600
-Message-ID: <20140522230807.2856.76394.stgit@bling.home>
-In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
-References: <20140522230230.2856.40017.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1753076AbaEVXNW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:13:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38776 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaEVXNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:13:20 -0400
+Message-ID: <537E848C.5010204@wwwdotorg.org>
+Date: Thu, 22 May 2014 17:13:16 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: fwu@marvell.com, linus.walleij@linaro.org, tony@atomide.com
+CC: linux-kernel@vger.kernel.org, swarren@nvidia.com, cxie4@marvell.com,
+        ylmao@marvell.com, njiang1@marvell.com, tianxf@marvell.com,
+        fswu@marvell.com
+Subject: Re: [PATCH v2] pinctrl: add params in disable_setting for different
+ usage
+References: <1400728210-17863-1-git-send-email-fwu@marvell.com>
+In-Reply-To: <1400728210-17863-1-git-send-email-fwu@marvell.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The quirk is intended to be extremely generic, but we only apply it
-to known offending devices.
+On 05/21/2014 09:10 PM, fwu@marvell.com wrote:
+> From: Fan Wu <fwu@marvell.com>
+> 
+> What the patch did:
+> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
+>   calling pinctrl_select_state
+> 2.Remove the HW disable operation in in pinmux_disable_setting function.
+> 
+...
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> index c0fe609..c97491a 100644
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -993,25 +993,13 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+>  		 * may not be identical to the set of groups with a mux setting
+>  		 * in the new state. While this might be unusual, it's entirely
+>  		 * possible for the "user"-supplied mapping table to be written
+> -		 * that way. For each group that was configured in the old state
+> -		 * but not in the new state, this code puts that group into a
+> -		 * safe/disabled state.
+> +		 * that way. This code is used for each group that was
+> +		 * configured in the old state but not in the new state
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/pci/quirks.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 923689f..ab620ac 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3385,6 +3385,29 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
- 			 PCI_DEVICE_ID_JMICRON_JMB388_ESD,
- 			 quirk_dma_func1_alias);
- 
-+/*
-+ * A few PCIe-to-PCI bridges fail to expose a PCIe capability, resulting in
-+ * using the wrong DMA alias for the device.  Some of these devices can be
-+ * used as either forward or reverse bridges, so we need to test whether the
-+ * device is operating in the correct mode.  We could probably apply this
-+ * quirk to PCI_ANY_ID, but for now we'll just use known offenders.  The test
-+ * is for a non-root, non-PCIe bridge where the upstream device is PCIe and
-+ * is not a PCIe-to-PCI bridge, then @pdev is actually a PCIe-to-PCI bridge.
-+ */
-+static void quirk_use_pcie_bridge_dma_alias(struct pci_dev *pdev)
-+{
-+	if (!pci_is_root_bus(pdev->bus) &&
-+	    pdev->hdr_type == PCI_HEADER_TYPE_BRIDGE &&
-+	    !pci_is_pcie(pdev) && pci_is_pcie(pdev->bus->self) &&
-+	    pci_pcie_type(pdev->bus->self) != PCI_EXP_TYPE_PCI_BRIDGE)
-+		pdev->dev_flags |= PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS;
-+}
-+/* ASM1083/1085, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c46 */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
-+			 quirk_use_pcie_bridge_dma_alias);
-+/* Tundra 8113, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c43 */
-+DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
-+
- static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
- {
- 	if (!PCI_FUNC(dev->devfn))
+Looking at the code, it's run for every group in the state, not "each
+group that was configured in the old state but not in the new state"
+
+> @@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+>  				 pins[i], desc->name, gname);
+>  		}
+>  	}
+> -
+> -	if (ops->disable)
+> -		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
+>  }
+
+Should that op be removed from the header file and all drivers too?
 
