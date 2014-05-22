@@ -1,159 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbaEVNAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:00:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40136 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362AbaEVNAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:00:21 -0400
-Date: Thu, 22 May 2014 14:00:14 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barriers and waitqueue
- lookups in unlock_page fastpath v7
-Message-ID: <20140522130014.GF23991@suse.de>
-References: <20140515104808.GF23991@suse.de>
- <20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
- <20140521121501.GT23991@suse.de>
- <20140521142622.049d0b3af5fc94912d5a1472@linux-foundation.org>
- <20140521213354.GL2485@laptop.programming.kicks-ass.net>
- <20140521145000.f130f8779f7641d0d8afcace@linux-foundation.org>
- <20140522000715.GA23991@suse.de>
- <20140522072001.GP30445@twins.programming.kicks-ass.net>
- <20140522104051.GE23991@suse.de>
- <20140522105638.GT30445@twins.programming.kicks-ass.net>
+	id S1755023AbaEVNBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:01:30 -0400
+Received: from mail.siteground.com ([67.19.240.234]:52400 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190AbaEVNB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 09:01:29 -0400
+Message-ID: <537DF520.2050904@1h.com>
+Date: Thu, 22 May 2014 16:01:20 +0300
+From: Marian Marinov <mm@1h.com>
+Organization: 1H Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140522105638.GT30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr@hp.com>
+CC: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] IPC initialize shmmax and shmall from the current value
+ not the default
+References: <5365723D.7030303@1h.com> <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net> <536621D4.60002@colorfullife.com> <5367EDB6.3010408@1h.com>
+In-Reply-To: <5367EDB6.3010408@1h.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 1h.com
+X-Get-Message-Sender-Via: mail.siteground.com: none
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 12:56:38PM +0200, Peter Zijlstra wrote:
-> On Thu, May 22, 2014 at 11:40:51AM +0100, Mel Gorman wrote:
-> > +void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, int bit)
-> > +{
-> > +	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
-> > +	unsigned long flags;
-> > +
-> > +	/* If there is no PG_waiters bit, always take the slow path */
-> 
-> That comment is misleading, this is actually a fast path for
-> !PG_waiters.
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-And could have been far better anyway now that you called me on it.
-
-> > +	if (!__PG_WAITERS && waitqueue_active(wq)) {
-> > +		__wake_up(wq, TASK_NORMAL, 1, &key);
-> > +		return;
-> > +	}
-> > +
-> > +	/*
-> > +	 * Unlike __wake_up_bit it is necessary to check waitqueue_active to be
-> > +	 * checked under the wqh->lock to avoid races with parallel additions
-> > +	 * to the waitqueue. Otherwise races could result in lost wakeups
-> > +	 */
-> > +	spin_lock_irqsave(&wqh->lock, flags);
-> > +	if (waitqueue_active(wqh))
-> > +		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
-> > +	else
-> > +		ClearPageWaiters(page);
-> > +	spin_unlock_irqrestore(&wqh->lock, flags);
-> > +}
+On 05/05/2014 10:59 PM, Marian Marinov wrote:
+> On 05/04/2014 02:17 PM, Manfred Spraul wrote:
+>> Hi Marian,
+>> 
+>> Note: The limits will soon be increased to (nearly) ULONG_MAX. I.e.: If you propose the patch because you are
+>> running into issues with a too small SEMMAX after an unshare(CLONE_NEWIPC), then this will be fixed soon.
+>> 
+>> 
+>> On 05/04/2014 01:53 AM, Davidlohr Bueso wrote:
+>>> On Sun, 2014-05-04 at 01:48 +0300, Marian Marinov wrote:
+>>>> When we are creating new IPC namespace that should be cloned from the current namespace it is a good idea to
+>>>> copy the values of the current shmmax and shmall to the new namespace.
+>> The idea sounds reasonable: If an admin has reduced the limits, then the reduction should also apply after a
+>> unshare(CLONE_NEWIPC).
+>> 
+>> But: Your patch doesn't use the current shmmax, it uses the shmmax from init_ipc_ns. Would it be possible to use
+>> the current values?
 > 
-> So I think you missed one Clear opportunity here that was in my original
-> proposal, possibly because you also frobbed PG_writeback in.
+> In my tests it worked exactly as expected. Here is an example:
 > 
-
-It got lost in the midst of all the other modifications to make this as
-"obvious" as possible.
-
-> <SNIP>
->
-> I suppose the one thing to say for the big open coded loop is that its
-> much easier to read than this scattered stuff.
+> [root@sp2 ~]# sysctl -a|grep shmmax kernel.shmmax = 68719476736 [root@sp2 ~]# lxc-attach -n cent_plain 
+> [root@localhost ~]# sysctl -a|grep shmmax kernel.shmmax = 68719476736 [root@localhost ~]# halt [root@sp2 ~]# sysctl
+> -a|grep shmmax kernel.shmmax = 68719476736 [root@sp2 ~]# sysctl kernel.shmmax=34359738368 kernel.shmmax =
+> 34359738368 [root@sp2 ~]# lxc-start -n cent_plain -d [root@sp2 ~]# lxc-attach -n cent_plain [root@localhost ~]#
+> sysctl -a|grep shmmax kernel.shmmax = 34359738368 [root@localhost ~]#
+> 
+> So it seams to work as expected :)
+> 
+> It works because wen you setup a new shmmax limit it is actually the limit in the init_ipc_ns. So when we are
+> creating a new ipc_ns its ok to copy the values from init_ipc_ns.
+> 
+> -Marian
 > 
 
-Sure, but the end result of open coding this is duplicated code that will
-be harder to maintain overall. I could split __wake_up_bit and use that
-in both but I do not think it would make the code any clearer for the sake
-of two lines.  Untested but this on top?
+Ping?
 
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index 73cb8c6..d3a8c34 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -60,19 +60,26 @@ EXPORT_SYMBOL(remove_wait_queue);
-  * There are circumstances in which we can try to wake a task which has already
-  * started to run but is not in state TASK_RUNNING. try_to_wake_up() returns
-  * zero in this (rare) case, and we handle it by continuing to scan the queue.
-+ *
-+ * Returns true if a process was woken up
-  */
--static void __wake_up_common(wait_queue_head_t *q, unsigned int mode,
-+static bool __wake_up_common(wait_queue_head_t *q, unsigned int mode,
- 			int nr_exclusive, int wake_flags, void *key)
- {
- 	wait_queue_t *curr, *next;
-+	bool woke = false;
- 
- 	list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
- 		unsigned flags = curr->flags;
- 
--		if (curr->func(curr, mode, wake_flags, key) &&
--				(flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
--			break;
-+		if (curr->func(curr, mode, wake_flags, key)) {
-+			woke = true;
-+			if ((flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
-+				break;
-+		}
- 	}
-+
-+	return woke;
- }
- 
- /**
-@@ -441,9 +448,13 @@ void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, i
- 	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
- 	unsigned long flags;
- 
--	/* If there is no PG_waiters bit, always take the slow path */
--	if (!__PG_WAITERS && waitqueue_active(wq)) {
--		__wake_up(wq, TASK_NORMAL, 1, &key);
-+	/*
-+	 * If there is no PG_waiters bit (32-bit), then waitqueue_active can be
-+	 * checked without wqh->lock as there is no PG_waiters race to protect.
-+	 */
-+	if (!__PG_WAITERS) {
-+		if (waitqueue_active(wqh))
-+			__wake_up(wqh, TASK_NORMAL, 1, &key);
- 		return;
- 	}
- 
-@@ -453,9 +464,8 @@ void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, i
- 	 * to the waitqueue. Otherwise races could result in lost wakeups
- 	 */
- 	spin_lock_irqsave(&wqh->lock, flags);
--	if (waitqueue_active(wqh))
--		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
--	else
-+	if (!waitqueue_active(wqh) ||
-+	    !__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key))
- 		ClearPageWaiters(page);
- 	spin_unlock_irqrestore(&wqh->lock, flags);
- }
+So will there be any more comments on that?
 
+Marian
+
+>> 
+>>> Why is this a good idea?
+>>> 
+>>> This would break userspace that relies on the current behavior. Furthermore we've recently changed the default
+>>> value of both these limits to be as large as you can get, thus deprecating them. I don't like the idea of this
+>>> being replaced by namespaces.
+>> Davidlohr: We are not deprecating them, we make the default huge. The limits should stay as usable as they were.
+>> 
+>> With regards to breaking user space, I must think about it a bit more. Right now, each new namespace starts with
+>> SEMMAX=32MB, i.e. an often unusable default.
+>> 
+>> -- Manfred
+>> 
+> 
+> 
+
+
+- -- 
+Marian Marinov
+Founder & CEO of 1H Ltd.
+Jabber/GTalk: hackman@jabber.org
+ICQ: 7556201
+Mobile: +359 886 660 270
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEARECAAYFAlN99SAACgkQ4mt9JeIbjJQHrQCfdexU5xdW4A/pO66SvbcYQVqF
+uREAoJ1e6hytp6435YUrpKjEG2qVulI1
+=QqGi
+-----END PGP SIGNATURE-----
