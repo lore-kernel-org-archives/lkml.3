@@ -1,53 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaEVPvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:51:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60482 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171AbaEVPvm (ORCPT
+	id S1751880AbaEVPwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:52:49 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:33891 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaEVPws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:51:42 -0400
-Message-ID: <537E1D0A.6020303@wwwdotorg.org>
-Date: Thu, 22 May 2014 09:51:38 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 11:52:48 -0400
+Date: Thu, 22 May 2014 21:22:41 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Michael Hennerich <michael.hennerich@analog.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] input/keyboard: Introduce the use of the managed version of
+ kzalloc
+Message-ID: <20140522155241.GA8976@himangi-Dell>
 MIME-Version: 1.0
-To: Tushar Behera <tushar.behera@linaro.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-CC: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, dianders@chromium.org,
-        jerry.wong@maximintegrated.com
-Subject: Re: [PATCH 1/2] ASoC: max98090: Add master clock handling
-References: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org> <1400750228-13750-2-git-send-email-tushar.behera@linaro.org>
-In-Reply-To: <1400750228-13750-2-git-send-email-tushar.behera@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 03:17 AM, Tushar Behera wrote:
-> If master clock is provided through device tree, then update
-> the master clock frequency during set_sysclk.
-> 
-> Documentation has been updated to reflect the change.
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. The input_allocate_device is replaced by the corresponding
+devm version and error handling code is cleaned up. Also, label err and
+err1 no longer required are removed. Also, linux/device.h include is
+added to make sure the devm_*() routine declarations are unambiguously
+available.
 
-> diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
+The following Coccinelle semantic patch was used for making a part of
+the change:
 
-> @@ -1929,6 +1930,11 @@ static int max98090_dai_set_sysclk(struct snd_soc_dai *dai,
->  	if (freq == max98090->sysclk)
->  		return 0;
->  
-> +	if (!IS_ERR(max98090->mclk)) {
-> +		freq = clk_round_rate(max98090->mclk, freq);
-> +		clk_set_rate(max98090->mclk, freq);
-> +	}
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-What are the intended semantics of set_sysclk()?
-sound/soc/tegra/tegra_wm98090.c assumes that set_sysclk() is a
-notification to the CODEC driver to tell it what rate the MCLK input is
-set to (the rate is set before calling set_sysclk), whereas the code
-above assumes that this function is to tell the CODEC to somehow
-configure its input clock to be a particular rate. I have a feeling the
-code above might fail on Tegra.
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
+
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+ drivers/input/keyboard/adp5520-keys.c | 28 ++++++++--------------------
+ 1 file changed, 8 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/input/keyboard/adp5520-keys.c b/drivers/input/keyboard/adp5520-keys.c
+index 4cc14c2..fdd6bdc 100644
+--- a/drivers/input/keyboard/adp5520-keys.c
++++ b/drivers/input/keyboard/adp5520-keys.c
+@@ -12,6 +12,7 @@
+ #include <linux/input.h>
+ #include <linux/mfd/adp5520.h>
+ #include <linux/slab.h>
++#include <linux/device.h>
+ 
+ struct adp5520_keys {
+ 	struct input_dev *input;
+@@ -89,17 +90,15 @@ static int adp5520_keys_probe(struct platform_device *pdev)
+ 	if (!(pdata->rows_en_mask && pdata->cols_en_mask))
+ 		return -EINVAL;
+ 
+-	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
+ 	if (dev == NULL) {
+ 		dev_err(&pdev->dev, "failed to alloc memory\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	input = input_allocate_device();
+-	if (!input) {
+-		ret = -ENOMEM;
+-		goto err;
+-	}
++	input = devm_input_allocate_device(&pdev->dev);
++	if (!input)
++		return -ENOMEM;
+ 
+ 	dev->master = pdev->dev.parent;
+ 	dev->input = input;
+@@ -135,7 +134,7 @@ static int adp5520_keys_probe(struct platform_device *pdev)
+ 	ret = input_register_device(input);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to register input device\n");
+-		goto err;
++		return ret;
+ 	}
+ 
+ 	en_mask = pdata->rows_en_mask | pdata->cols_en_mask;
+@@ -157,8 +156,7 @@ static int adp5520_keys_probe(struct platform_device *pdev)
+ 
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to write\n");
+-		ret = -EIO;
+-		goto err1;
++		return -EIO;
+ 	}
+ 
+ 	dev->notifier.notifier_call = adp5520_keys_notifier;
+@@ -166,19 +164,11 @@ static int adp5520_keys_probe(struct platform_device *pdev)
+ 			ADP5520_KP_IEN | ADP5520_KR_IEN);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register notifier\n");
+-		goto err1;
++		return ret;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, dev);
+ 	return 0;
+-
+-err1:
+-	input_unregister_device(input);
+-	input = NULL;
+-err:
+-	input_free_device(input);
+-	kfree(dev);
+-	return ret;
+ }
+ 
+ static int adp5520_keys_remove(struct platform_device *pdev)
+@@ -188,8 +178,6 @@ static int adp5520_keys_remove(struct platform_device *pdev)
+ 	adp5520_unregister_notifier(dev->master, &dev->notifier,
+ 				ADP5520_KP_IEN | ADP5520_KR_IEN);
+ 
+-	input_unregister_device(dev->input);
+-	kfree(dev);
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
