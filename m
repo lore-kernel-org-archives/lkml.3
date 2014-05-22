@@ -1,146 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaEVXcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:32:13 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:59624 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaEVXcM (ORCPT
+	id S1752662AbaEVXgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:36:22 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:20859
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751247AbaEVXgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:32:12 -0400
-From: abdoulaye berthe <berthe.ab@gmail.com>
-To: berthe.ab@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] bus: omap_l3_noc.c: use devm functions
-Date: Fri, 23 May 2014 01:32:05 +0200
-Message-Id: <1400801525-17536-1-git-send-email-berthe.ab@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 22 May 2014 19:36:21 -0400
+X-IronPort-AV: E=Sophos;i="4.98,890,1392159600"; 
+   d="scan'208";a="63299552"
+Date: Fri, 23 May 2014 07:35:47 +0800 (SGT)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Himangi Saraogi <himangi774@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dt/sparc: Introduce the use of the managed version of
+ kzalloc
+In-Reply-To: <alpine.DEB.2.10.1405230700090.2606@hadrien>
+Message-ID: <alpine.DEB.2.10.1405230735060.2606@hadrien>
+References: <20140522193430.GA16315@himangi-Dell> <20140522194539.GA7708@core.coreip.homeip.net> <alpine.DEB.2.10.1405230700090.2606@hadrien>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses devm function to ease mem alloc
 
-Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
----
- drivers/bus/omap_l3_noc.c | 73 +++++++++++------------------------------------
- 1 file changed, 17 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index feeecae..e8bcc8f 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -133,53 +133,28 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	static struct omap4_l3 *l3;
- 	struct resource	*res;
- 	int ret;
-+	struct device *dev = &pdev->dev;
- 
--	l3 = kzalloc(sizeof(*l3), GFP_KERNEL);
-+	l3 = devm_kzalloc(dev, sizeof(struct omap4_l3), GFP_KERNEL);
- 	if (!l3)
- 		return -ENOMEM;
- 
- 	platform_set_drvdata(pdev, l3);
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "couldn't find resource 0\n");
--		ret = -ENODEV;
--		goto err0;
--	}
- 
--	l3->l3_base[0] = ioremap(res->start, resource_size(res));
--	if (!l3->l3_base[0]) {
--		dev_err(&pdev->dev, "ioremap failed\n");
--		ret = -ENOMEM;
--		goto err0;
--	}
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	l3->l3_base[0] = devm_ioremap(dev, res->start, resource_size(res));
-+	if (IS_ERR(l3->l3_base[0]))
-+		return PTR_ERR(l3->l3_base[0]);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	if (!res) {
--		dev_err(&pdev->dev, "couldn't find resource 1\n");
--		ret = -ENODEV;
--		goto err1;
--	}
--
--	l3->l3_base[1] = ioremap(res->start, resource_size(res));
--	if (!l3->l3_base[1]) {
--		dev_err(&pdev->dev, "ioremap failed\n");
--		ret = -ENOMEM;
--		goto err1;
--	}
-+	l3->l3_base[1] = devm_ioremap(dev, res->start, resource_size(res));
-+	if (IS_ERR(l3->l3_base[1]))
-+		return PTR_ERR(l3->l3_base[1]);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
--	if (!res) {
--		dev_err(&pdev->dev, "couldn't find resource 2\n");
--		ret = -ENODEV;
--		goto err2;
--	}
--
--	l3->l3_base[2] = ioremap(res->start, resource_size(res));
--	if (!l3->l3_base[2]) {
--		dev_err(&pdev->dev, "ioremap failed\n");
--		ret = -ENOMEM;
--		goto err2;
--	}
-+	l3->l3_base[2] = devm_ioremap(dev, res->start, resource_size(res));
-+	if (IS_ERR(l3->l3_base[2]))
-+		return PTR_ERR(l3->l3_base[2]);
- 
- 	/*
- 	 * Setup interrupt Handlers
-@@ -191,7 +166,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	if (ret) {
- 		pr_crit("L3: request_irq failed to register for 0x%x\n",
- 						l3->debug_irq);
--		goto err3;
-+		free_irq(l3->debug_irq, l3);
-+		return ret;
- 	}
- 
- 	l3->app_irq = platform_get_irq(pdev, 1);
-@@ -201,22 +177,11 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	if (ret) {
- 		pr_crit("L3: request_irq failed to register for 0x%x\n",
- 						l3->app_irq);
--		goto err4;
-+		free_irq(l3->app_irq, l3);
-+		free_irq(l3->debug_irq, l3);
-+		return ret;
- 	}
--
- 	return 0;
--
--err4:
--	free_irq(l3->debug_irq, l3);
--err3:
--	iounmap(l3->l3_base[2]);
--err2:
--	iounmap(l3->l3_base[1]);
--err1:
--	iounmap(l3->l3_base[0]);
--err0:
--	kfree(l3);
--	return ret;
- }
- 
- static int omap4_l3_remove(struct platform_device *pdev)
-@@ -225,10 +190,6 @@ static int omap4_l3_remove(struct platform_device *pdev)
- 
- 	free_irq(l3->app_irq, l3);
- 	free_irq(l3->debug_irq, l3);
--	iounmap(l3->l3_base[0]);
--	iounmap(l3->l3_base[1]);
--	iounmap(l3->l3_base[2]);
--	kfree(l3);
- 
- 	return 0;
- }
--- 
-1.8.3.2
+On Fri, 23 May 2014, Julia Lawall wrote:
 
+>
+>
+> On Thu, 22 May 2014, Dmitry Torokhov wrote:
+>
+> > Hi Himangi,
+> >
+> > On Fri, May 23, 2014 at 01:04:30AM +0530, Himangi Saraogi wrote:
+> > > This patch moves data allocated using kzalloc to managed data allocated
+> > > using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+> > > functions. Also the unnecessary labels are done away with.
+> >
+> > Please no more partial devm conversions. I am not interested in patches
+> > that change only 1 resource to be managed and leaving the rest as is.
+> >
+> > If you want to do devm conversion please do it if you convert all (or at
+> > least majority) of resource handling to managed resources.
+>
+> Sorry, I don't think we are clear on what is wanted.  Himangi's patches
+> convert everything where a devm function is already available (to our
+> knowledge).  Do you prefer that new devm functions be introduced?  On the
+> one hand, that is perhaps useful from a safety point of view.  On the
+> other hand, it could lead to a huge number of rarely used devm functions
+> that no one knows about and to a lot of code diversity.  So I don't know
+> what is the good solution.
+
+I guess that the concrete problem is of_ioremap?  Since that is a pretty
+common function, I guess it could be reasonable to introduce a devm
+function for it as well.  Or maybe one already exists and we overlooked
+it.
+
+julia
