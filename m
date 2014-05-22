@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaEVV5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 17:57:46 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:50170 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaEVV5p convert rfc822-to-8bit (ORCPT
+	id S1752466AbaEVV5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 17:57:48 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:44342 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177AbaEVV5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 17:57:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400337445-25750-1-git-send-email-manuel.schoelling@gmx.de>
-References: <1400337445-25750-1-git-send-email-manuel.schoelling@gmx.de>
-Date: Thu, 22 May 2014 23:57:44 +0200
-Message-ID: <CACRpkdYJ31oTB4SJJugJU_neFgXVpVBjXs6dpYsCARJmxL=Cmg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: Cleanup string initializations (char[] instead
- of char *)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?UTF-8?Q?Manuel_Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 May 2014 17:57:46 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] tools: perf: util: session.c:  Cleaning up inconsistent NULL checks
+Date: Thu, 22 May 2014 23:58:36 +0200
+Message-Id: <1400795916-12613-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 4:37 PM, Manuel Schölling
-<manuel.schoelling@gmx.de> wrote:
+Cleaning up inconsistent NULL checks.
+There is otherwise a risk of a possible null pointer dereference.
 
-> Initializations like 'char *foo = "bar"' will create two variables: a static
-> string and a pointer (foo) to that static string. Instead 'char foo[] = "bar"'
-> will declare a single variable and will end up in shorter
-> assembly (according to Jeff Garzik on the KernelJanitor's TODO list).
->
-> Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+Was largely found by using a static code analysis program called cppcheck.
 
-At this point of the release cycle I do not dare to apply this.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ tools/perf/util/session.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Please work in Thierry's errors and resend after the merge window.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 55960f2..8defd80 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1625,13 +1625,15 @@ out_delete_map:
+ void perf_session__fprintf_info(struct perf_session *session, FILE *fp,
+ 				bool full)
+ {
+-	int fd = perf_data_file__fd(session->file);
++	int fd;
+ 	struct stat st;
+ 	int ret;
+ 
+ 	if (session == NULL || fp == NULL)
+ 		return;
+ 
++	fd = perf_data_file__fd(session->file);
++
+ 	ret = fstat(fd, &st);
+ 	if (ret == -1)
+ 		return;
+-- 
+1.7.10.4
 
-Yours,
-Linus Walleij
