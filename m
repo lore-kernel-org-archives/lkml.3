@@ -1,214 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaEVBC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 21:02:56 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:37289 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaEVBCz (ORCPT
+	id S1752134AbaEVBD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 21:03:56 -0400
+Received: from smtprelay0156.hostedemail.com ([216.40.44.156]:57052 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750770AbaEVBDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 21:02:55 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <537D4CBB.80305@lge.com>
-Date: Thu, 22 May 2014 10:02:51 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>
-Subject: Re: [RFC PATCH] arm: dma-mapping: fallback allocation for cma failure
-References: <537AEEDB.2000001@lge.com> <20140520065222.GB8315@js1304-P5Q-DELUXE> <xa1t1tvo1fas.fsf@mina86.com> <537C5EA3.20709@lge.com> <xa1td2f699j4.fsf@mina86.com>
-In-Reply-To: <xa1td2f699j4.fsf@mina86.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 21 May 2014 21:03:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2689:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4605:5007:6119:7652:7901:8957:8985:9025:9040:10004:10400:10848:11232:11658:11914:12043:12517:12519:12663:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: grass76_5c3efaec37c12
+X-Filterd-Recvd-Size: 2329
+Message-ID: <1400720632.11896.7.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] drivers/scsi/tmscsim.c: replace shift loop by ilog2
+From: Joe Perches <joe@perches.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kurt Garloff <garloff@suse.de>, akpm <akpm@linux-foundation.org>
+Date: Wed, 21 May 2014 18:03:52 -0700
+In-Reply-To: <20140522002822.GA6446@roeck-us.net>
+References: <20140520184809.56d3707440f64e2d9656e3c7@skynet.be>
+	 <1400605602.26709.11.camel@joe-AO725> <20140522002822.GA6446@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I appreciate your comments.
-The previous patch was ugly. But now it's beautiful! Just 3 lines!
+On Wed, 2014-05-21 at 17:28 -0700, Guenter Roeck wrote:
+> On Tue, May 20, 2014 at 10:06:42AM -0700, Joe Perches wrote:
+> > On Tue, 2014-05-20 at 18:48 +0200, Fabian Frederick wrote:
+> > > Cc: Kurt Garloff <garloff@suse.de>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > > ---
+> > >  drivers/scsi/tmscsim.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
+> > []
+> > > @@ -1611,7 +1611,7 @@ dc390_Reselect( struct dc390_acb* pACB )
+> > >        printk (KERN_ERR "DC390: Reselection must select host adapter: %02x!\n", lun);
+> > >      else
+> > >        lun ^= 1 << pACB->pScsiHost->this_id; /* Mask AdapterID */
+> > > -    id = 0; while (lun >>= 1) id++;
+> > > +    id = ilog2(lun);
+> > >      /* Get LUN */
+> > >      lun = DC390_read8 (ScsiFifo);
+> > >      if (!(lun & IDENTIFY_BASE)) printk (KERN_ERR "DC390: Resel: Expect identify message!\n");
+> > 
+> > Hey Fabian.
+> > 
+> > You've submitted several of these now.
+> > 
+> > Have you gone through all of these to make sure
+> > that the ilog2(<foo>) uses are always using a
+> > non-zero <foo>?
+> > 
+> Maybe I am missing something. Why not just use fls() ?
 
-I'm not familiar with kernel patch process.
-Can I have your name at Signed-off-by: line?
-What tag do I have to write your name in?
+fls strains Andrew Morton's brain.
 
-
---------------------------------- 8< ----------------------------------------------
- From 135c986cfaa5a7291519308b3d47e58bf9f5af25 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Tue, 20 May 2014 14:16:20 +0900
-Subject: [PATCH] arm: dma-mapping: add checking cma area initialized
-
-If CMA is turned on and CMA size is set to zero, kernel should
-behave as if CMA was not enabled at compile time.
-Every dma allocation should check existence of cma area
-before requesting memory.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
-  arch/arm/mm/dma-mapping.c |    7 ++++---
-  1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 18e98df..9173a13 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -390,12 +390,13 @@ static int __init atomic_pool_init(void)
-         if (!pages)
-                 goto no_pages;
-
--       if (IS_ENABLED(CONFIG_DMA_CMA))
-+       if (dev_get_cma_area(NULL))
-                 ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
-                                               atomic_pool_init);
-         else
-                 ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
-                                            atomic_pool_init);
-+
-         if (ptr) {
-                 int i;
-
-@@ -701,7 +702,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
-                 addr = __alloc_simple_buffer(dev, size, gfp, &page);
-         else if (!(gfp & __GFP_WAIT))
-                 addr = __alloc_from_pool(size, &page);
--       else if (!IS_ENABLED(CONFIG_DMA_CMA))
-+       else if (!dev_get_cma_area(dev))
-                 addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
-         else
-                 addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
-@@ -790,7 +791,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
-                 __dma_free_buffer(page, size);
-         } else if (__free_from_pool(cpu_addr, size)) {
-                 return;
--       } else if (!IS_ENABLED(CONFIG_DMA_CMA)) {
-+       } else if (!dev_get_cma_area(dev)) {
-                 __dma_free_remap(cpu_addr, size);
-                 __dma_free_buffer(page, size);
-         } else {
---
-1.7.9.5
+https://lkml.org/lkml/2014/5/19/771
 
 
-2014-05-22 오전 5:11, Michal Nazarewicz 쓴 글:
-> On Wed, May 21 2014, Gioh Kim <gioh.kim@lge.com> wrote:
->> Date: Tue, 20 May 2014 14:16:20 +0900
->> Subject: [PATCH] arm: dma-mapping: add checking cma area initialized
->>
->> If CMA is turned on and CMA size is set to zero, kernel should
->> behave as if CMA was not enabled at compile time.
->> Every dma allocation should check existence of cma area
->> before requesting memory.
->>
->> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
->> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> Some minor comments.  Also, I'd love for someone more experienced with
-> ARM to take a look at this as well.
->
->> ---
->>    arch/arm/mm/dma-mapping.c |   12 ++++++++----
->>    1 file changed, 8 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
->> index 18e98df..61f7b93 100644
->> --- a/arch/arm/mm/dma-mapping.c
->> +++ b/arch/arm/mm/dma-mapping.c
->> @@ -379,7 +379,7 @@ static int __init atomic_pool_init(void)
->>           unsigned long *bitmap;
->>           struct page *page;
->>           struct page **pages;
->> -       void *ptr;
->> +       void *ptr = NULL;
->
-> This is unnecessary any more.
->
->>           int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
->>
->>           bitmap = kzalloc(bitmap_size, GFP_KERNEL);
->> @@ -390,12 +390,13 @@ static int __init atomic_pool_init(void)
->>           if (!pages)
->>                   goto no_pages;
->>
->> -       if (IS_ENABLED(CONFIG_DMA_CMA))
->> +       if (IS_ENABLED(CONFIG_DMA_CMA) && dma_contiguous_default_area)
->
-> +	if (dev_get_cma_area(NULL))
->
-> dev_get_cma_area returns NULL if !IS_ENABLED(CONFIG_DMA_CMA) so there's
-> no need to check it explicitly.  And with NULL argument,
-> deg_get_cma_area returns the default area.
->
->>                   ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
->>                                                 atomic_pool_init);
->>           else
->>                   ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
->>                                              atomic_pool_init);
->> +
->>           if (ptr) {
->>                   int i;
->>
->> @@ -669,6 +670,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
->>           u64 mask = get_coherent_dma_mask(dev);
->>           struct page *page = NULL;
->>           void *addr;
->> +       struct cma *cma = dev_get_cma_area(dev);
->>
->>    #ifdef CONFIG_DMA_API_DEBUG
->>           u64 limit = (mask + 1) & ~mask;
->> @@ -701,7 +703,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
->>                   addr = __alloc_simple_buffer(dev, size, gfp, &page);
->>           else if (!(gfp & __GFP_WAIT))
->>                   addr = __alloc_from_pool(size, &page);
->> -       else if (!IS_ENABLED(CONFIG_DMA_CMA))
->> +       else if (!IS_ENABLED(CONFIG_DMA_CMA) || !cma)
->
-> Like above, just do:
->
-> +	else if (!dev_get_cma_area(dev))
->
-> This will also allow to drop the “cma” variable above.
->
->>                   addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
->>           else
->>                   addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
->> @@ -780,6 +782,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
->>                              bool is_coherent)
->>    {
->>           struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
->> +       struct cma *cma = dev_get_cma_area(dev);
->>
->>           if (dma_release_from_coherent(dev, get_order(size), cpu_addr))
->>                   return;
->> @@ -790,7 +793,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
->>                   __dma_free_buffer(page, size);
->>           } else if (__free_from_pool(cpu_addr, size)) {
->>                   return;
->> -       } else if (!IS_ENABLED(CONFIG_DMA_CMA)) {
->> +       } else if (!IS_ENABLED(CONFIG_DMA_CMA) || !cma) {
->
-> Ditto.
->
->>                   __dma_free_remap(cpu_addr, size);
->>                   __dma_free_buffer(page, size);
->>           } else {
->> @@ -798,6 +801,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
->>                    * Non-atomic allocations cannot be freed with IRQs disabled
->>                    */
->>                   WARN_ON(irqs_disabled());
->> +
->
-> Unrelated change.
->
->>                   __free_from_contiguous(dev, page, cpu_addr, size);
->>           }
->>    }
->> --
->> 1.7.9.5
->
