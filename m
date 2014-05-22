@@ -1,64 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaEVXgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:36:22 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:20859
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751247AbaEVXgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:36:21 -0400
-X-IronPort-AV: E=Sophos;i="4.98,890,1392159600"; 
-   d="scan'208";a="63299552"
-Date: Fri, 23 May 2014 07:35:47 +0800 (SGT)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Himangi Saraogi <himangi774@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dt/sparc: Introduce the use of the managed version of
- kzalloc
-In-Reply-To: <alpine.DEB.2.10.1405230700090.2606@hadrien>
-Message-ID: <alpine.DEB.2.10.1405230735060.2606@hadrien>
-References: <20140522193430.GA16315@himangi-Dell> <20140522194539.GA7708@core.coreip.homeip.net> <alpine.DEB.2.10.1405230700090.2606@hadrien>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752826AbaEVXgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:36:45 -0400
+Received: from evunix.uevora.pt ([193.136.216.1]:58860 "EHLO evunix.uevora.pt"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752644AbaEVXgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:36:42 -0400
+X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 May 2014 19:36:40 EDT
+X-UEvora-MailScanner-From: fsmoa@uevora.pt
+X-UEvora-MailScanner: Found to be clean
+X-UEvora-MailScanner-ID: 46425F0CE5.A9C5D
+X-DKIM: OpenDKIM Filter v2.6.8 evunix.uevora.pt 46425F0CE5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Fri, 23 May 2014 00:26:51 +0100
+From: Osbornes Solicitors LLP <fsmoa@uevora.pt>
+To: undisclosed-recipients:;
+Subject: PRIVATE MESSAGE
+Reply-To: <lawmarkchamb@mail2world.com>
+Mail-Reply-To: <lawmarkchamb@mail2world.com>
+Message-ID: <f95f98238fb8e5ad48d9391628b67d79@uevora.pt>
+User-Agent: Roundcube Webmail/0.7.1
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.7 (evunix.uevora.pt [0.0.0.0]); Fri, 23 May 2014 00:26:53 +0100 (WEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+My late client made his last will and testament in your favour, i sent 
+letters to you but got no response, i advise you contact me immediately.
 
-
-On Fri, 23 May 2014, Julia Lawall wrote:
-
->
->
-> On Thu, 22 May 2014, Dmitry Torokhov wrote:
->
-> > Hi Himangi,
-> >
-> > On Fri, May 23, 2014 at 01:04:30AM +0530, Himangi Saraogi wrote:
-> > > This patch moves data allocated using kzalloc to managed data allocated
-> > > using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-> > > functions. Also the unnecessary labels are done away with.
-> >
-> > Please no more partial devm conversions. I am not interested in patches
-> > that change only 1 resource to be managed and leaving the rest as is.
-> >
-> > If you want to do devm conversion please do it if you convert all (or at
-> > least majority) of resource handling to managed resources.
->
-> Sorry, I don't think we are clear on what is wanted.  Himangi's patches
-> convert everything where a devm function is already available (to our
-> knowledge).  Do you prefer that new devm functions be introduced?  On the
-> one hand, that is perhaps useful from a safety point of view.  On the
-> other hand, it could lead to a huge number of rarely used devm functions
-> that no one knows about and to a lot of code diversity.  So I don't know
-> what is the good solution.
-
-I guess that the concrete problem is of_ioremap?  Since that is a pretty
-common function, I guess it could be reasonable to introduce a devm
-function for it as well.  Or maybe one already exists and we overlooked
-it.
-
-julia
+Barr Mark Freedman
