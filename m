@@ -1,364 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817AbaEVJe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:34:57 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:64745 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751322AbaEVJey (ORCPT
+	id S1754216AbaEVJfU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:35:20 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55884 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753754AbaEVJfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:34:54 -0400
-Message-ID: <1400751291.16832.27.camel@x220>
-Subject: [PATCH] MIPS: MSP71xx: remove checks for two macros
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ralf Baechle <ralf@linux-mips.org>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mips@linux-mips.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 May 2014 11:34:51 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 May 2014 09:34:51.0858 (UTC) FILETIME=[14F15B20:01CF75A1]
-X-RcptDomain: vger.kernel.org
+	Thu, 22 May 2014 05:35:17 -0400
+Date: Thu, 22 May 2014 10:33:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Barry Song <baohua@kernel.org>
+Cc: Matt Porter <mporter@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching
+	nodes
+Message-ID: <20140522093347.GS3693@n2100.arm.linux.org.uk>
+References: <1398644860-22973-1-git-send-email-mporter@linaro.org> <20140428142950.GB30292@saruman.home> <20140428143709.GC7719@beef> <20140428145223.GL26756@n2100.arm.linux.org.uk> <CAGsJ_4x1+eePRDMP0-0WeTG6ZJdzmMkN_9USbKt8joY8AKsDdw@mail.gmail.com> <20140429151433.GD26756@n2100.arm.linux.org.uk> <CAGsJ_4yg2Dcwyj5cLc2DuYVOcWwmpkPzK_=BUZLqRLDyErBL=Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGsJ_4yg2Dcwyj5cLc2DuYVOcWwmpkPzK_=BUZLqRLDyErBL=Q@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since v2.6.39 there are checks for CONFIG_MSP_HAS_DUAL_USB and checks
-for CONFIG_MSP_HAS_TSMAC in the code. The related Kconfig symbols have
-never been added. These checks have evaluated to false for three years
-now. Remove them and the code they have been hiding.
+On Tue, Apr 29, 2014 at 11:40:33PM +0800, Barry Song wrote:
+> 2014-04-29 23:14 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> > On Tue, Apr 29, 2014 at 11:05:06PM +0800, Barry Song wrote:
+> >> 2014-04-28 22:52 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> >> > On Mon, Apr 28, 2014 at 10:37:09AM -0400, Matt Porter wrote:
+> >> >> The "fix" is tested against bcm281xx and bcm21664 as that is what the
+> >> >> l2c cleanup breaks in -next. As mentioned, I don't have the sirfsoc h/w
+> >> >> so this first attempt at a fix also breaks their platform. It can be
+> >> >> addressed by adding those platform specific compatibles back to the dts,
+> >> >> of course.
+> >> >>
+> >> >> I'd much prefer that the sirfsoc folks fix this...it's going to break
+> >> >> other platforms in a multi v7 build.
+> >> >
+> >> > Well, it's about time we got rid of this from platform specific code
+> >> > anyway, taking it away from platform maintainers to mess around with.
+> >> > So that's what I'm doing.
+> >> >
+> >> > It's worth noting that if you build a single zImage with exynos also
+> >> > enabled, then you also end up with an unconditional call from that
+> >> > code to l2x0_of_init() with it's own magic numbers - and that applies
+> >> > before my changes.
+> >> >
+> >> > So let's fix this properly and yank this crap from platform maintainers
+> >> > fingers.
+> >>
+> >> i mentioned dropping specific dts compatible prop will break non-csr
+> >> platforms in the mail thread "ARM: prima2: remove L2 cache size
+> >> override" and i said i was going to send v2. you said you need it
+> >> before rc6. now it has been sent, but i am sorry it is not against
+> >> next-20140424.
+> >
+> > FFS.  IT HASN'T BEEN SENT.  All that I did was drop it into linux-next
+> > so that more people would get off their fat backsides and test this
+> > fscking patch set - something which hasn't happened because no one
+> > pays attention to emails sent to mailing lists.
+> 
+> so your point is people don't pay attention to your mails? or you are
+> ignored? i think that is 100% not real. i think your opinions and
+> mails are always respected as you are the chief arm linux expert.
+> 
+> >
+> > I also told you that this was what I was going to do.  But... is it
+> > really on to hold up such a large patch set which impacts virtually
+> > everyone because _you_ don't have time to sort out your small special
+> > requirements - no it is not, that's just fscking selfish.
+> >
+> > Anyway, I've had it with dealing with platform maintainers, I've yanked
+> > this patch set, and I'm no longer planning to do anything with it -
+> > platform maintainers have destroyed my will to get any of this series
+> > into the kernel.
+> 
+> no, i am trying to follow your suggestion to make patch set merged and
+> l2 codes cleaned.
+> i have been trying to follow your will until now, and from the beginning.
+> 
+> >
+> > So, the L2 cache code is going to remain in its current state, and it's
+> > going to rot because it's _FAR_ too much effort dealing with slow people
+> > like yourselves, or people who want the series split up, or people who
+> > whinge that there aren't any acks there (WELL GET OFF YOUR FAT BACKSIDES
+> > AND SEND ME SOME IF YOU CARE ABOUT THIS - no, don't, I'm no longer pushing
+> > this series.)
+> 
+> people might be "selfish", but people might have some reasons to
+> response slowly, like holiday or family issue.
+> how about taking it easy? it doesn't prove you are not respected by
+> platform maintainers.
+> 
+> >
+> > This is the last time I'm going to ever try cleaning up any core ARM code.
+> > Core ARM maintanence is impossible in this environment with arm-soc split
+> > from core ARM stuff, because core ARM stuff /always/ impacts on SoC
+> > specific code.  You can't get away from that.
+> >
+> > My position in this community has been made impossible and obsolete by
+> > Linaro.  I'm at the point of walking away from this crap.
+> 
+> just fix the relationship and communication, that is good enough. you
+> have done things so well, there is no reason to give up.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Eyeball tested only.
+So, just as I thought...
 
- arch/mips/include/asm/mach-pmcs-msp71xx/msp_usb.h |  4 -
- arch/mips/pmcs-msp71xx/msp_eth.c                  | 76 -------------------
- arch/mips/pmcs-msp71xx/msp_usb.c                  | 90 -----------------------
- drivers/usb/host/ehci-pmcmsp.c                    | 40 ----------
- 4 files changed, 210 deletions(-)
+-rc6 has now been released, and YOU have done NOTHING to resolve any of
+the issues you have with this patch set - which is precisely on track
+with how you have behaved towards this set of changes on the past - where
+you promised imformation/patches and never delivered.
 
-diff --git a/arch/mips/include/asm/mach-pmcs-msp71xx/msp_usb.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_usb.h
-index aa45e6a07126..fe1566f2913e 100644
---- a/arch/mips/include/asm/mach-pmcs-msp71xx/msp_usb.h
-+++ b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_usb.h
-@@ -25,11 +25,7 @@
- #ifndef MSP_USB_H_
- #define MSP_USB_H_
- 
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--#define NUM_USB_DEVS   2
--#else
- #define NUM_USB_DEVS   1
--#endif
- 
- /* Register spaces for USB host 0 */
- #define MSP_USB0_MAB_START	(MSP_USB0_BASE + 0x0)
-diff --git a/arch/mips/pmcs-msp71xx/msp_eth.c b/arch/mips/pmcs-msp71xx/msp_eth.c
-index c584df393de2..15679b427f44 100644
---- a/arch/mips/pmcs-msp71xx/msp_eth.c
-+++ b/arch/mips/pmcs-msp71xx/msp_eth.c
-@@ -38,73 +38,6 @@
- #define MSP_ETHERNET_GPIO1	15
- #define MSP_ETHERNET_GPIO2	16
- 
--#ifdef CONFIG_MSP_HAS_TSMAC
--#define MSP_TSMAC_SIZE	0x10020
--#define MSP_TSMAC_ID	"pmc_tsmac"
--
--static struct resource msp_tsmac0_resources[] = {
--	[0] = {
--		.start	= MSP_MAC0_BASE,
--		.end	= MSP_MAC0_BASE + MSP_TSMAC_SIZE - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= MSP_INT_MAC0,
--		.end	= MSP_INT_MAC0,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct resource msp_tsmac1_resources[] = {
--	[0] = {
--		.start	= MSP_MAC1_BASE,
--		.end	= MSP_MAC1_BASE + MSP_TSMAC_SIZE - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= MSP_INT_MAC1,
--		.end	= MSP_INT_MAC1,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--static struct resource msp_tsmac2_resources[] = {
--	[0] = {
--		.start	= MSP_MAC2_BASE,
--		.end	= MSP_MAC2_BASE + MSP_TSMAC_SIZE - 1,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= MSP_INT_SAR,
--		.end	= MSP_INT_SAR,
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--
--static struct platform_device tsmac_device[] = {
--	[0] = {
--		.name	= MSP_TSMAC_ID,
--		.id	= 0,
--		.num_resources = ARRAY_SIZE(msp_tsmac0_resources),
--		.resource = msp_tsmac0_resources,
--	},
--	[1] = {
--		.name	= MSP_TSMAC_ID,
--		.id	= 1,
--		.num_resources = ARRAY_SIZE(msp_tsmac1_resources),
--		.resource = msp_tsmac1_resources,
--	},
--	[2] = {
--		.name	= MSP_TSMAC_ID,
--		.id	= 2,
--		.num_resources = ARRAY_SIZE(msp_tsmac2_resources),
--		.resource = msp_tsmac2_resources,
--	},
--};
--#define msp_eth_devs	tsmac_device
--
--#else
--/* If it is not TSMAC assume MSP_ETH (100Mbps) */
- #define MSP_ETH_ID	"pmc_mspeth"
- #define MSP_ETH_SIZE	0xE0
- static struct resource msp_eth0_resources[] = {
-@@ -152,7 +85,6 @@ static struct platform_device mspeth_device[] = {
- };
- #define msp_eth_devs	mspeth_device
- 
--#endif
- int __init msp_eth_setup(void)
- {
- 	int i, ret = 0;
-@@ -161,14 +93,6 @@ int __init msp_eth_setup(void)
- 	msp_gpio_pin_mode(MSP_GPIO_OUTPUT, MSP_ETHERNET_GPIO0);
- 	msp_gpio_pin_hi(MSP_ETHERNET_GPIO0);
- 
--#ifdef CONFIG_MSP_HAS_TSMAC
--	/* 3 phys on boards with TSMAC */
--	msp_gpio_pin_mode(MSP_GPIO_OUTPUT, MSP_ETHERNET_GPIO1);
--	msp_gpio_pin_hi(MSP_ETHERNET_GPIO1);
--
--	msp_gpio_pin_mode(MSP_GPIO_OUTPUT, MSP_ETHERNET_GPIO2);
--	msp_gpio_pin_hi(MSP_ETHERNET_GPIO2);
--#endif
- 	for (i = 0; i < ARRAY_SIZE(msp_eth_devs); i++) {
- 		ret = platform_device_register(&msp_eth_devs[i]);
- 		printk(KERN_INFO "device: %d, return value = %d\n", i, ret);
-diff --git a/arch/mips/pmcs-msp71xx/msp_usb.c b/arch/mips/pmcs-msp71xx/msp_usb.c
-index 4dab915696e7..c87c5f810cd1 100644
---- a/arch/mips/pmcs-msp71xx/msp_usb.c
-+++ b/arch/mips/pmcs-msp71xx/msp_usb.c
-@@ -75,47 +75,6 @@ static struct mspusb_device msp_usbhost0_device = {
- 		.resource	= msp_usbhost0_resources,
- 	},
- };
--
--/* MSP7140/MSP82XX has two USB2 hosts. */
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--static u64 msp_usbhost1_dma_mask = 0xffffffffUL;
--
--static struct resource msp_usbhost1_resources[] = {
--	[0] = { /* EHCI-HS operational and capabilities registers */
--		.start	= MSP_USB1_HS_START,
--		.end	= MSP_USB1_HS_END,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= MSP_INT_USB,
--		.end	= MSP_INT_USB,
--		.flags	= IORESOURCE_IRQ,
--	},
--	[2] = { /* MSBus-to-AMBA bridge register space */
--		.start	= MSP_USB1_MAB_START,
--		.end	= MSP_USB1_MAB_END,
--		.flags	= IORESOURCE_MEM,
--	},
--	[3] = { /* Identification and general hardware parameters */
--		.start	= MSP_USB1_ID_START,
--		.end	= MSP_USB1_ID_END,
--		.flags	= IORESOURCE_MEM,
--	},
--};
--
--static struct mspusb_device msp_usbhost1_device = {
--	.dev	= {
--		.name	= "pmcmsp-ehci",
--		.id	= 1,
--		.dev	= {
--			.dma_mask = &msp_usbhost1_dma_mask,
--			.coherent_dma_mask = 0xffffffffUL,
--		},
--		.num_resources	= ARRAY_SIZE(msp_usbhost1_resources),
--		.resource	= msp_usbhost1_resources,
--	},
--};
--#endif /* CONFIG_MSP_HAS_DUAL_USB */
- #endif /* CONFIG_USB_EHCI_HCD */
- 
- #if defined(CONFIG_USB_GADGET)
-@@ -157,46 +116,6 @@ static struct mspusb_device msp_usbdev0_device = {
- 		.resource	= msp_usbdev0_resources,
- 	},
- };
--
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--static struct resource msp_usbdev1_resources[] = {
--	[0] = { /* EHCI-HS operational and capabilities registers */
--		.start	= MSP_USB1_HS_START,
--		.end	= MSP_USB1_HS_END,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= MSP_INT_USB,
--		.end	= MSP_INT_USB,
--		.flags	= IORESOURCE_IRQ,
--	},
--	[2] = { /* MSBus-to-AMBA bridge register space */
--		.start	= MSP_USB1_MAB_START,
--		.end	= MSP_USB1_MAB_END,
--		.flags	= IORESOURCE_MEM,
--	},
--	[3] = { /* Identification and general hardware parameters */
--		.start	= MSP_USB1_ID_START,
--		.end	= MSP_USB1_ID_END,
--		.flags	= IORESOURCE_MEM,
--	},
--};
--
--/* This may need to be converted to a mspusb_device, too. */
--static struct mspusb_device msp_usbdev1_device = {
--	.dev	= {
--		.name	= "msp71xx_udc",
--		.id	= 0,
--		.dev	= {
--			.dma_mask = &msp_usbdev_dma_mask,
--			.coherent_dma_mask = 0xffffffffUL,
--		},
--		.num_resources	= ARRAY_SIZE(msp_usbdev1_resources),
--		.resource	= msp_usbdev1_resources,
--	},
--};
--
--#endif /* CONFIG_MSP_HAS_DUAL_USB */
- #endif /* CONFIG_USB_GADGET */
- 
- static int __init msp_usb_setup(void)
-@@ -231,10 +150,6 @@ static int __init msp_usb_setup(void)
- #if defined(CONFIG_USB_EHCI_HCD)
- 		msp_devs[0] = &msp_usbhost0_device.dev;
- 		ppfinit("platform add USB HOST done %s.\n", msp_devs[0]->name);
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--		msp_devs[1] = &msp_usbhost1_device.dev;
--		ppfinit("platform add USB HOST done %s.\n", msp_devs[1]->name);
--#endif
- #else
- 		ppfinit("%s: echi_hcd not supported\n", __FILE__);
- #endif	/* CONFIG_USB_EHCI_HCD */
-@@ -244,11 +159,6 @@ static int __init msp_usb_setup(void)
- 		msp_devs[0] = &msp_usbdev0_device.dev;
- 		ppfinit("platform add USB DEVICE done %s.\n"
- 					, msp_devs[0]->name);
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--		msp_devs[1] = &msp_usbdev1_device.dev;
--		ppfinit("platform add USB DEVICE done %s.\n"
--					, msp_devs[1]->name);
--#endif
- #else
- 		ppfinit("%s: usb_gadget not supported\n", __FILE__);
- #endif	/* CONFIG_USB_GADGET */
-diff --git a/drivers/usb/host/ehci-pmcmsp.c b/drivers/usb/host/ehci-pmcmsp.c
-index af3974a5e7c2..7d75465d97c7 100644
---- a/drivers/usb/host/ehci-pmcmsp.c
-+++ b/drivers/usb/host/ehci-pmcmsp.c
-@@ -68,9 +68,6 @@ static void usb_hcd_tdi_set_mode(struct ehci_hcd *ehci)
- 
- 	/* set TWI GPIO USB_HOST_DEV pin high */
- 	gpio_direction_output(MSP_PIN_USB0_HOST_DEV, 1);
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--	gpio_direction_output(MSP_PIN_USB1_HOST_DEV, 1);
--#endif
- }
- 
- /* called during probe() after chip reset completes */
-@@ -248,33 +245,6 @@ void usb_hcd_msp_remove(struct usb_hcd *hcd, struct platform_device *dev)
- 	usb_put_hcd(hcd);
- }
- 
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--/*
-- * Wrapper around the main ehci_irq.  Since both USB host controllers are
-- * sharing the same IRQ, need to first determine whether we're the intended
-- * recipient of this interrupt.
-- */
--static irqreturn_t ehci_msp_irq(struct usb_hcd *hcd)
--{
--	u32 int_src;
--	struct device *dev = hcd->self.controller;
--	struct platform_device *pdev;
--	struct mspusb_device *mdev;
--	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
--	/* need to reverse-map a couple of containers to get our device */
--	pdev = to_platform_device(dev);
--	mdev = to_mspusb_device(pdev);
--
--	/* Check to see if this interrupt is for this host controller */
--	int_src = ehci_readl(ehci, &mdev->mab_regs->int_stat);
--	if (int_src & (1 << pdev->id))
--		return ehci_irq(hcd);
--
--	/* Not for this device */
--	return IRQ_NONE;
--}
--#endif /* DUAL_USB */
--
- static const struct hc_driver ehci_msp_hc_driver = {
- 	.description =		hcd_name,
- 	.product_desc =		"PMC MSP EHCI",
-@@ -283,11 +253,7 @@ static const struct hc_driver ehci_msp_hc_driver = {
- 	/*
- 	 * generic hardware linkage
- 	 */
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--	.irq =			ehci_msp_irq,
--#else
- 	.irq =			ehci_irq,
--#endif
- 	.flags =		HCD_MEMORY | HCD_USB2 | HCD_BH,
- 
- 	/*
-@@ -334,9 +300,6 @@ static int ehci_hcd_msp_drv_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 
- 	gpio_request(MSP_PIN_USB0_HOST_DEV, "USB0_HOST_DEV_GPIO");
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--	gpio_request(MSP_PIN_USB1_HOST_DEV, "USB1_HOST_DEV_GPIO");
--#endif
- 
- 	ret = usb_hcd_msp_probe(&ehci_msp_hc_driver, pdev);
- 
-@@ -351,9 +314,6 @@ static int ehci_hcd_msp_drv_remove(struct platform_device *pdev)
- 
- 	/* free TWI GPIO USB_HOST_DEV pin */
- 	gpio_free(MSP_PIN_USB0_HOST_DEV);
--#ifdef CONFIG_MSP_HAS_DUAL_USB
--	gpio_free(MSP_PIN_USB1_HOST_DEV);
--#endif
- 
- 	return 0;
- }
+Well, right now I'm just not going to *care* one bit about Prima2.  If
+this patch set breaks it, tough.  You've had plenty of opportunity to
+deal with this, but instead you've chosen to just whinge about it and
+then do precisely nothing to assist.
+
+So, Prima2 *is* going to get *broken*.  No platform or SoC is important
+enough to stand in the way of core ARM changes beneficial to the rest of
+the community.
+
+We've lost around 4 weeks testing time in linux-next because of this...
+frankly I don't give a damn right now, all I care about is getting these
+patches out of my tree and into mainline during the next merge window.
+Any issues that come up can be debugged and fixed afterwards - and the
+debugging *has* to be done by the SoC people because I don't have any
+way to test and debug it on individual SoCs.  (And Olof's test farm is
+not sufficient for diagnosis.)
+
 -- 
-1.9.0
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
