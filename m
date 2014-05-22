@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595AbaEVM33 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:29:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51333 "EHLO
+	id S1755619AbaEVM36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:29:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51354 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaEVM30 (ORCPT
+	with ESMTP id S1755095AbaEVM34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:29:26 -0400
-Date: Thu, 22 May 2014 05:28:36 -0700
-From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-7aa2c016db2162defff77f6f5731bff3f25e5175@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-In-Reply-To: <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
-References: <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
+	Thu, 22 May 2014 08:29:56 -0400
+Date: Thu, 22 May 2014 05:29:00 -0700
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-e63da03639cc9e6e83b62e7ef8ffdbb92421416a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20140514132221.274b3463@annuminas.surriel.com>
+References: <20140514132221.274b3463@annuminas.surriel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Consolidate open coded implementations of nice level frobbing into nice_to_rlimit
- () and rlimit_to_nice()
-Git-Commit-ID: 7aa2c016db2162defff77f6f5731bff3f25e5175
+Subject: [tip:sched/core] sched/numa:
+  Allow task switch if load imbalance improves
+Git-Commit-ID: e63da03639cc9e6e83b62e7ef8ffdbb92421416a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,105 +32,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7aa2c016db2162defff77f6f5731bff3f25e5175
-Gitweb:     http://git.kernel.org/tip/7aa2c016db2162defff77f6f5731bff3f25e5175
-Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Thu, 8 May 2014 18:33:49 +0900
+Commit-ID:  e63da03639cc9e6e83b62e7ef8ffdbb92421416a
+Gitweb:     http://git.kernel.org/tip/e63da03639cc9e6e83b62e7ef8ffdbb92421416a
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Wed, 14 May 2014 13:22:21 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 22 May 2014 11:16:36 +0200
+CommitDate: Thu, 22 May 2014 11:16:38 +0200
 
-sched: Consolidate open coded implementations of nice level frobbing into nice_to_rlimit() and rlimit_to_nice()
+sched/numa: Allow task switch if load imbalance improves
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Currently the NUMA balancing code only allows moving tasks between NUMA
+nodes when the load on both nodes is in balance. This breaks down when
+the load was imbalanced to begin with.
+
+Allow tasks to be moved between NUMA nodes if the imbalance is small,
+or if the new imbalance is be smaller than the original one.
+
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com
+Cc: mgorman@suse.de
+Cc: chegu_vinod@hp.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/20140514132221.274b3463@annuminas.surriel.com
 ---
- drivers/staging/android/binder.c |  2 +-
- include/linux/sched/prio.h       | 16 ++++++++++++++++
- kernel/sched/core.c              |  2 +-
- kernel/sys.c                     |  6 +++---
- 4 files changed, 21 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c | 46 ++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 36 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 179b21b..9311bb6 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -436,7 +436,7 @@ static void binder_set_nice(long nice)
- 		set_user_nice(current, nice);
- 		return;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index f7cac2b..b899613 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1095,6 +1095,34 @@ static void task_numa_assign(struct task_numa_env *env,
+ 	env->best_cpu = env->dst_cpu;
+ }
+ 
++static bool load_too_imbalanced(long orig_src_load, long orig_dst_load,
++				long src_load, long dst_load,
++				struct task_numa_env *env)
++{
++	long imb, old_imb;
++
++	/* We care about the slope of the imbalance, not the direction. */
++	if (dst_load < src_load)
++		swap(dst_load, src_load);
++
++	/* Is the difference below the threshold? */
++	imb = dst_load * 100 - src_load * env->imbalance_pct;
++	if (imb <= 0)
++		return false;
++
++	/*
++	 * The imbalance is above the allowed threshold.
++	 * Compare it with the old imbalance.
++	 */
++	if (orig_dst_load < orig_src_load)
++		swap(orig_dst_load, orig_src_load);
++
++	old_imb = orig_dst_load * 100 - orig_src_load * env->imbalance_pct;
++
++	/* Would this change make things worse? */
++	return (old_imb > imb);
++}
++
+ /*
+  * This checks if the overall compute and NUMA accesses of the system would
+  * be improved if the source tasks was migrated to the target dst_cpu taking
+@@ -1107,7 +1135,8 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	struct rq *src_rq = cpu_rq(env->src_cpu);
+ 	struct rq *dst_rq = cpu_rq(env->dst_cpu);
+ 	struct task_struct *cur;
+-	long dst_load, src_load;
++	long orig_src_load, src_load;
++	long orig_dst_load, dst_load;
+ 	long load;
+ 	long imp = (groupimp > 0) ? groupimp : taskimp;
+ 
+@@ -1181,13 +1210,13 @@ static void task_numa_compare(struct task_numa_env *env,
+ 	 * In the overloaded case, try and keep the load balanced.
+ 	 */
+ balance:
+-	dst_load = env->dst_stats.load;
+-	src_load = env->src_stats.load;
++	orig_dst_load = env->dst_stats.load;
++	orig_src_load = env->src_stats.load;
+ 
+ 	/* XXX missing power terms */
+ 	load = task_h_load(env->p);
+-	dst_load += load;
+-	src_load -= load;
++	dst_load = orig_dst_load + load;
++	src_load = orig_src_load - load;
+ 
+ 	if (cur) {
+ 		load = task_h_load(cur);
+@@ -1195,11 +1224,8 @@ balance:
+ 		src_load += load;
  	}
--	min_nice = 20 - current->signal->rlim[RLIMIT_NICE].rlim_cur;
-+	min_nice = rlimit_to_nice(current->signal->rlim[RLIMIT_NICE].rlim_cur);
- 	binder_debug(BINDER_DEBUG_PRIORITY_CAP,
- 		     "%d: nice value %ld not allowed use %ld instead\n",
- 		      current->pid, nice, min_nice);
-diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
-index ac32258..d9cf5a5 100644
---- a/include/linux/sched/prio.h
-+++ b/include/linux/sched/prio.h
-@@ -41,4 +41,20 @@
- #define TASK_USER_PRIO(p)	USER_PRIO((p)->static_prio)
- #define MAX_USER_PRIO		(USER_PRIO(MAX_PRIO))
  
-+/*
-+ * Convert nice value [19,-20] to rlimit style value [1,40].
-+ */
-+static inline long nice_to_rlimit(long nice)
-+{
-+	return (MAX_NICE - nice + 1);
-+}
-+
-+/*
-+ * Convert rlimit style value [1,40] to nice value [-20, 19].
-+ */
-+static inline long rlimit_to_nice(long prio)
-+{
-+	return (MAX_NICE - prio + 1);
-+}
-+
- #endif /* _SCHED_PRIO_H */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index da302ca..321d800 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3033,7 +3033,7 @@ EXPORT_SYMBOL(set_user_nice);
- int can_nice(const struct task_struct *p, const int nice)
- {
- 	/* convert nice value [19,-20] to rlimit style value [1,40] */
--	int nice_rlim = 20 - nice;
-+	int nice_rlim = nice_to_rlimit(nice);
+-	/* make src_load the smaller */
+-	if (dst_load < src_load)
+-		swap(dst_load, src_load);
+-
+-	if (src_load * env->imbalance_pct < dst_load * 100)
++	if (load_too_imbalanced(orig_src_load, orig_dst_load,
++				src_load, dst_load, env))
+ 		goto unlock;
  
- 	return (nice_rlim <= task_rlimit(p, RLIMIT_NICE) ||
- 		capable(CAP_SYS_NICE));
-diff --git a/kernel/sys.c b/kernel/sys.c
-index fba0f29..66a751e 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -250,7 +250,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
- 			else
- 				p = current;
- 			if (p) {
--				niceval = 20 - task_nice(p);
-+				niceval = nice_to_rlimit(task_nice(p));
- 				if (niceval > retval)
- 					retval = niceval;
- 			}
-@@ -261,7 +261,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
- 			else
- 				pgrp = task_pgrp(current);
- 			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
--				niceval = 20 - task_nice(p);
-+				niceval = nice_to_rlimit(task_nice(p));
- 				if (niceval > retval)
- 					retval = niceval;
- 			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
-@@ -277,7 +277,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
- 
- 			do_each_thread(g, p) {
- 				if (uid_eq(task_uid(p), uid)) {
--					niceval = 20 - task_nice(p);
-+					niceval = nice_to_rlimit(task_nice(p));
- 					if (niceval > retval)
- 						retval = niceval;
- 				}
+ assign:
