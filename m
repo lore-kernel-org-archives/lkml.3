@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910AbaEVMVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:21:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50939 "EHLO
+	id S1755000AbaEVMVU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:21:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50948 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961AbaEVMVB (ORCPT
+	with ESMTP id S1754763AbaEVMVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:21:01 -0400
-Date: Thu, 22 May 2014 05:20:50 -0700
+	Thu, 22 May 2014 08:21:14 -0400
+Date: Thu, 22 May 2014 05:21:03 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-093f0ef34c50ff5cca41c1e18e258ff688e915b6@git.kernel.org>
+Message-ID: <tip-f156d84e427c9e1a855a4bb41156c7d82d87fb47@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1400480762-22852-4-git-send-email-namhyung@kernel.org>
-References: <1400480762-22852-4-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1400480762-22852-5-git-send-email-namhyung@kernel.org>
+References: <1400480762-22852-5-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Use hpp formats to sort hist entries
-Git-Commit-ID: 093f0ef34c50ff5cca41c1e18e258ff688e915b6
+Subject: [tip:perf/core] perf tools: Support event grouping in hpp ->sort(
+ )
+Git-Commit-ID: f156d84e427c9e1a855a4bb41156c7d82d87fb47
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,61 +32,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  093f0ef34c50ff5cca41c1e18e258ff688e915b6
-Gitweb:     http://git.kernel.org/tip/093f0ef34c50ff5cca41c1e18e258ff688e915b6
+Commit-ID:  f156d84e427c9e1a855a4bb41156c7d82d87fb47
+Gitweb:     http://git.kernel.org/tip/f156d84e427c9e1a855a4bb41156c7d82d87fb47
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Mon, 3 Mar 2014 12:07:47 +0900
+AuthorDate: Mon, 3 Mar 2014 14:14:03 +0900
 Committer:  Jiri Olsa <jolsa@kernel.org>
 CommitDate: Wed, 21 May 2014 11:45:34 +0200
 
-perf tools: Use hpp formats to sort hist entries
+perf tools: Support event grouping in hpp ->sort()
 
-It wrapped sort entries to hpp functions, so using the hpp sort list
-to sort entries.
+Move logic of hist_entry__sort_on_period to __hpp__sort() in order to
+support event group report.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/hist.c | 16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ tools/perf/ui/hist.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 58 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 7f0236c..38373c9 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -432,11 +432,11 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- int64_t
- hist_entry__cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	struct sort_entry *se;
-+	struct perf_hpp_fmt *fmt;
- 	int64_t cmp = 0;
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index a6eea66..0299385 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -116,6 +116,62 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 	return ret;
+ }
  
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		cmp = se->se_cmp(left, right);
-+	perf_hpp__for_each_sort_list(fmt) {
-+		cmp = fmt->cmp(left, right);
- 		if (cmp)
- 			break;
- 	}
-@@ -447,15 +447,11 @@ hist_entry__cmp(struct hist_entry *left, struct hist_entry *right)
- int64_t
- hist_entry__collapse(struct hist_entry *left, struct hist_entry *right)
- {
--	struct sort_entry *se;
-+	struct perf_hpp_fmt *fmt;
- 	int64_t cmp = 0;
++static int field_cmp(u64 field_a, u64 field_b)
++{
++	if (field_a > field_b)
++		return 1;
++	if (field_a < field_b)
++		return -1;
++	return 0;
++}
++
++static int __hpp__sort(struct hist_entry *a, struct hist_entry *b,
++		       hpp_field_fn get_field)
++{
++	s64 ret;
++	int i, nr_members;
++	struct perf_evsel *evsel;
++	struct hist_entry *pair;
++	u64 *fields_a, *fields_b;
++
++	ret = field_cmp(get_field(a), get_field(b));
++	if (ret || !symbol_conf.event_group)
++		return ret;
++
++	evsel = hists_to_evsel(a->hists);
++	if (!perf_evsel__is_group_event(evsel))
++		return ret;
++
++	nr_members = evsel->nr_members;
++	fields_a = calloc(sizeof(*fields_a), nr_members);
++	fields_b = calloc(sizeof(*fields_b), nr_members);
++
++	if (!fields_a || !fields_b)
++		goto out;
++
++	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		fields_a[perf_evsel__group_idx(evsel)] = get_field(pair);
++	}
++
++	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
++		evsel = hists_to_evsel(pair->hists);
++		fields_b[perf_evsel__group_idx(evsel)] = get_field(pair);
++	}
++
++	for (i = 1; i < nr_members; i++) {
++		ret = field_cmp(fields_a[i], fields_b[i]);
++		if (ret)
++			break;
++	}
++
++out:
++	free(fields_a);
++	free(fields_b);
++
++	return ret;
++}
++
+ #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
+ static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+ 			       struct perf_hpp *hpp,			\
+@@ -195,9 +251,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ #define __HPP_SORT_FN(_type, _field)						\
+ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
+ {										\
+-	s64 __a = he_get_##_field(a);						\
+-	s64 __b = he_get_##_field(b);						\
+-	return __a - __b;							\
++	return __hpp__sort(a, b, he_get_##_field);				\
+ }
  
--	list_for_each_entry(se, &hist_entry__sort_list, list) {
--		int64_t (*f)(struct hist_entry *, struct hist_entry *);
--
--		f = se->se_collapse ?: se->se_cmp;
--
--		cmp = f(left, right);
-+	perf_hpp__for_each_sort_list(fmt) {
-+		cmp = fmt->collapse(left, right);
- 		if (cmp)
- 			break;
- 	}
+ #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+@@ -217,9 +271,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ #define __HPP_SORT_RAW_FN(_type, _field)					\
+ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
+ {										\
+-	s64 __a = he_get_raw_##_field(a);					\
+-	s64 __b = he_get_raw_##_field(b);					\
+-	return __a - __b;							\
++	return __hpp__sort(a, b, he_get_raw_##_field);				\
+ }
+ 
+ 
