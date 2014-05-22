@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaEVUky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:40:54 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37478 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaEVUkx (ORCPT
+	id S1751750AbaEVUlL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:41:11 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:47930 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaEVUlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:40:53 -0400
-Date: Thu, 22 May 2014 21:39:43 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: wim@iguana.be, Guenter Roeck <linux@roeck-us.net>,
-        Arnd Bergmann <arnd@arndb.de>, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
- driver
-Message-ID: <20140522213943.7649e304@alan.etchedpixels.co.uk>
-In-Reply-To: <20140522203444.GE27329@lukather>
-References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
-	<20140507213318.GA2105@roeck-us.net>
-	<20140515091123.GQ29258@lukather>
-	<20140519150422.GA27329@lukather>
-	<20140522203444.GE27329@lukather>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 22 May 2014 16:41:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1400789482-5247-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+References: <1400789482-5247-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+Date: Thu, 22 May 2014 22:41:08 +0200
+X-Google-Sender-Auth: lxw43_fQReOSkGsj2xwb2lEs3UI
+Message-ID: <CAMuHMdWmSMv2m1Re=EnmHJb=Sih3HdeUEHUQXSVeX-VZDjyF_w@mail.gmail.com>
+Subject: Re: [PATCH v3] openrisc: irq: use irqchip framework
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux <linux@openrisc.net>, Jonas Bonn <jonas@southpole.se>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014 22:34:44 +0200
-Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+On Thu, May 22, 2014 at 10:11 PM, Stefan Kristiansson
+<stefan.kristiansson@saunalahti.fi> wrote:
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
+> @@ -0,0 +1,23 @@
+> +OpenRISC 1000 Programmable Interrupt Controller
+> +
+> +Required properties:
+> +
+> +- compatible : should be "opencores,o1k-pic-level" for variants with
 
-> On Mon, May 19, 2014 at 05:04:22PM +0200, Maxime Ripard wrote:
-> > On Thu, May 15, 2014 at 11:11:23AM +0200, Maxime Ripard wrote:
-> > > On Wed, May 07, 2014 at 02:33:18PM -0700, Guenter Roeck wrote:
-> > > > On Tue, May 06, 2014 at 09:44:19PM -0500, Maxime Ripard wrote:
-> > > > > Most of the watchdog code is duplicated between the machine restart code and
-> > > > > the watchdog driver. Add the restart hook to the watchdog driver, to be able to
-> > > > > remove it from the machine code eventually.
-> > > > > 
-> > > > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > > > 
-> > > > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > > 
-> > > Wim, do you have any comment on this one?
-> > 
-> > Ping?
-> > 
-> > It would be really great to see this in 3.16, and we get quite close
-> > to the end of ARM's merge window.
-> 
-> Ping?
-> 
-> Guenter, since you seem to be the only responsive, may I suggest that
-> you start merging patches and do a pull request to either Wim or Linus
-> directly during the merge window?
+or1k
 
-I've yet to see anyone explain why this is an improvement over the
-current situation ?
+> +  level triggered interrupt lines, "opencores,o1k-pic-edge" for variants with
+
+or1k
+
+> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
+> +  with the non-spec compliant or1200 type implementation.
+> +
+> +  "opencores,o1k-pic" is also provided as an alias to "opencores,or1200-pic",
+
+or1k
+
+> +  but this is only for backwards compatibility.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
