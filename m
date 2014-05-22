@@ -1,54 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315AbaEVDpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 23:45:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924AbaEVDph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 23:45:37 -0400
-Date: Thu, 22 May 2014 00:45:30 -0300
-From: Flavio Leitner <fbl@redhat.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Flavio Leitner <fbl@sysclose.org>
-Subject: Re: [PATCH] i8k: increase fan limit to 3
-Message-ID: <20140522034530.GD12759@t520.home>
-References: <1400725168-21358-1-git-send-email-fbl@redhat.com>
- <537D6FC8.5000105@roeck-us.net>
+	id S1751373AbaEVDqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 23:46:31 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:54162 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750886AbaEVDq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 23:46:29 -0400
+Message-ID: <537D730C.3000400@marvell.com>
+Date: Thu, 22 May 2014 11:46:20 +0800
+From: FanWu <fwu@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537D6FC8.5000105@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "fwu@marvell.com" <fwu@marvell.com>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
+        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
+        Fangsuo Wu <fswu@marvell.com>
+Subject: Re: [PATCH v2] pinctrl: add params in disable_setting for different
+ usage
+References: <1400728210-17863-1-git-send-email-fwu@marvell.com>
+In-Reply-To: <1400728210-17863-1-git-send-email-fwu@marvell.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-22_02:2014-05-22,2014-05-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=9
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405220047
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 08:32:24PM -0700, Guenter Roeck wrote:
-> On 05/21/2014 07:19 PM, Flavio Leitner wrote:
-> >From: Flavio Leitner <fbl@sysclose.org>
-> >
-> >It is possible to increase left fan speed on a
-> >DELL Precision 490n system up to 3.
-> >
-> >     value    fan rpm
-> >       1      35460
-> >       2      64740
-> >       3      78510
-> >
-> Guess the speed factor 30 doesn't apply here.
+On 05/22/2014 11:10 AM, fwu@marvell.com wrote:
+> From: Fan Wu <fwu@marvell.com>
+>
+> What the patch did:
+> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
+>    calling pinctrl_select_state
+> 2.Remove the HW disable operation in in pinmux_disable_setting function.
+>
+> The reason why to do this is that:
+> 1.To avoid duplicated enable_setting operation without disabling operation
+>    which will let Pin's desc->mux_usecount keep being added.
+> 2.The HW pin disable operation is not useful for most of the vendors' platform.
+>    And this avoid the HW glitch after using the item 1# modification.
+>
+> In the following case, the issue can be reproduced:
+> 1)There is a driver need to switch Pin state dynamicly, E.g. b/t "sleep" and
+> "default" state
+> 2)The Pin setting configuration in DTS node may be like the following one:
+> component a {
+> 	pinctrl-names = "default", "sleep";
+> 	pinctrl-0 = <&a_grp_setting &c_grp_setting>;
+> 	pinctrl-1 = <&b_grp_setting &c_grp_setting>;
+> }
+> The "c_grp_setting" config node is totaly same, maybe like following one:
+> c_grp_setting: c_grp_setting {
+> 	pinctrl-single,pins = <GPIO48 AF6>;
+> 	MFP_DEFAULT;
+> }
+> 3)When switching the Pin state in the following official Pinctrl sequence:
+> 	pin = pinctrl_get();
+> 	state = pinctrl_lookup_state(wanted_state);
+> 	pinctrl_select_state(state);
+> 	pinctrl_put();
+>
+> Test Result:
+> 1)The switch is completed as expectation, that is: component's
+> Pins configuration are changed according to the description in the
+> "wanted_state" group setting
+> 2)The "desc->mux_usecount" of corresponding Pins in "c_group" is added without being
+> decreased, because the "desc" is for each physical pin while the "setting" is
+> for each setting node in the DTS.
+> Thus, if the "c_grp_setting" in pinctrl-0 is not disabled ahead of enabling
+> "c_grp_setting" in pinctrl-1, the desc->mux_usecount will be kept added without
+> any chance to be decreased.
+>
+> According to the comments in the original code, only the setting, in old state
+> but not in new state, will be "disable"(calling pinmux_disable_setting), which
+> is correct logic but not intact. We still need consider case that the setting
+> is in both old state and new state.
+> We can do this in the following two ways:
+> 1) Avoid "enable"(calling pinmux_enable_setting) the Same Pins setting repeatedly.
+> 2) "Disable"(calling pinmux_disable_setting) the "Same Pins setting", actually
+> two setting instance, ahead of enabling them.
+>
+> Analysis:
+> 1.The solution 2# is better because it can avoid too much iteration.
+> 2.If we disable all of the setting in the old state and one/ones of the setting(s) is/are
+> existed in the new state, the Pin's mux function change may happen when
+> some SoC vendors defined the "pinctrl-single,function-off" in their DTS file.
+> old_setting=>disabled_setting=>new_setting.
+> 3.In the pinmux framework, when Pin state is switched, the setting in the old state should be
+> marked as "disabled".
+>
+> Conclusion:
+> 1.To Remove the HW disabling operation to above the glitch mentioned above.
+> 2.Handle the issue mentioned above by disabling all of the setting in old
+> state and then enable the new setting in new state.
+>
+> Signed-off-by: Fan Wu <fwu@marvell.com>
+> ---
+>   drivers/pinctrl/core.c   |   18 +++---------------
+>   drivers/pinctrl/pinmux.c |    4 ----
+>   2 files changed, 3 insertions(+), 19 deletions(-)
+>
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> index c0fe609..c97491a 100644
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -993,25 +993,13 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+>   		 * may not be identical to the set of groups with a mux setting
+>   		 * in the new state. While this might be unusual, it's entirely
+>   		 * possible for the "user"-supplied mapping table to be written
+> -		 * that way. For each group that was configured in the old state
+> -		 * but not in the new state, this code puts that group into a
+> -		 * safe/disabled state.
+> +		 * that way. This code is used for each group that was
+> +		 * configured in the old state but not in the new state
+>   		 */
+>   		list_for_each_entry(setting, &p->state->settings, node) {
+> -			bool found = false;
+>   			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
+>   				continue;
+> -			list_for_each_entry(setting2, &state->settings, node) {
+> -				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
+> -					continue;
+> -				if (setting2->data.mux.group ==
+> -						setting->data.mux.group) {
+> -					found = true;
+> -					break;
+> -				}
+> -			}
+> -			if (!found)
+> -				pinmux_disable_setting(setting);
+> +			pinmux_disable_setting(setting);
+>   		}
+>   	}
+>
+> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> index 9248ce4..c2c4aff 100644
+> --- a/drivers/pinctrl/pinmux.c
+> +++ b/drivers/pinctrl/pinmux.c
+> @@ -469,7 +469,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+>   {
+>   	struct pinctrl_dev *pctldev = setting->pctldev;
+>   	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+> -	const struct pinmux_ops *ops = pctldev->desc->pmxops;
+>   	int ret;
+>   	const unsigned *pins;
+>   	unsigned num_pins;
+> @@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+>   				 pins[i], desc->name, gname);
+>   		}
+>   	}
+> -
+> -	if (ops->disable)
+> -		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
+>   }
+>
+>   #ifdef CONFIG_DEBUG_FS
+>
 
-Those are actual rpms, not just a multiplied rpm. What I mean
-is that you can hear the fan spinning up or down and the
-temperature going up or down accordingly.
+Dear Guys,
 
-But even setting it to 3 is not enough to spin at maximum
-speed. Anyway, now I can load the system without the FBDIMM
-going above 75oC.
+Just as we talked, for my platform, I have no concern about removing the 
+HW disabling operation in the pinmux_disable_setting.
 
-[...]
-> I'll have to test this on older systems to make sure it doesn't cause problems there.
+Thus, I filed a new version of the patch we discussed before.
+Just as the patch comments said, the patch did:
+What the patch did:
+1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each 
+time of calling pinctrl_select_state
+2.Remove the HW disable operation in in pinmux_disable_setting function.
 
-Sure, let me know your findings. In meanwhile, I am using the patch here.
-Thanks,
-fbl
+Could you please help to review the above patch?
+
+
+If there is no concern about the above solution from you Guys, I think I 
+will try to do the other two patches:
+
+1. To remove the disable ops registration when defining the 
+"include/linux/pinctrl/pinmux.h" in inctrl-single driver.
+Meanwhile, the related things, like "pinctrl-single,function-off" 
+property and corresponding flag in "pcs_device", will be also removed.
+
+2. To remove the disable ops in "pinmux_ops"(include/linux/pinctrl/pinmux.h)
+
+Is that OK for you about my plan ?
