@@ -1,41 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331AbaEVQpk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:45:40 -0400
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:44961 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751151AbaEVQpj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:45:39 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3770:3865:3867:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:9025:9388:10004:10400:10848:11232:11658:11914:12043:12292:12517:12519:12555:12682:12740:12855:13069:13161:13229:13255:13311:13357:13845:14089:14090:14091,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rat24_140060a17f45a
-X-Filterd-Recvd-Size: 1222
-Message-ID: <1400777136.21099.6.camel@joe-AO725>
-Subject: Re: [PATCH] mfd: axp20x: Remove unnecessary const qualifier from
- axp20x_supplies[]
-From: Joe Perches <joe@perches.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 22 May 2014 09:45:36 -0700
-In-Reply-To: <20140522160856.GJ19747@lee--X1>
-References: <1400750311-15323-1-git-send-email-lee.jones@linaro.org>
-	 <1400750311-15323-2-git-send-email-lee.jones@linaro.org>
-	 <1400774373.21099.1.camel@joe-AO725> <20140522160856.GJ19747@lee--X1>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751789AbaEVQpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:45:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53419 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377AbaEVQpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:45:41 -0400
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
+        <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <grant.likely@linaro.org>
+CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
+        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
+        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [Patch v6 0/7] Introduce keystone reset driver
+Date: Thu, 22 May 2014 19:44:15 +0300
+Message-ID: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-22 at 17:08 +0100, Lee Jones wrote:
-> To be frank, I've never known what the double const means.  Care to
-> enlighten?
+These patches introduce keystone reset driver.
 
-There's a nice table here:
+The keystone SoC can be rebooted in several ways. By external reset
+pin, by soft and by watchdogs. This driver allows software reset and reset
+by one of the watchdogs. Also added opportunity to set soft/hard reset type.
 
-http://stackoverflow.com/questions/14562845/why-does-passing-char-as-const-char-generate-a-warning
+Based on linux-next/master
 
+v6..v5
+  clock: keystone-pllctrl: add bindings for keystone pll controller
+  mfd: ti-keystone-devctrl: add bindings for device state control
+  power: reset: add bindings for keystone reset driver
+  ARM: dts: keystone: update reset node to work with reset driver
+  	- for nodes s/device-state-control/device-state-control@02620000/g
+  	- for nodes s/pll-controller/pll-controller@02310000/g
+  mfd: ti-keystone-devctrl: add bindings for device state control
+  	- corrected description for reg property
+
+v5..v4
+  power: reset: keystone-reset: introduce keystone reset driver
+  	- changed to get rsmux and rspll offsets from DT
+  clock: keystone-pllctrl: add bindings for keystone pll controller
+  	- new patch
+  mfd: ti-keystone-devctrl: add bindings for device state control
+  	- new patch
+  power: reset: add bindings for keystone reset driver
+  	- corrected description of "ti,syscon-pll", "ti,syscon-dev" properties
+	- corrected examples
+  ARM: dts: keystone: update reset node to work with reset driver
+  	- added nodes for pll-controller and device-state-controll
+	- added offsets to "ti,syscon-pll", "ti,syscon-dev" properties
+
+v4..v3
+  Power: reset: keystone-reset: introduce keystone reset driver
+  	- changed to use syscon framework
+  	- changed to use regmap to access registers
+  Power: reset: add bindings for keystone reset driver
+  	- deleted properties "reg", "reg-names"
+	- added properties "ti,syscon-pll", "ti,syscon-dev"
+  ARM: dts: keystone: update reset node to work with reset driver
+  	- deleted properties "reg", "reg-names"
+	- added properties "ti,syscon-pll", "ti,syscon-dev"
+
+v2..v3
+  Power: reset: keystone-reset: introduce keystone reset driver
+	- no functional changes, only sanity
+  Power: reset: add bindings for keystone reset driver
+  	- corrected WDT numeration in examples
+	- extended description of wdt_list property
+
+v1..v2
+	- re based on v3.15-rc1 without changes
+
+Ivan Khoronzhuk (7):
+  power: reset: keystone-reset: introduce keystone reset driver
+  clock: keystone-pllctrl: add bindings for keystone pll controller
+  mfd: ti-keystone-devctrl: add bindings for device state control
+  power: reset: add bindings for keystone reset driver
+  ARM: keystone: remove redundant reset stuff
+  ARM: dts: keystone: update reset node to work with reset driver
+  ARM: keystone: enable reset driver support
+
+ .../bindings/clock/ti-keystone-pllctrl.txt         |  20 +++
+ .../bindings/mfd/ti-keystone-devctrl.txt           |  19 +++
+ .../bindings/power/reset/keystone-reset.txt        |  67 +++++++++
+ arch/arm/boot/dts/keystone.dtsi                    |  14 +-
+ arch/arm/configs/keystone_defconfig                |   3 +
+ arch/arm/mach-keystone/keystone.c                  |  34 -----
+ drivers/power/reset/Kconfig                        |   8 +
+ drivers/power/reset/Makefile                       |   1 +
+ drivers/power/reset/keystone-reset.c               | 166 +++++++++++++++++++++
+ 9 files changed, 297 insertions(+), 35 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
+ create mode 100644 drivers/power/reset/keystone-reset.c
+
+-- 
+1.8.3.2
 
