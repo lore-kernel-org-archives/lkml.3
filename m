@@ -1,144 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaEVB0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 21:26:55 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:55668 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaEVB0y (ORCPT
+	id S1752408AbaEVB1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 21:27:09 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:40048 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaEVB1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 21:26:54 -0400
-Message-ID: <1400722007.25612.1.camel@phoenix>
-Subject: [RESEND][PATCH] regulator: tps65218: Convert to use
- regulator_set_voltage_time_sel
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Keerthy <j-keerthy@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 May 2014 09:26:47 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 21 May 2014 21:27:06 -0400
+Message-ID: <537D5264.7070301@gmail.com>
+Date: Wed, 21 May 2014 18:27:00 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@linaro.org>
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        David Daney <david.daney@cavium.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Subject: Re: [PATCH 2/3] of: Make of_find_node_by_path() handle /aliases
+References: <1399993115-21552-1-git-send-email-grant.likely@linaro.org> <1399993115-21552-3-git-send-email-grant.likely@linaro.org> <537C15B1.3020006@gmail.com> <20140521160931.DD7F9C4198A@trevor.secretlab.ca>
+In-Reply-To: <20140521160931.DD7F9C4198A@trevor.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use regulator_set_voltage_time_sel() instead of open-coded.
+On 5/21/2014 9:09 AM, Grant Likely wrote:
+> On Tue, 20 May 2014 19:55:45 -0700, Frank Rowand <frowand.list@gmail.com> wrote:
+>> On 5/13/2014 7:58 AM, Grant Likely wrote:
+>>
+>>> Make of_find_node_by_path() handle aliases as prefixes. To make this
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Keerthy,
-This patch was sent on:
-https://lkml.org/lkml/2014/2/18/190
+< snip >
 
-I'd appreciate if you can review and test it.
-Thanks,
-Axel
+>>> ---
+>>
+>>>  drivers/of/base.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++----
+>>
+>>>  1 file changed, 56 insertions(+), 4 deletions(-)
+>>
+>>
+>>
+>> Was this patch created against a tree that has modifications to device tree
+>>
+>> locking?
+>>   I get a hang due to deadlock when I apply it.  Patch to verify the
+>> cause is below.
+> 
+> Ummm... I may have forgotten to enable CONFIG_LOCKDEP when testing. Try
+> the following fix, and can you please pass me that brown paper bag.
 
- drivers/regulator/tps65218-regulator.c | 37 +++++++++-------------------------
- 1 file changed, 10 insertions(+), 27 deletions(-)
+Nononono, I need to keep the bag for my own future use :-)
 
-diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
-index cec72fa..69b4b77 100644
---- a/drivers/regulator/tps65218-regulator.c
-+++ b/drivers/regulator/tps65218-regulator.c
-@@ -27,12 +27,10 @@
- #include <linux/regulator/machine.h>
- #include <linux/mfd/tps65218.h>
- 
--static unsigned int tps65218_ramp_delay = 4000;
--
- enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
- 
- #define TPS65218_REGULATOR(_name, _id, _ops, _n, _vr, _vm, _er, _em, _t, \
--			    _lr, _nlr)				\
-+			    _lr, _nlr, _delay)			\
- 	{							\
- 		.name			= _name,		\
- 		.id			= _id,			\
-@@ -47,6 +45,7 @@ enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
- 		.volt_table		= _t,			\
- 		.linear_ranges		= _lr,			\
- 		.n_linear_ranges	= _nlr,			\
-+		.ramp_delay		= _delay,		\
- 	}							\
- 
- #define TPS65218_INFO(_id, _nm, _min, _max)	\
-@@ -152,22 +151,6 @@ static int tps65218_pmic_disable(struct regulator_dev *dev)
- 				   dev->desc->enable_mask, TPS65218_PROTECT_L1);
- }
- 
--static int tps65218_set_voltage_time_sel(struct regulator_dev *rdev,
--	unsigned int old_selector, unsigned int new_selector)
--{
--	int old_uv, new_uv;
--
--	old_uv = regulator_list_voltage_linear_range(rdev, old_selector);
--	if (old_uv < 0)
--		return old_uv;
--
--	new_uv = regulator_list_voltage_linear_range(rdev, new_selector);
--	if (new_uv < 0)
--		return new_uv;
--
--	return DIV_ROUND_UP(abs(old_uv - new_uv), tps65218_ramp_delay);
--}
--
- /* Operations permitted on DCDC1, DCDC2 */
- static struct regulator_ops tps65218_dcdc12_ops = {
- 	.is_enabled		= regulator_is_enabled_regmap,
-@@ -177,7 +160,7 @@ static struct regulator_ops tps65218_dcdc12_ops = {
- 	.set_voltage_sel	= tps65218_pmic_set_voltage_sel,
- 	.list_voltage		= regulator_list_voltage_linear_range,
- 	.map_voltage		= regulator_map_voltage_linear_range,
--	.set_voltage_time_sel	= tps65218_set_voltage_time_sel,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- };
- 
- /* Operations permitted on DCDC3, DCDC4 and LDO1 */
-@@ -203,33 +186,33 @@ static const struct regulator_desc regulators[] = {
- 			   TPS65218_REG_CONTROL_DCDC1,
- 			   TPS65218_CONTROL_DCDC1_MASK,
- 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC1_EN, NULL,
--			   dcdc1_dcdc2_ranges, 2),
-+			   dcdc1_dcdc2_ranges, 2, 4000),
- 	TPS65218_REGULATOR("DCDC2", TPS65218_DCDC_2, tps65218_dcdc12_ops, 64,
- 			   TPS65218_REG_CONTROL_DCDC2,
- 			   TPS65218_CONTROL_DCDC2_MASK,
- 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC2_EN, NULL,
--			   dcdc1_dcdc2_ranges, 2),
-+			   dcdc1_dcdc2_ranges, 2, 4000),
- 	TPS65218_REGULATOR("DCDC3", TPS65218_DCDC_3, tps65218_ldo1_dcdc34_ops,
- 			   64, TPS65218_REG_CONTROL_DCDC3,
- 			   TPS65218_CONTROL_DCDC3_MASK, TPS65218_REG_ENABLE1,
- 			   TPS65218_ENABLE1_DC3_EN, NULL,
--			   ldo1_dcdc3_ranges, 2),
-+			   ldo1_dcdc3_ranges, 2, 0),
- 	TPS65218_REGULATOR("DCDC4", TPS65218_DCDC_4, tps65218_ldo1_dcdc34_ops,
- 			   53, TPS65218_REG_CONTROL_DCDC4,
- 			   TPS65218_CONTROL_DCDC4_MASK,
- 			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC4_EN, NULL,
--			   dcdc4_ranges, 2),
-+			   dcdc4_ranges, 2, 0),
- 	TPS65218_REGULATOR("DCDC5", TPS65218_DCDC_5, tps65218_dcdc56_pmic_ops,
- 			   1, -1, -1, TPS65218_REG_ENABLE1,
--			   TPS65218_ENABLE1_DC5_EN, NULL, NULL, 0),
-+			   TPS65218_ENABLE1_DC5_EN, NULL, NULL, 0, 0),
- 	TPS65218_REGULATOR("DCDC6", TPS65218_DCDC_6, tps65218_dcdc56_pmic_ops,
- 			   1, -1, -1, TPS65218_REG_ENABLE1,
--			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0),
-+			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0, 0),
- 	TPS65218_REGULATOR("LDO1", TPS65218_LDO_1, tps65218_ldo1_dcdc34_ops, 64,
- 			   TPS65218_REG_CONTROL_DCDC4,
- 			   TPS65218_CONTROL_LDO1_MASK, TPS65218_REG_ENABLE2,
- 			   TPS65218_ENABLE2_LDO1_EN, NULL, ldo1_dcdc3_ranges,
--			   2),
-+			   2, 0),
- };
- 
- static int tps65218_regulator_probe(struct platform_device *pdev)
--- 
-1.8.1.2
+The following fix looks good and boots successfully on the dragonboard.
 
+-Frank
 
+> 
+> g.
+> 
+> commit 35e9c5ae6c3d0b5eb91579f397d8e1ecb95ee711
+> Author: Grant Likely <grant.likely@linaro.org>
+> Date:   Thu May 22 01:04:17 2014 +0900
+> 
+>     dt: Create unlocked version of for_each_child_of_node()
+>     
+>     When iterating over nodes, sometimes it needs to be done when the DT
+>     lock is already held. This patch makes an unlocked version of the
+>     for_each_child_of_node() macro.
+>     
+>     Signed-off-by: Grant Likely <grant.likely@linaro.org>
+
+< snip >
 
