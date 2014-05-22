@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaEVHKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 03:10:23 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:50217 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750984AbaEVHKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 03:10:22 -0400
-Message-ID: <1400742620.21254.22.camel@x220>
-Subject: Re: [PATCH] powerpc: fix typo 'CONFIG_PMAC'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 May 2014 09:10:20 +0200
-In-Reply-To: <874n0j3yjf.fsf@igel.home>
-References: <1400617498.4912.66.camel@x220> <874n0j3yjf.fsf@igel.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 May 2014 07:10:21.0541 (UTC) FILETIME=[E507F950:01CF758C]
-X-RcptDomain: vger.kernel.org
+	id S1753563AbaEVHK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 03:10:27 -0400
+Received: from ozlabs.org ([103.22.144.67]:47103 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750984AbaEVHKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 03:10:25 -0400
+Date: Thu, 22 May 2014 17:10:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: linux-next: manual merge of the dt-rh tree with the arm-soc tree
+Message-ID: <20140522171014.57e04e48@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/E7MJHh8j9U1KhZHg94oFNxD"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas,
+--Sig_/E7MJHh8j9U1KhZHg94oFNxD
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2014-05-21 at 18:08 +0200, Andreas Schwab wrote:
-> Paul Bolle <pebolle@tiscali.nl> writes:
-> 
-> > Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
-> > perf_event_do_pending") added a check for CONFIG_PMAC were a check for
-> > CONFIG_PPC_PMAC was clearly intended.
-> >
-> > Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Untested. Needs testing on 32 bit powermac, I guess.
-> >
-> > This typo was introduced in v2.6.36. No one noticed because very few
-> > people still use 32 bit powermacs?
-> 
-> How does that bug manifest itself?
+Hi Rob,
 
-Do you want to know how to test this patch on a 32 bit powermac? Ie, see
-if it has any effect, and whether that effect improves things or make
-things worse.
+Today's linux-next merge of the dt-rh tree got a conflict in
+arch/arm/mach-vexpress/platsmp.c between commit d2606f81d563 ("ARM:
+vexpress: Simplify SMP operations for DT-powered system") from the
+arm-soc tree and commit 9d0c4dfedd96 ("of/fdt: update
+of_get_flat_dt_prop in prep for libfdt") from the dt-rh tree.
 
-I have no clue how to do that, sorry. Perhaps someone else has.
+I fixed it up (the former removed the code modified by the latter) and
+can carry the fix as necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Paul Bolle
+--Sig_/E7MJHh8j9U1KhZHg94oFNxD
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTfaLcAAoJEMDTa8Ir7ZwVJ+UP/0+hh2cmKKNOmVpaBSdKCgTg
+XIJJ/taFO72YLeQ6CFd0KGKld1vbKEKo8+DHTL09UYc6D2hjuwWR5ekC4aYdK4JS
+gYt53GAq81QDks2ilyaGv/NpDZulbVjQMk42nhQRBPsx0m/9zn5Lf8GPr4MMPhz4
+nsJa+4BY71xqbupl5GyMG+eoSp1zGnmIz1zxvdNmFnfqWdBiOiN/JB8MiT6c4lci
+MyC4sMhQNPZD/4rgegyfUchBHaq8qOzi84S5/fRBnEvLClhZVfxP6M3Iig029gzQ
+lqjnJhxYJmO4tpPTm4AweLZ6jV5y1NBDbz9wloYJQHbQ5iQ9LyvZr5Uhu8BXFXEN
+A3DrSJW/7ZkKw9TnUYiv47KNHLydNQOBzij0kdnmyjDzpSypkukcxw+yR/8zXLat
+fz5VffYlqHSRSK7zH2PfoAcDkT0rWe+jTdxmGCixGZLgsjB1bc07nbNFqcgSA7pb
+U55j2pxEWTwPm0XLpEPjm2sESI4pqBSwAfy3X8UhV/wZ9Ej+qkciqB0KQoY3hKjD
+MyKLKBKLUeJjB0ustmFSCYfU+7XxjK7FrCMZKPQNlmrTdeNVp+QsxFxifenmFzNO
+2BxE1P+tOUHzu6JQrPiiaVZYQL4OLpCWIEKvht8mD1U9j++qajRZIBtUDPnwru74
+Z/bDLkgOMeM1glkKDwI/
+=CfsB
+-----END PGP SIGNATURE-----
+
+--Sig_/E7MJHh8j9U1KhZHg94oFNxD--
