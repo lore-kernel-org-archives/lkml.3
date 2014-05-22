@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200AbaEVJTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:19:04 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:61855 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682AbaEVJTB (ORCPT
+	id S1754219AbaEVJTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:19:20 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:47801 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682AbaEVJTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:19:01 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] mfd: max14577: Cast to architecture agnostic data type
-Date: Thu, 22 May 2014 10:18:31 +0100
-Message-Id: <1400750311-15323-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400750311-15323-1-git-send-email-lee.jones@linaro.org>
-References: <1400750311-15323-1-git-send-email-lee.jones@linaro.org>
+	Thu, 22 May 2014 05:19:17 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, dianders@chromium.org,
+        jerry.wong@maximintegrated.com
+Subject: [PATCH 0/2] ASoC: max98090/max98095: Add master clock handing
+Date: Thu, 22 May 2014 14:47:06 +0530
+Message-Id: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/mfd/max14577.c:334:25:
-  warning: cast from pointer to integer of different size
-    max14577->dev_type = (unsigned int)of_id->data;
-                         ^
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/max14577.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+These CODECs are used on Snow/Peach-pit boards and the master clock
+needs to be set at 24MHz.
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index 36de88d..4a5e885 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -331,7 +331,8 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
- 
- 		of_id = of_match_device(max14577_dt_match, &i2c->dev);
- 		if (of_id)
--			max14577->dev_type = (unsigned int)of_id->data;
-+			max14577->dev_type =
-+				(enum maxim_device_type)of_id->data;
- 	} else {
- 		max14577->dev_type = id->driver_data;
- 	}
+Adding support in respective codec drivers so that we can update the
+master clock frequency from sound card driver through set_sysclk.
+
+These patches are prepared as per review comments on following patch.
+[PATCH] ASoC: samsung: Add 'mclk' handling for Snow sound-card driver
+https://lkml.org/lkml/2014/5/20/4
+
+Tushar Behera (2):
+  ASoC: max98090: Add master clock handling
+  ASoC: max98095: Add master clock handling
+
+ .../devicetree/bindings/sound/max98090.txt         |    6 ++++++
+ .../devicetree/bindings/sound/max98095.txt         |    6 ++++++
+ sound/soc/codecs/max98090.c                        |   13 +++++++++++++
+ sound/soc/codecs/max98090.h                        |    1 +
+ sound/soc/codecs/max98095.c                        |   14 ++++++++++++++
+ 5 files changed, 40 insertions(+)
+
 -- 
-1.8.3.2
+1.7.9.5
 
