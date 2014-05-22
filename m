@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaEVQP0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:15:26 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37854 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751730AbaEVQPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:15:24 -0400
-Message-ID: <537E224E.3060601@ti.com>
-Date: Thu, 22 May 2014 19:14:06 +0300
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1750987AbaEVQTm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:19:42 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:46639 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaEVQTl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:19:41 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
-        <arnd@arndb.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        <linux@arm.linux.org.uk>, <sergei.shtylyov@cogentembedded.com>,
-        <linux-doc@vger.kernel.org>, <w-kwok2@ti.com>, <rdunlap@infradead.org>,
-        <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        <m-karicheri2@ti.com>, <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch v5 3/7] mfd: ti-keystone-devctrl: add bindings for device
- state control
-References: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com> <1400766516-14537-4-git-send-email-ivan.khoronzhuk@ti.com> <20140522141432.GA19747@lee--X1> <537E0A87.5010408@ti.com> <20140522153309.GB19747@lee--X1>
-In-Reply-To: <20140522153309.GB19747@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <537DA5C0.2070609@roeck-us.net>
+References: <CA+HUmGjvHgWB3vcPnXAEVFdFuy9sOaB1BjaDW1-7ai933XEGWQ@mail.gmail.com>
+	<20140520195041.GA28913@roeck-us.net>
+	<CA+HUmGg4mE5RDxShNCK78yLi9gdX_FnHtWPKfGD4LaEqrCdj2Q@mail.gmail.com>
+	<20140520233812.GA15640@roeck-us.net>
+	<CA+HUmGge7AEpAnwAG_VJD2CKTtRBoC2bCGVU_t4qm-x6+OCr-g@mail.gmail.com>
+	<20140521193010.GA1721@roeck-us.net>
+	<CA+HUmGhm1VLTvMKW1TUUPqStUhD11M5u0VyTZyXyWz_ZS8uSVw@mail.gmail.com>
+	<20140521225958.GB2467@roeck-us.net>
+	<20140522071427.GA21230@kroah.com>
+	<537DA5C0.2070609@roeck-us.net>
+Date: Thu, 22 May 2014 09:19:40 -0700
+Message-ID: <CA+HUmGhVhLoehT68=2fErGeYSjAC87Ria=5pXUNSpYLwdpXc2w@mail.gmail.com>
+Subject: Re: pci: kernel crash in bus_find_device
+From: Francesco Ruggeri <fruggeri@arista.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
+        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Aborting a search does not sound like a correct solution.
+How does a higher level user (eg for_each_pci_dev) know that a search
+was aborted and decide whether it should try again, assuming it would
+be ok repeating the action on the devices visited the first time?
 
-On 05/22/2014 06:33 PM, Lee Jones wrote:
->>> Why do I only have this patch?  Where is the rest of the set?  Also,
->>> it's on v5 and I don't recall seeing the other 4 versions?
->> It's strange I've sent whole series on
+Francesco
+
+
+On Thu, May 22, 2014 at 12:22 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 05/22/2014 12:14 AM, Greg Kroah-Hartmann wrote:
 >>
->> linux-kernel@vger.kernel.org
->> linux-arm-kernel@lists.infradead.org
->> linux-doc@vger.kernel.org
->> devicetree@vger.kernel.org
+>> On Wed, May 21, 2014 at 03:59:58PM -0700, Guenter Roeck wrote:
+>>>
+>>> On Wed, May 21, 2014 at 01:04:04PM -0700, Francesco Ruggeri wrote:
+>>>>
+>>>> I have been using an x86 platform.
+>>>> When I started working on it I got early crashes until I added the
+>>>> check for p not NULL in
+>>>>
+>>>> +void bus_release_device(struct device *dev)
+>>>> +{
+>>>> + struct device_private *p = dev->p;
+>>>> +
+>>>> + if (p && klist_node_attached(&p->knode_bus))
+>>>> + klist_put_last(&p->knode_bus);
+>>>> +}
+>>>> +
+>>>>
+>>>> Maybe on powerpc *p is overriden between device_del and device_release?
+>>>>
+>>>> Or maybe some of the BUG_ONs in the patch? The ones on knode_dead are
+>>>> treated as WARN_ONs in the current klist code.
+>>>> The one in BUG_ON(!klist_dec_and_del(n)); is new, and in my tests I
+>>>> ran into it without the second patch (but only when I ran my module
+>>>> and tests).
+>>>>
+>>> Hi Francesco,
+>>>
+>>> I replaced the BUG_ON with WARN_ON; still crashes.
+>>>
+>>> Anyway, the problem seems to be known. I found two related exchanges.
+>>>
+>>> [1] describes pretty much the same problem. I don't see if/where it was
+>>> ever fixed, though.
+>>>
+>>> [2] is a patch to fix the problem. It did not apply cleanly to 3.14,
+>>> so I had to make some adjustments in klist_iter_init_node. Resulting
+>>> patch is below. With this patch, the problem is gone. It is not perfect,
+>>> as it aborts the loop if it encounters a deleted kobject, but it is
+>>> better
+>>> than nothing. Unfortunately, the patch never made it upstream; no idea
+>>> why.
+>>> Copying the author and Greg to get additional feedback.
+>>>
+>>> Guenter
+>>>
+>>> [1] https://lkml.org/lkml/2008/10/26/79
+>>> [2] https://lkml.org/lkml/2012/4/16/218
 >>
->> v4 is also was sent to lists in question:
->> https://lkml.org/lkml/2014/5/21/359
-> But did you send them to me?  I don't parse the list.
+>>
+>> 2 years ago?  I have no idea what was up with that, sorry...
+>>
 >
-
-Sorry.
-Becouse /scripts/get_maintainer.pl  patches/reset_driver_v6/* hadn't 
-been listed you
-It's because there is no patch with "code" for the bindings you've comment.
-
-I should check it by hand for mtd.
-
-The bindings for mtd device_state_control were added only on v5
-And it's added only to describe what is the node we've used in a 
-keystone DT.
-The node is planned to be used only via syscon phandle, there is no 
-driver for it,
-and compatible string for "ti,keystone-devctrl" added only to be matched by
-a high-level device driver if needed.
-
-I'll send new v6 series to you also.
-Once again sorry.
-
--- 
-Regards,
-Ivan Khoronzhuk
-
+> Ok, but do you have comments on the patch itself in its current version ?
+>
+> Guenter
+>
