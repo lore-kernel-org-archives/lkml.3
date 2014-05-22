@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310AbaEVKEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 06:04:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52685 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358AbaEVKET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 06:04:19 -0400
-Date: Thu, 22 May 2014 12:04:04 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Maynard Johnson <mpjohn@us.ibm.com>, Ulrich.Weigand@de.ibm.com,
-        Anton Blanchard <anton@au1.ibm.com>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, michael@ellerman.id.au
-Subject: Re: [PATCH 1/1] powerpc/perf: Adjust callchain based on DWARF debug
-Message-ID: <20140522100404.GB4789@krava.brq.redhat.com>
-References: <20140521012644.GA2890@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140521012644.GA2890@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754504AbaEVKE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 06:04:27 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42522 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754358AbaEVKEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 06:04:24 -0400
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, tglx@linutronix.de, gregkh@linuxfoundation.org,
+        balbi@ti.com, Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: [PATCH v2] PREEMPT_RT: USB serial gadget: Fix locking issue
+Date: Thu, 22 May 2014 11:58:48 +0200
+Message-Id: <1400752728-9495-1-git-send-email-jjhiblot@traphandler.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 06:26:44PM -0700, Sukadev Bhattiprolu wrote:
+With CONFIG_PREEMPT_RT_FULL the tty_flip_buffer_push(..) actions are executed
+immeditely (same behaviour as if low_latency flag was set). We thus have to
+release port_lock before callng tty_flip_buffer_push().
 
-SNIP
+This issue resultst of commits:
+44a0c019: USB: g_serial: don't set low_latency flag
+dc0cbd1b: serial: 8250: Call flush_to_ldisc when the irq is threaded
 
-> + * TODO:
-> + *	Rather than returning an index into the callchain and have the
-> + *	caller skip that entry, we could modify the callchain in-place
-> + *	by putting a PERF_CONTEXT_IGNORE marker in the affected entry.
-> + *
-> + *	But @chain points to read-only mmap, so the caller needs to
-> + *	duplicate the callchain to modify in-place - something like:
-> + *
-> + *		new_callchain = arch_duplicate_callchain();
-> + *		arch_adjust_callchain(new_callchain);
-> + *		...
-> + *		arch_free_callchain(new_callchain);
-> + *
-> + *	Since we only expect to adjust <= 1 entry for now, just return
-> + *	the index.
-> + */
-> +int arch_adjust_callchain(struct machine *machine, struct thread *thread,
-> +				struct ip_callchain *chain)
-> +{
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+---
 
-so in case we dont do the real adjusting of the callchain (see the other email)
-and just returning the index, I think we should rename this accordingly,
-so it's not confusing.. arch_callchain_skip_idx ? ;-)
+changes since v1:
+ - fix compilation problem: use port.tty instead of port->port_tty
 
-SNIP
+ drivers/usb/gadget/u_serial.c | 23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
 
-> --- a/tools/perf/util/callchain.h
-> +++ b/tools/perf/util/callchain.h
-> @@ -165,4 +165,16 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
->  
->  extern const char record_callchain_help[];
->  int parse_callchain_report_opt(const char *arg);
-> +
-> +#ifdef HAVE_ADJUST_CALLCHAIN
-> +extern int arch_adjust_callchain(struct machine *machine,
-> +			struct thread *thread, struct ip_callchain *chain);
-> +#else
-> +static inline int arch_adjust_callchain(struct machine *machine,
-> +			struct thread *thread, struct ip_callchain *chain)
+diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+index b369292..3d4246d 100644
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -549,12 +549,25 @@ static void gs_rx_push(unsigned long _port)
+ 		port->read_started--;
+ 	}
 
-this needs 'maybe_unused' attribute at each parameter, otherwise
-it won't compile for arch != ppc 
+-	/* Push from tty to ldisc; without low_latency set this is handled by
+-	 * a workqueue, so we won't get callbacks and can hold port_lock
+-	 */
+-	if (do_push)
++	/* Push from tty to ldisc */
++	if (do_push) {
++#ifndef CONFIG_PREEMPT_RT_FULL
++		/* without low_latency set this is handled by a workqueue, so
++		 * we won't get callbacks and can hold port_lock
++		*/
+ 		tty_flip_buffer_push(&port->port);
+-
++#else
++		/* CONFIG_PREEMPT_RT_FULL makes this a synchronous action. and
++		 * it may trigger synchronous callbacks to this driver. We need
++		 * to release the lock.
++		*/
++		spin_unlock_irq(&port->port_lock);
++		tty_flip_buffer_push(&port->port);
++		spin_lock_irq(&port->port_lock);
++		/* tty may have been closed */
++		tty = port->port.tty;
++#endif
++	}
 
-thanks,
-jirka
+ 	/* We want our data queue to become empty ASAP, keeping data
+ 	 * in the tty and ldisc (not here).  If we couldn't push any
+--
+1.9.2
+
