@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaEVM1a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:27:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51228 "EHLO
+	id S1755450AbaEVM1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:27:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51237 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391AbaEVM10 (ORCPT
+	with ESMTP id S1755391AbaEVM1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:27:26 -0400
-Date: Thu, 22 May 2014 05:26:37 -0700
-From: tip-bot for Ben Segall <tipbot@zytor.com>
-Message-ID: <tip-3944a9274ef6cda0cc282daf0739832f661670f7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140515225920.7179.13924.stgit@sword-of-the-dawn.mtv.corp.google.com>
-References: <20140515225920.7179.13924.stgit@sword-of-the-dawn.mtv.corp.google.com>
+	Thu, 22 May 2014 08:27:35 -0400
+Date: Thu, 22 May 2014 05:26:48 -0700
+From: tip-bot for Michael Kerrisk <tipbot@zytor.com>
+Message-ID: <tip-e78c7bca56dab5ce4f22694f99115ec07e4935f6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, mtk.manpages@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, mtk.manpages@gmail.com
+In-Reply-To: <536CEC24.9080201@gmail.com>
+References: <536CEC24.9080201@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix exec_start/task_hot on migrated tasks
-Git-Commit-ID: 3944a9274ef6cda0cc282daf0739832f661670f7
+Subject: [tip:sched/core] sched: Simplify return logic in sched_copy_attr(
+ )
+Git-Commit-ID: e78c7bca56dab5ce4f22694f99115ec07e4935f6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,43 +32,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3944a9274ef6cda0cc282daf0739832f661670f7
-Gitweb:     http://git.kernel.org/tip/3944a9274ef6cda0cc282daf0739832f661670f7
-Author:     Ben Segall <bsegall@google.com>
-AuthorDate: Thu, 15 May 2014 15:59:20 -0700
+Commit-ID:  e78c7bca56dab5ce4f22694f99115ec07e4935f6
+Gitweb:     http://git.kernel.org/tip/e78c7bca56dab5ce4f22694f99115ec07e4935f6
+Author:     Michael Kerrisk <mtk.manpages@gmail.com>
+AuthorDate: Fri, 9 May 2014 16:54:28 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 22 May 2014 11:16:25 +0200
+CommitDate: Thu, 22 May 2014 11:16:26 +0200
 
-sched: Fix exec_start/task_hot on migrated tasks
+sched: Simplify return logic in sched_copy_attr()
 
-task_hot checks exec_start on any runnable task, but if it has been
-migrated since the it last ran, then exec_start is a clock_task from
-another cpu. If the old cpu's clock_task was sufficiently far ahead of
-this cpu's then the task will not be considered for another migration
-until it has run. Instead reset exec_start whenever a task is migrated,
-since it is presumably no longer hot anyway.
+The logic in this function is a little contorted, clean it up:
 
-Signed-off-by: Ben Segall <bsegall@google.com>
-[ Made it compile. ]
+  * Rather than having chained gotos for the -EFBIG case, just
+    return -EFBIG directly.
+
+  * Now, the label 'out' is no longer needed, and 'ret' must be zero
+    zero by the time we fall through to this point, so just return 0.
+
+Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140515225920.7179.13924.stgit@sword-of-the-dawn.mtv.corp.google.com
+Link: http://lkml.kernel.org/r/536CEC24.9080201@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/core.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 28ccf50..dd3fa14 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4544,6 +4544,9 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
- 		atomic_long_add(se->avg.load_avg_contrib,
- 						&cfs_rq->removed_load);
- 	}
-+
-+	/* We have migrated, no longer consider this task hot */
-+	se->exec_start = 0;
- }
- #endif /* CONFIG_SMP */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2551b6d..2318fc4 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3657,13 +3657,11 @@ static int sched_copy_attr(struct sched_attr __user *uattr,
+ 	 */
+ 	attr->sched_nice = clamp(attr->sched_nice, MIN_NICE, MAX_NICE);
  
+-out:
+-	return ret;
++	return 0;
+ 
+ err_size:
+ 	put_user(sizeof(*attr), &uattr->size);
+-	ret = -E2BIG;
+-	goto out;
++	return -E2BIG;
+ }
+ 
+ /**
