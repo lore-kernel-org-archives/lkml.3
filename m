@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaEVCTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 22:19:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249AbaEVCTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 22:19:47 -0400
-From: Flavio Leitner <fbl@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        Flavio Leitner <fbl@sysclose.org>
-Subject: [PATCH] i8k: increase fan limit to 3
-Date: Wed, 21 May 2014 23:19:28 -0300
-Message-Id: <1400725168-21358-1-git-send-email-fbl@redhat.com>
+	id S1751523AbaEVCeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 22:34:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51751 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaEVCeO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 22:34:14 -0400
+Date: Wed, 21 May 2014 19:33:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 0/4] pagecache scanning with /proc/kpagecache
+Message-Id: <20140521193336.5df90456.akpm@linux-foundation.org>
+In-Reply-To: <537d5ee4.4914e00a.5672.ffff85d5SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1400639194-3743-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20140521154250.95bc3520ad8d192d95efe39b@linux-foundation.org>
+	<537d5ee4.4914e00a.5672.ffff85d5SMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Flavio Leitner <fbl@sysclose.org>
+On Wed, 21 May 2014 22:19:55 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-It is possible to increase left fan speed on a
-DELL Precision 490n system up to 3.
+> > A much nicer interface would be for us to (finally!) implement
+> > fincore(), perhaps with an enhanced per-present-page payload which
+> > presents the info which you need (although we don't actually know what
+> > that info is!).
+> 
+> page/pfn of each page slot and its page cache tag as shown in patch 4/4.
+> 
+> > This would require open() - it appears to be a requirement that the
+> > caller not open the file, but no reason was given for this.
+> > 
+> > Requiring open() would address some of the obvious security concerns,
+> > but it will still be possible for processes to poke around and get some
+> > understanding of the behaviour of other processes.  Careful attention
+> > should be paid to this aspect of any such patchset.
+> 
+> Sorry if I missed your point, but this interface defines fixed mapping
+> between file position in /proc/kpagecache and in-file page offset of
+> the target file. So we do not need to use seq_file mechanism, that's
+> why open() is not defined and default one is used.
+> The same thing is true for /proc/{kpagecount,kpageflags}, from which
+> I copied/pasted some basic code.
 
-    value    fan rpm
-      1      35460
-      2      64740
-      3      78510
+I think you did miss my point ;) Please do a web search for fincore -
+it's a syscall similar to mincore(), only it queries pagecache:
+fincore(int fd, loff_t offset, ...).  In its simplest form it queries
+just for present/absent, but we could increase the query payload to
+incorporate additional per-page info.
 
-Signed-off-by: Flavio Leitner <fbl@sysclose.org>
----
- drivers/char/i8k.c       | 4 ++--
- include/uapi/linux/i8k.h | 3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-index d915707..99180f0 100644
---- a/drivers/char/i8k.c
-+++ b/drivers/char/i8k.c
-@@ -519,7 +519,7 @@ static ssize_t i8k_hwmon_show_pwm(struct device *dev,
- 	status = i8k_get_fan_status(index);
- 	if (status < 0)
- 		return -EIO;
--	return sprintf(buf, "%d\n", clamp_val(status * 128, 0, 255));
-+	return sprintf(buf, "%d\n", clamp_val(status * 128, 0, 384));
- }
- 
- static ssize_t i8k_hwmon_set_pwm(struct device *dev,
-@@ -533,7 +533,7 @@ static ssize_t i8k_hwmon_set_pwm(struct device *dev,
- 	err = kstrtoul(buf, 10, &val);
- 	if (err)
- 		return err;
--	val = clamp_val(DIV_ROUND_CLOSEST(val, 128), 0, 2);
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 128), 0, 3);
- 
- 	mutex_lock(&i8k_mutex);
- 	err = i8k_set_fan(index, val);
-diff --git a/include/uapi/linux/i8k.h b/include/uapi/linux/i8k.h
-index 1c45ba5..133d02f 100644
---- a/include/uapi/linux/i8k.h
-+++ b/include/uapi/linux/i8k.h
-@@ -34,7 +34,8 @@
- #define I8K_FAN_OFF		0
- #define I8K_FAN_LOW		1
- #define I8K_FAN_HIGH		2
--#define I8K_FAN_MAX		I8K_FAN_HIGH
-+#define I8K_FAN_TURBO		3
-+#define I8K_FAN_MAX		I8K_FAN_TURBO
- 
- #define I8K_VOL_UP		1
- #define I8K_VOL_DOWN		2
--- 
-1.9.0
+It would take a lot of thought and discussion to nail down the
+fincore() interface (we've already tried a couple of times).  But
+unfortunately, fincore() is probably going to be implemented one day
+and it will (or at least could) make /proc/kpagecache obsolete.
 
