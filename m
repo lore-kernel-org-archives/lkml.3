@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092AbaEVMXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:23:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51021 "EHLO
+	id S1755117AbaEVMX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:23:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51027 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964844AbaEVMXL (ORCPT
+	with ESMTP id S1755101AbaEVMXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:23:11 -0400
-Date: Thu, 22 May 2014 05:23:01 -0700
+	Thu, 22 May 2014 08:23:23 -0400
+Date: Thu, 22 May 2014 05:23:12 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-6fe8c26d7ab9fbd6748fc40ca5fea1e3131e7236@git.kernel.org>
+Message-ID: <tip-e67d49a72df9aa50841ad400f7a99405e4980ee4@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1400480762-22852-15-git-send-email-namhyung@kernel.org>
-References: <1400480762-22852-15-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1400480762-22852-16-git-send-email-namhyung@kernel.org>
+References: <1400480762-22852-16-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top:
-  Add --fields option to specify output fields
-Git-Commit-ID: 6fe8c26d7ab9fbd6748fc40ca5fea1e3131e7236
+Subject: [tip:perf/core] perf tools: Skip elided sort entries
+Git-Commit-ID: e67d49a72df9aa50841ad400f7a99405e4980ee4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,89 +31,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6fe8c26d7ab9fbd6748fc40ca5fea1e3131e7236
-Gitweb:     http://git.kernel.org/tip/6fe8c26d7ab9fbd6748fc40ca5fea1e3131e7236
+Commit-ID:  e67d49a72df9aa50841ad400f7a99405e4980ee4
+Gitweb:     http://git.kernel.org/tip/e67d49a72df9aa50841ad400f7a99405e4980ee4
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 4 Mar 2014 11:01:41 +0900
+AuthorDate: Tue, 18 Mar 2014 13:00:59 +0900
 Committer:  Jiri Olsa <jolsa@kernel.org>
 CommitDate: Wed, 21 May 2014 11:45:36 +0200
 
-perf top: Add --fields option to specify output fields
+perf tools: Skip elided sort entries
 
-The --fields option is to allow user setup output field in any order.
-It can receive any sort keys and following (hpp) fields:
-
-  overhead, overhead_sys, overhead_us, sample and period
-
-If guest profiling is enabled, overhead_guest_{sys,us} will be
-available too.
-
-More more information, please see previous patch "perf report:
-Add -F option to specify output fields"
+When it converted sort entries to hpp formats, it missed se->elide
+handling, so add it for compatibility.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-15-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-16-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Documentation/perf-top.txt |  9 +++++++++
- tools/perf/builtin-top.c              | 15 +++++++++------
- 2 files changed, 18 insertions(+), 6 deletions(-)
+ tools/perf/ui/browsers/hists.c |  6 ++++++
+ tools/perf/ui/gtk/hists.c      |  6 ++++++
+ tools/perf/ui/stdio/hist.c     |  9 +++++++++
+ tools/perf/util/hist.c         |  9 +++++++++
+ tools/perf/util/hist.h         |  1 +
+ tools/perf/util/sort.c         | 11 +++++++++++
+ 6 files changed, 42 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index df86328..dcfa54c 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -116,6 +116,15 @@ Default is to monitor all CPUS.
- 	local_weight, abort, in_tx, transaction, overhead, sample, period.
- 	Please see description of --sort in the perf-report man page.
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 169224c..1c331b9 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -711,6 +711,9 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 		ui_browser__gotorc(&browser->b, row, 0);
  
-+--fields=::
-+	Specify output field - multiple keys can be specified in CSV format.
-+	Following fields are available:
-+	overhead, overhead_sys, overhead_us, sample and period.
-+	Also it can contain any sort key(s).
+ 		perf_hpp__for_each_format(fmt) {
++			if (perf_hpp__should_skip(fmt))
++				continue;
 +
-+	By default, every sort keys not specified in --field will be appended
-+	automatically.
+ 			if (current_entry && browser->b.navkeypressed) {
+ 				ui_browser__set_color(&browser->b,
+ 						      HE_COLORSET_SELECTED);
+@@ -1100,6 +1103,9 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
+ 		printed += fprintf(fp, "%c ", folded_sign);
+ 
+ 	perf_hpp__for_each_format(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
 +
- -n::
- --show-nr-samples::
- 	Show a column with the number of samples.
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 280945b..5b389ce 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1085,6 +1085,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
- 		   " Please refer the man page for the complete list."),
-+	OPT_STRING(0, "fields", &field_order, "key[,keys...]",
-+		   "output field(s): overhead, period, sample plus all of sort keys"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
-@@ -1138,17 +1140,18 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		usage_with_options(top_usage, options);
+ 		if (!first) {
+ 			ret = scnprintf(hpp.buf, hpp.size, "  ");
+ 			advance_hpp(&hpp, ret);
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index fd52669..9d90683 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -178,6 +178,9 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	col_idx = 0;
  
- 	sort__mode = SORT_MODE__TOP;
-+	/* display thread wants entries to be collapsed in a different tree */
-+	sort__need_collapse = 1;
+ 	perf_hpp__for_each_format(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
+ 		fmt->header(fmt, &hpp, hists_to_evsel(hists));
  
- 	if (setup_sorting() < 0) {
--		parse_options_usage(top_usage, options, "s", 1);
-+		if (sort_order)
-+			parse_options_usage(top_usage, options, "s", 1);
-+		if (field_order)
-+			parse_options_usage(sort_order ? NULL : top_usage,
-+					    options, "fields", 0);
- 		goto out_delete_evlist;
- 	}
+ 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+@@ -222,6 +225,9 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		col_idx = 0;
  
--	/* display thread wants entries to be collapsed in a different tree */
--	sort__need_collapse = 1;
--
--	perf_hpp__init();
--
- 	if (top.use_stdio)
- 		use_browser = 0;
- 	else if (top.use_tui)
+ 		perf_hpp__for_each_format(fmt) {
++			if (perf_hpp__should_skip(fmt))
++				continue;
++
+ 			if (fmt->color)
+ 				fmt->color(fmt, &hpp, h);
+ 			else
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 49e2e4a..e3fdf4e 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -318,6 +318,9 @@ static int hist_entry__snprintf(struct hist_entry *he, struct perf_hpp *hpp)
+ 		return 0;
+ 
+ 	perf_hpp__for_each_format(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
+ 		/*
+ 		 * If there's no field_sep, we still need
+ 		 * to display initial '  '.
+@@ -407,6 +410,9 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	fprintf(fp, "# ");
+ 
+ 	perf_hpp__for_each_format(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
+ 		if (!first)
+ 			fprintf(fp, "%s", sep ?: "  ");
+ 		else
+@@ -430,6 +436,9 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	perf_hpp__for_each_format(fmt) {
+ 		unsigned int i;
+ 
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
+ 		if (!first)
+ 			fprintf(fp, "%s", sep ?: "  ");
+ 		else
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index ae13c2d..b262b44 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -436,6 +436,9 @@ hist_entry__cmp(struct hist_entry *left, struct hist_entry *right)
+ 	int64_t cmp = 0;
+ 
+ 	perf_hpp__for_each_sort_list(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
+ 		cmp = fmt->cmp(left, right);
+ 		if (cmp)
+ 			break;
+@@ -451,6 +454,9 @@ hist_entry__collapse(struct hist_entry *left, struct hist_entry *right)
+ 	int64_t cmp = 0;
+ 
+ 	perf_hpp__for_each_sort_list(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
+ 		cmp = fmt->collapse(left, right);
+ 		if (cmp)
+ 			break;
+@@ -570,6 +576,9 @@ static int hist_entry__sort(struct hist_entry *a, struct hist_entry *b)
+ 	int64_t cmp = 0;
+ 
+ 	perf_hpp__for_each_sort_list(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
+ 		cmp = fmt->sort(a, b);
+ 		if (cmp)
+ 			break;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f3713b7..f67feb4 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -201,6 +201,7 @@ void perf_hpp__append_sort_keys(void);
+ 
+ bool perf_hpp__is_sort_entry(struct perf_hpp_fmt *format);
+ bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b);
++bool perf_hpp__should_skip(struct perf_hpp_fmt *format);
+ 
+ typedef u64 (*hpp_field_fn)(struct hist_entry *he);
+ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 5414ba5..0fe7cbe 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1358,6 +1358,17 @@ static int __setup_sorting(void)
+ 	return ret;
+ }
+ 
++bool perf_hpp__should_skip(struct perf_hpp_fmt *format)
++{
++	if (perf_hpp__is_sort_entry(format)) {
++		struct hpp_sort_entry *hse;
++
++		hse = container_of(format, struct hpp_sort_entry, hpp);
++		return hse->se->elide;
++	}
++	return false;
++}
++
+ static void sort_entry__setup_elide(struct sort_entry *se,
+ 				    struct strlist *list,
+ 				    const char *list_name, FILE *fp)
