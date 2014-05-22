@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaEVNrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:47:42 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:49079 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830AbaEVNrl (ORCPT
+	id S1753024AbaEVNsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:48:04 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:44496 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145AbaEVNsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:47:41 -0400
-Date: Thu, 22 May 2014 17:47:28 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@linux.com>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
- offline
-Message-ID: <20140522134726.GA3147@esperanza>
-References: <20140515071650.GB32113@esperanza>
- <alpine.DEB.2.10.1405151015330.24665@gentwo.org>
- <20140516132234.GF32113@esperanza>
- <alpine.DEB.2.10.1405160957100.32249@gentwo.org>
- <20140519152437.GB25889@esperanza>
- <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
- <537A4D27.1050909@parallels.com>
- <alpine.DEB.2.10.1405210937440.8038@gentwo.org>
- <20140521150408.GB23193@esperanza>
- <alpine.DEB.2.10.1405211912400.4433@gentwo.org>
+	Thu, 22 May 2014 09:48:01 -0400
+Date: Thu, 22 May 2014 09:47:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: remove the unneeded cpu_relax() in
+ __queue_work()
+Message-ID: <20140522134758.GA5065@htj.dyndns.org>
+References: <1400748257-14165-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405211912400.4433@gentwo.org>
+In-Reply-To: <1400748257-14165-1-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 07:13:21PM -0500, Christoph Lameter wrote:
-> On Wed, 21 May 2014, Vladimir Davydov wrote:
+On Thu, May 22, 2014 at 04:44:16PM +0800, Lai Jiangshan wrote:
+> When pwq->refcnt == 0, the retrying is guaranteed to make forward-progress.
+> The comment above the code explains it well:
 > 
-> > Do I understand you correctly that the following change looks OK to you?
+> 	/*
+> 	 * pwq is determined and locked.  For unbound pools, we could have
+> 	 * raced with pwq release and it could already be dead.  If its
+> 	 * refcnt is zero, repeat pwq selection.  Note that pwqs never die
+> 	 * without another pwq replacing it in the numa_pwq_tbl or while
+> 	 * work items are executing on it, so the retrying is guaranteed to
+> 	 * make forward-progress.
+> 	 */
 > 
-> Almost. Preemption needs to be enabled before functions that invoke the
-> page allocator etc etc.
+> It means the cpu_relax() here is useless and sometimes misleading,
+> it should retry directly and make some progress rather than waste time.
 
-I need to disable preemption only in slab_free, which never blocks
-according to its semantics, so everything should be fine just like that.
+cpu_relax() doesn't have much to do with guaranteeing forward
+progress.  It's about giving a breather during busy wait so that the
+waiting cpu doesn't busy loop claiming the same cache lines over and
+over ultimately delaying the event being waited on.  If you're doing a
+busy wait, you better use cpu_relax().
+
+Thanks.
+
+-- 
+tejun
