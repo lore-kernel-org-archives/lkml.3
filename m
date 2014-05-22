@@ -1,144 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaEVUfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:35:44 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:50095 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaEVUfn (ORCPT
+	id S1752054AbaEVUhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:37:10 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:56031 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaEVUhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:35:43 -0400
-Date: Fri, 23 May 2014 02:05:36 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] sbus: Introduce the use of the managed version of kzalloc
-Message-ID: <20140522203536.GA16457@himangi-Dell>
+	Thu, 22 May 2014 16:37:07 -0400
+Message-ID: <537E5FEB.1000103@de.ibm.com>
+Date: Thu, 22 May 2014 22:36:59 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Michael Mueller <mimu@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>
+CC: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Andreas Faerber <afaerber@suse.de>,
+        Richard Henderson <rth@twiddle.net>,
+        Eduardo Habkost <ehabkost@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v1 RFC 6/6] KVM: s390: add cpu model support
+References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com> <1399993114-15333-7-git-send-email-mimu@linux.vnet.ibm.com> <5375FFB8.90504@suse.de>	<20140516173907.3b1c4efa@bee> <53767590.2090605@suse.de>	<20140519125339.09840b9e@bee> <5379EF78.9040209@suse.de>	<20140519161811.5a17bc66@bee> <537A19F8.4060209@suse.de>	<20140519190318.6f92c1bd@bee> <537A6608.8000608@suse.de>	<20140520120218.38eb7181@bee> <537B2A0F.1030706@suse.de>	<20140521145652.197bff21@bee> <537CA89B.6050803@suse.de> <20140522102316.653f34ba@bee> <537DBB12.6070108@redhat.com>
+In-Reply-To: <537DBB12.6070108@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052220-5024-0000-0000-000000186407
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves data allocated using kzalloc to managed data allocated
-using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions. The header file is added to make the devm function explicitly
-available. Also, unnecessary assignment statements and labels are
-removed.
+On 22/05/14 10:53, Paolo Bonzini wrote:
+> Il 22/05/2014 10:23, Michael Mueller ha scritto:
+>> On Wed, 21 May 2014 15:22:35 +0200
+>> Alexander Graf <agraf@suse.de> wrote:
+>>
+>> I have seen the slides from Eduardo which he presented during this years
+>> DevConf in Brno and made my comments according the s390x implementation
+>> on that. Is you will see, this is mostly overlapping except for the model
+>> definition authority that I clearly see on qemu's side.
+>>
+>> See pdf attachment.
+> 
+> More comments:
+> 
+> - "Only one machine type in s390 case which is -machine s390-virtio-ccw"
+> 
+> This probably should change sooner or later, as soon as the implementation becomes stable enough.  Versioning is necessary for live migration across different QEMU version.  Perhaps start versioning in 2.2, i.e. start making s390-virtio-ccw-2.1 an alias for s390-virtio-ccw now?
+> 
+> Note that new virtio device features can appear at any time outside the s390 code, and will take part in versioning as well.
+> 
+> - "No enforce option"
+> 
+> Strongly suggest making enforce the only possible behavior.
+> 
+> - "Not in the s390x case, because the KVM facility mask limits the cpu model specific facilities"
+> 
+> What if the KVM facility mask changes?  For x86, nowadays new CPUID bits are only introduced in KVM when a new processors comes out.  But if we introduced an older CPUID bit, it would be a huge complication for backwards compatibility.  Is it different for s390?
+> 
+> Paolo
+> 
 
-The following Coccinelle semantic patch was used for making a part of
-the change:
+I guess we need to have a full picture here. Would this topic be suitable for the KVM call?
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
-
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
-
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
-Not compile tested due to incompatible architecture.
-
-To send to: "David S. Miller" <davem@davemloft.net>,sparclinux@vger.kernel.org,linux-kernel@vger.kernel.org
-
- drivers/sbus/char/display7seg.c | 23 ++++++++---------------
- 1 file changed, 8 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
-index 7c71e7b..367b64d 100644
---- a/drivers/sbus/char/display7seg.c
-+++ b/drivers/sbus/char/display7seg.c
-@@ -20,6 +20,7 @@
- #include <asm/io.h>
- 
- #include <asm/display7seg.h>
-+#include <linux/device.h>
- 
- #define D7S_MINOR	193
- #define DRIVER_NAME	"d7s"
-@@ -173,22 +174,21 @@ static struct miscdevice d7s_miscdev = {
- static int d7s_probe(struct platform_device *op)
- {
- 	struct device_node *opts;
--	int err = -EINVAL;
-+	int err;
- 	struct d7s *p;
- 	u8 regs;
- 
- 	if (d7s_device)
--		goto out;
-+		return -EINVAL;
- 
--	p = kzalloc(sizeof(*p), GFP_KERNEL);
--	err = -ENOMEM;
-+	p = devm_kzalloc(&op->dev, sizeof(*p), GFP_KERNEL);
- 	if (!p)
--		goto out;
-+		return -ENOMEM;
- 
- 	p->regs = of_ioremap(&op->resource[0], 0, sizeof(u8), "d7s");
- 	if (!p->regs) {
- 		printk(KERN_ERR PFX "Cannot map chip registers\n");
--		goto out_free;
-+		return -ENOMEM;
- 	}
- 
- 	err = misc_register(&d7s_miscdev);
-@@ -222,17 +222,11 @@ static int d7s_probe(struct platform_device *op)
- 
- 	dev_set_drvdata(&op->dev, p);
- 	d7s_device = p;
--	err = 0;
--
--out:
--	return err;
-+	return 0;
- 
- out_iounmap:
- 	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
--
--out_free:
--	kfree(p);
--	goto out;
-+	return err;
- }
- 
- static int d7s_remove(struct platform_device *op)
-@@ -251,7 +245,6 @@ static int d7s_remove(struct platform_device *op)
- 
- 	misc_deregister(&d7s_miscdev);
- 	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
--	kfree(p);
- 
- 	return 0;
- }
--- 
-1.9.1
+Christian
 
