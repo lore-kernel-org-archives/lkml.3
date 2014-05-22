@@ -1,26 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321AbaEVRP0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 13:15:26 -0400
-Received: from smarthost.TechFak.Uni-Bielefeld.DE ([129.70.137.17]:43979 "EHLO
+	id S1751502AbaEVRPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 13:15:30 -0400
+Received: from smarthost.TechFak.Uni-Bielefeld.DE ([129.70.137.17]:43982 "EHLO
 	smarthost.TechFak.Uni-Bielefeld.DE" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751143AbaEVRPZ (ORCPT
+	by vger.kernel.org with ESMTP id S1750923AbaEVRP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 13:15:25 -0400
+	Thu, 22 May 2014 13:15:29 -0400
 From: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
 To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org
+Cc: gregkh@linuxfoundation.org, Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
 Subject: [PATCH RESEND] sysfs: fix attribute_group bin file path on removal
-Date: Thu, 22 May 2014 19:15:11 +0200
-Message-Id: <1400778912-7485-1-git-send-email-rabel@cit-ec.uni-bielefeld.de>
+Date: Thu, 22 May 2014 19:15:12 +0200
+Message-Id: <1400778912-7485-2-git-send-email-rabel@cit-ec.uni-bielefeld.de>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1400778912-7485-1-git-send-email-rabel@cit-ec.uni-bielefeld.de>
+References: <1400778912-7485-1-git-send-email-rabel@cit-ec.uni-bielefeld.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I sent this patch to the list on 15 Apr 14.
-However, no activity since. Should I have sent this patch somewhere else?
+Cody Schafer already fixed binary file creation for attribute groups, see [1].
+This patch makes the appropriate changes for binary file removal
+of attribute groups.
+[1]: http://lkml.org/lkml/2014/2/27/832
 
-Regards,
+Signed-off-by: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
+---
+ fs/sysfs/group.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Robert
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index aa04068..7d2a860 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -18,7 +18,7 @@
+ #include "sysfs.h"
+ 
+ 
+-static void remove_files(struct kernfs_node *parent, struct kobject *kobj,
++static void remove_files(struct kernfs_node *parent,
+ 			 const struct attribute_group *grp)
+ {
+ 	struct attribute *const *attr;
+@@ -29,7 +29,7 @@ static void remove_files(struct kernfs_node *parent, struct kobject *kobj,
+ 			kernfs_remove_by_name(parent, (*attr)->name);
+ 	if (grp->bin_attrs)
+ 		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
+-			sysfs_remove_bin_file(kobj, *bin_attr);
++			kernfs_remove_by_name(parent, (*bin_attr)->attr.name);
+ }
+ 
+ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
+@@ -62,7 +62,7 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
+ 				break;
+ 		}
+ 		if (error) {
+-			remove_files(parent, kobj, grp);
++			remove_files(parent, grp);
+ 			goto exit;
+ 		}
+ 	}
+@@ -79,7 +79,7 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
+ 				break;
+ 		}
+ 		if (error)
+-			remove_files(parent, kobj, grp);
++			remove_files(parent, grp);
+ 	}
+ exit:
+ 	return error;
+@@ -224,7 +224,7 @@ void sysfs_remove_group(struct kobject *kobj,
+ 		kernfs_get(kn);
+ 	}
+ 
+-	remove_files(kn, kobj, grp);
++	remove_files(kn, grp);
+ 	if (grp->name)
+ 		kernfs_remove(kn);
+ 
+-- 
+1.9.2
+
