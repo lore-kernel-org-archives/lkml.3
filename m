@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaEVSCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:02:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2881 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247AbaEVSCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 14:02:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,888,1392192000"; 
-   d="scan'208";a="516171606"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
-        mika.westerberg@linux.intel.com, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V7 03/11] ACPI: remove ids that does not comply with the ACPI PNP id rule
-Date: Fri, 23 May 2014 02:02:25 +0800
-Message-Id: <1400781753-2682-4-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
-References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
+	id S1752404AbaEVSHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:07:50 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:47393 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaEVSHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 14:07:48 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Mark Brown <broonie@kernel.org>, Simon Horman <horms@verge.net.au>
+Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] spi: rspi: Round up division to avoid slave overclocking
+Date: Thu, 22 May 2014 20:07:35 +0200
+Message-Id: <1400782055-19609-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The acpi pnp scan handler id list just copies all the ids from all the
-struct pnp_device_id instances, but some of them do not
-comply with the ACPI PNP id rule (3 Alpha Charactors + 4 Hex numbers).
+The calculation of the bit rate divider used a standard C division, which
+rounds down the quotient. This may lead to a higher bitrate than requested.
+Round up to avoid this.
 
-For those ids, the coressponding devices will never be enumerated
-via ACPI, so it is safe to remove those ids from the PNPACPI white list.
+E.g. on Koelsch, the SPI flash (configured for 30 MHz) was driven at 48.75
+MHz. After this patch it's driven at a safe 24.375 MHz.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- drivers/acpi/acpi_pnp.c | 4 ----
- 1 file changed, 4 deletions(-)
+Simon: I think you want this in renesas-backports.
 
-diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
-index 57d14ed..d206616 100644
---- a/drivers/acpi/acpi_pnp.c
-+++ b/drivers/acpi/acpi_pnp.c
-@@ -33,10 +33,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
- 	/* ide   */
- 	{"PNP0600"},		/* Generic ESDI/IDE/ATA compatible hard disk controller */
- 	/* ns558 */
--	{"@P@0001"},		/* ALS 100 */
--	{"@P@0020"},		/* ALS 200 */
--	{"@P@1001"},		/* ALS 100+ */
--	{"@P@2001"},		/* ALS 120 */
- 	{"ASB16fd"},		/* AdLib NSC16 */
- 	{"AZT3001"},		/* AZT1008 */
- 	{"CDC0001"},		/* Opl3-SAx */
+ drivers/spi/spi-rspi.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
+index 1fb0ad213324..5639f9529e0b 100644
+--- a/drivers/spi/spi-rspi.c
++++ b/drivers/spi/spi-rspi.c
+@@ -266,7 +266,8 @@ static int rspi_set_config_register(struct rspi_data *rspi, int access_size)
+ 	rspi_write8(rspi, rspi->sppcr, RSPI_SPPCR);
+ 
+ 	/* Sets transfer bit rate */
+-	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
++	spbr = DIV_ROUND_UP(clk_get_rate(rspi->clk),
++			    2 * rspi->max_speed_hz) - 1;
+ 	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
+ 
+ 	/* Disable dummy transmission, set 16-bit word access, 1 frame */
+@@ -302,7 +303,8 @@ static int rspi_rz_set_config_register(struct rspi_data *rspi, int access_size)
+ 	rspi_write8(rspi, rspi->sppcr, RSPI_SPPCR);
+ 
+ 	/* Sets transfer bit rate */
+-	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz) - 1;
++	spbr = DIV_ROUND_UP(clk_get_rate(rspi->clk),
++			    2 * rspi->max_speed_hz) - 1;
+ 	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
+ 
+ 	/* Disable dummy transmission, set byte access */
+@@ -335,7 +337,7 @@ static int qspi_set_config_register(struct rspi_data *rspi, int access_size)
+ 	rspi_write8(rspi, rspi->sppcr, RSPI_SPPCR);
+ 
+ 	/* Sets transfer bit rate */
+-	spbr = clk_get_rate(rspi->clk) / (2 * rspi->max_speed_hz);
++	spbr = DIV_ROUND_UP(clk_get_rate(rspi->clk), 2 * rspi->max_speed_hz);
+ 	rspi_write8(rspi, clamp(spbr, 0, 255), RSPI_SPBR);
+ 
+ 	/* Disable dummy transmission, set byte access */
 -- 
-1.8.3.2
+1.9.1
 
