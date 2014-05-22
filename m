@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaEVEES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 00:04:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33729 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbaEVEDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753771AbaEVEDW (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 22 May 2014 00:03:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41303 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753652AbaEVEDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 00:03:20 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>
 CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>,
         George Cherian <george.cherian@ti.com>
-Subject: [PATCH v3 4/6] usb: dwc3: dwc3-omap: Add dwc3_omap_extcon_register function
-Date: Thu, 22 May 2014 09:31:36 +0530
-Message-ID: <1400731298-18442-5-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v3 3/6] usb: dwc3: dwc3-omap: Add dwc3_omap_set_utmi_mode() function
+Date: Thu, 22 May 2014 09:31:35 +0530
+Message-ID: <1400731298-18442-4-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1400731298-18442-1-git-send-email-george.cherian@ti.com>
 References: <1400731298-18442-1-git-send-email-george.cherian@ti.com>
@@ -24,104 +23,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the extcon related code to its own function.
+Move find and set the utmi mode to its own seperate function.
 Improve code readability, decrease the dwc3_probe() size.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c | 65 ++++++++++++++++++++++++++------------------
- 1 file changed, 39 insertions(+), 26 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c | 44 +++++++++++++++++++++++++-------------------
+ 1 file changed, 25 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 56ec6eb..7594535 100644
+index 09918ac..56ec6eb 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -421,6 +421,42 @@ static void dwc3_omap_set_utmi_mode(struct dwc3_omap *omap)
- 	dwc3_omap_write_utmi_status(omap, reg);
+@@ -397,6 +397,30 @@ static void dwc3_omap_map_offset(struct dwc3_omap *omap)
+ 	}
  }
  
-+static int dwc3_omap_extcon_register(struct dwc3_omap *omap)
++static void dwc3_omap_set_utmi_mode(struct dwc3_omap *omap)
 +{
-+	u32			ret;
++	u32			reg;
 +	struct device_node	*node = omap->dev->of_node;
-+	struct extcon_dev	*edev;
++	int			utmi_mode = 0;
 +
-+	if (of_property_read_bool(node, "extcon")) {
-+		edev = extcon_get_edev_by_phandle(omap->dev, 0);
-+		if (IS_ERR(edev)) {
-+			dev_vdbg(omap->dev, "couldn't get extcon device\n");
-+			return -EPROBE_DEFER;
-+		}
++	reg = dwc3_omap_read_utmi_status(omap);
 +
-+		omap->vbus_nb.notifier_call = dwc3_omap_vbus_notifier;
-+		ret = extcon_register_interest(&omap->extcon_vbus_dev,
-+					       edev->name, "USB",
-+					       &omap->vbus_nb);
-+		if (ret < 0)
-+			dev_vdbg(omap->dev, "failed to register notifier for USB\n");
++	of_property_read_u32(node, "utmi-mode", &utmi_mode);
 +
-+		omap->id_nb.notifier_call = dwc3_omap_id_notifier;
-+		ret = extcon_register_interest(&omap->extcon_id_dev,
-+					       edev->name, "USB-HOST",
-+					       &omap->id_nb);
-+		if (ret < 0)
-+			dev_vdbg(omap->dev, "failed to register notifier for USB-HOST\n");
-+
-+		if (extcon_get_cable_state(edev, "USB") == true)
-+			dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
-+		if (extcon_get_cable_state(edev, "USB-HOST") == true)
-+			dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
++	switch (utmi_mode) {
++	case DWC3_OMAP_UTMI_MODE_SW:
++		reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
++		break;
++	case DWC3_OMAP_UTMI_MODE_HW:
++		reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
++		break;
++	default:
++		dev_dbg(omap->dev, "UNKNOWN utmi mode %d\n", utmi_mode);
 +	}
 +
-+	return 0;
++	dwc3_omap_write_utmi_status(omap, reg);
 +}
 +
  static int dwc3_omap_probe(struct platform_device *pdev)
  {
  	struct device_node	*node = pdev->dev.of_node;
-@@ -428,7 +464,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	struct dwc3_omap	*omap;
- 	struct resource		*res;
- 	struct device		*dev = &pdev->dev;
--	struct extcon_dev	*edev;
- 	struct regulator	*vbus_reg = NULL;
- 
+@@ -410,8 +434,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
  	int			ret;
-@@ -500,31 +535,9 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 	int			irq;
  
- 	dwc3_omap_enable_irqs(omap);
+-	int			utmi_mode = 0;
+-
+ 	u32			reg;
  
--	if (of_property_read_bool(node, "extcon")) {
--		edev = extcon_get_edev_by_phandle(dev, 0);
--		if (IS_ERR(edev)) {
--			dev_vdbg(dev, "couldn't get extcon device\n");
--			ret = -EPROBE_DEFER;
--			goto err2;
--		}
+ 	void __iomem		*base;
+@@ -462,23 +484,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	dwc3_omap_map_offset(omap);
 -
--		omap->vbus_nb.notifier_call = dwc3_omap_vbus_notifier;
--		ret = extcon_register_interest(&omap->extcon_vbus_dev,
--			edev->name, "USB", &omap->vbus_nb);
--		if (ret < 0)
--			dev_vdbg(dev, "failed to register notifier for USB\n");
--		omap->id_nb.notifier_call = dwc3_omap_id_notifier;
--		ret = extcon_register_interest(&omap->extcon_id_dev, edev->name,
--					 "USB-HOST", &omap->id_nb);
--		if (ret < 0)
--			dev_vdbg(dev,
--				"failed to register notifier for USB-HOST\n");
+-	reg = dwc3_omap_read_utmi_status(omap);
 -
--		if (extcon_get_cable_state(edev, "USB") == true)
--			dwc3_omap_set_mailbox(omap, OMAP_DWC3_VBUS_VALID);
--		if (extcon_get_cable_state(edev, "USB-HOST") == true)
--			dwc3_omap_set_mailbox(omap, OMAP_DWC3_ID_GROUND);
+-	of_property_read_u32(node, "utmi-mode", &utmi_mode);
+-
+-	switch (utmi_mode) {
+-	case DWC3_OMAP_UTMI_MODE_SW:
+-		reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
+-		break;
+-	case DWC3_OMAP_UTMI_MODE_HW:
+-		reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
+-		break;
+-	default:
+-		dev_dbg(dev, "UNKNOWN utmi mode %d\n", utmi_mode);
 -	}
-+	ret = dwc3_omap_extcon_register(omap);
-+	if (ret < 0)
-+		goto err2;
+-
+-	dwc3_omap_write_utmi_status(omap, reg);
++	dwc3_omap_set_utmi_mode(omap);
  
- 	ret = of_platform_populate(node, NULL, NULL, dev);
- 	if (ret) {
+ 	/* check the DMA Status */
+ 	reg = dwc3_omap_readl(omap->base, USBOTGSS_SYSCONFIG);
 -- 
 1.8.3.1
 
