@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaEVJFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:05:18 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:61053 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaEVJFM (ORCPT
+	id S1754154AbaEVJHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:07:04 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59072 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaEVJG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:05:12 -0400
-Date: Thu, 22 May 2014 11:05:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
- functions.
-Message-ID: <20140522090502.GB30094@gmail.com>
-References: <20140501123738.3e64b2d2@notabene.brown>
+	Thu, 22 May 2014 05:06:59 -0400
+Date: Thu, 22 May 2014 02:06:51 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Kay Sievers <kay@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH RESEND] scsi: Output error messages using structured
+ printk in single line
+Message-ID: <20140522090651.GA14854@infradead.org>
+References: <20140227041738.31316.14684.stgit@yunodevel>
+ <1400638922.2481.18.camel@dabdike>
+ <94D0CD8314A33A4D9D801C0FE68B402956F1CF5A@G4W3202.americas.hpqcorp.net>
+ <537C4822.6000204@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140501123738.3e64b2d2@notabene.brown>
+In-Reply-To: <537C4822.6000204@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* NeilBrown <neilb@suse.de> wrote:
-
-> [[ get_maintainer.pl suggested 61 email address for this patch.
->    I've trimmed that list somewhat.  Hope I didn't miss anyone
->    important...
->    I'm hoping it will go in through the scheduler tree, but would
->    particularly like an Acked-by for the fscache parts.  Other acks
->    welcome.
-> ]]
+On Wed, May 21, 2014 at 08:30:58AM +0200, Hannes Reinecke wrote:
+> While this works reasonably well for most things, printing out
+> decoded sense with just one line (and not end up in massive switch()
+> statements) is near impossible.
 > 
-> The current "wait_on_bit" interface requires an 'action' function
-> to be provided which does the actual waiting.
-> There are over 20 such functions, many of them identical.
-> Most cases can be satisfied by one of just two functions, one
-> which uses io_schedule() and one which just uses schedule().
+> Plus you'll end up having to use a static buffer at one point, which
+> again increases the stack size.
 > 
-> So:
->  Rename wait_on_bit and        wait_on_bit_lock to
->         wait_on_bit_action and wait_on_bit_lock_action
->  to make it explicit that they need an action function.
+> The alternative approach as discussed at LSF is to move scsi_logging
+> over to tracing. There is already some coding for scsi tracing, but
+> in most cases it just duplicates existing logging statements.
+> So if we were to replace the entire scsi_logging infrastructure
+> with scsi tracing most of the issues (like chopped-up CDBs) would
+> be gone.
+> Plus we would have a far better control about _what_ is being printed.
 > 
->  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
->  which are *not* given an action function but implicitly use
->  a standard one.
->  The decision to error-out if a signal is pending is now made
->  based on the 'mode' argument rather than being encoded in the action
->  function.
+> And yes, I do have some patches for that :-)
 
-this patch fails to build on x86-32 allyesconfigs.
+I think any detailed logging of sense codes, cdbs and co should move
+to tracing.  In fact generally any non-defauly logging probably is
+better off in the tracing subsystems, but there might be a few
+exceptions.
 
-Could we keep the old names for a while, and remove them in the next 
-cycle or so?
-
-Thanks,
-
-	Ingo
