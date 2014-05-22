@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaEVIT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 04:19:28 -0400
-Received: from afflict.kos.to ([92.243.29.197]:40600 "EHLO afflict.kos.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835AbaEVITZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 04:19:25 -0400
-X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 May 2014 04:19:25 EDT
-Date: Thu, 22 May 2014 11:12:02 +0300
-From: Riku Voipio <riku.voipio@iki.fi>
-To: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH RESEND] mmc: dove: fix missing MACH_DOVE dependency
-Message-ID: <20140522081202.GA21151@afflict.kos.to>
-References: <1400522571-10799-1-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400522571-10799-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-message-flag: Warning: message not sent with a DRM-Certified client
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753980AbaEVITk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 04:19:40 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34521 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867AbaEVITh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 04:19:37 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        scottwood <scottwood@freescale.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v4 09/11] powerpc/perf: add support for the hv 24x7 interface
+In-reply-to: <1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com>
+References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com> <1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com>
+Date: Thu, 22 May 2014 18:19:29 +1000
+Message-Id: <1400744950-sup-4804@delenn.ozlabs.ibm.com>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052208-7014-0000-0000-000004EFF611
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014@08:02:51PM +0200, Sebastian Hesselbarth wrote:
-> DT-enabled Dove moved over from ARCH_DOVE in mach-dove to MACH_DOVE in
-> mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
-> DT-only MACH_DOVE Kconfig. This slipped through the cracks and now is
-> a fix to allow to build Dove's SDHCI driver for mach-mvebu on v3.15-rc.
+Hi Cody,
 
-Dove cubox has usually rootfs on mmc, so this patch is very much needed
-for using multiplatform kernel on dove cubox.
+I just tried building this with gcc 4.5, which failed with the following
+warning (treated as an error):
 
-Tested-by: Riku Voipio <riku.voipio@iki.fi>
+cc1: warnings being treated as errors
+arch/powerpc/perf/hv-24x7.c: In function 'single_24x7_request':
+arch/powerpc/perf/hv-24x7.c:346:1: error: the frame size of 8192 bytes is larger than 2048 bytes
+make[3]: *** [arch/powerpc/perf/hv-24x7.o] Error 1
+make[2]: *** [arch/powerpc/perf] Error 2
 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
-> ---
-> Cc: Chris Ball <chris@printf.net>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: linux-mmc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/mmc/host/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index 8aaf8c1f3f63..37665553ef33 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -168,7 +168,7 @@ config MMC_SDHCI_ESDHC_IMX
->  
->  config MMC_SDHCI_DOVE
->  	tristate "SDHCI support on Marvell's Dove SoC"
-> -	depends on ARCH_DOVE
-> +	depends on ARCH_DOVE || MACH_DOVE
->  	depends on MMC_SDHCI_PLTFM
->  	select MMC_SDHCI_IO_ACCESSORS
->  	help
-> -- 
-> 1.9.1
-> 
-> 
+My .config has CONFIG_FRAME_WARN=2048 (default on 64bit), but the
+alignment constraints in this function may require 8K on the stack -
+possibly a bit large?
+
+
+Notably for some reason this warning no longer seems to trigger on gcc
+4.8 (or at least somewhere between 4.5-4.8), though the assembly does
+still show it aligning the buffers.
+
+
+Excerpts from Cody P Schafer's message of 2014-03-06 11:01:08 +1100:
+> +static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
+<snip>
+> +    /*
+> +     * request_buffer and result_buffer are not required to be 4k aligned,
+> +     * but are not allowed to cross any 4k boundary. Aligning them to 4k is
+> +     * the simplest way to ensure that.
+> +     */
+> +    struct reqb {
+> +        struct hv_24x7_request_buffer buf;
+> +        struct hv_24x7_request req;
+> +    } __packed __aligned(4096) request_buffer = {
+<snip>
+> +    struct resb {
+> +        struct hv_24x7_data_result_buffer buf;
+> +        struct hv_24x7_result res;
+> +        struct hv_24x7_result_element elem;
+> +        __be64 result;
+> +    } __packed __aligned(4096) result_buffer = {};
+<snip>
+
+
+Cheers,
+-Ian
+
