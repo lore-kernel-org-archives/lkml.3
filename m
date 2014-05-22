@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaEVHsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 03:48:04 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:51975 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaEVHsB (ORCPT
+	id S1752287AbaEVH4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 03:56:25 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:36631 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751472AbaEVH4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 03:48:01 -0400
+	Thu, 22 May 2014 03:56:24 -0400
+Date: Thu, 22 May 2014 08:56:17 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, eshelton@pobox.com, hpa@zytor.com,
+        ian.campbell@citrix.com, jbeulich@suse.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
+        mjg59@srcf.ucam.org, stefano.stabellini@eu.citrix.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH v4 4/5] arch/x86: Replace plain strings with constants
+Message-ID: <20140522075617.GQ4798@console-pimps.org>
+References: <1400272904-31121-1-git-send-email-daniel.kiper@oracle.com>
+ <1400272904-31121-5-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <537DA7F5.6010704@southpole.se>
-References: <1400530303-29182-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-	<alpine.DEB.2.02.1405200809260.5204@ionos.tec.linutronix.de>
-	<20140521195056.GA14701@chokladfabriken.org>
-	<537DA7F5.6010704@southpole.se>
-Date: Thu, 22 May 2014 09:48:00 +0200
-X-Google-Sender-Auth: AQNYlBABdgGbL4wtDKZP5g8Dfss
-Message-ID: <CAMuHMdX6s1yYpwVoRiQYr2F5MTKqgSFLzVRniw6QYHgUmG7KBA@mail.gmail.com>
-Subject: Re: [ORLinux] [PATCH v2] openrisc: irq: use irqchip framework
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jonas Bonn <jonas@southpole.se>
-Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, linux <linux@openrisc.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400272904-31121-5-git-send-email-daniel.kiper@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 9:32 AM, Jonas Bonn <jonas@southpole.se> wrote:
-> On 05/21/2014 09:50 PM, Stefan Kristiansson wrote:
->> I see two paths to go to get there though, and here's where I'd like some input.
->> 1) Define the three different implementations as seperate irqchips,
->>    with accompanying IRQCHIP_DECLARE.
->> 2) Add custom device-tree bindings and determine the chip type from that.
->
-> I think 1) above is the way to go.  Something alone the lines of
-> "opencores,or1k-pic-level", "opencores,or1k-pic-edge", and
-> "opencores,or1200-pic".
+On Fri, 16 May, at 10:41:43PM, Daniel Kiper wrote:
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> ---
+>  arch/x86/kernel/setup.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index f41f648..7a67f5d 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -924,11 +924,11 @@ void __init setup_arch(char **cmdline_p)
+>  #endif
+>  #ifdef CONFIG_EFI
+>  	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
+> -		     "EL32", 4)) {
+> +				EFI32_LOADER_SIGNATURE, 4)) {
+>  		set_bit(EFI_BOOT, &efi.flags);
+>  		set_bit(EFI_DIRECT, &efi.flags);
+>  	} else if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
+> -		     "EL64", 4)) {
+> +				EFI64_LOADER_SIGNATURE, 4)) {
+>  		set_bit(EFI_BOOT, &efi.flags);
+>  		set_bit(EFI_DIRECT, &efi.flags);
+>  		set_bit(EFI_64BIT, &efi.flags);
 
-Sounds fine to me. The only thing I'm still wondering about is whether
-to have both "opencores,or1k-pic-*" variants, or just ""opencores,or1k-pic"
-and an (optional) property for edge/level selection.
+Conceptually this change is a nice cleanup, but you've also changed the
+indentation. Please don't do that, stick with the existing format.
 
-Is edge support planned to stay in future versions of the specifications?
-If not, go with the optional property to select edge.
-If yes, have two variants.
-
-> The first two match the behaviour of the or1k specification; the third
-> one, however, is really a misimplementation of the spec and is kind of
-> tied to the actual implementation of the OR1200... I wonder if we don't
-> need to version this one like we version the CPU identifier (*-rtlsvnXXXXX).
-
-Is this planned to be fixed for OR1200?
-If yes, how? If this will be done by switching to the version that follows the
-or1k spec, the compatible value in DT can just be changed to one of the
-"opencores,or1k-pic-*" variants.
-
-Just my 2 c...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Matt Fleming, Intel Open Source Technology Center
