@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613AbaEVXLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:11:30 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:47334 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753392AbaEVXL0 (ORCPT
+	id S1753661AbaEVXLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:11:42 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:48681 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632AbaEVXLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:11:26 -0400
+	Thu, 22 May 2014 19:11:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400799936-26499-7-git-send-email-keescook@chromium.org>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org> <1400799936-26499-7-git-send-email-keescook@chromium.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 22 May 2014 16:11:06 -0700
-Message-ID: <CALCETrWR6s7wqSwEeygOYqizrxy8eAyHb3SqvLoTooMZ+MfdqA@mail.gmail.com>
-Subject: Re: [PATCH v5 6/6] seccomp: add SECCOMP_EXT_ACT_TSYNC and SECCOMP_FILTER_TSYNC
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        liguang <lig.fnst@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
+X-Originating-IP: [128.107.151.95]
+Date: Thu, 22 May 2014 16:11:38 -0700
+Message-ID: <CADadk9FjRgvBqO4FMpz8UrBAh8pV8t4SZnKPVBwyjHzBUw+0=Q@mail.gmail.com>
+Subject: [PATCH] Staging: Media: sn9c102: Fixed a pointer declaration coding
+ style issue
+From: Chaitanya <c@24.io>
+To: Luca Risolia <luca.risolia@studio.unibo.it>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
-> Applying restrictive seccomp filter programs to large or diverse
-> codebases often requires handling threads which may be started early in
-> the process lifetime (e.g., by code that is linked in). While it is
-> possible to apply permissive programs prior to process start up, it is
-> difficult to further restrict the kernel ABI to those threads after that
-> point.
->
-> This change adds a new seccomp extension action for synchronizing thread
-> group seccomp filters and a prctl() for accessing that functionality,
-> as well as a flag for SECCOMP_EXT_ACT_FILTER to perform sync at filter
-> installation time.
->
-> When calling prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER,
-> flags, filter) with flags containing SECCOMP_FILTER_TSYNC, or when calling
-> prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0), it
-> will attempt to synchronize all threads in current's threadgroup to its
-> seccomp filter program. This is possible iff all threads are using a filter
-> that is an ancestor to the filter current is attempting to synchronize to.
-> NULL filters (where the task is running as SECCOMP_MODE_NONE) are also
-> treated as ancestors allowing threads to be transitioned into
-> SECCOMP_MODE_FILTER. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
-> calling thread, no_new_privs will be set for all synchronized threads too.
-> On success, 0 is returned. On failure, the pid of one of the failing threads
-> will be returned, with as many filters installed as possible.
+Fixed the ERROR thrown off by checkpatch.pl.
 
-Is there a use case for adding a filter and synchronizing filters
-being separate operations?  If not, I think this would be easier to
-understand and to use if there was just a single operation.
+Signed-off-by: Chaitanya Hazarey <c@24.io>
+---
+ drivers/staging/media/sn9c102/sn9c102_tas5130d1b.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-If you did that, you'd have to decide whether to continue requiring
-that all the other threads have a filter that's an ancestor of the
-current thread's filter.
+diff --git a/drivers/staging/media/sn9c102/sn9c102_tas5130d1b.c
+b/drivers/staging/media/sn9c102/sn9c102_tas5130d1b.c
+index a30bbc4..725de85 100644
+--- a/drivers/staging/media/sn9c102/sn9c102_tas5130d1b.c
++++ b/drivers/staging/media/sn9c102/sn9c102_tas5130d1b.c
+@@ -23,7 +23,7 @@
+ #include "sn9c102_devtable.h"
 
---Andy
+
+-static int tas5130d1b_init(struct sn9c102_device* cam)
++static int tas5130d1b_init(struct sn9c102_device *cam)
+ {
+  int err;
+
+@@ -36,8 +36,8 @@ static int tas5130d1b_init(struct sn9c102_device* cam)
+ }
+
+
+-static int tas5130d1b_set_ctrl(struct sn9c102_device* cam,
+-       const struct v4l2_control* ctrl)
++static int tas5130d1b_set_ctrl(struct sn9c102_device *cam,
++       const struct v4l2_control *ctrl)
+ {
+  int err = 0;
+
+@@ -56,10 +56,10 @@ static int tas5130d1b_set_ctrl(struct sn9c102_device* cam,
+ }
+
+
+-static int tas5130d1b_set_crop(struct sn9c102_device* cam,
+-       const struct v4l2_rect* rect)
++static int tas5130d1b_set_crop(struct sn9c102_device *cam,
++       const struct v4l2_rect *rect)
+ {
+- struct sn9c102_sensor* s = sn9c102_get_sensor(cam);
++ struct sn9c102_sensor *s = sn9c102_get_sensor(cam);
+  u8 h_start = (u8)(rect->left - s->cropcap.bounds.left) + 104,
+    v_start = (u8)(rect->top - s->cropcap.bounds.top) + 12;
+  int err = 0;
+@@ -76,8 +76,8 @@ static int tas5130d1b_set_crop(struct sn9c102_device* cam,
+ }
+
+
+-static int tas5130d1b_set_pix_format(struct sn9c102_device* cam,
+-     const struct v4l2_pix_format* pix)
++static int tas5130d1b_set_pix_format(struct sn9c102_device *cam,
++     const struct v4l2_pix_format *pix)
+ {
+  int err = 0;
+
+@@ -146,7 +146,7 @@ static const struct sn9c102_sensor tas5130d1b = {
+ };
+
+
+-int sn9c102_probe_tas5130d1b(struct sn9c102_device* cam)
++int sn9c102_probe_tas5130d1b(struct sn9c102_device *cam)
+ {
+  const struct usb_device_id tas5130d1b_id_table[] = {
+  { USB_DEVICE(0x0c45, 0x6024), },
+-- 
+1.9.1
