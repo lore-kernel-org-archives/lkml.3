@@ -1,99 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896AbaEVMAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:00:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45409 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754674AbaEVMAF (ORCPT
+	id S1754906AbaEVMBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:01:37 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:59654 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431AbaEVMBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:00:05 -0400
-Date: Thu, 22 May 2014 13:58:05 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, andriy.shevchenko@intel.com,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        zhuzhenhua@allwinnertech.com, shuge@allwinnertech.com,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, dmaengine@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v8 0/2] Add support for the Allwinner A31 DMA Controller
-Message-ID: <20140522115805.GC27329@lukather>
-References: <1400685357-508-1-git-send-email-maxime.ripard@free-electrons.com>
- <4828893.NoTbcUXQEt@wuerfel>
- <20140521155551.GV27329@lukather>
- <5291281.0OW8pVdbhQ@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ynll37MX3Fmyj3VY"
-Content-Disposition: inline
-In-Reply-To: <5291281.0OW8pVdbhQ@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 May 2014 08:01:34 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-bd-537de717e4ec
+Message-id: <537DE714.1090407@samsung.com>
+Date: Thu, 22 May 2014 14:01:24 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH 3/4] clk: samsung: Add driver to control CLKOUT line on
+ Exynos SoCs
+References: <1400604211-9447-1-git-send-email-t.figa@samsung.com>
+ <1400604211-9447-4-git-send-email-t.figa@samsung.com>
+ <537D8788.8030904@linaro.org> <537DD2C0.4060802@samsung.com>
+ <CAHbNUh2gkpV-rt6S+-bUmFvYAuK_HNoXfyOStwYe29sZMJonUw@mail.gmail.com>
+In-reply-to: <CAHbNUh2gkpV-rt6S+-bUmFvYAuK_HNoXfyOStwYe29sZMJonUw@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsVy+t/xK7riz2uDDdbuYLaY+vAJm8X8I+dY
+	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZLH2yF12i6XXLzJZPJ1wkc1i0dYv7BZTFh1mtWjde4Td
+	4vCbdlaLVbv+MFq0/93L5sDvsWbeGkaPnbPusntsWtXJ5nHn2h42j81L6j36tqxi9Pi8SS6A
+	PYrLJiU1J7MstUjfLoEr4+iPNqaCheIVtxYlNTB+EOxi5OSQEDCR6Ps9iwXCFpO4cG89Wxcj
+	F4eQwFJGidlXNzNDOJ8ZJf78WMkEUsUroCVxt6UTzGYRUJWYu+85WDebgJrE54ZHbCA2P1DN
+	mqbrQHEODlGBCInHF4QgWgUlfky+B1YuIqAj8WDRXhaQ+cwCb1kk1j37BtYrLBApcevicxaI
+	xf8ZJfZM7gXr4BQIltg15QAriM0soC4xad4iZghbXmLzmrfMExgFZyFZMgtJ2SwkZQsYmVcx
+	iqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihETYlx2Mi49ZHWIU4GBU4uEVuFodLMSaWFZcmXuI
+	UYKDWUmE1/FJbbAQb0piZVVqUX58UWlOavEhRiYOTqkGRon9pec15obWbJ11PnabqecbxSXf
+	O6VSn0Xd/rjK/0DKnDfSZhrt6sw71+k8v2I3SSo7ft2/znOKO+zrVr7/8zlSejsTG8dUqfc2
+	4ocu39E6eTxT+3aS2fHLmvUP3Ix7Z4TGZJQ+1YhKuVVi6l3O5ZAzMch1neC0+DUTTN9NX+/m
+	L9EqI3D0lxJLcUaioRZzUXEiAPu5OjaOAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22.05.2014 13:44, Tushar Behera wrote:
+> On 22 May 2014 16:04, Tomasz Figa <t.figa@samsung.com> wrote:
+>> On 22.05.2014 07:13, Tushar Behera wrote:
+>>> On 05/20/2014 10:13 PM, Tomasz Figa wrote:
+>>>> This patch introduces a driver that handles configuration of CLKOUT pin
+>>>> of Exynos SoCs that can be used to output certain clocks from inside of
+>>>> the SoC to a dedicated output pin.
+>>>>
+>>>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+>>>> ---
+>>>>  .../devicetree/bindings/arm/samsung/pmu.txt        |  30 ++++
+>>>>  drivers/clk/samsung/Makefile                       |   1 +
+>>>>  drivers/clk/samsung/clk-exynos-clkout.c            | 153 +++++++++++++++++++++
+>>>>  3 files changed, 184 insertions(+)
+>>>>  create mode 100644 drivers/clk/samsung/clk-exynos-clkout.c
+>>>>
+>>>
+>>> [ ... ]
+>>>
+>>>> +    clkout->clk_table[0] = clk_register_composite(NULL, "clkout",
+>>>> +                            parent_names, parent_count, &clkout->mux.hw,
+>>>> +                            &clk_mux_ops, NULL, NULL, &clkout->gate.hw,
+>>>> +                            &clk_gate_ops, CLK_SET_RATE_PARENT
+>>>> +                            | CLK_SET_RATE_NO_REPARENT);
+>>>
+>>> Would you please remove CLK_SET_RATE_NO_REPARENT flag from here? Let me
+>>> know if you have reservations against this.
+>>
+>> The problem with clock reparenting is that there are certain parent
+>> clocks of CLKOUT, rate of which changes at runtime, e.g. clocks derived
+>> from APLL or bus clocks, which can be reconfigured by cpufreq or devfreq.
+>>
+> 
+> +CC: Sylwester Nawrocki
+> 
+> Okay. But in cases where there is only 1 valid parent clock provided
+> through DT (at the moment for Exynos5250/Exynos5420), would it be safe
+> to set that clock as the parent of CLKOUT?
 
---ynll37MX3Fmyj3VY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is not something to rely on. I have simply omitted remaining CLKOUT
+parents on Exynos 5 SoCs, as I don't have any board with them on which I
+could test this. Eventually they will be added.
 
-On Wed, May 21, 2014 at 06:04:43PM +0200, Arnd Bergmann wrote:
-> On Wednesday 21 May 2014 17:55:51 Maxime Ripard wrote:
-> > On Wed, May 21, 2014 at 05:23:41PM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 21 May 2014 17:15:54 Maxime Ripard wrote:
-> > > > Changes from v7:
-> > > >   - select DMA_OF, since we're only relying on DT
-> > > >=20
-> > >=20
-> > > I missed the discussion about this issue, but it seems wrong to me.
-> > > DMA_OF is currently enabled if we have both DMAENGINE and OF turned o=
-n.
-> > >=20
-> > > If OF is disabled but DMA_OF gets selected by DMA_SUN6I, what happens?
-> >=20
-> > Is that even possible with a multiplatform-based platform?
->=20
-> It's not possible for ARCH_SUNXI or any other that depends on
-> ARCH_MULTIPLATFORM. I just noticed that you have 'depends on ARCH_SUNXI',
-> so the 'select DMA_OF' statement is just redundant, not wrong.
->=20
-> However, if the driver was 'depends on ARCH_SUNXI || COMPILE_TEST' as many
-> others are nowadays, it would be a bug.
+> Otherwise, this clock is
+> not usable ATM.
 
-Ah, yes, I forgot about COMPILE_TEST.
+On many boards it is already configured properly by the bootloader.
+Although I don't see any reason why you couldn't reparent it in
+(board-specific) sound card driver right now.
 
-I'll change this to remove the select, and add a dependency on
-COMPILE_TEST.
+> 
+>>>
+>>> With RFC patches, I am able to do a clk_set_rate() on this clock to
+>>> get a 24MHz output to the codec clock. With this flag set, I again have
+>>> to rely on the default value set to this register in bootloader.
+>>>
+>>
+>> This problem should be handled by initializing clocks from DT. I'm not
+>> sure why it hasn't been implemented yet...
+> 
+> I would be happy to get it done that way. I can see a patch from
+> Sylwester regarding this, but there hasn't been a conclusion as of
+> yet.
+> 
+> https://lkml.org/lkml/2014/4/9/173
 
-Thanks,
-Maxime
+Have you mentioned your use case there? It might indicate that this is
+indeed an important problem and that too much bikeshedding doesn't
+really make us closer to the solution.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---ynll37MX3Fmyj3VY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTfeZNAAoJEBx+YmzsjxAgmuUP/3ajKvld+AlL18U2BQRlb4Il
-vN2HkqOkJbZqqKA8w5qrWXsM/0Q1Idzb6Wpm3qH3vKtDCI8B3B9zofeeYUUmmLBX
-nJqFPqhVIrEgryI2jXrBZyCqaWJD1Bq3yimUuic5He00L4cArljYVZA4NkVP4b1L
-Bqi3Tvke+4B3w8Wm68o0UauctCHY77rnzn1m/e27VT5lwPPb3sHcvd9V3tK3+Cyz
-kfZiXROeRIpRjV3hDHM1YiYCpgqNswAXI/NUPKrSl/kxBr/DxFZXFVq5KCokyWO9
-d9GROmVuoZm05kJn828IJFqhMIgo4atDB5IKGdekixrX0X5Esn3W26urDzRyWk0k
-MxtovFWg7MhLhzUCtwy8SlBXiO6mlC3FBMVKu10Z4NhjDsfAol6tJ6UscnpTCDiP
-AeSfUDq9XuTL18SYBpB5fVI2rWXa3LqNw14uHGmGPUiTPfk7MMyU3h2oAhv/U8pd
-n/rM4RjTGw7qvf87pKE2z6LuBPxj48etBCDMc+/Oc+s3gKUffJ1ixObXYoPQUb6p
-Tv+ABhXX6DKVkUWbfzJoQFuk0Px1dY8elgpBeKtHUKfrIz3zw0Rc7tP8VW/LDzpP
-a9xZLO92XplUKHSHI7yDJPE8EonYaHVCqvekT3bdbBtpyCj/+7lHku6Ampclsd+C
-F/DNjMX6apxpozVBOe5t
-=cdyN
------END PGP SIGNATURE-----
-
---ynll37MX3Fmyj3VY--
+Best regards,
+Tomasz
