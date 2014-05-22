@@ -1,70 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbaEVIxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 04:53:49 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:57414 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364AbaEVIxo (ORCPT
+	id S1752705AbaEVIzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 04:55:25 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56453 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbaEVIzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 04:53:44 -0400
-Message-ID: <537DBB12.6070108@redhat.com>
-Date: Thu, 22 May 2014 10:53:38 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 04:55:22 -0400
+Date: Thu, 22 May 2014 01:55:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: compaction is still too expensive for thp
+In-Reply-To: <537DB0E5.40602@suse.cz>
+Message-ID: <alpine.DEB.2.02.1405220127320.13630@chino.kir.corp.google.com>
+References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <537DB0E5.40602@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Michael Mueller <mimu@linux.vnet.ibm.com>, Alexander Graf <agraf@suse.de>
-CC: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Andreas Faerber <afaerber@suse.de>,
-        Richard Henderson <rth@twiddle.net>,
-        Eduardo Habkost <ehabkost@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v1 RFC 6/6] KVM: s390: add cpu model support
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>	<1399993114-15333-7-git-send-email-mimu@linux.vnet.ibm.com>	<5375FFB8.90504@suse.de>	<20140516173907.3b1c4efa@bee>	<53767590.2090605@suse.de>	<20140519125339.09840b9e@bee>	<5379EF78.9040209@suse.de>	<20140519161811.5a17bc66@bee>	<537A19F8.4060209@suse.de>	<20140519190318.6f92c1bd@bee>	<537A6608.8000608@suse.de>	<20140520120218.38eb7181@bee>	<537B2A0F.1030706@suse.de>	<20140521145652.197bff21@bee>	<537CA89B.6050803@suse.de> <20140522102316.653f34ba@bee>
-In-Reply-To: <20140522102316.653f34ba@bee>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/05/2014 10:23, Michael Mueller ha scritto:
-> On Wed, 21 May 2014 15:22:35 +0200
-> Alexander Graf <agraf@suse.de> wrote:
->
-> I have seen the slides from Eduardo which he presented during this years
-> DevConf in Brno and made my comments according the s390x implementation
-> on that. Is you will see, this is mostly overlapping except for the model
-> definition authority that I clearly see on qemu's side.
->
-> See pdf attachment.
+On Thu, 22 May 2014, Vlastimil Babka wrote:
 
-More comments:
+> > With -mm, it turns out that while egregious thp fault latencies were
+> > reduced, faulting 64MB of memory backed by thp on a fragmented 128GB
+> > machine can result in latencies of 1-3s for the entire 64MB.  Collecting
+> > compaction stats from older kernels that give more insight into
+> > regressions, one such incident is as follows.
+> > 
+> > Baseline:
+> > compact_blocks_moved 8181986
+> > compact_pages_moved 6549560
+> > compact_pagemigrate_failed 1612070
+> > compact_stall 101959
+> > compact_fail 100895
+> > compact_success 1064
+> > 
+> > 5s later:
+> > compact_blocks_moved 8182447
+> > compact_pages_moved 6550286
+> > compact_pagemigrate_failed 1612092
+> > compact_stall 102023
+> > compact_fail 100959
+> > compact_success 1064
+> > 
+> > This represents faulting two 64MB ranges of anonymous memory.  As you can
+> > see, it results in falling back to 4KB pages because all 64 faults of
+> > hugepages ends up triggering compaction and failing to allocate.  Over the
+> > 64 async compactions, we scan on average 7.2 pageblocks per call,
+> > successfully migrate 11.3 pages per call, and fail migrating 0.34 pages
+> > per call.
+> > 
+> > If each async compaction scans 7.2 pageblocks per call, it would have to
+> > be called 9103 times to scan all memory on this 128GB machine.  We're
+> > simply not scanning enough memory as a result of ISOLATE_ABORT due to
+> > need_resched().
+> 
+> Well, the two objectives of not being expensive and at the same time scanning
+> "enough memory" (which is hard to define as well) are clearly quite opposite
+> :/
+> 
 
-- "Only one machine type in s390 case which is -machine s390-virtio-ccw"
+Agreed.
 
-This probably should change sooner or later, as soon as the 
-implementation becomes stable enough.  Versioning is necessary for live 
-migration across different QEMU version.  Perhaps start versioning in 
-2.2, i.e. start making s390-virtio-ccw-2.1 an alias for s390-virtio-ccw now?
+> > So the net result is that -mm is much better than Linus's tree, where such
+> > faulting of 64MB ranges could stall 8-9s, but we're still very expensive.
+> 
+> So I guess the difference here is mainly thanks to not doing sync compaction?
 
-Note that new virtio device features can appear at any time outside the 
-s390 code, and will take part in versioning as well.
+Not doing sync compaction for thp and caching the migration pfn for async 
+so that it doesn't iterate over a ton of memory that may not be eligible 
+for async compaction every time it is called.  But when we avoid sync 
+compaction, we also lose deferred compaction.
 
-- "No enforce option"
+> So if I understand correctly, your intention is to scan more in a single scan,
 
-Strongly suggest making enforce the only possible behavior.
+More will be scanned instead of ~7 pageblocks for every call to async 
+compaction with the data that I presented but also reduce how expensive 
+every pageblock scan is by avoiding needlessly migrating memory (and 
+dealing with rmap locks) when it will not result in 2MB of contiguous 
+memory for thp faults.
 
-- "Not in the s390x case, because the KVM facility mask limits the cpu 
-model specific facilities"
+> but balance the increased latencies by introducing deferring for async
+> compaction.
+> 
+> Offhand I can think of two issues with that.
+> 
+> 1) the result will be that often the latency will be low thanks to defer, but
+> then there will be a huge (?) spike by scanning whole 1GB (as you suggest
+> further in the mail) at once. I think that's similar to what you had now with
+> the sync compaction?
+> 
 
-What if the KVM facility mask changes?  For x86, nowadays new CPUID bits 
-are only introduced in KVM when a new processors comes out.  But if we 
-introduced an older CPUID bit, it would be a huge complication for 
-backwards compatibility.  Is it different for s390?
+Not at all, with MIGRATE_SYNC_LIGHT before there is no termination other 
+than an entire scan of memory so we were potentially scanning 128GB and 
+failing if thp cannot be allocated.
 
-Paolo
+If we are to avoid migrating memory needlessly that will not result in 
+cc->order memory being allocated, then the cost should be relatively 
+constant for a span of memory.  My 32GB system can iterate all memory with 
+MIGRATE_ASYNC and no need_resched() aborts in ~530ms.
+
+> 2) 1GB could have a good chance of being successful (?) so there would be no
+> defer anyway.
+> 
+
+If we terminate early because order-9 is allocatable or we end up scanning 
+the entire 1GB and the hugepage is allocated, then we have prevented 511 
+other pagefaults in my testcase where faulting 64MB of memory with thp 
+enabled can currently take 1-3s on a 128GB machine with fragmentation.  I 
+think the deferral is unnecessary in such a case.
+
+Are you suggesting we should try without the deferral first?
+
+> > I have a few improvements in mind, but thought it would be better to
+> > get feedback on it first because it's a substantial rewrite of the
+> > pageblock migration:
+> > 
+> >   - For all async compaction, avoid migrating memory unless enough
+> >     contiguous memory is migrated to allow a cc->order allocation.
+> 
+> Yes I suggested something like this earlier. Also in the scanner, skip to the
+> next cc->order aligned block as soon as any page fails the isolation and is
+> not PageBuddy.
+
+Agreed.
+
+> I would just dinstinguish kswapd and direct compaction, not "all async
+> compaction". Or maybe kswapd could be switched to sync compaction.
+> 
+
+To generalize this, I'm thinking that it is pointless for async compaction 
+to migrate memory in a contiguous span if it will not cause a cc->order 
+page allocation to succeed.
+
+> >     This
+> >     would remove the COMPACT_CLUSTER_MAX restriction on pageblock
+> >     compaction
+> 
+> Yes.
+> 
+> >     and keep pages on the cc->migratepages list between
+> >     calls to isolate_migratepages_range().
+> 
+> This might not be needed. It's called within a single pageblock (except maybe
+> CMA but that's quite a different thing) and I think we can ignore order >
+> pageblock_nr_order here.
+> 
+
+Ok, I guess pageblocks within a zone are always pageblock_order aligned 
+for all platforms so if we encounter any non-migratable (or PageBuddy) 
+memory in a block where pageblock_order == HPAGE_PMD_NR, then we can abort 
+that block immediately for thp faults.
+
+> >     When an unmigratable page is encountered or memory hole is found,
+> >     put all pages on cc->migratepages back on the lru lists unless
+> >     cc->nr_migratepages >= (1 << cc->order).  Otherwise, migrate when
+> >     enough contiguous memory has been isolated.
+> > 
+> >   - Remove the need_resched() checks entirely from compaction and
+> >     consider only doing a set amount of scanning for each call, such
+> >     as 1GB per call.
+> > 
+> >     If there is contention on zone->lru_lock, then we can still abort
+> >     to avoid excessive stalls, but need_resched() is a poor heuristic
+> >     to determine when async compaction is taking too long.
+> 
+> I tend to agree. I've also realized that because need_resched() leads to
+> cc->contended = true, direct reclaim and second compaction that would normally
+> follow (used to be sync, now only in hugepaged) is skipped. need_resched()
+> seems to be indeed unsuitable for this.
+> 
+
+It's hard to replace with an alternative, though, to determine when enough 
+is enough :)  1GB might be a sane starting point, though, and then try 
+reclaim and avoid the second call to async compaction on failure.  I'm not 
+sure if the deferral would be needed in this case or not.
+
+> >     The expense of calling async compaction if this is done is easily
+> >     quantified since we're not migrating any memory unless it is
+> >     sufficient for the page allocation: it would simply be the iteration
+> >     over 1GB of memory and avoiding contention on zone->lru_lock.
+> > 
+> > We may also need to consider deferring async compaction for subsequent
+> > faults in the near future even though scanning the previous 1GB does not
+> > decrease or have any impact whatsoever in the success of defragmenting the
+> > next 1GB.
+> > 
+> > Any other suggestions that may be helpful?
+> 
+> I suggested already the idea of turning the deferred compaction into a
+> live-tuned amount of how much to scan, instead of doing a whole zone (before)
+> or an arbitrary amount like 1GB, with the hope of reducing the latency spikes.
+> But I realize this would be tricky.
+> 
+
+By live-tuned, do you mean something that is tuned by the kernel over time 
+depending on how successful compaction is or do you mean something that 
+the user would alter?  If we are to go this route, I agree that we can 
+allow the user to tune the 1GB.
+
+> Even less concrete, it might be worth revisiting the rules we use for deciding
+> if compaction is worth trying, and the decisions if to continue or we believe
+> the allocation will succeed.
+
+Ah, tuning compaction_suitable() might be another opportunity.  I'm 
+wondering if we should be considering thp specially here since it's in the 
+fault path.
+
+> It relies heavily on watermark checks that also
+> consider the order, and I found it somewhat fragile. For example, in the alloc
+> slowpath -> direct compaction path, a check in compaction concludes that
+> allocation should succeed and finishes the compaction, and few moments later
+> the same check in the allocation will conclude that everything is fine up to
+> order 8, but there probably isn't a page of order 9. In between, the
+> nr_free_pages has *increased*. I suspect it's because the watermark checking
+> is racy and the counters drift, but I'm not sure yet.
+
+The watermark checks both in compaction_suitable() and and 
+compact_finished() are indeed racy with respect to the actual page 
+allocation.
+
+> However, this particular problem should be gone when I finish my series that
+> would capture the page that compaction has just freed. But still, the
+> decisions regarding compaction could be suboptimal.
+> 
+
+This should also avoid the race between COMPACT_PARTIAL, returning to the 
+page allocator, and finding that the high-order memory you thought was now 
+available has been allocated by someone else.
