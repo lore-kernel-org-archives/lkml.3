@@ -1,133 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbaEVXI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:08:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752617AbaEVXIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:08:53 -0400
-Subject: [PATCH v4 13/16] iommu/fsl: Use iommu_group_get_for_dev() for IOMMU
- groups
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, acooks@gmail.com, linux@horizon.com,
-        bhelgaas@google.com, Varun Sethi <varun.sethi@freescale.com>,
-        eddy0596@gmail.com
-Date: Thu, 22 May 2014 17:08:45 -0600
-Message-ID: <20140522230845.2856.95844.stgit@bling.home>
-In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
-References: <20140522230230.2856.40017.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1753613AbaEVXLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:11:30 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:47334 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392AbaEVXL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:11:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1400799936-26499-7-git-send-email-keescook@chromium.org>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org> <1400799936-26499-7-git-send-email-keescook@chromium.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 May 2014 16:11:06 -0700
+Message-ID: <CALCETrWR6s7wqSwEeygOYqizrxy8eAyHb3SqvLoTooMZ+MfdqA@mail.gmail.com>
+Subject: Re: [PATCH v5 6/6] seccomp: add SECCOMP_EXT_ACT_TSYNC and SECCOMP_FILTER_TSYNC
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        liguang <lig.fnst@cn.fujitsu.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop custom code and use IOMMU provided grouping support for PCI.
+On Thu, May 22, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
+> Applying restrictive seccomp filter programs to large or diverse
+> codebases often requires handling threads which may be started early in
+> the process lifetime (e.g., by code that is linked in). While it is
+> possible to apply permissive programs prior to process start up, it is
+> difficult to further restrict the kernel ABI to those threads after that
+> point.
+>
+> This change adds a new seccomp extension action for synchronizing thread
+> group seccomp filters and a prctl() for accessing that functionality,
+> as well as a flag for SECCOMP_EXT_ACT_FILTER to perform sync at filter
+> installation time.
+>
+> When calling prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER,
+> flags, filter) with flags containing SECCOMP_FILTER_TSYNC, or when calling
+> prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0), it
+> will attempt to synchronize all threads in current's threadgroup to its
+> seccomp filter program. This is possible iff all threads are using a filter
+> that is an ancestor to the filter current is attempting to synchronize to.
+> NULL filters (where the task is running as SECCOMP_MODE_NONE) are also
+> treated as ancestors allowing threads to be transitioned into
+> SECCOMP_MODE_FILTER. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
+> calling thread, no_new_privs will be set for all synchronized threads too.
+> On success, 0 is returned. On failure, the pid of one of the failing threads
+> will be returned, with as many filters installed as possible.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Varun Sethi <varun.sethi@freescale.com>
----
- drivers/iommu/fsl_pamu_domain.c |   66 +--------------------------------------
- 1 file changed, 1 insertion(+), 65 deletions(-)
+Is there a use case for adding a filter and synchronizing filters
+being separate operations?  If not, I think this would be easier to
+understand and to use if there was just a single operation.
 
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index 93072ba..d02d668 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -38,7 +38,6 @@
- #include <sysdev/fsl_pci.h>
- 
- #include "fsl_pamu_domain.h"
--#include "pci.h"
- 
- /*
-  * Global spinlock that needs to be held while
-@@ -892,8 +891,6 @@ static int fsl_pamu_get_domain_attr(struct iommu_domain *domain,
- 	return ret;
- }
- 
--#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
--
- static struct iommu_group *get_device_iommu_group(struct device *dev)
- {
- 	struct iommu_group *group;
-@@ -950,74 +947,13 @@ static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
- 	struct pci_controller *pci_ctl;
- 	bool pci_endpt_partioning;
- 	struct iommu_group *group = NULL;
--	struct pci_dev *bridge, *dma_pdev = NULL;
- 
- 	pci_ctl = pci_bus_to_host(pdev->bus);
- 	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
- 	/* We can partition PCIe devices so assign device group to the device */
- 	if (pci_endpt_partioning) {
--		bridge = pci_find_upstream_pcie_bridge(pdev);
--		if (bridge) {
--			if (pci_is_pcie(bridge))
--				dma_pdev = pci_get_domain_bus_and_slot(
--						pci_domain_nr(pdev->bus),
--						bridge->subordinate->number, 0);
--			if (!dma_pdev)
--				dma_pdev = pci_dev_get(bridge);
--		} else
--			dma_pdev = pci_dev_get(pdev);
--
--		/* Account for quirked devices */
--		swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
--
--		/*
--		 * If it's a multifunction device that does not support our
--		 * required ACS flags, add to the same group as lowest numbered
--		 * function that also does not suport the required ACS flags.
--		 */
--		if (dma_pdev->multifunction &&
--		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
--			u8 i, slot = PCI_SLOT(dma_pdev->devfn);
--
--			for (i = 0; i < 8; i++) {
--				struct pci_dev *tmp;
--
--				tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
--				if (!tmp)
--					continue;
--
--				if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
--					swap_pci_ref(&dma_pdev, tmp);
--					break;
--				}
--				pci_dev_put(tmp);
--			}
--		}
--
--		/*
--		 * Devices on the root bus go through the iommu.  If that's not us,
--		 * find the next upstream device and test ACS up to the root bus.
--		 * Finding the next device may require skipping virtual buses.
--		 */
--		while (!pci_is_root_bus(dma_pdev->bus)) {
--			struct pci_bus *bus = dma_pdev->bus;
--
--			while (!bus->self) {
--				if (!pci_is_root_bus(bus))
--					bus = bus->parent;
--				else
--					goto root_bus;
--			}
--
--			if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
--				break;
--
--			swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
--		}
-+		group = iommu_group_get_for_dev(&pdev->dev);
- 
--root_bus:
--		group = get_device_iommu_group(&dma_pdev->dev);
--		pci_dev_put(dma_pdev);
- 		/*
- 		 * PCIe controller is not a paritionable entity
- 		 * free the controller device iommu_group.
+If you did that, you'd have to decide whether to continue requiring
+that all the other threads have a filter that's an ancestor of the
+current thread's filter.
 
+--Andy
