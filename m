@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaEVJXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:23:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52029 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322AbaEVJXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:23:48 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@suse.de>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH] intel_rapl: Correct hotplug correction
-Date: Thu, 22 May 2014 11:23:44 +0200
-Message-Id: <1400750624-19238-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
+	id S1754195AbaEVJYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:24:22 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:49688 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751621AbaEVJYV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 05:24:21 -0400
+Message-ID: <1400750659.16832.24.camel@x220>
+Subject: [PATCH] MIPS: BCM1480: remove checks for CONFIG_SIBYTE_BCM1480_PROF
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Date: Thu, 22 May 2014 11:24:19 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 May 2014 09:24:19.0318 (UTC) FILETIME=[9BEB6960:01CF759F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+There are two checks for CONFIG_SIBYTE_BCM1480_PROF in the tree since
+v2.6.15. The related Kconfig symbol has never been added to the tree. So
+these checks have always evaluated to false. Besides, one of these
+checks guards a call of sbprof_cpu_intr(). But that function is not
+defined. Remove all this.
 
-So 009f225ef050 ("powercap, intel-rapl: Fix CPU hotplug callback
-registration") says how get_/put_online_cpus() should be replaced with
-this cpu_notifier_register_begin/_done().
-
-But they're still there so what's up?
-
-Let me do what was supposed to be done.
-
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/powercap/intel_rapl.c | 3 ---
- 1 file changed, 3 deletions(-)
+Untested.
 
-diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-index d9a0770b6c73..9055f3df1f64 100644
---- a/drivers/powercap/intel_rapl.c
-+++ b/drivers/powercap/intel_rapl.c
-@@ -1377,8 +1377,6 @@ static int __init rapl_init(void)
+Until v2.6.23 there also were checks for CONFIG_SIBYTE_SB1250_PROF in
+the tree. There also was a Kconfig symbol SIBYTE_SB1250_PROF so it was
+possible to make these checks evaluate to true. But, since one of these
+checks also guarded a call of sbprof_cpu_intr(), that should have made
+the build fail with an error.
+
+ arch/mips/sibyte/bcm1480/irq.c | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/arch/mips/sibyte/bcm1480/irq.c b/arch/mips/sibyte/bcm1480/irq.c
+index 59cfe2659771..373fbbc8425c 100644
+--- a/arch/mips/sibyte/bcm1480/irq.c
++++ b/arch/mips/sibyte/bcm1480/irq.c
+@@ -347,19 +347,8 @@ asmlinkage void plat_irq_dispatch(void)
+ 	unsigned int cpu = smp_processor_id();
+ 	unsigned int pending;
  
- 	cpu_notifier_register_begin();
+-#ifdef CONFIG_SIBYTE_BCM1480_PROF
+-	/* Set compare to count to silence count/compare timer interrupts */
+-	write_c0_compare(read_c0_count());
+-#endif
+-
+ 	pending = read_c0_cause() & read_c0_status();
  
--	/* prevent CPU hotplug during detection */
--	get_online_cpus();
- 	ret = rapl_detect_topology();
- 	if (ret)
- 		goto done;
-@@ -1390,7 +1388,6 @@ static int __init rapl_init(void)
- 	}
- 	__register_hotcpu_notifier(&rapl_cpu_notifier);
- done:
--	put_online_cpus();
- 	cpu_notifier_register_done();
- 
- 	return ret;
+-#ifdef CONFIG_SIBYTE_BCM1480_PROF
+-	if (pending & CAUSEF_IP7)	/* Cpu performance counter interrupt */
+-		sbprof_cpu_intr();
+-	else
+-#endif
+-
+ 	if (pending & CAUSEF_IP4)
+ 		do_IRQ(K_BCM1480_INT_TIMER_0 + cpu);
+ #ifdef CONFIG_SMP
 -- 
 1.9.0
 
