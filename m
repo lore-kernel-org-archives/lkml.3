@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaEVM0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:26:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51130 "EHLO
+	id S1755303AbaEVM0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:26:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51144 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755246AbaEVMZ6 (ORCPT
+	with ESMTP id S1754955AbaEVM0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:25:58 -0400
-Date: Thu, 22 May 2014 05:24:50 -0700
-From: tip-bot for Michael Kerrisk <tipbot@zytor.com>
-Message-ID: <tip-143cf23df25b7082cd706c3c53188e741e7881c3@git.kernel.org>
+	Thu, 22 May 2014 08:26:12 -0400
+Date: Thu, 22 May 2014 05:25:14 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-ce5f7f8200ca2504f6f290044393d73ca314965a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        stable@vger.kernel.org, tglx@linutronix.de, mtk.manpages@gmail.com
+        stable@vger.kernel.org, raistlin@linux.it, linux-man@vger.kernel.org,
+        tglx@linutronix.de, mtk.manpages@gmail.com, juri.lelli@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        stable@vger.kernel.org, tglx@linutronix.de, mtk.manpages@gmail.com
-In-Reply-To: <536CEC17.9070903@gmail.com>
-References: <536CEC17.9070903@gmail.com>
+        torvalds@linux-foundation.org, peterz@infradead.org, raistlin@linux.it,
+        stable@vger.kernel.org, linux-man@vger.kernel.org, tglx@linutronix.de,
+        juri.lelli@gmail.com, mtk.manpages@gmail.com
+In-Reply-To: <20140512205034.GH13467@laptop.programming.kicks-ass.net>
+References: <20140512205034.GH13467@laptop.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Make sched_setattr()
-  correctly return -EFBIG
-Git-Commit-ID: 143cf23df25b7082cd706c3c53188e741e7881c3
+Subject: [tip:sched/core] sched/deadline: Change sched_getparam()
+  behaviour vs SCHED_DEADLINE
+Git-Commit-ID: ce5f7f8200ca2504f6f290044393d73ca314965a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,53 +36,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  143cf23df25b7082cd706c3c53188e741e7881c3
-Gitweb:     http://git.kernel.org/tip/143cf23df25b7082cd706c3c53188e741e7881c3
-Author:     Michael Kerrisk <mtk.manpages@gmail.com>
-AuthorDate: Fri, 9 May 2014 16:54:15 +0200
+Commit-ID:  ce5f7f8200ca2504f6f290044393d73ca314965a
+Gitweb:     http://git.kernel.org/tip/ce5f7f8200ca2504f6f290044393d73ca314965a
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 12 May 2014 22:50:34 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 22 May 2014 10:21:25 +0200
+CommitDate: Thu, 22 May 2014 10:21:26 +0200
 
-sched: Make sched_setattr() correctly return -EFBIG
+sched/deadline: Change sched_getparam() behaviour vs SCHED_DEADLINE
 
-The documented[1] behavior of sched_attr() in the proposed man page text is:
+The way we read POSIX one should only call sched_getparam() when
+sched_getscheduler() returns either SCHED_FIFO or SCHED_RR.
 
-    sched_attr::size must be set to the size of the structure, as in
-    sizeof(struct sched_attr), if the provided structure is smaller
-    than the kernel structure, any additional fields are assumed
-    '0'. If the provided structure is larger than the kernel structure,
-    the kernel verifies all additional fields are '0' if not the
-    syscall will fail with -E2BIG.
+Given that we currently return sched_param::sched_priority=0 for all
+others, extend the same behaviour to SCHED_DEADLINE.
 
-As currently implemented, sched_copy_attr() returns -EFBIG for
-for this case, but the logic in sys_sched_setattr() converts that
-error to -EFAULT. This patch fixes the behavior.
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1615615/focus=1697760
-
-Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Requested-by: Michael Kerrisk <mtk.manpages@gmail.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: <stable@vger.kernel.org>
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: linux-man <linux-man@vger.kernel.org>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/536CEC17.9070903@gmail.com
+Cc: <stable@vger.kernel.org>
+Link: http://lkml.kernel.org/r/20140512205034.GH13467@laptop.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/sched/core.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 13584f1..f2205f0 100644
+index cdefcf7..f3f08bf 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -3658,8 +3658,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
- 	if (!uattr || pid < 0 || flags)
- 		return -EINVAL;
+@@ -3713,7 +3713,7 @@ SYSCALL_DEFINE1(sched_getscheduler, pid_t, pid)
+  */
+ SYSCALL_DEFINE2(sched_getparam, pid_t, pid, struct sched_param __user *, param)
+ {
+-	struct sched_param lp;
++	struct sched_param lp = { .sched_priority = 0 };
+ 	struct task_struct *p;
+ 	int retval;
  
--	if (sched_copy_attr(uattr, &attr))
--		return -EFAULT;
-+	retval = sched_copy_attr(uattr, &attr);
-+	if (retval)
-+		return retval;
+@@ -3730,11 +3730,8 @@ SYSCALL_DEFINE2(sched_getparam, pid_t, pid, struct sched_param __user *, param)
+ 	if (retval)
+ 		goto out_unlock;
  
- 	rcu_read_lock();
- 	retval = -ESRCH;
+-	if (task_has_dl_policy(p)) {
+-		retval = -EINVAL;
+-		goto out_unlock;
+-	}
+-	lp.sched_priority = p->rt_priority;
++	if (task_has_rt_policy(p))
++		lp.sched_priority = p->rt_priority;
+ 	rcu_read_unlock();
+ 
+ 	/*
