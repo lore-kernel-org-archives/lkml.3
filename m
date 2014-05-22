@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaEVMYy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:24:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51067 "EHLO
+	id S1755290AbaEVM0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:26:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51130 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875AbaEVMYv (ORCPT
+	with ESMTP id S1755246AbaEVMZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:24:51 -0400
-Date: Thu, 22 May 2014 05:24:39 -0700
-From: tip-bot for Michael Lentine <tipbot@zytor.com>
-Message-ID: <tip-eca8183699964579ca8a0b8d116bd1f4da0136f7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, mlentine@google.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, mlentine@google.com, jolsa@kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <1400579330-5043-3-git-send-email-eranian@google.com>
-References: <1400579330-5043-3-git-send-email-eranian@google.com>
+	Thu, 22 May 2014 08:25:58 -0400
+Date: Thu, 22 May 2014 05:24:50 -0700
+From: tip-bot for Michael Kerrisk <tipbot@zytor.com>
+Message-ID: <tip-143cf23df25b7082cd706c3c53188e741e7881c3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        stable@vger.kernel.org, tglx@linutronix.de, mtk.manpages@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        stable@vger.kernel.org, tglx@linutronix.de, mtk.manpages@gmail.com
+In-Reply-To: <536CEC17.9070903@gmail.com>
+References: <536CEC17.9070903@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add automatic remapping of Android libraries
-Git-Commit-ID: eca8183699964579ca8a0b8d116bd1f4da0136f7
+Subject: [tip:sched/core] sched: Make sched_setattr()
+  correctly return -EFBIG
+Git-Commit-ID: 143cf23df25b7082cd706c3c53188e741e7881c3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,153 +34,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eca8183699964579ca8a0b8d116bd1f4da0136f7
-Gitweb:     http://git.kernel.org/tip/eca8183699964579ca8a0b8d116bd1f4da0136f7
-Author:     Michael Lentine <mlentine@google.com>
-AuthorDate: Tue, 20 May 2014 11:48:50 +0200
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Wed, 21 May 2014 15:03:25 +0200
+Commit-ID:  143cf23df25b7082cd706c3c53188e741e7881c3
+Gitweb:     http://git.kernel.org/tip/143cf23df25b7082cd706c3c53188e741e7881c3
+Author:     Michael Kerrisk <mtk.manpages@gmail.com>
+AuthorDate: Fri, 9 May 2014 16:54:15 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 22 May 2014 10:21:25 +0200
 
-perf tools: Add automatic remapping of Android libraries
+sched: Make sched_setattr() correctly return -EFBIG
 
-This patch automatically adjusts the path of MMAP records
-associated with Android system libraries.
+The documented[1] behavior of sched_attr() in the proposed man page text is:
 
-The Android system is organized with system libraries found in
-/system/lib and user libraries in /data/app-lib. On the host system
-(not running Android), system libraries can be found in the downloaded
-NDK directory under ${NDK_ROOT}/platforms/${APP_PLATFORM}/arch-${ARCH}/usr/lib
-and the user libraries are installed under libs/${APP_ABI} within
-the apk build directory. This patch makes running the reporting
-tools possible on the host system using the libraries from the NDK.
+    sched_attr::size must be set to the size of the structure, as in
+    sizeof(struct sched_attr), if the provided structure is smaller
+    than the kernel structure, any additional fields are assumed
+    '0'. If the provided structure is larger than the kernel structure,
+    the kernel verifies all additional fields are '0' if not the
+    syscall will fail with -E2BIG.
 
-Signed-off-by: Michael Lentine <mlentine@google.com>
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1400579330-5043-3-git-send-email-eranian@google.com
-[ fixed 'space required before the open parenthesis' checkpatch.pl errors ]
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+As currently implemented, sched_copy_attr() returns -EFBIG for
+for this case, but the logic in sys_sched_setattr() converts that
+error to -EFAULT. This patch fixes the behavior.
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1615615/focus=1697760
+
+Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: <stable@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/536CEC17.9070903@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/util/map.c | 95 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 94 insertions(+), 1 deletion(-)
+ kernel/sched/core.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index ba5f5c0c..8ccbb32 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -32,6 +32,93 @@ static inline int is_no_dso_memory(const char *filename)
- 	       !strcmp(filename, "[heap]");
- }
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 13584f1..f2205f0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3658,8 +3658,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
+ 	if (!uattr || pid < 0 || flags)
+ 		return -EINVAL;
  
-+static inline int is_android_lib(const char *filename)
-+{
-+	return !strncmp(filename, "/data/app-lib", 13) ||
-+	       !strncmp(filename, "/system/lib", 11);
-+}
-+
-+static inline bool replace_android_lib(const char *filename, char *newfilename)
-+{
-+	const char *libname;
-+	char *app_abi;
-+	size_t app_abi_length, new_length;
-+	size_t lib_length = 0;
-+
-+	libname  = strrchr(filename, '/');
-+	if (libname)
-+		lib_length = strlen(libname);
-+
-+	app_abi = getenv("APP_ABI");
-+	if (!app_abi)
-+		return false;
-+
-+	app_abi_length = strlen(app_abi);
-+
-+	if (!strncmp(filename, "/data/app-lib", 13)) {
-+		char *apk_path;
-+
-+		if (!app_abi_length)
-+			return false;
-+
-+		new_length = 7 + app_abi_length + lib_length;
-+
-+		apk_path = getenv("APK_PATH");
-+		if (apk_path) {
-+			new_length += strlen(apk_path) + 1;
-+			if (new_length > PATH_MAX)
-+				return false;
-+			snprintf(newfilename, new_length,
-+				 "%s/libs/%s/%s", apk_path, app_abi, libname);
-+		} else {
-+			if (new_length > PATH_MAX)
-+				return false;
-+			snprintf(newfilename, new_length,
-+				 "libs/%s/%s", app_abi, libname);
-+		}
-+		return true;
-+	}
-+
-+	if (!strncmp(filename, "/system/lib/", 11)) {
-+		char *ndk, *app;
-+		const char *arch;
-+		size_t ndk_length;
-+		size_t app_length;
-+
-+		ndk = getenv("NDK_ROOT");
-+		app = getenv("APP_PLATFORM");
-+
-+		if (!(ndk && app))
-+			return false;
-+
-+		ndk_length = strlen(ndk);
-+		app_length = strlen(app);
-+
-+		if (!(ndk_length && app_length && app_abi_length))
-+			return false;
-+
-+		arch = !strncmp(app_abi, "arm", 3) ? "arm" :
-+		       !strncmp(app_abi, "mips", 4) ? "mips" :
-+		       !strncmp(app_abi, "x86", 3) ? "x86" : NULL;
-+
-+		if (!arch)
-+			return false;
-+
-+		new_length = 27 + ndk_length +
-+			     app_length + lib_length
-+			   + strlen(arch);
-+
-+		if (new_length > PATH_MAX)
-+			return false;
-+		snprintf(newfilename, new_length,
-+			"%s/platforms/%s/arch-%s/usr/lib/%s",
-+			ndk, app, arch, libname);
-+
-+		return true;
-+	}
-+	return false;
-+}
-+
- void map__init(struct map *map, enum map_type type,
- 	       u64 start, u64 end, u64 pgoff, struct dso *dso)
- {
-@@ -59,8 +146,9 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 	if (map != NULL) {
- 		char newfilename[PATH_MAX];
- 		struct dso *dso;
--		int anon, no_dso, vdso;
-+		int anon, no_dso, vdso, android;
+-	if (sched_copy_attr(uattr, &attr))
+-		return -EFAULT;
++	retval = sched_copy_attr(uattr, &attr);
++	if (retval)
++		return retval;
  
-+		android = is_android_lib(filename);
- 		anon = is_anon_memory(filename);
- 		vdso = is_vdso_map(filename);
- 		no_dso = is_no_dso_memory(filename);
-@@ -75,6 +163,11 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 			filename = newfilename;
- 		}
- 
-+		if (android) {
-+			if (replace_android_lib(filename, newfilename))
-+				filename = newfilename;
-+		}
-+
- 		if (vdso) {
- 			pgoff = 0;
- 			dso = vdso__dso_findnew(dsos__list);
+ 	rcu_read_lock();
+ 	retval = -ESRCH;
