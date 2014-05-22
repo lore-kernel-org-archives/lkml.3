@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725AbaEVNuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:50:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57529 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602AbaEVNuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:50:05 -0400
+	id S1755241AbaEVNwB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:52:01 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37402 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752526AbaEVNv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 09:51:58 -0400
+Message-ID: <537E00DD.4060702@ti.com>
+Date: Thu, 22 May 2014 16:51:25 +0300
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
-        <arnd@arndb.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <grant.likely@linaro.org>
-CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
-        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
-        <sergei.shtylyov@cogentembedded.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v5 3/7] mfd: ti-keystone-devctrl: add bindings for device state control
-Date: Thu, 22 May 2014 16:48:32 +0300
-Message-ID: <1400766516-14537-4-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        <santosh.shilimkar@ti.com>
+CC: <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <robh+dt@kernel.org>, <m-karicheri2@ti.com>, <galak@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch] ARM: dts: keystone: add pll controller syscon entry
+References: <1400681875-24432-1-git-send-email-ivan.khoronzhuk@ti.com> <537CEE13.5040908@cogentembedded.com> <537CEEFA.8080805@cogentembedded.com>
+In-Reply-To: <537CEEFA.8080805@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Keystone II devices have a set of registers that are used to control
-the status of its peripherals. This node is intended to allow access to
-this functionality.
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- .../devicetree/bindings/mfd/ti-keystone-devctrl.txt   | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+On 05/21/2014 09:22 PM, Sergei Shtylyov wrote:
+> On 05/21/2014 10:18 PM, Sergei Shtylyov wrote:
+>
+>>> The pll controller register set includes sets of registers with
+>>> different purposes, so it's logically to add syscon entry to be able
+>>> to access them from appropriate places.
+>
+>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>> ---
+>
+>>> Based on linux-next/master
+>
+>>>   arch/arm/boot/dts/keystone.dtsi | 5 +++++
+>>>   1 file changed, 5 insertions(+)
+>>
+>>> diff --git a/arch/arm/boot/dts/keystone.dtsi 
+>>> b/arch/arm/boot/dts/keystone.dtsi
+>>> index d9f99e7..5e67c5b 100644
+>>> --- a/arch/arm/boot/dts/keystone.dtsi
+>>> +++ b/arch/arm/boot/dts/keystone.dtsi
+>>> @@ -66,6 +66,11 @@
+>>>           ranges = <0x0 0x0 0x0 0xc0000000>;
+>>>           dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+>>>
+>>> +        pllctrl: pll_controller {
+>
+>>    I think it's better to follow the pattern established by 
+>> "reset-controller"
+>> and use hyphen ISO dash in the node name. This is also a common 
+>> practice to
+>
+>    Oops, hyphen and dash are basically the same thing; I meant 
+> s/dash/underscore/.
 
-diff --git a/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
-new file mode 100644
-index 0000000..35f7a66
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
-@@ -0,0 +1,19 @@
-+* Device tree bindings for Texas Instruments keystone device state control
-+
-+The Keystone II devices have a set of registers that are used to control
-+the status of its peripherals. This node is intended to allow access to
-+this functionality.
-+
-+Required properties:
-+
-+- compatible:		"ti,keystone-devctrl", "syscon"
-+
-+- reg:			contains offset/length value for pll controller
-+			registers space.
-+
-+Example:
-+
-+devctrl: device-state-control {
-+	compatible = "ti,keystone-devctrl", "syscon";
-+	reg = <0x02620000 0x1000>;
-+};
+You meant s/underscore/dash.
+I'll replace.
+FYI: the change is included in new series [Patch v5 0/7] Introduce 
+keystone reset driver
+
+And this patch is squashed in:
+[Patch v5 6/7] ARM: dts: keystone: update reset node to work with reset 
+driver
+
+Thanks.
+
+>
+>> use hyphens in the device trees overall.
+>
+>>> +            compatible = "ti,keystone-pllctrl", "syscon";
+>>> +            reg = <0x2310000 0x200>;
+>>> +        };
+>>> +
+>>>           rstctrl: reset-controller {
+>>>               compatible = "ti,keystone-reset";
+>>>               reg = <0x023100e8 4>;    /* pll reset control reg */
+>>>
+>
+> WBR, Sergei
+>
+
 -- 
-1.8.3.2
+Regards,
+Ivan Khoronzhuk
 
