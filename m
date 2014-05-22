@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaEVHIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 03:08:44 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:47832 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841AbaEVHIn (ORCPT
+	id S1752511AbaEVHKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 03:10:23 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:50217 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750984AbaEVHKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 03:08:43 -0400
-Message-ID: <537DA126.4060102@linux.vnet.ibm.com>
-Date: Thu, 22 May 2014 12:33:02 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, benh@kernel.crashing.org
-Subject: Re: [V6 01/11] perf: Add PERF_SAMPLE_BRANCH_COND
-References: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com> <1400666396-1682-2-git-send-email-khandual@linux.vnet.ibm.com> <20140521113025.GC2485@laptop.programming.kicks-ass.net> <537D73A6.2050403@linux.vnet.ibm.com> <20140522070105.GL30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140522070105.GL30445@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 May 2014 03:10:22 -0400
+Message-ID: <1400742620.21254.22.camel@x220>
+Subject: Re: [PATCH] powerpc: fix typo 'CONFIG_PMAC'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 22 May 2014 09:10:20 +0200
+In-Reply-To: <874n0j3yjf.fsf@igel.home>
+References: <1400617498.4912.66.camel@x220> <874n0j3yjf.fsf@igel.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052207-9264-0000-0000-00000624AC37
+X-OriginalArrivalTime: 22 May 2014 07:10:21.0541 (UTC) FILETIME=[E507F950:01CF758C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 12:31 PM, Peter Zijlstra wrote:
-> On Thu, May 22, 2014 at 09:18:54AM +0530, Anshuman Khandual wrote:
-> 
->> Hope this new change log below makes more sense.
-> 
-> Yep reads a whole lot better. Thanks.
-> 
+Andreas,
 
-Will resend the first four patches with this new commit messages without
-changing the overall version of the patchset. Hope thats okay.
+On Wed, 2014-05-21 at 18:08 +0200, Andreas Schwab wrote:
+> Paul Bolle <pebolle@tiscali.nl> writes:
+> 
+> > Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
+> > perf_event_do_pending") added a check for CONFIG_PMAC were a check for
+> > CONFIG_PPC_PMAC was clearly intended.
+> >
+> > Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Untested. Needs testing on 32 bit powermac, I guess.
+> >
+> > This typo was introduced in v2.6.36. No one noticed because very few
+> > people still use 32 bit powermacs?
+> 
+> How does that bug manifest itself?
+
+Do you want to know how to test this patch on a 32 bit powermac? Ie, see
+if it has any effect, and whether that effect improves things or make
+things worse.
+
+I have no clue how to do that, sorry. Perhaps someone else has.
+
+
+Paul Bolle
 
