@@ -1,121 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaEVNIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:08:18 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:62866 "EHLO isis.lip6.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752592AbaEVNIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:08:16 -0400
-X-pt: isis.lip6.fr
-From: Benoit Taine <benoit.taine@lip6.fr>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: benoit.taine@lip6.fr, Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8723au: Use kmemdup() instead of memcpy() to duplicate memory
-Date: Thu, 22 May 2014 15:08:33 +0200
-Message-Id: <1400764113-15933-1-git-send-email-benoit.taine@lip6.fr>
-X-Mailer: git-send-email 1.9.3
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Thu, 22 May 2014 15:08:02 +0200 (CEST)
+	id S1755149AbaEVNJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:09:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45357 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115AbaEVNJh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 09:09:37 -0400
+Date: Thu, 22 May 2014 15:09:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
+Message-ID: <20140522130931.GV13658@twins.programming.kicks-ass.net>
+References: <20140411134243.160989490@infradead.org>
+ <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
+ <20140522125818.GV30445@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wnBGVoaGQwxWUIo6"
+Content-Disposition: inline
+In-Reply-To: <20140522125818.GV30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This issue was reported by coccicheck using the semantic patch 
-at scripts/coccinelle/api/memdup.cocci, and tested by compilation.
 
-Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
----
- drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c |    3 +--
- drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c |   17 +++++++----------
- 2 files changed, 8 insertions(+), 12 deletions(-)
+--wnBGVoaGQwxWUIo6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-index e2d426a..f917edd 100644
---- a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-+++ b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-@@ -339,12 +339,11 @@ int rtl8723a_FirmwareDownload(struct rtw_adapter *padapter)
- 		rtStatus = _FAIL;
- 		goto Exit;
- 	}
--	firmware_buf = kzalloc(fw->size, GFP_KERNEL);
-+	firmware_buf = kmemdup(fw->data, fw->size, GFP_KERNEL);
- 	if (!firmware_buf) {
- 		rtStatus = _FAIL;
- 		goto Exit;
- 	}
--	memcpy(firmware_buf, fw->data, fw->size);
- 	buf = firmware_buf;
- 	fw_size = fw->size;
- 	release_firmware(fw);
-diff --git a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-index 182f57c..c88a416 100644
---- a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-+++ b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-@@ -1426,14 +1426,14 @@ static int rtw_cfg80211_set_probe_req_wpsp2pie(struct rtw_adapter *padapter,
- 				pmlmepriv->wps_probe_req_ie = NULL;
- 			}
- 
--			pmlmepriv->wps_probe_req_ie =
--				kmalloc(wps_ielen, GFP_KERNEL);
-+			pmlmepriv->wps_probe_req_ie = kmemdup(wps_ie,
-+							      wps_ielen,
-+							      GFP_KERNEL);
- 			if (pmlmepriv->wps_probe_req_ie == NULL) {
- 				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
- 					  __func__, __LINE__);
- 				return -EINVAL;
- 			}
--			memcpy(pmlmepriv->wps_probe_req_ie, wps_ie, wps_ielen);
- 			pmlmepriv->wps_probe_req_ie_len = wps_ielen;
- 		}
- 	}
-@@ -1697,12 +1697,11 @@ static int rtw_cfg80211_set_wpa_ie(struct rtw_adapter *padapter, const u8 *pie,
- 		ret = -EINVAL;
- 		goto exit;
- 	}
--	buf = kzalloc(ielen, GFP_KERNEL);
-+	buf = kmemdup(pie, ielen, GFP_KERNEL);
- 	if (buf == NULL) {
- 		ret = -ENOMEM;
- 		goto exit;
- 	}
--	memcpy(buf, pie, ielen);
- 
- 	/* dump */
- 	DBG_8723A("set wpa_ie(length:%zu):\n", ielen);
-@@ -3178,14 +3177,13 @@ static int rtw_cfg80211_set_beacon_wpsp2pie(struct net_device *ndev, char *buf,
- 				pmlmepriv->wps_beacon_ie = NULL;
- 			}
- 
--			pmlmepriv->wps_beacon_ie =
--				kmalloc(wps_ielen, GFP_KERNEL);
-+			pmlmepriv->wps_beacon_ie = kmemdup(wps_ie, wps_ielen,
-+							   GFP_KERNEL);
- 			if (pmlmepriv->wps_beacon_ie == NULL) {
- 				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
- 					  __func__, __LINE__);
- 				return -EINVAL;
- 			}
--			memcpy(pmlmepriv->wps_beacon_ie, wps_ie, wps_ielen);
- 			pmlmepriv->wps_beacon_ie_len = wps_ielen;
- 
- #ifdef CONFIG_8723AU_AP_MODE
-@@ -3270,14 +3268,13 @@ static int rtw_cfg80211_set_assoc_resp_wpsp2pie(struct net_device *net,
- 			pmlmepriv->wps_assoc_resp_ie = NULL;
- 		}
- 
--		pmlmepriv->wps_assoc_resp_ie = kmalloc(len, GFP_KERNEL);
-+		pmlmepriv->wps_assoc_resp_ie = kmemdup(buf, len, GFP_KERNEL);
- 		if (pmlmepriv->wps_assoc_resp_ie == NULL) {
- 			DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
- 				  __func__, __LINE__);
- 			return -EINVAL;
- 
- 		}
--		memcpy(pmlmepriv->wps_assoc_resp_ie, buf, len);
- 		pmlmepriv->wps_assoc_resp_ie_len = len;
- 	}
- 
+On Thu, May 22, 2014 at 02:58:18PM +0200, Peter Zijlstra wrote:
+> ---
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 4ea7b3f1a087..a5da85fb3570 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -546,12 +546,38 @@ static bool set_nr_and_not_polling(struct task_struct *p)
+>  	struct thread_info *ti = task_thread_info(p);
+>  	return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
+>  }
+> +
+> +/*
+> + * Atomically set TIF_NEED_RESCHED if TIF_POLLING_NRFLAG is set.
+> + */
+> +static bool set_nr_if_polling(struct task_struct *p)
+> +{
+> +	struct thread_info *ti = task_thread_info(p);
+> +	typeof(ti->flags) old, val = ti->flags;
+> +
+> +	for (;;) {
+> +		if (!(val & _TIF_POLLING_NRFLAG))
+> +			return false;
+> +		if (val & _TIF_NEED_RESCHED)
+> +			return true;
 
+Hmm, I think this is racy, false would be safer. If its already set we
+might already be past the sched_ttwu_pending() invocation, while if its
+clear and we're the one to set it, we're guaranteed not.
+
+> +		old = cmpxchg(&ti->flags, val, val | _TIF_NEED_RESCHED);
+> +		if (old == val)
+> +			return true;
+> +		val = old;
+> +	}
+> +}
+
+--wnBGVoaGQwxWUIo6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTffcLAAoJEHZH4aRLwOS6B6UP/jA0mCwUbk0wGw4LP+d7DT1z
+szsmQwWRa/4U01WhCzeerQa8/8nONevHdkhgaIQeCfncI/a46hLgSZtKj9Y71jON
+IGEbOYviKDDPzC5YsBI55nDLf3QTiyYMQAVh+hsiqLptfwkhm89w0UU8I6UR7zmh
+4w6CVN4/ytuXOT+rcaZhKnU+5f+aT2avJLH+GLBJt0IW2hYZ7OUihZzVW3M5bMPh
+GnAN3XtfgYHKOrj/d1quCymSNAXp34JDxbz/UY0PSin9wDiRS5JvKz6boLUsRnqp
+7y/w6ZiL/Sg5jBH4vZGlUsU5Hkz9IMe2MGjgj6R+JDdUFiih+CK9N+JVpEHSKN4k
+d39DmSHeStegdDYQK+0VNzFV6FhoL9P3KpbDy0cPH2OgFABeAGC5HDuPVKy3oT2O
+GmANJiyrInomFG1JLi0wSkdW4o8ELWf0XN6xCbZhqE1l1DzdvDabb+hj/7U5cQnc
+XBznDNxQJV9K3XRzkQmzWpaPFewyVjQhVwuikrxnRJoK0FQW5k108BYBdeCjcf6i
+1qwO91PJpkju1fn5t6WlK06cOZONWIDCOupYt4hF2VqcEPi7tbsz3dUDGvcC+tf8
+LdklZIyJmLXNItlFZrickZ7gv52ew7s/9YLLxD1NLlqTcPELtt4aeAaWpByVzwjp
+37kHxy0LCHXpYA8rysb6
+=TkRa
+-----END PGP SIGNATURE-----
+
+--wnBGVoaGQwxWUIo6--
