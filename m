@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750AbaEVUlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:41:11 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:47930 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaEVUlJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:41:09 -0400
+	id S1752043AbaEVUmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:42:46 -0400
+Received: from mout.gmx.net ([212.227.17.20]:54518 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751039AbaEVUmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 16:42:44 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: agk@redhat.com
+Cc: snitzer@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] md: Use time_in_range()
+Date: Thu, 22 May 2014 22:42:37 +0200
+Message-Id: <1400791357-21047-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <1400789482-5247-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-References: <1400789482-5247-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-Date: Thu, 22 May 2014 22:41:08 +0200
-X-Google-Sender-Auth: lxw43_fQReOSkGsj2xwb2lEs3UI
-Message-ID: <CAMuHMdWmSMv2m1Re=EnmHJb=Sih3HdeUEHUQXSVeX-VZDjyF_w@mail.gmail.com>
-Subject: Re: [PATCH v3] openrisc: irq: use irqchip framework
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux <linux@openrisc.net>, Jonas Bonn <jonas@southpole.se>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:AIx6ulCAum8r1998GfWZHM8ArUjmb0Oh+zQb+wCV/txs4A2CIc3
+ BjLdGudUFtyIBLbRwm5DBOiNjVt/N4NsO5DZKScBbc3tWKVTVtbukFo6oW0nwyQ0O6ZWxlg
+ cpZMaJgQYL9MP8F5aZaDR9yUNu0XjogKP/tp1qHmMN9dYBwpPXXcF+zYHAusvKWj83G8Am1
+ 89+NsBWarXH8/dzQB9lhg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 10:11 PM, Stefan Kristiansson
-<stefan.kristiansson@saunalahti.fi> wrote:
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
-> @@ -0,0 +1,23 @@
-> +OpenRISC 1000 Programmable Interrupt Controller
-> +
-> +Required properties:
-> +
-> +- compatible : should be "opencores,o1k-pic-level" for variants with
+To be future-proof and for better readability the time comparisons are modified
+to use time_in_range() instead of plain, error-prone math.
 
-or1k
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ drivers/md/dm-cache-target.c       |    5 +++--
+ drivers/md/dm-log-userspace-base.c |    4 ++--
+ drivers/md/dm-thin.c               |    5 +++--
+ 3 files changed, 8 insertions(+), 6 deletions(-)
 
-> +  level triggered interrupt lines, "opencores,o1k-pic-edge" for variants with
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index 9380be7..4378d1d 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -1429,8 +1429,9 @@ static void process_bio(struct cache *cache, struct prealloc *structs,
+ 
+ static int need_commit_due_to_time(struct cache *cache)
+ {
+-	return jiffies < cache->last_commit_jiffies ||
+-	       jiffies > cache->last_commit_jiffies + COMMIT_PERIOD;
++	return !time_in_range(jiffies,
++	      cache->last_commit_jiffies,
++	      cache->last_commit_jiffies + COMMIT_PERIOD);
+ }
+ 
+ static int commit_if_needed(struct cache *cache)
+diff --git a/drivers/md/dm-log-userspace-base.c b/drivers/md/dm-log-userspace-base.c
+index b953db6..cd9b171 100644
+--- a/drivers/md/dm-log-userspace-base.c
++++ b/drivers/md/dm-log-userspace-base.c
+@@ -829,7 +829,7 @@ static int userspace_is_remote_recovering(struct dm_dirty_log *log,
+ 	int r;
+ 	uint64_t region64 = region;
+ 	struct log_c *lc = log->context;
+-	static unsigned long long limit;
++	static unsigned long limit;
+ 	struct {
+ 		int64_t is_recovering;
+ 		uint64_t in_sync_hint;
+@@ -845,7 +845,7 @@ static int userspace_is_remote_recovering(struct dm_dirty_log *log,
+ 	 */
+ 	if (region < lc->in_sync_hint)
+ 		return 0;
+-	else if (jiffies < limit)
++	else if (time_after(limit, jiffies))
+ 		return 1;
+ 
+ 	limit = jiffies + (HZ / 4);
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index 2e71de8..c83b363 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1375,8 +1375,9 @@ static void process_bio_fail(struct thin_c *tc, struct bio *bio)
+  */
+ static int need_commit_due_to_time(struct pool *pool)
+ {
+-	return jiffies < pool->last_commit_jiffies ||
+-	       jiffies > pool->last_commit_jiffies + COMMIT_PERIOD;
++	return !time_in_range(jiffies,
++	      pool->last_commit_jiffies,
++	      pool->last_commit_jiffies + COMMIT_PERIOD);
+ }
+ 
+ #define thin_pbd(node) rb_entry((node), struct dm_thin_endio_hook, rb_node)
+-- 
+1.7.10.4
 
-or1k
-
-> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
-> +  with the non-spec compliant or1200 type implementation.
-> +
-> +  "opencores,o1k-pic" is also provided as an alias to "opencores,or1200-pic",
-
-or1k
-
-> +  but this is only for backwards compatibility.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
