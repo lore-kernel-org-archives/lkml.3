@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaEVP4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:56:24 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:33856 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaEVP4X (ORCPT
+	id S1752747AbaEVP5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:57:12 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:39852 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324AbaEVP5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:56:23 -0400
-Message-ID: <537E1E22.9070701@linaro.org>
-Date: Thu, 22 May 2014 16:56:18 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 11:57:10 -0400
+Date: Thu, 22 May 2014 16:57:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, chris@printf.net,
+        ulf.hansson@linaro.org, kernel@stlinux.com, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 5/8] ARM: STi: DT: Add sdhci pin configuration for stih415
+Message-ID: <20140522155703.GF19747@lee--X1>
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+ <1400771902-26553-6-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>
-CC: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flag APIs
-References: <1397772242-4048-1-git-send-email-agross@codeaurora.org> <20140502162841.GZ32284@intel.com> <20140502180827.GA9476@qualcomm.com> <20140515173206.GA16858@qualcomm.com> <20140522061049.GW21128@intel.com> <20140522150906.GA22327@qualcomm.com> <537E1749.1030505@linaro.org> <20140522153214.GB22327@qualcomm.com>
-In-Reply-To: <20140522153214.GB22327@qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400771902-26553-6-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> This patch adds the required pin config for the sdhci controller
+> present in the stih415 SoC.
+> 
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 
+Switch these round - same with all the other patches.
 
-On 22/05/14 16:32, Andy Gross wrote:
-> On Thu, May 22, 2014 at 04:27:05PM +0100, Srinivas Kandagatla wrote:
->
-> <snip>
->
->>>
->>> The EOT is not used for every transaction.  It is part of a handshaking
->>> protocol with the attached peripheral, much like the NWD (notify when done).  As
->>> near as I can tell today, no peripheral depends on the EOB, so we could drop it
->>> for now until it is needed and cross this bridge when we need to.
->>
->> As EOT behaviour is totally dependent on the attached peripheral(or
->> channel), Can't we make this specific to channel by passing
->> additional flags in the DT dma channel descriptors? This will be
->> better abstraction for drivers as well.
->
-> Even for channels where you want to use EOT, you don't use it for every
-> transaction.  So a global channel flag isn't going to work.  This is the same
-> for NWD.  It is a per descriptor choice.
+> ---
+>  arch/arm/boot/dts/stih415-pinctrl.dtsi | 21 +++++++++++++++++++++
+>  arch/arm/boot/dts/stih415.dtsi         | 12 ++++++++++++
+>  2 files changed, 33 insertions(+)
 
-Thanks Andy for explaining, I got it now.
->
->>
->> I know that EOT flag is part of descriptor but still some channels
->> *must* have EOT to run there state-machine correctly. So making it
->> optional for those channels might be wrong.
->>
->> Are there any use cases for particular *channel* where EOT
->> requirement changes dynamically?
->
-> I2C is one example.  You place EOT on the last transaction that makes up a
-> write/read transaction.  You may have multiple descriptors to send data, but the
-> last one has EOT.  And for read transactions, you place NWD on the last read
-> transaction.
->
-> <snip>
->
+[...]
+
+> diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
+> index d6f254f..6579b1d 100644
+> --- a/arch/arm/boot/dts/stih415.dtsi
+> +++ b/arch/arm/boot/dts/stih415.dtsi
+> @@ -218,5 +218,17 @@
+>  			resets	= <&powerdown STIH415_KEYSCAN_POWERDOWN>,
+>  				  <&softreset STIH415_KEYSCAN_SOFTRESET>;
+>  		};
+> +
+> +		mmc0: sdhci@fe81e000 {
+> +			compatible = "st,sdhci";
+> +			status = "disabled";
+> +			reg = <0xfe81e000 0x1000>;
+> +			interrupts = <GIC_SPI 145 IRQ_TYPE_NONE>;
+> +			interrupt-names = "mmcirq";
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&pinctrl_mmc0>;
+> +			clock-names = "mmc";
+> +			clocks = <&clk_s_a1_ls 1>;
+
+Nit: These would be easier to read if the '='s were lined up (using tabs).
+
+> +		};
+>  	};
+>  };
+
+Apart from that:
+
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
