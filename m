@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570AbaEVKIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 06:08:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50871 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754438AbaEVKIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 06:08:23 -0400
-Date: Thu, 22 May 2014 12:08:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] intel_rapl: Correct hotplug correction
-Message-ID: <20140522100820.GE4383@pd.tnic>
-References: <1400750624-19238-1-git-send-email-bp@alien8.de>
- <537DC6D2.8040305@linux.vnet.ibm.com>
+	id S1754022AbaEVKO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 06:14:26 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:42484 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaEVKOZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 06:14:25 -0400
+Date: Thu, 22 May 2014 12:14:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] uprobes: more x86 fixes
+Message-ID: <20140522101420.GC31816@gmail.com>
+References: <20140514151016.GA530@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <537DC6D2.8040305@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140514151016.GA530@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 03:13:46PM +0530, Srivatsa S. Bhat wrote:
-> On 05/22/2014 02:53 PM, Borislav Petkov wrote:
-> > From: Borislav Petkov <bp@suse.de>
-> > 
-> > So 009f225ef050 ("powercap, intel-rapl: Fix CPU hotplug callback
-> > registration") says how get_/put_online_cpus() should be replaced with
-> > this cpu_notifier_register_begin/_done().
-> > 
-> > But they're still there so what's up?
-> > 
+
+* Oleg Nesterov <oleg@redhat.com> wrote:
+
+> Ingo, please pull from
 > 
-> Ok, so I retained that because the comments in the code said that
-> the caller of rapl_cleanup_data() should hold the hotplug lock.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 > 
-> Here is the snippet from the patch's changelog:
+> Based on tip:perf/uprobes
 > 
->     ...
->     Fix the intel-rapl code in the powercap driver by using this latter form
->     of callback registration. But retain the calls to get/put_online_cpus(),
->     since they also protect the function rapl_cleanup_data(). By nesting
->     get/put_online_cpus() *inside* cpu_notifier_register_begin/done(), we avoid
->     the ABBA deadlock possibility mentioned above.
+> 
+> Denys found another nasty old bug in uprobes/x86: div, mul, shifts with
+> count in CL, and cmpxchg are not handled correctly.
+> 
+> Plus a couple of other minor fixes. Nobody acked the changes in x86/traps,
+> hopefully they are simple enough, and I believe that they make sense anyway
+> and allow to do more cleanups.
+> 
+> Denys Vlasenko (2):
+>       uprobes/x86: Simplify rip-relative handling
+>       uprobes/x86: Fix scratch register selection for rip-relative fixups
+> 
+> Oleg Nesterov (8):
+>       uprobes: Add mem_cgroup_charge_anon() into uprobe_write_opcode()
+>       x86/traps: Make math_error() static
+>       x86/traps: Use SEND_SIG_PRIV instead of force_sig()
+>       x86/traps: Introduce do_error_trap()
+>       x86/traps: Introduce fill_trap_info(), simplify DO_ERROR_INFO()
+>       x86/traps: Shift fill_trap_info() from DO_ERROR_INFO() to do_error_trap()
+>       x86/traps: Kill DO_ERROR_INFO()
+>       uprobes/x86: Fix the wrong ->si_addr when xol triggers a trap
+> 
+>  arch/x86/include/asm/traps.h   |    1 -
+>  arch/x86/include/asm/uprobes.h |    3 -
+>  arch/x86/kernel/traps.c        |  110 ++++++++++++---------
+>  arch/x86/kernel/uprobes.c      |  213 ++++++++++++++++++++++++++--------------
+>  include/linux/uprobes.h        |    4 +
+>  kernel/events/uprobes.c        |   33 ++++---
+>  6 files changed, 225 insertions(+), 139 deletions(-)
 
-My bad, I missed that part.
+Pulled into tip:perf/uprobes, thanks a lot Oleg!
 
-> But looking closer at the code, I think the only requirement is that
-> rapl_cleanup_data() should be protected against CPU hotplug, and we
-> don't actually need to hold the cpu_hotplug.lock per-se.
-
-What is the difference between "CPU hotplug" and cpu_hotplug.lock?
->From looking at the code those are two different mutexes with
-cpu_hotplug.lock, i.e. get_online_cpus() having a preemption point.
-
-And yet, you want to replace get_/put_online_cpus() with
-cpu_notifier_register_begin/_done() which is kinda the same thing but
-not really. The one protects against hotplug operations and the other
-protects against cpu hotplug notifier registration.
-
-Oh, and there's a third one, aliased to the notifier one, which
-is "attempting to serialize the updates to cpu_online_mask &
-cpu_present_mask."
-
-So why, oh why do we need three? This is absolutely insane. Do we have
-at least one sensible reason why cpu hotplug users should need to know
-all that gunk?
-
-> cpu_notifier_register_begin()/end() also provide equivalent protection
-> against CPU hotplug. So we should be able to remove the get/put_online_cpus()
-> from intel-rapl driver.
-
-Btw, rapl_exit() has both calls too :-\.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+	Ingo
