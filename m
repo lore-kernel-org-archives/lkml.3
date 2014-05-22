@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964787AbaEVMV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:21:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50967 "EHLO
+	id S964804AbaEVMWE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:22:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50972 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054AbaEVMVt (ORCPT
+	with ESMTP id S964790AbaEVMWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:21:49 -0400
-Date: Thu, 22 May 2014 05:21:38 -0700
+	Thu, 22 May 2014 08:22:01 -0400
+Date: Thu, 22 May 2014 05:21:49 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-fb821c9e7135e324ff6d50d030352718a80364b4@git.kernel.org>
+Message-ID: <tip-a2ce067e55e328f1a6fe3dddf77a173381ffdfe1@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1400480762-22852-8-git-send-email-namhyung@kernel.org>
-References: <1400480762-22852-8-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1400480762-22852-9-git-send-email-namhyung@kernel.org>
+References: <1400480762-22852-9-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui: Get rid of callback from __hpp__fmt()
-Git-Commit-ID: fb821c9e7135e324ff6d50d030352718a80364b4
+Subject: [tip:perf/core] perf tools: Allow hpp fields to be sort keys
+Git-Commit-ID: a2ce067e55e328f1a6fe3dddf77a173381ffdfe1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,245 +31,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb821c9e7135e324ff6d50d030352718a80364b4
-Gitweb:     http://git.kernel.org/tip/fb821c9e7135e324ff6d50d030352718a80364b4
+Commit-ID:  a2ce067e55e328f1a6fe3dddf77a173381ffdfe1
+Gitweb:     http://git.kernel.org/tip/a2ce067e55e328f1a6fe3dddf77a173381ffdfe1
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Mon, 3 Mar 2014 17:05:19 +0900
+AuthorDate: Tue, 4 Mar 2014 09:06:42 +0900
 Committer:  Jiri Olsa <jolsa@kernel.org>
 CommitDate: Wed, 21 May 2014 11:45:34 +0200
 
-perf ui: Get rid of callback from __hpp__fmt()
+perf tools: Allow hpp fields to be sort keys
 
-The callback was used by TUI for determining color of folded sign
-using percent of first field/column. But it cannot be used anymore
-since it now support dynamic reordering of output field.
+Add overhead{,_sys,_us,_guest_sys,_guest_us}, sample and period sort
+keys so that they can be selected with --sort/-s option.
 
-So move the logic to the hist_browser__show_entry().
+  $ perf report -s period,comm --stdio
+  ...
+  # Overhead        Period          Command
+  # ........  ............  ...............
+  #
+      47.06%           152          swapper
+      13.93%            45  qemu-system-arm
+      12.38%            40         synergys
+       3.72%            12          firefox
+       2.48%             8            xchat
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1400480762-22852-8-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1400480762-22852-9-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c | 62 ++++++++++++++++--------------------------
- tools/perf/ui/gtk/hists.c      |  2 +-
- tools/perf/ui/hist.c           | 28 ++++++-------------
- tools/perf/util/hist.h         |  4 +--
- 4 files changed, 34 insertions(+), 62 deletions(-)
+ tools/perf/Documentation/perf-diff.txt   |  5 ++--
+ tools/perf/Documentation/perf-report.txt |  9 ++++++++
+ tools/perf/Documentation/perf-top.txt    |  5 ++--
+ tools/perf/builtin-diff.c                |  3 ++-
+ tools/perf/builtin-report.c              |  6 ++---
+ tools/perf/builtin-top.c                 |  4 ++--
+ tools/perf/ui/hist.c                     |  9 ++++++--
+ tools/perf/util/sort.c                   | 39 ++++++++++++++++++++++++++++++++
+ 8 files changed, 67 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 847de11..37c5188 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -616,35 +616,6 @@ struct hpp_arg {
- 	bool current_entry;
- };
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index fbfa119..b3b8aba 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -50,7 +50,8 @@ OPTIONS
  
--static int __hpp__overhead_callback(struct perf_hpp *hpp, bool front)
--{
--	struct hpp_arg *arg = hpp->ptr;
--
--	if (arg->current_entry && arg->b->navkeypressed)
--		ui_browser__set_color(arg->b, HE_COLORSET_SELECTED);
--	else
--		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
--
--	if (front) {
--		if (!symbol_conf.use_callchain)
--			return 0;
--
--		slsmg_printf("%c ", arg->folded_sign);
--		return 2;
--	}
--
--	return 0;
--}
--
--static int __hpp__color_callback(struct perf_hpp *hpp, bool front __maybe_unused)
--{
--	struct hpp_arg *arg = hpp->ptr;
--
--	if (!arg->current_entry || !arg->b->navkeypressed)
--		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
--	return 0;
--}
--
- static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
- {
- 	struct hpp_arg *arg = hpp->ptr;
-@@ -665,7 +636,7 @@ static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
- 	return ret;
- }
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol.
++	Sort by key(s): pid, comm, dso, symbol, cpu, parent, srcline.
++	Please see description of --sort in the perf-report man page.
  
--#define __HPP_COLOR_PERCENT_FN(_type, _field, _cb)			\
-+#define __HPP_COLOR_PERCENT_FN(_type, _field)				\
- static u64 __hpp_get_##_field(struct hist_entry *he)			\
- {									\
- 	return he->stat._field;						\
-@@ -676,15 +647,15 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
- 				struct perf_hpp *hpp,			\
- 				struct hist_entry *he)			\
- {									\
--	return __hpp__fmt(hpp, he, __hpp_get_##_field, _cb, " %6.2f%%",	\
-+	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %6.2f%%",	\
- 			  __hpp__slsmg_color_printf, true);		\
- }
+ -t::
+ --field-separator=::
+@@ -202,4 +203,4 @@ If specified the 'Weighted diff' column is displayed with value 'd' computed as:
  
--__HPP_COLOR_PERCENT_FN(overhead, period, __hpp__overhead_callback)
--__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys, __hpp__color_callback)
--__HPP_COLOR_PERCENT_FN(overhead_us, period_us, __hpp__color_callback)
--__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys, __hpp__color_callback)
--__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us, __hpp__color_callback)
-+__HPP_COLOR_PERCENT_FN(overhead, period)
-+__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
-+__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
-+__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
-+__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
+ SEE ALSO
+ --------
+-linkperf:perf-record[1]
++linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 09af662..9babe91 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -79,6 +79,15 @@ OPTIONS
+ 	abort cost. This is the global weight.
+ 	- local_weight: Local weight version of the weight above.
+ 	- transaction: Transaction abort flags.
++	- overhead: Overhead percentage of sample
++	- overhead_sys: Overhead percentage of sample running in system mode
++	- overhead_us: Overhead percentage of sample running in user mode
++	- overhead_guest_sys: Overhead percentage of sample running in system mode
++	on guest machine
++	- overhead_guest_us: Overhead percentage of sample running in user mode on
++	guest machine
++	- sample: Number of sample
++	- period: Raw number of event count of sample
  
- #undef __HPP_COLOR_PERCENT_FN
+ 	By default, comm, dso and symbol keys are used.
+ 	(i.e. --sort comm,dso,symbol)
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 64ed79c..df86328 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -113,7 +113,8 @@ Default is to monitor all CPUS.
+ -s::
+ --sort::
+ 	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
+-	local_weight, abort, in_tx, transaction
++	local_weight, abort, in_tx, transaction, overhead, sample, period.
++	Please see description of --sort in the perf-report man page.
  
-@@ -729,7 +700,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ -n::
+ --show-nr-samples::
+@@ -212,4 +213,4 @@ Pressing any unmapped key displays a menu, and prompts for input.
  
- 	if (row_offset == 0) {
- 		struct hpp_arg arg = {
--			.b 		= &browser->b,
-+			.b		= &browser->b,
- 			.folded_sign	= folded_sign,
- 			.current_entry	= current_entry,
- 		};
-@@ -742,11 +713,24 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 		ui_browser__gotorc(&browser->b, row, 0);
- 
- 		perf_hpp__for_each_format(fmt) {
--			if (!first) {
-+			if (current_entry && browser->b.navkeypressed) {
-+				ui_browser__set_color(&browser->b,
-+						      HE_COLORSET_SELECTED);
-+			} else {
-+				ui_browser__set_color(&browser->b,
-+						      HE_COLORSET_NORMAL);
-+			}
-+
-+			if (first) {
-+				if (symbol_conf.use_callchain) {
-+					slsmg_printf("%c ", folded_sign);
-+					width -= 2;
-+				}
-+				first = false;
-+			} else {
- 				slsmg_printf("  ");
- 				width -= 2;
- 			}
--			first = false;
- 
- 			if (fmt->color) {
- 				width -= fmt->color(fmt, &hpp, entry);
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index d5c336e..2237245 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -43,7 +43,7 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 				       struct perf_hpp *hpp,			\
- 				       struct hist_entry *he)			\
- {										\
--	return __hpp__fmt(hpp, he, he_get_##_field, NULL, " %6.2f%%",		\
-+	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
- 			  __percent_color_snprintf, true);			\
- }
- 
+ SEE ALSO
+ --------
+-linkperf:perf-stat[1], linkperf:perf-list[1]
++linkperf:perf-stat[1], linkperf:perf-list[1], linkperf:perf-report[1]
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index f3b10dc..b60c711 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -741,7 +741,8 @@ static const struct option options[] = {
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+ 		   "separator for columns, no spaces will be added between "
+ 		   "columns '.' is reserved."),
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 89c9528..d0180d5 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -699,10 +699,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "header-only", &report.header_only,
+ 		    "Show only data header."),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
+-		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
+-		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
+-		   "snoop, locked, abort, in_tx, transaction"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 37d3046..4fef1e4 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1083,8 +1083,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
+-		   " abort, in_tx, transaction"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++		   " Please refer the man page for the complete list."),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 400437e..e7ac794 100644
+index e7ac794..24116a4 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -16,20 +16,15 @@
- })
+@@ -346,8 +346,13 @@ void perf_hpp__init(void)
+ 	int i;
  
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, hpp_callback_fn callback,
--	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent)
-+	       hpp_field_fn get_field, const char *fmt,
-+	       hpp_snprint_fn print_fn, bool fmt_percent)
- {
--	int ret = 0;
-+	int ret;
- 	struct hists *hists = he->hists;
- 	struct perf_evsel *evsel = hists_to_evsel(hists);
- 	char *buf = hpp->buf;
- 	size_t size = hpp->size;
- 
--	if (callback) {
--		ret = callback(hpp, true);
--		advance_hpp(hpp, ret);
--	}
--
- 	if (fmt_percent) {
- 		double percent = 0.0;
- 		u64 total = hists__total_period(hists);
-@@ -37,9 +32,9 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 		if (total)
- 			percent = 100.0 * get_field(he) / total;
- 
--		ret += hpp__call_print_fn(hpp, print_fn, fmt, percent);
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, percent);
- 	} else
--		ret += hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
- 
- 	if (perf_evsel__is_group_event(evsel)) {
- 		int prev_idx, idx_delta;
-@@ -99,13 +94,6 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 		}
+ 	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
+-		INIT_LIST_HEAD(&perf_hpp__format[i].list);
+-		INIT_LIST_HEAD(&perf_hpp__format[i].sort_list);
++		struct perf_hpp_fmt *fmt = &perf_hpp__format[i];
++
++		INIT_LIST_HEAD(&fmt->list);
++
++		/* sort_list may be linked by setup_sorting() */
++		if (fmt->sort_list.next == NULL)
++			INIT_LIST_HEAD(&fmt->sort_list);
  	}
  
--	if (callback) {
--		int __ret = callback(hpp, false);
--
--		advance_hpp(hpp, __ret);
--		ret += __ret;
--	}
--
- 	/*
- 	 * Restore original buf and size as it's where caller expects
- 	 * the result will be saved.
-@@ -235,7 +223,7 @@ static u64 he_get_##_field(struct hist_entry *he)				\
- static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	return __hpp__fmt(hpp, he, he_get_##_field, NULL, " %6.2f%%",		\
-+	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
- 			  hpp_color_scnprintf, true);				\
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index b2829f9..916652a 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1028,6 +1028,26 @@ static struct sort_dimension memory_sort_dimensions[] = {
+ 
+ #undef DIM
+ 
++struct hpp_dimension {
++	const char		*name;
++	struct perf_hpp_fmt	*fmt;
++	int			taken;
++};
++
++#define DIM(d, n) { .name = n, .fmt = &perf_hpp__format[d], }
++
++static struct hpp_dimension hpp_sort_dimensions[] = {
++	DIM(PERF_HPP__OVERHEAD, "overhead"),
++	DIM(PERF_HPP__OVERHEAD_SYS, "overhead_sys"),
++	DIM(PERF_HPP__OVERHEAD_US, "overhead_us"),
++	DIM(PERF_HPP__OVERHEAD_GUEST_SYS, "overhead_guest_sys"),
++	DIM(PERF_HPP__OVERHEAD_GUEST_US, "overhead_guest_us"),
++	DIM(PERF_HPP__SAMPLES, "sample"),
++	DIM(PERF_HPP__PERIOD, "period"),
++};
++
++#undef DIM
++
+ struct hpp_sort_entry {
+ 	struct perf_hpp_fmt hpp;
+ 	struct sort_entry *se;
+@@ -1115,6 +1135,16 @@ static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
+ 	return 0;
  }
  
-@@ -244,7 +232,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
--	return __hpp__fmt(hpp, he, he_get_##_field, NULL, fmt,			\
-+	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
- 			  hpp_entry_scnprintf, true);				\
- }
- 
-@@ -264,7 +252,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
--	return __hpp__fmt(hpp, he, he_get_raw_##_field, NULL, fmt,		\
-+	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt,			\
- 			  hpp_entry_scnprintf, false);				\
- }
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index e76d323..76bb72e 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -203,8 +203,8 @@ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
- typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- 
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, hpp_callback_fn callback,
--	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent);
-+	       hpp_field_fn get_field, const char *fmt,
-+	       hpp_snprint_fn print_fn, bool fmt_percent);
- 
- static inline void advance_hpp(struct perf_hpp *hpp, int inc)
++static int __hpp_dimension__add(struct hpp_dimension *hd)
++{
++	if (!hd->taken) {
++		hd->taken = 1;
++
++		perf_hpp__register_sort_field(hd->fmt);
++	}
++	return 0;
++}
++
+ int sort_dimension__add(const char *tok)
  {
+ 	unsigned int i;
+@@ -1144,6 +1174,15 @@ int sort_dimension__add(const char *tok)
+ 		return __sort_dimension__add(sd, i);
+ 	}
+ 
++	for (i = 0; i < ARRAY_SIZE(hpp_sort_dimensions); i++) {
++		struct hpp_dimension *hd = &hpp_sort_dimensions[i];
++
++		if (strncasecmp(tok, hd->name, strlen(tok)))
++			continue;
++
++		return __hpp_dimension__add(hd);
++	}
++
+ 	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++) {
+ 		struct sort_dimension *sd = &bstack_sort_dimensions[i];
+ 
