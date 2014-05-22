@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaEVTVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 15:21:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41674 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaEVTVt (ORCPT
+	id S1752253AbaEVTZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 15:25:34 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:60262 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870AbaEVTZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 15:21:49 -0400
-Date: Thu, 22 May 2014 15:21:46 -0400 (EDT)
-Message-Id: <20140522.152146.2116142050088142989.davem@davemloft.net>
-To: jim_baxter@mentor.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kamal@canonical.com, bhutchings@solarflare.com,
-        edumazet@google.com, mszeredi@suse.cz, fw@strlen.de
-Subject: Re: skbuff truesize incorrect.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <537E4AFD.20304@mentor.com>
-References: <537E4AFD.20304@mentor.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 22 May 2014 12:21:48 -0700 (PDT)
+	Thu, 22 May 2014 15:25:33 -0400
+Date: Thu, 22 May 2014 14:25:30 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: hannes@cmpxchg.org, mhocko@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
+ offline
+In-Reply-To: <20140522134726.GA3147@esperanza>
+Message-ID: <alpine.DEB.2.10.1405221422390.15766@gentwo.org>
+References: <20140515071650.GB32113@esperanza> <alpine.DEB.2.10.1405151015330.24665@gentwo.org> <20140516132234.GF32113@esperanza> <alpine.DEB.2.10.1405160957100.32249@gentwo.org> <20140519152437.GB25889@esperanza> <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
+ <537A4D27.1050909@parallels.com> <alpine.DEB.2.10.1405210937440.8038@gentwo.org> <20140521150408.GB23193@esperanza> <alpine.DEB.2.10.1405211912400.4433@gentwo.org> <20140522134726.GA3147@esperanza>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Baxter <jim_baxter@mentor.com>
-Date: Thu, 22 May 2014 20:07:41 +0100
+On Thu, 22 May 2014, Vladimir Davydov wrote:
 
-> My questions are:
-> 
-> 1) Which buffer size does truesize represent, is it the total buffer or
-> just the data related to the relevant skb?
-> 
-> 2) If truesize is for the skb it is contained within should it be
-> updated during the call to skb_trim?
-> 
-> 3) Why does the truesize default to 32960?
+> On Wed, May 21, 2014 at 07:13:21PM -0500, Christoph Lameter wrote:
+> > On Wed, 21 May 2014, Vladimir Davydov wrote:
+> >
+> > > Do I understand you correctly that the following change looks OK to you?
+> >
+> > Almost. Preemption needs to be enabled before functions that invoke the
+> > page allocator etc etc.
+>
+> I need to disable preemption only in slab_free, which never blocks
+> according to its semantics, so everything should be fine just like that.
 
-skb->truesize represents the total amount of memory that the SKB
-is holding up.
+slab_free calls __slab_free which can release slabs via
+put_cpu_partial()/unfreeze_partials()/discard_slab() to the page
+allocator. I'd rather have preemption enabled there.
 
-This is the size of the sk_buff metadata plus all of the buffer
-memory.
-
-For example, if the buffer is using 16K buffer yet only 1500 of it is
-actually used for the packet, 16K is what should be plugged into the
-equation to compute truesize.
-
-Otherwise it would be easy to compromise a system by sending lots of 1
-byte packets to a socket, even though the actual memory consumed by
-that "1 byte" packet is significantly larger.
