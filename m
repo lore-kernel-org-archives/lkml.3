@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaEVEBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 00:01:36 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54693 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaEVEBf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 00:01:35 -0400
-Message-ID: <537D762F.1080100@linux.vnet.ibm.com>
-Date: Thu, 22 May 2014 09:29:43 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752815AbaEVECK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 00:02:10 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41254 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751461AbaEVECH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 00:02:07 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <devicetree@vger.kernel.org>
+CC: <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
+        <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <broonie@linaro.org>, <lee.jones@linaro.org>,
+        <linux-omap@vger.kernel.org>, Keerthy <j-keerthy@ti.com>
+Subject: [PATCH v3 0/4] tps65917: Drivers for TPS65917 PMIC
+Date: Thu, 22 May 2014 09:30:35 +0530
+Message-ID: <1400731239-3180-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: Fwd: [V6 00/11] perf: New conditional branch filter
-References: <1399280953-31442-1-git-send-email-khandual@linux.vnet.ibm.com> <537C6DDE.9000204@linux.vnet.ibm.com> <20140521092313.GF30445@twins.programming.kicks-ass.net> <537C827B.9090505@linux.vnet.ibm.com> <20140521120146.GD2485@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140521120146.GD2485@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052204-5490-0000-0000-00000020330F
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 05:31 PM, Peter Zijlstra wrote:
-> On Wed, May 21, 2014 at 04:09:55PM +0530, Anshuman Khandual wrote:
->> On 05/21/2014 02:53 PM, Peter Zijlstra wrote:
->>> On Wed, May 21, 2014 at 02:41:58PM +0530, Anshuman Khandual wrote:
->>>> Hello Peter/Ingo,
->>>>
->>>> Would you please consider reviewing the first four patches in this patch series
->>>> which changes the generic perf kernel and perf tools code. Andi Kleen and Stephane
->>>> Eranian have already reviewed these changes. The rest of the patch series is related
->>>> to powerpc and being reviewed by Michael Ellerman/Ben.
->>>>
->>>
->>> If they land in my inbox I might have a look.
->>>
->>
->> Sent.
-> 
-> Thanks, they look fine to me, although 1/x can use a lightly longer
-> changelog, making it explicit its a filter for conditional branches.
-> 
-> How do people want this routed? Should I take all patches through tip,
-> or do I ask Ingo to create a special perf/cond branch which includes the
-> first 4 patches which can be merged into whatever ppc branch and the
-> rest then go on top in the ppc tree?
-> 
+The TPS65917 chip is a power management IC for Portable Navigation Systems
+and Tablet Computing devices. It contains the following components:
 
-Peter,
+ - Regulators.
+ - GPADC.
+ - Over Temperature warning and Shut down.
 
-Thanks for considering the patchset.
+This patch series adds support for TPS65917 mfd device. At this time only
+the regulator functionality is made available.
+
+The closest drivers are PALMAS series drivers.
+The register set is changed. Bit-field defenitions are changed.
+Hence based on the PALMAS drivers and created a new set of drivers
+with code changes as required.
+
+The patches are boot tested on DRA72-EVM.
+
+Keerthy (4):
+  MFD: DT bindings for the TPS65917 family MFD
+  Regulators: Add TPS65917 Bindings
+  mfd: tps65917: Add driver for the TPS65917 PMIC
+  regulator: tps65917: Add Regulator driver for TPS65917 PMIC
+
+ Documentation/devicetree/bindings/mfd/tps65917.txt |   35 +
+ .../bindings/regulator/tps65917-pmic.txt           |   67 +
+ drivers/mfd/Kconfig                                |   12 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/tps65917.c                             |  594 ++++++++
+ drivers/regulator/Kconfig                          |   12 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/tps65917-regulator.c             |  809 +++++++++++
+ include/linux/mfd/tps65917.h                       | 1485 ++++++++++++++++++++
+ 9 files changed, 3016 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/tps65917.txt
+ create mode 100644 Documentation/devicetree/bindings/regulator/tps65917-pmic.txt
+ create mode 100644 drivers/mfd/tps65917.c
+ create mode 100644 drivers/regulator/tps65917-regulator.c
+ create mode 100644 include/linux/mfd/tps65917.h
+
+-- 
+1.7.9.5
 
