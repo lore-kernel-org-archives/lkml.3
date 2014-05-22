@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760AbaEVTxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 15:53:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47882 "EHLO mx2.suse.de"
+	id S1752314AbaEVTzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 15:55:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50738 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039AbaEVTxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 15:53:20 -0400
-Date: Thu, 22 May 2014 20:53:13 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barries and waitqueue
- lookups in unlock_page fastpath v5
-Message-ID: <20140522195313.GN23991@suse.de>
-References: <20140514192945.GA10830@redhat.com>
- <20140515104808.GF23991@suse.de>
- <20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
- <20140521121501.GT23991@suse.de>
- <20140521142622.049d0b3af5fc94912d5a1472@linux-foundation.org>
- <20140521213354.GL2485@laptop.programming.kicks-ass.net>
- <20140521145000.f130f8779f7641d0d8afcace@linux-foundation.org>
- <20140522064529.GI30445@twins.programming.kicks-ass.net>
- <20140522084643.GD23991@suse.de>
- <20140522104722.f76b5b8dc0ec28510687be2e@linux-foundation.org>
+	id S1751581AbaEVTzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 15:55:42 -0400
+Date: Thu, 22 May 2014 21:55:38 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] x86, MCE: Kill CPU_POST_DEAD
+Message-ID: <20140522195538.GM4383@pd.tnic>
+References: <1400750624-19238-1-git-send-email-bp@alien8.de>
+ <537DC6D2.8040305@linux.vnet.ibm.com>
+ <20140522100820.GE4383@pd.tnic>
+ <537DE579.6000505@linux.vnet.ibm.com>
+ <20140522123251.GU30445@twins.programming.kicks-ass.net>
+ <20140522153006.GK4383@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F328133C0@ORSMSX114.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140522104722.f76b5b8dc0ec28510687be2e@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F328133C0@ORSMSX114.amr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 10:47:22AM -0700, Andrew Morton wrote:
-> On Thu, 22 May 2014 09:46:43 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On Thu, May 22, 2014 at 03:50:21PM +0000, Luck, Tony wrote:
+> >> So I think we can reduce it to just the one rwsem (with recursion) if we
+> >> shoot CPU_POST_DEAD in the head.
+> >
+> > Here's the first bullet. Stressing my box here with Steve's hotplug
+> > script seems to work fine.
+> >
+> > Tony, any objections?
 > 
-> > > > If I'm still on track here, what happens if we switch to wake-all so we
-> > > > can avoid the dangling flag?  I doubt if there are many collisions on
-> > > > that hash table?
-> > > 
-> > > Wake-all will be ugly and loose a herd of waiters, all racing to
-> > > acquire, all but one of whoem will loose the race. It also looses the
-> > > fairness, its currently a FIFO queue. Wake-all will allow starvation.
-> > > 
-> > 
-> > And the cost of the thundering herd of waiters may offset any benefit of
-> > reducing the number of calls to page_waitqueue and waker functions.
+> what was this comment referring to:
 > 
-> Well, none of this has been demonstrated.
+>     /* intentionally ignoring frozen here */
 > 
+> After you move the cmci_rediscover() call, it is now in a place where we are
+> no longer ignoring frozen (i.e. the old placement did the rediscover even if the
+> CPU_TASKS_FROZEN bit was set - with the new placement we will skip rediscovery.
+>
+> So we were working around some interaction between cpu hotplug and frozen.
+> Do we no longer need to do that?
 
-True, but it's also the type of thing that would deserve a patch of its
-own with some separation in case bisection fingerpoints to a patch that
-is doing too much on its own.
+Hmm, that FROZEN thing is supposedly for hotplug operations while
+suspend is happening. I guess it makes a little sense to rediscover CMCI
+banks while suspend is in progress. Whatever.
 
-> As I speculated earlier, hash chain collisions will probably be rare,
+Let's keep it before more crap ensues, that was a good catch, thanks.
 
-They are meant to be (well, they're documented to be). It's the primary
-reason why I'm not concerned about "dangling waiters" being that common
-a case.
+So, I guess something like that instead.
 
-> except for the case where a bunch of processes are waiting on the same
-> page.  And in this case, perhaps wake-all is the desired behavior.
-> 
-> Take a look at do_read_cache_page().  It does lock_page(), but it
-> doesn't actually *need* to.  It checks ->mapping and PG_uptodate and
-> then...  unlocks the page!  We could have used wait_on_page_locked()
-> there and permitted concurrent threads to run concurrently.
-> 
+Which means, I'd need to run a couple of suspend/resume rounds while
+hotplugging cores to see whether we're still kosher.
 
-It does that later when it calls wait_on_page_read but the flow is weird. It
-looks like the first lock_page was to serialise against any IO and double
-check it was not racing against a parallel reclaim although the elevated
-reference count should have prevented that. Historical artifact maybe?
-It looks like there could be some improvement there but also would deserve
-a patch on its own.
+More fun tomorrow.
+
+---
+From: Borislav Petkov <bp@suse.de>
+Date: Thu, 22 May 2014 16:40:54 +0200
+Subject: [PATCH] x86, MCE: Kill CPU_POST_DEAD
+
+In conjunction with cleaning up CPU hotplug, we want to get rid of
+CPU_POST_DEAD. Kill this instance here and rediscover CMCI banks at the
+end of CPU_DEAD.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68317c80de7f..bfde4871848f 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2391,6 +2391,10 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 			threshold_cpu_callback(action, cpu);
+ 		mce_device_remove(cpu);
+ 		mce_intel_hcpu_update(cpu);
++
++		/* intentionally ignoring frozen here */
++		if (!(action & CPU_TASKS_FROZEN))
++			cmci_rediscover();
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
+@@ -2402,11 +2406,6 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
+ 	}
+ 
+-	if (action == CPU_POST_DEAD) {
+-		/* intentionally ignoring frozen here */
+-		cmci_rediscover();
+-	}
+-
+ 	return NOTIFY_OK;
+ }
+ 
+-- 
+1.9.0
+
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
