@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaEVQ0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:26:30 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58969 "EHLO extserv.mm-sol.com"
+	id S1752258AbaEVQ2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:28:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44546 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751263AbaEVQZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:25:12 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sboyd@codeaurora.org, rdunlap@infradead.org
-Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v1 2/5] clk: qcom: Allow an override function to be passed as data
-Date: Thu, 22 May 2014 19:24:42 +0300
-Message-Id: <1400775885-10296-3-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400775885-10296-1-git-send-email-gdjakov@mm-sol.com>
-References: <1400775885-10296-1-git-send-email-gdjakov@mm-sol.com>
+	id S1750869AbaEVQ2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:28:00 -0400
+Date: Thu, 22 May 2014 18:27:56 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
+        Flavio Leitner <fbl@redhat.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Flavio Leitner <fbl@sysclose.org>,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] i8k: increase fan limit to 3
+Message-ID: <20140522182756.04afd351@endymion.delvare>
+In-Reply-To: <20140522151259.GC1001@roeck-us.net>
+References: <1400725168-21358-1-git-send-email-fbl@redhat.com>
+	<537D6FC8.5000105@roeck-us.net>
+	<20140522082831.GA16167@alpha.franken.de>
+	<20140522151259.GC1001@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The APQ8084 and MSM8974 SoCs share a lot of clock data. Instead of
-duplicating all the data, we can add the support for APQ8084 into
-the MSM8974 code and just describe the differences by using an
-override function.
+On Thu, 22 May 2014 08:12:59 -0700, Guenter Roeck wrote:
+> On Thu, May 22, 2014 at 10:28:31AM +0200, Thomas Bogendoerfer wrote:
+> > On Wed, May 21, 2014 at 08:32:24PM -0700, Guenter Roeck wrote:
+> > > On 05/21/2014 07:19 PM, Flavio Leitner wrote:
+> > > >From: Flavio Leitner <fbl@sysclose.org>
+> > > >
+> > > >It is possible to increase left fan speed on a
+> > > >DELL Precision 490n system up to 3.
+> > > >
+> > > >     value    fan rpm
+> > > >       1      35460
+> > > >       2      64740
+> > > >       3      78510
+> > > >
+> > > Guess the speed factor 30 doesn't apply here.
+> > 
+> > on my vostro 1720 value 3 is default value and it looks like
+> > it's sort of an auto mode.
+> > 
+> > BTW. the only fan in the system is on the left side, but shows up as
+> > RigthFan. Wouldn't it be better to simply number the fans and let the
+> > "real" labeling be done via sensors.conf ?
+> > 
+> I agree. Jean, any comments ? Is it ok to drop the fan labels ?
 
-This patch applies to the clk-next tree and the following patchset
-on top of it: https://lkml.org/lkml/2014/5/16/666
+Yes it is, I had that it mind already, just I don't have the time to do
+it.
 
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
----
- drivers/clk/qcom/gcc-msm8974.c |   27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/clk/qcom/gcc-msm8974.c b/drivers/clk/qcom/gcc-msm8974.c
-index 33eb051..58cb2f5 100644
---- a/drivers/clk/qcom/gcc-msm8974.c
-+++ b/drivers/clk/qcom/gcc-msm8974.c
-@@ -2674,14 +2674,6 @@ static const struct qcom_cc_desc gcc_msm8974_desc = {
- 	.num_resets = ARRAY_SIZE(gcc_msm8974_resets),
- };
- 
--static const struct of_device_id gcc_msm8974_match_table[] = {
--	{ .compatible = "qcom,gcc-msm8974" },
--	{ .compatible = "qcom,gcc-msm8974pro" , .data = (void *)1UL },
--	{ .compatible = "qcom,gcc-msm8974pro-ac", .data = (void *)1UL },
--	{ }
--};
--MODULE_DEVICE_TABLE(of, gcc_msm8974_match_table);
--
- static void msm8974_pro_clock_override(void)
- {
- 	sdcc1_apps_clk_src_init.parent_names = gcc_xo_gpll0_gpll4;
-@@ -2697,20 +2689,31 @@ static void msm8974_pro_clock_override(void)
- 		&gcc_sdcc1_cdccal_ff_clk.clkr;
- }
- 
-+static const struct of_device_id gcc_msm8974_match_table[] = {
-+	{ .compatible = "qcom,gcc-msm8974" },
-+	{ .compatible = "qcom,gcc-msm8974pro",
-+		.data =	&msm8974_pro_clock_override },
-+	{ .compatible = "qcom,gcc-msm8974pro-ac",
-+		.data = &msm8974_pro_clock_override },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, gcc_msm8974_match_table);
-+
- static int gcc_msm8974_probe(struct platform_device *pdev)
- {
- 	struct clk *clk;
- 	struct device *dev = &pdev->dev;
--	bool pro;
- 	const struct of_device_id *id;
-+	void (*overrides)(void);
- 
- 	id = of_match_device(gcc_msm8974_match_table, dev);
- 	if (!id)
- 		return -ENODEV;
--	pro = !!(id->data);
- 
--	if (pro)
--		msm8974_pro_clock_override();
-+	if (id->data) {
-+		overrides = id->data;
-+		overrides();
-+	}
- 
- 	/* Temporary until RPM clocks supported */
- 	clk = clk_register_fixed_rate(dev, "xo", NULL, CLK_IS_ROOT, 19200000);
 -- 
-1.7.9.5
-
+Jean Delvare
+SUSE L3 Support
