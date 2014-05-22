@@ -1,70 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbaEVFfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 01:35:54 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:44431 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705AbaEVFfx (ORCPT
+	id S1751897AbaEVFgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 01:36:12 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:44658 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaEVFgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 01:35:53 -0400
-Date: Thu, 22 May 2014 11:05:40 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: spinlock recursion in migrate_swap_stop
-Message-ID: <20140522053540.GA26857@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <5371122D.6020605@oracle.com>
- <537AB86B.4020901@oracle.com>
- <20140520110431.GX2485@laptop.programming.kicks-ass.net>
- <537B52BD.1080807@oracle.com>
- <537CA54A.8030408@oracle.com>
+	Thu, 22 May 2014 01:36:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <537CA54A.8030408@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052205-6102-0000-0000-000005A14791
+In-Reply-To: <20140520123453.09a76dd0c8fad40082a16289@linux-foundation.org>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+ <1399974350-11089-19-git-send-email-mgorman@suse.de> <20140520154900.GO23991@suse.de>
+ <20140520123453.09a76dd0c8fad40082a16289@linux-foundation.org>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 22 May 2014 11:05:39 +0530
+Message-ID: <CA+V-a8vF0XkxkxKyO=NAvjd6J678rtqrZfwj9F7vppAzDGvTtQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: non-atomically mark page accessed during page cache
+ allocation where possible -fix
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 927fa33..b5e11c7 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1154,6 +1156,7 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
->                 goto out;
+On Wed, May 21, 2014 at 1:04 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 20 May 2014 16:49:00 +0100 Mel Gorman <mgorman@suse.de> wrote:
 >
->         trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
-> +       BUG_ON(cur == p);
-
-I am not sure how this check can ever be successful because at the start
-of this function migrate_swap() we have
-
-  if (arg.src_cpu == arg.dst_cpu)
-	  goto out;
-
-
-if cur is actually p; then should the above condition should always be
-successul right?
-
-Or am I missing something?
-
->         ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
+>> Prabhakar Lad reported the following problem
+>>
+>>   I see following issue on DA850 evm,
+>>   git bisect points me to
+>>   commit id: 975c3a671f11279441006a29a19f55ccc15fb320
+>>   ( mm: non-atomically mark page accessed during page cache allocation
+>>   where possible)
+>>
+>>   Unable to handle kernel paging request at virtual address 30e03501
+>>   pgd = c68cc000
+>>   [30e03501] *pgd=00000000
+>>   Internal error: Oops: 1 [#1] PREEMPT ARM
+>>   Modules linked in:
+>>   CPU: 0 PID: 1015 Comm: network.sh Not tainted 3.15.0-rc5-00323-g975c3a6 #9
+>>   task: c70c4e00 ti: c73d0000 task.ti: c73d0000
+>>   PC is at init_page_accessed+0xc/0x24
+>>   LR is at shmem_write_begin+0x54/0x60
+>>   pc : [<c0088aa0>]    lr : [<c00923e8>]    psr: 20000013
+>>   sp : c73d1d90  ip : c73d1da0  fp : c73d1d9c
+>>   r10: c73d1dec  r9 : 00000000  r8 : 00000000
+>>   r7 : c73d1e6c  r6 : c694d7bc  r5 : ffffffe4  r4 : c73d1dec
+>>   r3 : c73d0000  r2 : 00000001  r1 : 00000000  r0 : 30e03501
+>>   Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+>>   Control: 0005317f  Table: c68cc000  DAC: 00000015
+>>   Process network.sh (pid: 1015, stack limit = 0xc73d01c0)
+>>
+>> pagep is set but not pointing to anywhere valid as it's an uninitialised
+>> stack variable. This patch is a fix to
+>> mm-non-atomically-mark-page-accessed-during-page-cache-allocation-where-possible.patch
+>>
+>> ...
+>>
+>> --- a/mm/filemap.c
+>> +++ b/mm/filemap.c
+>> @@ -2459,7 +2459,7 @@ ssize_t generic_perform_write(struct file *file,
+>>               flags |= AOP_FLAG_UNINTERRUPTIBLE;
+>>
+>>       do {
+>> -             struct page *page;
+>> +             struct page *page = NULL;
+>>               unsigned long offset;   /* Offset into pagecache page */
+>>               unsigned long bytes;    /* Bytes to write to page */
+>>               size_t copied;          /* Bytes copied from user */
 >
->  out:
+> Well not really.  generic_perform_write() only touches *page if
+> ->write_begin() returned "success", which is reasonable behavior.
 >
+> I'd say you mucked up shmem_write_begin() - it runs
+> init_page_accessed() even if shmem_getpage() returned an error.  It
+> shouldn't be doing that.
 >
-> Which seems to get hit. This sounds like a race with task moving to
-> other cpu maybe?
+> This?
 >
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm/shmem.c: don't run init_page_accessed() against an uninitialised pointer
+>
+> If shmem_getpage() returned an error then it didn't necessarily initialise
+> *pagep.  So shmem_write_begin() shouldn't be playing with *pagep in this
+> situation.
+>
+> Fixes an oops when "mm: non-atomically mark page accessed during page
+> cache allocation where possible" (quite reasonably) left *pagep
+> uninitialized.
+>
+> Reported-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Dave Hansen <dave.hansen@intel.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+>  mm/shmem.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff -puN mm/shmem.c~mm-non-atomically-mark-page-accessed-during-page-cache-allocation-where-possiblefix-2 mm/shmem.c
+> --- a/mm/shmem.c~mm-non-atomically-mark-page-accessed-during-page-cache-allocation-where-possiblefix-2
+> +++ a/mm/shmem.c
+> @@ -1376,7 +1376,7 @@ shmem_write_begin(struct file *file, str
+>         struct inode *inode = mapping->host;
+>         pgoff_t index = pos >> PAGE_CACHE_SHIFT;
+>         ret = shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
+> -       if (*pagep)
+> +       if (ret == 0 && *pagep)
+>                 init_page_accessed(*pagep);
+>         return ret;
+>  }
 
---
-Thanks and Regards
-Srikar Dronamraju
+Reported-and-Tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
+Regards,
+--Prabhakar Lad
+
+> _
+>
