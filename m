@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900AbaEVU5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:57:44 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38937 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaEVU5n (ORCPT
+	id S1752171AbaEVU6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:58:19 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:62115 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbaEVU6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:57:43 -0400
-Date: Thu, 22 May 2014 23:57:14 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Manu Gupta <manugupt1@gmail.com>
-Subject: Re: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c: Fix to remove
- null pointer checks that could never happen
-Message-ID: <20140522205714.GO15585@mwanda>
-References: <1400788682-10787-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400788682-10787-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 22 May 2014 16:58:17 -0400
+Message-ID: <1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: skbuff truesize incorrect.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jim Baxter <jim_baxter@mentor.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, kamal@canonical.com,
+        Ben Hutchings <bhutchings@solarflare.com>, edumazet@google.com,
+        mszeredi@suse.cz, fw@strlen.de
+Date: Thu, 22 May 2014 13:58:15 -0700
+In-Reply-To: <537E4AFD.20304@mentor.com>
+References: <537E4AFD.20304@mentor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Thu, 2014-05-22 at 20:07 +0100, Jim Baxter wrote:
 
-regards,
-dan carpenter
+> 
+> I have been investigating a network issue with bursts of network traffic
+> over USB CDC-NCM, the issue is that the kernel is dropping packets
+> because sk_rcvqueues_full() returns true due to skb2->truesize is always
+> 32960 instead of SKB_TRUESIZE(skb2->len) which is about 1800.
+> 
+> The code I am trying to fix is this code below, it is splitting a set of
+> multiple network packets compressed into a single 16k packet into
+> individual skb's and sending them up the network stack.
+
+if skb are allocated with 16k = 16384 bytes, adding the struct
+skb_shared_info overhead and rounding up to power of two gives 32768
+bytes.
+
+Chances to be able to allocate 32KB contiguous memory are slim after a
+while.
+
+I would set rx_max (rx_urb_size) to SKB_MAX_HEAD(0) so that you do not
+use high order allocations.
+
+What is the exact 'overhead' using ~4K instead of 16K exactly on this
+hardware ?
+
+
 
