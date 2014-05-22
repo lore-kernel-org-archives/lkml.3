@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaEVUUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:20:30 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:62644 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927AbaEVUUZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:20:25 -0400
+	id S1752638AbaEVUUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:20:39 -0400
+Received: from mout.gmx.com ([74.208.4.201]:55516 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752447AbaEVUUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 16:20:37 -0400
+Date: Fri, 23 May 2014 01:49:22 +0530 (IST)
+From: Govindarajulu Varadarajan <_govind@gmx.com>
+X-X-Sender: gvaradar@ws.cisco
+To: Jim Davis <jim.epost@gmail.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, benve@cisco.com,
+        ssujith@cisco.com, _govind@gmx.com, neepatel@cisco.com,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140522, in
+ drivers/net/ethernet/cisco/enic/enic_main.c
+In-Reply-To: <CA+r1ZhgW_Du8VUCmOof-MYnOun8Pq0FYTu4cG5NAOt3vkztWBw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.03.1405230148040.15994@ws.cisco>
+References: <CA+r1ZhgW_Du8VUCmOof-MYnOun8Pq0FYTu4cG5NAOt3vkztWBw@mail.gmail.com>
+User-Agent: Alpine 2.03 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140522191746.GL4383@pd.tnic>
-References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521233802.GA21575@pd.tnic> <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
- <20140522191746.GL4383@pd.tnic>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 22 May 2014 14:20:04 -0600
-Message-ID: <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
-Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
-To: Borislav Petkov <bp@alien8.de>
-Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <rric@kernel.org>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-Provags-ID: V03:K0:0FCiCkrjHDddH0ClpWZ5FvI2Ccvjpizrs2Qxo9gN5vmAPIh8qg0
+ OJcJi5q8BkANsXinUWIg/kt36Yh8NDQkfagw2rdrV2Nzivg6UXz1V7cxeynTds1BYUkZEQE
+ dyOxRDsm3n9OFF6lvnCJxU6TtmHM0l5x7qbepP7bophm+KAAOyXIhcY6OO7WIhVcMH0ALK2
+ CovJeS1I7P4Pop1xQ8jWw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 1:17 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, May 22, 2014 at 11:56:03AM -0600, Bjorn Helgaas wrote:
->> I chose Fam16h (0x16) because it looks like that's the newest stuff
->> that's in the field. I suspect things would probably work if we
->> changed this patch to leave ECS disabled on some Fam16h, Fam15h, etc.,
->> but that would change behavior on existing systems, which obviously
->> adds some risk. I didn't think there was much benefit that makes the
->> risk worthwhile.
->>
->> My goal is to stop needing CPU-specific changes in the future, not
->> necessarily to remove the CPU-specific code we already have.
->>
->> Does that make sense? I'm not sure whether I understood your real
->> question.
+
+
+On Thu, 22 May 2014, Jim Davis wrote:
+
+> Building with the attached random configuration file,
 >
-> No, you got it right. I'm just wondering why only the newest stuff.
-> MMCONFIG is supposed to work just fine on everything from Fam10h
-> onwards, I'm not sure all Fam10h supported it though. Maybe Suravee can
-> verify that...
+> drivers/built-in.o: In function `enic_poll_msix':
+> enic_main.c:(.text+0x48710a): undefined reference to `__udivdi3'
+> make: *** [vmlinux] Error 1
+>
 
-Even if MMCONFIG does work fine on everything from Fam10h onwards, we
-still depend on the BIOS to provide a correct MCFG table.  I don't
-think we can guarantee that changing from ECS to MMCONFIG on a Fam16h
-box in the field is safe, because we'd then be using a feature we've
-never used before.
+Looks like 64 bit divide issue. Will look into it.
 
-Bjorn
+Thanks for reporting.
+
+Govind
