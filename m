@@ -1,85 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaEVRV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 13:21:27 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:63142 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaEVRV0 (ORCPT
+	id S1752017AbaEVRWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 13:22:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43979 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaEVRWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 13:21:26 -0400
-Message-ID: <537E3218.6030104@cogentembedded.com>
-Date: Thu, 22 May 2014 21:21:28 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 13:22:45 -0400
+Message-ID: <537E3263.7090706@codeaurora.org>
+Date: Thu, 22 May 2014 10:22:43 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>
-CC: netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>, Li Yang <leoli@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Aida Mynzhasova <aida.mynzhasova@skitlab.ru>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Claudiu Manoil <claudiu.manoil@freescale.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH RESEND net-next 4/9] net: systemport: use the new fixed
- PHY helpers
-References: <1400708331-18088-1-git-send-email-f.fainelli@gmail.com> <1400708331-18088-5-git-send-email-f.fainelli@gmail.com> <537D20EA.1000305@cogentembedded.com> <CAGVrzcbBQFhw-dUh+tFm8H5m9-fmVgutChS8wUG-F6sTBoRq-g@mail.gmail.com>
-In-Reply-To: <CAGVrzcbBQFhw-dUh+tFm8H5m9-fmVgutChS8wUG-F6sTBoRq-g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Georgi Djakov <gdjakov@mm-sol.com>
+CC: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1 3/5] clk: gcc: Add APQ8084 Global Clock Controller
+ support
+References: <1400775885-10296-1-git-send-email-gdjakov@mm-sol.com> <1400775885-10296-4-git-send-email-gdjakov@mm-sol.com>
+In-Reply-To: <1400775885-10296-4-git-send-email-gdjakov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 05/22/14 09:24, Georgi Djakov wrote:
+> diff --git a/drivers/clk/qcom/gcc-msm8974.c b/drivers/clk/qcom/gcc-msm8974.c
+> index 58cb2f5..c2a8d77 100644
+> --- a/drivers/clk/qcom/gcc-msm8974.c
+> +++ b/drivers/clk/qcom/gcc-msm8974.c
+> @@ -204,6 +204,12 @@ static const struct freq_tbl ftbl_gcc_blsp1_2_qup1_6_i2c_apps_clk[] = {
+>  	{ }
+>  };
+>  
+> +static const struct freq_tbl ftbl_gcc_blsp1_2_qup1_6_i2c_apps_clk_apq8084[] = {
+> +	F(19200000, P_XO, 1, 0, 0),
+> +	F(50000000, P_GPLL0, 12, 0, 0),
+> +	{ }
+> +};
+> +
 
-On 05/22/2014 02:02 AM, Florian Fainelli wrote:
+Just merge this with the other blsp1_2_qup table.
 
->>> of_phy_connect_fixed_link() is becoming obsolete, and also required
->>> platform code to register the fixed PHYs at the specified addresses for
->>> those to be usable. Get rid of it and use the new of_phy_is_fixed_link()
->>> plus of_phy_register_fixed_link() helpers to transition over the new
->>> scheme.
+>  static struct clk_rcg2 blsp1_qup1_i2c_apps_clk_src = {
+>  	.cmd_rcgr = 0x0660,
+>  	.hid_width = 5,
+> @@ -768,6 +774,27 @@ static struct clk_rcg2 ce2_clk_src = {
+>  	},
+>  };
+>  
+> +static const struct freq_tbl ftbl_gcc_ce3_clk_apq8084[] = {
+> +	F(50000000, P_GPLL0, 12, 0, 0),
+> +	F(85710000, P_GPLL0, 7, 0, 0),
+> +	F(100000000, P_GPLL0, 6, 0, 0),
+> +	F(171430000, P_GPLL0, 3.5, 0, 0),
+> +	{ }
+> +};
+> +
 
->>> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
->>> ---
->>>    drivers/net/ethernet/broadcom/bcmsysport.c | 17 +++++++++++++++--
->>>    drivers/net/ethernet/broadcom/bcmsysport.h |  1 +
->>>    2 files changed, 16 insertions(+), 2 deletions(-)
+Ditto.
 
->>> diff --git a/drivers/net/ethernet/broadcom/bcmsysport.c
->>> b/drivers/net/ethernet/broadcom/bcmsysport.c
->>> index d40c5b969e9e..dc708a888f80 100644
->>> --- a/drivers/net/ethernet/broadcom/bcmsysport.c
->>> +++ b/drivers/net/ethernet/broadcom/bcmsysport.c
->>> @@ -1327,8 +1327,8 @@ static int bcm_sysport_open(struct net_device *dev)
->>>          /* Read CRC forward */
->>>          priv->crc_fwd = !!(umac_readl(priv, UMAC_CMD) & CMD_CRC_FWD);
->>>
->>> -       priv->phydev = of_phy_connect_fixed_link(dev,
->>> bcm_sysport_adj_link,
->>> -
->>> priv->phy_interface);
->>> +       priv->phydev = of_phy_connect(dev, priv->phy_dn,
->>> bcm_sysport_adj_link,
->>> +                                       0, priv->phy_interface);
+> +static struct clk_rcg2 ce3_clk_src_apq8084 = {
 
->>     The continuation line should start on the next character after ( on the
->> above line, according to the networking coding style.
+Please drop all the _apq8084 stuff. I imagine if we support other chips
+in this same driver this won't make any sense.
 
-> Unless I am once again not following the coding style, the patch in
-> patchwork has this correctly, and so does my file locally:
+> +	.cmd_rcgr = 0x1d10,
+> +	.hid_width = 5,
+> +	.parent_map = gcc_xo_gpll0_map,
+> +	.freq_tbl = ftbl_gcc_ce3_clk_apq8084,
+> +	.clkr.hw.init = &(struct clk_init_data){
+> +		.name = "ce3_clk_src",
+> +		.parent_names = gcc_xo_gpll0,
+> +		.num_parents = 2,
+> +		.ops = &clk_rcg2_ops,
+> +	},
+> +};
+> +
+>  static const struct freq_tbl ftbl_gcc_gp_clk[] = {
+>  	F(4800000, P_XO, 4, 0, 0),
+>  	F(6000000, P_GPLL0, 10, 1, 10),
+> @@ -780,6 +807,12 @@ static const struct freq_tbl ftbl_gcc_gp_clk[] = {
+>  	{ }
+>  };
+>  
+> +static const struct freq_tbl ftbl_gcc_gp_clk_apq8084[] = {
+> +	F(19200000, P_XO, 1, 0, 0),
+> +	F(100000000, P_GPLL0, 6, 0, 0),
+> +	F(200000000, P_GPLL0, 3, 0, 0),
+> +	{ }
+> +};
 
-> http://patchwork.ozlabs.org/patch/351323/
+Merge with other GP table?
 
-    Don't know about your local file but the patchwork still has the 
-indentation wrong. -- you've used only tabs while the last several characters 
-should have been spaces. However, if David himself finds it correct, I guess I 
-just need to shut up. :-)
+>  
+>  static struct clk_rcg2 gp1_clk_src = {
+>  	.cmd_rcgr = 0x1904,
+> @@ -966,6 +999,11 @@ static const struct freq_tbl ftbl_gcc_usb_hs_system_clk[] = {
+>  	{ }
+>  };
+>  
+> +static const struct freq_tbl ftbl_gcc_usb_hs_system_clk_apq8084[] = {
+> +	F(75000000, P_GPLL0, 8, 0, 0),
+> +	{ }
+> +};
+> +
 
-WBR, Sergei
+ditto.
+
+>  static struct clk_rcg2 usb_hs_system_clk_src = {
+>  	.cmd_rcgr = 0x0490,
+>  	.hid_width = 5,
+> @@ -1029,6 +1067,11 @@ static const struct freq_tbl ftbl_gcc_usb_hsic_system_clk[] = {
+>  	{ }
+>  };
+>  
+> +static const struct freq_tbl ftbl_gcc_usb_hsic_system_clk_apq8084[] = {
+> +	F(75000000, P_GPLL0, 8, 0, 0),
+> +	{ }
+> +};
+> +
+
+ditto.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
