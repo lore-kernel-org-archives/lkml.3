@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457AbaEVJVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:21:38 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:50121 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440AbaEVJVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:21:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140522085339.26279.83340.sendpatchset@w520>
-References: <20140522085339.26279.83340.sendpatchset@w520>
-Date: Thu, 22 May 2014 11:21:35 +0200
-X-Google-Sender-Auth: oQISudW6aVrSn2K0cJHaR-QserM
-Message-ID: <CAMuHMdW=UdR9sk_jBZu_14LvkHUqg+tXtGaFtLGD0+ikwqO+bw@mail.gmail.com>
-Subject: Re: [PATCH 00/03] staging: Emma Mobile USB driver and KZM9D board code
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1754161AbaEVJXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:23:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52029 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322AbaEVJXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 05:23:48 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <bp@suse.de>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH] intel_rapl: Correct hotplug correction
+Date: Thu, 22 May 2014 11:23:44 +0200
+Message-Id: <1400750624-19238-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+From: Borislav Petkov <bp@suse.de>
 
-Thanks for your series! This looks like a good solution for interim board
-support.
+So 009f225ef050 ("powercap, intel-rapl: Fix CPU hotplug callback
+registration") says how get_/put_online_cpus() should be replaced with
+this cpu_notifier_register_begin/_done().
 
-On Thu, May 22, 2014 at 10:53 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> Olof, patch 3/3 contains some board staging code for KZM9D. As it is
-> today the EMEV2 SoC is DT-only and we neither have defconfig nor Kconfig
-> definitions for the KZM9D board (emev2-kzm9d.dts).
+But they're still there so what's up?
 
-Although there's no KZM9D-specific defconfig anymore, support for it is
-included in shmobile_defconfig, right?
+Let me do what was supposed to be done.
 
-Gr{oetje,eeting}s,
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/powercap/intel_rapl.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-                        Geert
+diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+index d9a0770b6c73..9055f3df1f64 100644
+--- a/drivers/powercap/intel_rapl.c
++++ b/drivers/powercap/intel_rapl.c
+@@ -1377,8 +1377,6 @@ static int __init rapl_init(void)
+ 
+ 	cpu_notifier_register_begin();
+ 
+-	/* prevent CPU hotplug during detection */
+-	get_online_cpus();
+ 	ret = rapl_detect_topology();
+ 	if (ret)
+ 		goto done;
+@@ -1390,7 +1388,6 @@ static int __init rapl_init(void)
+ 	}
+ 	__register_hotcpu_notifier(&rapl_cpu_notifier);
+ done:
+-	put_online_cpus();
+ 	cpu_notifier_register_done();
+ 
+ 	return ret;
+-- 
+1.9.0
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
