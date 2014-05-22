@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaEVCNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 22:13:00 -0400
-Received: from ozlabs.org ([103.22.144.67]:38927 "EHLO ozlabs.org"
+	id S1752340AbaEVCTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 22:19:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16515 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750965AbaEVCM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 22:12:58 -0400
-Date: Thu, 22 May 2014 12:12:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Simon Horman <horms@verge.net.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the renesas tree with the arm-soc tree
-Message-ID: <20140522121250.0648dfec@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/eG9faOgSaC+6b8uERwIW38S"; protocol="application/pgp-signature"
+	id S1751249AbaEVCTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 22:19:47 -0400
+From: Flavio Leitner <fbl@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Flavio Leitner <fbl@sysclose.org>
+Subject: [PATCH] i8k: increase fan limit to 3
+Date: Wed, 21 May 2014 23:19:28 -0300
+Message-Id: <1400725168-21358-1-git-send-email-fbl@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/eG9faOgSaC+6b8uERwIW38S
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Flavio Leitner <fbl@sysclose.org>
 
-Hi Simon,
+It is possible to increase left fan speed on a
+DELL Precision 490n system up to 3.
 
-Today's linux-next merge of the renesas tree got a conflict in
-arch/arm/boot/dts/r8a7790-lager.dts between commit 637193b2f22c ("Merge
-branch 'next/boards' into for-next") from the arm-soc tree and commit
-2a3bd7497db1 ("Merge branch 'heads/dt-scif-for-v3.16' into next") from
-the renesas tree.
+    value    fan rpm
+      1      35460
+      2      64740
+      3      78510
 
-I fixed it up (I used the latter since it kept the trailing semi-colon)
-and can carry the fix as necessary (no action is required).
+Signed-off-by: Flavio Leitner <fbl@sysclose.org>
+---
+ drivers/char/i8k.c       | 4 ++--
+ include/uapi/linux/i8k.h | 3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index d915707..99180f0 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -519,7 +519,7 @@ static ssize_t i8k_hwmon_show_pwm(struct device *dev,
+ 	status = i8k_get_fan_status(index);
+ 	if (status < 0)
+ 		return -EIO;
+-	return sprintf(buf, "%d\n", clamp_val(status * 128, 0, 255));
++	return sprintf(buf, "%d\n", clamp_val(status * 128, 0, 384));
+ }
+ 
+ static ssize_t i8k_hwmon_set_pwm(struct device *dev,
+@@ -533,7 +533,7 @@ static ssize_t i8k_hwmon_set_pwm(struct device *dev,
+ 	err = kstrtoul(buf, 10, &val);
+ 	if (err)
+ 		return err;
+-	val = clamp_val(DIV_ROUND_CLOSEST(val, 128), 0, 2);
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 128), 0, 3);
+ 
+ 	mutex_lock(&i8k_mutex);
+ 	err = i8k_set_fan(index, val);
+diff --git a/include/uapi/linux/i8k.h b/include/uapi/linux/i8k.h
+index 1c45ba5..133d02f 100644
+--- a/include/uapi/linux/i8k.h
++++ b/include/uapi/linux/i8k.h
+@@ -34,7 +34,8 @@
+ #define I8K_FAN_OFF		0
+ #define I8K_FAN_LOW		1
+ #define I8K_FAN_HIGH		2
+-#define I8K_FAN_MAX		I8K_FAN_HIGH
++#define I8K_FAN_TURBO		3
++#define I8K_FAN_MAX		I8K_FAN_TURBO
+ 
+ #define I8K_VOL_UP		1
+ #define I8K_VOL_DOWN		2
+-- 
+1.9.0
 
---Sig_/eG9faOgSaC+6b8uERwIW38S
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTfV0nAAoJEMDTa8Ir7ZwVWgMP/jiZ1fgVBuelNao/vxaWbtp7
-SGi7T491nw5PO70KjrXqBgPp9W4bQX6HXAUa+2gyh38EefNmZJXJ7ikeaJ1VWG2r
-CLxnNTIeojq5/K9usflVRkWN0pjMWiNsDYSiYqw6TJKuxrQvo4hs2XvHH5qqcptI
-NHhcp34dRC9HcupE2CkqVIjwsF+YM8akQAbHu+og/L7ikgSVZAw7zGpwcFVHNUyQ
-KcUsdq8bjnWbnX6YuDBNw3zwPAxsqdhnMWUFNx8POmjVsDjpg0hR+kdK52aXGPAJ
-R1Q8QHolsv4Ik85vyRzhMxbdA1NRtpEiiGGNJJWmkZGoLHqUXhYw2hNRneoo+NY6
-3qtekC1veeZiLiaAWt+xjlHyLDYf5TiTRerR4Ds2G9ok/Zeu1eTEHv2KS4jP/vSk
-4MYEaCO8hycGEGYIEPXaZ6kwtbDDv0fD1T75CsI7ALWIf0Zx17LgF86geVA4axYJ
-K2064uslc+kQIXWJ/nZ6P5oAV66KEAuYnbraTRgSyKA6pXSYdV7YR01YaJHPHbHe
-QIMQsDX1JEq38ir8D9Y1uwsAtXgvypExxm5oDn2dq0zKWdMiBgpsKdME6cVQlVVi
-GBWOnBBUYNH8anDEVYbNAghn5Vq48cmk67LFLwQHunHlzwy0QCaNibRzR2AvF+2N
-nxz+/hbKk7ZqqTagA3P3
-=VBNc
------END PGP SIGNATURE-----
-
---Sig_/eG9faOgSaC+6b8uERwIW38S--
