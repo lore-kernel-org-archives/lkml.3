@@ -1,90 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaEVOkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:40:12 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:47268 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071AbaEVOkK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:40:10 -0400
-X-IronPort-AV: E=Sophos;i="4.98,887,1392163200"; 
-   d="scan'208";a="133934104"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH] xen-blkfront: check feature-persitent on resume
-Date: Thu, 22 May 2014 16:40:07 +0200
-Message-ID: <1400769607-17278-1-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+	id S1752959AbaEVOkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:40:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42594 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751919AbaEVOkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 10:40:52 -0400
+Date: Thu, 22 May 2014 15:40:45 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barriers and waitqueue
+ lookups in unlock_page fastpath v7
+Message-ID: <20140522144045.GH23991@suse.de>
+References: <20140515104808.GF23991@suse.de>
+ <20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
+ <20140521121501.GT23991@suse.de>
+ <20140521142622.049d0b3af5fc94912d5a1472@linux-foundation.org>
+ <20140521213354.GL2485@laptop.programming.kicks-ass.net>
+ <20140521145000.f130f8779f7641d0d8afcace@linux-foundation.org>
+ <20140522000715.GA23991@suse.de>
+ <20140522072001.GP30445@twins.programming.kicks-ass.net>
+ <20140522104051.GE23991@suse.de>
+ <20140522105638.GT30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140522105638.GT30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are missing a check to see if the backend supports persistent
-grants on resume, meaning we will always run with the value fetched
-from the firsts host on which we run on.
+On Thu, May 22, 2014 at 12:56:38PM +0200, Peter Zijlstra wrote:
+> On Thu, May 22, 2014 at 11:40:51AM +0100, Mel Gorman wrote:
+> > +void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, int bit)
+> > +{
+> > +	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
+> > +	unsigned long flags;
+> > +
+> > +	/* If there is no PG_waiters bit, always take the slow path */
+> 
+> That comment is misleading, this is actually a fast path for
+> !PG_waiters.
+> 
+> > +	if (!__PG_WAITERS && waitqueue_active(wq)) {
+> > +		__wake_up(wq, TASK_NORMAL, 1, &key);
+> > +		return;
+> > +	}
+> > +
+> > +	/*
+> > +	 * Unlike __wake_up_bit it is necessary to check waitqueue_active to be
+> > +	 * checked under the wqh->lock to avoid races with parallel additions
+> > +	 * to the waitqueue. Otherwise races could result in lost wakeups
+> > +	 */
+> > +	spin_lock_irqsave(&wqh->lock, flags);
+> > +	if (waitqueue_active(wqh))
+> > +		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
+> > +	else
+> > +		ClearPageWaiters(page);
+> > +	spin_unlock_irqrestore(&wqh->lock, flags);
+> > +}
+> 
+> So I think you missed one Clear opportunity here that was in my original
+> proposal, possibly because you also frobbed PG_writeback in.
+> 
+> If you do:
+> 
+> 	spin_lock_irqsave(&wqh->lock, flags);
+> 	if (!waitqueue_active(wqh) || !__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key))
+> 		ClearPageWaiters(page);
+> 	spin_unlock_irqrestore(&wqh->lock, flags);
+> 
+> With the below change to __wake_up_common(), we'll also clear the bit
+> when there's no waiters of @page, even if there's waiters for another
+> page.
+> 
+> I suppose the one thing to say for the big open coded loop is that its
+> much easier to read than this scattered stuff.
+> 
+> ---
+> diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+> index 0ffa20ae657b..213c5bfe6b56 100644
+> --- a/kernel/sched/wait.c
+> +++ b/kernel/sched/wait.c
+> @@ -61,18 +61,23 @@ EXPORT_SYMBOL(remove_wait_queue);
+>   * started to run but is not in state TASK_RUNNING. try_to_wake_up() returns
+>   * zero in this (rare) case, and we handle it by continuing to scan the queue.
+>   */
+> -static void __wake_up_common(wait_queue_head_t *q, unsigned int mode,
+> +static bool __wake_up_common(wait_queue_head_t *q, unsigned int mode,
+>  			int nr_exclusive, int wake_flags, void *key)
+>  {
+>  	wait_queue_t *curr, *next;
+> +	bool woke = false;
+>  
+>  	list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
+>  		unsigned flags = curr->flags;
+>  
+> -		if (curr->func(curr, mode, wake_flags, key) &&
+> -				(flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
+> -			break;
+> +		if (curr->func(curr, mode, wake_flags, key)) {
+> +			woke = true;
+> +			if ((flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
+> +				break;
+> +		}
+>  	}
+> +
+> +	return woke;
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
----
- drivers/block/xen-blkfront.c |   23 ++++++++++++++++-------
- 1 files changed, 16 insertions(+), 7 deletions(-)
+Ok, thinking about this more I'm less sure.
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index efe1b47..00ae36b 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1430,6 +1430,20 @@ static void split_bio_end(struct bio *bio, int error)
- 	bio_put(bio);
- }
- 
-+static void blkfront_setup_persistent(struct blkfront_info *info)
-+{
-+	unsigned int persistent;
-+	int err;
-+
-+	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
-+			    "feature-persistent", "%u", &persistent,
-+			    NULL);
-+	if (err)
-+		info->feature_persistent = 0;
-+	else
-+		info->feature_persistent = persistent;
-+}
-+
- static int blkif_recover(struct blkfront_info *info)
- {
- 	int i;
-@@ -1456,6 +1470,7 @@ static int blkif_recover(struct blkfront_info *info)
- 	info->shadow_free = info->ring.req_prod_pvt;
- 	info->shadow[BLK_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
- 
-+	blkfront_setup_persistent(info);
- 	rc = blkfront_setup_indirect(info);
- 	if (rc) {
- 		kfree(copy);
-@@ -1851,13 +1866,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	if (!err && discard)
- 		blkfront_setup_discard(info);
- 
--	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
--			    "feature-persistent", "%u", &persistent,
--			    NULL);
--	if (err)
--		info->feature_persistent = 0;
--	else
--		info->feature_persistent = persistent;
-+	blkfront_setup_persistent(info);
- 
- 	err = blkfront_setup_indirect(info);
- 	if (err) {
+There are cases where the curr->func returns false even though there is a
+task that needs to run -- task was already running or preparing to run. We
+potentially end up clearing PG_waiters while there are still tasks on the
+waitqueue. As __finish_wait checks if the waitqueue is empty and the last
+waiter clears the bit I think there is nothing to gain by trying to do the
+same job in __wake_up_page_bit.
+
 -- 
-1.7.7.5 (Apple Git-26)
-
+Mel Gorman
+SUSE Labs
