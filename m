@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaEVWi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 18:38:57 -0400
-Received: from ozlabs.org ([103.22.144.67]:51185 "EHLO ozlabs.org"
+	id S1752554AbaEVWjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 18:39:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49265 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011AbaEVWi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 18:38:56 -0400
-Date: Fri, 23 May 2014 08:38:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, michael@ellerman.id.au, mingo@redhat.com,
-        paulus@samba.org, imunsie@au1.ibm.com, acme@ghostprotocols.net,
-        scottwood@freescale.com, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] powerpc/perf/hv-24x7: use kmem_cache instead of aligned
- stack allocations
-Message-ID: <20140523083847.4e039ddb@canb.auug.org.au>
-In-Reply-To: <1400797756-6057-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <537E78AD.1040409@linux.vnet.ibm.com>
-	<1400797756-6057-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751363AbaEVWjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 18:39:11 -0400
+Message-ID: <537E7C8B.3000600@suse.de>
+Date: Fri, 23 May 2014 00:39:07 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/vY7w.S42ucd/t8Q=uJdy8J="; protocol="application/pgp-signature"
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Michael Mueller <mimu@linux.vnet.ibm.com>
+CC: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Andreas Faerber <afaerber@suse.de>,
+        Richard Henderson <rth@twiddle.net>,
+        Eduardo Habkost <ehabkost@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v1 RFC 6/6] KVM: s390: add cpu model support
+References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com> <1399993114-15333-7-git-send-email-mimu@linux.vnet.ibm.com> <5375FFB8.90504@suse.de>	<20140516173907.3b1c4efa@bee> <53767590.2090605@suse.de>	<20140519125339.09840b9e@bee> <5379EF78.9040209@suse.de>	<20140519161811.5a17bc66@bee> <537A19F8.4060209@suse.de>	<20140519190318.6f92c1bd@bee> <537A6608.8000608@suse.de>	<20140520120218.38eb7181@bee> <537B2A0F.1030706@suse.de>	<20140521145652.197bff21@bee> <537CA89B.6050803@suse.de> <20140522102316.653f34ba@bee> <537DBB12.6070108@redhat.com> <537E5FEB.1000103@de.ibm.com>
+In-Reply-To: <537E5FEB.1000103@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/vY7w.S42ucd/t8Q=uJdy8J=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Cody,
+On 22.05.14 22:36, Christian Borntraeger wrote:
+> On 22/05/14 10:53, Paolo Bonzini wrote:
+>> Il 22/05/2014 10:23, Michael Mueller ha scritto:
+>>> On Wed, 21 May 2014 15:22:35 +0200
+>>> Alexander Graf <agraf@suse.de> wrote:
+>>>
+>>> I have seen the slides from Eduardo which he presented during this years
+>>> DevConf in Brno and made my comments according the s390x implementation
+>>> on that. Is you will see, this is mostly overlapping except for the model
+>>> definition authority that I clearly see on qemu's side.
+>>>
+>>> See pdf attachment.
+>> More comments:
+>>
+>> - "Only one machine type in s390 case which is -machine s390-virtio-ccw"
+>>
+>> This probably should change sooner or later, as soon as the implementation becomes stable enough.  Versioning is necessary for live migration across different QEMU version.  Perhaps start versioning in 2.2, i.e. start making s390-virtio-ccw-2.1 an alias for s390-virtio-ccw now?
+>>
+>> Note that new virtio device features can appear at any time outside the s390 code, and will take part in versioning as well.
+>>
+>> - "No enforce option"
+>>
+>> Strongly suggest making enforce the only possible behavior.
+>>
+>> - "Not in the s390x case, because the KVM facility mask limits the cpu model specific facilities"
+>>
+>> What if the KVM facility mask changes?  For x86, nowadays new CPUID bits are only introduced in KVM when a new processors comes out.  But if we introduced an older CPUID bit, it would be a huge complication for backwards compatibility.  Is it different for s390?
+>>
+>> Paolo
+>>
+> I guess we need to have a full picture here. Would this topic be suitable for the KVM call?
 
-On Thu, 22 May 2014 15:29:08 -0700 Cody P Schafer <cody@linux.vnet.ibm.com>=
- wrote:
->
-> -	*res =3D be64_to_cpu(result_buffer.result);
-> +	*res =3D be64_to_cpu(result_buffer->result);
-> +	kfree(result_buffer);
-> +	kfree(request_buffer);
-> +	return ret;
+Very much so, yes. Please put it on the agenda.
 
-Why not just fall through here by removing the above 3 lines?
 
-> +
-> +out_hcall:
-> +	kfree(result_buffer);
-> +out_resb:
-> +	kfree(request_buffer);
-> +out_reqb:
->  	return ret;
->  }
+Alex
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/vY7w.S42ucd/t8Q=uJdy8J=
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTfnx8AAoJEMDTa8Ir7ZwVbBcP/AmC6VxAvD37K/pqbIdteq5s
-pzy2Jien5QdRiePqxJl9G0TH20KQANMrejTwhhbbQuHs86qAYC9HhEgtfxl4jnXc
-UGadMbw9gYgUGbXW2O5k6bRxHBX0nDw/HzA4UR1s4B12dJXi5LWcEXglY+v5/k1j
-PsGhx2zA4t1w28/kY1KunOcwyqZDnkVudBETcdErCtyBV9l7z3DyQwQr2lfKNSCv
-LYnRW4za2jKe3YHIgGNQpmdb5nn2Y0TLf3QnF/+DDFe7CRYmNhBbPCtj2dQD57HK
-itvUTSzoAYjarOZ0tql/0cAVKh+LcNz+2qBZk8jMwrqElOwVBabSh/S6GW1w+TLF
-UdNJ939AFnidpl1v6xsMXx3lfXkqQDf1PCZ45pMzgIzhcKqkpXhfOmCebOR4Wi5H
-miqCw7jmES9zkUgg0FfQfvBsYQlM/bjNdHE0Aio0E9QFeKSs6gPWHJcgkHCiYkqF
-PEESWNw94wXEWm0IDmTd97c7W8xKsoy4BJJ9Wk3RG44CMz3KfVShf7JZbVYVvG/B
-xcn/LZig6QaZK3namhVdf+albHi4Svbcg9Vzp+ByouOdEn08iTCrsm723cJ/a6GR
-mLkyOlP17NtyiaVavC5AgmCdTbbKe54JNz1dK7vSleWmpbm+7+ulQX9b35RfY6Y0
-Ron3JypLQaI6R0ZME1Hy
-=y+gw
------END PGP SIGNATURE-----
-
---Sig_/vY7w.S42ucd/t8Q=uJdy8J=--
