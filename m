@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaEVRPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 13:15:30 -0400
-Received: from smarthost.TechFak.Uni-Bielefeld.DE ([129.70.137.17]:43982 "EHLO
-	smarthost.TechFak.Uni-Bielefeld.DE" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750923AbaEVRP3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 13:15:29 -0400
-From: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
-Subject: [PATCH RESEND] sysfs: fix attribute_group bin file path on removal
-Date: Thu, 22 May 2014 19:15:12 +0200
-Message-Id: <1400778912-7485-2-git-send-email-rabel@cit-ec.uni-bielefeld.de>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1400778912-7485-1-git-send-email-rabel@cit-ec.uni-bielefeld.de>
-References: <1400778912-7485-1-git-send-email-rabel@cit-ec.uni-bielefeld.de>
+	id S1751583AbaEVRQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 13:16:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54884 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145AbaEVRQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 13:16:41 -0400
+Message-ID: <537E30AF.4070501@zytor.com>
+Date: Thu, 22 May 2014 10:15:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
+        benh@kernel.crashing.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v2 16/18] x86: io: implement dummy relaxed accessor macros
+ for writes
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com> <1400777250-17335-17-git-send-email-will.deacon@arm.com>
+In-Reply-To: <1400777250-17335-17-git-send-email-will.deacon@arm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cody Schafer already fixed binary file creation for attribute groups, see [1].
-This patch makes the appropriate changes for binary file removal
-of attribute groups.
-[1]: http://lkml.org/lkml/2014/2/27/832
+On 05/22/2014 09:47 AM, Will Deacon wrote:
+> write{b,w,l,q}_relaxed are implemented by some architectures in order to
+> permit memory-mapped I/O accesses with weaker barrier semantics than the
+> non-relaxed variants.
+> 
+> This patch adds dummy macros for the read and write accessors to x86,
+> which simply expand to the non-relaxed variants. Note that this
+> strengthens the relaxed read accessors, since they are now ordered with
+> respect to each other by way of a compiler barrier.
 
-Signed-off-by: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
----
- fs/sysfs/group.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+OK, do we want/need that compiler barrier?  And you say "strengthens" -
+strengthens with respect to what if we didn't have them before?
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index aa04068..7d2a860 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -18,7 +18,7 @@
- #include "sysfs.h"
- 
- 
--static void remove_files(struct kernfs_node *parent, struct kobject *kobj,
-+static void remove_files(struct kernfs_node *parent,
- 			 const struct attribute_group *grp)
- {
- 	struct attribute *const *attr;
-@@ -29,7 +29,7 @@ static void remove_files(struct kernfs_node *parent, struct kobject *kobj,
- 			kernfs_remove_by_name(parent, (*attr)->name);
- 	if (grp->bin_attrs)
- 		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
--			sysfs_remove_bin_file(kobj, *bin_attr);
-+			kernfs_remove_by_name(parent, (*bin_attr)->attr.name);
- }
- 
- static int create_files(struct kernfs_node *parent, struct kobject *kobj,
-@@ -62,7 +62,7 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
- 				break;
- 		}
- 		if (error) {
--			remove_files(parent, kobj, grp);
-+			remove_files(parent, grp);
- 			goto exit;
- 		}
- 	}
-@@ -79,7 +79,7 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
- 				break;
- 		}
- 		if (error)
--			remove_files(parent, kobj, grp);
-+			remove_files(parent, grp);
- 	}
- exit:
- 	return error;
-@@ -224,7 +224,7 @@ void sysfs_remove_group(struct kobject *kobj,
- 		kernfs_get(kn);
- 	}
- 
--	remove_files(kn, kobj, grp);
-+	remove_files(kn, grp);
- 	if (grp->name)
- 		kernfs_remove(kn);
- 
--- 
-1.9.2
+	-hpa
 
