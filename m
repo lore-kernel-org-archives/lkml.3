@@ -1,115 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492AbaEVR5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 13:57:16 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36144 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaEVR5P (ORCPT
+	id S1751730AbaEVR6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 13:58:31 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:64174 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750760AbaEVR6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 13:57:15 -0400
-Date: Thu, 22 May 2014 10:57:00 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Francesco Ruggeri <fruggeri@arista.com>
-Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
-        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: pci: kernel crash in bus_find_device
-Message-ID: <20140522175700.GA14814@roeck-us.net>
-References: <20140520195041.GA28913@roeck-us.net>
- <CA+HUmGg4mE5RDxShNCK78yLi9gdX_FnHtWPKfGD4LaEqrCdj2Q@mail.gmail.com>
- <20140520233812.GA15640@roeck-us.net>
- <CA+HUmGge7AEpAnwAG_VJD2CKTtRBoC2bCGVU_t4qm-x6+OCr-g@mail.gmail.com>
- <20140521193010.GA1721@roeck-us.net>
- <CA+HUmGhm1VLTvMKW1TUUPqStUhD11M5u0VyTZyXyWz_ZS8uSVw@mail.gmail.com>
- <20140521225958.GB2467@roeck-us.net>
- <20140522071427.GA21230@kroah.com>
- <537DA5C0.2070609@roeck-us.net>
- <CA+HUmGhVhLoehT68=2fErGeYSjAC87Ria=5pXUNSpYLwdpXc2w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+HUmGhVhLoehT68=2fErGeYSjAC87Ria=5pXUNSpYLwdpXc2w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 May 2014 13:58:30 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuQLAAI6flNbsFZY/2dsb2JhbABZgwerCgoFAYM6lwGBDRd0glMTHCMYgQIkE4hFAdcOhVWIeYRHAQOPP4oxAYsXiA+DOjs
+Date: Thu, 22 May 2014 19:58:27 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1 linux-next] FS/HFSPLUS: fix pr_foo() and hfs_dbg formats
+Message-Id: <20140522195827.d09991a0c3b060802c9dea1c@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 09:19:40AM -0700, Francesco Ruggeri wrote:
-> Aborting a search does not sound like a correct solution.
-> How does a higher level user (eg for_each_pci_dev) know that a search
-> was aborted and decide whether it should try again, assuming it would
-> be ok repeating the action on the devices visited the first time?
-> 
-Agreed, it is less than desirable.
 
-I would consider this to be a secondary problem, though, the immediate
-problem being the crash. One possible solution might be to have the various
-functions return error codes (ERR_PTR), but that would be quite invasive as
-well. I really think we need input from Greg and, if the solution touches
-the PCI subsystem, from Bjorn Helgaas to find an acceptable solution
-to that problem.
+Suggested-By: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/hfsplus/extents.c | 7 +++----
+ fs/hfsplus/super.c   | 3 ++-
+ fs/hfsplus/xattr.c   | 2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-Guenter
+diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
+index a09fcb6..feca524 100644
+--- a/fs/hfsplus/extents.c
++++ b/fs/hfsplus/extents.c
+@@ -436,10 +436,9 @@ int hfsplus_file_extend(struct inode *inode, bool zeroout)
+ 	if (sbi->alloc_file->i_size * 8 <
+ 	    sbi->total_blocks - sbi->free_blocks + 8) {
+ 		/* extend alloc file */
+-		pr_err("extend alloc file! "
+-				"(%llu,%u,%u)\n",
+-			sbi->alloc_file->i_size * 8,
+-			sbi->total_blocks, sbi->free_blocks);
++		pr_err("extend alloc file! (%llu,%u,%u)\n",
++		       sbi->alloc_file->i_size * 8,
++		       sbi->total_blocks, sbi->free_blocks);
+ 		return -ENOSPC;
+ 	}
+ 
+diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
+index dcb4741..593af2f 100644
+--- a/fs/hfsplus/super.c
++++ b/fs/hfsplus/super.c
+@@ -131,9 +131,10 @@ static int hfsplus_system_write_inode(struct inode *inode)
+ 	hfsplus_inode_write_fork(inode, fork);
+ 	if (tree) {
+ 		int err = hfs_btree_write(tree);
++
+ 		if (err) {
+ 			pr_err("b-tree write err: %d, ino %lu\n",
+-					err, inode->i_ino);
++			       err, inode->i_ino);
+ 			return err;
+ 		}
+ 	}
+diff --git a/fs/hfsplus/xattr.c b/fs/hfsplus/xattr.c
+index aab093c..744e261 100644
+--- a/fs/hfsplus/xattr.c
++++ b/fs/hfsplus/xattr.c
+@@ -70,7 +70,7 @@ static void hfsplus_init_header_node(struct inode *attr_file,
+ 	loff_t tmp;
+ 
+ 	hfs_dbg(ATTR_MOD, "init_hdr_attr_file: clump %u, node_size %u\n",
+-				clump_size, node_size);
++		clump_size, node_size);
+ 
+ 	/* The end of the node contains list of record offsets */
+ 	rec_offsets = (__be16 *)(buf + node_size);
+-- 
+1.9.1
 
-> Francesco
-> 
-> 
-> On Thu, May 22, 2014 at 12:22 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On 05/22/2014 12:14 AM, Greg Kroah-Hartmann wrote:
-> >>
-> >> On Wed, May 21, 2014 at 03:59:58PM -0700, Guenter Roeck wrote:
-> >>>
-> >>> On Wed, May 21, 2014 at 01:04:04PM -0700, Francesco Ruggeri wrote:
-> >>>>
-> >>>> I have been using an x86 platform.
-> >>>> When I started working on it I got early crashes until I added the
-> >>>> check for p not NULL in
-> >>>>
-> >>>> +void bus_release_device(struct device *dev)
-> >>>> +{
-> >>>> + struct device_private *p = dev->p;
-> >>>> +
-> >>>> + if (p && klist_node_attached(&p->knode_bus))
-> >>>> + klist_put_last(&p->knode_bus);
-> >>>> +}
-> >>>> +
-> >>>>
-> >>>> Maybe on powerpc *p is overriden between device_del and device_release?
-> >>>>
-> >>>> Or maybe some of the BUG_ONs in the patch? The ones on knode_dead are
-> >>>> treated as WARN_ONs in the current klist code.
-> >>>> The one in BUG_ON(!klist_dec_and_del(n)); is new, and in my tests I
-> >>>> ran into it without the second patch (but only when I ran my module
-> >>>> and tests).
-> >>>>
-> >>> Hi Francesco,
-> >>>
-> >>> I replaced the BUG_ON with WARN_ON; still crashes.
-> >>>
-> >>> Anyway, the problem seems to be known. I found two related exchanges.
-> >>>
-> >>> [1] describes pretty much the same problem. I don't see if/where it was
-> >>> ever fixed, though.
-> >>>
-> >>> [2] is a patch to fix the problem. It did not apply cleanly to 3.14,
-> >>> so I had to make some adjustments in klist_iter_init_node. Resulting
-> >>> patch is below. With this patch, the problem is gone. It is not perfect,
-> >>> as it aborts the loop if it encounters a deleted kobject, but it is
-> >>> better
-> >>> than nothing. Unfortunately, the patch never made it upstream; no idea
-> >>> why.
-> >>> Copying the author and Greg to get additional feedback.
-> >>>
-> >>> Guenter
-> >>>
-> >>> [1] https://lkml.org/lkml/2008/10/26/79
-> >>> [2] https://lkml.org/lkml/2012/4/16/218
-> >>
-> >>
-> >> 2 years ago?  I have no idea what was up with that, sorry...
-> >>
-> >
-> > Ok, but do you have comments on the patch itself in its current version ?
-> >
-> > Guenter
-> >
-> 
