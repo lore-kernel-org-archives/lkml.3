@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaEVLov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 07:44:51 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:39858 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875AbaEVLou (ORCPT
+	id S1754689AbaEVLrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 07:47:45 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:51386 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118AbaEVLrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 07:44:50 -0400
+	Thu, 22 May 2014 07:47:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        Christophe Kerello <christophe.kerello@st.com>,
+        computersforpeace@gmail.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 09/10] mtd: st_spi_fsm: Provide mask to obtain correct boot device pins
+Date: Thu, 22 May 2014 13:47:07 +0200
+Message-ID: <4231397.Nn7Rm5jh2O@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400757848-18075-10-git-send-email-lee.jones@linaro.org>
+References: <1400757848-18075-1-git-send-email-lee.jones@linaro.org> <1400757848-18075-10-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <537DD2C0.4060802@samsung.com>
-References: <1400604211-9447-1-git-send-email-t.figa@samsung.com>
-	<1400604211-9447-4-git-send-email-t.figa@samsung.com>
-	<537D8788.8030904@linaro.org>
-	<537DD2C0.4060802@samsung.com>
-Date: Thu, 22 May 2014 17:14:49 +0530
-Message-ID: <CAHbNUh2gkpV-rt6S+-bUmFvYAuK_HNoXfyOStwYe29sZMJonUw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] clk: samsung: Add driver to control CLKOUT line on
- Exynos SoCs
-From: Tushar Behera <tushar.behera@linaro.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:aqKdLyeEGQCuLn9aOR8eX1Sv2YLydVdOs4JecigpKTq
+ oJTuG6Itft+47OS3UQQgqqCgH5lKjuMy7t/TEsVf8Ss6uzdVhK
+ NZxKV5HhgaxyZpLjQYN54mH/uvfNzi/3Q2qTygbCC6z3n+jvLT
+ yRKrwtRYpvg7RaKj/7cPSlXfEMpyE3vD+Xn13NZkdrGGToyIp5
+ Aq6TipTqo1ZffP7ManUDC52Y6NuMcDvNzbDkUFSY5a7c4QL/n9
+ +swjlEfvqW5vvpnC+SjFhbqbXLaXueVJgKp85XLUxzmLmVcVGh
+ NjO6YbPqYah0AbS/wDWOrKmPb8dMhpizEQ/TXhY/JwdgozTjv7
+ ENGYYVSzKWMuYe0+hxSo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 May 2014 16:04, Tomasz Figa <t.figa@samsung.com> wrote:
-> On 22.05.2014 07:13, Tushar Behera wrote:
->> On 05/20/2014 10:13 PM, Tomasz Figa wrote:
->>> This patch introduces a driver that handles configuration of CLKOUT pin
->>> of Exynos SoCs that can be used to output certain clocks from inside of
->>> the SoC to a dedicated output pin.
->>>
->>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->>> ---
->>>  .../devicetree/bindings/arm/samsung/pmu.txt        |  30 ++++
->>>  drivers/clk/samsung/Makefile                       |   1 +
->>>  drivers/clk/samsung/clk-exynos-clkout.c            | 153 +++++++++++++++++++++
->>>  3 files changed, 184 insertions(+)
->>>  create mode 100644 drivers/clk/samsung/clk-exynos-clkout.c
->>>
->>
->> [ ... ]
->>
->>> +    clkout->clk_table[0] = clk_register_composite(NULL, "clkout",
->>> +                            parent_names, parent_count, &clkout->mux.hw,
->>> +                            &clk_mux_ops, NULL, NULL, &clkout->gate.hw,
->>> +                            &clk_gate_ops, CLK_SET_RATE_PARENT
->>> +                            | CLK_SET_RATE_NO_REPARENT);
->>
->> Would you please remove CLK_SET_RATE_NO_REPARENT flag from here? Let me
->> know if you have reservations against this.
->
-> The problem with clock reparenting is that there are certain parent
-> clocks of CLKOUT, rate of which changes at runtime, e.g. clocks derived
-> from APLL or bus clocks, which can be reconfigured by cpufreq or devfreq.
->
+On Thursday 22 May 2014 12:24:07 Lee Jones wrote:
+> +       /* Mask to apply on boot_device_reg */
+> +       ret = of_property_read_u32(np, "st,boot-device-msk", &boot_device_msk);
+> +       if (ret)
+> +               goto boot_device_fail;
+> +
+> 
 
-+CC: Sylwester Nawrocki
+The binding defines this property as "optional", but the driver fails
+here if it's not provided. I suggest you add a default value here so you
+can deal with existing dts. The default should be documented in
+the binding as well.
 
-Okay. But in cases where there is only 1 valid parent clock provided
-through DT (at the moment for Exynos5250/Exynos5420), would it be safe
-to set that clock as the parent of CLKOUT? Otherwise, this clock is
-not usable ATM.
-
->>
->> With RFC patches, I am able to do a clk_set_rate() on this clock to
->> get a 24MHz output to the codec clock. With this flag set, I again have
->> to rely on the default value set to this register in bootloader.
->>
->
-> This problem should be handled by initializing clocks from DT. I'm not
-> sure why it hasn't been implemented yet...
-
-I would be happy to get it done that way. I can see a patch from
-Sylwester regarding this, but there hasn't been a conclusion as of
-yet.
-
-https://lkml.org/lkml/2014/4/9/173
-
-Thanks,
--- 
-Tushar Behera
+	Arnd
