@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaEVWPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 18:15:22 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:43965 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaEVWPU (ORCPT
+	id S1751618AbaEVWSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 18:18:15 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39023 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923AbaEVWSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 18:15:20 -0400
+	Thu, 22 May 2014 18:18:14 -0400
+Message-ID: <537E77A4.908@codeaurora.org>
+Date: Thu, 22 May 2014 15:18:12 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20140520180159.3a70193c@canb.auug.org.au>
-References: <20140520180159.3a70193c@canb.auug.org.au>
-Date: Fri, 23 May 2014 00:15:20 +0200
-Message-ID: <CACRpkdY9taDGRKj_ivkcYaHu+Jz8LnVDt-QQSntkwrcBuLitHA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the mfd-lj tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Lee Jones <lee.jones@linaro.org>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Christopher Covington <cov@codeaurora.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [RFC] ARM: tty: Move HVC DCC assembly to arch/arm
+References: <1382120064-2459-1-git-send-email-cov@codeaurora.org> <52617F22.6030900@codeaurora.org> <537E74C1.7020509@codeaurora.org>
+In-Reply-To: <537E74C1.7020509@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 10:01 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> drivers/mfd/stmpe.c: In function 'stmpe_irq_init':
-> drivers/mfd/stmpe.c:1000:15: error: 'struct stmpe' has no member named 'irq_base'
->    base = stmpe->irq_base;
->                ^
+On 05/22/14 15:05, Christopher Covington wrote:
+> Hi Stephen,
 >
-> Caused by commit 3ba1d516d5fe ("mfd: stmpe: root out static GPIO and
-> IRQ assignments").
+> On 10/18/2013 02:34 PM, Stephen Boyd wrote:
+>> On 10/18/13 11:14, Christopher Covington wrote:
+>>> Put architecture-specific assembly code where it belongs,
+>>> allowing for support of additional architectures such as arm64 in
+>>> the future.
+>> Do you have that patch too? There was also a patch a year ago to add
+>> armv5/v4 support to this driver. Maybe we can resurrect that too.
+> I still haven't gotten around to testing that one.
 
-Some mishap in merging these patches I think. I don't have that
-line in my branch with the latest patches, I'll get the proper
-versions to Lee somehow.
+It would be nice if that patch was sent along with this one, or if you
+have some armv8 patch that works too. This patch by itself doesn't seem
+too useful because we're just moving code around in preparation for
+supporting this driver on multiple arches.
 
-> This is exactly the same error and commit I reported against the gpio
-> tree on Friday.  Why has it come back?
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-It is supposed to come through both trees but I took the branch
-out of GPIO after the initial troubles, but it seems to remain in
-MFD.
-
-Yours,
-Linus Walleij
