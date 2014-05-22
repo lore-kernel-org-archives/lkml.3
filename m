@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbaEVCeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 22:34:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51751 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaEVCeO (ORCPT
+	id S1752501AbaEVCfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 22:35:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44867 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073AbaEVCfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 22:34:14 -0400
-Date: Wed, 21 May 2014 19:33:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 0/4] pagecache scanning with /proc/kpagecache
-Message-Id: <20140521193336.5df90456.akpm@linux-foundation.org>
-In-Reply-To: <537d5ee4.4914e00a.5672.ffff85d5SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <1400639194-3743-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<20140521154250.95bc3520ad8d192d95efe39b@linux-foundation.org>
-	<537d5ee4.4914e00a.5672.ffff85d5SMTPIN_ADDED_BROKEN@mx.google.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 21 May 2014 22:35:15 -0400
+Message-ID: <537D6244.6040106@oracle.com>
+Date: Wed, 21 May 2014 22:34:44 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: spinlock recursion in migrate_swap_stop
+References: <5371122D.6020605@oracle.com> <537AB86B.4020901@oracle.com> <20140520110431.GX2485@laptop.programming.kicks-ass.net> <537B52BD.1080807@oracle.com> <537CA54A.8030408@oracle.com> <20140521131948.GF2485@laptop.programming.kicks-ass.net> <20140521164959.GI5226@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140521164959.GI5226@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 May 2014 22:19:55 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On 05/21/2014 12:49 PM, Peter Zijlstra wrote:
+> On Wed, May 21, 2014 at 03:19:48PM +0200, Peter Zijlstra wrote:
+>> > On Wed, May 21, 2014 at 09:08:26AM -0400, Sasha Levin wrote:
+>>> > > +++ b/kernel/sched/core.c
+>>> > > @@ -1154,6 +1156,7 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
+>>> > >                 goto out;
+>>> > > 
+>>> > >         trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
+>>> > > +       BUG_ON(cur == p);
+>>> > >         ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
+>>> > > 
+>>> > >  out:
+>>> > > 
+>>> > > 
+>>> > > Which seems to get hit. This sounds like a race with task moving to
+>>> > > other cpu maybe?
+>> > 
+>> > Oi, good call that, lemme go stare.
+> I think something simple like this should be sufficient to avoid the
+> problem of selecting oneself as a flip target.
 
-> > A much nicer interface would be for us to (finally!) implement
-> > fincore(), perhaps with an enhanced per-present-page payload which
-> > presents the info which you need (although we don't actually know what
-> > that info is!).
-> 
-> page/pfn of each page slot and its page cache tag as shown in patch 4/4.
-> 
-> > This would require open() - it appears to be a requirement that the
-> > caller not open the file, but no reason was given for this.
-> > 
-> > Requiring open() would address some of the obvious security concerns,
-> > but it will still be possible for processes to poke around and get some
-> > understanding of the behaviour of other processes.  Careful attention
-> > should be paid to this aspect of any such patchset.
-> 
-> Sorry if I missed your point, but this interface defines fixed mapping
-> between file position in /proc/kpagecache and in-file page offset of
-> the target file. So we do not need to use seq_file mechanism, that's
-> why open() is not defined and default one is used.
-> The same thing is true for /proc/{kpagecount,kpageflags}, from which
-> I copied/pasted some basic code.
+Why would that happen in the first place?
 
-I think you did miss my point ;) Please do a web search for fincore -
-it's a syscall similar to mincore(), only it queries pagecache:
-fincore(int fd, loff_t offset, ...).  In its simplest form it queries
-just for present/absent, but we could increase the query payload to
-incorporate additional per-page info.
 
-It would take a lot of thought and discussion to nail down the
-fincore() interface (we've already tried a couple of times).  But
-unfortunately, fincore() is probably going to be implemented one day
-and it will (or at least could) make /proc/kpagecache obsolete.
-
+Thanks,
+Sasha
