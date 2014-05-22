@@ -1,188 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaEVGxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 02:53:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33556 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaEVGxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 02:53:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,885,1392192000"; 
-   d="scan'208";a="515855000"
-Message-ID: <537D9EBE.7030806@intel.com>
-Date: Thu, 22 May 2014 09:52:46 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752019AbaEVG71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 02:59:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52910 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196AbaEVG70 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 02:59:26 -0400
+Date: Thu, 22 May 2014 08:59:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: spinlock recursion in migrate_swap_stop
+Message-ID: <20140522065915.GJ30445@twins.programming.kicks-ass.net>
+References: <5371122D.6020605@oracle.com>
+ <537AB86B.4020901@oracle.com>
+ <20140520110431.GX2485@laptop.programming.kicks-ass.net>
+ <537B52BD.1080807@oracle.com>
+ <537CA54A.8030408@oracle.com>
+ <20140521131948.GF2485@laptop.programming.kicks-ass.net>
+ <20140521164959.GI5226@laptop.programming.kicks-ass.net>
+ <537D6244.6040106@oracle.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: ye olde task_ctx_sched_out trace.
-References: <20140521150613.GA28702@redhat.com> <20140521151655.GG2485@laptop.programming.kicks-ass.net> <20140521153013.GG5226@laptop.programming.kicks-ass.net> <20140521153219.GH5226@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140521153219.GH5226@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ukxq3d9/SFe4Ri4s"
+Content-Disposition: inline
+In-Reply-To: <537D6244.6040106@oracle.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 06:32 PM, Peter Zijlstra wrote:
-> On Wed, May 21, 2014 at 05:30:13PM +0200, Peter Zijlstra wrote:
->> A little something like so I suppose.
->>
->> ---
-> 
->> +void perf_event_exec(void)
->> +{
->> +	struct perf_event_context *ctx;
->> +	int ctxn;
->> +
->> +	rcu_read_lock();
->> +	for_each_task_context_nr(ctxn) {
->> +		ctx = task->perf_event_ctxp[ctxn];
-> 
-> s/task/current/
-> 
->> +		if (!ctx)
->> +			continue;
->> +
->> +		perf_event_enable_on_exec(ctx);
->> +	}
->> +	rcu_read_unlock();
->> +}
-> 
-> 
-> It would help if I pasted the one that actually compiles I suppose..
-> 
-> ---
->  fs/exec.c                  |  1 +
->  include/linux/perf_event.h |  1 +
->  kernel/events/core.c       | 28 ++++++++++++++++------------
->  3 files changed, 18 insertions(+), 12 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 476f3ebf437e..8d51d7ce3dcf 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -1111,6 +1111,7 @@ void setup_new_exec(struct linux_binprm * bprm)
->  		set_dumpable(current->mm, suid_dumpable);
->  
->  	set_task_comm(current, kbasename(bprm->filename));
-> +	perf_event_exec();
 
-Shouldn't that be the other way around i.e.
+--ukxq3d9/SFe4Ri4s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-+	perf_event_exec();
-	set_task_comm(current, kbasename(bprm->filename));
+On Wed, May 21, 2014 at 10:34:44PM -0400, Sasha Levin wrote:
+> On 05/21/2014 12:49 PM, Peter Zijlstra wrote:
+> > On Wed, May 21, 2014 at 03:19:48PM +0200, Peter Zijlstra wrote:
+> >> > On Wed, May 21, 2014 at 09:08:26AM -0400, Sasha Levin wrote:
+> >>> > > +++ b/kernel/sched/core.c
+> >>> > > @@ -1154,6 +1156,7 @@ int migrate_swap(struct task_struct *cur, s=
+truct task_struct *p)
+> >>> > >                 goto out;
+> >>> > >=20
+> >>> > >         trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
+> >>> > > +       BUG_ON(cur =3D=3D p);
+> >>> > >         ret =3D stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_s=
+wap_stop, &arg);
+> >>> > >=20
+> >>> > >  out:
+> >>> > >=20
+> >>> > >=20
+> >>> > > Which seems to get hit. This sounds like a race with task moving =
+to
+> >>> > > other cpu maybe?
+> >> >=20
+> >> > Oi, good call that, lemme go stare.
+> > I think something simple like this should be sufficient to avoid the
+> > problem of selecting oneself as a flip target.
+>=20
+> Why would that happen in the first place?
 
-Also what about flagging the comm event that corresponds to an exec e.g.
+We do all that with preemption enabled, because its big and expensive,
+so its entirely possible that current (env->p) got moved around while we
+were doing it, at which point we'll look at it as a possible dst, while
+its already our src.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 476f3eb..28d69a1 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1046,13 +1046,13 @@ EXPORT_SYMBOL_GPL(get_task_comm);
-  * so that a new one can be started
-  */
- 
--void set_task_comm(struct task_struct *tsk, const char *buf)
-+void __set_task_comm(struct task_struct *tsk, const char *buf, bool exec)
- {
- 	task_lock(tsk);
- 	trace_task_rename(tsk, buf);
- 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
- 	task_unlock(tsk);
--	perf_event_comm(tsk);
-+	perf_event_comm(tsk, exec);
- }
- 
- int flush_old_exec(struct linux_binprm * bprm)
-@@ -1110,7 +1110,7 @@ void setup_new_exec(struct linux_binprm * bprm)
- 	else
- 		set_dumpable(current->mm, suid_dumpable);
- 
--	set_task_comm(current, kbasename(bprm->filename));
-+	__set_task_comm(current, kbasename(bprm->filename), true);
- 
- 	/* Set the new mm task size. We have to do that late because it may
- 	 * depend on TIF_32BIT which is only updated in flush_thread() on
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index af6dcf1..26614312 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -694,7 +694,7 @@ extern struct perf_guest_info_callbacks *perf_guest_cbs;
- extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
- extern int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
- 
--extern void perf_event_comm(struct task_struct *tsk);
-+extern void perf_event_comm(struct task_struct *tsk, bool exec);
- extern void perf_event_fork(struct task_struct *tsk);
- 
- /* Callchains */
-@@ -801,7 +801,7 @@ static inline int perf_unregister_guest_info_callbacks
- (struct perf_guest_info_callbacks *callbacks)				{ return 0; }
- 
- static inline void perf_event_mmap(struct vm_area_struct *vma)		{ }
--static inline void perf_event_comm(struct task_struct *tsk)		{ }
-+static inline void perf_event_comm(struct task_struct *tsk, bool exec)	{ }
- static inline void perf_event_fork(struct task_struct *tsk)		{ }
- static inline void perf_event_init(void)				{ }
- static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 25f54c7..cadcf38 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2376,7 +2376,11 @@ extern long do_fork(unsigned long, unsigned long, unsigned long, int __user *, i
- struct task_struct *fork_idle(int);
- extern pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
- 
--extern void set_task_comm(struct task_struct *tsk, const char *from);
-+extern void __set_task_comm(struct task_struct *tsk, const char *from, bool exec);
-+static inline void set_task_comm(struct task_struct *tsk, const char *from)
-+{
-+	__set_task_comm(tsk, from, false);
-+}
- extern char *get_task_comm(char *to, struct task_struct *tsk);
- 
- #ifdef CONFIG_SMP
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index e3fc8f0..8ae875a 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -501,7 +501,12 @@ struct perf_event_mmap_page {
- #define PERF_RECORD_MISC_GUEST_KERNEL		(4 << 0)
- #define PERF_RECORD_MISC_GUEST_USER		(5 << 0)
- 
-+/*
-+ * PERF_RECORD_MISC_MMAP_DATA and PERF_RECORD_MISC_COMM_EXEC are used on
-+ * different events so can reuse the same bit position.
-+ */
- #define PERF_RECORD_MISC_MMAP_DATA		(1 << 13)
-+#define PERF_RECORD_MISC_COMM_EXEC		(1 << 13)
- /*
-  * Indicates that the content of PERF_SAMPLE_IP points to
-  * the actual instruction that triggered the event. See also
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ed50b09..760abd0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5067,7 +5067,7 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
- 		       NULL);
- }
- 
--void perf_event_comm(struct task_struct *task)
-+void perf_event_comm(struct task_struct *task, bool exec)
- {
- 	struct perf_comm_event comm_event;
- 	struct perf_event_context *ctx;
-@@ -5093,7 +5093,7 @@ void perf_event_comm(struct task_struct *task)
- 		.event_id  = {
- 			.header = {
- 				.type = PERF_RECORD_COMM,
--				.misc = 0,
-+				.misc = exec ? PERF_RECORD_MISC_COMM_EXEC : 0,
- 				/* .size */
- 			},
- 			/* .pid */
 
+
+--ukxq3d9/SFe4Ri4s
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfaBDAAoJEHZH4aRLwOS6cIgP/1sCWt0wxLdNzJ6EdB1msBLq
+irR5BEzFMbAJpIX7zMMYrombkJvq1+8Tp2A3CiIJrn0yZ+lHaGZaolKxW4wNyASF
+O312bhtY7NF7x2xB4H6wJjeTsTsonJpjRPDIU5L0NrFZ3RJl+uZlb2owjGjM61fG
+vPtFgwGoxHHE6bS7b96kVnGejMmdXgQXtDcjz2RfLrfNi+wuLOdXkJu840z9GFhI
+DQ4MW6tmKWPRHrCAawogRMskiACXJItvWSkoGqh0f0Z5mKxbPixresUw29TPYdZc
+bli9r1sSy7XImxk3DJ7t4O2ql1zilDqCd+3sXvK4KbCTx8i7RBUlkNiptbemDrBT
+XoPas3LrsKJLeHMss9U2R105KzrvmqE36kZKBpq0AXhgSSP18S6E5dDvyapTprEM
+EIqBBltf/8IrgYUYJsiHmCOWonTx8csthjy+fGUXeDeufJ3SQaa9X70q2ahYTNnn
+bvks92ZznKC6kx8Ju947RbHHhWDQym1DICQYawodwGGyJuad6RJOIzoYqQEM6z22
+dfPbNuQGZLtwa6BZ2WACBZSzFvVMFsz2OxgwWdAekC73b3opRFLMOQIM0UpHHpCs
+2Cmyc5niE0wv9mpoQxbl6/sMv8jrtFig/vy0ReSq81pYN8utnhwHWSwW6Sg3D8KE
+BKagYx9arajpv5ReEU3v
+=L8YP
+-----END PGP SIGNATURE-----
+
+--ukxq3d9/SFe4Ri4s--
