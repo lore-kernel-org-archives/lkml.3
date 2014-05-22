@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaEVADg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 20:03:36 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:45204 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaEVADf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 20:03:35 -0400
+	id S1753962AbaEVAGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 20:06:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37925 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101AbaEVAGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 20:06:03 -0400
+Date: Thu, 22 May 2014 02:05:58 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
+Message-ID: <20140522000558.GC29118@earth.universe>
+References: <1399739870-13526-1-git-send-email-sre@kernel.org>
+ <1399739870-13526-10-git-send-email-sre@kernel.org>
+ <20140514215503.GM27426@atomide.com>
+ <20140520003538.GD15793@atomide.com>
+ <20140521182513.GA26285@earth.universe>
+ <20140521184319.GL17417@atomide.com>
+ <20140521194527.GM17417@atomide.com>
+ <20140521215055.GA26362@earth.universe>
+ <20140521220807.GB14520@atomide.com>
 MIME-Version: 1.0
-In-Reply-To: <20140521235143.GC21575@pd.tnic>
-References: <CALCETrWA1X-X7W7MZn5eYEO-hxWWYk3APORmH-1dw=5ua1dG+A@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F3281189E@ORSMSX114.amr.corp.intel.com>
-	<CALCETrXMe_rvKBcZpGhodXO1WY44WHSyZM8OKQG-AXm=X0kMrw@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F3281198D@ORSMSX114.amr.corp.intel.com>
-	<CALCETrXxEAwJ33bF7FeRLeCbE7BfMn==OsFsoorW_NWFLxwuew@mail.gmail.com>
-	<20140521224816.GP25130@pd.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F32811B92@ORSMSX114.amr.corp.intel.com>
-	<CALCETrVfas7s_F1bFnJou=ymra5zmc3DTeiEm+DDjKJg+J=0qg@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F32811C5F@ORSMSX114.amr.corp.intel.com>
-	<CA+55aFwXTME_Ge53xKjyM35mVQ+gmvDPwTLa5kR5zAMnNTFSbQ@mail.gmail.com>
-	<20140521235143.GC21575@pd.tnic>
-Date: Thu, 22 May 2014 09:03:34 +0900
-X-Google-Sender-Auth: 7vUXMRKzukv01Ip1J-zW7RoCsYE
-Message-ID: <CA+55aFyD7wzt_Ev1yc3R+WnFNCBodGkEw5-qLsbhFMPQoFnEWw@mail.gmail.com>
-Subject: Re: [RFC] x86_64: A real proposal for iret-less return to kernel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Andy Lutomirski <luto@amacapital.net>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="/Uq4LBwYP4y1W6pO"
+Content-Disposition: inline
+In-Reply-To: <20140521220807.GB14520@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 8:51 AM, Borislav Petkov <bp@alien8.de> wrote:
->
-> Regardless, exceptions like MCE cannot be held pending and do pierce the
-> NMI handler on both.
 
-No, that's fine, if it's a thread-synchronous thing (ie a memory load
-that causes errors). But for NMI handlers, that is irrelevant: if the
-NMI code itself gets memory errors, the machine really is dead. Let's
-face it, we're going to panic and reboot, there's no other real
-alternative (other than the "just log it, pray, and continue in
-unstable mode", which is actually a perfectly valid alternative in
-many cases, since people don't necessarily care deeply and have
-written their distributed algorithms to not rely on any particular
-thread too  much, and will verify the end results anyway).
+--/Uq4LBwYP4y1W6pO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problem is literally the non-synchronous things (like another CPU
-having problems) where things like broadcast will actually turn a
-non-thread-synchronous thing into problems for other CPU's. Then, a
-user-mode memory access error (that we *can* recover from, perhaps by
-killing the process and isolating the page) can turn into a
-unrecoverable error on another CPU because it got interrupted at a
-point where it really couldn't afford to be interrupted.
+Hi,
 
-It appears Intel is fixing their braindamage.
+On Wed, May 21, 2014 at 03:08:07PM -0700, Tony Lindgren wrote:
+> * Sebastian Reichel <sre@kernel.org> [140521 14:51]:
+> > On Wed, May 21, 2014 at 12:45:28PM -0700, Tony Lindgren wrote:
+> >=20
+> > Right. The only documentation of the SSI module is existing
+> > code sent by Carlos / included in the maemo kernel.
+>=20
+> That's probably better than any documentation though :)
 
-                      Linus
+Both have their advantages. Just with the code its hard to add
+features like context loss checks.
+
+> > > > It's probably something with the sysc or idlemodes that
+> > > > keeps things from idling. Maybe wrong address? Or wrong
+> > > > flags? I'm pretty sure it was the first .dts patch out of
+> > > > these two as the second one alone did not apply.
+> > >=20
+> > > Hmm yeah below is probably how it should be, does this
+> > > work for you? With this fix applied and your ssi dts
+> > > patches n900 keeps hitting off-idle for me.
+> >=20
+> > I can confirm, that the N900 hits idle states when the DT
+> > patch and the hwmod patch is applied. I have not actually
+> > tested if it also works without your hwmod patch.
+> >=20
+> > There are still problems with the idle state if the driver is
+> > actually loaded (and I see 100% runtime pm usage in powertop),
+> > but that can be fixed later.
+> >=20
+> > Feel free to add Tested-by/Acked-By to the hwmod patch.
+>=20
+> OK thanks for testing.
+
+You are welcome.
+
+> I'll apply your dts changes as soon as I have an ack from Paul on
+> the hwmod changes. Probably best to queue them together to avoid
+> PM breaking.
+
+Ok. Sounds legit.
+
+-- Sebastian
+
+--/Uq4LBwYP4y1W6pO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTfT9mAAoJENju1/PIO/qaBJ8P+wYxFppWYeqJc8XYemc/Dxf4
+qVLjw0FD69M2ElkTkVekQ+QT6AxWeGy8g+kTKaov3p1tkyoPGQxGjcFejI63/giM
+Q+vGv1ojv3sMzx9gNFFVc7tgfqudAL+OWUJdFEdGeYwwvS4WqcmqM81a87FESo/C
+BZIl5wcaXOa+kVu3aLAqPS21z3qoMvrleHcoGKOzRGHwP6J06iq8B3x99GMHVsEX
+V19kWoyN7lIPxaLGBfjARcEN6AuKsJ4npW191qVbYWHOxyltlb+6nkgDAMu5ZFv7
+Z7iTP2GcFpV6+Bgbqyx5T8kDFq95QzE17uM6aAKrlLO/W0zy/B/bAeVTx0R0J3Ki
+dTyGvP8yl5uOkxB5Ozcb9yQ0iiN21WWMEBS+Q5lWDdrJkjaFyliUpFoZllyZSOzS
+ruorXFAp3FuLdk0RIQK10DidXriPA/pXPVI46mK6wKNsyQk8OuT29MGz2l7DjhOu
+oRC5M3j2Xkdc1zwfzz2XLVAc/YuJ6fQC4C5CwbSovlmeLYz47bLYv0EKOe6ugb3Z
+3JsW4XkheBWBj4hi2uHfieMJHVdVu1LvCxhA05841ipSAiDf4T0+3vOEpmC0TtHK
+UeCNfR9Wp/JYUyI7CMBlDQfgDlesnBzHCnNSCqtP9KP5kHlfa9ymM426TDTy+xIw
+aJ5eSo79+niU5E83dlfa
+=LoPK
+-----END PGP SIGNATURE-----
+
+--/Uq4LBwYP4y1W6pO--
