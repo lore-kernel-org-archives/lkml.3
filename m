@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaEVDZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 23:25:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46238 "EHLO
+	id S1753415AbaEVDZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 23:25:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46252 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaEVDZd (ORCPT
+	with ESMTP id S1751017AbaEVDZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 23:25:33 -0400
-Message-Id: <20140522031949.836503239@linutronix.de>
+	Wed, 21 May 2014 23:25:40 -0400
+Message-Id: <20140522031950.044848781@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Thu, 22 May 2014 03:25:42 -0000
+Date: Thu, 22 May 2014 03:25:50 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [patch 2/6] rtmutex: Remove builtin tester
+Subject: [patch 4/6] rtmutex: Confine deadlock logic to futex
 References: <20140522031841.797415507@linutronix.de>
-Content-Disposition: inline; filename=rtmutex-remove-tester.patch
+Content-Disposition: inline;
+ filename=rtmutex-confine-deadlock-logic-to-futex.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,2145 +26,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tester has been broken for quite some time. It's possible to fix
-it, but the main reason for having it in the kernel was the lock steal
-mechanism in the rtmutex code. That's gone, so we can implement a
-stateful correctness tester just via the futex syscall.
+The builtin tester is gone,, so the deadlock logic is now only
+required for futexes.
+
+Remove the extra arguments for the public functions and also for the
+futex specific ones which get always called with deadlock detection
+enabled.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/locking/Makefile                               |    1 
- kernel/locking/rtmutex-tester.c                       |  420 ------------------
- kernel/locking/rtmutex.c                              |    2 
- kernel/locking/rtmutex_common.h                       |   22 
- lib/Kconfig.debug                                     |    6 
- scripts/rt-tester/check-all.sh                        |   22 
- scripts/rt-tester/rt-tester.py                        |  220 ---------
- scripts/rt-tester/t2-l1-2rt-sameprio.tst              |   94 ----
- scripts/rt-tester/t2-l1-pi.tst                        |   77 ---
- scripts/rt-tester/t2-l1-signal.tst                    |   72 ---
- scripts/rt-tester/t2-l2-2rt-deadlock.tst              |   84 ---
- scripts/rt-tester/t3-l1-pi-1rt.tst                    |   87 ---
- scripts/rt-tester/t3-l1-pi-2rt.tst                    |   88 ---
- scripts/rt-tester/t3-l1-pi-3rt.tst                    |   87 ---
- scripts/rt-tester/t3-l1-pi-signal.tst                 |   93 ---
- scripts/rt-tester/t3-l1-pi-steal.tst                  |   91 ---
- scripts/rt-tester/t3-l2-pi.tst                        |   87 ---
- scripts/rt-tester/t4-l2-pi-deboost.tst                |  118 -----
- scripts/rt-tester/t5-l4-pi-boost-deboost-setsched.tst |  178 -------
- scripts/rt-tester/t5-l4-pi-boost-deboost.tst          |  138 -----
- 20 files changed, 1 insertion(+), 1986 deletions(-)
+ include/linux/rtmutex.h         |    6 +---
+ kernel/futex.c                  |    9 ++----
+ kernel/locking/rtmutex.c        |   54 +++++++++++++++++++++-------------------
+ kernel/locking/rtmutex_common.h |    7 ++---
+ 4 files changed, 37 insertions(+), 39 deletions(-)
 
-Index: tip/kernel/locking/Makefile
+Index: tip/include/linux/rtmutex.h
 ===================================================================
---- tip.orig/kernel/locking/Makefile
-+++ tip/kernel/locking/Makefile
-@@ -18,7 +18,6 @@ obj-$(CONFIG_SMP) += lglock.o
- obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
- obj-$(CONFIG_RT_MUTEXES) += rtmutex.o
- obj-$(CONFIG_DEBUG_RT_MUTEXES) += rtmutex-debug.o
--obj-$(CONFIG_RT_MUTEX_TESTER) += rtmutex-tester.o
- obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
- obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
- obj-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
-Index: tip/kernel/locking/rtmutex-tester.c
+--- tip.orig/include/linux/rtmutex.h
++++ tip/include/linux/rtmutex.h
+@@ -90,11 +90,9 @@ extern void __rt_mutex_init(struct rt_mu
+ extern void rt_mutex_destroy(struct rt_mutex *lock);
+ 
+ extern void rt_mutex_lock(struct rt_mutex *lock);
+-extern int rt_mutex_lock_interruptible(struct rt_mutex *lock,
+-						int detect_deadlock);
++extern int rt_mutex_lock_interruptible(struct rt_mutex *lock);
+ extern int rt_mutex_timed_lock(struct rt_mutex *lock,
+-					struct hrtimer_sleeper *timeout,
+-					int detect_deadlock);
++			       struct hrtimer_sleeper *timeout);
+ 
+ extern int rt_mutex_trylock(struct rt_mutex *lock);
+ 
+Index: tip/kernel/futex.c
 ===================================================================
---- tip.orig/kernel/locking/rtmutex-tester.c
-+++ /dev/null
-@@ -1,420 +0,0 @@
--/*
-- * RT-Mutex-tester: scriptable tester for rt mutexes
-- *
-- * started by Thomas Gleixner:
-- *
-- *  Copyright (C) 2006, Timesys Corp., Thomas Gleixner <tglx@timesys.com>
-- *
-- */
--#include <linux/device.h>
--#include <linux/kthread.h>
--#include <linux/export.h>
--#include <linux/sched.h>
--#include <linux/sched/rt.h>
--#include <linux/spinlock.h>
--#include <linux/timer.h>
--#include <linux/freezer.h>
--#include <linux/stat.h>
--
--#include "rtmutex.h"
--
--#define MAX_RT_TEST_THREADS	8
--#define MAX_RT_TEST_MUTEXES	8
--
--static spinlock_t rttest_lock;
--static atomic_t rttest_event;
--
--struct test_thread_data {
--	int			opcode;
--	int			opdata;
--	int			mutexes[MAX_RT_TEST_MUTEXES];
--	int			event;
--	struct device		dev;
--};
--
--static struct test_thread_data thread_data[MAX_RT_TEST_THREADS];
--static struct task_struct *threads[MAX_RT_TEST_THREADS];
--static struct rt_mutex mutexes[MAX_RT_TEST_MUTEXES];
--
--enum test_opcodes {
--	RTTEST_NOP = 0,
--	RTTEST_SCHEDOT,		/* 1 Sched other, data = nice */
--	RTTEST_SCHEDRT,		/* 2 Sched fifo, data = prio */
--	RTTEST_LOCK,		/* 3 Lock uninterruptible, data = lockindex */
--	RTTEST_LOCKNOWAIT,	/* 4 Lock uninterruptible no wait in wakeup, data = lockindex */
--	RTTEST_LOCKINT,		/* 5 Lock interruptible, data = lockindex */
--	RTTEST_LOCKINTNOWAIT,	/* 6 Lock interruptible no wait in wakeup, data = lockindex */
--	RTTEST_LOCKCONT,	/* 7 Continue locking after the wakeup delay */
--	RTTEST_UNLOCK,		/* 8 Unlock, data = lockindex */
--	/* 9, 10 - reserved for BKL commemoration */
--	RTTEST_SIGNAL = 11,	/* 11 Signal other test thread, data = thread id */
--	RTTEST_RESETEVENT = 98,	/* 98 Reset event counter */
--	RTTEST_RESET = 99,	/* 99 Reset all pending operations */
--};
--
--static int handle_op(struct test_thread_data *td, int lockwakeup)
--{
--	int i, id, ret = -EINVAL;
--
--	switch(td->opcode) {
--
--	case RTTEST_NOP:
--		return 0;
--
--	case RTTEST_LOCKCONT:
--		td->mutexes[td->opdata] = 1;
--		td->event = atomic_add_return(1, &rttest_event);
--		return 0;
--
--	case RTTEST_RESET:
--		for (i = 0; i < MAX_RT_TEST_MUTEXES; i++) {
--			if (td->mutexes[i] == 4) {
--				rt_mutex_unlock(&mutexes[i]);
--				td->mutexes[i] = 0;
--			}
--		}
--		return 0;
--
--	case RTTEST_RESETEVENT:
--		atomic_set(&rttest_event, 0);
--		return 0;
--
--	default:
--		if (lockwakeup)
--			return ret;
--	}
--
--	switch(td->opcode) {
--
--	case RTTEST_LOCK:
--	case RTTEST_LOCKNOWAIT:
--		id = td->opdata;
--		if (id < 0 || id >= MAX_RT_TEST_MUTEXES)
--			return ret;
--
--		td->mutexes[id] = 1;
--		td->event = atomic_add_return(1, &rttest_event);
--		rt_mutex_lock(&mutexes[id]);
--		td->event = atomic_add_return(1, &rttest_event);
--		td->mutexes[id] = 4;
--		return 0;
--
--	case RTTEST_LOCKINT:
--	case RTTEST_LOCKINTNOWAIT:
--		id = td->opdata;
--		if (id < 0 || id >= MAX_RT_TEST_MUTEXES)
--			return ret;
--
--		td->mutexes[id] = 1;
--		td->event = atomic_add_return(1, &rttest_event);
--		ret = rt_mutex_lock_interruptible(&mutexes[id], 0);
--		td->event = atomic_add_return(1, &rttest_event);
--		td->mutexes[id] = ret ? 0 : 4;
--		return ret ? -EINTR : 0;
--
--	case RTTEST_UNLOCK:
--		id = td->opdata;
--		if (id < 0 || id >= MAX_RT_TEST_MUTEXES || td->mutexes[id] != 4)
--			return ret;
--
--		td->event = atomic_add_return(1, &rttest_event);
--		rt_mutex_unlock(&mutexes[id]);
--		td->event = atomic_add_return(1, &rttest_event);
--		td->mutexes[id] = 0;
--		return 0;
--
--	default:
--		break;
--	}
--	return ret;
--}
--
--/*
-- * Schedule replacement for rtsem_down(). Only called for threads with
-- * PF_MUTEX_TESTER set.
-- *
-- * This allows us to have finegrained control over the event flow.
-- *
-- */
--void schedule_rt_mutex_test(struct rt_mutex *mutex)
--{
--	int tid, op, dat;
--	struct test_thread_data *td;
--
--	/* We have to lookup the task */
--	for (tid = 0; tid < MAX_RT_TEST_THREADS; tid++) {
--		if (threads[tid] == current)
--			break;
--	}
--
--	BUG_ON(tid == MAX_RT_TEST_THREADS);
--
--	td = &thread_data[tid];
--
--	op = td->opcode;
--	dat = td->opdata;
--
--	switch (op) {
--	case RTTEST_LOCK:
--	case RTTEST_LOCKINT:
--	case RTTEST_LOCKNOWAIT:
--	case RTTEST_LOCKINTNOWAIT:
--		if (mutex != &mutexes[dat])
--			break;
--
--		if (td->mutexes[dat] != 1)
--			break;
--
--		td->mutexes[dat] = 2;
--		td->event = atomic_add_return(1, &rttest_event);
--		break;
--
--	default:
--		break;
--	}
--
--	schedule();
--
--
--	switch (op) {
--	case RTTEST_LOCK:
--	case RTTEST_LOCKINT:
--		if (mutex != &mutexes[dat])
--			return;
--
--		if (td->mutexes[dat] != 2)
--			return;
--
--		td->mutexes[dat] = 3;
--		td->event = atomic_add_return(1, &rttest_event);
--		break;
--
--	case RTTEST_LOCKNOWAIT:
--	case RTTEST_LOCKINTNOWAIT:
--		if (mutex != &mutexes[dat])
--			return;
--
--		if (td->mutexes[dat] != 2)
--			return;
--
--		td->mutexes[dat] = 1;
--		td->event = atomic_add_return(1, &rttest_event);
--		return;
--
--	default:
--		return;
--	}
--
--	td->opcode = 0;
--
--	for (;;) {
--		set_current_state(TASK_INTERRUPTIBLE);
--
--		if (td->opcode > 0) {
--			int ret;
--
--			set_current_state(TASK_RUNNING);
--			ret = handle_op(td, 1);
--			set_current_state(TASK_INTERRUPTIBLE);
--			if (td->opcode == RTTEST_LOCKCONT)
--				break;
--			td->opcode = ret;
--		}
--
--		/* Wait for the next command to be executed */
--		schedule();
--	}
--
--	/* Restore previous command and data */
--	td->opcode = op;
--	td->opdata = dat;
--}
--
--static int test_func(void *data)
--{
--	struct test_thread_data *td = data;
--	int ret;
--
--	current->flags |= PF_MUTEX_TESTER;
--	set_freezable();
--	allow_signal(SIGHUP);
--
--	for(;;) {
--
--		set_current_state(TASK_INTERRUPTIBLE);
--
--		if (td->opcode > 0) {
--			set_current_state(TASK_RUNNING);
--			ret = handle_op(td, 0);
--			set_current_state(TASK_INTERRUPTIBLE);
--			td->opcode = ret;
--		}
--
--		/* Wait for the next command to be executed */
--		schedule();
--		try_to_freeze();
--
--		if (signal_pending(current))
--			flush_signals(current);
--
--		if(kthread_should_stop())
--			break;
--	}
--	return 0;
--}
--
--/**
-- * sysfs_test_command - interface for test commands
-- * @dev:	thread reference
-- * @buf:	command for actual step
-- * @count:	length of buffer
-- *
-- * command syntax:
-- *
-- * opcode:data
-- */
--static ssize_t sysfs_test_command(struct device *dev, struct device_attribute *attr,
--				  const char *buf, size_t count)
--{
--	struct sched_param schedpar;
--	struct test_thread_data *td;
--	char cmdbuf[32];
--	int op, dat, tid, ret;
--
--	td = container_of(dev, struct test_thread_data, dev);
--	tid = td->dev.id;
--
--	/* strings from sysfs write are not 0 terminated! */
--	if (count >= sizeof(cmdbuf))
--		return -EINVAL;
--
--	/* strip of \n: */
--	if (buf[count-1] == '\n')
--		count--;
--	if (count < 1)
--		return -EINVAL;
--
--	memcpy(cmdbuf, buf, count);
--	cmdbuf[count] = 0;
--
--	if (sscanf(cmdbuf, "%d:%d", &op, &dat) != 2)
--		return -EINVAL;
--
--	switch (op) {
--	case RTTEST_SCHEDOT:
--		schedpar.sched_priority = 0;
--		ret = sched_setscheduler(threads[tid], SCHED_NORMAL, &schedpar);
--		if (ret)
--			return ret;
--		set_user_nice(current, 0);
--		break;
--
--	case RTTEST_SCHEDRT:
--		schedpar.sched_priority = dat;
--		ret = sched_setscheduler(threads[tid], SCHED_FIFO, &schedpar);
--		if (ret)
--			return ret;
--		break;
--
--	case RTTEST_SIGNAL:
--		send_sig(SIGHUP, threads[tid], 0);
--		break;
--
--	default:
--		if (td->opcode > 0)
--			return -EBUSY;
--		td->opdata = dat;
--		td->opcode = op;
--		wake_up_process(threads[tid]);
--	}
--
--	return count;
--}
--
--/**
-- * sysfs_test_status - sysfs interface for rt tester
-- * @dev:	thread to query
-- * @buf:	char buffer to be filled with thread status info
-- */
--static ssize_t sysfs_test_status(struct device *dev, struct device_attribute *attr,
--				 char *buf)
--{
--	struct test_thread_data *td;
--	struct task_struct *tsk;
--	char *curr = buf;
--	int i;
--
--	td = container_of(dev, struct test_thread_data, dev);
--	tsk = threads[td->dev.id];
--
--	spin_lock(&rttest_lock);
--
--	curr += sprintf(curr,
--		"O: %4d, E:%8d, S: 0x%08lx, P: %4d, N: %4d, B: %p, M:",
--		td->opcode, td->event, tsk->state,
--			(MAX_RT_PRIO - 1) - tsk->prio,
--			(MAX_RT_PRIO - 1) - tsk->normal_prio,
--		tsk->pi_blocked_on);
--
--	for (i = MAX_RT_TEST_MUTEXES - 1; i >=0 ; i--)
--		curr += sprintf(curr, "%d", td->mutexes[i]);
--
--	spin_unlock(&rttest_lock);
--
--	curr += sprintf(curr, ", T: %p, R: %p\n", tsk,
--			mutexes[td->dev.id].owner);
--
--	return curr - buf;
--}
--
--static DEVICE_ATTR(status, S_IRUSR, sysfs_test_status, NULL);
--static DEVICE_ATTR(command, S_IWUSR, NULL, sysfs_test_command);
--
--static struct bus_type rttest_subsys = {
--	.name = "rttest",
--	.dev_name = "rttest",
--};
--
--static int init_test_thread(int id)
--{
--	thread_data[id].dev.bus = &rttest_subsys;
--	thread_data[id].dev.id = id;
--
--	threads[id] = kthread_run(test_func, &thread_data[id], "rt-test-%d", id);
--	if (IS_ERR(threads[id]))
--		return PTR_ERR(threads[id]);
--
--	return device_register(&thread_data[id].dev);
--}
--
--static int init_rttest(void)
--{
--	int ret, i;
--
--	spin_lock_init(&rttest_lock);
--
--	for (i = 0; i < MAX_RT_TEST_MUTEXES; i++)
--		rt_mutex_init(&mutexes[i]);
--
--	ret = subsys_system_register(&rttest_subsys, NULL);
--	if (ret)
--		return ret;
--
--	for (i = 0; i < MAX_RT_TEST_THREADS; i++) {
--		ret = init_test_thread(i);
--		if (ret)
--			break;
--		ret = device_create_file(&thread_data[i].dev, &dev_attr_status);
--		if (ret)
--			break;
--		ret = device_create_file(&thread_data[i].dev, &dev_attr_command);
--		if (ret)
--			break;
--	}
--
--	printk("Initializing RT-Tester: %s\n", ret ? "Failed" : "OK" );
--
--	return ret;
--}
--
--device_initcall(init_rttest);
+--- tip.orig/kernel/futex.c
++++ tip/kernel/futex.c
+@@ -1619,8 +1619,7 @@ retry_private:
+ 			this->pi_state = pi_state;
+ 			ret = rt_mutex_start_proxy_lock(&pi_state->pi_mutex,
+ 							this->rt_waiter,
+-							this->task,
+-							RT_MUTEX_FULL_CHAINWALK);
++							this->task);
+ 			if (ret == 1) {
+ 				/* We got the lock. */
+ 				requeue_pi_wake_futex(this, &key2, hb2);
+@@ -2240,8 +2239,7 @@ retry_private:
+ 	 * Block on the PI mutex:
+ 	 */
+ 	if (!trylock) {
+-		ret = rt_mutex_timed_lock(&q.pi_state->pi_mutex, to,
+-					  RT_MUTEX_FULL_CHAINWALK);
++		ret = __rt_mutex_timed_lock(&q.pi_state->pi_mutex, to);
+ 	} else {
+ 		ret = rt_mutex_trylock(&q.pi_state->pi_mutex);
+ 		/* Fixup the trylock return value: */
+@@ -2564,8 +2562,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 		 */
+ 		WARN_ON(!q.pi_state);
+ 		pi_mutex = &q.pi_state->pi_mutex;
+-		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter,
+-						 RT_MUTEX_FULL_CHAINWALK);
++		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter);
+ 		debug_rt_mutex_free_waiter(&rt_waiter);
+ 
+ 		spin_lock(q.lock_ptr);
 Index: tip/kernel/locking/rtmutex.c
 ===================================================================
 --- tip.orig/kernel/locking/rtmutex.c
 +++ tip/kernel/locking/rtmutex.c
-@@ -745,7 +745,7 @@ __rt_mutex_slowlock(struct rt_mutex *loc
+@@ -957,47 +957,53 @@ EXPORT_SYMBOL_GPL(rt_mutex_lock);
+ /**
+  * rt_mutex_lock_interruptible - lock a rt_mutex interruptible
+  *
+- * @lock: 		the rt_mutex to be locked
+- * @detect_deadlock:	deadlock detection on/off
++ * @lock:		the rt_mutex to be locked
+  *
+  * Returns:
+- *  0 		on success
+- * -EINTR 	when interrupted by a signal
+- * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
++ *  0		on success
++ * -EINTR	when interrupted by a signal
+  */
+-int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock,
+-						 int detect_deadlock)
++int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock)
+ {
+ 	might_sleep();
  
- 		debug_rt_mutex_print_deadlock(waiter);
+ 	return rt_mutex_fastlock(lock, TASK_INTERRUPTIBLE,
+-				 detect_deadlock, rt_mutex_slowlock);
++				 RT_MUTEX_MIN_CHAINWALK, rt_mutex_slowlock);
+ }
+ EXPORT_SYMBOL_GPL(rt_mutex_lock_interruptible);
  
--		schedule_rt_mutex(lock);
-+		schedule();
++/*
++ * Futex variant to allow full deadlock detection.
++ */
++int __rt_mutex_timed_lock(struct rt_mutex *lock,
++			  struct hrtimer_sleeper *timeout)
++{
++	might_sleep();
++
++	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout,
++				       RT_MUTEX_FULL_CHAINWALK,
++				       rt_mutex_slowlock);
++}
++
+ /**
+  * rt_mutex_timed_lock - lock a rt_mutex interruptible
+  *			the timeout structure is provided
+  *			by the caller
+  *
+- * @lock: 		the rt_mutex to be locked
++ * @lock:		the rt_mutex to be locked
+  * @timeout:		timeout structure or NULL (no timeout)
+- * @detect_deadlock:	deadlock detection on/off
+  *
+  * Returns:
+- *  0 		on success
+- * -EINTR 	when interrupted by a signal
++ *  0		on success
++ * -EINTR	when interrupted by a signal
+  * -ETIMEDOUT	when the timeout expired
+- * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
+  */
+ int
+-rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout,
+-		    int detect_deadlock)
++rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout)
+ {
+-	might_sleep();
+-
+ 	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout,
+-				       detect_deadlock, rt_mutex_slowlock);
++				       RT_MUTEX_MIN_CHAINWALK,
++				       rt_mutex_slowlock);
+ }
+ EXPORT_SYMBOL_GPL(rt_mutex_timed_lock);
  
- 		raw_spin_lock(&lock->wait_lock);
- 		set_current_state(state);
+@@ -1103,7 +1109,6 @@ void rt_mutex_proxy_unlock(struct rt_mut
+  * @lock:		the rt_mutex to take
+  * @waiter:		the pre-initialized rt_mutex_waiter
+  * @task:		the task to prepare
+- * @detect_deadlock:	perform deadlock detection (1) or not (0)
+  *
+  * Returns:
+  *  0 - task blocked on lock
+@@ -1114,7 +1119,7 @@ void rt_mutex_proxy_unlock(struct rt_mut
+  */
+ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
+ 			      struct rt_mutex_waiter *waiter,
+-			      struct task_struct *task, int detect_deadlock)
++			      struct task_struct *task)
+ {
+ 	int ret;
+ 
+@@ -1125,7 +1130,8 @@ int rt_mutex_start_proxy_lock(struct rt_
+ 		return 1;
+ 	}
+ 
+-	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
++	ret = task_blocks_on_rt_mutex(lock, waiter, task,
++				      RT_MUTEX_FULL_CHAINWALK);
+ 
+ 	if (ret && !rt_mutex_owner(lock)) {
+ 		/*
+@@ -1171,9 +1177,8 @@ struct task_struct *rt_mutex_next_owner(
+  * rt_mutex_finish_proxy_lock() - Complete lock acquisition
+  * @lock:		the rt_mutex we were woken on
+  * @to:			the timeout, null if none. hrtimer should already have
+- * 			been started.
++ *			been started.
+  * @waiter:		the pre-initialized rt_mutex_waiter
+- * @detect_deadlock:	perform deadlock detection (1) or not (0)
+  *
+  * Complete the lock acquisition started our behalf by another thread.
+  *
+@@ -1185,8 +1190,7 @@ struct task_struct *rt_mutex_next_owner(
+  */
+ int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
+ 			       struct hrtimer_sleeper *to,
+-			       struct rt_mutex_waiter *waiter,
+-			       int detect_deadlock)
++			       struct rt_mutex_waiter *waiter)
+ {
+ 	int ret;
+ 
 Index: tip/kernel/locking/rtmutex_common.h
 ===================================================================
 --- tip.orig/kernel/locking/rtmutex_common.h
 +++ tip/kernel/locking/rtmutex_common.h
-@@ -15,28 +15,6 @@
- #include <linux/rtmutex.h>
+@@ -104,12 +104,11 @@ extern void rt_mutex_proxy_unlock(struct
+ 				  struct task_struct *proxy_owner);
+ extern int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
+ 				     struct rt_mutex_waiter *waiter,
+-				     struct task_struct *task,
+-				     int detect_deadlock);
++				     struct task_struct *task);
+ extern int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
+ 				      struct hrtimer_sleeper *to,
+-				      struct rt_mutex_waiter *waiter,
+-				      int detect_deadlock);
++				      struct rt_mutex_waiter *waiter);
++extern int __rt_mutex_timed_lock(struct rt_mutex *l, struct hrtimer_sleeper *to);
  
- /*
-- * The rtmutex in kernel tester is independent of rtmutex debugging. We
-- * call schedule_rt_mutex_test() instead of schedule() for the tasks which
-- * belong to the tester. That way we can delay the wakeup path of those
-- * threads to provoke lock stealing and testing of  complex boosting scenarios.
-- */
--#ifdef CONFIG_RT_MUTEX_TESTER
--
--extern void schedule_rt_mutex_test(struct rt_mutex *lock);
--
--#define schedule_rt_mutex(_lock)				\
--  do {								\
--	if (!(current->flags & PF_MUTEX_TESTER))		\
--		schedule();					\
--	else							\
--		schedule_rt_mutex_test(_lock);			\
--  } while (0)
--
--#else
--# define schedule_rt_mutex(_lock)			schedule()
--#endif
--
--/*
-  * This is the control structure for tasks blocked on a rt_mutex,
-  * which is allocated on the kernel stack on of the blocked task.
-  *
-Index: tip/lib/Kconfig.debug
-===================================================================
---- tip.orig/lib/Kconfig.debug
-+++ tip/lib/Kconfig.debug
-@@ -828,12 +828,6 @@ config DEBUG_PI_LIST
- 	default y
- 	depends on DEBUG_RT_MUTEXES
- 
--config RT_MUTEX_TESTER
--	bool "Built-in scriptable tester for rt-mutexes"
--	depends on DEBUG_KERNEL && RT_MUTEXES
--	help
--	  This option enables a rt-mutex tester.
--
- config DEBUG_SPINLOCK
- 	bool "Spinlock and rw-lock debugging: basic checks"
- 	depends on DEBUG_KERNEL
-Index: tip/scripts/rt-tester/check-all.sh
-===================================================================
---- tip.orig/scripts/rt-tester/check-all.sh
-+++ /dev/null
-@@ -1,22 +0,0 @@
--
--
--function testit ()
--{
-- printf "%-30s: " $1
-- ./rt-tester.py $1 | grep Pass
--}
--
--testit t2-l1-2rt-sameprio.tst
--testit t2-l1-pi.tst
--testit t2-l1-signal.tst
--#testit t2-l2-2rt-deadlock.tst
--testit t3-l1-pi-1rt.tst
--testit t3-l1-pi-2rt.tst
--testit t3-l1-pi-3rt.tst
--testit t3-l1-pi-signal.tst
--testit t3-l1-pi-steal.tst
--testit t3-l2-pi.tst
--testit t4-l2-pi-deboost.tst
--testit t5-l4-pi-boost-deboost.tst
--testit t5-l4-pi-boost-deboost-setsched.tst
--
-Index: tip/scripts/rt-tester/rt-tester.py
-===================================================================
---- tip.orig/scripts/rt-tester/rt-tester.py
-+++ /dev/null
-@@ -1,220 +0,0 @@
--#!/usr/bin/python
--#
--# rt-mutex tester
--#
--# (C) 2006 Thomas Gleixner <tglx@linutronix.de>
--#
--# This program is free software; you can redistribute it and/or modify
--# it under the terms of the GNU General Public License version 2 as
--# published by the Free Software Foundation.
--#
--import os
--import sys
--import getopt
--import shutil
--import string
--
--# Globals
--quiet = 0
--test = 0
--comments = 0
--
--sysfsprefix = "/sys/devices/system/rttest/rttest"
--statusfile = "/status"
--commandfile = "/command"
--
--# Command opcodes
--cmd_opcodes = {
--    "schedother"    : "1",
--    "schedfifo"     : "2",
--    "lock"          : "3",
--    "locknowait"    : "4",
--    "lockint"       : "5",
--    "lockintnowait" : "6",
--    "lockcont"      : "7",
--    "unlock"        : "8",
--    "signal"        : "11",
--    "resetevent"    : "98",
--    "reset"         : "99",
--    }
--
--test_opcodes = {
--    "prioeq"        : ["P" , "eq" , None],
--    "priolt"        : ["P" , "lt" , None],
--    "priogt"        : ["P" , "gt" , None],
--    "nprioeq"       : ["N" , "eq" , None],
--    "npriolt"       : ["N" , "lt" , None],
--    "npriogt"       : ["N" , "gt" , None],
--    "unlocked"      : ["M" , "eq" , 0],
--    "trylock"       : ["M" , "eq" , 1],
--    "blocked"       : ["M" , "eq" , 2],
--    "blockedwake"   : ["M" , "eq" , 3],
--    "locked"        : ["M" , "eq" , 4],
--    "opcodeeq"      : ["O" , "eq" , None],
--    "opcodelt"      : ["O" , "lt" , None],
--    "opcodegt"      : ["O" , "gt" , None],
--    "eventeq"       : ["E" , "eq" , None],
--    "eventlt"       : ["E" , "lt" , None],
--    "eventgt"       : ["E" , "gt" , None],
--    }
--
--# Print usage information
--def usage():
--    print "rt-tester.py <-c -h -q -t> <testfile>"
--    print " -c    display comments after first command"
--    print " -h    help"
--    print " -q    quiet mode"
--    print " -t    test mode (syntax check)"
--    print " testfile: read test specification from testfile"
--    print " otherwise from stdin"
--    return
--
--# Print progress when not in quiet mode
--def progress(str):
--    if not quiet:
--        print str
--
--# Analyse a status value
--def analyse(val, top, arg):
--
--    intval = int(val)
--
--    if top[0] == "M":
--        intval = intval / (10 ** int(arg))
--	intval = intval % 10
--        argval = top[2]
--    elif top[0] == "O":
--        argval = int(cmd_opcodes.get(arg, arg))
--    else:
--        argval = int(arg)
--
--    # progress("%d %s %d" %(intval, top[1], argval))
--
--    if top[1] == "eq" and intval == argval:
--	return 1
--    if top[1] == "lt" and intval < argval:
--        return 1
--    if top[1] == "gt" and intval > argval:
--	return 1
--    return 0
--
--# Parse the commandline
--try:
--    (options, arguments) = getopt.getopt(sys.argv[1:],'chqt')
--except getopt.GetoptError, ex:
--    usage()
--    sys.exit(1)
--
--# Parse commandline options
--for option, value in options:
--    if option == "-c":
--        comments = 1
--    elif option == "-q":
--        quiet = 1
--    elif option == "-t":
--        test = 1
--    elif option == '-h':
--        usage()
--        sys.exit(0)
--
--# Select the input source
--if arguments:
--    try:
--        fd = open(arguments[0])
--    except Exception,ex:
--        sys.stderr.write("File not found %s\n" %(arguments[0]))
--        sys.exit(1)
--else:
--    fd = sys.stdin
--
--linenr = 0
--
--# Read the test patterns
--while 1:
--
--    linenr = linenr + 1
--    line = fd.readline()
--    if not len(line):
--        break
--
--    line = line.strip()
--    parts = line.split(":")
--
--    if not parts or len(parts) < 1:
--        continue
--
--    if len(parts[0]) == 0:
--        continue
--
--    if parts[0].startswith("#"):
--	if comments > 1:
--	    progress(line)
--	continue
--
--    if comments == 1:
--	comments = 2
--
--    progress(line)
--
--    cmd = parts[0].strip().lower()
--    opc = parts[1].strip().lower()
--    tid = parts[2].strip()
--    dat = parts[3].strip()
--
--    try:
--        # Test or wait for a status value
--        if cmd == "t" or cmd == "w":
--            testop = test_opcodes[opc]
--
--            fname = "%s%s%s" %(sysfsprefix, tid, statusfile)
--            if test:
--		print fname
--                continue
--
--            while 1:
--                query = 1
--                fsta = open(fname, 'r')
--                status = fsta.readline().strip()
--                fsta.close()
--                stat = status.split(",")
--                for s in stat:
--		    s = s.strip()
--                    if s.startswith(testop[0]):
--                        # Separate status value
--                        val = s[2:].strip()
--                        query = analyse(val, testop, dat)
--                        break
--                if query or cmd == "t":
--                    break
--
--            progress("   " + status)
--
--            if not query:
--                sys.stderr.write("Test failed in line %d\n" %(linenr))
--		sys.exit(1)
--
--        # Issue a command to the tester
--        elif cmd == "c":
--            cmdnr = cmd_opcodes[opc]
--            # Build command string and sys filename
--            cmdstr = "%s:%s" %(cmdnr, dat)
--            fname = "%s%s%s" %(sysfsprefix, tid, commandfile)
--            if test:
--		print fname
--                continue
--            fcmd = open(fname, 'w')
--            fcmd.write(cmdstr)
--            fcmd.close()
--
--    except Exception,ex:
--    	sys.stderr.write(str(ex))
--        sys.stderr.write("\nSyntax error in line %d\n" %(linenr))
--        if not test:
--            fd.close()
--            sys.exit(1)
--
--# Normal exit pass
--print "Pass"
--sys.exit(0)
--
--
-Index: tip/scripts/rt-tester/t2-l1-2rt-sameprio.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t2-l1-2rt-sameprio.tst
-+++ /dev/null
-@@ -1,94 +0,0 @@
--#
--# RT-Mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	0
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 2 threads 1 lock
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedfifo:		0: 	80
--C: schedfifo:		1: 	80
--
--# T0 lock L0
--C: locknowait:		0: 	0
--C: locknowait:		1:	0
--W: locked:		0: 	0
--W: blocked:		1: 	0
--T: prioeq:		0: 	80
--
--# T0 unlock L0
--C: unlock:		0: 	0
--W: locked:		1: 	0
--
--# Verify T0
--W: unlocked:		0: 	0
--T: prioeq:		0: 	80
--
--# Unlock
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
--
--# T1,T0 lock L0
--C: locknowait:		1: 	0
--C: locknowait:		0:	0
--W: locked:		1: 	0
--W: blocked:		0: 	0
--T: prioeq:		1: 	80
--
--# T1 unlock L0
--C: unlock:		1: 	0
--W: locked:		0: 	0
--
--# Verify T1
--W: unlocked:		1: 	0
--T: prioeq:		1: 	80
--
--# Unlock and exit
--C: unlock:		0: 	0
--W: unlocked:		0: 	0
--
-Index: tip/scripts/rt-tester/t2-l1-pi.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t2-l1-pi.tst
-+++ /dev/null
-@@ -1,77 +0,0 @@
--#
--# RT-Mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	0
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 2 threads 1 lock with priority inversion
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedfifo:		1: 	80
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L0
--C: locknowait:		1: 	0
--W: blocked:		1: 	0
--T: prioeq:		0: 	80
--
--# T0 unlock L0
--C: unlock:		0: 	0
--W: locked:		1: 	0
--
--# Verify T1
--W: unlocked:		0: 	0
--T: priolt:		0: 	1
--
--# Unlock and exit
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
--
-Index: tip/scripts/rt-tester/t2-l1-signal.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t2-l1-signal.tst
-+++ /dev/null
-@@ -1,72 +0,0 @@
--#
--# RT-Mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	0
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 2 threads 1 lock with priority inversion
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedother:		1: 	0
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L0
--C: lockintnowait:	1: 	0
--W: blocked:		1: 	0
--
--# Interrupt T1
--C: signal:		1:	0
--W: unlocked:		1: 	0
--T: opcodeeq:		1:	-4
--
--# Unlock and exit
--C: unlock:		0: 	0
--W: unlocked:		0: 	0
-Index: tip/scripts/rt-tester/t2-l2-2rt-deadlock.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t2-l2-2rt-deadlock.tst
-+++ /dev/null
-@@ -1,84 +0,0 @@
--#
--# RT-Mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	0
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 2 threads 2 lock
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedfifo:		0: 	80
--C: schedfifo:		1: 	80
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L1
--C: locknowait:		1:	1
--W: locked:		1: 	1
--
--# T0 lock L1
--C: lockintnowait:	0: 	1
--W: blocked:		0: 	1
--
--# T1 lock L0
--C: lockintnowait:	1: 	0
--W: blocked:		1: 	0
--
--# Make deadlock go away
--C: signal:		1:	0
--W: unlocked:		1:	0
--C: signal:		0:	0
--W: unlocked:		0:	1
--
--# Unlock and exit
--C: unlock:		0: 	0
--W: unlocked:		0: 	0
--C: unlock:		1: 	1
--W: unlocked:		1: 	1
--
-Index: tip/scripts/rt-tester/t3-l1-pi-1rt.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t3-l1-pi-1rt.tst
-+++ /dev/null
-@@ -1,87 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 3 threads 1 lock PI
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedother:		1: 	0
--C: schedfifo:		2: 	82
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L0
--C: locknowait:		1: 	0
--W: blocked:		1: 	0
--T: priolt:		0: 	1
--
--# T2 lock L0
--C: locknowait:		2: 	0
--W: blocked:		2: 	0
--T: prioeq:		0: 	82
--
--# T0 unlock L0
--C: unlock:		0: 	0
--
--# Wait until T2 got the lock
--W: locked:		2: 	0
--W: unlocked:		0:	0
--T: priolt:		0:	1
--
--# T2 unlock L0
--C: unlock:		2: 	0
--
--W: unlocked:		2: 	0
--W: locked:		1: 	0
--
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
-Index: tip/scripts/rt-tester/t3-l1-pi-2rt.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t3-l1-pi-2rt.tst
-+++ /dev/null
-@@ -1,88 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 3 threads 1 lock PI
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedfifo:		1: 	81
--C: schedfifo:		2: 	82
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L0
--C: locknowait:		1: 	0
--W: blocked:		1: 	0
--T: prioeq:		0: 	81
--
--# T2 lock L0
--C: locknowait:		2: 	0
--W: blocked:		2: 	0
--T: prioeq:		0: 	82
--T: prioeq:		1:	81
--
--# T0 unlock L0
--C: unlock:		0: 	0
--
--# Wait until T2 got the lock
--W: locked:		2: 	0
--W: unlocked:		0:	0
--T: priolt:		0:	1
--
--# T2 unlock L0
--C: unlock:		2: 	0
--
--W: unlocked:		2: 	0
--W: locked:		1: 	0
--
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
-Index: tip/scripts/rt-tester/t3-l1-pi-3rt.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t3-l1-pi-3rt.tst
-+++ /dev/null
-@@ -1,87 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 3 threads 1 lock PI
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedfifo:		0: 	80
--C: schedfifo:		1: 	81
--C: schedfifo:		2: 	82
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L0
--C: locknowait:		1: 	0
--W: blocked:		1: 	0
--T: prioeq:		0: 	81
--
--# T2 lock L0
--C: locknowait:		2: 	0
--W: blocked:		2: 	0
--T: prioeq:		0: 	82
--
--# T0 unlock L0
--C: unlock:		0: 	0
--
--# Wait until T2 got the lock
--W: locked:		2: 	0
--W: unlocked:		0:	0
--T: prioeq:		0:	80
--
--# T2 unlock L0
--C: unlock:		2: 	0
--
--W: locked:		1: 	0
--W: unlocked:		2: 	0
--
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
-Index: tip/scripts/rt-tester/t3-l1-pi-signal.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t3-l1-pi-signal.tst
-+++ /dev/null
-@@ -1,93 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--# Reset event counter
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set priorities
--C: schedother:		0: 	0
--C: schedfifo:		1: 	80
--C: schedfifo:		2: 	81
--
--# T0 lock L0
--C: lock:		0:	0
--W: locked:		0: 	0
--
--# T1 lock L0, no wait in the wakeup path
--C: locknowait:		1: 	0
--W: blocked:		1: 	0
--T: prioeq:		0:	80
--T: prioeq:		1:	80
--
--# T2 lock L0 interruptible, no wait in the wakeup path
--C: lockintnowait:	2:	0
--W: blocked:		2: 	0
--T: prioeq:		0:	81
--T: prioeq:		1:	80
--
--# Interrupt T2
--C: signal:		2:	2
--W: unlocked:		2:	0
--T: prioeq:		1:	80
--T: prioeq:		0:	80
--
--T: locked:		0:	0
--T: blocked:		1:	0
--
--# T0 unlock L0
--C: unlock:		0: 	0
--
--# Wait until T1 has locked L0 and exit
--W: locked:		1:	0
--W: unlocked:		0: 	0
--T: priolt:		0:	1
--
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
--
--
--
-Index: tip/scripts/rt-tester/t3-l1-pi-steal.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t3-l1-pi-steal.tst
-+++ /dev/null
-@@ -1,91 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 3 threads 1 lock PI steal pending ownership
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedfifo:		1: 	80
--C: schedfifo:		2: 	81
--
--# T0 lock L0
--C: lock:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L0
--C: lock:		1: 	0
--W: blocked:		1: 	0
--T: prioeq:		0: 	80
--
--# T0 unlock L0
--C: unlock:		0: 	0
--
--# Wait until T1 is in the wakeup loop
--W: blockedwake:		1: 	0
--T: priolt:		0: 	1
--
--# T2 lock L0
--C: lock:		2: 	0
--# T1 leave wakeup loop
--C: lockcont:		1: 	0
--
--# T2 must have the lock and T1 must be blocked
--W: locked:		2: 	0
--W: blocked:		1: 	0
--
--# T2 unlock L0
--C: unlock:		2: 	0
--
--# Wait until T1 is in the wakeup loop and let it run
--W: blockedwake:		1: 	0
--C: lockcont:		1: 	0
--W: locked:		1: 	0
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
-Index: tip/scripts/rt-tester/t3-l2-pi.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t3-l2-pi.tst
-+++ /dev/null
-@@ -1,87 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 3 threads 2 lock PI
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedother:		1: 	0
--C: schedfifo:		2: 	82
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L0
--C: locknowait:		1: 	0
--W: blocked:		1: 	0
--T: priolt:		0: 	1
--
--# T2 lock L0
--C: locknowait:		2: 	0
--W: blocked:		2: 	0
--T: prioeq:		0: 	82
--
--# T0 unlock L0
--C: unlock:		0: 	0
--
--# Wait until T2 got the lock
--W: locked:		2: 	0
--W: unlocked:		0:	0
--T: priolt:		0:	1
--
--# T2 unlock L0
--C: unlock:		2: 	0
--
--W: unlocked:		2: 	0
--W: locked:		1: 	0
--
--C: unlock:		1: 	0
--W: unlocked:		1: 	0
-Index: tip/scripts/rt-tester/t4-l2-pi-deboost.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t4-l2-pi-deboost.tst
-+++ /dev/null
-@@ -1,118 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 4 threads 2 lock PI
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedother:		1: 	0
--C: schedfifo:		2: 	82
--C: schedfifo:		3: 	83
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L1
--C: locknowait:		1: 	1
--W: locked:		1: 	1
--
--# T3 lock L0
--C: lockintnowait:	3: 	0
--W: blocked:		3: 	0
--T: prioeq:		0: 	83
--
--# T0 lock L1
--C: lock:		0: 	1
--W: blocked:		0: 	1
--T: prioeq:		1: 	83
--
--# T1 unlock L1
--C: unlock:		1:	1
--
--# Wait until T0 is in the wakeup code
--W: blockedwake:		0:	1
--
--# Verify that T1 is unboosted
--W: unlocked:		1: 	1
--T: priolt:		1: 	1
--
--# T2 lock L1 (T0 is boosted and pending owner !)
--C: locknowait:		2:	1
--W: blocked:		2: 	1
--T: prioeq:		0: 	83
--
--# Interrupt T3 and wait until T3 returned
--C: signal:		3:	0
--W: unlocked:		3:	0
--
--# Verify prio of T0 (still pending owner,
--# but T2 is enqueued due to the previous boost by T3
--T: prioeq:		0:	82
--
--# Let T0 continue
--C: lockcont:		0:	1
--W: locked:		0:	1
--
--# Unlock L1 and let T2 get L1
--C: unlock:		0:	1
--W: locked:		2:	1
--
--# Verify that T0 is unboosted
--W: unlocked:		0:	1
--T: priolt:		0:	1
--
--# Unlock everything and exit
--C: unlock:		2:	1
--W: unlocked:		2:	1
--
--C: unlock:		0:	0
--W: unlocked:		0:	0
--
-Index: tip/scripts/rt-tester/t5-l4-pi-boost-deboost-setsched.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t5-l4-pi-boost-deboost-setsched.tst
-+++ /dev/null
-@@ -1,178 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 5 threads 4 lock PI - modify priority of blocked threads
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedfifo:		1: 	81
--C: schedfifo:		2: 	82
--C: schedfifo:		3: 	83
--C: schedfifo:		4: 	84
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L1
--C: locknowait:		1: 	1
--W: locked:		1: 	1
--
--# T1 lock L0
--C: lockintnowait:	1: 	0
--W: blocked:		1: 	0
--T: prioeq:		0: 	81
--
--# T2 lock L2
--C: locknowait:		2: 	2
--W: locked:		2: 	2
--
--# T2 lock L1
--C: lockintnowait:	2: 	1
--W: blocked:		2: 	1
--T: prioeq:		0: 	82
--T: prioeq:		1:	82
--
--# T3 lock L3
--C: locknowait:		3: 	3
--W: locked:		3: 	3
--
--# T3 lock L2
--C: lockintnowait:	3: 	2
--W: blocked:		3: 	2
--T: prioeq:		0: 	83
--T: prioeq:		1:	83
--T: prioeq:		2:	83
--
--# T4 lock L3
--C: lockintnowait:	4:	3
--W: blocked:		4: 	3
--T: prioeq:		0: 	84
--T: prioeq:		1:	84
--T: prioeq:		2:	84
--T: prioeq:		3:	84
--
--# Reduce prio of T4
--C: schedfifo:		4: 	80
--T: prioeq:		0: 	83
--T: prioeq:		1:	83
--T: prioeq:		2:	83
--T: prioeq:		3:	83
--T: prioeq:		4:	80
--
--# Increase prio of T4
--C: schedfifo:		4: 	84
--T: prioeq:		0: 	84
--T: prioeq:		1:	84
--T: prioeq:		2:	84
--T: prioeq:		3:	84
--T: prioeq:		4:	84
--
--# Reduce prio of T3
--C: schedfifo:		3: 	80
--T: prioeq:		0: 	84
--T: prioeq:		1:	84
--T: prioeq:		2:	84
--T: prioeq:		3:	84
--T: prioeq:		4:	84
--
--# Increase prio of T3
--C: schedfifo:		3: 	85
--T: prioeq:		0: 	85
--T: prioeq:		1:	85
--T: prioeq:		2:	85
--T: prioeq:		3:	85
--T: prioeq:		4:	84
--
--# Reduce prio of T3
--C: schedfifo:		3: 	83
--T: prioeq:		0: 	84
--T: prioeq:		1:	84
--T: prioeq:		2:	84
--T: prioeq:		3:	84
--T: prioeq:		4:	84
--
--# Signal T4
--C: signal:		4: 	0
--W: unlocked:		4: 	3
--T: prioeq:		0: 	83
--T: prioeq:		1:	83
--T: prioeq:		2:	83
--T: prioeq:		3:	83
--
--# Signal T3
--C: signal:		3: 	0
--W: unlocked:		3: 	2
--T: prioeq:		0: 	82
--T: prioeq:		1:	82
--T: prioeq:		2:	82
--
--# Signal T2
--C: signal:		2: 	0
--W: unlocked:		2: 	1
--T: prioeq:		0: 	81
--T: prioeq:		1:	81
--
--# Signal T1
--C: signal:		1: 	0
--W: unlocked:		1: 	0
--T: priolt:		0: 	1
--
--# Unlock and exit
--C: unlock:		3:	3
--C: unlock:		2:	2
--C: unlock:		1:	1
--C: unlock:		0:	0
--
--W: unlocked:		3:	3
--W: unlocked:		2:	2
--W: unlocked:		1:	1
--W: unlocked:		0:	0
--
-Index: tip/scripts/rt-tester/t5-l4-pi-boost-deboost.tst
-===================================================================
---- tip.orig/scripts/rt-tester/t5-l4-pi-boost-deboost.tst
-+++ /dev/null
-@@ -1,138 +0,0 @@
--#
--# rt-mutex test
--#
--# Op: C(ommand)/T(est)/W(ait)
--# |  opcode
--# |  |     threadid: 0-7
--# |  |     |  opcode argument
--# |  |     |  |
--# C: lock: 0: 0
--#
--# Commands
--#
--# opcode	opcode argument
--# schedother	nice value
--# schedfifo	priority
--# lock		lock nr (0-7)
--# locknowait	lock nr (0-7)
--# lockint	lock nr (0-7)
--# lockintnowait	lock nr (0-7)
--# lockcont	lock nr (0-7)
--# unlock	lock nr (0-7)
--# signal	thread to signal (0-7)
--# reset		0
--# resetevent	0
--#
--# Tests / Wait
--#
--# opcode	opcode argument
--#
--# prioeq	priority
--# priolt	priority
--# priogt	priority
--# nprioeq	normal priority
--# npriolt	normal priority
--# npriogt	normal priority
--# locked	lock nr (0-7)
--# blocked	lock nr (0-7)
--# blockedwake	lock nr (0-7)
--# unlocked	lock nr (0-7)
--# opcodeeq	command opcode or number
--# opcodelt	number
--# opcodegt	number
--# eventeq	number
--# eventgt	number
--# eventlt	number
--
--#
--# 5 threads 4 lock PI
--#
--C: resetevent:		0: 	0
--W: opcodeeq:		0: 	0
--
--# Set schedulers
--C: schedother:		0: 	0
--C: schedfifo:		1: 	81
--C: schedfifo:		2: 	82
--C: schedfifo:		3: 	83
--C: schedfifo:		4: 	84
--
--# T0 lock L0
--C: locknowait:		0: 	0
--W: locked:		0: 	0
--
--# T1 lock L1
--C: locknowait:		1: 	1
--W: locked:		1: 	1
--
--# T1 lock L0
--C: lockintnowait:	1: 	0
--W: blocked:		1: 	0
--T: prioeq:		0: 	81
--
--# T2 lock L2
--C: locknowait:		2: 	2
--W: locked:		2: 	2
--
--# T2 lock L1
--C: lockintnowait:	2: 	1
--W: blocked:		2: 	1
--T: prioeq:		0: 	82
--T: prioeq:		1:	82
--
--# T3 lock L3
--C: locknowait:		3: 	3
--W: locked:		3: 	3
--
--# T3 lock L2
--C: lockintnowait:	3: 	2
--W: blocked:		3: 	2
--T: prioeq:		0: 	83
--T: prioeq:		1:	83
--T: prioeq:		2:	83
--
--# T4 lock L3
--C: lockintnowait:	4:	3
--W: blocked:		4: 	3
--T: prioeq:		0: 	84
--T: prioeq:		1:	84
--T: prioeq:		2:	84
--T: prioeq:		3:	84
--
--# Signal T4
--C: signal:		4: 	0
--W: unlocked:		4: 	3
--T: prioeq:		0: 	83
--T: prioeq:		1:	83
--T: prioeq:		2:	83
--T: prioeq:		3:	83
--
--# Signal T3
--C: signal:		3: 	0
--W: unlocked:		3: 	2
--T: prioeq:		0: 	82
--T: prioeq:		1:	82
--T: prioeq:		2:	82
--
--# Signal T2
--C: signal:		2: 	0
--W: unlocked:		2: 	1
--T: prioeq:		0: 	81
--T: prioeq:		1:	81
--
--# Signal T1
--C: signal:		1: 	0
--W: unlocked:		1: 	0
--T: priolt:		0: 	1
--
--# Unlock and exit
--C: unlock:		3:	3
--C: unlock:		2:	2
--C: unlock:		1:	1
--C: unlock:		0:	0
--
--W: unlocked:		3:	3
--W: unlocked:		2:	2
--W: unlocked:		1:	1
--W: unlocked:		0:	0
--
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+ # include "rtmutex-debug.h"
 
 
