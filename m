@@ -1,76 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaEVLaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 07:30:16 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:52805 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581AbaEVLaP (ORCPT
+	id S1754715AbaEVLbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 07:31:37 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:32895 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753504AbaEVLbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 07:30:15 -0400
-Date: Thu, 22 May 2014 12:30:10 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Jay Aurabind <jay.aurabind@gmail.com>
-Subject: [PATCH v2] mfd: abx500-core: Remove unused function
- abx500_dump_all_banks()
-Message-ID: <20140522113010.GT6679@lee--X1>
-References: <1400750311-15323-1-git-send-email-lee.jones@linaro.org>
+	Thu, 22 May 2014 07:31:35 -0400
+Date: Thu, 22 May 2014 17:01:19 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: "Arnd Bergmann (arnd@arndb.de)" <arnd@arndb.de>,
+        "'Bjorn Helgaas' (bhelgaas@google.com)" <bhelgaas@google.com>
+Cc: Mohit KUMAR <mohit.kumar@st.com>, spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Nicholson <mark@nicholnet.com>
+Subject: Re: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
+Message-ID: <20140522113119.GA2646@pratyush-vbox>
+References: <cover.1397555158.git.mohit.kumar@st.com>
+ <2CC2A0A4A178534D93D5159BF3BCB6619B94997E2B@EAPEX1MAIL1.st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1400750311-15323-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <2CC2A0A4A178534D93D5159BF3BCB6619B94997E2B@EAPEX1MAIL1.st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-22_03:2014-05-22,2014-05-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-abx500_dump_all_banks() has no callers in the kernel, so it's probably
-safe to remove it.
-    
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi Arnd/Bjorn,
 
-diff --git a/drivers/mfd/abx500-core.c b/drivers/mfd/abx500-core.c
-index d6d0ec4..fe41899 100644
---- a/drivers/mfd/abx500-core.c
-+++ b/drivers/mfd/abx500-core.c
-@@ -151,26 +151,6 @@ int abx500_startup_irq_enabled(struct device *dev, unsigned int irq)
- }
- EXPORT_SYMBOL(abx500_startup_irq_enabled);
- 
--int abx500_dump_all_banks(void)
--{
--	struct abx500_ops *ops;
--	struct device *dummy_child;
--	struct abx500_device_entry *dev_entry;
--
--	dummy_child = kzalloc(sizeof(struct device), GFP_KERNEL);
--	if (!dummy_child)
--		return -ENOMEM;
--	list_for_each_entry(dev_entry, &abx500_list, list) {
--		dummy_child->parent = dev_entry->dev;
--		ops = &dev_entry->ops;
--
--		if ((ops != NULL) && (ops->dump_all_banks != NULL))
--			ops->dump_all_banks(dummy_child);
--	}
--	kfree(dummy_child);
--}
--EXPORT_SYMBOL(abx500_dump_all_banks);
--
- MODULE_AUTHOR("Mattias Wallin <mattias.wallin@stericsson.com>");
- MODULE_DESCRIPTION("ABX500 core driver");
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
-index df2508f..552cc1d 100644
---- a/include/linux/mfd/abx500.h
-+++ b/include/linux/mfd/abx500.h
-@@ -330,7 +330,6 @@ int abx500_mask_and_set_register_interruptible(struct device *dev, u8 bank,
- int abx500_get_chip_id(struct device *dev);
- int abx500_event_registers_startup_state_get(struct device *dev, u8 *event);
- int abx500_startup_irq_enabled(struct device *dev, unsigned int irq);
--int abx500_dump_all_banks(void);
- 
- struct abx500_ops {
- 	int (*get_chip_id) (struct device *);
+On Mon, May 19, 2014 at 07:55:12PM +0800, Mohit KUMAR wrote:
+> Hello Arnd,
+> 
+> > -----Original Message-----
+> > From: Mohit KUMAR DCG
+> > Sent: Tuesday, April 15, 2014 5:20 PM
+> > To: spear-devel; linux-kernel@vger.kernel.org; devicetree@vger.kernel.org;
+> > linux-pci@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> > Cc: Mohit KUMAR DCG
+> > Subject: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
+> > 
+> > Patch# 1 and 2: Improvement and fixes for SPEAr13xx support.
+> > Patch# 3,4 and 6: Add DT bindings for spear1310/40-miphy, misc and pcie
+> > node Patch# 5: Add spear1310/40-miphy driver and support for spear1310/40
+> > miphy wrapper.
+> > Patch# 7-9: Add SPEAr13xx PCIe driver and dt support.
+> > 
+> > These pathes are tested with linux-3.15 tag of arm-soc tree.
+> > Tested with SPEAr1310 evaluation board with:
+> > 	- INTEL PRO 100/100 EP card
+> > 	- USB xhci gen2 card
+> >  	- Above cards connected through LeCROY PTC switch
+> > 
+> > Modifications for SATA are tested with SPEAr1340-evb board
+> > 
+> 
+> I think 3.16 windows is about to close, are you planning to merge this series?
+> Pls let me know if something pending on our part.
+
+If you could let us know the status of this patch series inclusion.
+
+Regards
+Pratyush
+
+> 
+> Regards
+> Mohit
+> 
+> > Changes since v7:
+> > - Rebase over for-linus-3.15 tag of arm-soc tree so that complete patch series
+> > can be applied cleanly.
+> > - Incorporated few comments on comment style and superfluous comments
+> > Changes since v6:
+> > - Split miphy driver for SPEAr1310 and SPEAr1340
+> > - Some cleanup and incorporated other minor comments Changes since v5:
+> > - Split DT bindings for misc, miphy-40lp and pcie node into sepearte patches
+> > - Merge config options PCIE_SPEAR13XX and PCI_MSI into defconfig patch
+> > - Incorporated other minor comments
+> > Changes since v4:
+> > - Uses per device function pointers passed from .data field to
+> >   the of_device_id instead of of_device_is_compatible.
+> > - Incorporated other minor comments from v4
+> > 
+> > Changes since v3:
+> > - Phy driver renamed to phy-miphy40lp
+> > - ahci phy hook patch used as suggested by Arnd
+> > - Incorporated other minor comments from v3
+> > 
+> > Changes since v2:
+> > - Incorporated comments to move SPEAr13xx PCIe and SATA phy specific
+> > routines to
+> >   the phy framework
+> > - Modify ahci driver to include phy hooks
+> > - phy-core driver modifications for subsys_initcall()
+> > 
+> > Changes since v1:
+> > - Few patches of the series are already accepted and applied to mainline e.g.
+> >  pcie designware driver improvements,fixes for IO translation bug, PCIe dw
+> > driver maintainer. So dropped these from v2.
+> > - Incorporated comment to move the common/reset PCIe code to the
+> > seperate driver
+> > - PCIe and SATA share common PHY configuration registers, so move SATA
+> > platform code to the system config driver Fourth patch is improves pcie
+> > designware driver and fixes the IO translation bug. IO translation bug fix
+> > leads to the working of PCIe EP devices connected to RC through switch.
+> > 
+> > Mohit Kumar (1):
+> >   SPEAr13xx: defconfig: Update
+> > 
+> > Pratyush Anand (8):
+> >   clk: SPEAr13XX: Fix pcie clock name
+> >   SPEAr13XX: Fix static mapping table
+> >   phy: SPEAr1310/40-miphy: Add binding information
+> >   SPEAr: misc: Add binding information
+> >   phy: SPEAr1310/40-miphy: Add phy driver for PCIe and SATA
+> >   SPEAr13XX: Add binding information for PCIe controller
+> >   SPEAr13XX: dts: Add PCIe node information
+> >   pcie: SPEAr13xx: Add designware wrapper support
+> > 
+> >  .../devicetree/bindings/arm/spear-misc.txt         |    9 +
+> >  .../devicetree/bindings/pci/spear13xx-pcie.txt     |   14 +
+> >  .../devicetree/bindings/phy/st-spear1310-miphy.txt |   12 +
+> >  .../devicetree/bindings/phy/st-spear1340-miphy.txt |   11 +
+> >  MAINTAINERS                                        |    6 +
+> >  arch/arm/boot/dts/spear1310-evb.dts                |    4 +
+> >  arch/arm/boot/dts/spear1310.dtsi                   |   93 +++++-
+> >  arch/arm/boot/dts/spear1340-evb.dts                |    4 +
+> >  arch/arm/boot/dts/spear1340.dtsi                   |   30 ++-
+> >  arch/arm/boot/dts/spear13xx.dtsi                   |    9 +-
+> >  arch/arm/configs/spear13xx_defconfig               |   16 +
+> >  arch/arm/mach-spear/Kconfig                        |    4 +
+> >  arch/arm/mach-spear/include/mach/spear.h           |    4 +-
+> >  arch/arm/mach-spear/spear1340.c                    |  127 +------
+> >  arch/arm/mach-spear/spear13xx.c                    |    2 +-
+> >  drivers/clk/spear/spear1310_clock.c                |    6 +-
+> >  drivers/clk/spear/spear1340_clock.c                |    2 +-
+> >  drivers/pci/host/Kconfig                           |    8 +
+> >  drivers/pci/host/Makefile                          |    1 +
+> >  drivers/pci/host/pcie-spear13xx.c                  |  407 ++++++++++++++++++++
+> >  drivers/phy/Kconfig                                |   12 +
+> >  drivers/phy/Makefile                               |    2 +
+> >  drivers/phy/phy-spear1310-miphy.c                  |  274 +++++++++++++
+> >  drivers/phy/phy-spear1340-miphy.c                  |  300 ++++++++++++++
+> >  24 files changed, 1218 insertions(+), 139 deletions(-)  create mode 100644
+> > Documentation/devicetree/bindings/arm/spear-misc.txt
+> >  create mode 100644 Documentation/devicetree/bindings/pci/spear13xx-
+> > pcie.txt
+> >  create mode 100644 Documentation/devicetree/bindings/phy/st-
+> > spear1310-miphy.txt
+> >  create mode 100644 Documentation/devicetree/bindings/phy/st-
+> > spear1340-miphy.txt
+> >  create mode 100644 drivers/pci/host/pcie-spear13xx.c  create mode 100644
+> > drivers/phy/phy-spear1310-miphy.c  create mode 100644 drivers/phy/phy-
+> > spear1340-miphy.c
+> 
