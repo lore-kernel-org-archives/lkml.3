@@ -1,107 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaEVNPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:15:22 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:36515 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190AbaEVNPU (ORCPT
+	id S1754985AbaEVNQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:16:07 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:37160 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaEVNQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:15:20 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] ARM: imx: add missing kfree call in error paths
-Date: Thu, 22 May 2014 15:14:42 +0200
-Message-Id: <1400764482-20147-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 22 May 2014 09:16:05 -0400
+Date: Thu, 22 May 2014 15:16:00 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: remove CONFIG_PMCTWILED completely
+Message-ID: <20140522131600.GA10287@linux-mips.org>
+References: <1400585676.4912.38.camel@x220>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400585676.4912.38.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We forgot to free pdev->dev.dma_mask as it is not freed
-by platform_device_put().
+On Tue, May 20, 2014 at 01:34:36PM +0200, Paul Bolle wrote:
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- arch/arm/mach-imx/mach-mx31_3ds.c    |    4 +++-
- arch/arm/mach-imx/mach-mx31moboard.c |    4 +++-
- arch/arm/mach-imx/mach-mx35_3ds.c    |    4 +++-
- arch/arm/mach-imx/mach-pcm037.c      |    4 +++-
- 4 files changed, 12 insertions(+), 4 deletions(-)
+> Commit 8b284dbc2200 ("MIPS: PNX Removing dead CONFIG_PMCTWILED") missed
+> one reference to CONFIG_PMCTWILED in the code. It also missed one
+> related reference to pmctwiled_setup(). Remove these references now.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested.
 
-diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
-index 453f41a..8de1019 100644
---- a/arch/arm/mach-imx/mach-mx31_3ds.c
-+++ b/arch/arm/mach-imx/mach-mx31_3ds.c
-@@ -201,9 +201,11 @@ static int __init mx31_3ds_init_camera(void)
- 		goto err;
- 
- 	ret = platform_device_add(pdev);
--	if (ret)
-+	if (ret) {
- err:
-+		kfree(pdev->dev.dma_mask);
- 		platform_device_put(pdev);
-+	}
- 
- 	return ret;
- }
-diff --git a/arch/arm/mach-imx/mach-mx31moboard.c b/arch/arm/mach-imx/mach-mx31moboard.c
-index 6bed570..f24a93c 100644
---- a/arch/arm/mach-imx/mach-mx31moboard.c
-+++ b/arch/arm/mach-imx/mach-mx31moboard.c
-@@ -494,9 +494,11 @@ static int __init mx31moboard_init_cam(void)
- 		goto err;
- 
- 	ret = platform_device_add(pdev);
--	if (ret)
-+	if (ret) {
- err:
-+		kfree(pdev->dev.dma_mask);
- 		platform_device_put(pdev);
-+	}
- 
- 	return ret;
- 
-diff --git a/arch/arm/mach-imx/mach-mx35_3ds.c b/arch/arm/mach-imx/mach-mx35_3ds.c
-index 72cd77d..ffdddb3 100644
---- a/arch/arm/mach-imx/mach-mx35_3ds.c
-+++ b/arch/arm/mach-imx/mach-mx35_3ds.c
-@@ -284,9 +284,11 @@ static int __init imx35_3ds_init_camera(void)
- 		goto err;
- 
- 	ret = platform_device_add(pdev);
--	if (ret)
-+	if (ret) {
- err:
-+		kfree(pdev->dev.dma_mask);
- 		platform_device_put(pdev);
-+	}
- 
- 	return ret;
- }
-diff --git a/arch/arm/mach-imx/mach-pcm037.c b/arch/arm/mach-imx/mach-pcm037.c
-index 8eb1570..764a111 100644
---- a/arch/arm/mach-imx/mach-pcm037.c
-+++ b/arch/arm/mach-imx/mach-pcm037.c
-@@ -427,9 +427,11 @@ static int __init pcm037_init_camera(void)
- 		goto err;
- 
- 	ret = platform_device_add(pdev);
--	if (ret)
-+	if (ret) {
- err:
-+		kfree(pdev->dev.dma_mask);
- 		platform_device_put(pdev);
-+	}
- 
- 	return ret;
- }
--- 
-1.7.10.4
+Who is testing MSP71xx anyway ...
 
+Anyway, looks good.  Queued for 3.16.
+
+  Ralf
