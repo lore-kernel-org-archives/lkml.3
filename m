@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaEVWY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 18:24:27 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:62367 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663AbaEVWYZ (ORCPT
+	id S1752839AbaEVWYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 18:24:55 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63537 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaEVWYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 18:24:25 -0400
+	Thu, 22 May 2014 18:24:23 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 3/3] x86_64,vsyscall: Fix warn_bad_vsyscall log output
-Date: Thu, 22 May 2014 15:24:16 -0700
-Message-Id: <1c63aae33e04955fa998943da984582adf709158.1400797362.git.luto@amacapital.net>
+Subject: [PATCH 2/3] x86_64,vsyscall: Turn vsyscalls all the way off when vsyscall=none
+Date: Thu, 22 May 2014 15:24:15 -0700
+Message-Id: <00157d645245f5476d0177d853a9c5c0dc7efb2b.1400797362.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <cover.1400797362.git.luto@amacapital.net>
 References: <cover.1400797362.git.luto@amacapital.net>
@@ -23,43 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit:
+I see no point in having an unusable read-only page sitting at
+0xffffffffff600000 when vsyscall=none.  Instead, skip mapping it and
+remove it from /proc/PID/maps.
 
-    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
-    Author: Joe Perches <joe@perches.com>
-    Date:   Mon May 21 19:50:07 2012 -0700
-
-        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
-
-caused warn_bad_vsyscall to output garbage in the middle of the
-line.  Revert the bad part of it.
-
-The printk in question isn't actually bare; the level is "%s".
+I kept the ratelimited warning when programs try to use a vsyscall
+in this mode, since it may help admins avoid confusion.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/kernel/vsyscall_64.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/vsyscall_64.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 8d38eb5..6463f9e 100644
+index ad84894..8d38eb5 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -81,10 +81,10 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 	if (!show_unhandled_signals)
- 		return;
- 
--	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
--			      level, current->comm, task_pid_nr(current),
--			      message, regs->ip, regs->cs,
--			      regs->sp, regs->ax, regs->si, regs->di);
-+	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
-+			   level, current->comm, task_pid_nr(current),
-+			   message, regs->ip, regs->cs,
-+			   regs->sp, regs->ax, regs->si, regs->di);
+@@ -309,6 +309,8 @@ struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
+ 	if (!mm || mm->context.ia32_compat)
+ 		return NULL;
+ #endif
++	if (vsyscall_mode == NONE)
++		return NULL;
+ 	return &gate_vma;
  }
  
- static int addr_to_vsyscall_nr(unsigned long addr)
+@@ -329,7 +331,7 @@ int in_gate_area(struct mm_struct *mm, unsigned long addr)
+  */
+ int in_gate_area_no_mm(unsigned long addr)
+ {
+-	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
++	return vsyscall_mode != NONE && (addr & PAGE_MASK) == VSYSCALL_ADDR;
+ }
+ 
+ /*
+@@ -380,10 +382,12 @@ void __init map_vsyscall(void)
+ 	extern char __vsyscall_page;
+ 	unsigned long physaddr_vsyscall = __pa_symbol(&__vsyscall_page);
+ 
+-	__set_fixmap(VSYSCALL_PAGE, physaddr_vsyscall,
+-		     vsyscall_mode == NATIVE
+-		     ? PAGE_KERNEL_VSYSCALL
+-		     : PAGE_KERNEL_VVAR);
++	if (vsyscall_mode != NONE)
++		__set_fixmap(VSYSCALL_PAGE, physaddr_vsyscall,
++			     vsyscall_mode == NATIVE
++			     ? PAGE_KERNEL_VSYSCALL
++			     : PAGE_KERNEL_VVAR);
++
+ 	BUILD_BUG_ON((unsigned long)__fix_to_virt(VSYSCALL_PAGE) !=
+ 		     (unsigned long)VSYSCALL_ADDR);
+ }
 -- 
 1.9.0
 
