@@ -1,143 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaEWMvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:51:15 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:46077 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaEWMvL (ORCPT
+	id S1752531AbaEWMvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:51:13 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:32862 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaEWMvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:51:11 -0400
+	Fri, 23 May 2014 08:51:10 -0400
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v1] of/irq: do irq resolution in
- platform_get_irq_byname()
-To: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>
-Cc: santosh.shilimkar@ti.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-In-Reply-To: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
-References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
-Date: Fri, 23 May 2014 17:03:33 +0900
-Message-Id: <20140523080333.66720C4176E@trevor.secretlab.ca>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        Rob Herring <robh@kernel.org>
+Subject: [PATCH v2 1/2] of: Ensure unique names without sacrificing determinism
+Date: Fri, 23 May 2014 08:36:08 +0900
+Message-Id: <1400801769-4506-2-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400801769-4506-1-git-send-email-grant.likely@linaro.org>
+References: <1400801769-4506-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
-> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
-> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
-> moves resolving of the interrupt resources in platform_get_irq().
-> But this solution isn't complete because platform_get_irq_byname()
-> need to be modified the same way.
-> 
-> Hence, fix it by adding interrupt resolution code at the
-> platform_get_irq_byname() function too.
-> 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Rob Herring <robh@kernel.org>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Thierry Reding <thierry.reding@gmail.com>
-> 
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+The way the driver core is implemented, every device using the same bus
+type is required to have a unique name because a symlink to each device
+is created in the appropriate /sys/bus/*/devices directory, and two
+identical names causes a collision.
 
-Applied, Thanks.
+The current code handles the requirement by using an globally
+incremented counter that is appended to the device name. It works, but
+it means any change to device registration will change the assigned
+numbers. Instead, if we build up the name by using information from the
+parent nodes, then it can be guaranteed to be unique without adding a
+random number to the end of it.
 
-g.
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Cc: Rob Herring <robh@kernel.org>
+---
+ drivers/of/platform.c | 40 +++++++++++++++++++---------------------
+ 1 file changed, 19 insertions(+), 21 deletions(-)
 
-> ---
-> Changes in v1:
-> - use of_property_match_string() to get IRQ index by name
-> - minor comments fixed
-> 
-> RFC:
->  https://lkml.org/lkml/2014/5/19/325
-> 
->  drivers/base/platform.c |    7 +++++--
->  drivers/of/irq.c        |   22 ++++++++++++++++++++++
->  include/linux/of_irq.h  |    5 +++++
->  3 files changed, 32 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 5b47210..9e9227e 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -131,9 +131,12 @@ EXPORT_SYMBOL_GPL(platform_get_resource_byname);
->   */
->  int platform_get_irq_byname(struct platform_device *dev, const char *name)
->  {
-> -	struct resource *r = platform_get_resource_byname(dev, IORESOURCE_IRQ,
-> -							  name);
-> +	struct resource *r;
-> +
-> +	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
-> +		return of_irq_get_byname(dev->dev.of_node, name);
->  
-> +	r = platform_get_resource_byname(dev, IORESOURCE_IRQ, name);
->  	return r ? r->start : -ENXIO;
->  }
->  EXPORT_SYMBOL_GPL(platform_get_irq_byname);
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 5aeb894..3e06a69 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -406,6 +406,28 @@ int of_irq_get(struct device_node *dev, int index)
->  }
->  
->  /**
-> + * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq number
-> + * @dev: pointer to device tree node
-> + * @name: irq name
-> + *
-> + * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
-> + * is not yet created, or error code in case of any other failure.
-> + */
-> +int of_irq_get_byname(struct device_node *dev, const char *name)
-> +{
-> +	int index;
-> +
-> +	if (unlikely(!name))
-> +		return -EINVAL;
-> +
-> +	index = of_property_match_string(dev, "interrupt-names", name);
-> +	if (index < 0)
-> +		return index;
-> +
-> +	return of_irq_get(dev, index);
-> +}
-> +
-> +/**
->   * of_irq_count - Count the number of IRQs a node uses
->   * @dev: pointer to device tree node
->   */
-> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-> index 6404253..bfec136 100644
-> --- a/include/linux/of_irq.h
-> +++ b/include/linux/of_irq.h
-> @@ -45,6 +45,7 @@ extern void of_irq_init(const struct of_device_id *matches);
->  #ifdef CONFIG_OF_IRQ
->  extern int of_irq_count(struct device_node *dev);
->  extern int of_irq_get(struct device_node *dev, int index);
-> +extern int of_irq_get_byname(struct device_node *dev, const char *name);
->  #else
->  static inline int of_irq_count(struct device_node *dev)
->  {
-> @@ -54,6 +55,10 @@ static inline int of_irq_get(struct device_node *dev, int index)
->  {
->  	return 0;
->  }
-> +static inline int of_irq_get_byname(struct device_node *dev, const char *name)
-> +{
-> +	return 0;
-> +}
->  #endif
->  
->  #if defined(CONFIG_OF)
-> -- 
-> 1.7.9.5
-> 
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index d0009b3614af..95c133a0554b 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -68,17 +68,15 @@ EXPORT_SYMBOL(of_find_device_by_node);
+  * of_device_make_bus_id - Use the device node data to assign a unique name
+  * @dev: pointer to device structure that is linked to a device tree node
+  *
+- * This routine will first try using either the dcr-reg or the reg property
+- * value to derive a unique name.  As a last resort it will use the node
+- * name followed by a unique number.
++ * This routine will first try using the translated bus address to
++ * derive a unique name. If it cannot, then it will prepend names from
++ * parent nodes until a unique name can be derived.
+  */
+ void of_device_make_bus_id(struct device *dev)
+ {
+-	static atomic_t bus_no_reg_magic;
+ 	struct device_node *node = dev->of_node;
+ 	const __be32 *reg;
+ 	u64 addr;
+-	int magic;
+ 
+ #ifdef CONFIG_PPC_DCR
+ 	/*
+@@ -100,25 +98,25 @@ void of_device_make_bus_id(struct device *dev)
+ 	}
+ #endif /* CONFIG_PPC_DCR */
+ 
+-	/*
+-	 * For MMIO, get the physical address
+-	 */
+-	reg = of_get_property(node, "reg", NULL);
+-	if (reg) {
+-		addr = of_translate_address(node, reg);
+-		if (addr != OF_BAD_ADDR) {
+-			dev_set_name(dev, "%llx.%s",
+-				     (unsigned long long)addr, node->name);
++	/* Construct the name, using parent nodes if necessary to ensure uniqueness */
++	while (node->parent) {
++		/*
++		 * If the address can be translated, then that is as much
++		 * uniqueness as we need. Make it the first component and return
++		 */
++		reg = of_get_property(node, "reg", NULL);
++		if (reg && (addr = of_translate_address(node, reg)) != OF_BAD_ADDR) {
++			dev_set_name(dev, dev_name(dev) ? "%llx.%s:%s" : "%llx.%s",
++				     (unsigned long long)addr, node->name,
++				     dev_name(dev));
+ 			return;
+ 		}
+-	}
+ 
+-	/*
+-	 * No BusID, use the node name and add a globally incremented
+-	 * counter (and pray...)
+-	 */
+-	magic = atomic_add_return(1, &bus_no_reg_magic);
+-	dev_set_name(dev, "%s.%d", node->name, magic - 1);
++		/* format arguments only used if dev_name() resolves to NULL */
++		dev_set_name(dev, dev_name(dev) ? "%s:%s" : "%s",
++			     strrchr(node->full_name, '/') + 1, dev_name(dev));
++		node = node->parent;
++	}
+ }
+ 
+ /**
+-- 
+1.9.1
 
