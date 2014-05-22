@@ -1,121 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaEVXgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:36:53 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39562 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644AbaEVXgu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:36:50 -0400
-Date: Fri, 23 May 2014 00:36:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        tiwai@suse.de, perex@perex.cz, dianders@chromium.org,
-        jerry.wong@maximintegrated.com
-Message-ID: <20140522233628.GW12304@sirena.org.uk>
-References: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org>
- <1400750228-13750-2-git-send-email-tushar.behera@linaro.org>
- <537E1D0A.6020303@wwwdotorg.org>
- <20140522173403.GL12304@sirena.org.uk>
- <537E38FF.9000407@wwwdotorg.org>
- <20140522181948.GP12304@sirena.org.uk>
- <537E7937.2010408@wwwdotorg.org>
+	id S1752498AbaEVXkI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:40:08 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:38667
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751243AbaEVXkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:40:06 -0400
+X-WSS-ID: 0N601QO-07-75F-02
+X-M-MSG: 
+Message-ID: <537E8ACF.6000103@amd.com>
+Date: Thu, 22 May 2014 18:39:59 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Wwca24FQN26//Jqu"
-Content-Disposition: inline
-In-Reply-To: <537E7937.2010408@wwwdotorg.org>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] ASoC: max98090: Add master clock handling
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Bjorn Helgaas <bhelgaas@google.com>, Borislav Petkov <bp@alien8.de>
+CC: Robert Richter <rric@kernel.org>, Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Aravind Gopalakrishnan" <Aravind.Gopalakrishnan@amd.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after
+ Fam16h
+References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521233802.GA21575@pd.tnic>
+ <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
+ <20140522191746.GL4383@pd.tnic>
+ <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
+In-Reply-To: <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(199002)(189002)(24454002)(51704005)(377454003)(479174003)(74662001)(87936001)(92726001)(50986999)(74502001)(54356999)(81542001)(87266999)(31966008)(76176999)(68736004)(21056001)(101416001)(77096999)(86362001)(81342001)(85852003)(83072002)(33656002)(83322001)(80316001)(92566001)(99396002)(44976005)(19580395003)(102836001)(19580405001)(64706001)(84676001)(23676002)(65956001)(77982001)(65806001)(59896001)(80022001)(50466002)(76482001)(79102001)(64126003)(97736001)(47776003)(20776003)(83506001)(36756003)(46102001)(4396001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR02MB479;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 021975AE46
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5/22/2014 3:20 PM, Bjorn Helgaas wrote:
+> On Thu, May 22, 2014 at 1:17 PM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Thu, May 22, 2014 at 11:56:03AM -0600, Bjorn Helgaas wrote:
+>>> I chose Fam16h (0x16) because it looks like that's the newest stuff
+>>> that's in the field. I suspect things would probably work if we
+>>> changed this patch to leave ECS disabled on some Fam16h, Fam15h, etc.,
+>>> but that would change behavior on existing systems, which obviously
+>>> adds some risk. I didn't think there was much benefit that makes the
+>>> risk worthwhile.
+>>>
+>>> My goal is to stop needing CPU-specific changes in the future, not
+>>> necessarily to remove the CPU-specific code we already have.
+>>>
+>>> Does that make sense? I'm not sure whether I understood your real
+>>> question.
+>>
+>> No, you got it right. I'm just wondering why only the newest stuff.
+>> MMCONFIG is supposed to work just fine on everything from Fam10h
+>> onwards, I'm not sure all Fam10h supported it though. Maybe Suravee can
+>> verify that...
+>
+> Even if MMCONFIG does work fine on everything from Fam10h onwards, we
+> still depend on the BIOS to provide a correct MCFG table.  I don't
+> think we can guarantee that changing from ECS to MMCONFIG on a Fam16h
+> box in the field is safe, because we'd then be using a feature we've
+> never used before.
+>
+> Bjorn
+>
 
---Wwca24FQN26//Jqu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+At this point, family11h and later (upto 16h which is our most current 
+processor) should already have supports for the MCFG. However, we can't 
+guarantee that all the systems currently out there would not use the 
+ECS. So, I think it is ok to say we won't support it post 16h as Bjorn 
+suggests.
 
-On Thu, May 22, 2014 at 04:24:55PM -0600, Stephen Warren wrote:
-
-> My main worry is that this patch opens the door for set_sysclk() to
-> perform some kind of calculation to determine the MCLK rate. Right now,
-> this patch doesn't do that, but there's nothing obvious from the code
-> that no CODEC is allowed to do that. After all, sysclk has a parameter
-> to indicate *which* clock in the CODEC to set. Some CODEC driver author
-> might write something where the machine driver tells the CODEC driver
-> the desired rate of some CODEC-internal PLL, from which set_sysclk()
-> calculates what it needs for MCLK, and then goes off and requests that
-> value from the clock API.
-
-I really think you're reading too much into this - the set_sysclk() API
-isn't any different to the clock API here really and most of the
-potential for doing really problematic stuff and defining your clocks to
-mean funny things exists anyway.  Of course people could do tasteless
-things but that's always going to be a risk and we also want to try to
-minimise the amount of redundant code people have to write.
-
-It should be fairly easy to spot substantial abuse since the driver
-would need to call clk_set_rate() with a different rate.
-
-> Ignoring that, I'm still not sure that the CODEC driver setting the MCLK
-> rate is appropriate. If we have 1 MCLK output from an SoC, connected to
-> 2 different CODECs, why wouldn't the overall machine driver call
-> clk_set_rate() on that clock, and then notify the two CODEC drivers of
-> that rate. Making each CODEC's set_sysclk() call clk_set_rate() on the
-> same clock with the same value seems redundant, albeit it should work
-> out fine since they both request the same rate.
-
-Right, it should work fine and it's less work for the machine drivers.
-The alternative is that every machine driver using a device with a
-programmable input has the code to get that clock from the CODEC device
-and set it in sync with telling the CODEC about it which is redundant
-and makes life harder for generic drivers like simple card (which
-obviously can't know the specifics of every CODEC it works with).
-
-It's certainly a more normal thing from a device model and device tree
-point of view for the CODEC to be responsible for getting the resource
-and it seems natural to extend that to such basic management as setting
-the rate. =20
-
-If anything I think want to expose some or all of the CODEC clock trees
-to the clock API, sometimes (rarely but not never) the CODEC PLLs and
-FLLs are used to supply things outside the audio subsystem if they
-happen to be going spare, it's difficult to do that at the minute since
-there's no guaranteed API for being a clock provider.  At the minute
-we're mostly reimplementing a custom clock API which seems like the
-wrong way to be doing things.  That might go towards answering your
-concerns since set_sysclk() would end up as a clock API call (or at
-least a thin wrapper around one).
-
---Wwca24FQN26//Jqu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfon5AAoJELSic+t+oim90pEQAINzaP+0sN7QLFYXrNMRtkCb
-afNPrx1Nt1kYR3r7RcHX/6DEqigEpydq7I/i6a35+nv08lJLOw2LS2IXyYMLeSm0
-qazYoKfrUH5ZpdLs85ud6srorn4VBJ/U+UaKXUB6BtJzCLAysJnT4/Rkt3DP3KJZ
-TJo7oE5ipj40bThwY7ACHOe9g4+ACSQjBTKBzcov9eU4hfnxZhR+8v/a2rUweV4a
-6BPL2eJ8EJgzmkNEdmUBP5RdsVL0WwCw/xhxH+JyPx0l8cRifD+1XaEloPW8bM6C
-EisdIdt4agUxEBCXtcne7fVpgZCBoYilE2xWGoRzRbP9Voe5nYrzcxu6evBHf5CO
-++0VBc4v/xBmnDkO5lIwR6b7Tu3E8MP+C2dxd5hecmacWd/mcy6tgJxUVhR9aCP2
-q6eeqlGEln/MeC24pinVZL3qllc3ABW+OzRBmS2LA1KtvC7OPa1UxVp5yAH9rEGB
-UjHH9rPXMd7ePPlhWYa5fJC13/Dc/PEr1cN8KAjkinGf+6qHnXwtRQNmry3o22zK
-ZGnBStJwbNttPfHBWHTDnBULSbKO+iNbhr9oBWbx0QPPQNasH5x/ffNeotgvVC9I
-ZZg+M4ks3ADuQQs1g/+R3km/Ed27/c5CdVgUr3yx0OO4H4NJb+CRQ2DWm/crDO8X
-p8yYWIdv4cgsDy2YSupo
-=rYHp
------END PGP SIGNATURE-----
-
---Wwca24FQN26//Jqu--
+Suravee
