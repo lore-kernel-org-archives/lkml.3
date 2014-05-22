@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaEVXNW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:13:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38776 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaEVXNU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:13:20 -0400
-Message-ID: <537E848C.5010204@wwwdotorg.org>
-Date: Thu, 22 May 2014 17:13:16 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752906AbaEVXOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:14:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114AbaEVXHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:07:53 -0400
+Subject: [PATCH v4 04/16] PCI: quirk dma_alias_devfn for Ricoh devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
+Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
+        eddy0596@gmail.com, linux@horizon.com
+Date: Thu, 22 May 2014 17:07:49 -0600
+Message-ID: <20140522230749.2856.5415.stgit@bling.home>
+In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
+References: <20140522230230.2856.40017.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: fwu@marvell.com, linus.walleij@linaro.org, tony@atomide.com
-CC: linux-kernel@vger.kernel.org, swarren@nvidia.com, cxie4@marvell.com,
-        ylmao@marvell.com, njiang1@marvell.com, tianxf@marvell.com,
-        fswu@marvell.com
-Subject: Re: [PATCH v2] pinctrl: add params in disable_setting for different
- usage
-References: <1400728210-17863-1-git-send-email-fwu@marvell.com>
-In-Reply-To: <1400728210-17863-1-git-send-email-fwu@marvell.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 09:10 PM, fwu@marvell.com wrote:
-> From: Fan Wu <fwu@marvell.com>
-> 
-> What the patch did:
-> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
->   calling pinctrl_select_state
-> 2.Remove the HW disable operation in in pinmux_disable_setting function.
-> 
-...
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> index c0fe609..c97491a 100644
-> --- a/drivers/pinctrl/core.c
-> +++ b/drivers/pinctrl/core.c
-> @@ -993,25 +993,13 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
->  		 * may not be identical to the set of groups with a mux setting
->  		 * in the new state. While this might be unusual, it's entirely
->  		 * possible for the "user"-supplied mapping table to be written
-> -		 * that way. For each group that was configured in the old state
-> -		 * but not in the new state, this code puts that group into a
-> -		 * safe/disabled state.
-> +		 * that way. This code is used for each group that was
-> +		 * configured in the old state but not in the new state
+The existing quirk for these devices doesn't really solve the problem;
+re-implement it using the DMA alias iterator.  We'll come back later
+and remove the existing quirk and dma_source interface.  Note that
+device ID 0xe822 is typically function 0 and 0xe230 has been tested to
+not need the quirk and are therefore removed versus the equivalent
+dma_source quirk.  If there exist in other configurations we can
+re-add them.
 
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/pci/quirks.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Looking at the code, it's run for every group in the state, not "each
-group that was configured in the old state but not in the new state"
-
-> @@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
->  				 pins[i], desc->name, gname);
->  		}
->  	}
-> -
-> -	if (ops->disable)
-> -		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
->  }
-
-Should that op be removed from the header file and all drivers too?
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index e729206..bc8ebd9 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3333,6 +3333,22 @@ int pci_dev_specific_reset(struct pci_dev *dev, int probe)
+ 	return -ENOTTY;
+ }
+ 
++static void quirk_dma_func0_alias(struct pci_dev *dev)
++{
++	if (PCI_FUNC(dev->devfn) != 0) {
++		dev->dma_alias_devfn = PCI_DEVFN(PCI_SLOT(dev->devfn), 0);
++		dev->dev_flags |= PCI_DEV_FLAGS_DMA_ALIAS_DEVFN;
++	}
++}
++
++/*
++ * https://bugzilla.redhat.com/show_bug.cgi?id=605888
++ *
++ * Some Ricoh devices use function 0 as the PCIe requester ID for DMA.
++ */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe832, quirk_dma_func0_alias);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe476, quirk_dma_func0_alias);
++
+ static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
+ {
+ 	if (!PCI_FUNC(dev->devfn))
 
