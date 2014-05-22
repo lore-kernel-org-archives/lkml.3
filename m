@@ -1,119 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaEVSFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:05:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50078 "EHLO bear.ext.ti.com"
+	id S1752324AbaEVSCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:02:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2881 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618AbaEVSFe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 14:05:34 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH 02/47] mtd: nand: stm_nand_bch: provide Device Tree
- documentation
-Thread-Topic: [PATCH 02/47] mtd: nand: stm_nand_bch: provide Device Tree
- documentation
-Thread-Index: Ac916Fnu9MieOYLQQS60OY/GFi7QEw==
-Date: Thu, 22 May 2014 18:05:03 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAD826F@DBDE04.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752247AbaEVSCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 14:02:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,888,1392192000"; 
+   d="scan'208";a="516171606"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
+        mika.westerberg@linux.intel.com, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH V7 03/11] ACPI: remove ids that does not comply with the ACPI PNP id rule
+Date: Fri, 23 May 2014 02:02:25 +0800
+Message-Id: <1400781753-2682-4-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: linux-mtd [mailto:linux-mtd-bounces@lists.infradead.org] On Behalf Of Lee Jones
->
->This is where we describe the different new and generic options used by
->the ST BCH driver.
->
->Cc: devicetree@vger.kernel.org
->Signed-off-by: Lee Jones <lee.jones@linaro.org>
->---
-> Documentation/devicetree/bindings/mtd/stm-nand.txt | 123 +++++++++++++++++++++
-> 1 file changed, 123 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/mtd/stm-nand.txt
->
->diff --git a/Documentation/devicetree/bindings/mtd/stm-nand.txt
->b/Documentation/devicetree/bindings/mtd/stm-nand.txt
->new file mode 100644
->index 0000000..9f9325f
->--- /dev/null
->+++ b/Documentation/devicetree/bindings/mtd/stm-nand.txt
->@@ -0,0 +1,123 @@
->+STM BCH NAND Support
->+--------------------
->+
->+Required properties:
->+
->+- compatible		: Should be "st,nand-bch"
->+- reg			: Should contain register's location and length
->+- reg-names		: "nand_mem" - NAND Controller register map
->+			  "nand_dma" - BCH Controller DMA configuration map
->+- interrupts		: Interrupt number
->+- interrupt-names	: "nand_irq" - NAND Controller IRQ
->+- st,nand-banks		: Subnode representing one or more "banks" of NAND
->+                          Flash, connected to an STM NAND Controller (see
->+                          description below).
->+- nand-ecc-strength	: Generic NAND property (See mtd/nand.txt)
->+- st,bch-bitflip-threshold
->+			: The threshold at which the number of corrected bit-
->+			  flips per sector is deemed to have reached an
->+			  excessive level (triggers '-EUCLEAN' to be returned
->+			  to the caller).  The value should be in the range 1
->+			  to <ecc-strength> where <ecc-strength> is 18 or 30,
->+			  depending on the BCH ECC mode in operation.  A value
->+			  of 0, or if left unspecified, is interpreted by the
->+			  driver as <ecc-strength>.
->+
-Please drop this one as discussed in other thread that bitflip_threshold
-does not qualify as DT binding (as it's not a hardware or const parameter).
+The acpi pnp scan handler id list just copies all the ids from all the
+struct pnp_device_id instances, but some of them do not
+comply with the ACPI PNP id rule (3 Alpha Charactors + 4 Hex numbers).
 
->+Properties describing Bank of NAND Flash ("st,nand-banks"):
->+
->+- st,nand-csn		: Chip select associated with the Bank.
->+- st,nand-timing-spec	: [Optional] NAND Device Timing Data.  All times
->+                          expressed in ns, except where stated otherwise:
+For those ids, the coressponding devices will never be enumerated
+via ACPI, so it is safe to remove those ids from the PNPACPI white list.
 
-I think DT maintainers don't prefer NAND timings being passed by DT,
-Instead they want it parsed from ONFI.
-Refer comments by 'Rob Herring <robherring2@gmail.com>' on
-[PATCH RFC 1/3] Devicetree: Add pl353 smc controller devicetree binding information
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/acpi/acpi_pnp.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
+diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+index 57d14ed..d206616 100644
+--- a/drivers/acpi/acpi_pnp.c
++++ b/drivers/acpi/acpi_pnp.c
+@@ -33,10 +33,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+ 	/* ide   */
+ 	{"PNP0600"},		/* Generic ESDI/IDE/ATA compatible hard disk controller */
+ 	/* ns558 */
+-	{"@P@0001"},		/* ALS 100 */
+-	{"@P@0020"},		/* ALS 200 */
+-	{"@P@1001"},		/* ALS 100+ */
+-	{"@P@2001"},		/* ALS 120 */
+ 	{"ASB16fd"},		/* AdLib NSC16 */
+ 	{"AZT3001"},		/* AZT1008 */
+ 	{"CDC0001"},		/* Opl3-SAx */
+-- 
+1.8.3.2
 
->+                            tR           : Max Page Read delay [us]
-
-(1) Even if you end up requiring these bindings, then please add them
-to NAND generic bindings so that other drivers can re-use them.
-(2) It would be good to have DT-bindings suffixed with timing units
-like "ns" | "ps". Example: "tR-us" or something similar.
-
-[...]
-
->+Note, during initialisation, the NAND Controller timing registers are configured
->+according to one of the following methods, in order of precedence:
->+
->+           1. Configuration based on "st,nand_timing_spec" if supplied.
->+
-Not sure if this mode is really required, as almost all devices are ONFI compliant.
-Please check with 'Rob Herring <robherring2@gmail.com>'
-
->+           2. Configuration based on ONFI timing mode, as advertised by the
->+              device during ONFI-probing (ONFI-compliant NAND only).
->+
->+           3. Use reset/safe timing values
->+
-
-
-with regards, pekon
