@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750987AbaEVQTm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:19:42 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:46639 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaEVQTl (ORCPT
+	id S1751092AbaEVQY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:24:59 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:48177 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaEVQY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:19:41 -0400
+	Thu, 22 May 2014 12:24:58 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: DT for 3.16 at91-dt3 #3
+Date: Thu, 22 May 2014 18:24:55 +0200
+Message-ID: <1400775895-31183-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-In-Reply-To: <537DA5C0.2070609@roeck-us.net>
-References: <CA+HUmGjvHgWB3vcPnXAEVFdFuy9sOaB1BjaDW1-7ai933XEGWQ@mail.gmail.com>
-	<20140520195041.GA28913@roeck-us.net>
-	<CA+HUmGg4mE5RDxShNCK78yLi9gdX_FnHtWPKfGD4LaEqrCdj2Q@mail.gmail.com>
-	<20140520233812.GA15640@roeck-us.net>
-	<CA+HUmGge7AEpAnwAG_VJD2CKTtRBoC2bCGVU_t4qm-x6+OCr-g@mail.gmail.com>
-	<20140521193010.GA1721@roeck-us.net>
-	<CA+HUmGhm1VLTvMKW1TUUPqStUhD11M5u0VyTZyXyWz_ZS8uSVw@mail.gmail.com>
-	<20140521225958.GB2467@roeck-us.net>
-	<20140522071427.GA21230@kroah.com>
-	<537DA5C0.2070609@roeck-us.net>
-Date: Thu, 22 May 2014 09:19:40 -0700
-Message-ID: <CA+HUmGhVhLoehT68=2fErGeYSjAC87Ria=5pXUNSpYLwdpXc2w@mail.gmail.com>
-Subject: Re: pci: kernel crash in bus_find_device
-From: Francesco Ruggeri <fruggeri@arista.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
-        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aborting a search does not sound like a correct solution.
-How does a higher level user (eg for_each_pci_dev) know that a search
-was aborted and decide whether it should try again, assuming it would
-be ok repeating the action on the devices visited the first time?
+Arnd, Olof, Kevin,
 
-Francesco
+Another AT91 DT pull-request for 3.16. This one is the conversion of two more
+SoC to Common Clock Framework (aka CCF). I identified it as a "DT" pull-request
+but it modifies slightly a couple of files in mach-at91 (use of a configuration
+option).
+This pull-request depends on:
+- the fixes that I already sent for 3.15 and that are present in the recent
+  3.15-rc6 tag.
+- the at91-cleanup tag that you integrated in your arm-soc/next/soc branch.
+So, as suggested by Arnd on IRC, I merged both of them to act as the base
+before adding the material for this pull-request.
+
+About the clock nodes that should be grouped in a "clocks" container or not,
+while waiting for a clear statement by the DT maintainers, I kept the clocks
+nodes as they had been written by Boris.
+As proposed by Olof, I plan to send you a comprehensive patch that fixes this
+when Mark gives his point of view.
+
+Thanks, best regards,
+
+The following changes since commit 6a84872a3c3090993be108f02f91b4de062a7d32:
+
+  Merge branch 'at91-3.16-cleanup' into at91-3.16-dt3 (2014-05-22 18:01:22 +0200)
+
+are available in the git repository at:
 
 
-On Thu, May 22, 2014 at 12:22 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 05/22/2014 12:14 AM, Greg Kroah-Hartmann wrote:
->>
->> On Wed, May 21, 2014 at 03:59:58PM -0700, Guenter Roeck wrote:
->>>
->>> On Wed, May 21, 2014 at 01:04:04PM -0700, Francesco Ruggeri wrote:
->>>>
->>>> I have been using an x86 platform.
->>>> When I started working on it I got early crashes until I added the
->>>> check for p not NULL in
->>>>
->>>> +void bus_release_device(struct device *dev)
->>>> +{
->>>> + struct device_private *p = dev->p;
->>>> +
->>>> + if (p && klist_node_attached(&p->knode_bus))
->>>> + klist_put_last(&p->knode_bus);
->>>> +}
->>>> +
->>>>
->>>> Maybe on powerpc *p is overriden between device_del and device_release?
->>>>
->>>> Or maybe some of the BUG_ONs in the patch? The ones on knode_dead are
->>>> treated as WARN_ONs in the current klist code.
->>>> The one in BUG_ON(!klist_dec_and_del(n)); is new, and in my tests I
->>>> ran into it without the second patch (but only when I ran my module
->>>> and tests).
->>>>
->>> Hi Francesco,
->>>
->>> I replaced the BUG_ON with WARN_ON; still crashes.
->>>
->>> Anyway, the problem seems to be known. I found two related exchanges.
->>>
->>> [1] describes pretty much the same problem. I don't see if/where it was
->>> ever fixed, though.
->>>
->>> [2] is a patch to fix the problem. It did not apply cleanly to 3.14,
->>> so I had to make some adjustments in klist_iter_init_node. Resulting
->>> patch is below. With this patch, the problem is gone. It is not perfect,
->>> as it aborts the loop if it encounters a deleted kobject, but it is
->>> better
->>> than nothing. Unfortunately, the patch never made it upstream; no idea
->>> why.
->>> Copying the author and Greg to get additional feedback.
->>>
->>> Guenter
->>>
->>> [1] https://lkml.org/lkml/2008/10/26/79
->>> [2] https://lkml.org/lkml/2012/4/16/218
->>
->>
->> 2 years ago?  I have no idea what was up with that, sorry...
->>
->
-> Ok, but do you have comments on the patch itself in its current version ?
->
-> Guenter
->
+  git://github.com/at91linux/linux-at91.git tags/at91-dt3
+
+for you to fetch changes up to b4a86b3810f5dc4b959ee69a3818c876752c88cd:
+
+  ARM: at91: move sam9n12 SoC to the CCF (2014-05-22 18:03:17 +0200)
+
+----------------------------------------------------------------
+3.16 third DT series:
+- move of both at91sam9n12 and at91sam9x5 to CCF
+
+----------------------------------------------------------------
+Boris BREZILLON (8):
+      ARM: at91: prepare common clk transition for sam9x5 SoCs
+      ARM: at91/dt: define sam9x5 clocks
+      ARM: at91/dt: define sam9x5ek's crystal frequencies
+      ARM: at91: move sam9x5 SoCs to the CCF
+      ARM: at91: prepare common clk transition for sam9n12 SoC
+      ARM: at91/dt: define sam9n12 clocks
+      ARM: at91/dt: define sam9n12ek crystal frequencies
+      ARM: at91: move sam9n12 SoC to the CCF
+
+ arch/arm/boot/dts/at91sam9n12.dtsi       | 348 +++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/at91sam9n12ek.dts      |   8 +
+ arch/arm/boot/dts/at91sam9x5.dtsi        | 355 ++++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/at91sam9x5_can.dtsi    |  31 +++
+ arch/arm/boot/dts/at91sam9x5_isi.dtsi    |  26 +++
+ arch/arm/boot/dts/at91sam9x5_lcd.dtsi    |  26 +++
+ arch/arm/boot/dts/at91sam9x5_macb0.dtsi  |  11 +
+ arch/arm/boot/dts/at91sam9x5_macb1.dtsi  |  11 +
+ arch/arm/boot/dts/at91sam9x5_usart3.dtsi |  11 +
+ arch/arm/boot/dts/at91sam9x5cm.dtsi      |   8 +
+ arch/arm/mach-at91/Kconfig               |   2 -
+ arch/arm/mach-at91/at91sam9n12.c         |   6 +-
+ arch/arm/mach-at91/at91sam9x5.c          |   6 +-
+ 13 files changed, 842 insertions(+), 7 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_can.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_isi.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_lcd.dtsi
+
+-- 
+Nicolas Ferre
