@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819AbaEVLyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 07:54:12 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:54077 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007AbaEVLyL (ORCPT
+	id S1754842AbaEVLyX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 07:54:23 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:55622 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823AbaEVLyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 07:54:11 -0400
-Message-ID: <537DE56F.3040003@linaro.org>
-Date: Thu, 22 May 2014 13:54:23 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 07:54:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Christophe Kerello <christophe.kerello@st.com>,
+        computersforpeace@gmail.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 09/10] mtd: st_spi_fsm: Provide mask to obtain correct boot device pins
+Date: Thu, 22 May 2014 13:53:52 +0200
+Message-ID: <6459516.cEryHnqAem@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140522115216.GV6679@lee--X1>
+References: <1400757848-18075-1-git-send-email-lee.jones@linaro.org> <4231397.Nn7Rm5jh2O@wuerfel> <20140522115216.GV6679@lee--X1>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "'Shinya Kuribayashi'" <shinya.kuribayashi.px@renesas.com>,
-        "'Magnus Damm'" <damm@opensource.se>,
-        "'Viresh Kumar'" <viresh.kumar@linaro.org>,
-        "'Laurent Pinchart'" <laurent.pinchart@ideasonboard.com>,
-        "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/4] clocksource: em_sti: remove unnecessary OOM messages
-References: <002c01cf6384$781c57b0$68550710$%han@samsung.com> <002d01cf6384$a6dbcf90$f4936eb0$%han@samsung.com> <5379E177.2030707@linaro.org> <001a01cf757a$087b4530$1971cf90$%han@samsung.com>
-In-Reply-To: <001a01cf757a$087b4530$1971cf90$%han@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:iGAHU/7VDSu66jEZdcTu7odxDTqrN3xb2+QXU4UE89j
+ oFVtBr8/h9yjTuNsaw3/q7RT/zuNDrj4HAueCFWhw78teFmyGk
+ UCzXsstH4hEWIlrTi+2HsUD9RQNvvQDM9/Q4axGU4FFuUfXQI0
+ sQsGWBOhXbshMgn66ukH+Pnn44IeGFEiJp6tbYOBGrTYB77vxZ
+ Vy1EKdGFyZl1aHNO7MWnFtUmHqZuhUWvSGYoFbjl1SijYuncAa
+ qap9+7kNk7/knFzah6rrrFaw20nAvcrcHyJmJMrjsUywa9frd0
+ Qbt3pXvaU4vgbWWpDT8uuLjBdjtQV92maNOIm9Q42KZRwOAF4A
+ cdlb4foJF+KmVJ0/4Go4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 06:55 AM, Jingoo Han wrote:
-> On Monday, May 19, 2014 7:48 PM, Daniel Lezcano wrote:
->> On 04/29/2014 10:26 AM, Jingoo Han wrote:
->>> The site-specific OOM messages are unnecessary, because they
->>> duplicate the MM subsystem generic OOM message.
->>
->> Are you sure the MM subsys display a message when an allocation fails ?
->>
->> There are multiple reasons an allocation can fail.
->
-> (+cc Viresh Kumar, Laurent Pinchart, Dan Carpenter, Joe Perches,
->         Thierry Reding, Andrew Morton)
->
-> There was a discussion about this in other threads. [1]
-> Please refer to the following link. Thank you.
->
-> [1] http://patchwork.ozlabs.org/patch/324158/
+On Thursday 22 May 2014 12:52:16 Lee Jones wrote:
+> > On Thursday 22 May 2014 12:24:07 Lee Jones wrote:
+> > > +       /* Mask to apply on boot_device_reg */
+> > > +       ret = of_property_read_u32(np, "st,boot-device-msk", &boot_device_msk);
+> > > +       if (ret)
+> > > +               goto boot_device_fail;
+> > > +
+> > > 
+> > 
+> > The binding defines this property as "optional", but the driver fails
+> > here if it's not provided. I suggest you add a default value here so you
+> > can deal with existing dts. The default should be documented in
+> > the binding as well.
+> 
+> The property is optional. It doesn't fail completely, merely skips the
+> boot device check and falls back to using SPI.  I can update the
+> documentation to this effect though, no problem.
 
-Ok, thanks for the pointer.
+Ah, I see, thanks for the explanation!
 
-
-
->>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>> ---
->>>    drivers/clocksource/em_sti.c |    4 +---
->>>    1 file changed, 1 insertion(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/clocksource/em_sti.c b/drivers/clocksource/em_sti.c
->>> index 9d17083..d0a7bd6 100644
->>> --- a/drivers/clocksource/em_sti.c
->>> +++ b/drivers/clocksource/em_sti.c
->>> @@ -318,10 +318,8 @@ static int em_sti_probe(struct platform_device *pdev)
->>>    	int irq;
->>>
->>>    	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
->>> -	if (p == NULL) {
->>> -		dev_err(&pdev->dev, "failed to allocate driver data\n");
->>> +	if (p == NULL)
->>>    		return -ENOMEM;
->>> -	}
->>>
->>>    	p->pdev = pdev;
->>>    	platform_set_drvdata(pdev, p);
->>>
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+	Arnd
