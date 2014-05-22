@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222AbaEVQvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:51:06 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:46879 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989AbaEVQs1 (ORCPT
+	id S1753234AbaEVQvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:51:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48897 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752983AbaEVQs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 May 2014 12:48:27 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>, Li Yang <leoli@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Aida Mynzhasova <aida.mynzhasova@skitlab.ru>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Claudiu Manoil <claudiu.manoil@freescale.com>,
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list),
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
-Subject: [PATCH net-next v2 7/9] ucc_geth: use the new fixed PHY helpers
-Date: Thu, 22 May 2014 09:47:49 -0700
-Message-Id: <1400777271-32199-8-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400777271-32199-1-git-send-email-f.fainelli@gmail.com>
-References: <1400777271-32199-1-git-send-email-f.fainelli@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
+        benh@kernel.crashing.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v2 18/18] asm-generic: io: define relaxed accessor macros unconditionally
+Date: Thu, 22 May 2014 17:47:30 +0100
+Message-Id: <1400777250-17335-19-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_phy_connect_fixed_link() is becoming obsolete, and also required
-platform code to register the fixed PHYs at the specified addresses for
-those to be usable. Get rid of it and use the new of_phy_is_fixed_link()
-plus of_phy_register_fixed_link() helpers to transition over the new
-scheme.
+Now that no architectures using asm-generic/io.h define their own relaxed
+accessors, the dummy definitions can be used unconditionally.
 
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
-No changes in v2
+ include/asm-generic/io.h | 16 ----------------
+ 1 file changed, 16 deletions(-)
 
- drivers/net/ethernet/freescale/ucc_geth.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
-index c8299c31b21f..fab39e295441 100644
---- a/drivers/net/ethernet/freescale/ucc_geth.c
-+++ b/drivers/net/ethernet/freescale/ucc_geth.c
-@@ -1728,9 +1728,6 @@ static int init_phy(struct net_device *dev)
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 9ccedeb06522..f5611abb82ed 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -53,27 +53,21 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
+ #endif
  
- 	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link, 0,
- 				priv->phy_interface);
--	if (!phydev)
--		phydev = of_phy_connect_fixed_link(dev, &adjust_link,
--						   priv->phy_interface);
- 	if (!phydev) {
- 		dev_err(&dev->dev, "Could not attach to PHY\n");
- 		return -ENODEV;
-@@ -3790,6 +3787,17 @@ static int ucc_geth_probe(struct platform_device* ofdev)
- 	ug_info->uf_info.irq = irq_of_parse_and_map(np, 0);
+ #define readb __raw_readb
+-#ifndef readb_relaxed
+ #define readb_relaxed readb
+-#endif
  
- 	ug_info->phy_node = of_parse_phandle(np, "phy-handle", 0);
-+	if (!ug_info->phy_node) {
-+		/* In the case of a fixed PHY, the DT node associated
-+		 * to the PHY is the Ethernet MAC DT node.
-+		 */
-+		if (of_phy_is_fixed_link(np)) {
-+			err = of_phy_register_fixed_link(np);
-+			if (err)
-+				return err;
-+		}
-+		ug_info->phy_node = np;
-+	}
+ #define readw readw
+ static inline u16 readw(const volatile void __iomem *addr)
+ {
+ 	return __le16_to_cpu(__raw_readw(addr));
+ }
+-#ifndef readw_relaxed
+ #define readw_relaxed readw
+-#endif
  
- 	/* Find the TBI PHY node.  If it's not there, we don't support SGMII */
- 	ug_info->tbi_node = of_parse_phandle(np, "tbi-handle", 0);
+ #define readl readl
+ static inline u32 readl(const volatile void __iomem *addr)
+ {
+ 	return __le32_to_cpu(__raw_readl(addr));
+ }
+-#ifndef readl_relaxed
+ #define readl_relaxed readl
+-#endif
+ 
+ #ifndef __raw_writeb
+ static inline void __raw_writeb(u8 b, volatile void __iomem *addr)
+@@ -97,19 +91,13 @@ static inline void __raw_writel(u32 b, volatile void __iomem *addr)
+ #endif
+ 
+ #define writeb __raw_writeb
+-#ifndef writeb_relaxed
+ #define writeb_relaxed writeb
+-#endif
+ 
+ #define writew(b,addr) __raw_writew(__cpu_to_le16(b),addr)
+-#ifndef writew_relaxed
+ #define writew_relaxed writew
+-#endif
+ 
+ #define writel(b,addr) __raw_writel(__cpu_to_le32(b),addr)
+-#ifndef writel_relaxed
+ #define writel_relaxed writel
+-#endif
+ 
+ #ifdef CONFIG_64BIT
+ #ifndef __raw_readq
+@@ -124,9 +112,7 @@ static inline u64 readq(const volatile void __iomem *addr)
+ {
+ 	return __le64_to_cpu(__raw_readq(addr));
+ }
+-#ifndef readq_relaxed
+ #define readq_relaxed readq
+-#endif
+ 
+ #ifndef __raw_writeq
+ static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
+@@ -136,9 +122,7 @@ static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
+ #endif
+ 
+ #define writeq(b, addr) __raw_writeq(__cpu_to_le64(b), addr)
+-#ifndef writeq_relaxed
+ #define writeq_relaxed writeq
+-#endif
+ #endif /* CONFIG_64BIT */
+ 
+ #ifndef PCI_IOBASE
 -- 
-1.9.1
+1.9.2
 
