@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879AbaEVNuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:50:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37304 "EHLO bear.ext.ti.com"
+	id S1755051AbaEVNuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:50:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37305 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754580AbaEVNuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754589AbaEVNuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 May 2014 09:50:04 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
@@ -18,9 +18,9 @@ CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
         <sergei.shtylyov@cogentembedded.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v5 2/7] clock: keystone-pllctrl: add bindings for keystone pll controller
-Date: Thu, 22 May 2014 16:48:31 +0300
-Message-ID: <1400766516-14537-3-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [Patch v5 4/7] power: reset: add bindings for keystone reset driver
+Date: Thu, 22 May 2014 16:48:33 +0300
+Message-ID: <1400766516-14537-5-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -30,42 +30,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main pll controller used to drive theC66x CorePacs, the switch fabric,
-and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
-the NETCP modules) requires a PLL Controller to manage the various clock
-divisions, gating, and synchronization.
+This node is intended to allow SoC reset in case of software reset
+or appropriate watchdogs.
+
+The Keystone SoCs can contain up to 4 watchdog timers to reset
+SoC. Each watchdog timer event input is connected to the Reset Mux
+block. The Reset Mux block can be configured to cause reset or not.
+
+Additionally soft or hard reset can be configured.
 
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- .../bindings/clock/ti-keystone-pllctrl.txt           | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
+ .../bindings/power/reset/keystone-reset.txt        | 67 ++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
 
-diff --git a/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
+diff --git a/Documentation/devicetree/bindings/power/reset/keystone-reset.txt b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
 new file mode 100644
-index 0000000..208176d
+index 0000000..2ef7bbe
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
-@@ -0,0 +1,20 @@
-+* Device tree bindings for Texas Instruments keystone pll controller
++++ b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
+@@ -0,0 +1,67 @@
++* Device tree bindings for Texas Instruments keystone reset
 +
-+The main pll controller used to drive theC66x CorePacs, the switch fabric,
-+and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
-+the NETCP modules) requires a PLL Controller to manage the various clock
-+divisions, gating, and synchronization.
++This node is intended to allow SoC reset in case of software reset
++of selected watchdogs.
++
++The Keystone SoCs can contain up to 4 watchdog timers to reset
++SoC. Each watchdog timer event input is connected to the Reset Mux
++block. The Reset Mux block can be configured to cause reset or not.
++
++Additionally soft or hard reset can be configured.
 +
 +Required properties:
 +
-+- compatible:		"ti,keystone-pllctrl", "syscon"
++- compatible:		ti,keystone-reset
 +
-+- reg:			contains offset/length value for pll controller
-+			registers space.
++- ti,syscon-pll:	phandle/offset pair. The phandle to syscon used to
++			access pll controller registers and the offset to use
++			reset control registers.
 +
-+Example:
++- ti,syscon-dev:	phandle/offset pair. The phandle to syscon used to
++			access device state control registers and the offset
++			in order to use mux block registers for all watchdogs.
++
++Optional properties:
++
++- ti,soft-reset:	Boolean option indicating soft reset.
++			By default hard reset is used.
++
++- ti,wdt_list:		WDT list that can cause SoC reset. It's not related
++			to WDT driver, it's just needed to enable a SoC related
++			reset that's triggered by one of WDTs. The list is
++			in format: <0>, <2>; It can be in random order and
++			begins from 0 to 3, as keystone can contain up to 4 SoC
++			reset watchdogs and can be in random order.
++
++Example 1:
++Setup keystone reset so that in case software reset or
++WDT0 is triggered it issues hard reset for SoC.
 +
 +pllctrl: pll-controller {
 +	compatible = "ti,keystone-pllctrl", "syscon";
 +	reg = <0x02310000 0x200>;
++};
++
++devctrl: device-state-control {
++	compatible = "ti,keystone-devctrl", "syscon";
++	reg = <0x02620000 0x1000>;
++};
++
++rstctrl: reset-controller {
++	compatible = "ti,keystone-reset";
++	ti,syscon-pll = <&pllctrl 0xe4>;
++	ti,syscon-dev = <&devctrl 0x328>;
++	ti,wdt_list = <0>;
++};
++
++Example 2:
++Setup keystone reset so that in case of software reset or
++WDT0 or WDT2 is triggered it issues soft reset for SoC.
++
++rstctrl: reset-controller {
++	compatible = "ti,keystone-reset";
++	ti,syscon-pll = <&pllctrl 0xe4>;
++	ti,syscon-dev = <&devctrl 0x328>;
++	ti,wdt_list = <0>, <2>;
++	ti,soft-reset;
 +};
 -- 
 1.8.3.2
