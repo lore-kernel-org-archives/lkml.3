@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaEVN04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:26:56 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:37220 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaEVN0z (ORCPT
+	id S1752773AbaEVN1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:27:42 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:61591 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaEVN1k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:26:55 -0400
-Date: Thu, 22 May 2014 15:26:45 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: cavium-octeon: remove checks for CONFIG_CAVIUM_GDB
-Message-ID: <20140522132645.GC10287@linux-mips.org>
-References: <1400602574.4912.43.camel@x220>
+	Thu, 22 May 2014 09:27:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400602574.4912.43.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <672dd8e9-2857-49fb-848f-d38d38b23c9b@BN1BFFO11FD024.protection.gbl>
+References: <672dd8e9-2857-49fb-848f-d38d38b23c9b@BN1BFFO11FD024.protection.gbl>
+Date: Thu, 22 May 2014 08:27:39 -0500
+Message-ID: <CAL_Jsq+1_W_d1WWkMUsHZYKXV=t9MN70iR25bnA8Emzh8zb2mg@mail.gmail.com>
+Subject: Re: [RFC] Migrate to Hz resolution for OPP binding
+From: Rob Herring <robherring2@gmail.com>
+To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 06:16:14PM +0200, Paul Bolle wrote:
+On Tue, May 20, 2014 at 5:30 PM, Sören Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+> Hi,
+>
+> I guess this is just to evaluate how big the lynch mob will be. Anyway:
+> Triggered by this discussion https://lkml.org/lkml/2014/5/15/46, I
+> looked a little into what it would take to migrate everybody to Hz
+> frequency resolutions to avoid all the conversions between cpufreq, CCF,
+> OPPs, etc.
+> Turns out, OPPs are already stored in Hz resolution in the kernel, but the DT
+> bindings use kHz resolution to specify them in DT. So, code-wise there
+> is just a removal of a multiplication in the OPP parser (see below), but
+> then there are the DT bindings...
 
-> Three checks for CONFIG_CAVIUM_GDB were added in v2.6.29. But the
-> Kconfig symbol CAVIUM_GDB was never added to the tree. Remove these
-> checks.
-> 
-> Also remove the last reference to octeon_get_boot_debug_flag(). There is
-> no definition of that function anyway.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Add this to the list of issues with the current OPP binding and define
+a new binding, not a band-aid.
 
-Queued for 3.16.  Thanks Paul & Andreas!
+> As plan B, I was thinking to add the property 'operating-points-hz'...
+>
+> Any better ideas?
 
-> A follow up might be to remove plat_smp_ops.cpus_done. All these
-> callbacks are now (basically) nops.
+Fix clk_round_rate to specify how you want to round. There are
+usecases for both rounding up and down. Don't you have the same
+rounding problem with hz? Assume the person filling in OPP values
+knows nothing about the kernel and you could have values rounded both
+ways.
 
-I'll think about it.  The hook is no useful if unused then again now and
-then ordering issues in SMP startup of secondary CPUs are showing up and
-it may be useful to solve those.  Maybe something like
-
-void __init smp_cpus_done(unsigned int max_cpus)
-{
-- 	mp_ops->cpus_done();
-+ 	if (cpus_done)
-+ 		mp_ops->cpus_done();
-}
-
-which would make a NULL cpus_done function pointer safe and allow empty definitions
-to be removed.
-
-  Ralf
+Rob
