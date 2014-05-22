@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaEVOI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:08:59 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12129 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750899AbaEVOI5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:08:57 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+ULUKle8gdapp9L1t4Dak4qafCaaIlCoE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan CB92557D2D3
-Date: Thu, 22 May 2014 10:08:38 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v6 10/17] ARM: mvebu: add USB3 support for Armada 38x
-Message-ID: <20140522140838.GM8664@titan.lakedaemon.net>
-References: <1400149062-32661-1-git-send-email-gregory.clement@free-electrons.com>
- <1400149062-32661-11-git-send-email-gregory.clement@free-electrons.com>
- <20140516190729.GN27822@titan.lakedaemon.net>
- <1400497768.2007.10.camel@x220>
- <537CAFD2.3080807@free-electrons.com>
+	id S1752208AbaEVOKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:10:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45862 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347AbaEVOKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 10:10:07 -0400
+Date: Thu, 22 May 2014 09:09:48 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+CC: <linux-kernel@vger.kernel.org>, <mingo@kernel.org>, <tglx@linutronix.de>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>
+Subject: Re: [PATCH v2] PREEMPT_RT: USB serial gadget: Fix locking issue
+Message-ID: <20140522140948.GB11707@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1400752728-9495-1-git-send-email-jjhiblot@traphandler.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mxv5cy4qt+RJ9ypb"
 Content-Disposition: inline
-In-Reply-To: <537CAFD2.3080807@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1400752728-9495-1-git-send-email-jjhiblot@traphandler.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 03:53:22PM +0200, Gregory CLEMENT wrote:
-> On 19/05/2014 13:09, Paul Bolle wrote:
-> > On Fri, 2014-05-16 at 15:07 -0400, Jason Cooper wrote:
-> >> On Thu, May 15, 2014 at 12:17:35PM +0200, Gregory CLEMENT wrote:
-> >>> This patch adds the selection of the config symbol needed to build the
-> >>> USB3 support for Armada 38x into mvebu_v7_defconfig.
-> >>>
-> >>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> >>> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> >>> ---
-> >>>  arch/arm/mach-mvebu/Kconfig | 1 +
-> >>>  1 file changed, 1 insertion(+)
-> >>
-> >> Patches 10 and 11 applied to mvebu/soc
-> > 
-> > These two just hit linux-next (in next-20140519). They're pointless, as
-> > config USB_ARCH_HAS_XHCI was dropped in commit b797b76fb464 ("usb: host:
-> > remove USB_ARCH_HAS_?HCI").
-> 
-> Right! We didn't notice it.
-> 
-> Jason you can simply remove them from mvebu/soc when you will submit the pull request
+--mxv5cy4qt+RJ9ypb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Now dropped from mvebu/soc.
+Hi,
 
-thx,
+On Thu, May 22, 2014 at 11:58:48AM +0200, Jean-Jacques Hiblot wrote:
+> With CONFIG_PREEMPT_RT_FULL the tty_flip_buffer_push(..) actions are exec=
+uted
+> immeditely (same behaviour as if low_latency flag was set). We thus have =
+to
+> release port_lock before callng tty_flip_buffer_push().
+>=20
+> This issue resultst of commits:
+> 44a0c019: USB: g_serial: don't set low_latency flag
+> dc0cbd1b: serial: 8250: Call flush_to_ldisc when the irq is threaded
+>=20
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 
-Jason.
+can you please resend with linux-usb in copy ?
+
+--=20
+balbi
+
+--mxv5cy4qt+RJ9ypb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTfgUsAAoJEIaOsuA1yqREKYYP+wRsL1g3xs3IARlanYieLkyD
+ExG7OhhN21daA4hsDKmhPj4CqT0bpUNov9l7ORcD8TYh3waDMtZYXnEm9cBurGw/
+x2k29rylVO2OI1HcnwbTxGko9R7RYG4bpjqf5cKXGdnMY0cFTSROxfNQN6bU71rS
+Pyltv+ZcQXefMwhGGtghutvsOE/gh8nQ6MIRlGYUc2/tWwQ82abw/4IjC1CXg3vI
+GegQHJpxts3hb5h/J0DnGhwZVAst62OYmpzbErzh55/SX/gfyrRnmcQpiRZiSYuv
+q1pvwsFqKB28PV8n0janXwNvxNf9WWFieQXjHJHcOca/haYJ1AxxHhkLpgky24Qh
+91yVEqqHyDQSe8SEYQifVsi+MoYBTHhKlmNdQtV93EnuJmPrmlvYLRseQ+pdDaSR
+tJDU8QzfGX+wBJvlNRmjDKheQ5r5iMPlrMRjhrPrywYLtDURiAdnyjGollXL/BbD
+LXHw3OHsFVo4fV7ikNMxNIuR2AvtnM8CSk/ObDtLrMpzYqzsl/wL7nPtPq0skQ6Q
+dj2PZ6vPvYgn2bvNZoeFhsosFPBp1batUCXMb9wrgVYtNySCO4t8dC/hDjIv+Gzf
+Hku3Lamf1yQUr1S7AYkbkWkXfZEAzoXJSuDNxtclN6r0uofSSqxAl+x6zLa74r4J
+cBUcWOsEfQWiRGstsW5f
+=VXeI
+-----END PGP SIGNATURE-----
+
+--mxv5cy4qt+RJ9ypb--
