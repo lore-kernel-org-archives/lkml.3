@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaEVBuf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 21:50:35 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:39721 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaEVBue (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 21:50:34 -0400
-Message-ID: <537D57CA.6000305@windriver.com>
-Date: Thu, 22 May 2014 09:50:02 +0800
-From: "Yang,Wei" <Wei.Yang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752956AbaEVByw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 21:54:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25585 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731AbaEVByv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 21:54:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,883,1392192000"; 
+   d="scan'208";a="535769805"
+Date: Thu, 22 May 2014 09:54:48 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jet Chen <jet.chen@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [x86, vdso] cfda7bb9ecb: +14.7% will-it-scale.per_thread_ops
+Message-ID: <20140522015448.GA23196@localhost>
+References: <537AEF2D.9040207@intel.com>
+ <CALCETrVFbo1yb7FyCH1Y=pHb89VPt9ycx0C-wv2A7h=CzwwdGA@mail.gmail.com>
 MIME-Version: 1.0
-To: <Wei.Yang@windriver.com>, <daniel.lezcano@linaro.org>
-CC: <tglx@linutronix.de>, <rostedt@goodmis.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] drivers/clocksource: do not trace read_sched_clock
-References: <1399950608-11873-1-git-send-email-Wei.Yang@windriver.com>
-In-Reply-To: <1399950608-11873-1-git-send-email-Wei.Yang@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.170]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVFbo1yb7FyCH1Y=pHb89VPt9ycx0C-wv2A7h=CzwwdGA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi Andy,
 
-What do you think of it?
+On Wed, May 21, 2014 at 03:46:58PM -0700, Andy Lutomirski wrote:
+> On Mon, May 19, 2014 at 10:59 PM, Jet Chen <jet.chen@intel.com> wrote:
+> > Hi Andy,
+> >
+> > FYI, we noticed the below changes on
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/vdso
+> > commit cfda7bb9ecbf9d96264bb5bade33a842966d1062 ("x86, vdso: Move syscall
+> > and sysenter setup into kernel/cpu/common.c")
+> 
+> This is really strange.  That change shouldn't have any effect except
+> that some kernels might boot a cycle or two faster.
+> 
+> >
+> > test case: nhm4/will-it-scale/sched_yield
+> >
+> > 3d7ee969bffcc98  cfda7bb9ecbf9d96264bb5bad
+> > ---------------  -------------------------
+> >     5497021 ~ 0%     +14.7%    6303424 ~ 0%  TOTAL
+> > will-it-scale.per_thread_ops
+> >        0.54 ~ 0%      +5.6%       0.57 ~ 0%  TOTAL will-it-scale.scalability
+> >     6209483 ~ 0%      +1.6%    6305917 ~ 0%  TOTAL
+> > will-it-scale.per_process_ops
+> >        2455 ~ 5%     +16.9%       2870 ~ 5%  TOTAL cpuidle.C1-NHM.usage
+> >        8829 ~ 7%     +15.2%      10169 ~10%  TOTAL
+> > slabinfo.kmalloc-64.active_objs
+> >       24.13 ~12%     +48.9%      35.93 ~14%  TOTAL time.user_time
+> >         393 ~ 0%      -3.0%        382 ~ 1%  TOTAL time.system_time
+> >
+> 
+> Is this a speedup or a slowdown?
 
-Regards
-Wei
-On 05/13/2014 11:10 AM, Wei.Yang@windriver.com wrote:
-> From: Yang Wei <Wei.Yang@windriver.com>
->
-> We do not need to trace read_sched_clock function,
-> so add notrace attribute for this function.
->
-> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
-> ---
->   drivers/clocksource/dw_apb_timer_of.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
-> index 2a2ea27..d305fb0 100644
-> --- a/drivers/clocksource/dw_apb_timer_of.c
-> +++ b/drivers/clocksource/dw_apb_timer_of.c
-> @@ -106,7 +106,7 @@ static void __init add_clocksource(struct device_node *source_timer)
->   	sched_rate = rate;
->   }
->   
-> -static u64 read_sched_clock(void)
-> +static u64 notrace read_sched_clock(void)
->   {
->   	return ~__raw_readl(sched_io_base);
->   }
+It's a speedup. The will-it-scale/sched_yield test case's throughput
+increased by +14.7% (multi-thread case) and +1.6% (multi-process case).
 
+However the CPU %user time increased more, by +48.9%.
+
+Thanks,
+Fengguang
