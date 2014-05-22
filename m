@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaEVWyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 18:54:13 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:52112
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751145AbaEVWyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 18:54:12 -0400
-Date: Thu, 22 May 2014 17:37:58 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: powerpc: remove checks for CONFIG_BOOK3E_MMU_TLB_STATS
-Message-ID: <20140522223758.GA20343@home.buserror.net>
-References: <1400608550.4912.48.camel@x220>
+	id S1752246AbaEVXEG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:04:06 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:33049 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751196AbaEVXEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:04:04 -0400
+X-IronPort-AV: E=Sophos;i="4.98,890,1392159600"; 
+   d="scan'208";a="75435853"
+Date: Fri, 23 May 2014 07:03:37 +0800 (SGT)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Himangi Saraogi <himangi774@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] dt/sparc: Introduce the use of the managed version of
+ kzalloc
+In-Reply-To: <20140522194539.GA7708@core.coreip.homeip.net>
+Message-ID: <alpine.DEB.2.10.1405230700090.2606@hadrien>
+References: <20140522193430.GA16315@himangi-Dell> <20140522194539.GA7708@core.coreip.homeip.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1400608550.4912.48.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [2601:2:5800:3f7:94a7:3934:a2c9:ca27]
-X-ClientProxiedBy: DM2PR04CA054.namprd04.prod.outlook.com (10.141.154.172)
- To DM2PR03MB400.namprd03.prod.outlook.com (10.141.84.153)
-X-Forefront-PRVS: 021975AE46
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(428001)(51704005)(189002)(199002)(24454002)(42186004)(83322001)(19580405001)(20776003)(47776003)(23726002)(80022001)(99396002)(33656002)(83072002)(46102001)(92566001)(50986999)(54356999)(19580395003)(53416003)(46406003)(76176999)(76482001)(83506001)(79102001)(86362001)(64706001)(81342001)(74662001)(102836001)(31966008)(74502001)(4396001)(81542001)(81156002)(87976001)(101416001)(85852003)(77982001)(97756001)(21056001)(69596002)(50466002)(92726001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB400;H:home.buserror.net;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 07:55:50PM +0200, Paul Bolle wrote:
-> Three checks for CONFIG_BOOK3E_MMU_TLB_STATS were added in v2.6.32. But
-> the related Kconfig symbol was never added. These checks have always
-> evaluated to false. Remove them.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> 
-> ---
-> Untested.
-> 
-> A second order cleanup is now possible (ie, TLB_MISS_PROLOG_STATS and
-> friends are, well, defined away). Perhaps it is preferable to include
-> that cleanup in this patch.
-> 
->  arch/powerpc/include/asm/exception-64e.h | 38 --------------------------------
->  arch/powerpc/mm/tlb_low_64e.S            | 10 ---------
->  2 files changed, 48 deletions(-)
 
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S: Assembler messages:
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:89: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:238: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:269: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:281: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:441: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:510: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:881: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-/home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:918: Error: unrecognized opcode: `tlb_miss_prolog_stats'
 
--Scott
+On Thu, 22 May 2014, Dmitry Torokhov wrote:
+
+> Hi Himangi,
+>
+> On Fri, May 23, 2014 at 01:04:30AM +0530, Himangi Saraogi wrote:
+> > This patch moves data allocated using kzalloc to managed data allocated
+> > using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+> > functions. Also the unnecessary labels are done away with.
+>
+> Please no more partial devm conversions. I am not interested in patches
+> that change only 1 resource to be managed and leaving the rest as is.
+>
+> If you want to do devm conversion please do it if you convert all (or at
+> least majority) of resource handling to managed resources.
+
+Sorry, I don't think we are clear on what is wanted.  Himangi's patches
+convert everything where a devm function is already available (to our
+knowledge).  Do you prefer that new devm functions be introduced?  On the
+one hand, that is perhaps useful from a safety point of view.  On the
+other hand, it could lead to a huge number of rarely used devm functions
+that no one knows about and to a lot of code diversity.  So I don't know
+what is the good solution.
+
+thanks,
+julia
