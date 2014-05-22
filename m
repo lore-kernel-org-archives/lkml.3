@@ -1,113 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085AbaEVM3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:29:23 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:51077 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaEVM3S (ORCPT
+	id S1755595AbaEVM33 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:29:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51333 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709AbaEVM30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:29:18 -0400
-Date: Thu, 22 May 2014 14:29:09 +0200
-From: Michael Mueller <mimu@linux.vnet.ibm.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Alexander Graf <agraf@suse.de>, linux-s390@vger.kernel.org,
-        kvm@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
-        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Andreas Faerber <afaerber@suse.de>,
-        Richard Henderson <rth@twiddle.net>,
-        Eduardo Habkost <ehabkost@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v1 RFC 6/6] KVM: s390: add cpu model
- support
-Message-ID: <20140522142909.13fcd583@bee>
-In-Reply-To: <537DBB12.6070108@redhat.com>
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>
-	<1399993114-15333-7-git-send-email-mimu@linux.vnet.ibm.com>
-	<5375FFB8.90504@suse.de>
-	<20140516173907.3b1c4efa@bee>
-	<53767590.2090605@suse.de>
-	<20140519125339.09840b9e@bee>
-	<5379EF78.9040209@suse.de>
-	<20140519161811.5a17bc66@bee>
-	<537A19F8.4060209@suse.de>
-	<20140519190318.6f92c1bd@bee>
-	<537A6608.8000608@suse.de>
-	<20140520120218.38eb7181@bee>
-	<537B2A0F.1030706@suse.de>
-	<20140521145652.197bff21@bee>
-	<537CA89B.6050803@suse.de>
-	<20140522102316.653f34ba@bee>
-	<537DBB12.6070108@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052212-2966-0000-0000-00000B5E5E1E
+	Thu, 22 May 2014 08:29:26 -0400
+Date: Thu, 22 May 2014 05:28:36 -0700
+From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
+Message-ID: <tip-7aa2c016db2162defff77f6f5731bff3f25e5175@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+In-Reply-To: <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
+References: <a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched:
+  Consolidate open coded implementations of nice level frobbing into nice_to_rlimit
+ () and rlimit_to_nice()
+Git-Commit-ID: 7aa2c016db2162defff77f6f5731bff3f25e5175
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014 10:53:38 +0200
-Paolo Bonzini <pbonzini@redhat.com> wrote:
+Commit-ID:  7aa2c016db2162defff77f6f5731bff3f25e5175
+Gitweb:     http://git.kernel.org/tip/7aa2c016db2162defff77f6f5731bff3f25e5175
+Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+AuthorDate: Thu, 8 May 2014 18:33:49 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 22 May 2014 11:16:36 +0200
 
-> Il 22/05/2014 10:23, Michael Mueller ha scritto:
-> > On Wed, 21 May 2014 15:22:35 +0200
-> > Alexander Graf <agraf@suse.de> wrote:
-> >
-> > I have seen the slides from Eduardo which he presented during this years
-> > DevConf in Brno and made my comments according the s390x implementation
-> > on that. Is you will see, this is mostly overlapping except for the model
-> > definition authority that I clearly see on qemu's side.
-> >
-> > See pdf attachment.
-> 
-> More comments:
-> 
-> - "Only one machine type in s390 case which is -machine s390-virtio-ccw"
-> 
-> This probably should change sooner or later, as soon as the 
-> implementation becomes stable enough.  Versioning is necessary for live 
-> migration across different QEMU version.  Perhaps start versioning in 
-> 2.2, i.e. start making s390-virtio-ccw-2.1 an alias for s390-virtio-ccw now?
+sched: Consolidate open coded implementations of nice level frobbing into nice_to_rlimit() and rlimit_to_nice()
 
-Absolutely right, we did not do it yet.
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/a568a1e3cc8e78648f41b5035fa5e381d36274da.1399532322.git.yangds.fnst@cn.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ drivers/staging/android/binder.c |  2 +-
+ include/linux/sched/prio.h       | 16 ++++++++++++++++
+ kernel/sched/core.c              |  2 +-
+ kernel/sys.c                     |  6 +++---
+ 4 files changed, 21 insertions(+), 5 deletions(-)
 
-> 
-> Note that new virtio device features can appear at any time outside the 
-> s390 code, and will take part in versioning as well.
-
-These changes are then as well included in the machine version I guess. 
-
-> 
-> - "No enforce option"
-> 
-> Strongly suggest making enforce the only possible behavior.
-
-Right that's the plan.
-
-> 
-> - "Not in the s390x case, because the KVM facility mask limits the cpu 
-> model specific facilities"
-> 
-> What if the KVM facility mask changes?  For x86, nowadays new CPUID bits 
-> are only introduced in KVM when a new processors comes out.  But if we 
-> introduced an older CPUID bit, it would be a huge complication for 
-> backwards compatibility.  Is it different for s390?
-> 
-
-I'm thinking about this one currently. The ABI itself will not change
-because all facilities of the architecture will be defined in QEMU for the
-respective CPU model even though some of them are masked out upon request
-by KVM, but the mask is part of the interface itself and can be applied by
-QEMU already.  
-
-Michael 
-
-> Paolo
-> 
-
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 179b21b..9311bb6 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -436,7 +436,7 @@ static void binder_set_nice(long nice)
+ 		set_user_nice(current, nice);
+ 		return;
+ 	}
+-	min_nice = 20 - current->signal->rlim[RLIMIT_NICE].rlim_cur;
++	min_nice = rlimit_to_nice(current->signal->rlim[RLIMIT_NICE].rlim_cur);
+ 	binder_debug(BINDER_DEBUG_PRIORITY_CAP,
+ 		     "%d: nice value %ld not allowed use %ld instead\n",
+ 		      current->pid, nice, min_nice);
+diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
+index ac32258..d9cf5a5 100644
+--- a/include/linux/sched/prio.h
++++ b/include/linux/sched/prio.h
+@@ -41,4 +41,20 @@
+ #define TASK_USER_PRIO(p)	USER_PRIO((p)->static_prio)
+ #define MAX_USER_PRIO		(USER_PRIO(MAX_PRIO))
+ 
++/*
++ * Convert nice value [19,-20] to rlimit style value [1,40].
++ */
++static inline long nice_to_rlimit(long nice)
++{
++	return (MAX_NICE - nice + 1);
++}
++
++/*
++ * Convert rlimit style value [1,40] to nice value [-20, 19].
++ */
++static inline long rlimit_to_nice(long prio)
++{
++	return (MAX_NICE - prio + 1);
++}
++
+ #endif /* _SCHED_PRIO_H */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index da302ca..321d800 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3033,7 +3033,7 @@ EXPORT_SYMBOL(set_user_nice);
+ int can_nice(const struct task_struct *p, const int nice)
+ {
+ 	/* convert nice value [19,-20] to rlimit style value [1,40] */
+-	int nice_rlim = 20 - nice;
++	int nice_rlim = nice_to_rlimit(nice);
+ 
+ 	return (nice_rlim <= task_rlimit(p, RLIMIT_NICE) ||
+ 		capable(CAP_SYS_NICE));
+diff --git a/kernel/sys.c b/kernel/sys.c
+index fba0f29..66a751e 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -250,7 +250,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 			else
+ 				p = current;
+ 			if (p) {
+-				niceval = 20 - task_nice(p);
++				niceval = nice_to_rlimit(task_nice(p));
+ 				if (niceval > retval)
+ 					retval = niceval;
+ 			}
+@@ -261,7 +261,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 			else
+ 				pgrp = task_pgrp(current);
+ 			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+-				niceval = 20 - task_nice(p);
++				niceval = nice_to_rlimit(task_nice(p));
+ 				if (niceval > retval)
+ 					retval = niceval;
+ 			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+@@ -277,7 +277,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 
+ 			do_each_thread(g, p) {
+ 				if (uid_eq(task_uid(p), uid)) {
+-					niceval = 20 - task_nice(p);
++					niceval = nice_to_rlimit(task_nice(p));
+ 					if (niceval > retval)
+ 						retval = niceval;
+ 				}
