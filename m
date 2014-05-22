@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706AbaEVQcf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:32:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38940 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaEVQcd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:32:33 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH v1 5/5] ARM: dts: qcom: Add APQ8084 serial port DT node
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1400775885-10296-6-git-send-email-gdjakov@mm-sol.com>
-Date: Thu, 22 May 2014 11:32:28 -0500
-Cc: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, sboyd@codeaurora.org,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+	id S1752048AbaEVQdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:33:07 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:43587
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750917AbaEVQdG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:33:06 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] staging: comedi: addi_apci_1564: move
+ apci1564_do_insn_bits() to addi_apci_1564.c
+Thread-Topic: [PATCH 2/2] staging: comedi: addi_apci_1564: move
+ apci1564_do_insn_bits() to addi_apci_1564.c
+Thread-Index: AQHPdVaTT1HixoikC0WYYnwsOwYkbZtMy+Hw
+Date: Thu, 22 May 2014 16:33:05 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E6364F@P3PWEX4MB008.ex4.secureserver.net>
+References: <1400719209-21452-1-git-send-email-chase.southwood@gmail.com>
+ <1400719275-21780-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1400719275-21780-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <693A0E52-34CF-4A63-A8D0-A83780F969F0@codeaurora.org>
-References: <1400775885-10296-1-git-send-email-gdjakov@mm-sol.com> <1400775885-10296-6-git-send-email-gdjakov@mm-sol.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-X-Mailer: Apple Mail (2.1874)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, May 21, 2014 5:41 PM, Chase Southwood wrote:
+>
+> This function is already compliant with the comedi API and is behaving as
+> comedi core expects.  This patch moves it out of
+> addi-data/hwdrv_apci1564.c and into the driver proper since no further
+> work needs to be done on it.
+>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
 
-On May 22, 2014, at 11:24 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
-
-> Add the necessary DT node to probe the serial driver on
-> APQ8084 platforms.
-> 
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> ---
-> arch/arm/boot/dts/qcom-apq8084.dtsi |    7 +++++++
-> 1 file changed, 7 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/qcom-apq8084.dtsi b/arch/arm/boot/dts/qcom-apq8084.dtsi
-> index 2dcd11e..c346549 100644
-> --- a/arch/arm/boot/dts/qcom-apq8084.dtsi
-> +++ b/arch/arm/boot/dts/qcom-apq8084.dtsi
-> @@ -185,5 +185,12 @@
-> 			reg = <0xfc400000 0x4000>;
-> 		};
-> 
-> +		serial@f995e000 {
-
-Mark it disabled in the soc.dtsi and “ok” in the board.
-
-> +			compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
-> +			reg = <0xf995e000 0x1000>;
-> +			interrupts = <0 114 0x0>;
-> +			clocks = <&gcc GCC_BLSP2_UART2_APPS_CLK>, <&gcc GCC_BLSP2_AHB_CLK>;
-> +			clock-names = "core", "iface";
-> +		};
-> 	};
-> };
-> -- 
-> 1.7.9.5
-> 
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
