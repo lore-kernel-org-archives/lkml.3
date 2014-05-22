@@ -1,104 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970AbaEVP1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:27:12 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:52163 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaEVP1J (ORCPT
+	id S1752058AbaEVP2Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:28:25 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:55625 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaEVP2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:27:09 -0400
-Message-ID: <537E1749.1030505@linaro.org>
-Date: Thu, 22 May 2014 16:27:05 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 11:28:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: LABBE Corentin <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, herbert@gondor.apana.org.au,
+        davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto accelerator
+Date: Thu, 22 May 2014 17:28 +0200
+Message-ID: <7774492.yVryDeoI4M@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400771396-9686-4-git-send-email-clabbe.montjoie@gmail.com>
+References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com> <1400771396-9686-4-git-send-email-clabbe.montjoie@gmail.com>
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>
-CC: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flag APIs
-References: <1397772242-4048-1-git-send-email-agross@codeaurora.org> <20140502162841.GZ32284@intel.com> <20140502180827.GA9476@qualcomm.com> <20140515173206.GA16858@qualcomm.com> <20140522061049.GW21128@intel.com> <20140522150906.GA22327@qualcomm.com>
-In-Reply-To: <20140522150906.GA22327@qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:BdYqjquNmnCtXHy7i8TlFxhV4VmS+McySSso5cgMMkJ
+ 81qG5Fd5JKs6BPS5LFT7njDctVrrZte5kjQSIAwornTZ911rBe
+ EMphy/pc0kj0MVFhGL2npas2XnXhNbK9BR0+11+RKpAgAxqiCo
+ y2OCm+iXMANLuXVnLUg8T0do+BHhcWYcDCAmy7M1felpth9+5b
+ lFyBZ2hzytPp6KBPTVIdJJO7Oi7uTLi1Qo16NyNyPH5QhCn6Ih
+ 6kVIhpCXGyDwXDx6qNoJApaEnmoTJet/5uCHiyb/urjaCMDUmV
+ +OJs+BvqIGkF4uWiHjDdsZ0Bb3YHAeZi9S0DV7wD13OQscVLBN
+ vqWZpMptDf1CWE1Mfh24=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 22 May 2014 17:09:56 LABBE Corentin wrote:
+> Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
+> ---
+>  drivers/crypto/Kconfig    |   49 ++
+>  drivers/crypto/Makefile   |    1 +
+>  drivers/crypto/sunxi-ss.c | 1476 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 1526 insertions(+)
+>  create mode 100644 drivers/crypto/sunxi-ss.c
+> 
+> diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
+> index 03ccdb0..5ea0922 100644
+> --- a/drivers/crypto/Kconfig
+> +++ b/drivers/crypto/Kconfig
+> @@ -418,4 +418,53 @@ config CRYPTO_DEV_MXS_DCP
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called mxs-dcp.
+>  
+> +config CRYPTO_DEV_SUNXI_SS
+> +        tristate "Support for Allwinner Security System cryptographic accelerator"
+> +        depends on ARCH_SUNXI
+> +        help
+> +          Some Allwinner processors have a crypto accelerator named
+> +          Security System. Select this if you want to use it.
+> +
+> +          To compile this driver as a module, choose M here: the module
+> +          will be called sunxi-ss.
+> +
+> +if CRYPTO_DEV_SUNXI_SS
+> +config CRYPTO_DEV_SUNXI_SS_PRNG
+> +	bool "Security System PRNG"
+> +	select CRYPTO_RNG2
+> +	help
+> +	  If you enable this option, the SS will provide a pseudo random
+> +	  number generator.
+> +config CRYPTO_DEV_SUNXI_SS_MD5
+> +	bool "Security System MD5"
+> +	select CRYPTO_MD5
+> +	help
+> +	  If you enable this option, the SS will provide MD5 hardware
+> +	  acceleration.
 
+My feeling is that this should either be one driver that provides
+all five algorithms unconditionally, or five drivers that are each
+separate loadable modules and based on top of a common module
+that only exports functions but has no active logic itself
 
-On 22/05/14 16:09, Andy Gross wrote:
-> On Thu, May 22, 2014 at 11:40:49AM +0530, Vinod Koul wrote:
->
-> <snip>
->
->>>> I have 3 different IRQs that can be asserted based on the bit I set in the
->>>> hardware descriptor.  The normal IRQ is the INT bit.  However, in some cases the
->>>> peripheral protocol requires the use of the EOT or EOB interrupt instead.  The
->>>> DMA_PREP_INTERRUPT would only work if I had only 2 choices.
->>>
->>> Thinking about this more, I could use the DMA_PREP_INTERRUPT to cover the EOT
->>> flag.  However, I might get in a bind later if I need to support the EOB (end of
->>> block) interrupt.
->> Sorry for delay in this.
->>
->> I think it would make sense to use DMA_PREP_INTERRUPT for EOB interrupt. The EOT
->> should always be enabled for the cases where it is applicable instead of nomral
->> irq.
->>
->> That should genrically ocvery your cases, or did we miss anything here
->
-> The EOT is not used for every transaction.  It is part of a handshaking
-> protocol with the attached peripheral, much like the NWD (notify when done).  As
-> near as I can tell today, no peripheral depends on the EOB, so we could drop it
-> for now until it is needed and cross this bridge when we need to.
+> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_MD5
+> +#include <crypto/md5.h>
+> +#define SUNXI_SS_HASH_COMMON
+> +#endif
+> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_SHA1
+> +#include <crypto/sha.h>
+> +#define SUNXI_SS_HASH_COMMON
+> +#endif
+> +#ifdef SUNXI_SS_HASH_COMMON
+> +#include <crypto/hash.h>
+> +#include <crypto/internal/hash.h>
+> +#endif
+> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_AES
+> +#include <crypto/aes.h>
+> +#endif
+> +
+> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_3DES
+> +#define SUNXI_SS_DES
+> +#endif
+> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_DES
+> +#define SUNXI_SS_DES
+> +#endif
+> +#ifdef SUNXI_SS_DES
+> +#include <crypto/des.h>
+> +#endif
+> +
+> +#ifdef CONFIG_CRYPTO_DEV_SUNXI_SS_PRNG
+> +#include <crypto/internal/rng.h>
 
-As EOT behaviour is totally dependent on the attached peripheral(or 
-channel), Can't we make this specific to channel by passing additional 
-flags in the DT dma channel descriptors? This will be better abstraction 
-for drivers as well.
+That would cleanup this #ifdef chain either way.
 
-I know that EOT flag is part of descriptor but still some channels 
-*must* have EOT to run there state-machine correctly. So making it 
-optional for those channels might be wrong.
+> +/* General notes:
+> + * I cannot use a key/IV cache because each time one of these change ALL stuff
+> + * need to be re-writed.
+> + * And for example, with dm-crypt IV changes on each request.
+> + *
+> + * After each request the device must be disabled.
+> + *
+> + * For performance reason, we use writel_relaxed/read_relaxed for all
+> + * operations on RX and TX FIFO.
+> + * For all other registers, we use writel.
+> + * See http://permalink.gmane.org/gmane.linux.ports.arm.kernel/117644
+> + * and http://permalink.gmane.org/gmane.linux.ports.arm.kernel/117640
+> + * */
+> +
+> +static struct sunxi_ss_ctx {
+> +	void *base;
 
-Are there any use cases for particular *channel* where EOT requirement 
-changes dynamically?
+__iomem ?
 
+> +	int irq;
+> +	struct clk *busclk;
+> +	struct clk *ssclk;
+> +	struct device *dev;
+> +	struct resource *res;
+> +	void *buf_in; /* pointer to data to be uploaded to the device */
+> +	size_t buf_in_size; /* size of buf_in */
+> +	void *buf_out;
+> +	size_t buf_out_size;
+> +} _ss_ctx, *ss_ctx = &_ss_ctx;
+> +
+> +static DEFINE_MUTEX(lock);
+> +static DEFINE_MUTEX(bufout_lock);
+> +static DEFINE_MUTEX(bufin_lock);
 
+I guess the mutexes should be part of sunxi_ss_ctx.
 
---srini
+Are you sure you need the global _ss_ctx structure?
+Normally you should get a pointer from whoever calls you.
 
->
->>>
->>>>
->>>>>
->>>>>>
->>>>>> The NWD flag requests that the peripheral wait until the data has been fully
->>>>>> processed before signaling an interrupt.
->>>>> interrupt for transaction complete or DMA request?
->>>>
->>>> This is a special signaling mechanism that holds off the DMA interrupt until the
->>>> peripheral actually acks that the data has been processed completely.  This is
->>>> required in many cases by the peripheral.  One example is the SPI controller.
->>>> At the end of a transaction you are supposed to set the NWD so that the chip
->>>> select is de-asserted.
->>>
->>> I'm not sure what flag I could map this to... maybe DMA_CTRL_ACK?  or maybe the
->>> DMA_PREP_FENCE?  I don't generally like overloading the flags and slightly
->>> twisting their intent.  Could we add a flag to denote device ACK?
->> Nope lets not override these...
->
-> Then I need to add a flag.  Something like DMA_PREP_DEVICE_ACK that denotes that the
-> attached device needs to ACK the transfer.
->
-> Also, one thing I forgot.  For crypto and some of the other blocks, we have
-> something called command descriptors that can be transferred to the blocks to
-> provide programming or direction.  The DMA controller has a flag that tells the
-> attached peripheral that the incoming DMA contains command descriptors.  The dma
-> descriptors still point to a memory region to transfer, but the contents are
-> interpreted differently.  This is yet another flag in the descriptor flag
-> section.  I'd need another flag for this as well.  Something like DMA_PREP_CMD.
->
-> We are actively working on upstreaming our crypto block and this will be
-> required for that to work properly.
->
+> +struct sunxi_req_ctx {
+> +	u8 key[AES_MAX_KEY_SIZE * 8];
+> +	u32 keylen;
+> +	u32 mode;
+> +	u64 byte_count; /* number of bytes "uploaded" to the device */
+> +	u32 waitbuf; /* a partial word waiting to be completed and
+> +			uploaded to the device */
+> +	/* number of bytes to be uploaded in the waitbuf word */
+> +	unsigned int nbwait;
+> +};
+> +
+> +#ifdef SUNXI_SS_HASH_COMMON
+> +/*============================================================================*/
+> +/*============================================================================*/
+
+Please remove all the ======== lines.
+
+> +	/* If we have more than one SG, we cannot use kmap_atomic since
+> +	 * we hold the mapping too long*/
+> +	src_addr = kmap(sg_page(in_sg)) + in_sg->offset;
+> +	if (src_addr == NULL) {
+> +		dev_err(ss_ctx->dev, "KMAP error for src SG\n");
+> +		return -1;
+> +	}
+> +	dst_addr = kmap(sg_page(out_sg)) + out_sg->offset;
+> +	if (dst_addr == NULL) {
+> +		kunmap(src_addr);
+> +		dev_err(ss_ctx->dev, "KMAP error for dst SG\n");
+> +		return -1;
+> +	}
+> +	src32 = (u32 *)src_addr;
+> +	dst32 = (u32 *)dst_addr;
+> +	ileft = nbytes / 4;
+> +	oleft = nbytes / 4;
+> +	sgileft = in_sg->length / 4;
+> +	sgoleft = out_sg->length / 4;
+> +	do {
+> +		tmp = readl_relaxed(ss_ctx->base + SUNXI_SS_FCSR);
+> +		rx_cnt = SS_RXFIFO_SPACES(tmp);
+> +		tx_cnt = SS_TXFIFO_SPACES(tmp);
+> +		todo = min3(rx_cnt, ileft, sgileft);
+> +		if (todo > 0) {
+> +			ileft -= todo;
+> +			sgileft -= todo;
+> +		}
+> +		while (todo > 0) {
+> +			writel_relaxed(*src32++, ss_ctx->base + SS_RXFIFO);
+> +			todo--;
+> +		}
+
+I wonder if this is meant to be used in combination with a dma engine
+rather than accessed with writel/readl.
+
+How does the original driver do it?
+
+	Arnd
