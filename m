@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672AbaEVQE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:04:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955AbaEVQEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:04:25 -0400
-Message-ID: <537E1FFC.40608@redhat.com>
-Date: Thu, 22 May 2014 12:04:12 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751498AbaEVQGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:06:52 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:47323 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215AbaEVQGt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:06:49 -0400
+Date: Thu, 22 May 2014 17:06:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, chris@printf.net,
+        ulf.hansson@linaro.org, kernel@stlinux.com, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 2/8] mmc: sdhci-st: STMicroelectronics SDHCI binding
+ documentation.
+Message-ID: <20140522160643.GI19747@lee--X1>
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+ <1400771902-26553-3-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: vmscan: Use proportional scanning during direct
- reclaim and full scan at DEF_PRIORITY
-References: <1400749779-24879-1-git-send-email-mgorman@suse.de> <1400749779-24879-4-git-send-email-mgorman@suse.de>
-In-Reply-To: <1400749779-24879-4-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400771902-26553-3-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 05:09 AM, Mel Gorman wrote:
-> Commit "mm: vmscan: obey proportional scanning requirements for kswapd"
-> ensured that file/anon lists were scanned proportionally for reclaim from
-> kswapd but ignored it for direct reclaim. The intent was to minimse direct
-> reclaim latency but Yuanhan Liu pointer out that it substitutes one long
-> stall for many small stalls and distorts aging for normal workloads like
-> streaming readers/writers.  Hugh Dickins pointed out that a side-effect of
-> the same commit was that when one LRU list dropped to zero that the entirety
-> of the other list was shrunk leading to excessive reclaim in memcgs.
-> This patch scans the file/anon lists proportionally for direct reclaim
-> to similarly age page whether reclaimed by kswapd or direct reclaim but
-> takes care to abort reclaim if one LRU drops to zero after reclaiming the
-> requested number of pages.
+> This patch adds the device tree binding documentation for ST
+> SDHCI driver. It contains the differences between the core properties
+> in mmc.txt and the properties used by the sdhci-st driver.
 > 
-
-> Note that there are fewer allocation stalls even though the amount
-> of direct reclaim scanning is very approximately the same.
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> ---
+>  Documentation/devicetree/bindings/mmc/sdhci-st.txt | 26 ++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-st.txt
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> diff --git a/Documentation/devicetree/bindings/mmc/sdhci-st.txt b/Documentation/devicetree/bindings/mmc/sdhci-st.txt
+> new file mode 100644
+> index 0000000..ae3dae0
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/sdhci-st.txt
+> @@ -0,0 +1,26 @@
+> +* STMicroelectronics sdhci-st MMC/SD controller
+> +
+> +This file documents differences between the core properties in mmc.txt
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Where is mmc.txt?
 
+> +and the properties used by the sdhci-st driver
+> +
+> +Required properties:
+> +- compatible: "st,sdhci"
+> +- clocks: card clock, must be "mmc".
+
+This isn't correct.  I think you mean it must be a phandle to the
+'mmc' clock.  It's also worth referencing the clock DT documentation
+here.
+
+> +Optional properties:
+> +- reset: to provide a reset to the HC.
+
+What is it; integer, string, phandle, something else?
+
+> +- non-removable: non-removable slot (bindings/mmc/mmc.txt).
+
+This however, _is_ a string, so you need to put it in "'s like you did
+with "mmc" above and/or reference the file which documents it.
+
+> +
+> +Example:
+> +
+> +mmc0: sdhci@fe81e000 {
+> +	compatible	= "st,sdhci";
+> +	status		= "disabled";
+> +	reg		= <0xfe81e000 0x1000>;
+> +	interrupts	= <GIC_SPI 127 IRQ_TYPE_NONE>;
+> +	interrupt-names	= "mmcirq";
+> +	pinctrl-names	= "default";
+> +	pinctrl-0	= <&pinctrl_mmc0>;
+> +	clock-names	= "mmc";
+
+I don't think you need clock-names if you only have one clock.
+
+> +	clocks		= <&clk_s_a1_ls 1>;
+> +};
+
+Once fixed you can add my Ack for the next submission:
+
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
 -- 
-All rights reversed
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
