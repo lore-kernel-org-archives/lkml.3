@@ -1,95 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302AbaEVGdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 02:33:10 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:47255 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419AbaEVGdG (ORCPT
+	id S1751811AbaEVGhm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 02:37:42 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:62393 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEVGhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 02:33:06 -0400
+	Thu, 22 May 2014 02:37:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140521223511.GI12819@moon>
-References: <20140428212517.200264067@openvz.org> <20140428213301.507657833@openvz.org>
- <alpine.DEB.2.02.1405220642100.9695@ionos.tec.linutronix.de>
- <20140521215707.GH12819@moon> <alpine.DEB.2.02.1405220658530.9695@ionos.tec.linutronix.de>
- <20140521223511.GI12819@moon>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Thu, 22 May 2014 08:32:45 +0200
-X-Google-Sender-Auth: GNZeH90bxvETATWgm7c6jedQRxQ
-Message-ID: <CAHO5Pa3NFndwZUKGdEt8AYnYLXvd4aJB1RdWOQ-Kcht+Y0WEyA@mail.gmail.com>
-Subject: Re: [patch 3/3] timerfd: Implement write method
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, shawn@churchofgit.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, vdavydov@parallels.com,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Date: Thu, 22 May 2014 12:07:40 +0530
+Message-ID: <CAJb+z00bA+wbE+vO09wo=frpVRZiVnXjdo2FJHdd_bsp9Ec83g@mail.gmail.com>
+Subject: USB 3.0 - Synopsis DWC Host-AHB - on Linux Kernel 3.10.28
+From: krishnamurthy holla <kmholla@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Thomas, thanks for pinging me on this.]
+Hello,
 
-Hi Cyril
+I am using Linux kernel 3.10.28 - MIPS processor (BIG Endian)
 
-Please CC linux-api on changes that affect kernel-user-space ABI/API.
+I see that XHCI fails during xhci_device_alloc() because of
+wait_for_completion_interruptible_timeout () when I connect a device.
 
-On Thu, May 22, 2014 at 12:35 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Thu, May 22, 2014 at 07:12:30AM +0900, Thomas Gleixner wrote:
->>
->> There is a world outside of checkpoint/restore, really.
->
-> Yes, I simply don't know who else might use this write()
-> functionality for other purpose, I mean i don't see a
-> point to use it for anything else.
+So, I thought of initializing host controller as BE as my host is BE.
+But this time, it failed much earlier, i.e in xhci_handle_event()
+itself for the check le32_to_cpu(event->event_cmd.flags) & TRB_CYCLE)
+!=  xhci->event_ring->cycle_state)
 
-Nevertheless, when making API changes like this, we should be thinking
-as generally as possible, rather than looking from the perspective of
-a single use case.
+I would like to know if any of you used Synopsis DWC Host-AHB and got
+successful device detection. Also, Please let me know if XHCI needs
+special configuration on Big Endian system.
 
->> So what's the semantics of that write function? We really want to have
->> that agreed on and documented in the man page.
->
-> The idea was to provide a way to setup @ticks into (nonzero) value
-> which we get from show_fdinfo output. Then when we restore it
-> we setup the timer and set @ticks to the value it had at dump
-> moment.
->
->> Right now the write will just update the ticks and nothing else. So
->> what if there is a waiter already? What if there is a timer armed?
->>
->> Can you please describe how checkpoint/restore is going to use all of
->> this. How is the timer restored and how/when is the reader which was
->> waiting in read/poll at the time of suspend reattached to it.
->
-> Thomas, I see what you mean. Need to think (I must admit I forgot about
-> polling of timerfds :( I were to restore timerfds like this
->
->  - fetch data from fdinfo
->  - use timer_create/settime to arm it
->  - write @ticks then
->
-> but i didn't try restore polling waiters, my bad. Letme rework this
-> trying addressing your comments.
-
-Great. Please CC me and linux-api@ on the next round.
-
-Cheers,
-
-Michael
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+Thanks
