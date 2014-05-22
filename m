@@ -1,230 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785AbaEVL01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 07:26:27 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:48636 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626AbaEVLY0 (ORCPT
+	id S1754641AbaEVL2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 07:28:39 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56008 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751347AbaEVL2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 07:24:26 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
-        Angus Clark <angus.clark@st.com>,
-        Carmelo Amoroso <carmelo.amoroso@st.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 04/10] mtd: st_spi_fsm: Add support for N25Q512 and N25Q00A devices
-Date: Thu, 22 May 2014 12:24:02 +0100
-Message-Id: <1400757848-18075-5-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400757848-18075-1-git-send-email-lee.jones@linaro.org>
-References: <1400757848-18075-1-git-send-email-lee.jones@linaro.org>
+	Thu, 22 May 2014 07:28:38 -0400
+Date: Thu, 22 May 2014 12:27:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Barry Song <baohua@kernel.org>
+Cc: Matt Porter <mporter@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching
+	nodes
+Message-ID: <20140522112712.GT3693@n2100.arm.linux.org.uk>
+References: <1398644860-22973-1-git-send-email-mporter@linaro.org> <20140428142950.GB30292@saruman.home> <20140428143709.GC7719@beef> <20140428145223.GL26756@n2100.arm.linux.org.uk> <CAGsJ_4x1+eePRDMP0-0WeTG6ZJdzmMkN_9USbKt8joY8AKsDdw@mail.gmail.com> <20140429151433.GD26756@n2100.arm.linux.org.uk> <CAGsJ_4yg2Dcwyj5cLc2DuYVOcWwmpkPzK_=BUZLqRLDyErBL=Q@mail.gmail.com> <20140522093347.GS3693@n2100.arm.linux.org.uk> <CAGsJ_4yCaK8w3_vOw9uSyEtUGq0suWssrMnBHbQSU8rK0ibyUQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGsJ_4yCaK8w3_vOw9uSyEtUGq0suWssrMnBHbQSU8rK0ibyUQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Angus Clark <angus.clark@st.com>
+On Thu, May 22, 2014 at 07:04:14PM +0800, Barry Song wrote:
+> 2014-05-22 17:33 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> > On Tue, Apr 29, 2014 at 11:40:33PM +0800, Barry Song wrote:
+> >> 2014-04-29 23:14 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> >> > On Tue, Apr 29, 2014 at 11:05:06PM +0800, Barry Song wrote:
+> >> >> 2014-04-28 22:52 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> >> >> > On Mon, Apr 28, 2014 at 10:37:09AM -0400, Matt Porter wrote:
+> >> >> >> The "fix" is tested against bcm281xx and bcm21664 as that is what the
+> >> >> >> l2c cleanup breaks in -next. As mentioned, I don't have the sirfsoc h/w
+> >> >> >> so this first attempt at a fix also breaks their platform. It can be
+> >> >> >> addressed by adding those platform specific compatibles back to the dts,
+> >> >> >> of course.
+> >> >> >>
+> >> >> >> I'd much prefer that the sirfsoc folks fix this...it's going to break
+> >> >> >> other platforms in a multi v7 build.
+> >> >> >
+> >> >> > Well, it's about time we got rid of this from platform specific code
+> >> >> > anyway, taking it away from platform maintainers to mess around with.
+> >> >> > So that's what I'm doing.
+> >> >> >
+> >> >> > It's worth noting that if you build a single zImage with exynos also
+> >> >> > enabled, then you also end up with an unconditional call from that
+> >> >> > code to l2x0_of_init() with it's own magic numbers - and that applies
+> >> >> > before my changes.
+> >> >> >
+> >> >> > So let's fix this properly and yank this crap from platform maintainers
+> >> >> > fingers.
+> >> >>
+> >> >> i mentioned dropping specific dts compatible prop will break non-csr
+> >> >> platforms in the mail thread "ARM: prima2: remove L2 cache size
+> >> >> override" and i said i was going to send v2. you said you need it
+> >> >> before rc6. now it has been sent, but i am sorry it is not against
+> >> >> next-20140424.
+> >> >
+> >> > FFS.  IT HASN'T BEEN SENT.  All that I did was drop it into linux-next
+> >> > so that more people would get off their fat backsides and test this
+> >> > fscking patch set - something which hasn't happened because no one
+> >> > pays attention to emails sent to mailing lists.
+> >>
+> >> so your point is people don't pay attention to your mails? or you are
+> >> ignored? i think that is 100% not real. i think your opinions and
+> >> mails are always respected as you are the chief arm linux expert.
+> >>
+> >> >
+> >> > I also told you that this was what I was going to do.  But... is it
+> >> > really on to hold up such a large patch set which impacts virtually
+> >> > everyone because _you_ don't have time to sort out your small special
+> >> > requirements - no it is not, that's just fscking selfish.
+> >> >
+> >> > Anyway, I've had it with dealing with platform maintainers, I've yanked
+> >> > this patch set, and I'm no longer planning to do anything with it -
+> >> > platform maintainers have destroyed my will to get any of this series
+> >> > into the kernel.
+> >>
+> >> no, i am trying to follow your suggestion to make patch set merged and
+> >> l2 codes cleaned.
+> >> i have been trying to follow your will until now, and from the beginning.
+> >>
+> >> >
+> >> > So, the L2 cache code is going to remain in its current state, and it's
+> >> > going to rot because it's _FAR_ too much effort dealing with slow people
+> >> > like yourselves, or people who want the series split up, or people who
+> >> > whinge that there aren't any acks there (WELL GET OFF YOUR FAT BACKSIDES
+> >> > AND SEND ME SOME IF YOU CARE ABOUT THIS - no, don't, I'm no longer pushing
+> >> > this series.)
+> >>
+> >> people might be "selfish", but people might have some reasons to
+> >> response slowly, like holiday or family issue.
+> >> how about taking it easy? it doesn't prove you are not respected by
+> >> platform maintainers.
+> >>
+> >> >
+> >> > This is the last time I'm going to ever try cleaning up any core ARM code.
+> >> > Core ARM maintanence is impossible in this environment with arm-soc split
+> >> > from core ARM stuff, because core ARM stuff /always/ impacts on SoC
+> >> > specific code.  You can't get away from that.
+> >> >
+> >> > My position in this community has been made impossible and obsolete by
+> >> > Linaro.  I'm at the point of walking away from this crap.
+> >>
+> >> just fix the relationship and communication, that is good enough. you
+> >> have done things so well, there is no reason to give up.
+> >
+> > So, just as I thought...
+> >
+> > -rc6 has now been released, and YOU have done NOTHING to resolve any of
+> > the issues you have with this patch set - which is precisely on track
+> > with how you have behaved towards this set of changes on the past - where
+> > you promised imformation/patches and never delivered.
+> >
+> > Well, right now I'm just not going to *care* one bit about Prima2.  If
+> > this patch set breaks it, tough.  You've had plenty of opportunity to
+> > deal with this, but instead you've chosen to just whinge about it and
+> > then do precisely nothing to assist.
+> 
+> i have no idea why you are saying this. if you checked the email, i
+> have sent a patch in last month.
+> 
+> http://www.spinics.net/lists/arm-kernel/msg327151.html
+> 
+> but i got no reply and you said you will not handle l2....
 
-This patch adds support for the Micron N25Q512 and N25Q00A Serial Flash devices.
-Unlike previous Micron devices, it is now mandatory to check the Flags Status
-Register following a Write or Erase operation.  The N25Q512A device presents a
-further complication in that different variants of the device use different
-opcodes for the WRITE_1_4_4 operation.  Since there is no easy way to determine
-at runtime which variant is being used, FLASH_CAPS_WRITE_1_4_4 support is
-removed for N25Q512 devices, resulting in WRITE_1_1_4 being used instead.
+I said I won't deal with this patch set anymore because I got *thoroughly*
+frustrated with you and the lack of cooperation from many of the SoC people.
+It seems that the only way to get things done around here is to railroad
+them into linux-next and wait for people to notice the changes.  That's
+really not an acceptable way of doing development, but it's the *only*
+one which gets people's attention.  Sending emails does not work, because
+people ignore them.
 
-The following devices have been tested:
+Moreover, your patch is a total rewrite of several of my patches, and is
+not an incremental set of changes.  Given that my patch set which was last
+posted has the SoC changes done incrementally amongst the other changes,
+this is just not an acceptable approach, so frankly the patch is useless
+to me.
 
-    b2000C + N25Q512A13GSF40G
-    b2000C + N25Q00AA13GSF40G
-    b2147A + N25Q512A83GSF40X
-
-Signed-off-by: Angus Clark <angus.clark@st.com>
-Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 96 +++++++++++++++++++++++++++++++++++++---
- 1 file changed, 91 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 67ea35e..d48004d 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -225,12 +225,25 @@
- #define S25FL_STATUS_E_ERR     0x20
- #define S25FL_STATUS_P_ERR     0x40
- 
-+/* N25Q - READ/WRITE/CLEAR NON/VOLATILE STATUS/CONFIG Registers */
-+#define N25Q_CMD_RFSR          0x70
-+#define N25Q_CMD_CLFSR         0x50
- #define N25Q_CMD_WRVCR         0x81
- #define N25Q_CMD_RDVCR         0x85
- #define N25Q_CMD_RDVECR        0x65
- #define N25Q_CMD_RDNVCR        0xb5
- #define N25Q_CMD_WRNVCR        0xb1
- 
-+/* N25Q Flags Status Register: Error Flags */
-+#define N25Q_FLAGS_ERR_ERASE   BIT(5)
-+#define N25Q_FLAGS_ERR_PROG    BIT(4)
-+#define N25Q_FLAGS_ERR_VPP     BIT(3)
-+#define N25Q_FLAGS_ERR_PROT    BIT(1)
-+#define N25Q_FLAGS_ERROR       (N25Q_FLAGS_ERR_ERASE   | \
-+                                N25Q_FLAGS_ERR_PROG    | \
-+                                N25Q_FLAGS_ERR_VPP     | \
-+                                N25Q_FLAGS_ERR_PROT)
-+
- #define FLASH_PAGESIZE         256			/* In Bytes    */
- #define FLASH_PAGESIZE_32      (FLASH_PAGESIZE / 4)	/* In uint32_t */
- #define FLASH_MAX_BUSY_WAIT    (300 * HZ)	/* Maximum 'CHIPERASE' time */
-@@ -242,6 +255,7 @@
- #define CFG_WRITE_TOGGLE_32BIT_ADDR    0x00000002
- #define CFG_ERASESEC_TOGGLE_32BIT_ADDR 0x00000008
- #define CFG_S25FL_CHECK_ERROR_FLAGS    0x00000010
-+#define CFG_N25Q_CHECK_ERROR_FLAGS     0x00000020
- 
- struct stfsm_seq {
- 	uint32_t data_size;
-@@ -360,6 +374,7 @@ static struct flash_info flash_types[] = {
- 	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
- 	  stfsm_mx25_config},
- 
-+	/* Micron N25Qxxx */
- #define N25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
- 		   FLASH_FLAG_READ_FAST         |	\
- 		   FLASH_FLAG_READ_1_1_2        |	\
-@@ -372,10 +387,29 @@ static struct flash_info flash_types[] = {
- 		   FLASH_FLAG_WRITE_1_4_4)
- 	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108,
- 	  stfsm_n25q_config },
--	{ "n25q256", 0x20ba19, 0, 64 * 1024,  512,
--	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, stfsm_n25q_config },
--	{ "n25q512", 0x20ba20, 0, 64 * 1024,  1024,
--	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, stfsm_n25q_config},
-+
-+       /* Micron N25Q256/N25Q512/N25Q00A (32-bit ADDR devices)
-+        *
-+        * Versions are available with or without a dedicated RESET# pin
-+        * (e.g. N25Q512A83GSF40G vs. N25Q512A13GSF40G).  To complicate matters,
-+        * the versions that include a RESET# pin (Feature Set = 8) require a
-+        * different opcode for the FLASH_CMD_WRITE_1_4_4 command.
-+        * Unfortunately it is not possible to determine easily at run-time
-+        * which version is being used.  We therefore remove support for
-+        * FLASH_FLAG_WRITE_1_4_4 (falling back to FLASH_FLAG_WRITE_1_1_4), and
-+        * defer overall support for RESET# to the board-level platform/Device
-+        * Tree property "reset-signal".
-+        */
-+#define N25Q_32BIT_ADDR_FLAG  ((N25Q_FLAG              |	\
-+				FLASH_FLAG_32BIT_ADDR  |	\
-+				FLASH_FLAG_RESET)      &	\
-+			       ~FLASH_FLAG_WRITE_1_4_4)
-+	{ "n25q256", 0x20ba19,      0, 64 * 1024,   512,
-+	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
-+	{ "n25q512", 0x20ba20, 0x1000, 64 * 1024,  1024,
-+	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
-+	{ "n25q00a", 0x20ba21, 0x1000, 64 * 1024,  2048,
-+	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
- 
- 	/*
- 	 * Spansion S25FLxxxP
-@@ -854,6 +888,30 @@ static int stfsm_write_fifo(struct stfsm *fsm, const uint32_t *buf,
- 	return size;
- }
- 
-+static int n25q_clear_flags(struct stfsm *fsm)
-+{
-+	struct stfsm_seq seq = {
-+		.seq_opc[0] = (SEQ_OPC_PADS_1 |
-+			       SEQ_OPC_CYCLES(8) |
-+			       SEQ_OPC_OPCODE(N25Q_CMD_CLFSR) |
-+			       SEQ_OPC_CSDEASSERT),
-+		.seq = {
-+			STFSM_INST_CMD1,
-+			STFSM_INST_STOP,
-+		},
-+		.seq_cfg = (SEQ_CFG_PADS_1 |
-+			    SEQ_CFG_READNOTWRITE |
-+			    SEQ_CFG_CSDEASSERT |
-+			    SEQ_CFG_STARTSEQ),
-+	};
-+
-+	stfsm_load_seq(fsm, &seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return 0;
-+}
-+
- static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
- {
- 	struct stfsm_seq *seq = &fsm->stfsm_seq_en_32bit_addr;
-@@ -1214,10 +1272,18 @@ static int stfsm_mx25_config(struct stfsm *fsm)
- static int stfsm_n25q_config(struct stfsm *fsm)
- {
- 	uint32_t flags = fsm->info->flags;
--	uint8_t vcr;
-+	uint8_t vcr, sta;
- 	int ret = 0;
- 	bool soc_reset;
- 
-+	/*
-+	 * Check/Clear Error Flags
-+	 */
-+	fsm->configuration |= CFG_N25Q_CHECK_ERROR_FLAGS;
-+	stfsm_read_status(fsm, N25Q_CMD_RFSR, &sta, 1);
-+	if (sta & N25Q_FLAGS_ERROR)
-+		n25q_clear_flags(fsm);
-+
- 	/* Configure 'READ' sequence */
- 	if (flags & FLASH_FLAG_32BIT_ADDR)
- 		ret = stfsm_search_prepare_rw_seq(fsm, &fsm->stfsm_seq_read,
-@@ -1592,6 +1658,7 @@ static int stfsm_write(struct stfsm *fsm, const uint8_t *buf,
- 	uint32_t page_buf[FLASH_PAGESIZE_32];
- 	uint8_t *t = (uint8_t *)&tmp;
- 	const uint8_t *p;
-+	uint8_t sta;
- 	int ret;
- 	int i;
- 
-@@ -1663,6 +1730,15 @@ static int stfsm_write(struct stfsm *fsm, const uint8_t *buf,
- 	if (ret && fsm->configuration & CFG_S25FL_CHECK_ERROR_FLAGS)
- 		stfsm_s25fl_clear_status_reg(fsm);
- 
-+	/* N25Q: Check/Clear Error Flags */
-+	if (fsm->configuration & CFG_N25Q_CHECK_ERROR_FLAGS) {
-+		stfsm_read_status(fsm, N25Q_CMD_RFSR, &sta, 1);
-+		if (sta & N25Q_FLAGS_ERROR) {
-+			n25q_clear_flags(fsm);
-+			ret = -EPROTO;
-+		}
-+	}
-+
- 	/* Exit 32-bit address mode, if required */
- 	if (fsm->configuration & CFG_WRITE_TOGGLE_32BIT_ADDR)
- 		stfsm_enter_32bit_addr(fsm, 0);
-@@ -1705,6 +1781,7 @@ static int stfsm_mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
- static int stfsm_erase_sector(struct stfsm *fsm, uint32_t offset)
- {
- 	struct stfsm_seq *seq = &stfsm_seq_erase_sector;
-+	uint8_t sta;
- 	int ret;
- 
- 	dev_dbg(fsm->dev, "erasing sector at 0x%08x\n", offset);
-@@ -1725,6 +1802,15 @@ static int stfsm_erase_sector(struct stfsm *fsm, uint32_t offset)
- 	if (ret && fsm->configuration & CFG_S25FL_CHECK_ERROR_FLAGS)
- 		stfsm_s25fl_clear_status_reg(fsm);
- 
-+	/* N25Q: Check/Clear Error Flags */
-+	if (fsm->configuration & CFG_N25Q_CHECK_ERROR_FLAGS) {
-+		stfsm_read_status(fsm, N25Q_CMD_RFSR, &sta, 1);
-+		if (sta & N25Q_FLAGS_ERROR) {
-+			n25q_clear_flags(fsm);
-+			ret = -EPROTO;
-+		}
-+	}
-+
- 	/* Exit 32-bit address mode, if required */
- 	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
- 		stfsm_enter_32bit_addr(fsm, 0);
 -- 
-1.8.3.2
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
