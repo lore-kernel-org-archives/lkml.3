@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaEVQsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:48:15 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:53457 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbaEVQsM (ORCPT
+	id S1753438AbaEVQ4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:56:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48865 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752804AbaEVQsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:48:12 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>, Li Yang <leoli@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Aida Mynzhasova <aida.mynzhasova@skitlab.ru>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Claudiu Manoil <claudiu.manoil@freescale.com>,
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list),
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
-Subject: [PATCH net-next v2 0/9] net: of_phy_connect_fixed_link removal
-Date: Thu, 22 May 2014 09:47:42 -0700
-Message-Id: <1400777271-32199-1-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 22 May 2014 12:48:15 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
+        benh@kernel.crashing.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>,
+        Helge Deller <deller@gmx.de>
+Subject: [PATCH v2 12/18] parisc: io: implement dummy relaxed accessor macros for writes
+Date: Thu, 22 May 2014 17:47:24 +0100
+Message-Id: <1400777250-17335-13-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+write{b,w,l,q}_relaxed are implemented by some architectures in order to
+permit memory-mapped I/O accesses with weaker barrier semantics than the
+non-relaxed variants.
 
-This patch set removes of_phy_connect_fixed_link() from the tree now that
-we have a better solution for dealing with fixed PHY (emulated PHY) devices
-for drivers that require them.
+This patch adds dummy macros for the write accessors to parisc, in the
+same vein as the dummy definitions for the relaxed read accessors.
 
-First two patches update the 'fixed-link' Device Tree binding and drivers to
-refere to it.
+Cc: Helge Deller <deller@gmx.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/parisc/include/asm/io.h | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Patches 3 to 7 update the in-tree network drivers that use
-of_phy_connect_fixed_link()
-
-Patch 8 removes of_phy_connect_fixed_link
-
-Patch 9 removes the PowerPC code that parsed the 'fixed-link' property.
-
-Patch 9 can be merged via the net-next tree if the PowerPC folks ack it,
-but it really has to be merged after the first 8 patches in order to avoid
-breakage.
-
-Florian Fainelli (9):
-  Documentation: devicetree: add old and deprecated 'fixed-link'
-  Documentation: devicetree: net: refer to fixed-link.txt
-  net: bcmgenet: use the new fixed PHY helpers
-  net: systemport: use the new fixed PHY helpers
-  fs_enet: use the new fixed PHY helpers
-  gianfar: use the new fixed PHY helpers
-  ucc_geth: use the new fixed PHY helpers
-  of: mdio: remove of_phy_connect_fixed_link
-  powerpc/fsl: fsl_soc: remove 'fixed-link' parsing code
-
- .../devicetree/bindings/net/broadcom-bcmgenet.txt  |  2 +-
- .../bindings/net/broadcom-systemport.txt           |  2 +-
- .../devicetree/bindings/net/fixed-link.txt         | 12 +++++++
- .../devicetree/bindings/net/fsl-tsec-phy.txt       |  5 +--
- arch/powerpc/sysdev/fsl_soc.c                      | 32 ------------------
- drivers/net/ethernet/broadcom/bcmsysport.c         | 17 ++++++++--
- drivers/net/ethernet/broadcom/bcmsysport.h         |  1 +
- drivers/net/ethernet/broadcom/genet/bcmmii.c       | 21 +++++++-----
- .../net/ethernet/freescale/fs_enet/fs_enet-main.c  | 17 ++++++----
- drivers/net/ethernet/freescale/gianfar.c           | 14 ++++++--
- drivers/net/ethernet/freescale/ucc_geth.c          | 14 ++++++--
- drivers/of/of_mdio.c                               | 38 ----------------------
- include/linux/of_mdio.h                            | 10 ------
- 13 files changed, 76 insertions(+), 109 deletions(-)
-
+diff --git a/arch/parisc/include/asm/io.h b/arch/parisc/include/asm/io.h
+index 1f6d2ae7aba5..8cd0abf28ffb 100644
+--- a/arch/parisc/include/asm/io.h
++++ b/arch/parisc/include/asm/io.h
+@@ -217,10 +217,14 @@ static inline void writeq(unsigned long long q, volatile void __iomem *addr)
+ #define writel	writel
+ #define writeq	writeq
+ 
+-#define readb_relaxed(addr) readb(addr)
+-#define readw_relaxed(addr) readw(addr)
+-#define readl_relaxed(addr) readl(addr)
+-#define readq_relaxed(addr) readq(addr)
++#define readb_relaxed(addr)	readb(addr)
++#define readw_relaxed(addr)	readw(addr)
++#define readl_relaxed(addr)	readl(addr)
++#define readq_relaxed(addr)	readq(addr)
++#define writeb_relaxed(b, addr)	writeb(b, addr)
++#define writew_relaxed(w, addr)	writew(w, addr)
++#define writel_relaxed(l, addr)	writel(l, addr)
++#define writeq_relaxed(q, addr)	writeq(q, addr)
+ 
+ #define mmiowb() do { } while (0)
+ 
 -- 
-1.9.1
+1.9.2
 
