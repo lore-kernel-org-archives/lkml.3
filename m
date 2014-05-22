@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaEVPml (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:42:41 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:34350 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaEVPmj (ORCPT
+	id S1751895AbaEVPoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:44:54 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:47212 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751146AbaEVPow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:42:39 -0400
-Date: Thu, 22 May 2014 11:42:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: remove the confusing POOL_FREEZING
-Message-ID: <20140522154236.GF5065@htj.dyndns.org>
-References: <1400756486-12089-1-git-send-email-laijs@cn.fujitsu.com>
+	Thu, 22 May 2014 11:44:52 -0400
+Message-ID: <537E1B55.1090807@st.com>
+Date: Thu, 22 May 2014 17:44:21 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400756486-12089-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <patrice.chotard@st.com>, <srinivas.kandagatla@gmail.com>,
+        <chris@printf.net>, <ulf.hansson@linaro.org>
+Cc: <kernel@stlinux.com>, <lee.jones@linaro.org>, <linux-mmc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: Add SDHCI support for STMicroelectronics SoCs
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-22_03:2014-05-22,2014-05-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Peter,
 
-On Thu, May 22, 2014 at 07:01:16PM +0800, Lai Jiangshan wrote:
-> While freezing takes place globally, its execution is per-workqueue;
-> however, the current implementation makes use of the per-worker_pool
-> POOL_FREEZING flag.  While it's not broken, the flag makes the code
-> more confusing and complicates freeze_workqueues_begin() and
-> thaw_workqueues() by requiring them to walk through all pools.
-> 
-> So we remove the POOL_FREEZING and use workqueue_freezing instead.
+On 05/22/2014 05:18 PM, Peter Griffin wrote:
+> This series adds a SDHCI platform driver for ST SoCs, along with
+> the additional device tree bindings and configuration to enable
+> the controller to work properly.
+>
+> Initially it supports the stih416 and stih415 SoCs, and has
+> been tested on a stih416-b2020 board.
 
-Misses the part which explains how the middle step is unnecessary.  I
-used the following text instead.
-
-    workqueue: remove the confusing POOL_FREEZING
-    
-    Currently, the global freezing state is propagated to worker_pools via
-    POOL_FREEZING and then to each workqueue; however, the middle step -
-    propagation through worker_pools - can be skipped as long as one or
-    more max_active adjustments happens for each workqueue after the
-    update to the global state is visible.  The global workqueue freezing
-    state and the max_active adjustments during workqueue creation and
-    [un]freezing are serialized with wq_pool_mutex, so it's trivial to
-    guarantee that max_actives stay in sync with global freezing state.
-    
-    POOL_FREEZING is unnecessary and makes the code more confusing and
-    complicates freeze_workqueues_begin() and thaw_workqueues() by
-    requiring them to walk through all pools.
-    
-    Remove POOL_FREEZING and use workqueue_freezing directly instead.
+In next version, could you also add  drivers/mmc/host/sdhci-st.c in the 
+ARM/STI ARCHITECTURE field of MAINTAINERS file?
 
 
-Applied to wq/for-3.16.
+Thanks,
+Maxime
 
-Thanks.
 
--- 
-tejun
+>
+> regards,
+>
+> Peter.
+>
