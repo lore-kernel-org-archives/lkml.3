@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaEVO0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:26:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49040 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147AbaEVO0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:26:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,887,1392192000"; 
-   d="scan'208";a="435560446"
-Message-ID: <1400768808.27343.4.camel@rzhang1-toshiba>
-Subject: Re: [PATCH V6 09/11] ACPI: introduce flag .is_master_device
-From: Zhang Rui <rui.zhang@intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
-        "Lan, Tianyu" <tianyu.lan@intel.com>
-Date: Thu, 22 May 2014 22:26:48 +0800
-In-Reply-To: <20140522085135.GC1651@lahna.fi.intel.com>
-References: <1400136256-2218-1-git-send-email-rui.zhang@intel.com>
-	 <1400136256-2218-10-git-send-email-rui.zhang@intel.com>
-	 <20140521085207.GR1651@lahna.fi.intel.com>
-	 <1400683387.13930.26.camel@rzhang1-toshiba>
-	 <20140522085135.GC1651@lahna.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752652AbaEVO1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:27:54 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:40776 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaEVO1w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 10:27:52 -0400
+Message-ID: <537E0961.8040005@gmail.com>
+Date: Thu, 22 May 2014 16:27:45 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
+        Caitlin Bestler <caitlin.bestler@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Elie De Brauwer <eliedebrauwer@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Steven Whitehouse <steve@chygwyn.com>,
+        =?UTF-8?B?UsOpbWkgRGVuaXMtQ291cm1v?= =?UTF-8?B?bnQ=?= 
+	<remi.denis-courmont@nokia.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Chris Friesen <chris.friesen@windriver.com>
+Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
+References: <536101C9.9090601@gmail.com> <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com> <20140512143451.GB13801@kernel.org> <20140521210535.GA5414@kernel.org>
+In-Reply-To: <20140521210535.GA5414@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-22 at 11:51 +0300, Mika Westerberg wrote:
-> On Wed, May 21, 2014 at 10:43:07PM +0800, Zhang Rui wrote:
-> > On 三, 2014-05-21 at 11:52 +0300, Mika Westerberg wrote:
-> > > On Thu, May 15, 2014 at 02:44:14PM +0800, Zhang Rui wrote:
-> > > > For some ACPI device objects, they represent master devices,
-> > > > and their children devices are enumerated by bus controller drivers
-> > > > for the buses they are on.
-> > > > 
-> > > > In this case, we do not want to enumerate their children devices to
-> > > > platform bus explicitly in acpi scan code.
-> > > > 
-> > > > Thus a new flag .is_master_device is introduced in this patch.
-> > > > 
-> > > > For devices with this flag set, we will not do default enumeration
-> > > > for their children.
-> > > 
-> > > Is there any particular reason we would like to enumerate everything
-> > > below the first device by default?
-> > 
-> > we do not enumerate everything below the first device by default, we
-> > just enumerate all the devices with _HID.
-> 
-> OK.
-> 
-> > But if a device has _HID and it is enumerated by its parents to a
-> > separate bus, we need this flag set for its parent.
-> 
-> How about checking if the device has *SerialBus() connector and in such
-> case skip the device (given that it is not listed in a special list,
-> like acpi_platform_device_ids)?
+Hi Arnaldo,
 
-This sounds like a good idea.
-I think we can just ignore devices with ACPI_RESOURCE_TYPE_SERIAL_BUS
-resources, and this can be done in drivers/acpi/scan.c for all _HID
-devices w/o handler attached, right?
+On 05/21/2014 11:05 PM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, May 12, 2014 at 11:34:51AM -0300, Arnaldo Carvalho de Melo escreveu:
+>> Em Mon, May 12, 2014 at 12:15:25PM +0200, Michael Kerrisk (man-pages) escreveu:
+>>> Hi Arnaldo,
+>  
+>>> Ping!
+> 
+>> I acknowledge the problem, the timeout has to be passed to the
+>> underlying ->recvmsg() implementations that should return the time spent
+>> waiting for each packet, so that we can accrue that at recvmmsg level.
+>  
+>> We can do either passing an extra timeout parameter to the recvmsg
+>> implementations or using some struct sock member to specify that
+>> timeout.
+>  
+>> The first approach is intrusive, touches tons of files, so I'll try
+>> making it all mostly transparent by hooking into sock_rcvtimeo()
+>> somehow.
+> 
+> But after thinking a bit more, looks like we need to do that, please
+> take a look at the attached patch to see if it addresses the problem.
+> 
+> Mostly it adds a new timeop to the per protocol recvmsg()
+> implementations, that, if not NULL, should be used instead of
+> SO_RCVTIMEO.
+> 
+> since the underlying recvmsg implementations already check that timeout,
+> return what is remaining, that will then be used in subsequent recvmsg
+> calls, at the end we just convert it back to timespec format.
+> 
+> In most cases it is just passed to skb_recv_datagram, that will check
+> the pointer, use it and update if not NULL.
+> 
+> Should have no problems, but I only did a boot with a system with this
+> patch applied, no problems noticed on a normal desktop session, ssh,
+> etc.
 
-thanks,
-rui
+Thanks! I applied this patch against 3.15-rc6.
 
+recvmmsg() now (mostly) does what I expect: 
+* it waits until either the timeout expires or vlen messages 
+  have been received
+* If no message is received before timeout, it returns -1/EAGAIN.
+* If vlen messages are received before the timeout expires, then
+  the remaining time is returned in timeout.
+
+One question: in the event that the call is interrupted by a signal 
+handler, it fails (as expected) with EINTR, but the 'timeout' value is 
+not updated with the remaining time on the timer. Would it be desirable 
+to emulate the behavior of select() (and other syscalls) in this 
+respect, and instead return the remaining time if interrupted by 
+a signal?
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
