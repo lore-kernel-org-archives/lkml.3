@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaEVG0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 02:26:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43884 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897AbaEVG0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 02:26:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,885,1392192000"; 
-   d="scan'208";a="515844786"
-Date: Thu, 22 May 2014 11:40:49 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Gross <agross@codeaurora.org>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flag APIs
-Message-ID: <20140522061049.GW21128@intel.com>
-References: <1397772242-4048-1-git-send-email-agross@codeaurora.org>
- <20140502162841.GZ32284@intel.com>
- <20140502180827.GA9476@qualcomm.com>
- <20140515173206.GA16858@qualcomm.com>
+	id S1751338AbaEVGbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 02:31:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39616 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaEVGbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 02:31:17 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <zonque@gmail.com>,
+        <b-liu@ti.com>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH v5 0/6] Add support for SW babble Control
+Date: Thu, 22 May 2014 11:59:35 +0530
+Message-ID: <1400740181-31213-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140515173206.GA16858@qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 12:32:06PM -0500, Andy Gross wrote:
-> On Fri, May 02, 2014 at 01:08:27PM -0500, Andy Gross wrote:
-> > On Fri, May 02, 2014 at 09:58:41PM +0530, Vinod Koul wrote:
-> > > On Thu, Apr 17, 2014 at 05:04:02PM -0500, Andy Gross wrote:
-> > > > This patch adds APIs that allow for BAM hardware flags to be set per
-> > > > descriptor.  Each one of the new flags informs the attached peripheral of a
-> > > > special behavior that is required.
-> > > > 
-> > > > The EOT flag requests that the peripheral assert an end of transaction interrupt
-> > > > when that descriptor is complete.  It also results in special signaling protocol
-> > > > that is used between the attached peripheral and the core using the DMA
-> > > > controller.
-> > > DMA_PREP_INTERRUPT ??
-> > 
-> > I have 3 different IRQs that can be asserted based on the bit I set in the
-> > hardware descriptor.  The normal IRQ is the INT bit.  However, in some cases the
-> > peripheral protocol requires the use of the EOT or EOB interrupt instead.  The
-> > DMA_PREP_INTERRUPT would only work if I had only 2 choices.
-> 
-> Thinking about this more, I could use the DMA_PREP_INTERRUPT to cover the EOT
-> flag.  However, I might get in a bind later if I need to support the EOB (end of
-> block) interrupt.
-Sorry for delay in this.
+Series add support for SW babble control logic found in 
+new silicon versions of AM335x. Runtime differentiation of
+silicon version is done by checking the BABBLE_CTL register.
+For newer silicon the register default value read is 0x4 and
+for older versions its 0x0.
 
-I think it would make sense to use DMA_PREP_INTERRUPT for EOB interrupt. The EOT
-should always be enabled for the cases where it is applicable instead of nomral
-irq.
+Patch 1 -> Handle Babble only if MUSB is in HOST mode
+Patch 2 -> Convert recover work to delayed work.
+Patch 3 -> usb_phy_vbus_(off/_on) are NOPs for am335x PHY
+	   so use usb_phy(_shutdown/_init) in musb_platform_reset()
+Patch 4 -> Add return value for musb_platform_reset() in prepration
+	   to support SW babble_ctrl
+Patch 5 -> Add the sw_babble_control()
+Patch 6 -> Enable sw babble control for newer silicon
 
-That should genrically ocvery your cases, or did we miss anything here
-> 
-> > 
-> > > 
-> > > > 
-> > > > The NWD flag requests that the peripheral wait until the data has been fully
-> > > > processed before signaling an interrupt.
-> > > interrupt for transaction complete or DMA request?
-> > 
-> > This is a special signaling mechanism that holds off the DMA interrupt until the
-> > peripheral actually acks that the data has been processed completely.  This is
-> > required in many cases by the peripheral.  One example is the SPI controller.
-> > At the end of a transaction you are supposed to set the NWD so that the chip
-> > select is de-asserted.
-> 
-> I'm not sure what flag I could map this to... maybe DMA_CTRL_ACK?  or maybe the
-> DMA_PREP_FENCE?  I don't generally like overloading the flags and slightly
-> twisting their intent.  Could we add a flag to denote device ACK?
-Nope lets not override these...
+v4 -> v5 : Added a debug print before resetting MUSB.
+	   changed a musb_readb to dsps_readb introduced in Patch#5 of v4.
+
+v3 -> v4 : Fixes an issue in gagdet mode - BUS RESET should not
+	   be handled as a BABBLE. Added a check for the same.(Patch #1)
+	   Enable sw babble control properly (Patch #6)
+	   	
+v2 -> v3 : Modify musb_platform_reset() to return zero on success.
+
+George Cherian (6):
+  usb: musb: core: Handle Babble condition only in HOST mode
+  usb: musb: core: Convert babble recover work to delayed work
+  usb: musb: dsps: Call usb_phy(_shutdown/_init) during
+    musb_platform_reset()
+  usb: musb: core: Convert the musb_platform_reset to have a return
+    value.
+  usb: musb: dsps: Add the sw_babble_control()
+  usb: musb: dsps: Enable sw babble control for newer silicon
+
+ drivers/usb/musb/musb_core.c | 27 ++++++++------
+ drivers/usb/musb/musb_core.h | 12 +++---
+ drivers/usb/musb/musb_dsps.c | 87 ++++++++++++++++++++++++++++++++++++++++++--
+ drivers/usb/musb/musb_regs.h |  7 ++++
+ 4 files changed, 113 insertions(+), 20 deletions(-)
 
 -- 
-~Vinod
+1.8.3.1
+
