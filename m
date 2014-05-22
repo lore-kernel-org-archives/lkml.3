@@ -1,48 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaEVNMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:12:49 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:37160 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaEVNMs (ORCPT
+	id S1752735AbaEVNPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:15:22 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:36515 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190AbaEVNPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:12:48 -0400
-Date: Thu, 22 May 2014 15:12:43 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: remove checks for CONFIG_SGI_IP35
-Message-ID: <20140522131243.GZ10287@linux-mips.org>
-References: <1400584909.4912.35.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400584909.4912.35.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 May 2014 09:15:20 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] ARM: imx: add missing kfree call in error paths
+Date: Thu, 22 May 2014 15:14:42 +0200
+Message-Id: <1400764482-20147-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 01:21:49PM +0200, Paul Bolle wrote:
+We forgot to free pdev->dev.dma_mask as it is not freed
+by platform_device_put().
 
-> Ever since (shortly before) v2.4.0 there have been checks for
-> CONFIG_SGI_IP35. But a Kconfig symbol SGI_IP35 was never added to the
-> tree. Remove these checks.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested.
-> 
-> For some reason CONFIG_SGI_IP35 was heavily used in arch/ia64 too.
-> Anyhow, IA64 has dropped that macro years ago.
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ arch/arm/mach-imx/mach-mx31_3ds.c    |    4 +++-
+ arch/arm/mach-imx/mach-mx31moboard.c |    4 +++-
+ arch/arm/mach-imx/mach-mx35_3ds.c    |    4 +++-
+ arch/arm/mach-imx/mach-pcm037.c      |    4 +++-
+ 4 files changed, 12 insertions(+), 4 deletions(-)
 
-The #ifdefs exist because these headers are originally from IRIX and the
-equivalent IRIX definitions were converted to Linux-style.  For the
-IA64 version keeping those ifdefs around obviously made no sense since -
-since IP35 (Origin 300/3000 series) is MIPS-based, so it was dropped
-again.
+diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
+index 453f41a..8de1019 100644
+--- a/arch/arm/mach-imx/mach-mx31_3ds.c
++++ b/arch/arm/mach-imx/mach-mx31_3ds.c
+@@ -201,9 +201,11 @@ static int __init mx31_3ds_init_camera(void)
+ 		goto err;
+ 
+ 	ret = platform_device_add(pdev);
+-	if (ret)
++	if (ret) {
+ err:
++		kfree(pdev->dev.dma_mask);
+ 		platform_device_put(pdev);
++	}
+ 
+ 	return ret;
+ }
+diff --git a/arch/arm/mach-imx/mach-mx31moboard.c b/arch/arm/mach-imx/mach-mx31moboard.c
+index 6bed570..f24a93c 100644
+--- a/arch/arm/mach-imx/mach-mx31moboard.c
++++ b/arch/arm/mach-imx/mach-mx31moboard.c
+@@ -494,9 +494,11 @@ static int __init mx31moboard_init_cam(void)
+ 		goto err;
+ 
+ 	ret = platform_device_add(pdev);
+-	if (ret)
++	if (ret) {
+ err:
++		kfree(pdev->dev.dma_mask);
+ 		platform_device_put(pdev);
++	}
+ 
+ 	return ret;
+ 
+diff --git a/arch/arm/mach-imx/mach-mx35_3ds.c b/arch/arm/mach-imx/mach-mx35_3ds.c
+index 72cd77d..ffdddb3 100644
+--- a/arch/arm/mach-imx/mach-mx35_3ds.c
++++ b/arch/arm/mach-imx/mach-mx35_3ds.c
+@@ -284,9 +284,11 @@ static int __init imx35_3ds_init_camera(void)
+ 		goto err;
+ 
+ 	ret = platform_device_add(pdev);
+-	if (ret)
++	if (ret) {
+ err:
++		kfree(pdev->dev.dma_mask);
+ 		platform_device_put(pdev);
++	}
+ 
+ 	return ret;
+ }
+diff --git a/arch/arm/mach-imx/mach-pcm037.c b/arch/arm/mach-imx/mach-pcm037.c
+index 8eb1570..764a111 100644
+--- a/arch/arm/mach-imx/mach-pcm037.c
++++ b/arch/arm/mach-imx/mach-pcm037.c
+@@ -427,9 +427,11 @@ static int __init pcm037_init_camera(void)
+ 		goto err;
+ 
+ 	ret = platform_device_add(pdev);
+-	if (ret)
++	if (ret) {
+ err:
++		kfree(pdev->dev.dma_mask);
+ 		platform_device_put(pdev);
++	}
+ 
+ 	return ret;
+ }
+-- 
+1.7.10.4
 
-There is some out-of-tree support for IP35 so I'd like to drop this
-patch.
-
-  Ralf
