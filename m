@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803AbaEVNy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:54:59 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:50521 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285AbaEVNx4 (ORCPT
+	id S1752565AbaEVN6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:58:11 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55436 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750842AbaEVN6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:53:56 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com
-Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 2/4] phy: miphy365x: Add MiPHY365x header file for DT x Driver defines
-Date: Thu, 22 May 2014 14:53:37 +0100
-Message-Id: <1400766819-22286-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400766819-22286-1-git-send-email-lee.jones@linaro.org>
-References: <1400766819-22286-1-git-send-email-lee.jones@linaro.org>
+	Thu, 22 May 2014 09:58:10 -0400
+Message-ID: <1400767088.16407.14.camel@x220>
+Subject: Re: [PATCH] MIPS: remove checks for CONFIG_SGI_IP35
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Date: Thu, 22 May 2014 15:58:08 +0200
+In-Reply-To: <20140522131243.GZ10287@linux-mips.org>
+References: <1400584909.4912.35.camel@x220>
+	 <20140522131243.GZ10287@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 May 2014 13:58:08.0306 (UTC) FILETIME=[DC5C0920:01CF75C5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the shared header file which will be reference from both
-the MiPHY365x driver and its associated Device Tree node(s).
+On Thu, 2014-05-22 at 15:12 +0200, Ralf Baechle wrote:
+> On Tue, May 20, 2014 at 01:21:49PM +0200, Paul Bolle wrote:
+> 
+> > Ever since (shortly before) v2.4.0 there have been checks for
+> > CONFIG_SGI_IP35. But a Kconfig symbol SGI_IP35 was never added to the
+> > tree. Remove these checks.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Untested.
+> > 
+> > For some reason CONFIG_SGI_IP35 was heavily used in arch/ia64 too.
+> > Anyhow, IA64 has dropped that macro years ago.
+> 
+> The #ifdefs exist because these headers are originally from IRIX and the
+> equivalent IRIX definitions were converted to Linux-style.  For the
+> IA64 version keeping those ifdefs around obviously made no sense since -
+> since IP35 (Origin 300/3000 series) is MIPS-based, so it was dropped
+> again.
 
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- include/dt-bindings/phy/phy-miphy365x.h | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 include/dt-bindings/phy/phy-miphy365x.h
+Nice to know. Thanks.
 
-diff --git a/include/dt-bindings/phy/phy-miphy365x.h b/include/dt-bindings/phy/phy-miphy365x.h
-new file mode 100644
-index 0000000..8757c02
---- /dev/null
-+++ b/include/dt-bindings/phy/phy-miphy365x.h
-@@ -0,0 +1,25 @@
-+/*
-+ * This header provides constants for the phy framework
-+ * based on the STMicroelectronics miphy365x.
-+ */
-+#ifndef _DT_BINDINGS_PHY_MIPHY
-+#define _DT_BINDINGS_PHY_MIPHY
-+
-+/* Supports 16 ports without a datatype change (u8 & 0xF0). */
-+#define MIPHY_PORT_0			0
-+#define MIPHY_PORT_1			1
-+#define MIPHY_PORT_2			2
-+#define MIPHY_PORT_3			3
-+
-+/* Supports 16 types without a datatype change (u8 & 0x0F). */
-+#define MIPHY_TYPE_SHIFT		4
-+#define MIPHY_TYPE_SATA			(0 << MIPHY_TYPE_SHIFT)
-+#define MIPHY_TYPE_PCIE			(1 << MIPHY_TYPE_SHIFT)
-+#define MIPHY_TYPE_USB			(2 << MIPHY_TYPE_SHIFT)
-+
-+#define MIPHY_SATA_PORT0		(MIPHY_TYPE_SATA) | (MIPHY_PORT_0)
-+#define MIPHY_SATA_PORT1		(MIPHY_TYPE_SATA) | (MIPHY_PORT_1)
-+#define MIPHY_PCIE_PORT0		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_0)
-+#define MIPHY_PCIE_PORT1		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_1)
-+
-+#endif /* _DT_BINDINGS_PHY_MIPHY */
--- 
-1.8.3.2
+> There is some out-of-tree support for IP35 so I'd like to drop this
+> patch.
+
+Thanks for handling this (and the similar) patches so quickly. I
+disagree with your decision here. But there are many, many issues like
+this still left in the tree. So there's no point in making noise about
+just this one Kconfig macro.
+
+By the way, could you perhaps look at CONFIG_SYS_HAS_CPU_RM9000? It
+seems the Kconfig entry for SYS_HAS_CPU_RM9000 is simply missing. But
+the CPU support code is rather complicated and I stopped trying to
+understand it after staring at it for way too long.
+
+Thanks again,
+
+
+Paul Bolle
 
