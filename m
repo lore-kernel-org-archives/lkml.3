@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751168AbaEVU3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:29:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58757 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaEVU3V (ORCPT
+	id S1751456AbaEVUaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:30:08 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:42298 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247AbaEVUaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:29:21 -0400
-Message-ID: <537E5E1F.3050605@codeaurora.org>
-Date: Thu, 22 May 2014 16:29:19 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Larry Bassel <larry.bassel@linaro.org>
-CC: catalin.marinas@arm.com, will.deacon@arm.com, khilman@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 2/2] arm64: enable context tracking
-References: <1400786855-32656-1-git-send-email-larry.bassel@linaro.org> <1400786855-32656-3-git-send-email-larry.bassel@linaro.org>
-In-Reply-To: <1400786855-32656-3-git-send-email-larry.bassel@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 May 2014 16:30:06 -0400
+Message-ID: <1400790603.5367.167.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: skbuff truesize incorrect.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jim Baxter <jim_baxter@mentor.com>
+Cc: David Miller <davem@davemloft.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kamal@canonical.com, bhutchings@solarflare.com, edumazet@google.com,
+        mszeredi@suse.cz, fw@strlen.de
+Date: Thu, 22 May 2014 13:30:03 -0700
+In-Reply-To: <537E5C63.7080607@mentor.com>
+References: <537E4AFD.20304@mentor.com>
+	 <20140522.152146.2116142050088142989.davem@davemloft.net>
+	 <537E5C63.7080607@mentor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Larry,
+On Thu, 2014-05-22 at 21:21 +0100, Jim Baxter wrote:
 
-On 05/22/2014 03:27 PM, Larry Bassel wrote:
-> Make calls to ct_user_enter when the kernel is exited
-> and ct_user_exit when the kernel is entered (in el0_da,
-> el0_ia, el0_svc, el0_irq and all of the "error" paths).
-> 
-> These macros expand to function calls which will only work
-> properly if el0_sync and related code has been rearranged
-> (in a previous patch of this series).
-> 
-> The calls to ct_user_exit are made after hw debugging has been
-> enabled (enable_dbg_and_irq).
-> 
-> The call to ct_user_enter is made at the beginning of the
-> kernel_exit macro.
-> 
-> This patch is based on earlier work by Kevin Hilman.
-> Save/restore optimizations were also done by Kevin.
 
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -30,6 +30,44 @@
->  #include <asm/unistd32.h>
->  
->  /*
-> + * Context tracking subsystem.  Used to instrument transitions
-> + * between user and kernel mode.
-> + */
-> +	.macro ct_user_exit, restore = 0
-> +#ifdef CONFIG_CONTEXT_TRACKING
-> +	bl	context_tracking_user_exit
-> +	.if \restore == 1
-> +	/*
-> +	 * Save/restore needed during syscalls.  Restore syscall arguments from
-> +	 * the values already saved on stack during kernel_entry.
-> +	 */
-> +	ldp	x0, x1, [sp]
-> +	ldp	x2, x3, [sp, #S_X2]
-> +	ldp	x4, x5, [sp, #S_X4]
-> +	ldp	x6, x7, [sp, #S_X6]
-> +	.endif
-> +#endif
-> +	.endm
-> +
-> +	.macro ct_user_enter, save = 0
-> +#ifdef CONFIG_CONTEXT_TRACKING
-> +	.if \save == 1
-> +	/*
-> +	 * Save/restore only needed on syscall fastpath, which uses
-> +	 * x0-x2.
-> +	 */
-> +	push    x2, x3
+> OK, so it is the value of the memory that has been allocated for the SKB.
+> If there are multiple clones for an skb all pointing at the same data,
+> will that distort the memory used when they all have the same truesize?
 
-Why is x3 saved?
+Its always better to over estimate memory uses, than under estimating.
 
-> +	push    x0, x1
-> +	.endif
-> +	bl	context_tracking_user_enter
-> +	.if \save == 1
-> +	pop     x0, x1
-> +	pop     x2, x3
-> +	.endif
-> +#endif
-> +	.endm
+Its all about guarding against OOM.
 
-Thanks,
-Christopher
+Keep in mind some parts of networking stack do not like clones.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+TCP coalescing works beautifully with non cloned skbs.
+
+Instead of cloning skb or doing copies, you could play with having frame
+on a page fragment. Only headers might need to be pulled from the frame
+to linear part of skb.
+
+
+
+
+
