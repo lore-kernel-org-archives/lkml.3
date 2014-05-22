@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaEVTZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 15:25:34 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:60262 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750870AbaEVTZd (ORCPT
+	id S1752730AbaEVTZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 15:25:46 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:40985 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaEVTZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 May 2014 15:25:33 -0400
-Date: Thu, 22 May 2014 14:25:30 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: hannes@cmpxchg.org, mhocko@suse.cz, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
- offline
-In-Reply-To: <20140522134726.GA3147@esperanza>
-Message-ID: <alpine.DEB.2.10.1405221422390.15766@gentwo.org>
-References: <20140515071650.GB32113@esperanza> <alpine.DEB.2.10.1405151015330.24665@gentwo.org> <20140516132234.GF32113@esperanza> <alpine.DEB.2.10.1405160957100.32249@gentwo.org> <20140519152437.GB25889@esperanza> <alpine.DEB.2.10.1405191056580.22956@gentwo.org>
- <537A4D27.1050909@parallels.com> <alpine.DEB.2.10.1405210937440.8038@gentwo.org> <20140521150408.GB23193@esperanza> <alpine.DEB.2.10.1405211912400.4433@gentwo.org> <20140522134726.GA3147@esperanza>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <537E4F29.9080103@gmail.com>
+Date: Thu, 22 May 2014 15:25:29 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Jim Baxter <jim_baxter@mentor.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "David S. Miller" <davem@davemloft.net>, kamal@canonical.com,
+        Ben Hutchings <bhutchings@solarflare.com>, edumazet@google.com,
+        mszeredi@suse.cz, fw@strlen.de
+Subject: Re: skbuff truesize incorrect.
+References: <537E4AFD.20304@mentor.com>
+In-Reply-To: <537E4AFD.20304@mentor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014, Vladimir Davydov wrote:
+On 05/22/2014 03:07 PM, Jim Baxter wrote:
+> Hi, I was hoping you can help me with some questions.
+> 
+> I have been investigating a network issue with bursts of network traffic
+> over USB CDC-NCM, the issue is that the kernel is dropping packets
+> because sk_rcvqueues_full() returns true due to skb2->truesize is always
+> 32960 instead of SKB_TRUESIZE(skb2->len) which is about 1800.
+> 
+> The code I am trying to fix is this code below, it is splitting a set of
+> multiple network packets compressed into a single 16k packet into
+> individual skb's and sending them up the network stack.
+> 
+>     skb2 = skb_clone(skb, GFP_ATOMIC);
+>     if (skb2 == NULL)
+>         goto err;
+> 
+>     if (!skb_pull(skb2, index)) {
+>         ret = -EOVERFLOW;
+>         goto err;
+>     }
 
-> On Wed, May 21, 2014 at 07:13:21PM -0500, Christoph Lameter wrote:
-> > On Wed, 21 May 2014, Vladimir Davydov wrote:
-> >
-> > > Do I understand you correctly that the following change looks OK to you?
-> >
-> > Almost. Preemption needs to be enabled before functions that invoke the
-> > page allocator etc etc.
->
-> I need to disable preemption only in slab_free, which never blocks
-> according to its semantics, so everything should be fine just like that.
+This assumes that you original 16K packet is linear.  Is that
+always the case?
 
-slab_free calls __slab_free which can release slabs via
-put_cpu_partial()/unfreeze_partials()/discard_slab() to the page
-allocator. I'd rather have preemption enabled there.
+> 
+>     skb_trim(skb2, dg_len - crc_len);
+> 
+> My questions are:
+> 
+> 1) Which buffer size does truesize represent, is it the total buffer or
+> just the data related to the relevant skb?
+
+Total buffer size (including the struct sk_buff).
+
+> 
+> 2) If truesize is for the skb it is contained within should it be
+> updated during the call to skb_trim?
+
+No, because the the buffer/memory is still there.  skb_trim just
+sets the tail pointer and adjusts skb->len.
+
+
+> 
+> 3) Why does the truesize default to 32960?
+
+Probably because that's how much buffer space was actually allocated
+for the original skb.  When you cloned it, you inherited the truesize
+since a clone is just the struct sk_buff that points into the data
+of the original.
+
+This is the very same problem that I ran into with SCTP since it
+has similar code in it.  You can play games with truesize manually,
+but you have to be very careful here.
+
+-vlad
+> 
+> 
+> Thank you for any help,
+> Jim Baxter.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
