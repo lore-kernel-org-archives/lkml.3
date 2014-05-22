@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709AbaEVJnF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:43:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47927 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaEVJnC (ORCPT
+	id S1754197AbaEVJqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:46:48 -0400
+Received: from ionion.tem.uoc.gr ([147.52.48.134]:39715 "EHLO
+	ionion.tem.uoc.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaEVJqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:43:02 -0400
-Message-ID: <537DC6A1.3090206@linutronix.de>
-Date: Thu, 22 May 2014 11:42:57 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 22 May 2014 05:46:47 -0400
+X-Greylist: delayed 3834 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 May 2014 05:46:46 EDT
+Message-ID: <20140522113440.11255ku06kg007mo@webmail.edu.uoc.gr>
+Date: Thu, 22 May 2014 11:34:40 +0300
+From: Dong Zhai <tem1667@tem.uoc.gr>
+Reply-to: dong.zhai1@foxmail.com
+To: undisclosed-recipients:;
+Subject: Recruitment in progress
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: delicious quinoa <delicious.quinoa@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: [PATCH 6/7 v2] gpio: dwapb: use a second irq chip
-References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>	<1395505004-22650-7-git-send-email-bigeasy@linutronix.de>	<5331F6D5.7070809@gmail.com>	<53427718.30406@linutronix.de>	<CANk1AXSuBGj3vZ7knKmHTwDZLTkvVFT42Lt9ZTdk-E+sp=xQ+g@mail.gmail.com>	<20140430111308.GA11829@linutronix.de> <CACRpkdY=oVyBCwRkppq11B0tkn2bMw+-h_fDhy538eatVUJ=pQ@mail.gmail.com>
-In-Reply-To: <CACRpkdY=oVyBCwRkppq11B0tkn2bMw+-h_fDhy538eatVUJ=pQ@mail.gmail.com>
-X-Enigmail-Version: 1.6+git0.20140323
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+ charset=UTF-8;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 05:01 PM, Linus Walleij wrote:
-> OK this patch is ACKed by Alan so I would like to apply it but:
-> 
-> Content-Type: text/plain; charset=utf-8
-> Content-Disposition: inline
-> Content-Transfer-Encoding: quoted-printable
-> 
-> This is not good. Quoted-printable makes the raw patch look like
-> that:
-> 
-> - int err, irq;
-> + int err, irq, i;
-> =20
->   irq =3D irq_of_parse_and_map(node, 0);
-> 
-> Notice spurious =20 and =3D encoding.
-> 
-> Please resend in ISO8859-1 and take this opportunity to add
+Greetings,
 
-doesn't "git am" handle this on its own?
+I am Dong Zhai, Deputy General Manager at Qinghai Huading Industrial  
+Co., Ltd. China. I can tell you have a good reputation and I would  
+like to make a proposal to you. We are in need of a Reputable  
+Company/Individual in Canada and in the United State of America that  
+can act as our Company Sales/Collection Representative (Intermediary  
+between Qinghai Huading Industrial Co., Ltd and its clients in Canada  
+and in the United State of America region). If interested, kindly  
+indicate your interest by sending us an email on: dong.zhai1@foxmail.com
 
-> Alan's ACK.
+Note: The job will only take few minutes of your time daily. You can  
+Earn Extra income while doing your normal Job/Business
 
-I will try to add his ack and tell git resent the patch.
+Dong Zhai
+Qinghai Huading
+Industrial Co., Ltd
 
-> Yours,
-> Linus Walleij
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
-Sebastian
+
