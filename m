@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaEVPfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:35:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46034 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaEVPfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:35:10 -0400
-Date: Thu, 22 May 2014 17:35:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ben Segall <bsegall@google.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        pjt@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: fix unlocked reads of some cfs_b->quota/period
-Message-ID: <20140522153504.GY30445@twins.programming.kicks-ass.net>
-References: <20140519224945.20303.93530.stgit@sword-of-the-dawn.mtv.corp.google.com>
+	id S1752357AbaEVPgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:36:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43677 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146AbaEVPgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 11:36:23 -0400
+Date: Thu, 22 May 2014 16:36:17 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barriers and waitqueue
+ lookups in unlock_page fastpath v7
+Message-ID: <20140522153617.GI23991@suse.de>
+References: <20140521121501.GT23991@suse.de>
+ <20140521142622.049d0b3af5fc94912d5a1472@linux-foundation.org>
+ <20140521213354.GL2485@laptop.programming.kicks-ass.net>
+ <20140521145000.f130f8779f7641d0d8afcace@linux-foundation.org>
+ <20140522000715.GA23991@suse.de>
+ <20140522072001.GP30445@twins.programming.kicks-ass.net>
+ <20140522104051.GE23991@suse.de>
+ <20140522105638.GT30445@twins.programming.kicks-ass.net>
+ <20140522144045.GH23991@suse.de>
+ <20140522150451.GX30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+aOZGdcGYL8FotQd"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140519224945.20303.93530.stgit@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140522150451.GX30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 22, 2014 at 05:04:51PM +0200, Peter Zijlstra wrote:
+> On Thu, May 22, 2014 at 03:40:45PM +0100, Mel Gorman wrote:
+> 
+> > > +static bool __wake_up_common(wait_queue_head_t *q, unsigned int mode,
+> > >  			int nr_exclusive, int wake_flags, void *key)
+> > >  {
+> > >  	wait_queue_t *curr, *next;
+> > > +	bool woke = false;
+> > >  
+> > >  	list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
+> > >  		unsigned flags = curr->flags;
+> > >  
+> > > +		if (curr->func(curr, mode, wake_flags, key)) {
+> > > +			woke = true;
+> > > +			if ((flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
+> > > +				break;
+> > > +		}
+> > >  	}
+> > > +
+> > > +	return woke;
+> > 
+> > Ok, thinking about this more I'm less sure.
+> > 
+> > There are cases where the curr->func returns false even though there is a
+> > task that needs to run -- task was already running or preparing to run. We
+> > potentially end up clearing PG_waiters while there are still tasks on the
+> > waitqueue. As __finish_wait checks if the waitqueue is empty and the last
+> > waiter clears the bit I think there is nothing to gain by trying to do the
+> > same job in __wake_up_page_bit.
+> 
+> Hmm, I think you're right, we need the test result from
+> wake_bit_function(), unpolluted by the ttwu return value.
 
---+aOZGdcGYL8FotQd
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Which would be a bit too special cased and not a clear win. I at least
+added a comment to explain what is going on here.
 
-On Mon, May 19, 2014 at 03:49:45PM -0700, Ben Segall wrote:
-> @@ -3783,7 +3787,7 @@ static void __maybe_unused unthrottle_offline_cfs_r=
-qs(struct rq *rq)
->  		 * clock_task is not advancing so we just need to make sure
->  		 * there's some valid quota amount
->  		 */
-> -		cfs_rq->runtime_remaining =3D cfs_b->quota;
-> +		cfs_rq->runtime_remaining =3D 1;
->  		if (cfs_rq_throttled(cfs_rq))
->  			unthrottle_cfs_rq(cfs_rq);
->  	}
->=20
+	/*
+	 * Unlike __wake_up_bit it is necessary to check waitqueue_active
+	 * under the wqh->lock to avoid races with parallel additions that
+	 * could result in lost wakeups.
+	 */
+	spin_lock_irqsave(&wqh->lock, flags);
+	if (waitqueue_active(wqh)) {
+		/*
+		 * Try waking a task on the queue. Responsibility for clearing
+		 * the PG_waiters bit is left to the last waiter on the
+		 * waitqueue as PageWaiters is called outside wqh->lock and
+		 * we cannot miss wakeups. Due to hashqueue collisions, there
+		 * may be colliding pages that still have PG_waiters set but
+		 * the impact means there will be at least one unnecessary
+		 * lookup of the page waitqueue on the next unlock_page or
+		 * end of writeback.
+		 */
+		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
+	} else {
+		/* No potential waiters, safe to clear PG_waiters */
+		ClearPageWaiters(page);
+	}
+	spin_unlock_irqrestore(&wqh->lock, flags);
 
-That ^, causes:
-
-kernel/sched/fair.c: In function =E2=80=98unthrottle_offline_cfs_rqs=E2=80=
-=99:
-kernel/sched/fair.c:3782:25: warning: unused variable =E2=80=98cfs_b=E2=80=
-=99 [-Wunused-variable]
-
-Stuck this on:
-
----
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3779,8 +3779,6 @@ static void __maybe_unused unthrottle_of
- 	struct cfs_rq *cfs_rq;
-=20
- 	for_each_leaf_cfs_rq(rq, cfs_rq) {
--		struct cfs_bandwidth *cfs_b =3D tg_cfs_bandwidth(cfs_rq->tg);
--
- 		if (!cfs_rq->runtime_enabled)
- 			continue;
-=20
-
---+aOZGdcGYL8FotQd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfhkoAAoJEHZH4aRLwOS6ZaAP/AmeXKLl41uwgnmNO0J1E9QU
-cMFddjEfYw+4tanJ/IyU0oO+wKtbP3cFRgXZ3sfgqwSWbpRGKiXJIwp/2nu9bVsY
-HUrCIT7bgmfNo20nwfYUoKC4dtoSzBgyyc/Nm/oHQzSwOXiKkC31F0+H4+i15lXw
-RIuvdE/rNTBYl2O1HXwNpKbF0WYsB9sKFwId8brTLV+1A9OJMDSDkHBxZzNQ170W
-8nQaDVmzwj1GhZP9xfR/F2WlBk6AS0oEAitXa4bCN777M9eKptKm5pPQvg8KSs4V
-zvkERxpCjkh4/fDhfpy1styY1HS+kp58Hn8jEUkAV9EUn2H+6tu0Ki3Lr8hRLs3S
-fNMP0Wvrw+zwPmy32Bg8vHC1VdFFGV2z340+ivm+cnD/qR59Ehib9t/PqAobQ6dE
-OYwoXZ2yJAR4zxnPbuhbJytF2aaYLHtvJhWD+gBBPFI5BCYnaO9uwMLMZmkJSIQC
-oJLG6PCN1YLjVwzXUxuQKxGs/cuXmXy/6S6k6QNsHNpPwOEfsNFj7ZeXuMBVZ7LY
-cdpsEo3I/wGf4x6WN71gLXqHffJ8g4XrCmIJ6KhsCvwWd3OdBuZUv2CRlDUCGF0V
-ksa06vmVpklHBrYcUCZkoTuQD8nLoHByIFWP1bQVmzSX7cp1ESMmN6xzZ+1+CtH7
-J1/g18ukxmSGaZU3i1b4
-=jOy7
------END PGP SIGNATURE-----
-
---+aOZGdcGYL8FotQd--
+-- 
+Mel Gorman
+SUSE Labs
