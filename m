@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaEVECK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 00:02:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41254 "EHLO bear.ext.ti.com"
+	id S1753270AbaEVECS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 00:02:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50468 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461AbaEVECH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 00:02:07 -0400
+	id S1753115AbaEVECN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 00:02:13 -0400
 From: Keerthy <j-keerthy@ti.com>
 To: <devicetree@vger.kernel.org>
 CC: <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
@@ -13,55 +13,68 @@ CC: <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <broonie@linaro.org>, <lee.jones@linaro.org>,
         <linux-omap@vger.kernel.org>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v3 0/4] tps65917: Drivers for TPS65917 PMIC
-Date: Thu, 22 May 2014 09:30:35 +0530
-Message-ID: <1400731239-3180-1-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH v3 1/4] MFD: DT bindings for the TPS65917 family MFD
+Date: Thu, 22 May 2014 09:30:36 +0530
+Message-ID: <1400731239-3180-2-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400731239-3180-1-git-send-email-j-keerthy@ti.com>
+References: <1400731239-3180-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPS65917 chip is a power management IC for Portable Navigation Systems
-and Tablet Computing devices. It contains the following components:
+Add the various binding files for the TPS65917 family of chips. There is a
+top level MFD binding then a seperate binding for regulators IP blocks on chips.
 
- - Regulators.
- - GPADC.
- - Over Temperature warning and Shut down.
-
-This patch series adds support for TPS65917 mfd device. At this time only
-the regulator functionality is made available.
-
-The closest drivers are PALMAS series drivers.
-The register set is changed. Bit-field defenitions are changed.
-Hence based on the PALMAS drivers and created a new set of drivers
-with code changes as required.
-
-The patches are boot tested on DRA72-EVM.
-
-Keerthy (4):
-  MFD: DT bindings for the TPS65917 family MFD
-  Regulators: Add TPS65917 Bindings
-  mfd: tps65917: Add driver for the TPS65917 PMIC
-  regulator: tps65917: Add Regulator driver for TPS65917 PMIC
-
- Documentation/devicetree/bindings/mfd/tps65917.txt |   35 +
- .../bindings/regulator/tps65917-pmic.txt           |   67 +
- drivers/mfd/Kconfig                                |   12 +
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/tps65917.c                             |  594 ++++++++
- drivers/regulator/Kconfig                          |   12 +
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/tps65917-regulator.c             |  809 +++++++++++
- include/linux/mfd/tps65917.h                       | 1485 ++++++++++++++++++++
- 9 files changed, 3016 insertions(+)
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+---
+ Documentation/devicetree/bindings/mfd/tps65917.txt |   35 ++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/mfd/tps65917.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/tps65917-pmic.txt
- create mode 100644 drivers/mfd/tps65917.c
- create mode 100644 drivers/regulator/tps65917-regulator.c
- create mode 100644 include/linux/mfd/tps65917.h
 
+diff --git a/Documentation/devicetree/bindings/mfd/tps65917.txt b/Documentation/devicetree/bindings/mfd/tps65917.txt
+new file mode 100644
+index 0000000..287a713
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/tps65917.txt
+@@ -0,0 +1,35 @@
++* TPS65917 device tree bindings
++
++The TI TPS65917 family of PMICs.
++
++Required properties:
++- compatible : Should be from the list
++  ti,tps65917
++- interrupt-controller : TPS65917 has its own internal IRQs
++- #interrupt-cells : should be set to 2 for IRQ number and flags
++  The first cell is the IRQ number.
++  The second cell is the flags, encoded as the trigger masks from
++  Documentation/devicetree/bindings/interrupts.txt
++- interrupt-parent : The parent interrupt controller.
++
++Optional properties:
++  ti,mux-padX : set the pad register X (1-2) to the correct muxing for the
++		hardware, if not set will use muxing in OTP.
++
++Example:
++
++tps65917 {
++	compatible = "ti,tps65917";
++	reg = <0x58>
++	interrupt-parent = <&intc>;
++	interrupt-controller;
++	#interrupt-cells = <2>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	pmic {
++		compatible = "ti,tps65917-pmic";
++		....
++	};
++}
 -- 
 1.7.9.5
 
