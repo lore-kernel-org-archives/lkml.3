@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaEVKau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 06:30:50 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:47073 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774AbaEVKas (ORCPT
+	id S1754605AbaEVKbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 06:31:52 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36220 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428AbaEVKbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 06:30:48 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-e3-537dd1d5c11d
-Message-id: <537DD1D2.9010107@samsung.com>
-Date: Thu, 22 May 2014 12:30:42 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Tushar Behera <tushar.behera@linaro.org>,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH 3/4] clk: samsung: Add driver to control CLKOUT line on
- Exynos SoCs
-References: <1400604211-9447-1-git-send-email-t.figa@samsung.com>
- <1400604211-9447-4-git-send-email-t.figa@samsung.com>
- <537D7CF4.6050305@linaro.org>
-In-reply-to: <537D7CF4.6050305@linaro.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t/xq7pXL9YGGzy4zWYx9eETNov5R86x
-	WvQuuMpmsenxNVaLy7vmsFnMOL+PyWLtkbvsFkuvX2SyeDrhIpvFoq1f2C2mLDrMatG69wi7
-	xapdfxgt2v/uZXPg81gzbw2jx85Zd9k9Nq3qZPO4c20Pm8fmJfUefVtWMXp83iQXwB7FZZOS
-	mpNZllqkb5fAlXFw+Q3WgmM8Fd8XljUwNnJ1MXJySAiYSPR/uswCYYtJXLi3nq2LkYtDSGAp
-	o8S0xftYIJzPjBKvLn1gA6niFdCSOPHtD5jNIqAq0bl9CzuIzSagJvG54RFYnB+oZk3TdaBm
-	Dg5RgQiJxxeEIFoFJX5Mvge2TETAX+L0vfPMIPOZBU4wS3x9+ZoRJCEsEClx6+JzqMUzGSWO
-	vJjECpLgBBp69M17ZhCbWUBHYn/rNDYIW15i85q3zBMYBWchWTILSdksJGULGJlXMYqmliYX
-	FCel5xrpFSfmFpfmpesl5+duYoTE1dcdjEuPWR1iFOBgVOLh7ciqDRZiTSwrrsw9xCjBwawk
-	wrvvDFCINyWxsiq1KD++qDQntfgQIxMHp1QDY9WxnZpqi0Q1D9Vk8YQINNx7sEH6gsnPKdUT
-	Ju2Rd7TdmCz8/OimZ88iz6fY7Pg6VVUz52lHyHat9ed+fq6evvXtitPTVCacnuf9+E7BpKu5
-	N2SZ3166+HDdq9pyp8xbHCc1Jrj9bgqffeqt3XJz4yP/JVqfHevi5a2/yap1YJ7q23+2809s
-	FtukxFKckWioxVxUnAgAHWCdZ4kCAAA=
+	Thu, 22 May 2014 06:31:51 -0400
+Date: Thu, 22 May 2014 11:31:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, tiwai@suse.de, perex@perex.cz,
+        dianders@chromium.org, jerry.wong@maximintegrated.com,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Message-ID: <20140522103137.GE12304@sirena.org.uk>
+References: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org>
+ <1400750228-13750-3-git-send-email-tushar.behera@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AV6bwGDIl1DgWyaJ"
+Content-Disposition: inline
+In-Reply-To: <1400750228-13750-3-git-send-email-tushar.behera@linaro.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] ASoC: max98095: Add master clock handling
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2014 06:28, Tushar Behera wrote:
-> On 05/20/2014 10:13 PM, Tomasz Figa wrote:
->> This patch introduces a driver that handles configuration of CLKOUT pin
->> of Exynos SoCs that can be used to output certain clocks from inside of
->> the SoC to a dedicated output pin.
->>
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->> ---
->>  .../devicetree/bindings/arm/samsung/pmu.txt        |  30 ++++
->>  drivers/clk/samsung/Makefile                       |   1 +
->>  drivers/clk/samsung/clk-exynos-clkout.c            | 153 +++++++++++++++++++++
->>  3 files changed, 184 insertions(+)
->>  create mode 100644 drivers/clk/samsung/clk-exynos-clkout.c
->>
->> diff --git a/Documentation/devicetree/bindings/arm/samsung/pmu.txt b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
->> index b562634..5ed94a9 100644
->> --- a/Documentation/devicetree/bindings/arm/samsung/pmu.txt
->> +++ b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
->> @@ -11,8 +11,38 @@ Properties:
->>  
->>   - reg : offset and length of the register set.
->>  
->> + - #clock-cells : must be <1>, since PMU requires once cell as clock specifier.
-> 
-> s/once/one
-> 
->> +		The single specifier cell is used as index to list of clocks
->> +		provided by PMU, which is currently:
->> +			0 : SoC clock output (CLKOUT pin)
-> 
-> Will it make more sense if we add a macro for this clock number that
-> would be referred in the device tree files?
 
-Right now, with just one clock, it doesn't make sense, but if further
-clocks show up with newer SoCs, then macros will have to be added.
+--AV6bwGDIl1DgWyaJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Best regards,
-Tomasz
+On Thu, May 22, 2014 at 02:47:08PM +0530, Tushar Behera wrote:
+> If master clock is provided through device tree, then update
+> the master clock frequency during set_sysclk.
+
+Same issues here.
+
+--AV6bwGDIl1DgWyaJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfdIGAAoJELSic+t+oim9O6wP/1P9klcj7qRF6QcyX1jclMzz
+JRFmSf+Z9v9WuqNiD3TKJUMUjIVvy6YgY5xq8o4NX3IKYABNtoxgek/9pKxCQeWy
+jheEjbCn3moVIpioYXLeK704xeUqLuKSnrvG12Qa2xwwZZQjqfBYKNJkEsmuJZp5
+BMtfTogBVuNOYz6gSPVv7Rb3d23Zmckd2Otb7mKbv9N3THX/aRCJgQLJjpKQn5+4
+JYj6s/nmrgEzCCQ4R77YE4kDinaY2a6nF54RsmMyw9WXcGOVpz5CHpv3WDMtg474
+1H1n5HsCeFoNWV70xSvlXPhWql99If8ka5xI3Uhj2thCENn4Id3HiM+mkYaFP0f/
+6GtyjD10mLARSmAbImjLfn/BQ7qJzZQZbMVEp+Tz3xYwhbc/wAdjRImkwdcRTnrv
+LkDt/IQ1HUz3kciEhy8jVhBCfwvRIdurGeNmkN5hBkF5oSrsvJyBhm4PZ67yy3nZ
+YcSb7VWIV+ltR7KtvLrr9cXs3nDfTMob92ETM09pBjqXn4/vIOVZiWtUed7it1zv
+Abak2Brxy5f+df4dqqnHMHaUzIXwBCpvjpKTURFudyD36Mc4EfJy2cE2lTLo1qSk
+FIUPXDH7OtXkpKTF8FhAisdpayumKn1rTDWxoyWHzE98XJEDo3uFN9jo8zOCyCN2
+2m1C5+AeOmvKcuPEplBQ
+=YGih
+-----END PGP SIGNATURE-----
+
+--AV6bwGDIl1DgWyaJ--
