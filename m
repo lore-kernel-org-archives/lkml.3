@@ -1,64 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460AbaEVJwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:52:34 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:51743 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351AbaEVJwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:52:32 -0400
-Date: Thu, 22 May 2014 11:52:27 +0200
-From: Dongsu Park <dongsu.park@profitbricks.com>
-To: Daniel Phillips <daniel@phunq.net>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        tux3@tux3.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Tux3 for review
-Message-ID: <20140522095227.GA9176@gmail.com>
-References: <5376B273.7000800@partner.samsung.com>
- <20140518235555.GC18954@dastard>
- <537AA802.408@phunq.net>
+	id S1754511AbaEVJxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:53:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49061 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753611AbaEVJxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 05:53:38 -0400
+Date: Thu, 22 May 2014 11:53:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mathieu Souchaud <mattieu.souchaud@free.fr>
+Cc: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] x86/mce: Improve mcheck_init_device() error handling
+Message-ID: <20140522095333.GD4383@pd.tnic>
+References: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <537AA802.408@phunq.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, May 03, 2014 at 11:03:51PM +0200, Mathieu Souchaud wrote:
+> Check return code of every function called by mcheck_init_device().
+> 
+> Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   49 +++++++++++++++++++++++++++++++-------
+>  1 file changed, 41 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 68317c8..284cfad 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -2437,32 +2437,65 @@ static __init int mcheck_init_device(void)
+>  	int err;
+>  	int i = 0;
+>  
+> -	if (!mce_available(&boot_cpu_data))
+> -		return -EIO;
+> +	if (!mce_available(&boot_cpu_data)) {
+> +		err = -EIO;
+> +		goto err_out;
+> +	}
+>  
+> -	zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL);
+> +	if (!zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL)) {
+> +		err = -ENOMEM;
+> +		goto err_out;
+> +	}
+>  
+>  	mce_init_banks();
+>  
+>  	err = subsys_system_register(&mce_subsys, NULL);
+>  	if (err)
+> -		return err;
+> +		goto err_out_mem;
+>  
+>  	cpu_notifier_register_begin();
+>  	for_each_online_cpu(i) {
+>  		err = mce_device_create(i);
+>  		if (err) {
+> -			cpu_notifier_register_done();
+> -			return err;
+> +			goto err_device_create;
+>  		}
 
-On 19.05.2014 17:55, Daniel Phillips wrote:
-> On 05/18/2014 04:55 PM, Dave Chinner wrote:
-> >On Fri, May 16, 2014 at 05:50:59PM -0700, Daniel Phillips wrote:
-> >>We would like to offer Tux3 for review for mainline merge. We have
-> >>prepared a new repository suitable for pulling:
-> >>
-> >>https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/
+No need for curly braces {} around a single if-statement.
 
-First of all, thank you for trying to merge it to mainline.
-Maybe I cannot say the code is clean enough, but basically
-the filesystem seems to work at least.
+>  	}
+>  
+>  	register_syscore_ops(&mce_syscore_ops);
 
-> >Then there's all the writeback hacks. You've simply copy-n-pasted
-> >most of fs-writeback.c, including duplicating structures like struct
-> >wb_writeback_work and then hacked in crap (kallsyms lookups!) to be
-> >able to access core structures from kernel module context
-> >(tux3_setup_writeback(), I'm looking at you).
-> This is intentional. The files named "*_hack" were kept as close as
-> possible to the original core code to clarify exactly where core
-> needs to change in order to remove our workarounds. If you think we
-> should pretty up that code then we will happily do it. Or maybe we
-> can hammer out acceptable core patches right now, and include those
-> with our merge proposal. That would make us even happier. We hate
-> those hacks as much as you do.
+Ok, I see it now. Your patch is correct but the way the error labels
+get placed it is hard to see that the cpu hotplug mutex is taken and
+released in the right order, even on the error path.
 
-Looking up kallsyms is not only hacky, but also making the filesystem
-unable to be mounted at all, when CONFIG_KALLSYMS_ALL is not defined.
-I'll send out patches to fix that separately to tux3 mailing list.
+So, can we try to simplify this and make it more obvious? I.e., we take
+register_syscore_ops out of the way of the hotplug region:
 
-Regards,
-Dongsu
+---
+	cpu_notifier_register_begin();
+	for_each_online_cpu(i) {
+		err = mce_device_create(i);
+		if (err) {
+			cpu_notifier_register_done();
+			goto err_device_create;
+		}
+	}
 
+	__register_hotcpu_notifier(&mce_cpu_notifier);
+	cpu_notifier_register_done();
+---
+
+Also, as you've noticed we've dropped the __register_hotcpu_notifier
+retval because that function returns 0 unconditionally. Which is very
+smart, btw.</sarcasm>
+
+This way, in the hotplug mutex region we have only cpu hotplug-relevant
+operations which one can verify at a glance.
+
+Then, we do
+
+---
+	register_syscore_ops(&mce_syscore_ops);
+---
+
+Then, the error path looks simpler too:
+
+---
+err_register:
+	unregister_syscore_ops(&mce_syscore_ops);
+	cpu_notifier_register_begin();
+	__unregister_hotcpu_notifier(&mce_cpu_notifier);
+	cpu_notifier_register_done();
+
+err_device_create:
+	/*
+	 * mce_device_remove behave properly if mce_device_create was not
+	 * called on that device.
+	 */
+	for_each_possible_cpu(i)
+		mce_device_remove(i);
+---
+
+We don't need to grab the hotplug lock when iterating over the possible
+cpus because we don't care whether they're online or not, I'd say.
+
+So what do you think, makes sense? You probably would need to apply the
+patch and look at the code - it is easier at least to me.
+
+Here's the whole diff with the new changes incorporated. If no one
+complains, feel free to incorporate this into your v3 along with the
+remaining feedback.
+
+Thanks for your patience.
+
+---
+Index: b/arch/x86/kernel/cpu/mcheck/mce.c
+===================================================================
+--- a/arch/x86/kernel/cpu/mcheck/mce.c	2014-05-22 11:04:25.006626559 +0200
++++ b/arch/x86/kernel/cpu/mcheck/mce.c	2014-05-22 11:47:50.102583505 +0200
+@@ -2437,32 +2437,63 @@ static __init int mcheck_init_device(voi
+ 	int err;
+ 	int i = 0;
+ 
+-	if (!mce_available(&boot_cpu_data))
+-		return -EIO;
++	if (!mce_available(&boot_cpu_data)) {
++		err = -EIO;
++		goto err_out;
++	}
+ 
+-	zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL);
++	if (!zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL)) {
++		err = -ENOMEM;
++		goto err_out;
++	}
+ 
+ 	mce_init_banks();
+ 
+ 	err = subsys_system_register(&mce_subsys, NULL);
+ 	if (err)
+-		return err;
++		goto err_out_mem;
+ 
+ 	cpu_notifier_register_begin();
+ 	for_each_online_cpu(i) {
+ 		err = mce_device_create(i);
+ 		if (err) {
+ 			cpu_notifier_register_done();
+-			return err;
++			goto err_device_create;
+ 		}
+ 	}
+ 
+-	register_syscore_ops(&mce_syscore_ops);
+ 	__register_hotcpu_notifier(&mce_cpu_notifier);
+ 	cpu_notifier_register_done();
+ 
++	register_syscore_ops(&mce_syscore_ops);
++
+ 	/* register character device /dev/mcelog */
+-	misc_register(&mce_chrdev_device);
++	err = misc_register(&mce_chrdev_device);
++	if (err)
++		goto err_register;
++
++	return 0;
++
++err_register:
++	unregister_syscore_ops(&mce_syscore_ops);
++
++	cpu_notifier_register_begin();
++	__unregister_hotcpu_notifier(&mce_cpu_notifier);
++	cpu_notifier_register_done();
++
++err_device_create:
++	/*
++	 * mce_device_remove behave properly if mce_device_create was not
++	 * called on that device.
++	 */
++	for_each_possible_cpu(i)
++		mce_device_remove(i);
++
++err_out_mem:
++	free_cpumask_var(mce_device_initialized);
++
++err_out:
++	pr_err("Unable to init device /dev/mcelog (rc: %d)\n", err);
+ 
+ 	return err;
+ }
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
