@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957AbaEVMFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:05:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5661 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754817AbaEVMFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:05:10 -0400
-Message-ID: <1400760284.3145.15.camel@holly>
-Subject: [PATCH] Documentation: incorrect formula to calculate CommitLimit
- value
-From: Petr Oros <poros@redhat.com>
-Reply-To: poros@redhat.com
-To: rdunlap@infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        trivial@kernel.org
-Date: Thu, 22 May 2014 14:04:44 +0200
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754975AbaEVMGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:06:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43029 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754415AbaEVMGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 08:06:00 -0400
+Message-ID: <537DE835.5010703@linaro.org>
+Date: Thu, 22 May 2014 14:06:13 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] clocksource: remove unnecessary OOM messages
+References: <002c01cf6384$781c57b0$68550710$%han@samsung.com>
+In-Reply-To: <002c01cf6384$781c57b0$68550710$%han@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The formula to calculate "CommitLimit" value mentioned in kernel documentation is incorrect.
-Right formula is: CommitLimit = ([total RAM pages] - [total huge TLB pages]) * overcommit_ratio / 100 + [total swap pages]
+On 04/29/2014 10:24 AM, Jingoo Han wrote:
+> The site-specific OOM messages are unnecessary, because they
+> duplicate the MM subsystem generic OOM message. For example,
+> k.alloc and v.alloc failures use dump_stack().
+>
+> Jingoo Han (4):
+>        clocksource: em_sti: remove unnecessary OOM messages
+>        clocksource: sh_cmt: remove unnecessary OOM messages
+>        clocksource: sh_mtu2: remove unnecessary OOM messages
+>        clocksource: sh_tmu: remove unnecessary OOM messages
+>
+> ---
+>   drivers/clocksource/em_sti.c  |    4 +---
+>   drivers/clocksource/sh_cmt.c  |    4 +---
+>   drivers/clocksource/sh_mtu2.c |    4 +---
+>   drivers/clocksource/sh_tmu.c  |    4 +---
+>   4 files changed, 4 insertions(+), 12 deletions(-)
 
-Signed-off-by: Petr Oros <poros@redhat.com>
----
- Documentation/filesystems/proc.txt | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Applied to my tree for 3.16 with some slight changes due to Laurent's 
+changes (kmalloc -> kzalloc).
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 8b9cd8e..b58d764 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -854,7 +854,8 @@ WritebackTmp: Memory used by FUSE for temporary writeback buffers
-               if strict overcommit accounting is enabled (mode 2 in
-               'vm.overcommit_memory').
-               The CommitLimit is calculated with the following formula:
--              CommitLimit = ('vm.overcommit_ratio' * Physical RAM) + Swap
-+              CommitLimit = ([total RAM pages] - [total huge TLB pages]) *
-+                             overcommit_ratio / 100 + [total swap pages]
-               For example, on a system with 1G of physical RAM and 7G
-               of swap with a `vm.overcommit_ratio` of 30 it would
-               yield a CommitLimit of 7.3G.
+Thanks !
+   -- Daniel
+
+
 -- 
-1.9.0
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
