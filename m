@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaEVJZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:25:49 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:37753 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753994AbaEVJZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:25:48 -0400
-Message-ID: <537DC298.1000200@mev.co.uk>
-Date: Thu, 22 May 2014 10:25:44 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754497AbaEVJ0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:26:31 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51340 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754125AbaEVJ0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 05:26:30 -0400
+Date: Thu, 22 May 2014 10:26:57 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: debugfs and module unloading
+Message-ID: <20140522092647.GA5808@e103592.cambridge.arm.com>
+References: <20140521164827.GB3501@e103592.cambridge.arm.com>
+ <20140521220114.GB15454@kroah.com>
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] staging: comedi: addi_apci_1564: move apci1564_do_insn_bits()
- to addi_apci_1564.c
-References: <1400719209-21452-1-git-send-email-chase.southwood@gmail.com> <1400719275-21780-1-git-send-email-chase.southwood@gmail.com>
-In-Reply-To: <1400719275-21780-1-git-send-email-chase.southwood@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140521220114.GB15454@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-22 01:41, Chase Southwood wrote:
-> This function is already compliant with the comedi API and is behaving as
-> comedi core expects.  This patch moves it out of
-> addi-data/hwdrv_apci1564.c and into the driver proper since no further
-> work needs to be done on it.
->
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-> ---
-> Just a couple patches in this set, but with these out of the way, the
-> next patchset can focus entirely on getting the change-of-state interrupt
-> functionality working.  Made sense to just finish up with DI/DO and start
-> COS interrupts separately.
->
->   .../staging/comedi/drivers/addi-data/hwdrv_apci1564.c   | 17 -----------------
->   drivers/staging/comedi/drivers/addi_apci_1564.c         | 17 +++++++++++++++++
->   2 files changed, 17 insertions(+), 17 deletions(-)
+On Wed, May 21, 2014 at 11:01:14PM +0100, Greg Kroah-Hartman wrote:
+> On Wed, May 21, 2014 at 05:48:28PM +0100, Dave P Martin wrote:
+> > Hi there,
+> > 
+> > I have a quick debugfs question:
+> > 
+> > How can I protect against a module being unloaded while debugfs files it
+> > provides are open?
+> > 
+> > I can do something like the following:
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+[...]
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+> > ... but it doesn't quite work.  debugfs_remove_recursive() prevents any
+> > new file handles being opened, but files already open remain open -- so
+> > it's still possible for the module text to get unloaded between the
+> > module refcount being decreased inside module_put() and the time
+> > my_debugfs_file_release() returns.
+> > 
+> > The scenario to consider is when a request to unload the module races
+> > with closure of the last debugfs file.
+> > 
+> > 
+> > The only obvious way I can see to solve this without changing the debugfs
+> > code is to make the module impossible to unload by calling __module_get()
+> > during initialisation, before any debugfs file is created.
+> > 
+> > 
+> > A similar dependency problem exists when a pointer to some device
+> > instance data is passed to debugfs_create_file().  For pluggable
+> > devices, the device might go away at any time.  I hoped this could
+> > be solved by calling get_device() ... put_device() in the debugfs file
+> > open and release methods, but I found that a device instance can
+> > get removed, and the module unloaded, even though the struct device
+> > refcount is not zero.
+> > 
+> > 
+> > Am I missing something?
+> 
+> Nope, you are not, it's a known issue.  Al Viro is doing some core VFS
+> work to help mitigate this, and I am working on converting debugfs to
+> use kernfs which should also help resolve this problem.
+> 
+> Don't unload modules automatically and you should be fine :)
+
+OK, I will stop attempting half-baked workarounds of my own and keep
+an eye out for changes in VFS.
+
+Unloading the module certainly speeds up development work, but users
+of it are unlikely to care...
+
+Thanks
+---Dave
