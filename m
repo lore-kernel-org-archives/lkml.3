@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaEVSoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:44:18 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:35965 "EHLO smtp.outflux.net"
+	id S1752349AbaEVSpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:45:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47274 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922AbaEVSoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 14:44:17 -0400
-Date: Thu, 22 May 2014 11:43:55 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Wenkai Du <wenkai.du@intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Christian Engelmayer <cengelma@gmx.at>, alsa-devel@alsa-project.org
-Subject: [PATCH] ASoC: Intel: avoid format string leak to thread name
-Message-ID: <20140522184355.GA8301@www.outflux.net>
+	id S1751243AbaEVSpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 14:45:09 -0400
+Message-ID: <537E45B0.8040304@suse.cz>
+Date: Thu, 22 May 2014 20:45:04 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 09/19] mm: page_alloc: Use word-based accesses for get/set
+ pageblock bitmaps
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>	<1399974350-11089-10-git-send-email-mgorman@suse.de>	<537DC247.5020801@suse.cz> <20140522112357.4715059bb69273f40c3ec4f2@linux-foundation.org>
+In-Reply-To: <20140522112357.4715059bb69273f40c3ec4f2@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes sure a format string can never get processed into the worker
-thread name from the device name.
+On 22.5.2014 20:23, Andrew Morton wrote:
+> On Thu, 22 May 2014 11:24:23 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
+>
+>>> In a test running dd onto tmpfs the overhead of the pageblock-related
+>>> functions went from 1.27% in profiles to 0.5%.
+>>>
+>>> Signed-off-by: Mel Gorman <mgorman@suse.de>
+>>> Acked-by: Vlastimil Babka <vbabka@suse.cz>
+>> Hi, I've tested if this closes the race I've been previously trying to fix
+>> with the series in http://marc.info/?l=linux-mm&m=139359694028925&w=2
+>> And indeed with this patch I wasn't able to reproduce it in my stress test
+>> (which adds lots of memory isolation calls) anymore. So thanks to Mel I can
+>> dump my series in the trashcan :P
+>>
+>> Therefore I believe something like below should be added to the changelog,
+>> and put to stable as well.
+> OK, I made it so.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- sound/soc/intel/sst-baytrail-ipc.c |    2 +-
- sound/soc/intel/sst-haswell-ipc.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Thanks.
 
-diff --git a/sound/soc/intel/sst-baytrail-ipc.c b/sound/soc/intel/sst-baytrail-ipc.c
-index 0d31dbbf4806..1b25bf168beb 100644
---- a/sound/soc/intel/sst-baytrail-ipc.c
-+++ b/sound/soc/intel/sst-baytrail-ipc.c
-@@ -809,7 +809,7 @@ int sst_byt_dsp_init(struct device *dev, struct sst_pdata *pdata)
- 	/* start the IPC message thread */
- 	init_kthread_worker(&byt->kworker);
- 	byt->tx_thread = kthread_run(kthread_worker_fn,
--				     &byt->kworker,
-+				     &byt->kworker, "%s",
- 				     dev_name(byt->dev));
- 	if (IS_ERR(byt->tx_thread)) {
- 		err = PTR_ERR(byt->tx_thread);
-diff --git a/sound/soc/intel/sst-haswell-ipc.c b/sound/soc/intel/sst-haswell-ipc.c
-index e7996b39a484..a8fd60c67341 100644
---- a/sound/soc/intel/sst-haswell-ipc.c
-+++ b/sound/soc/intel/sst-haswell-ipc.c
-@@ -1735,7 +1735,7 @@ int sst_hsw_dsp_init(struct device *dev, struct sst_pdata *pdata)
- 	/* start the IPC message thread */
- 	init_kthread_worker(&hsw->kworker);
- 	hsw->tx_thread = kthread_run(kthread_worker_fn,
--					   &hsw->kworker,
-+					   &hsw->kworker, "%s",
- 					   dev_name(hsw->dev));
- 	if (IS_ERR(hsw->tx_thread)) {
- 		ret = PTR_ERR(hsw->tx_thread);
--- 
-1.7.9.5
+> Miraculously, the patch applies OK to 3.14.  And it compiles!
 
+Great, shipping time!
 
--- 
-Kees Cook
-Chrome OS Security
+Vlastimil
