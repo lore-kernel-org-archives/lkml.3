@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaEVPzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:55:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40034 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741AbaEVPzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:55:06 -0400
-Date: Thu, 22 May 2014 12:54:58 -0300
-From: Flavio Leitner <fbl@redhat.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Flavio Leitner <fbl@sysclose.org>
-Subject: Re: [PATCH] i8k: increase fan limit to 3
-Message-ID: <20140522155458.GI12759@t520.home>
-References: <1400725168-21358-1-git-send-email-fbl@redhat.com>
- <20140522151048.GB1001@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140522151048.GB1001@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752399AbaEVPzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:55:46 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:37540 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaEVPzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 11:55:44 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH v3 2/2] mmc: tegra: fix reporting of base clock frequency
+Date: Thu, 22 May 2014 08:55:36 -0700
+Message-Id: <1400774136-12396-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1400774136-12396-1-git-send-email-abrestic@chromium.org>
+References: <1400774136-12396-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 08:10:48AM -0700, Guenter Roeck wrote:
-> On Wed, May 21, 2014 at 11:19:28PM -0300, Flavio Leitner wrote:
-> > From: Flavio Leitner <fbl@sysclose.org>
-> > 
-> > It is possible to increase left fan speed on a
-> > DELL Precision 490n system up to 3.
-> > 
-> >     value    fan rpm
-> >       1      35460
-> >       2      64740
-> >       3      78510
-> > 
-> > Signed-off-by: Flavio Leitner <fbl@sysclose.org>
-> > ---
-> >  drivers/char/i8k.c       | 4 ++--
-> >  include/uapi/linux/i8k.h | 3 ++-
-> >  2 files changed, 4 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> > index d915707..99180f0 100644
-> > --- a/drivers/char/i8k.c
-> > +++ b/drivers/char/i8k.c
-> > @@ -519,7 +519,7 @@ static ssize_t i8k_hwmon_show_pwm(struct device *dev,
-> >  	status = i8k_get_fan_status(index);
-> >  	if (status < 0)
-> >  		return -EIO;
-> > -	return sprintf(buf, "%d\n", clamp_val(status * 128, 0, 255));
-> > +	return sprintf(buf, "%d\n", clamp_val(status * 128, 0, 384));
-> 
-> pwm value range is limited to (0, 255), so we'll have to find another
-> solution.
+Tegra SDHCI controllers, by default, report a base clock frequency
+of 208Mhz in SDHCI_CAPABILTIES which may or may not be equal to the
+actual base clock frequency.  This is because the clock rate is
+configured by the clock controller, which is external to the SD/MMC
+controller.  Since the SD/MMC controller has no knowledge of how this
+clock is configured, it will simply report the maximum frequency.
+While the reported value can be overridden by setting BASE_CLK_FREQ in
+VENDOR_CLOCK_CTRL on Tegra30 and later SoCs, just set CAP_CLOCK_BASE_BROKEN
+and supply sdhci_pltfm_clk_get_max_clock(), which simply does a
+clk_get_rate(), as the get_max_clock() callback.
 
-You mean in the hw? Because the code today just multiply by 128 so
-you have 0, 128 and 256 as possible pwm values. See below.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes from v2:
+ - rebased on mmc-next
+Changes from v1:
+ - fixed up commit message per Stephen's suggestions
+---
+ drivers/mmc/host/sdhci-tegra.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-> I think we'll have to define a per-system data structure
-> which holds the fan speed range and the fan multiplier, and attach it
-> to the dmi data. Currently, .driver_data is used directly to override
-> the fan multiplier; it will have to point to a configuration data
-> structure with both fan multiplier and maximum fan speed value.
-> Unless someone has a better idea, of course.
+diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+index 4375cd4..d93a063 100644
+--- a/drivers/mmc/host/sdhci-tegra.c
++++ b/drivers/mmc/host/sdhci-tegra.c
+@@ -154,13 +154,15 @@ static const struct sdhci_ops tegra_sdhci_ops = {
+ 	.set_bus_width = tegra_sdhci_set_bus_width,
+ 	.reset      = tegra_sdhci_reset,
+ 	.set_uhs_signaling = sdhci_set_uhs_signaling,
++	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
+ };
+ 
+ static const struct sdhci_pltfm_data sdhci_tegra20_pdata = {
+ 	.quirks = SDHCI_QUIRK_BROKEN_TIMEOUT_VAL |
+ 		  SDHCI_QUIRK_SINGLE_POWER_WRITE |
+ 		  SDHCI_QUIRK_NO_HISPD_BIT |
+-		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
++		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
++		  SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+ 	.ops  = &tegra_sdhci_ops,
+ };
+ 
+@@ -175,7 +177,8 @@ static const struct sdhci_pltfm_data sdhci_tegra30_pdata = {
+ 		  SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
+ 		  SDHCI_QUIRK_SINGLE_POWER_WRITE |
+ 		  SDHCI_QUIRK_NO_HISPD_BIT |
+-		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
++		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
++		  SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+ 	.ops  = &tegra_sdhci_ops,
+ };
+ 
+@@ -191,7 +194,8 @@ static const struct sdhci_pltfm_data sdhci_tegra114_pdata = {
+ 		  SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
+ 		  SDHCI_QUIRK_SINGLE_POWER_WRITE |
+ 		  SDHCI_QUIRK_NO_HISPD_BIT |
+-		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
++		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
++		  SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+ 	.ops  = &tegra_sdhci_ops,
+ };
+ 
+-- 
+1.9.1.423.g4596e3a
 
-Sounds good to me.  It could provide a generic one that works as
-today in case there is no specific per-system data structure.
-
-It could also include the status multiplier so that for systems with
-levels off, minimum and maximum then use x128 and systems with more
-states can use another multiplier.
-
-I volunteer to test on precision 490n and on latitude D520.
-
-fbl
