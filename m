@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241AbaEVNwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:52:01 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37402 "EHLO bear.ext.ti.com"
+	id S1754008AbaEVNtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:49:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58765 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752526AbaEVNv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:51:58 -0400
-Message-ID: <537E00DD.4060702@ti.com>
-Date: Thu, 22 May 2014 16:51:25 +0300
+	id S1752368AbaEVNtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 09:49:53 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
+        <arnd@arndb.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <grant.likely@linaro.org>
+CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
+        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
+        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [Patch v5 0/7] Introduce keystone reset driver
+Date: Thu, 22 May 2014 16:48:29 +0300
+Message-ID: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <santosh.shilimkar@ti.com>
-CC: <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <robh+dt@kernel.org>, <m-karicheri2@ti.com>, <galak@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch] ARM: dts: keystone: add pll controller syscon entry
-References: <1400681875-24432-1-git-send-email-ivan.khoronzhuk@ti.com> <537CEE13.5040908@cogentembedded.com> <537CEEFA.8080805@cogentembedded.com>
-In-Reply-To: <537CEEFA.8080805@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These patches introduce keystone reset driver.
 
-On 05/21/2014 09:22 PM, Sergei Shtylyov wrote:
-> On 05/21/2014 10:18 PM, Sergei Shtylyov wrote:
->
->>> The pll controller register set includes sets of registers with
->>> different purposes, so it's logically to add syscon entry to be able
->>> to access them from appropriate places.
->
->>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>> ---
->
->>> Based on linux-next/master
->
->>>   arch/arm/boot/dts/keystone.dtsi | 5 +++++
->>>   1 file changed, 5 insertions(+)
->>
->>> diff --git a/arch/arm/boot/dts/keystone.dtsi 
->>> b/arch/arm/boot/dts/keystone.dtsi
->>> index d9f99e7..5e67c5b 100644
->>> --- a/arch/arm/boot/dts/keystone.dtsi
->>> +++ b/arch/arm/boot/dts/keystone.dtsi
->>> @@ -66,6 +66,11 @@
->>>           ranges = <0x0 0x0 0x0 0xc0000000>;
->>>           dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
->>>
->>> +        pllctrl: pll_controller {
->
->>    I think it's better to follow the pattern established by 
->> "reset-controller"
->> and use hyphen ISO dash in the node name. This is also a common 
->> practice to
->
->    Oops, hyphen and dash are basically the same thing; I meant 
-> s/dash/underscore/.
+The keystone SoC can be rebooted in several ways. By external reset
+pin, by soft and by watchdogs. This driver allows software reset and reset
+by one of the watchdogs. Also added opportunity to set soft/hard reset type.
 
-You meant s/underscore/dash.
-I'll replace.
-FYI: the change is included in new series [Patch v5 0/7] Introduce 
-keystone reset driver
+Based on linux-next/master
 
-And this patch is squashed in:
-[Patch v5 6/7] ARM: dts: keystone: update reset node to work with reset 
-driver
+v5..v4
+  power: reset: keystone-reset: introduce keystone reset driver
+  	- changed to get rsmux and rspll offsets from DT
+  clock: keystone-pllctrl: add bindings for keystone pll controller
+  	- new patch
+  mfd: ti-keystone-devctrl: add bindings for device state control
+  	- new patch
+  power: reset: add bindings for keystone reset driver
+  	- corrected description of "ti,syscon-pll", "ti,syscon-dev" properties
+	- corrected examples
+  ARM: dts: keystone: update reset node to work with reset driver
+  	- added nodes for pll-controller and device-state-controll
+	- added offsets to "ti,syscon-pll", "ti,syscon-dev" properties
 
-Thanks.
+v4..v3
+  Power: reset: keystone-reset: introduce keystone reset driver
+  	- changed to use syscon framework
+  	- changed to use regmap to access registers
+  Power: reset: add bindings for keystone reset driver
+  	- deleted properties "reg", "reg-names"
+	- added properties "ti,syscon-pll", "ti,syscon-dev"
+  ARM: dts: keystone: update reset node to work with reset driver
+  	- deleted properties "reg", "reg-names"
+	- added properties "ti,syscon-pll", "ti,syscon-dev"
 
->
->> use hyphens in the device trees overall.
->
->>> +            compatible = "ti,keystone-pllctrl", "syscon";
->>> +            reg = <0x2310000 0x200>;
->>> +        };
->>> +
->>>           rstctrl: reset-controller {
->>>               compatible = "ti,keystone-reset";
->>>               reg = <0x023100e8 4>;    /* pll reset control reg */
->>>
->
-> WBR, Sergei
->
+v2..v3
+  Power: reset: keystone-reset: introduce keystone reset driver
+	- no functional changes, only sanity
+  Power: reset: add bindings for keystone reset driver
+  	- corrected WDT numeration in examples
+	- extended description of wdt_list property
+
+v1..v2
+	- re based on v3.15-rc1 without changes
+
+Ivan Khoronzhuk (7):
+  power: reset: keystone-reset: introduce keystone reset driver
+  clock: keystone-pllctrl: add bindings for keystone pll controller
+  mfd: ti-keystone-devctrl: add bindings for device state control
+  power: reset: add bindings for keystone reset driver
+  ARM: keystone: remove redundant reset stuff
+  ARM: dts: keystone: update reset node to work with reset driver
+  ARM: keystone: enable reset driver support
+
+ .../bindings/clock/ti-keystone-pllctrl.txt         |  20 +++
+ .../bindings/mfd/ti-keystone-devctrl.txt           |  19 +++
+ .../bindings/power/reset/keystone-reset.txt        |  67 +++++++++
+ arch/arm/boot/dts/keystone.dtsi                    |  14 +-
+ arch/arm/configs/keystone_defconfig                |   3 +
+ arch/arm/mach-keystone/keystone.c                  |  34 -----
+ drivers/power/reset/Kconfig                        |   8 +
+ drivers/power/reset/Makefile                       |   1 +
+ drivers/power/reset/keystone-reset.c               | 166 +++++++++++++++++++++
+ 9 files changed, 297 insertions(+), 35 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
+ create mode 100644 drivers/power/reset/keystone-reset.c
 
 -- 
-Regards,
-Ivan Khoronzhuk
+1.8.3.2
 
