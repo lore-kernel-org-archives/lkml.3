@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaEVUhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:37:10 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:56031 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaEVUhH (ORCPT
+	id S1751386AbaEVUky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:40:54 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37478 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaEVUkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:37:07 -0400
-Message-ID: <537E5FEB.1000103@de.ibm.com>
-Date: Thu, 22 May 2014 22:36:59 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 16:40:53 -0400
+Date: Thu, 22 May 2014 21:39:43 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: wim@iguana.be, Guenter Roeck <linux@roeck-us.net>,
+        Arnd Bergmann <arnd@arndb.de>, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v2 1/6] wdt: sunxi: Move restart code to the watchdog
+ driver
+Message-ID: <20140522213943.7649e304@alan.etchedpixels.co.uk>
+In-Reply-To: <20140522203444.GE27329@lukather>
+References: <1399430664-29091-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1399430664-29091-2-git-send-email-maxime.ripard@free-electrons.com>
+	<20140507213318.GA2105@roeck-us.net>
+	<20140515091123.GQ29258@lukather>
+	<20140519150422.GA27329@lukather>
+	<20140522203444.GE27329@lukather>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        Michael Mueller <mimu@linux.vnet.ibm.com>,
-        Alexander Graf <agraf@suse.de>
-CC: linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Andreas Faerber <afaerber@suse.de>,
-        Richard Henderson <rth@twiddle.net>,
-        Eduardo Habkost <ehabkost@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v1 RFC 6/6] KVM: s390: add cpu model support
-References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com> <1399993114-15333-7-git-send-email-mimu@linux.vnet.ibm.com> <5375FFB8.90504@suse.de>	<20140516173907.3b1c4efa@bee> <53767590.2090605@suse.de>	<20140519125339.09840b9e@bee> <5379EF78.9040209@suse.de>	<20140519161811.5a17bc66@bee> <537A19F8.4060209@suse.de>	<20140519190318.6f92c1bd@bee> <537A6608.8000608@suse.de>	<20140520120218.38eb7181@bee> <537B2A0F.1030706@suse.de>	<20140521145652.197bff21@bee> <537CA89B.6050803@suse.de> <20140522102316.653f34ba@bee> <537DBB12.6070108@redhat.com>
-In-Reply-To: <537DBB12.6070108@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052220-5024-0000-0000-000000186407
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/05/14 10:53, Paolo Bonzini wrote:
-> Il 22/05/2014 10:23, Michael Mueller ha scritto:
->> On Wed, 21 May 2014 15:22:35 +0200
->> Alexander Graf <agraf@suse.de> wrote:
->>
->> I have seen the slides from Eduardo which he presented during this years
->> DevConf in Brno and made my comments according the s390x implementation
->> on that. Is you will see, this is mostly overlapping except for the model
->> definition authority that I clearly see on qemu's side.
->>
->> See pdf attachment.
-> 
-> More comments:
-> 
-> - "Only one machine type in s390 case which is -machine s390-virtio-ccw"
-> 
-> This probably should change sooner or later, as soon as the implementation becomes stable enough.  Versioning is necessary for live migration across different QEMU version.  Perhaps start versioning in 2.2, i.e. start making s390-virtio-ccw-2.1 an alias for s390-virtio-ccw now?
-> 
-> Note that new virtio device features can appear at any time outside the s390 code, and will take part in versioning as well.
-> 
-> - "No enforce option"
-> 
-> Strongly suggest making enforce the only possible behavior.
-> 
-> - "Not in the s390x case, because the KVM facility mask limits the cpu model specific facilities"
-> 
-> What if the KVM facility mask changes?  For x86, nowadays new CPUID bits are only introduced in KVM when a new processors comes out.  But if we introduced an older CPUID bit, it would be a huge complication for backwards compatibility.  Is it different for s390?
-> 
-> Paolo
-> 
+On Thu, 22 May 2014 22:34:44 +0200
+Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
 
-I guess we need to have a full picture here. Would this topic be suitable for the KVM call?
+> On Mon, May 19, 2014 at 05:04:22PM +0200, Maxime Ripard wrote:
+> > On Thu, May 15, 2014 at 11:11:23AM +0200, Maxime Ripard wrote:
+> > > On Wed, May 07, 2014 at 02:33:18PM -0700, Guenter Roeck wrote:
+> > > > On Tue, May 06, 2014 at 09:44:19PM -0500, Maxime Ripard wrote:
+> > > > > Most of the watchdog code is duplicated between the machine restart code and
+> > > > > the watchdog driver. Add the restart hook to the watchdog driver, to be able to
+> > > > > remove it from the machine code eventually.
+> > > > > 
+> > > > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > > > > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > > > 
+> > > > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> > > 
+> > > Wim, do you have any comment on this one?
+> > 
+> > Ping?
+> > 
+> > It would be really great to see this in 3.16, and we get quite close
+> > to the end of ARM's merge window.
+> 
+> Ping?
+> 
+> Guenter, since you seem to be the only responsive, may I suggest that
+> you start merging patches and do a pull request to either Wim or Linus
+> directly during the merge window?
 
-Christian
-
+I've yet to see anyone explain why this is an improvement over the
+current situation ?
