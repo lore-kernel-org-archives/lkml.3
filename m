@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaEVCJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 22:09:58 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:57938 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaEVCJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 22:09:56 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 2/3] of: Make of_find_node_by_path() handle /aliases
-To: frowand.list@gmail.com
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        David Daney <david.daney@cavium.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <537C1252.3090900@gmail.com>
-References: <1399993115-21552-1-git-send-email-grant.likely@linaro.org>
-	<1399993115-21552-3-git-send-email-grant.likely@linaro.org>
-	<53757D25.1060005@gmail.com>
-	<20140516105444.C1DB7C42277@trevor.secretlab.ca>
-	<20140518092730.109AAC40B8A@trevor.secretlab.ca>
-	<537C1252.3090900@gmail.com>
-Date: Thu, 22 May 2014 10:16:00 +0900
-Message-Id: <20140522011600.C0014C40B13@trevor.secretlab.ca>
+	id S1753167AbaEVCNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 22:13:00 -0400
+Received: from ozlabs.org ([103.22.144.67]:38927 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750965AbaEVCM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 May 2014 22:12:58 -0400
+Date: Thu, 22 May 2014 12:12:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Simon Horman <horms@verge.net.au>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the renesas tree with the arm-soc tree
+Message-ID: <20140522121250.0648dfec@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/eG9faOgSaC+6b8uERwIW38S"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 19:41:22 -0700, Frank Rowand <frowand.list@gmail.com> wrote:
-> On 5/18/2014 2:27 AM, Grant Likely wrote:
-> > On Fri, 16 May 2014 11:54:44 +0100, Grant Likely <grant.likely@linaro.org> wrote:
-> >> On Thu, 15 May 2014 19:51:17 -0700, Frank Rowand <frowand.list@gmail.com> wrote:
-> >>> On 5/13/2014 7:58 AM, Grant Likely wrote:
-> >>>> Make of_find_node_by_path() handle aliases as prefixes. To make this
-> >>>> work the name search is refactored to search by path component instead
-> >>>> of by full string. This should be a more efficient search, and it makes
-> >>>> it possible to start a search at a subnode of a tree.
-> >>>>
-> >>>> Signed-off-by: David Daney <david.daney@cavium.com>
-> >>>> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> >>>> [grant.likely: Rework to not require allocating at runtime]
-> >>>> Acked-by: Rob Herring <robh@kernel.org>
-> >>>> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> >>>> ---
-> >>>>  drivers/of/base.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++----
-> >>>>  1 file changed, 56 insertions(+), 4 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> >>>> index 6e240698353b..60089b9a3014 100644
-> >>>> --- a/drivers/of/base.c
-> >>>> +++ b/drivers/of/base.c
-> >>>> @@ -771,9 +771,38 @@ struct device_node *of_get_child_by_name(const struct device_node *node,
-> >>>>  }
-> >>>>  EXPORT_SYMBOL(of_get_child_by_name);
-> >>>>  
-> >>>> +static struct device_node *__of_find_node_by_path(struct device_node *parent,
-> >>>> +						const char *path)
-> >>>> +{
-> >>>> +	struct device_node *child;
-> >>>> +	int len = strchrnul(path, '/') - path;
-> >>>> +
-> >>>> +	if (!len)
-> >>>> +		return parent;
-> >>>
-> >>> (!len) is true if the the final character of the path passed into of_find_node_by_path()
-> >>> was "/".  Strictly speaking, ->full_name will never end with "/", so the return value
-> >>> should be NULL, indicating that the match fails.
-> >>
-> >> Ah, good catch. I should add a test case for that.
-> > 
-> > In my testing this looks okay. The while loop that calls into
-> > __of_find_node_by_path() looks like this:
-> > 
-> > 	while (np && *path == '/') {
-> > 		path++; /* Increment past '/' delimiter */
-> > 		np = __of_find_node_by_path(np, path);
-> > 		path = strchrnul(path, '/');
-> > 	}
-> > 
-> > If the path ends with a '/', then the loop will go around one more time.
-> > The pointer will be incremented to point at the null character and len
-> > will be null because strchrnul() will point at the last item.
-> 
-> Yes, that was my point.  The old version of of_find_node_by_path() would not
-> find a match if the path ended with a "/" (unless the full path was "/").
-> This patch series changes the behavior to be a match.
-> 
-> I will reply to this email with an additional patch that restores the
-> original behavior.
-> 
-> If you move the additional test cases you provide below and the test cases
-> in patch 3 to the beginning of the series, you can see the before and after
-> behavior of adding patch 1 and patch 2.
+--Sig_/eG9faOgSaC+6b8uERwIW38S
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Ah, I see. That raises the question about what the behaviour /should/
-be. Off the top of my head, matching against a trailing '/' seems to be
-okay. Are there situations that you see or can think of where matching
-would be the wrong thing to do?
+Hi Simon,
 
-g.
+Today's linux-next merge of the renesas tree got a conflict in
+arch/arm/boot/dts/r8a7790-lager.dts between commit 637193b2f22c ("Merge
+branch 'next/boards' into for-next") from the arm-soc tree and commit
+2a3bd7497db1 ("Merge branch 'heads/dt-scif-for-v3.16' into next") from
+the renesas tree.
+
+I fixed it up (I used the latter since it kept the trailing semi-colon)
+and can carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/eG9faOgSaC+6b8uERwIW38S
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTfV0nAAoJEMDTa8Ir7ZwVWgMP/jiZ1fgVBuelNao/vxaWbtp7
+SGi7T491nw5PO70KjrXqBgPp9W4bQX6HXAUa+2gyh38EefNmZJXJ7ikeaJ1VWG2r
+CLxnNTIeojq5/K9usflVRkWN0pjMWiNsDYSiYqw6TJKuxrQvo4hs2XvHH5qqcptI
+NHhcp34dRC9HcupE2CkqVIjwsF+YM8akQAbHu+og/L7ikgSVZAw7zGpwcFVHNUyQ
+KcUsdq8bjnWbnX6YuDBNw3zwPAxsqdhnMWUFNx8POmjVsDjpg0hR+kdK52aXGPAJ
+R1Q8QHolsv4Ik85vyRzhMxbdA1NRtpEiiGGNJJWmkZGoLHqUXhYw2hNRneoo+NY6
+3qtekC1veeZiLiaAWt+xjlHyLDYf5TiTRerR4Ds2G9ok/Zeu1eTEHv2KS4jP/vSk
+4MYEaCO8hycGEGYIEPXaZ6kwtbDDv0fD1T75CsI7ALWIf0Zx17LgF86geVA4axYJ
+K2064uslc+kQIXWJ/nZ6P5oAV66KEAuYnbraTRgSyKA6pXSYdV7YR01YaJHPHbHe
+QIMQsDX1JEq38ir8D9Y1uwsAtXgvypExxm5oDn2dq0zKWdMiBgpsKdME6cVQlVVi
+GBWOnBBUYNH8anDEVYbNAghn5Vq48cmk67LFLwQHunHlzwy0QCaNibRzR2AvF+2N
+nxz+/hbKk7ZqqTagA3P3
+=VBNc
+-----END PGP SIGNATURE-----
+
+--Sig_/eG9faOgSaC+6b8uERwIW38S--
