@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaEVPzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:55:46 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:37540 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669AbaEVPzo (ORCPT
+	id S1752711AbaEVP4Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:56:24 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:33856 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbaEVP4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:55:44 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
+	Thu, 22 May 2014 11:56:23 -0400
+Message-ID: <537E1E22.9070701@linaro.org>
+Date: Thu, 22 May 2014 16:56:18 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andy Gross <agross@codeaurora.org>
+CC: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH v3 2/2] mmc: tegra: fix reporting of base clock frequency
-Date: Thu, 22 May 2014 08:55:36 -0700
-Message-Id: <1400774136-12396-2-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1400774136-12396-1-git-send-email-abrestic@chromium.org>
-References: <1400774136-12396-1-git-send-email-abrestic@chromium.org>
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flag APIs
+References: <1397772242-4048-1-git-send-email-agross@codeaurora.org> <20140502162841.GZ32284@intel.com> <20140502180827.GA9476@qualcomm.com> <20140515173206.GA16858@qualcomm.com> <20140522061049.GW21128@intel.com> <20140522150906.GA22327@qualcomm.com> <537E1749.1030505@linaro.org> <20140522153214.GB22327@qualcomm.com>
+In-Reply-To: <20140522153214.GB22327@qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra SDHCI controllers, by default, report a base clock frequency
-of 208Mhz in SDHCI_CAPABILTIES which may or may not be equal to the
-actual base clock frequency.  This is because the clock rate is
-configured by the clock controller, which is external to the SD/MMC
-controller.  Since the SD/MMC controller has no knowledge of how this
-clock is configured, it will simply report the maximum frequency.
-While the reported value can be overridden by setting BASE_CLK_FREQ in
-VENDOR_CLOCK_CTRL on Tegra30 and later SoCs, just set CAP_CLOCK_BASE_BROKEN
-and supply sdhci_pltfm_clk_get_max_clock(), which simply does a
-clk_get_rate(), as the get_max_clock() callback.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
----
-Changes from v2:
- - rebased on mmc-next
-Changes from v1:
- - fixed up commit message per Stephen's suggestions
----
- drivers/mmc/host/sdhci-tegra.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-index 4375cd4..d93a063 100644
---- a/drivers/mmc/host/sdhci-tegra.c
-+++ b/drivers/mmc/host/sdhci-tegra.c
-@@ -154,13 +154,15 @@ static const struct sdhci_ops tegra_sdhci_ops = {
- 	.set_bus_width = tegra_sdhci_set_bus_width,
- 	.reset      = tegra_sdhci_reset,
- 	.set_uhs_signaling = sdhci_set_uhs_signaling,
-+	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
- };
- 
- static const struct sdhci_pltfm_data sdhci_tegra20_pdata = {
- 	.quirks = SDHCI_QUIRK_BROKEN_TIMEOUT_VAL |
- 		  SDHCI_QUIRK_SINGLE_POWER_WRITE |
- 		  SDHCI_QUIRK_NO_HISPD_BIT |
--		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
-+		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
-+		  SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
- 	.ops  = &tegra_sdhci_ops,
- };
- 
-@@ -175,7 +177,8 @@ static const struct sdhci_pltfm_data sdhci_tegra30_pdata = {
- 		  SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
- 		  SDHCI_QUIRK_SINGLE_POWER_WRITE |
- 		  SDHCI_QUIRK_NO_HISPD_BIT |
--		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
-+		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
-+		  SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
- 	.ops  = &tegra_sdhci_ops,
- };
- 
-@@ -191,7 +194,8 @@ static const struct sdhci_pltfm_data sdhci_tegra114_pdata = {
- 		  SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
- 		  SDHCI_QUIRK_SINGLE_POWER_WRITE |
- 		  SDHCI_QUIRK_NO_HISPD_BIT |
--		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
-+		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
-+		  SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
- 	.ops  = &tegra_sdhci_ops,
- };
- 
--- 
-1.9.1.423.g4596e3a
+On 22/05/14 16:32, Andy Gross wrote:
+> On Thu, May 22, 2014 at 04:27:05PM +0100, Srinivas Kandagatla wrote:
+>
+> <snip>
+>
+>>>
+>>> The EOT is not used for every transaction.  It is part of a handshaking
+>>> protocol with the attached peripheral, much like the NWD (notify when done).  As
+>>> near as I can tell today, no peripheral depends on the EOB, so we could drop it
+>>> for now until it is needed and cross this bridge when we need to.
+>>
+>> As EOT behaviour is totally dependent on the attached peripheral(or
+>> channel), Can't we make this specific to channel by passing
+>> additional flags in the DT dma channel descriptors? This will be
+>> better abstraction for drivers as well.
+>
+> Even for channels where you want to use EOT, you don't use it for every
+> transaction.  So a global channel flag isn't going to work.  This is the same
+> for NWD.  It is a per descriptor choice.
 
+Thanks Andy for explaining, I got it now.
+>
+>>
+>> I know that EOT flag is part of descriptor but still some channels
+>> *must* have EOT to run there state-machine correctly. So making it
+>> optional for those channels might be wrong.
+>>
+>> Are there any use cases for particular *channel* where EOT
+>> requirement changes dynamically?
+>
+> I2C is one example.  You place EOT on the last transaction that makes up a
+> write/read transaction.  You may have multiple descriptors to send data, but the
+> last one has EOT.  And for read transactions, you place NWD on the last read
+> transaction.
+>
+> <snip>
+>
