@@ -1,108 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264AbaEVJTg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:19:36 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:53047 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244AbaEVJTc (ORCPT
+	id S1754298AbaEVJTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:19:51 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:48571 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247AbaEVJTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:19:32 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, dianders@chromium.org,
-        jerry.wong@maximintegrated.com
-Subject: [PATCH 2/2] ASoC: max98095: Add master clock handling
-Date: Thu, 22 May 2014 14:47:08 +0530
-Message-Id: <1400750228-13750-3-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org>
-References: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org>
+	Thu, 22 May 2014 05:19:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140522085409.26279.64965.sendpatchset@w520>
+References: <20140522085339.26279.83340.sendpatchset@w520>
+	<20140522085409.26279.64965.sendpatchset@w520>
+Date: Thu, 22 May 2014 11:19:33 +0200
+X-Google-Sender-Auth: Qq7ogY6gwZ0esObpv-I6SdADkfI
+Message-ID: <CAMuHMdWyCN7UJ89xjpAj-X7rTHo_r0U6XJJwMOxGnXAeeYZXHQ@mail.gmail.com>
+Subject: Re: [PATCH 03/03] staging: board: kzm9d: Board staging support for emxx_udc
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If master clock is provided through device tree, then update
-the master clock frequency during set_sysclk.
+Hi Magnus,
 
-Documentation has been updated to reflect the change.
+On Thu, May 22, 2014 at 10:54 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> Add staging board support for the KZM9D board and add
+> an emxx_udc platform device to allow in-tree continous
+> development of the driver on the KZM9D board.
+>
+> When DT bindings are ready for the emxx_udc driver then
+> the platform device in the KZM9D staging board code can
+> easily be removed. Until then we use platform devices
+> to continously improve the driver and integration code.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- .../devicetree/bindings/sound/max98095.txt         |    6 ++++++
- sound/soc/codecs/max98095.c                        |   14 ++++++++++++++
- 2 files changed, 20 insertions(+)
+Nice!
 
-diff --git a/Documentation/devicetree/bindings/sound/max98095.txt b/Documentation/devicetree/bindings/sound/max98095.txt
-index bacbeaa..318a4c8 100644
---- a/Documentation/devicetree/bindings/sound/max98095.txt
-+++ b/Documentation/devicetree/bindings/sound/max98095.txt
-@@ -8,6 +8,12 @@ Required properties:
- 
- - reg : The I2C address of the device.
- 
-+Optional properties:
-+
-+- clocks: The phandle of the master clock to the CODEC
-+
-+- clock-names: Should be "mclk"
-+
- Example:
- 
- max98095: codec@11 {
-diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
-index d6c1e4c..4d66b95 100644
---- a/sound/soc/codecs/max98095.c
-+++ b/sound/soc/codecs/max98095.c
-@@ -15,6 +15,7 @@
- #include <linux/delay.h>
- #include <linux/pm.h>
- #include <linux/i2c.h>
-+#include <linux/clk.h>
- #include <sound/core.h>
- #include <sound/pcm.h>
- #include <sound/pcm_params.h>
-@@ -42,6 +43,7 @@ struct max98095_priv {
- 	struct regmap *regmap;
- 	enum max98095_type devtype;
- 	struct max98095_pdata *pdata;
-+	struct clk *mclk;
- 	unsigned int sysclk;
- 	struct max98095_cdata dai[3];
- 	const char **eq_texts;
-@@ -1395,6 +1397,11 @@ static int max98095_dai_set_sysclk(struct snd_soc_dai *dai,
- 	if (freq == max98095->sysclk)
- 		return 0;
- 
-+	if (!IS_ERR(max98095->mclk)) {
-+		freq = clk_round_rate(max98095->mclk, freq);
-+		clk_set_rate(max98095->mclk, freq);
-+	}
-+
- 	/* Setup clocks for slave mode, and using the PLL
- 	 * PSCLK = 0x01 (when master clk is 10MHz to 20MHz)
- 	 *         0x02 (when master clk is 20MHz to 40MHz)..
-@@ -2238,6 +2245,10 @@ static int max98095_probe(struct snd_soc_codec *codec)
- 	struct i2c_client *client;
- 	int ret = 0;
- 
-+	max98095->mclk = devm_clk_get(codec->dev, "mclk");
-+	if (!IS_ERR(max98095->mclk))
-+		clk_prepare_enable(max98095->mclk);
-+
- 	/* reset the codec, the DSP core, and disable all interrupts */
- 	max98095_reset(codec);
- 
-@@ -2340,6 +2351,9 @@ static int max98095_remove(struct snd_soc_codec *codec)
- 	if (max98095->headphone_jack || max98095->mic_jack)
- 		max98095_jack_detect_disable(codec);
- 
-+	if (!IS_ERR(max98095->mclk))
-+		clk_disable_unprepare(max98095->mclk);
-+
- 	if (client->irq)
- 		free_irq(client->irq, codec);
- 
--- 
-1.7.9.5
+>  drivers/staging/Kconfig        |    2 ++
+>  drivers/staging/Makefile       |    1 +
+>  drivers/staging/board/Kconfig  |    7 +++++++
+>  drivers/staging/board/Makefile |    1 +
+>  drivers/staging/board/board.h  |   17 +++++++++++++++++
+>  drivers/staging/board/kzm9d.c  |   18 ++++++++++++++++++
+>  6 files changed, 46 insertions(+)
 
+As you're adding infrastructure and a first user, I think this should
+be split in two patches:
+  - Introduction of drivers/staging/board infrastructure,
+  - Addition of kzm9d board support.
+
+> --- /dev/null
+> +++ work/drivers/staging/board/Kconfig  2014-05-22 15:31:58.000000000 +0900
+> @@ -0,0 +1,7 @@
+> +config STAGING_BOARD
+> +       boolean "Staging Board Support"
+> +       help
+> +         Select to enable per-board staging support code.
+> +
+> +         If in doubt, say N here.
+> +
+
+No board-specific Kconfig symbols, so the actual individual board
+support itself is
+always compiled-in (but see below)?
+
+> --- /dev/null
+> +++ work/drivers/staging/board/Makefile 2014-05-22 15:31:58.000000000 +0900
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += kzm9d.o
+
+Ah, it's included in all shmobile multi-platform kernels.
+
+What about testing for CONFIG_ARCH_EMEV2 instead of
+CONFIG_ARCH_SHMOBILE_MULTI?
+Or adding a KZM9D-specific Kconfig symbol to .../board/Kconfig?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
