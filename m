@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaEVOVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:21:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaEVOVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:21:01 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] Documentation/sysctl/vm.txt: clarify vfs_cache_pressure description
-Date: Thu, 22 May 2014 16:20:49 +0200
-Message-Id: <1400768449-16784-1-git-send-email-dvlasenk@redhat.com>
+	id S1752319AbaEVOV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:21:27 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:35435 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaEVOV0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 10:21:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140522134758.GA5065@htj.dyndns.org>
+References: <1400748257-14165-1-git-send-email-laijs@cn.fujitsu.com>
+	<20140522134758.GA5065@htj.dyndns.org>
+Date: Thu, 22 May 2014 22:21:25 +0800
+X-Google-Sender-Auth: V4kDm1wvrqYgWty_xyQaQDYZSZo
+Message-ID: <CACvQF53Xs91KMdsYCsqM-NNJYtb+byajjc668aiM2vMFBv3JaA@mail.gmail.com>
+Subject: Re: [PATCH] workqueue: remove the unneeded cpu_relax() in __queue_work()
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Existing description is worded in a way which almost encourages
-setting of vfs_cache_pressure above 100, possibly way above it.
+On Thu, May 22, 2014 at 9:47 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, May 22, 2014 at 04:44:16PM +0800, Lai Jiangshan wrote:
+>> When pwq->refcnt == 0, the retrying is guaranteed to make forward-progress.
+>> The comment above the code explains it well:
+>>
+>>       /*
+>>        * pwq is determined and locked.  For unbound pools, we could have
+>>        * raced with pwq release and it could already be dead.  If its
+>>        * refcnt is zero, repeat pwq selection.  Note that pwqs never die
+>>        * without another pwq replacing it in the numa_pwq_tbl or while
+>>        * work items are executing on it, so the retrying is guaranteed to
+>>        * make forward-progress.
+>>        */
+>>
+>> It means the cpu_relax() here is useless and sometimes misleading,
+>> it should retry directly and make some progress rather than waste time.
+>
+> cpu_relax() doesn't have much to do with guaranteeing forward
+> progress.  It's about giving a breather during busy wait so that the
 
-Users are left in a dark what this numeric value is - an int?
-a percentage? what the scale is?
+This is not busy wait, the retry and numa_pwq_tbl() guarantee that
+the retry will get a new pwq (even without cpu_relax()) as the comments says,
+and the refcnt of this new pwq is very very likely non-zero and
+cpu_relax() can't
+increase the probability of non-zero-refcnt. cpu_relax() is useless here.
 
-As a result, we are getting reports about noticeable performance
-degradation from users who have set vfs_cache_pressure
-to ridiculously high values - because they thought there is
-no downside to it.
+It is different from spin_lock() or some other spin code.
 
->From the code inspection it's obvious that this value is treated as
-a percentage. This patch changes text to reflect this fact,
-and adds a cautionary paragraph advising against setting
-vfs_cache_pressure sky high.
+it is similar to the loop of __task_rq_lock() which also guarantees progress.
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
----
- Documentation/sysctl/vm.txt | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Thanks,
+Lai
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index dd9d0e3..2449ec54 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -746,8 +746,8 @@ Changing this takes effect whenever an application requests memory.
- vfs_cache_pressure
- ------------------
- 
--Controls the tendency of the kernel to reclaim the memory which is used for
--caching of directory and inode objects.
-+This percentage value controls the tendency of the kernel to reclaim
-+the memory which is used for caching of directory and inode objects.
- 
- At the default value of vfs_cache_pressure=100 the kernel will attempt to
- reclaim dentries and inodes at a "fair" rate with respect to pagecache and
-@@ -757,6 +757,11 @@ never reclaim dentries and inodes due to memory pressure and this can easily
- lead to out-of-memory conditions. Increasing vfs_cache_pressure beyond 100
- causes the kernel to prefer to reclaim dentries and inodes.
- 
-+Increasing vfs_cache_pressure significantly beyond 100 may have negative
-+performance impact. Reclaim code needs to take various locks to find freeable
-+directory and inode objects. With vfs_cache_pressure=1000, it will look for
-+ten times more freeable objects than there are.
-+
- ==============================================================
- 
- zone_reclaim_mode:
--- 
-1.8.1.4
-
+> waiting cpu doesn't busy loop claiming the same cache lines over and
+> over ultimately delaying the event being waited on.  If you're doing a
+> busy wait, you better use cpu_relax().
+>
+> Thanks.
+>
+> --
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
