@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbaEVHAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 03:00:39 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52948 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaEVHAi (ORCPT
+	id S1752175AbaEVHBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 03:01:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43754 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaEVHBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 03:00:38 -0400
-Date: Thu, 22 May 2014 09:00:29 +0200
+	Thu, 22 May 2014 03:01:13 -0400
+Date: Thu, 22 May 2014 09:01:05 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: spinlock recursion in migrate_swap_stop
-Message-ID: <20140522070029.GK30445@twins.programming.kicks-ass.net>
-References: <5371122D.6020605@oracle.com>
- <537AB86B.4020901@oracle.com>
- <20140520110431.GX2485@laptop.programming.kicks-ass.net>
- <537B52BD.1080807@oracle.com>
- <537CA54A.8030408@oracle.com>
- <20140522053540.GA26857@linux.vnet.ibm.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, benh@kernel.crashing.org
+Subject: Re: [V6 01/11] perf: Add PERF_SAMPLE_BRANCH_COND
+Message-ID: <20140522070105.GL30445@twins.programming.kicks-ass.net>
+References: <1400666396-1682-1-git-send-email-khandual@linux.vnet.ibm.com>
+ <1400666396-1682-2-git-send-email-khandual@linux.vnet.ibm.com>
+ <20140521113025.GC2485@laptop.programming.kicks-ass.net>
+ <537D73A6.2050403@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iQbDWBcONlRwAlo5"
+	protocol="application/pgp-signature"; boundary="rIkTV52V9g01js4a"
 Content-Disposition: inline
-In-Reply-To: <20140522053540.GA26857@linux.vnet.ibm.com>
+In-Reply-To: <537D73A6.2050403@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---iQbDWBcONlRwAlo5
+--rIkTV52V9g01js4a
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, May 22, 2014 at 11:05:40AM +0530, Srikar Dronamraju wrote:
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 927fa33..b5e11c7 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -1154,6 +1156,7 @@ int migrate_swap(struct task_struct *cur, struct =
-task_struct *p)
-> >                 goto out;
-> >
-> >         trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
-> > +       BUG_ON(cur =3D=3D p);
->=20
-> I am not sure how this check can ever be successful because at the start
-> of this function migrate_swap() we have
->=20
->   if (arg.src_cpu =3D=3D arg.dst_cpu)
-> 	  goto out;
->=20
->=20
-> if cur is actually p; then should the above condition should always be
-> successul right?
->=20
-> Or am I missing something?
+On Thu, May 22, 2014 at 09:18:54AM +0530, Anshuman Khandual wrote:
 
-Yeah, current might have migrated while we were looking for a target.
+> Hope this new change log below makes more sense.
 
---iQbDWBcONlRwAlo5
+Yep reads a whole lot better. Thanks.
+
+--rIkTV52V9g01js4a
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTfaCNAAoJEHZH4aRLwOS6Oj4QAJvsp+1wn021MmGdoEC2Se0C
-LmLpwLF5VuRh4JjX/h8q+aYfPW13NxK7p3rTIhr8HDJfGuMSNS5C7iSe2JF/H3+i
-+lbeZYuI5b1X4ByioUuvUz0i5NywrZB0BSGLn0doZJPN+hjxvI3/gyz+ehUfz1q1
-bPgkDIasBoYiX/osAjQwtTxvMpS1H+QNExKPy6EsQO1xowej6gxwgcgbjQK749x1
-8W5nH6jSlkgPZ7dSu/iAqK6oMFTWaow5eJENCY9eQWDSoyu//DS12Uk8JxMWnJ8E
-4I8CjShOP4stmg/SGCJugjpGMSIGBJHJs6y94hgiLVPRrWxmHa5YV5fqHfEI9Uo4
-uwVH6E8eAEKCOE/A4mN7leS8Bmg2qIoxgBPl4k9PapFNIn81tjdwIRcwnNdv/YxH
-a8aZnAiDu3XvMDPDkzDHxM6ozgB2fjOmzUYK+wM5MasnsWFCmp+qB1JsjBfW05MG
-QqbfaEmWd4e6Yi57vBAONlDAvFFgb3qmHsrtuUo24CvvgQPjVUyN63cKYKNE6aEr
-9iEb8TEl34ASMWU//vwWFDC5v9o/dbOtr3YgxbhGCAV7x9XSQypIhBIBqnI50QsX
-y212LR0CaQpmLu9A89KcR6aWyUb6R31yJXjcMlqB6rvWd3w1+F/De231wkHoBdlu
-feZJXfXJezN1WcCyi013
-=LTDn
+iQIcBAEBAgAGBQJTfaCxAAoJEHZH4aRLwOS6KE0QAIBawrjgwB0jG77VzbCArlJQ
+9LwQlR4GEkZtPWZ09VyXwNtQmVM3oIALY1hKTLWiyP0wzsUTNID4qpCQtiRdx2iP
+ucFIVLDAorZ+DuxdEPD0ibiB7caK6tUt2UEYs3meE/uPCa8+10dPExncFSQQbgLg
+zbNMU84Ndu9cEKCqjTe3bAORN28wZ12pNuKyM3k2Sdh0veJmv/kzdqPjtWjUFxjt
+/a9O5sZDM+8H6a42iT8yTHm2+vKBcG+gcDpdzJHk2OUrhdqcx4b4iyQVKwgGgQAU
+4qJawFkNQpMP+8UA5gxRiaSzPxCSeb3fgOtUK7Gy6XMiHjNcq/Nbcl55hbZuMCC0
+CnIksFjcOGUiUJJleAJzu9nsPKzF1atNkXcXTBsy4oZt18HKZjEnxTDAWac24l9y
+O2QzsiuK5es2O5rWdIY0k61teda0CpHy8f9wBtAQnYZvHrmIz+ihMvnih+FhMkSY
+OibV0xE8Z9vR6gP0E0zNjdB+QK5GPj8kcgDNb4W4OdB+kOncXVrCIIiaSTP8x49s
+2xDEK3/pJeMD5u6Jla/pfGOemOIQdUY7NT6PTeeEfiZd35OwslOGfwrpoJUD9fJt
+r0c+2/6t4JWU3smzWsbHJMnkZT7ocmtQla7Kajlp68NTLcz4Q3xlNaUBGxZfGzFp
+asN8UW9ArwLvhp3Mbk5F
+=kRvw
 -----END PGP SIGNATURE-----
 
---iQbDWBcONlRwAlo5--
+--rIkTV52V9g01js4a--
