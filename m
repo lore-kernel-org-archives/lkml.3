@@ -1,44 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaEVMVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:21:49 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:44782 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048AbaEVMVr (ORCPT
+	id S964787AbaEVMV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:21:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50967 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054AbaEVMVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:21:47 -0400
-Date: Thu, 22 May 2014 14:21:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH] perf: delete unused variable tmp to fix new build warning
-Message-ID: <20140522122142.GA6650@gmail.com>
-References: <1400700787-11759-1-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 22 May 2014 08:21:49 -0400
+Date: Thu, 22 May 2014 05:21:38 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-fb821c9e7135e324ff6d50d030352718a80364b4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1400480762-22852-8-git-send-email-namhyung@kernel.org>
+References: <1400480762-22852-8-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui: Get rid of callback from __hpp__fmt()
+Git-Commit-ID: fb821c9e7135e324ff6d50d030352718a80364b4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1400700787-11759-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  fb821c9e7135e324ff6d50d030352718a80364b4
+Gitweb:     http://git.kernel.org/tip/fb821c9e7135e324ff6d50d030352718a80364b4
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Mon, 3 Mar 2014 17:05:19 +0900
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Wed, 21 May 2014 11:45:34 +0200
 
-* Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+perf ui: Get rid of callback from __hpp__fmt()
 
-> commit 3a497f48637e2aac17eabb84a17f8ac5216028fc [tip:perf/core]
-> ("perf: Simplify perf_event_exit_task_context()") deleted the
-> code that was using tmp but not the declaration of it, causing:
-> 
-> kernel/events/core.c:7434:35: warning: unused variable ‘tmp’ [-Wunused-variable]
+The callback was used by TUI for determining color of folded sign
+using percent of first field/column. But it cannot be used anymore
+since it now support dynamic reordering of output field.
 
-This warning should be addressed by:
+So move the logic to the hist_browser__show_entry().
 
-  12665b35b0b4 perf/events/core: Drop unused variable after cleanup
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1400480762-22852-8-git-send-email-namhyung@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/ui/browsers/hists.c | 62 ++++++++++++++++--------------------------
+ tools/perf/ui/gtk/hists.c      |  2 +-
+ tools/perf/ui/hist.c           | 28 ++++++-------------
+ tools/perf/util/hist.h         |  4 +--
+ 4 files changed, 34 insertions(+), 62 deletions(-)
 
-Thanks,
-
-	Ingo
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 847de11..37c5188 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -616,35 +616,6 @@ struct hpp_arg {
+ 	bool current_entry;
+ };
+ 
+-static int __hpp__overhead_callback(struct perf_hpp *hpp, bool front)
+-{
+-	struct hpp_arg *arg = hpp->ptr;
+-
+-	if (arg->current_entry && arg->b->navkeypressed)
+-		ui_browser__set_color(arg->b, HE_COLORSET_SELECTED);
+-	else
+-		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
+-
+-	if (front) {
+-		if (!symbol_conf.use_callchain)
+-			return 0;
+-
+-		slsmg_printf("%c ", arg->folded_sign);
+-		return 2;
+-	}
+-
+-	return 0;
+-}
+-
+-static int __hpp__color_callback(struct perf_hpp *hpp, bool front __maybe_unused)
+-{
+-	struct hpp_arg *arg = hpp->ptr;
+-
+-	if (!arg->current_entry || !arg->b->navkeypressed)
+-		ui_browser__set_color(arg->b, HE_COLORSET_NORMAL);
+-	return 0;
+-}
+-
+ static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
+ {
+ 	struct hpp_arg *arg = hpp->ptr;
+@@ -665,7 +636,7 @@ static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
+ 	return ret;
+ }
+ 
+-#define __HPP_COLOR_PERCENT_FN(_type, _field, _cb)			\
++#define __HPP_COLOR_PERCENT_FN(_type, _field)				\
+ static u64 __hpp_get_##_field(struct hist_entry *he)			\
+ {									\
+ 	return he->stat._field;						\
+@@ -676,15 +647,15 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
+ 				struct perf_hpp *hpp,			\
+ 				struct hist_entry *he)			\
+ {									\
+-	return __hpp__fmt(hpp, he, __hpp_get_##_field, _cb, " %6.2f%%",	\
++	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %6.2f%%",	\
+ 			  __hpp__slsmg_color_printf, true);		\
+ }
+ 
+-__HPP_COLOR_PERCENT_FN(overhead, period, __hpp__overhead_callback)
+-__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys, __hpp__color_callback)
+-__HPP_COLOR_PERCENT_FN(overhead_us, period_us, __hpp__color_callback)
+-__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys, __hpp__color_callback)
+-__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us, __hpp__color_callback)
++__HPP_COLOR_PERCENT_FN(overhead, period)
++__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
++__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
++__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
++__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
+ 
+ #undef __HPP_COLOR_PERCENT_FN
+ 
+@@ -729,7 +700,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 
+ 	if (row_offset == 0) {
+ 		struct hpp_arg arg = {
+-			.b 		= &browser->b,
++			.b		= &browser->b,
+ 			.folded_sign	= folded_sign,
+ 			.current_entry	= current_entry,
+ 		};
+@@ -742,11 +713,24 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 		ui_browser__gotorc(&browser->b, row, 0);
+ 
+ 		perf_hpp__for_each_format(fmt) {
+-			if (!first) {
++			if (current_entry && browser->b.navkeypressed) {
++				ui_browser__set_color(&browser->b,
++						      HE_COLORSET_SELECTED);
++			} else {
++				ui_browser__set_color(&browser->b,
++						      HE_COLORSET_NORMAL);
++			}
++
++			if (first) {
++				if (symbol_conf.use_callchain) {
++					slsmg_printf("%c ", folded_sign);
++					width -= 2;
++				}
++				first = false;
++			} else {
+ 				slsmg_printf("  ");
+ 				width -= 2;
+ 			}
+-			first = false;
+ 
+ 			if (fmt->color) {
+ 				width -= fmt->color(fmt, &hpp, entry);
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index d5c336e..2237245 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -43,7 +43,7 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
+ 				       struct perf_hpp *hpp,			\
+ 				       struct hist_entry *he)			\
+ {										\
+-	return __hpp__fmt(hpp, he, he_get_##_field, NULL, " %6.2f%%",		\
++	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
+ 			  __percent_color_snprintf, true);			\
+ }
+ 
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 400437e..e7ac794 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -16,20 +16,15 @@
+ })
+ 
+ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-	       hpp_field_fn get_field, hpp_callback_fn callback,
+-	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent)
++	       hpp_field_fn get_field, const char *fmt,
++	       hpp_snprint_fn print_fn, bool fmt_percent)
+ {
+-	int ret = 0;
++	int ret;
+ 	struct hists *hists = he->hists;
+ 	struct perf_evsel *evsel = hists_to_evsel(hists);
+ 	char *buf = hpp->buf;
+ 	size_t size = hpp->size;
+ 
+-	if (callback) {
+-		ret = callback(hpp, true);
+-		advance_hpp(hpp, ret);
+-	}
+-
+ 	if (fmt_percent) {
+ 		double percent = 0.0;
+ 		u64 total = hists__total_period(hists);
+@@ -37,9 +32,9 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 		if (total)
+ 			percent = 100.0 * get_field(he) / total;
+ 
+-		ret += hpp__call_print_fn(hpp, print_fn, fmt, percent);
++		ret = hpp__call_print_fn(hpp, print_fn, fmt, percent);
+ 	} else
+-		ret += hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
++		ret = hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
+ 
+ 	if (perf_evsel__is_group_event(evsel)) {
+ 		int prev_idx, idx_delta;
+@@ -99,13 +94,6 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 		}
+ 	}
+ 
+-	if (callback) {
+-		int __ret = callback(hpp, false);
+-
+-		advance_hpp(hpp, __ret);
+-		ret += __ret;
+-	}
+-
+ 	/*
+ 	 * Restore original buf and size as it's where caller expects
+ 	 * the result will be saved.
+@@ -235,7 +223,7 @@ static u64 he_get_##_field(struct hist_entry *he)				\
+ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	return __hpp__fmt(hpp, he, he_get_##_field, NULL, " %6.2f%%",		\
++	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
+ 			  hpp_color_scnprintf, true);				\
+ }
+ 
+@@ -244,7 +232,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+ 	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
+-	return __hpp__fmt(hpp, he, he_get_##_field, NULL, fmt,			\
++	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
+ 			  hpp_entry_scnprintf, true);				\
+ }
+ 
+@@ -264,7 +252,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+ 	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
+-	return __hpp__fmt(hpp, he, he_get_raw_##_field, NULL, fmt,		\
++	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt,			\
+ 			  hpp_entry_scnprintf, false);				\
+ }
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index e76d323..76bb72e 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -203,8 +203,8 @@ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
+ typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
+ 
+ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-	       hpp_field_fn get_field, hpp_callback_fn callback,
+-	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent);
++	       hpp_field_fn get_field, const char *fmt,
++	       hpp_snprint_fn print_fn, bool fmt_percent);
+ 
+ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+ {
