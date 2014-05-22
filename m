@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaEVPZO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:25:14 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:46236 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaEVPZL (ORCPT
+	id S1751700AbaEVPZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:25:29 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:37720 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaEVPZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:25:11 -0400
+	Thu, 22 May 2014 11:25:26 -0400
+Date: Thu, 22 May 2014 17:25:10 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: remove checks for CONFIG_SGI_IP35
+Message-ID: <20140522152510.GD17197@linux-mips.org>
+References: <1400584909.4912.35.camel@x220>
+ <20140522131243.GZ10287@linux-mips.org>
+ <1400767088.16407.14.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFqq-kjQoMiyKApDuTR+Fc-8WOuqXHFcgwgZNkg4Mm4Z=Q@mail.gmail.com>
-References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
-	<1397689719-28882-1-git-send-email-abrestic@chromium.org>
-	<1397689719-28882-2-git-send-email-abrestic@chromium.org>
-	<537B9022.20709@wwwdotorg.org>
-	<86egzormf5.fsf@void.printf.net>
-	<CAPDyKFqq-kjQoMiyKApDuTR+Fc-8WOuqXHFcgwgZNkg4Mm4Z=Q@mail.gmail.com>
-Date: Thu, 22 May 2014 08:25:10 -0700
-X-Google-Sender-Auth: edPV1JvYlIW2bCKScYgE_qAN0ts
-Message-ID: <CAL1qeaH94cb+zYzUoCcM4+cNaFsPDEtK-xomE0QVw3gRP1jy6A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] mmc: tegra: disable UHS modes
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Chris Ball <chris@printf.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400767088.16407.14.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Stephen/Andrew,
->
-> I tried to include the v2 of patch1 and patch2 in PR I just sent to
-> Chris - but needed to omit them due to conflicts.
->
-> Could you please re-base them on top of my PR and resend them? I
-> suppose Chris can take them separately once he pulled my PR.
+On Thu, May 22, 2014 at 03:58:08PM +0200, Paul Bolle wrote:
 
-Will do.
+> By the way, could you perhaps look at CONFIG_SYS_HAS_CPU_RM9000? It
+> seems the Kconfig entry for SYS_HAS_CPU_RM9000 is simply missing. But
+> the CPU support code is rather complicated and I stopped trying to
+> understand it after staring at it for way too long.
 
-Thanks,
-Andrew
+Seem that crept back in through commit 69f24d17 [MIPS: Optimize
+current_cpu_type() for better code.] which had been developed before
+but merged after RM9000 was removed.
+
+There were various other artifacts of the RM9000 support around which I
+also removed.  Only a few comments and PRID_IMP_RM9000 which helps
+avoid accidental reuse of the value are now remaining.
+
+  Ralf
