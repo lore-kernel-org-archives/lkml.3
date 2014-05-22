@@ -1,94 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbaEVJTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:19:51 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:48571 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247AbaEVJTf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:19:35 -0400
+	id S1754347AbaEVJT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:19:59 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34741 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754307AbaEVJTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 05:19:54 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <lee.jones@linaro.org>, Keerthy <j-keerthy@ti.com>
+Subject: [PATCH 1/2] regulator: palmas: Reemove open coded functions with helper functions
+Date: Thu, 22 May 2014 14:48:29 +0530
+Message-ID: <1400750310-20925-2-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400750310-20925-1-git-send-email-j-keerthy@ti.com>
+References: <1400750310-20925-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20140522085409.26279.64965.sendpatchset@w520>
-References: <20140522085339.26279.83340.sendpatchset@w520>
-	<20140522085409.26279.64965.sendpatchset@w520>
-Date: Thu, 22 May 2014 11:19:33 +0200
-X-Google-Sender-Auth: Qq7ogY6gwZ0esObpv-I6SdADkfI
-Message-ID: <CAMuHMdWyCN7UJ89xjpAj-X7rTHo_r0U6XJJwMOxGnXAeeYZXHQ@mail.gmail.com>
-Subject: Re: [PATCH 03/03] staging: board: kzm9d: Board staging support for emxx_udc
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+Reemove open coded functions with helper functions.
 
-On Thu, May 22, 2014 at 10:54 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> Add staging board support for the KZM9D board and add
-> an emxx_udc platform device to allow in-tree continous
-> development of the driver on the KZM9D board.
->
-> When DT bindings are ready for the emxx_udc driver then
-> the platform device in the KZM9D staging board code can
-> easily be removed. Until then we use platform devices
-> to continously improve the driver and integration code.
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+---
+ drivers/regulator/palmas-regulator.c |  158 ++++++----------------------------
+ 1 file changed, 26 insertions(+), 132 deletions(-)
 
-Nice!
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 9c62b1d..9602eba 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -36,6 +36,18 @@ struct regs_info {
+ 	int	sleep_id;
+ };
+ 
++static const struct regulator_linear_range smps_low_ranges[] = {
++	REGULATOR_LINEAR_RANGE(500000, 0x1, 0x6, 0),
++	REGULATOR_LINEAR_RANGE(510000, 0x7, 0x79, 10000),
++	REGULATOR_LINEAR_RANGE(1650000, 0x7A, 0x7f, 0),
++};
++
++static const struct regulator_linear_range smps_high_ranges[] = {
++	REGULATOR_LINEAR_RANGE(1000000, 0x1, 0x6, 0),
++	REGULATOR_LINEAR_RANGE(1020000, 0x7, 0x79, 20000),
++	REGULATOR_LINEAR_RANGE(3300000, 0x7A, 0x7f, 0),
++};
++
+ static const struct regs_info palmas_regs_info[] = {
+ 	{
+ 		.name		= "SMPS12",
+@@ -280,54 +292,6 @@ static int palmas_ldo_write(struct palmas *palmas, unsigned int reg,
+ 	return regmap_write(palmas->regmap[REGULATOR_SLAVE], addr, value);
+ }
+ 
+-static int palmas_is_enabled_smps(struct regulator_dev *dev)
+-{
+-	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
+-	int id = rdev_get_id(dev);
+-	unsigned int reg;
+-
+-	palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
+-
+-	reg &= PALMAS_SMPS12_CTRL_STATUS_MASK;
+-	reg >>= PALMAS_SMPS12_CTRL_STATUS_SHIFT;
+-
+-	return !!(reg);
+-}
+-
+-static int palmas_enable_smps(struct regulator_dev *dev)
+-{
+-	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
+-	int id = rdev_get_id(dev);
+-	unsigned int reg;
+-
+-	palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
+-
+-	reg &= ~PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+-	if (pmic->current_reg_mode[id])
+-		reg |= pmic->current_reg_mode[id];
+-	else
+-		reg |= SMPS_CTRL_MODE_ON;
+-
+-	palmas_smps_write(pmic->palmas, palmas_regs_info[id].ctrl_addr, reg);
+-
+-	return 0;
+-}
+-
+-static int palmas_disable_smps(struct regulator_dev *dev)
+-{
+-	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
+-	int id = rdev_get_id(dev);
+-	unsigned int reg;
+-
+-	palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
+-
+-	reg &= ~PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+-
+-	palmas_smps_write(pmic->palmas, palmas_regs_info[id].ctrl_addr, reg);
+-
+-	return 0;
+-}
+-
+ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
+ {
+ 	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
+@@ -382,81 +346,6 @@ static unsigned int palmas_get_mode_smps(struct regulator_dev *dev)
+ 	return 0;
+ }
+ 
+-static int palmas_list_voltage_smps(struct regulator_dev *dev,
+-					unsigned selector)
+-{
+-	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
+-	int id = rdev_get_id(dev);
+-	int mult = 1;
+-
+-	/* Read the multiplier set in VSEL register to return
+-	 * the correct voltage.
+-	 */
+-	if (pmic->range[id])
+-		mult = 2;
+-
+-	if (selector == 0)
+-		return 0;
+-	else if (selector < 6)
+-		return 500000 * mult;
+-	else
+-		/* Voltage is linear mapping starting from selector 6,
+-		 * volt = (0.49V + ((selector - 5) * 0.01V)) * RANGE
+-		 * RANGE is either x1 or x2
+-		 */
+-		return (490000 + ((selector - 5) * 10000)) * mult;
+-}
+-
+-static int palmas_map_voltage_smps(struct regulator_dev *rdev,
+-		int min_uV, int max_uV)
+-{
+-	struct palmas_pmic *pmic = rdev_get_drvdata(rdev);
+-	int id = rdev_get_id(rdev);
+-	int ret, voltage;
+-
+-	if (min_uV == 0)
+-		return 0;
+-
+-	if (pmic->range[id]) { /* RANGE is x2 */
+-		if (min_uV < 1000000)
+-			min_uV = 1000000;
+-		ret = DIV_ROUND_UP(min_uV - 1000000, 20000) + 6;
+-	} else {		/* RANGE is x1 */
+-		if (min_uV < 500000)
+-			min_uV = 500000;
+-		ret = DIV_ROUND_UP(min_uV - 500000, 10000) + 6;
+-	}
+-
+-	/* Map back into a voltage to verify we're still in bounds */
+-	voltage = palmas_list_voltage_smps(rdev, ret);
+-	if (voltage < min_uV || voltage > max_uV)
+-		return -EINVAL;
+-
+-	return ret;
+-}
+-
+-static int palma_smps_set_voltage_smps_time_sel(struct regulator_dev *rdev,
+-	unsigned int old_selector, unsigned int new_selector)
+-{
+-	struct palmas_pmic *pmic = rdev_get_drvdata(rdev);
+-	int id = rdev_get_id(rdev);
+-	int old_uv, new_uv;
+-	unsigned int ramp_delay = pmic->ramp_delay[id];
+-
+-	if (!ramp_delay)
+-		return 0;
+-
+-	old_uv = palmas_list_voltage_smps(rdev, old_selector);
+-	if (old_uv < 0)
+-		return old_uv;
+-
+-	new_uv = palmas_list_voltage_smps(rdev, new_selector);
+-	if (new_uv < 0)
+-		return new_uv;
+-
+-	return DIV_ROUND_UP(abs(old_uv - new_uv), ramp_delay);
+-}
+-
+ static int palmas_smps_set_ramp_delay(struct regulator_dev *rdev,
+ 		 int ramp_delay)
+ {
+@@ -493,16 +382,16 @@ static int palmas_smps_set_ramp_delay(struct regulator_dev *rdev,
+ }
+ 
+ static struct regulator_ops palmas_ops_smps = {
+-	.is_enabled		= palmas_is_enabled_smps,
+-	.enable			= palmas_enable_smps,
+-	.disable		= palmas_disable_smps,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
+ 	.set_mode		= palmas_set_mode_smps,
+ 	.get_mode		= palmas_get_mode_smps,
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+-	.list_voltage		= palmas_list_voltage_smps,
+-	.map_voltage		= palmas_map_voltage_smps,
+-	.set_voltage_time_sel	= palma_smps_set_voltage_smps_time_sel,
++	.list_voltage		= regulator_list_voltage_linear_range,
++	.map_voltage		= regulator_map_voltage_linear_range,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ 	.set_ramp_delay		= palmas_smps_set_ramp_delay,
+ };
+ 
+@@ -511,9 +400,9 @@ static struct regulator_ops palmas_ops_ext_control_smps = {
+ 	.get_mode		= palmas_get_mode_smps,
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+-	.list_voltage		= palmas_list_voltage_smps,
+-	.map_voltage		= palmas_map_voltage_smps,
+-	.set_voltage_time_sel	= palma_smps_set_voltage_smps_time_sel,
++	.list_voltage		= regulator_list_voltage_linear_range,
++	.map_voltage		= regulator_map_voltage_linear_range,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ 	.set_ramp_delay		= palmas_smps_set_ramp_delay,
+ };
+ 
+@@ -1042,12 +931,17 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 			 * ranges. Read the current smps mode for later use.
+ 			 */
+ 			addr = palmas_regs_info[id].vsel_addr;
++			pmic->desc[id].n_linear_ranges = 3;
+ 
+ 			ret = palmas_smps_read(pmic->palmas, addr, &reg);
+ 			if (ret)
+ 				return ret;
+ 			if (reg & PALMAS_SMPS12_VOLTAGE_RANGE)
+ 				pmic->range[id] = 1;
++			if (pmic->range[id])
++				pmic->desc[id].linear_ranges = smps_high_ranges;
++			else
++				pmic->desc[id].linear_ranges = smps_low_ranges;
+ 
+ 			if (reg_init && reg_init->roof_floor)
+ 				pmic->desc[id].ops =
+-- 
+1.7.9.5
 
->  drivers/staging/Kconfig        |    2 ++
->  drivers/staging/Makefile       |    1 +
->  drivers/staging/board/Kconfig  |    7 +++++++
->  drivers/staging/board/Makefile |    1 +
->  drivers/staging/board/board.h  |   17 +++++++++++++++++
->  drivers/staging/board/kzm9d.c  |   18 ++++++++++++++++++
->  6 files changed, 46 insertions(+)
-
-As you're adding infrastructure and a first user, I think this should
-be split in two patches:
-  - Introduction of drivers/staging/board infrastructure,
-  - Addition of kzm9d board support.
-
-> --- /dev/null
-> +++ work/drivers/staging/board/Kconfig  2014-05-22 15:31:58.000000000 +0900
-> @@ -0,0 +1,7 @@
-> +config STAGING_BOARD
-> +       boolean "Staging Board Support"
-> +       help
-> +         Select to enable per-board staging support code.
-> +
-> +         If in doubt, say N here.
-> +
-
-No board-specific Kconfig symbols, so the actual individual board
-support itself is
-always compiled-in (but see below)?
-
-> --- /dev/null
-> +++ work/drivers/staging/board/Makefile 2014-05-22 15:31:58.000000000 +0900
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += kzm9d.o
-
-Ah, it's included in all shmobile multi-platform kernels.
-
-What about testing for CONFIG_ARCH_EMEV2 instead of
-CONFIG_ARCH_SHMOBILE_MULTI?
-Or adding a KZM9D-specific Kconfig symbol to .../board/Kconfig?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
