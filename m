@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaEVQsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:48:22 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:56593 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856AbaEVQsR (ORCPT
+	id S1753298AbaEVQwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:52:36 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:61167 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaEVQsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:48:17 -0400
+	Thu, 22 May 2014 12:48:23 -0400
 From: Florian Fainelli <f.fainelli@gmail.com>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
@@ -21,9 +21,9 @@ Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         linux-kernel@vger.kernel.org (open list),
         linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
-Subject: [PATCH net-next v2 2/9] Documentation: devicetree: net: refer to fixed-link.txt
-Date: Thu, 22 May 2014 09:47:44 -0700
-Message-Id: <1400777271-32199-3-git-send-email-f.fainelli@gmail.com>
+Subject: [PATCH net-next v2 5/9] fs_enet: use the new fixed PHY helpers
+Date: Thu, 22 May 2014 09:47:47 -0700
+Message-Id: <1400777271-32199-6-git-send-email-f.fainelli@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400777271-32199-1-git-send-email-f.fainelli@gmail.com>
 References: <1400777271-32199-1-git-send-email-f.fainelli@gmail.com>
@@ -31,62 +31,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the Freescale TSEC PHY, Broadcom GENET & SYSTEMPORT Device Tree
-binding documentation to refer to the fixed-link Device Tree binding in
-fixed-link.txt.
+of_phy_connect_fixed_link() is becoming obsolete, and also required
+platform code to register the fixed PHYs at the specified addresses for
+those to be usable. Get rid of it and use the new of_phy_is_fixed_link()
+plus of_phy_register_fixed_link() helpers to transition over the new
+scheme.
 
-Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 ---
-No changes in v2
+- merge if conditions on the same line as suggested by Sergei
+- add comment explaining the device_node pointer assignment
 
- Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt   | 2 +-
- Documentation/devicetree/bindings/net/broadcom-systemport.txt | 2 +-
- Documentation/devicetree/bindings/net/fsl-tsec-phy.txt        | 5 +----
- 3 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt b/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
-index f2febb94550e..451fef26b4df 100644
---- a/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
-+++ b/Documentation/devicetree/bindings/net/broadcom-bcmgenet.txt
-@@ -24,7 +24,7 @@ Optional properties:
- - fixed-link: When the GENET interface is connected to a MoCA hardware block or
-   when operating in a RGMII to RGMII type of connection, or when the MDIO bus is
-   voluntarily disabled, this property should be used to describe the "fixed link".
--  See Documentation/devicetree/bindings/net/fsl-tsec-phy.txt for information on
-+  See Documentation/devicetree/bindings/net/fixed-link.txt for information on
-   the property specifics
+diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+index dc80db41d6b3..cfaf17b70f3f 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
++++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+@@ -792,10 +792,6 @@ static int fs_init_phy(struct net_device *dev)
+ 	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link, 0,
+ 				iface);
+ 	if (!phydev) {
+-		phydev = of_phy_connect_fixed_link(dev, &fs_adjust_link,
+-						   iface);
+-	}
+-	if (!phydev) {
+ 		dev_err(&dev->dev, "Could not attach to PHY\n");
+ 		return -ENODEV;
+ 	}
+@@ -1029,9 +1025,16 @@ static int fs_enet_probe(struct platform_device *ofdev)
+ 	fpi->use_napi = 1;
+ 	fpi->napi_weight = 17;
+ 	fpi->phy_node = of_parse_phandle(ofdev->dev.of_node, "phy-handle", 0);
+-	if ((!fpi->phy_node) && (!of_get_property(ofdev->dev.of_node, "fixed-link",
+-						  NULL)))
+-		goto out_free_fpi;
++	if (!fpi->phy_node && of_phy_is_fixed_link(ofdev->dev.of_node)) {
++		err = of_phy_register_fixed_link(ofdev->dev.of_node);
++		if (err)
++			goto out_free_fpi;
++
++		/* In the case of a fixed PHY, the DT node associated
++		 * to the PHY is the Ethernet MAC DT node.
++		 */
++		fpi->phy_node = ofdev->dev.of_node;
++	}
  
- Required child nodes:
-diff --git a/Documentation/devicetree/bindings/net/broadcom-systemport.txt b/Documentation/devicetree/bindings/net/broadcom-systemport.txt
-index 1b7600e022dd..c183ea90d9bc 100644
---- a/Documentation/devicetree/bindings/net/broadcom-systemport.txt
-+++ b/Documentation/devicetree/bindings/net/broadcom-systemport.txt
-@@ -8,7 +8,7 @@ Required properties:
- - local-mac-address: Ethernet MAC address (48 bits) of this adapter
- - phy-mode: Should be a string describing the PHY interface to the
-   Ethernet switch/PHY, see Documentation/devicetree/bindings/net/ethernet.txt
--- fixed-link: see Documentation/devicetree/bindings/net/fsl-tsec-phy.txt for
-+- fixed-link: see Documentation/devicetree/bindings/net/fixed-link.txt for
-   the property specific details
- 
- Optional properties:
-diff --git a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-index 737cdef4f903..be6ea8960f20 100644
---- a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-+++ b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-@@ -42,10 +42,7 @@ Properties:
-     interrupt.  For TSEC and eTSEC devices, the first interrupt is
-     transmit, the second is receive, and the third is error.
-   - phy-handle : See ethernet.txt file in the same directory.
--  - fixed-link : <a b c d e> where a is emulated phy id - choose any,
--    but unique to the all specified fixed-links, b is duplex - 0 half,
--    1 full, c is link speed - d#10/d#100/d#1000, d is pause - 0 no
--    pause, 1 pause, e is asym_pause - 0 no asym_pause, 1 asym_pause.
-+  - fixed-link : See fixed-link.txt in the same directory.
-   - phy-connection-type : See ethernet.txt file in the same directory.
-     This property is only really needed if the connection is of type
-     "rgmii-id", as all other connection types are detected by hardware.
+ 	if (of_device_is_compatible(ofdev->dev.of_node, "fsl,mpc5125-fec")) {
+ 		phy_connection_type = of_get_property(ofdev->dev.of_node,
 -- 
 1.9.1
 
