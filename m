@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631AbaEVMaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:30:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51379 "EHLO
+	id S1755414AbaEVM1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:27:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51216 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194AbaEVMaK (ORCPT
+	with ESMTP id S1755391AbaEVM1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:30:10 -0400
-Date: Thu, 22 May 2014 05:28:48 -0700
-From: "tip-bot for xiaofeng.yan" <tipbot@zytor.com>
-Message-ID: <tip-4027d080854d1be96ef134a1c3024d5276114db6@git.kernel.org>
+	Thu, 22 May 2014 08:27:20 -0400
+Date: Thu, 22 May 2014 05:26:26 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-842514849a616e9b61acad65771c7afe01e651f9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, xiaofeng.yan@huawei.com, tglx@linutronix.de
+        catalin.marinas@arm.com, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, xiaofeng.yan@huawei.com
-In-Reply-To: <1399605687-18094-1-git-send-email-xiaofeng.yan@huawei.com>
-References: <1399605687-18094-1-git-send-email-xiaofeng.yan@huawei.com>
+        catalin.marinas@arm.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20140509170649.GG13658@twins.programming.kicks-ass.net>
+References: <20140509170649.GG13658@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt: Fix 'struct sched_dl_entity'
-  and dl_task_time() comments, to match the current upstream code
-Git-Commit-ID: 4027d080854d1be96ef134a1c3024d5276114db6
+Subject: [tip:sched/core] arm64: Remove TIF_POLLING_NRFLAG
+Git-Commit-ID: 842514849a616e9b61acad65771c7afe01e651f9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,49 +31,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4027d080854d1be96ef134a1c3024d5276114db6
-Gitweb:     http://git.kernel.org/tip/4027d080854d1be96ef134a1c3024d5276114db6
-Author:     xiaofeng.yan <xiaofeng.yan@huawei.com>
-AuthorDate: Fri, 9 May 2014 03:21:27 +0000
+Commit-ID:  842514849a616e9b61acad65771c7afe01e651f9
+Gitweb:     http://git.kernel.org/tip/842514849a616e9b61acad65771c7afe01e651f9
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 9 May 2014 19:04:00 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 22 May 2014 11:16:37 +0200
+CommitDate: Thu, 22 May 2014 10:22:58 +0200
 
-sched/rt: Fix 'struct sched_dl_entity' and dl_task_time() comments, to match the current upstream code
+arm64: Remove TIF_POLLING_NRFLAG
 
-Signed-off-by: xiaofeng.yan <xiaofeng.yan@huawei.com>
+The only idle method for arm64 is WFI and it therefore
+unconditionally requires the reschedule interrupt when idle.
+
+Suggested-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1399605687-18094-1-git-send-email-xiaofeng.yan@huawei.com
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Link: http://lkml.kernel.org/r/20140509170649.GG13658@twins.programming.kicks-ass.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h   | 4 ++--
- kernel/sched/deadline.c | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/arm64/include/asm/thread_info.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 725eef1..0f91d00 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1175,8 +1175,8 @@ struct sched_dl_entity {
- 
- 	/*
- 	 * Original scheduling parameters. Copied here from sched_attr
--	 * during sched_setscheduler2(), they will remain the same until
--	 * the next sched_setscheduler2().
-+	 * during sched_setattr(), they will remain the same until
-+	 * the next sched_setattr().
- 	 */
- 	u64 dl_runtime;		/* maximum runtime for each instance	*/
- 	u64 dl_deadline;	/* relative deadline of each instance	*/
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index e0a04ae..f9ca7d1 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -520,7 +520,7 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- 	 * We need to take care of a possible races here. In fact, the
- 	 * task might have changed its scheduling policy to something
- 	 * different from SCHED_DEADLINE or changed its reservation
--	 * parameters (through sched_setscheduler()).
-+	 * parameters (through sched_setattr()).
- 	 */
- 	if (!dl_task(p) || dl_se->dl_new)
- 		goto unlock;
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 720e70b..7b8e3a2 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -95,13 +95,11 @@ static inline struct thread_info *current_thread_info(void)
+  *  TIF_NEED_RESCHED	- rescheduling necessary
+  *  TIF_NOTIFY_RESUME	- callback before returning to user
+  *  TIF_USEDFPU		- FPU was used by this task this quantum (SMP)
+- *  TIF_POLLING_NRFLAG	- true if poll_idle() is polling TIF_NEED_RESCHED
+  */
+ #define TIF_SIGPENDING		0
+ #define TIF_NEED_RESCHED	1
+ #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
+ #define TIF_SYSCALL_TRACE	8
+-#define TIF_POLLING_NRFLAG	16
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+ #define TIF_FREEZE		19
+ #define TIF_RESTORE_SIGMASK	20
