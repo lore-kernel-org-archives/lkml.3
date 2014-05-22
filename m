@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaEVP7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:59:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809AbaEVP7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:59:46 -0400
-Message-ID: <537E1EE6.8080102@redhat.com>
-Date: Thu, 22 May 2014 11:59:34 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752833AbaEVP7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:59:53 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:41333 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772AbaEVP7u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 11:59:50 -0400
+Date: Thu, 22 May 2014 16:59:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, chris@printf.net,
+        ulf.hansson@linaro.org, kernel@stlinux.com, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 3/8] ARM: STi: DT: Add sdhci pins for stih416
+Message-ID: <20140522155943.GH19747@lee--X1>
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+ <1400771902-26553-4-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] fs/superblock: Avoid locking counting inodes and
- dentries before reclaiming them
-References: <1400749779-24879-1-git-send-email-mgorman@suse.de> <1400749779-24879-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1400749779-24879-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400771902-26553-4-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 05:09 AM, Mel Gorman wrote:
-> From: Tim Chen <tim.c.chen@linux.intel.com>
+On Thu, 22 May 2014, Peter Griffin wrote:
+
+> This adds the required pin config for both SDHCI controllers on
+> the stih416 SoC.
 > 
-> We remove the call to grab_super_passive in call to super_cache_count.
-> This becomes a scalability bottleneck as multiple threads are trying to do
-> memory reclamation, e.g. when we are doing large amount of file read and
-> page cache is under pressure.  The cached objects quickly got reclaimed
-> down to 0 and we are aborting the cache_scan() reclaim.  But counting
-> creates a log jam acquiring the sb_lock.
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> ---
+>  arch/arm/boot/dts/stih416-pinctrl.dtsi | 39 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 39 insertions(+)
 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
+> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> index 6252188..140af6b 100644
+> --- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> +++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> @@ -467,6 +467,45 @@
+>  					};
+>  				};
+>  			};
+> +
+> +			mmc0 {
+> +				pinctrl_mmc0: mmc0 {
+> +					st,pins {
+> +						mmcclk = <&PIO13 4 ALT4 BIDIR_PU NICLK 0 CLK_B>;
+> +						data0 = <&PIO14 4 ALT4 BIDIR_PU BYPASS 0>;
+> +						data1 = <&PIO14 5 ALT4 BIDIR_PU BYPASS 0>;
+> +						data2 = <&PIO14 6 ALT4 BIDIR_PU BYPASS 0>;
+> +						data3 = <&PIO14 7 ALT4 BIDIR_PU BYPASS 0>;
+> +						cmd = <&PIO15 1 ALT4 BIDIR_PU BYPASS 0>;
+> +						wp = <&PIO15 3 ALT4 IN>;
+> +						data4 = <&PIO16 4 ALT4 BIDIR_PU BYPASS 0>;
+> +						data5 = <&PIO16 5 ALT4 BIDIR_PU BYPASS 0>;
+> +						data6 = <&PIO16 6 ALT4 BIDIR_PU BYPASS 0>;
+> +						data7 = <&PIO16 7 ALT4 BIDIR_PU BYPASS 0>;
+> +						pwr = <&PIO17 1 ALT4 OUT>;
+> +						cd = <&PIO17 2 ALT4 IN>;
+> +						led = <&PIO17 3 ALT4 OUT>;
+> +					};
+> +				};
+> +			};
+> +			mmc1 {
+> +				pinctrl_mmc1: mmc1 {
+> +					st,pins {
+> +						mmcclk = <&PIO15 0 ALT3 BIDIR_PU NICLK 0 CLK_B>;
+> +						data0 = <&PIO13 7 ALT3 BIDIR_PU BYPASS 0>;
+> +						data1 = <&PIO14 1 ALT3 BIDIR_PU BYPASS 0>;
+> +						data2 = <&PIO14 2 ALT3 BIDIR_PU BYPASS 0>;
+> +						data3 = <&PIO14 3 ALT3 BIDIR_PU BYPASS 0>;
+> +						cmd = <&PIO15 4 ALT3 BIDIR_PU BYPASS 0>;
+> +						data4 = <&PIO15 6 ALT3 BIDIR_PU BYPASS 0>;
+> +						data5 = <&PIO15 7 ALT3 BIDIR_PU BYPASS 0>;
+> +						data6 = <&PIO16 0 ALT3 BIDIR_PU BYPASS 0>;
+> +						data7 = <&PIO16 1 ALT3 BIDIR_PU BYPASS 0>;
+> +						pwr = <&PIO16 2 ALT3 OUT>;
+> +						nreset = <&PIO13 6 ALT3 OUT>;
+> +					};
+> +				};
+> +			};
+>  		};
+>  
+>  		pin-controller-fvdp-fe {
 
 -- 
-All rights reversed
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
