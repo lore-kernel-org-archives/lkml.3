@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaEVQqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:46:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37909 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaEVQp7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:45:59 -0400
+	id S1752449AbaEVQqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:46:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39134 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913AbaEVQqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:46:20 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
         <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
@@ -20,9 +19,9 @@ CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
         <sergei.shtylyov@cogentembedded.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v6 3/7] mfd: ti-keystone-devctrl: add bindings for device state control
-Date: Thu, 22 May 2014 19:44:18 +0300
-Message-ID: <1400777062-19276-4-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [Patch v6 7/7] ARM: keystone: enable reset driver support
+Date: Thu, 22 May 2014 19:44:22 +0300
+Message-ID: <1400777062-19276-8-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -32,42 +31,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Keystone II devices have a set of registers that are used to control
-the status of its peripherals. This node is intended to allow access to
-this functionality.
+Enable reset driver support in order to have opportunity
+to reboot SoC by watchdog and by software.
 
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- .../devicetree/bindings/mfd/ti-keystone-devctrl.txt   | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+ arch/arm/configs/keystone_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
-new file mode 100644
-index 0000000..20963c7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
-@@ -0,0 +1,19 @@
-+* Device tree bindings for Texas Instruments keystone device state control
-+
-+The Keystone II devices have a set of registers that are used to control
-+the status of its peripherals. This node is intended to allow access to
-+this functionality.
-+
-+Required properties:
-+
-+- compatible:		"ti,keystone-devctrl", "syscon"
-+
-+- reg:			contains offset/length value for device state control
-+			registers space.
-+
-+Example:
-+
-+devctrl: device-state-control@0x02620000 {
-+	compatible = "ti,keystone-devctrl", "syscon";
-+	reg = <0x02620000 0x1000>;
-+};
+diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
+index 07b4327..dc0da3f 100644
+--- a/arch/arm/configs/keystone_defconfig
++++ b/arch/arm/configs/keystone_defconfig
+@@ -132,6 +132,9 @@ CONFIG_SPI=y
+ CONFIG_SPI_DAVINCI=y
+ CONFIG_SPI_SPIDEV=y
+ # CONFIG_HWMON is not set
++CONFIG_POWER_SUPPLY=y
++CONFIG_POWER_RESET=y
++CONFIG_POWER_RESET_KEYSTONE=y
+ CONFIG_WATCHDOG=y
+ CONFIG_WATCHDOG_CORE=y
+ CONFIG_DAVINCI_WATCHDOG=y
 -- 
 1.8.3.2
 
