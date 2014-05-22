@@ -1,177 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaEVKVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 06:21:21 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:58639 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaEVKVT convert rfc822-to-8bit (ORCPT
+	id S1754386AbaEVKWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 06:22:46 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:58845 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491AbaEVKWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 06:21:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <cover.1400271129.git.rgb@redhat.com>
-References: <cover.1400271129.git.rgb@redhat.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Thu, 22 May 2014 12:20:57 +0200
-X-Google-Sender-Auth: 4Gs4EX8XeE6C_i_kyVQtBbqoCIw
-Message-ID: <CAHO5Pa0EdUsV9jJuLbkmbvFyopecQiUDZd0UasAJ5kMhtsVxjQ@mail.gmail.com>
-Subject: Re: [PATCH V3 0/6] namespaces: log namespaces per task
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        containers <containers@lists.linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, sgrubb@redhat.com,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 May 2014 06:22:45 -0400
+Message-ID: <1400754158.8873.3.camel@BR9GV9YG.de.ibm.com>
+Subject: Re: [PATCH 1/1] drivers/s390/cio/qdio_main.c: replace shift loop by
+ ilog2
+From: Ursula Braun <ubraun@linux.vnet.ibm.com>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Joe Perches <joe@perches.com>, ursula.braun@de.ibm.com,
+        Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+        akpm <akpm@linux-foundation.org>
+Date: Thu, 22 May 2014 12:22:38 +0200
+In-Reply-To: <OF57E68FFD.38663B1A-ONC1257CE0.00383C6B-C1257CE0.0038457A@de.ibm.com>
+References: <OF57E68FFD.38663B1A-ONC1257CE0.00383C6B-C1257CE0.0038457A@de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052210-1948-0000-0000-000008E2A7A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard,
+yes, the callers guarantee that count > 0 here.
 
-On Tue, May 20, 2014 at 3:12 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> The purpose is to track namespaces in use by logged processes from the
-> perspective of init_*_ns.
->
-> 1/6 defines a function to generate them and assigns them.
->
-> Use a serial number per namespace (unique across one boot of one kernel)
-> instead of the inode number (which is claimed to have had the right to change
-> reserved and is not necessarily unique if there is more than one proc fs).  It
-> could be argued that the inode numbers have now become a defacto interface and
-> can't change now, but I'm proposing this approach to see if this helps address
-> some of the objections to the earlier patchset.
->
-> 2/6 adds access functions to get to the serial numbers in a similar way to
-> inode access for namespace proc operations.
->
-> 3/6 implements, as suggested by Serge Hallyn, making these serial numbers
-> available in /proc/self/ns/{ipc,mnt,net,pid,user,uts}_snum.  I chose "snum"
-> instead of "seq" for consistency with inum and there are a number of other uses
-> of "seq" in the namespace code.
->
-> 4/6 exposes proc's ns entries structure which lists a number of useful
-> operations per namespace type for other subsystems to use.
+Regards, Ursula Braun
 
-Since the 3 and 4 change the ABI, please CC iterations of this patch
-series to linux-api@vger.kernel.org, as per
-Documentation/SubmitChecklist.
-
-Cheers,
-
-Michael
-
-
-> 5/6 provides an example of usage for audit_log_task_info() which is used by
-> syscall audits, among others.  audit_log_task() and audit_common_recv_message()
-> would be other potential use cases.
->
-> Proposed output format:
-> This differs slightly from Aristeu's patch because of the label conflict with
-> "pid=" due to including it in existing records rather than it being a seperate
-> record.  The serial numbers are printed in hex.
->         type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
->
-> 6/6 tracks the creation and deletion of of namespaces, listing the type of
-> namespace instance, related namespace id if there is one and the newly minted
-> serial number.
->
-> Proposed output format:
->         type=NS_INIT msg=audit(1400217435.706:94): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 old_snum=0 snum=a1 res=1
->         type=NS_DEL msg=audit(1400217435.730:95): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 snum=a1 res=1
->
->
-> v2 -> v3:
->         Use atomic64_t in ns_serial to simplify it.
->         Avoid funciton duplication in proc, keying on dentry.
->         Squash down audit patch to avoid rcu sleep issues.
->         Add tracking for creation and deletion of namespace instances.
->
-> v1 -> v2:
->         Avoid rollover by switching from an int to a long long.
->         Change rollover behaviour from simply avoiding zero to raising a BUG.
->         Expose serial numbers in /proc/<pid>/ns/*_snum.
->         Expose ns_entries and use it in audit.
->
->
-> Notes:
-> There has been some progress made for audit in net namespaces and pid
-> namespaces since this previous thread.  net namespaces are now served as peers
-> by one auditd in the init_net namespace with processes in a non-init_net
-> namespace being able to write records if they are in the init_user_ns and have
-> CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
-> records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
-> of userspace processes that try to join netlink broadcast groups.
->
-> This set does not try to solve the non-init namespace audit messages and
-> auditd problem yet.  That will come later, likely with additional auditd
-> instances running in another namespace with a limited ability to influence the
-> master auditd.  I echo Eric B's idea that messages destined for different
-> namespaces would have to be tailored for that namespace with references that
-> make sense (such as the right pid number reported to that pid namespace, and
-> not leaking info about parents or peers).
->
-> Bugs:
-> Patch 6/6 has a timing bug such that mnt and net namespace initial namespaces
-> never get logged, I suspect because they are initialized before the audit
-> subsystem.  I've tried moving audit from __initcall to subsys_initcall, but
-> that doesn't help.
->
-> Questions:
-> Is there a way to link serial numbers of namespaces involved in migration of a
-> container to another kernel?  It sounds like what is needed is a part of a
-> mangement application that is able to pull the audit rcords from constituent
-> hosts to build an audit trail of a container.
->
-> What additional events should list this information?
->
-> Does this present any problematic information leaks?  Only CAP_AUDIT_CONTROL
-> (and proposed CAP_AUDIT_READ) in init_user_ns can get to this information in
-> the init namespace at the moment from audit.  *However*, the addition of the
-> proc/<pid>/ns/*_snum does make it available to other processes now.
->
->
-> Richard Guy Briggs (6):
->   namespaces: assign each namespace instance a serial number
->   namespaces: expose namespace instance serial number in proc_ns_operations
->   namespaces: expose ns instance serial numbers in proc
->   namespaces: expose ns_entries
->   audit: log namespace serial numbers
->   audit: log creation and deletion of namespace instances
->
->  fs/mount.h                     |    1 +
->  fs/namespace.c                 |   12 +++++++++
->  fs/proc/namespaces.c           |   35 +++++++++++++++++++-------
->  include/linux/audit.h          |   15 +++++++++++
->  include/linux/ipc_namespace.h  |    1 +
->  include/linux/nsproxy.h        |    8 ++++++
->  include/linux/pid_namespace.h  |    1 +
->  include/linux/proc_ns.h        |    2 +
->  include/linux/user_namespace.h |    1 +
->  include/linux/utsname.h        |    1 +
->  include/net/net_namespace.h    |    1 +
->  include/uapi/linux/audit.h     |    2 +
->  init/version.c                 |    1 +
->  ipc/msgutil.c                  |    1 +
->  ipc/namespace.c                |   20 +++++++++++++++
->  kernel/audit.c                 |   53 +++++++++++++++++++++++++++++++++++++++-
->  kernel/nsproxy.c               |   17 +++++++++++++
->  kernel/pid.c                   |    1 +
->  kernel/pid_namespace.c         |   19 ++++++++++++++
->  kernel/user.c                  |    1 +
->  kernel/user_namespace.c        |   18 +++++++++++++
->  kernel/utsname.c               |   20 +++++++++++++++
->  net/core/net_namespace.c       |   20 ++++++++++++++-
->  23 files changed, 240 insertions(+), 11 deletions(-)
->
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+On Thu, 2014-05-22 at 12:14 +0200, Ursula Braun1 wrote:
+> From:        Sebastian Ott <sebott@linux.vnet.ibm.com> 
+> To:        Joe Perches <joe@perches.com>, Ursula
+> Braun1/Germany/IBM@IBMDE, 
+> Cc:        Fabian Frederick <fabf@skynet.be>, linux-kernel
+> <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org> 
+> Date:        21/05/2014 14:32 
+> Subject:        Re: [PATCH 1/1] drivers/s390/cio/qdio_main.c: replace
+> shift loop by ilog2 
+> 
+> ______________________________________________________________________
+> 
+> 
+> 
+> On Tue, 20 May 2014, Joe Perches wrote:
+> > On Tue, 2014-05-20 at 18:37 +0200, Fabian Frederick wrote:
+> > > This is untested.
+> > []
+> > > diff --git a/drivers/s390/cio/qdio_main.c
+> b/drivers/s390/cio/qdio_main.c
+> > []
+> > > @@ -411,15 +411,14 @@ static inline void qdio_stop_polling(struct
+> qdio_q *q)
+> > >  
+> > >  static inline void account_sbals(struct qdio_q *q, int count)
+> > >  {
+> > > -                 int pos = 0;
+> > > +                 int pos;
+> > >  
+> > >                   q->q_stats.nr_sbal_total += count;
+> > >                   if (count == QDIO_MAX_BUFFERS_MASK) {
+> > >                                    q->q_stats.nr_sbals[7]++;
+> > >                                    return;
+> > >                   }
+> > > -                 while (count >>= 1)
+> > > -                                  pos++;
+> > > +                 pos = ilog2(count);
+> > 
+> > What guarantees count > 0 here?
+> 
+> We would already be screwed when called with count < 0. Ursula, do the
+> callers assure that count is positive?
+> 
+> Regards,
+> Sebastian
+> > 
+> > count may be better unsigned.
+> > 
+> > 
 
 
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
