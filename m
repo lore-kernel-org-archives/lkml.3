@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaEVUUM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:20:12 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:59368 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaEVUUK (ORCPT
+	id S1752221AbaEVUUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:20:30 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:62644 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927AbaEVUUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:20:10 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: soc: samsung: dma.c:  Fix to remove null pointer checks that could never happen
-Date: Thu, 22 May 2014 22:21:00 +0200
-Message-Id: <1400790060-10977-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 22 May 2014 16:20:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140522191746.GL4383@pd.tnic>
+References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521233802.GA21575@pd.tnic> <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
+ <20140522191746.GL4383@pd.tnic>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 22 May 2014 14:20:04 -0600
+Message-ID: <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
+Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
+To: Borislav Petkov <bp@alien8.de>
+Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Robert Richter <rric@kernel.org>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removal of null pointer checks that could never happen
+On Thu, May 22, 2014 at 1:17 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, May 22, 2014 at 11:56:03AM -0600, Bjorn Helgaas wrote:
+>> I chose Fam16h (0x16) because it looks like that's the newest stuff
+>> that's in the field. I suspect things would probably work if we
+>> changed this patch to leave ECS disabled on some Fam16h, Fam15h, etc.,
+>> but that would change behavior on existing systems, which obviously
+>> adds some risk. I didn't think there was much benefit that makes the
+>> risk worthwhile.
+>>
+>> My goal is to stop needing CPU-specific changes in the future, not
+>> necessarily to remove the CPU-specific code we already have.
+>>
+>> Does that make sense? I'm not sure whether I understood your real
+>> question.
+>
+> No, you got it right. I'm just wondering why only the newest stuff.
+> MMCONFIG is supposed to work just fine on everything from Fam10h
+> onwards, I'm not sure all Fam10h supported it though. Maybe Suravee can
+> verify that...
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- sound/soc/samsung/dma.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Even if MMCONFIG does work fine on everything from Fam10h onwards, we
+still depend on the BIOS to provide a correct MCFG table.  I don't
+think we can guarantee that changing from ECS to MMCONFIG on a Fam16h
+box in the field is safe, because we'd then be using a feature we've
+never used before.
 
-diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
-index dc09b71..0f17ae0 100644
---- a/sound/soc/samsung/dma.c
-+++ b/sound/soc/samsung/dma.c
-@@ -124,8 +124,7 @@ static void audio_buffdone(void *data)
- 		if (prtd->dma_pos >= prtd->dma_end)
- 			prtd->dma_pos = prtd->dma_start;
- 
--		if (substream)
--			snd_pcm_period_elapsed(substream);
-+		snd_pcm_period_elapsed(substream);
- 
- 		spin_lock(&prtd->lock);
- 		if (!samsung_dma_has_circular()) {
--- 
-1.7.10.4
-
+Bjorn
