@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaEVSPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:15:43 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:34418 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaEVSPl (ORCPT
+	id S1752039AbaEVSS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:18:58 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:49989 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaEVSS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 14:15:41 -0400
-Message-ID: <537E3EC7.1030904@twiddle.net>
-Date: Thu, 22 May 2014 11:15:35 -0700
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
+	Thu, 22 May 2014 14:18:56 -0400
+Date: Thu, 22 May 2014 20:18:38 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
         benh@kernel.crashing.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: Re: [PATCH v2 05/18] alpha: io: implement relaxed accessor macros
- for writes
-References: <1400777250-17335-1-git-send-email-will.deacon@arm.com> <1400777250-17335-6-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1400777250-17335-6-git-send-email-will.deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        paulmck@linux.vnet.ibm.com, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v2 14/18] sparc: io: implement dummy relaxed accessor
+ macros for writes
+Message-ID: <20140522181838.GA30632@ravnborg.org>
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+ <1400777250-17335-15-git-send-email-will.deacon@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400777250-17335-15-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 09:47 AM, Will Deacon wrote:
+On Thu, May 22, 2014 at 05:47:26PM +0100, Will Deacon wrote:
 > write{b,w,l,q}_relaxed are implemented by some architectures in order to
-> permit memory-mapped I/O writes with weaker barrier semantics than the
+> permit memory-mapped I/O accesses with weaker barrier semantics than the
 > non-relaxed variants.
 > 
-> This patch implements these write macros for Alpha, in the same vein as
-> the relaxed read macros, which are already implemented.
+> This patch adds dummy macros for the write accessors to sparc, in the
+> same vein as the dummy definitions for the relaxed read accessors. The
+> existing relaxed read{b,w,l} accessors are moved into asm/io.h, since
+> they are identical between 32-bit and 64-bit machines.
 > 
-> Cc: Richard Henderson <rth@twiddle.net>
-> Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-> Cc: Matt Turner <mattst88@gmail.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
 > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/alpha/include/asm/io.h | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
+Look good:
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-Acked-by: Richard Henderson <rth@twiddle.net>
+But you should wait for David's ack too.
+
+	Sam
 
 
-r~
