@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaEVGhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 02:37:42 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:62393 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaEVGhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 02:37:41 -0400
-MIME-Version: 1.0
-Date: Thu, 22 May 2014 12:07:40 +0530
-Message-ID: <CAJb+z00bA+wbE+vO09wo=frpVRZiVnXjdo2FJHdd_bsp9Ec83g@mail.gmail.com>
-Subject: USB 3.0 - Synopsis DWC Host-AHB - on Linux Kernel 3.10.28
-From: krishnamurthy holla <kmholla@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1751996AbaEVGjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 02:39:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51623 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982AbaEVGi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 02:38:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,885,1392192000"; 
+   d="scan'208";a="535859869"
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+To: lee.jones@linaro.org, sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
+        bin.yang@intel.com, lejun.zhu@linux.intel.com
+Subject: [PATCH v2 0/4] mfd: Intel SoC Power Management IC
+Date: Thu, 22 May 2014 14:38:38 +0800
+Message-Id: <1400740722-8320-1-git-send-email-lejun.zhu@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Devices based on Intel SoC products such as Baytrail have a Power
+Management IC. In the PMIC there are subsystems for voltage regulation,
+A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
+Crystal Cove.
 
-I am using Linux kernel 3.10.28 - MIPS processor (BIG Endian)
+This series contains common code for these PMICs, and device specific
+support for Crystal Cove.
 
-I see that XHCI fails during xhci_device_alloc() because of
-wait_for_completion_interruptible_timeout () when I connect a device.
+v2:
+- Use regmap instead of creating our own I2C read/write callbacks.
+- Add one missing EXPORT_SYMBOL.
+- Remove some duplicate code and put them into pmic_regmap_load_from_hw.
 
-So, I thought of initializing host controller as BE as my host is BE.
-But this time, it failed much earlier, i.e in xhci_handle_event()
-itself for the check le32_to_cpu(event->event_cmd.flags) & TRB_CYCLE)
-!=  xhci->event_ring->cycle_state)
+Zhu, Lejun (4):
+  mfd: intel_soc_pmic: Core driver
+  mfd: intel_soc_pmic: I2C interface
+  mfd: intel_soc_pmic: Crystal Cove support
+  mfd: intel_soc_pmic: Build files
 
-I would like to know if any of you used Synopsis DWC Host-AHB and got
-successful device detection. Also, Please let me know if XHCI needs
-special configuration on Big Endian system.
+ drivers/mfd/Kconfig                |  11 +
+ drivers/mfd/Makefile               |   3 +
+ drivers/mfd/intel_soc_pmic_core.c  | 521 +++++++++++++++++++++++++++++++++++++
+ drivers/mfd/intel_soc_pmic_core.h  |  83 ++++++
+ drivers/mfd/intel_soc_pmic_crc.c   | 165 ++++++++++++
+ drivers/mfd/intel_soc_pmic_i2c.c   | 148 +++++++++++
+ include/linux/mfd/intel_soc_pmic.h |  29 +++
+ 7 files changed, 960 insertions(+)
+ create mode 100644 drivers/mfd/intel_soc_pmic_core.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_core.h
+ create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
+ create mode 100644 include/linux/mfd/intel_soc_pmic.h
 
-Thanks
+-- 
+1.8.3.2
+
