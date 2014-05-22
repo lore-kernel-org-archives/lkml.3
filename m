@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaEVVBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 17:01:15 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33069 "EHLO
+	id S1753007AbaEVVBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 17:01:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33051 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690AbaEVVAV (ORCPT
+	with ESMTP id S1751202AbaEVVAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 17:00:21 -0400
+	Thu, 22 May 2014 17:00:19 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: "David S . Miller" <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH 3/5] net: ks8851: Use devm_regulator_get_optional()
-Date: Thu, 22 May 2014 14:00:11 -0700
-Message-Id: <1400792413-21618-4-git-send-email-sboyd@codeaurora.org>
+        Nishanth Menon <nm@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>
+Subject: [PATCH 2/5] devicetree: bindings: Properly document micrel ks8851 SPI chips
+Date: Thu, 22 May 2014 14:00:10 -0700
+Message-Id: <1400792413-21618-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1400792413-21618-1-git-send-email-sboyd@codeaurora.org>
 References: <1400792413-21618-1-git-send-email-sboyd@codeaurora.org>
@@ -22,59 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies error paths and removes the need to
-regulator_put().
+The ks8851 SPI ethernet wasn't documented, but we documented the
+optional regulator supply for it under the mll based ethernet
+chip. Furthermore, that compatible string needed another 'l'. Fix
+all of this and document the newly added optional vdd-io and
+reset-gpios properties.
 
 Cc: Nishanth Menon <nm@ti.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/net/ethernet/micrel/ks8851.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ Documentation/devicetree/bindings/net/micrel-ks8851.txt | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
-index 13767eb36a48..f2bfc708880c 100644
---- a/drivers/net/ethernet/micrel/ks8851.c
-+++ b/drivers/net/ethernet/micrel/ks8851.c
-@@ -1417,7 +1417,7 @@ static int ks8851_probe(struct spi_device *spi)
- 	ks->spidev = spi;
- 	ks->tx_space = 6144;
+diff --git a/Documentation/devicetree/bindings/net/micrel-ks8851.txt b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
+index d54d0cc79487..bbdf9a7359a2 100644
+--- a/Documentation/devicetree/bindings/net/micrel-ks8851.txt
++++ b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
+@@ -1,9 +1,18 @@
+-Micrel KS8851 Ethernet mac
++Micrel KS8851 Ethernet mac (MLL)
  
--	ks->vdd_reg = regulator_get_optional(&spi->dev, "vdd");
-+	ks->vdd_reg = devm_regulator_get_optional(&spi->dev, "vdd");
- 	if (IS_ERR(ks->vdd_reg)) {
- 		ret = PTR_ERR(ks->vdd_reg);
- 		if (ret == -EPROBE_DEFER)
-@@ -1427,7 +1427,7 @@ static int ks8851_probe(struct spi_device *spi)
- 		if (ret) {
- 			dev_err(&spi->dev, "regulator enable fail: %d\n",
- 				ret);
--			goto err_reg_en;
-+			goto err_reg;
- 		}
- 	}
+ Required properties:
+-- compatible = "micrel,ks8851-ml" of parallel interface
++- compatible = "micrel,ks8851-mll" of parallel interface
+ - reg : 2 physical address and size of registers for data and command
+ - interrupts : interrupt connection
  
-@@ -1530,9 +1530,6 @@ err_irq:
- err_id:
- 	if (!IS_ERR(ks->vdd_reg))
- 		regulator_disable(ks->vdd_reg);
--err_reg_en:
--	if (!IS_ERR(ks->vdd_reg))
--		regulator_put(ks->vdd_reg);
- err_reg:
- 	free_netdev(ndev);
- 	return ret;
-@@ -1547,10 +1544,8 @@ static int ks8851_remove(struct spi_device *spi)
- 
- 	unregister_netdev(priv->netdev);
- 	free_irq(spi->irq, priv);
--	if (!IS_ERR(priv->vdd_reg)) {
-+	if (!IS_ERR(priv->vdd_reg))
- 		regulator_disable(priv->vdd_reg);
--		regulator_put(priv->vdd_reg);
--	}
- 	free_netdev(priv->netdev);
- 
- 	return 0;
++Micrel KS8851 Ethernet mac (SPI)
++
++Required properties:
++- compatible = "micrel,ks8851" or the deprecated "ks8851"
++- reg : chip select number
++- interrupts : interrupt connection
++
+ Optional properties:
+-- vdd-supply:	supply for Ethernet mac
++- vdd-supply: analog 3.3V supply for Ethernet mac
++- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
++- reset-gpios: reset_n input pin
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
