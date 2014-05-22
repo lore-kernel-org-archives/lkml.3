@@ -1,106 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717AbaEVMcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:32:43 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:12141 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234AbaEVMcj (ORCPT
+	id S1755730AbaEVMdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:33:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45220 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875AbaEVMdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:32:39 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-22-537dee63020a
-Message-id: <537DEE61.2050606@samsung.com>
-Date: Thu, 22 May 2014 14:32:33 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH 3/4] clk: samsung: Add driver to control CLKOUT line on
- Exynos SoCs
-References: <1400604211-9447-1-git-send-email-t.figa@samsung.com>
- <1400604211-9447-4-git-send-email-t.figa@samsung.com>
- <537D8788.8030904@linaro.org> <537DD2C0.4060802@samsung.com>
- <CAHbNUh2gkpV-rt6S+-bUmFvYAuK_HNoXfyOStwYe29sZMJonUw@mail.gmail.com>
- <537DE714.1090407@samsung.com> <537DECCE.8000301@samsung.com>
-In-reply-to: <537DECCE.8000301@samsung.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xa7rJ72qDDZ6vNrGY+vAJm8X8I+dY
-	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZLH2yF12i6XXLzJZPJ1wkc1i0dYv7BZTFh1mtWjde4Td
-	4vCbdlaLVbv+MFq0/93L5sDvsWbeGkaPnbPusntsWtXJ5nHn2h42j81L6j36tqxi9Pi8SS6A
-	PYrLJiU1J7MstUjfLoEr487MeYwFTwUq5i/vZ2pgbODtYuTkkBAwkXj29CMLhC0mceHeejYQ
-	W0hgKaPEvdVKXYxcQPZnRonX+16ygyR4BbQkTp59wApiswioShydspcRxGYTUJP43PAIrJkf
-	qGZN03WgoRwcogIREo8vCEG0Ckr8mHwPbJeIQLTE6tX3mUDmMwvsY5HY+Hk7M0hCWCBS4tbF
-	5ywQR+xnkrh8KBTE5hTQlth+/DjYLmYBdYlJ8xYxQ9jyEpvXvGWewCg4C8mOWUjKZiEpW8DI
-	vIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJL6+7GBcfMzqEKMAB6MSD6/A1epgIdbEsuLK
-	3EOMEhzMSiK8jk9qg4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwzr5z9/Te3P9t+w2yFDfe/sG0
-	SOP454UHlt83erhi6tLNu5IsYnj/CPYu+PF9p5qUi3Hhx8qcnYJLDrEE/Hbq6muwE3DNnlIf
-	Np29rF3wlY6i5sKpv9+FnlP/3DrBXUHCZ55lxYRaJrfdzUVCaed7VKZ0LuGcskjm4o8An8uF
-	FfelfvDdkpu2TomlOCPRUIu5qDgRAKBgE5eNAgAA
+	Thu, 22 May 2014 08:33:02 -0400
+Date: Thu, 22 May 2014 14:32:51 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] intel_rapl: Correct hotplug correction
+Message-ID: <20140522123251.GU30445@twins.programming.kicks-ass.net>
+References: <1400750624-19238-1-git-send-email-bp@alien8.de>
+ <537DC6D2.8040305@linux.vnet.ibm.com>
+ <20140522100820.GE4383@pd.tnic>
+ <537DE579.6000505@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K/BmBeHUK5PA/HQO"
+Content-Disposition: inline
+In-Reply-To: <537DE579.6000505@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--K/BmBeHUK5PA/HQO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 22.05.2014 14:25, Sylwester Nawrocki wrote:
-> On 22/05/14 14:01, Tomasz Figa wrote:
->>>>>>>> [ ... ]
->>>>>>>>
->>>>>>>>>> +    clkout->clk_table[0] = clk_register_composite(NULL, "clkout",
->>>>>>>>>> +                            parent_names, parent_count, &clkout->mux.hw,
->>>>>>>>>> +                            &clk_mux_ops, NULL, NULL, &clkout->gate.hw,
->>>>>>>>>> +                            &clk_gate_ops, CLK_SET_RATE_PARENT
->>>>>>>>>> +                            | CLK_SET_RATE_NO_REPARENT);
->>>>>>>>
->>>>>>>> Would you please remove CLK_SET_RATE_NO_REPARENT flag from here? Let me
->>>>>>>> know if you have reservations against this.
->>>>>>
->>>>>> The problem with clock reparenting is that there are certain parent
->>>>>> clocks of CLKOUT, rate of which changes at runtime, e.g. clocks derived
->>>>>> from APLL or bus clocks, which can be reconfigured by cpufreq or devfreq.
->>>>>>
->>>>
->>>> +CC: Sylwester Nawrocki
->>>>
->>>> Okay. But in cases where there is only 1 valid parent clock provided
->>>> through DT (at the moment for Exynos5250/Exynos5420), would it be safe
->>>> to set that clock as the parent of CLKOUT?
->>
->> This is not something to rely on. I have simply omitted remaining CLKOUT
->> parents on Exynos 5 SoCs, as I don't have any board with them on which I
->> could test this. Eventually they will be added.
->>
->>>> Otherwise, this clock is
->>>> not usable ATM.
->>
->> On many boards it is already configured properly by the bootloader.
->> Although I don't see any reason why you couldn't reparent it in
->> (board-specific) sound card driver right now.
-> 
-> This would require passing the parent's clock specifier in 'clocks'
-> property of the sound card device node, which I assume is not something
-> we're generally expected to do in mainline. Although some drivers
-> happen to be doing it already I think that's a bad example. It sounds
-> like an abuse of the current clock bindings.
+On Thu, May 22, 2014 at 05:24:33PM +0530, Srivatsa S. Bhat wrote:
+> Yeah, its complicated and perhaps we can do much better than that. But I'=
+ll
+> try to explain why there are so many different locks in the existing code.
+>=20
+> get/put_online_cpus() uses cpu_hotplug.lock underneath. Although that's j=
+ust
+> a mutex, its not used in the usual way (more about that below).
+>=20
+> cpu_maps_update_begin(), cpu_notifier_register_begin/done,
+> register/unregister_cpu_notifier  -- all of these use the cpu_add_remove_=
+lock.
+>=20
+> The fundamental difference between these 2 categories is the concurrency
+> allowed with the lock :-
+> get_online_cpus() is like a read_lock(). That is, it allows any number
+> of concurrent CPU hotplug readers (tasks that want to block hotplug), but=
+ it
+> ensures that a writer won't run concurrently with any reader.
+>=20
+> Hence, this won't work for notifier registrations because register/unregi=
+ster
+> has to _mutate_ the notifier linked-list, and obviously we can't have mul=
+tiple
+> tasks trying to do this at the same time. So we need a proper mutex that
+> allows only 1 task at a time into the critical section. That's why the
+> cpu_add_remove_lock is used in all the register/unregister paths.
+>=20
+> Now, let's look at why the CPU hotplug writer path (the task that actually
+> does hotplug) takes cpu_add_remove_lock in addition to the cpu_hotplug.lo=
+ck.
+> First reason is simple: you don't want tasks that are doing notifier
+> [un]registrations to race with hotplug. But the second, although subtle r=
+eason
+> is that put_online_cpus() and cpu_hotplug_writer_begin()/done() require t=
+hat
+> there is only 1 CPU hotplug writer at a time. The cpu_add_remove_lock pro=
+vides
+> this guarantee, since it is taken in the writer path. (The long comment a=
+bove
+> cpu_hotplug_begin() mentions this as well).
+>=20
+> And then there is powerpc which uses cpu_maps_update_begin/done() to prot=
+ect
+> dlpar operations (operations that change the cpu_present_mask etc). But i=
+deally
+> it should have just used cpu_hotplug_begin() itself, like what driver/acp=
+i/
+> processor_driver.c does, but then it would have to hold cpu_add_remove_lo=
+ck
+> as well, due to the current design :(
+>=20
+> That was just me trying to explain the current mess, not justifying it! :=
+-/
 
-Well, an already board-specific driver might have some knowledge of the
-SoC, so it might not be a huge problem, but I agree that this is not an
-optimal solution.
+So I think we can reduce it to just the one rwsem (with recursion) if we
+shoot CPU_POST_DEAD in the head.
 
-Best regards,
-Tomasz
+Because currently we cannot take the rwsem in exclusive mode over the
+whole thing because of POST_DEAD.
+
+Once we kill that, the hotplug lock's exclusive mode can cover the
+entire hotplug operation.
+
+For (un)registrer we can also use the exclusive lock, (un)register of
+notifiers should not happen often and should equally not be performance
+critical, so using the exclusive lock should be just fine.
+
+That means we can then remove cpu_add_remove_lock from both the register
+and hotplug ops proper. (un)register_cpu_notifier() should get an
+assertion that we hold the hotplug lock in exclusive mode.
+
+That leaves the non-exclusive lock to guard against hotplug happening.
+
+Now, last time Linus said he would like that to be a non-lock, and have
+it weakly serialized, RCU style. Not sure we can fully pull that off,
+haven't throught that through yet.
+
+> I think Oleg had a proposed patch to use per-cpu rwsem in CPU hotplug to
+> drastically simplify this whole locking scheme. I think we could look at
+> that again.
+
+I don't think that was to simplify things, the hotplug lock is basically
+an open coded rw lock already, so that was to make it reuse the per-cpu
+rwsem code.
+
+--K/BmBeHUK5PA/HQO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfe5zAAoJEHZH4aRLwOS6kSYP/AkFRCaussLoVy6PY7MgWh1V
+JRk5jSvHNtujleNWI09noOkiLFOUqoduyl7MW6KCIpjjchbdkxmYxyXlFiRVYuLP
++jsNIf9xW+uzX9+njI9oi/uOH6Rj3c3s5AWdPIgeuKg8mHdFMFBu+y04GeRJvT4g
+4VYoiYa/2F3V/wUCErCTCcD+v/0J8dKU0WymsdF+m0WDxUZhX7zklziSZDfu//2R
+esAFTv5Q5r/6y+k3NIyCfOF+Bq6Y03rfFYjjiNuQqXHTG5ZyAJAYXmC0/jmfJkQu
+5Bn8VlmNF45jyNf/e1RrvSyyshS2AjlBi19lY0g2GRL6DWY/3McSAUJmXIQagKTD
+H/mE5DhS/Wj1lwnSVV/gCoQjTXiEPH6Sn3x+5rNFcHWrKMOcvb3qIE8ySnsgKuDN
+NSNnOkn3weA3go30ikpINRQ1ogcGKJtoeynNTTgY/IbAQkEk9T5W+GCk6XHCZrzP
+yL3UkfJvfFKCpGdNhVhMFpIyCvr2sPbMK0bQnAq0fH9khoXa7saJ5FrHeOze0Gkf
+Y8B6Pw2GGCwCXfQVg0rRX5nomU3px7IqyahXVreUGfi50TYsxMWf/YT40mkHxTpN
+AKHKqzcO+c0qnRwYTyh49j28wzKYb9IeXHH017ZxA9c2h+Y5F+Oq1yAMLjdLEPjE
+ABo+ikXz15wudG+iGgG2
+=VA3D
+-----END PGP SIGNATURE-----
+
+--K/BmBeHUK5PA/HQO--
