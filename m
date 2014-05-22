@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaEVGBZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 02:01:25 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:30645 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaEVGBY (ORCPT
+	id S1751630AbaEVGMj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 02:12:39 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:52706 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaEVGMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 02:01:24 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-5d-537d92ad9dda
-Message-id: <537D92AE.2030105@samsung.com>
-Date: Thu, 22 May 2014 08:01:18 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Gioh Kim <gioh.kim@lge.com>, rientjes@google.com, mina86@mina86.com,
-        linux-kernel@vger.kernel.org
-Cc: gunho.lee@lge.com, gurugio@gmail.com
-Subject: Re: [PATCH] drivers/base/dma-contiguous.c: erratum of dev_get_cma_area
-References: <1400733097-1176-1-git-send-email-gioh.kim@lge.com>
-In-reply-to: <1400733097-1176-1-git-send-email-gioh.kim@lge.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t/xK7prJ9UGG+x7qW/xrOkLo8WFaQuZ
-	LSYf/shkcXnXHDaLBcdbWC3almxkcmDz2DnrLrvHgk2lHl1vrzB5rPvzisnj8ya5ANYoLpuU
-	1JzMstQifbsErow9EysK/rJX7P7xgaWBcSdbFyMnh4SAicTny79ZIGwxiQv31gPFuTiEBJYy
-	Svzp6WYESQgJfGKUmPtLAcTmFdCS6Dz2HSzOIqAqseX7YWYQm03AUKLrbRfYUFGBGIndnxcy
-	QtQLSvyYfA9sgYhAusTTfTfAbGYBDYmm1z1MILawgL/E4/MtTBC77CXW370GNpNTwEHi3tx7
-	TBD1ZhKPWtYxQ9jyEpvXvGWewCgwC8mKWUjKZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9d
-	Lzk/dxMjJKy/7GBcfMzqEKMAB6MSD6/A1epgIdbEsuLK3EOMEhzMSiK822pqg4V4UxIrq1KL
-	8uOLSnNSiw8xMnFwSjUwqvAYPj0nfX2bYLjUUW7P+tpTtstTZ8z55TPLeO7HarEci60PE89u
-	q3BMsWTvXhux7dOygLIna+1mPcs4N2OhYq6L44QbP3u49m+M4dfa+TJ7pjbLvRvrFba9rL2o
-	Fr09YVbzdycZnt9blvXszRH7d9TlkkzGutq1/PdDzz09/eXUux/fTaZtCFZiKc5INNRiLipO
-	BAAlaPgiSQIAAA==
+	Thu, 22 May 2014 02:12:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <537D8030.8010403@intel.com>
+References: <537D8030.8010403@intel.com>
+Date: Wed, 21 May 2014 23:12:36 -0700
+Message-ID: <CAHA+R7Mhd2KYaU8THAd+O4HzQNRLxhpGccvEPOqWJRKAwZbpgQ@mail.gmail.com>
+Subject: Re: [net] WARNING: CPU: 1 PID: 1 at net/batman-adv/hard-interface.c:92
+ batadv_is_on_batman_iface()
+From: Cong Wang <cwang@twopensource.com>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 2014-05-22 06:31, Gioh Kim wrote:
-> fix erratum get_dev_cma_area into dev_get_cma_area
+On Wed, May 21, 2014 at 9:42 PM, Jet Chen <jet.chen@intel.com> wrote:
+> Hi Steffen,
 >
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> ---
->   drivers/base/dma-contiguous.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+> 0day kernel testing robot got the below dmesg and the first bad commit is
 >
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index b056661..6343f25 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -291,7 +291,7 @@ err:
->    *
->    * This function allocates memory buffer for specified device. It uses
->    * device specific contiguous memory area if available or the default
-> - * global one. Requires architecture specific get_dev_cma_area() helper
-> + * global one. Requires architecture specific dev_get_cma_area() helper
->    * function.
->    */
->   struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+> commit 78ff4be45a4c51d8fb21ad92e4fabb467c6c3eeb
+> Author:     Steffen Klassert <steffen.klassert@secunet.com>
+> AuthorDate: Mon May 19 11:36:56 2014 +0200
+> Commit:     David S. Miller <davem@davemloft.net>
+> CommitDate: Wed May 21 02:08:32 2014 -0400
+>
+>     ip_tunnel: Initialize the fallback device properly
+>         We need to initialize the fallback device to have a correct mtu
+>     set on this device. Otherwise the mtu is set to null and the device
+>     is unusable.
+>         Fixes: fd58156e456d ("IPIP: Use ip-tunneling code.")
+>     Cc: Pravin B Shelar <pshelar@nicira.com>
+>     Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+>
+> +--------------------------------------------------------------------------------+------------+------------+
+> |
+> | d8d33c3b8a | 78ff4be45a |
+> +--------------------------------------------------------------------------------+------------+------------+
+> | boot_successes
+> | 60         | 0          |
+> | boot_failures
+> | 0          | 20         |
+> |
+> WARNING:CPU:PID:at_net/batman-adv/hard-interface.c:batadv_is_on_batman_iface()
+> | 0          | 20         |
+> | backtrace:register_netdevice_notifier
+> | 0          | 20         |
+> | backtrace:batadv_init
+> | 0          | 20         |
+> | backtrace:kernel_init_freeable
+> | 0          | 20         |
+> +--------------------------------------------------------------------------------+------------+------------+
+>
 
-Thanks for this small fix. I've applied it to my tree.
+batman needs to fix:
 
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+diff --git a/net/batman-adv/hard-interface.c b/net/batman-adv/hard-interface.c
+index b851cc5..fbda6b5 100644
+--- a/net/batman-adv/hard-interface.c
++++ b/net/batman-adv/hard-interface.c
+@@ -83,7 +83,7 @@ static bool batadv_is_on_batman_iface(const struct
+net_device *net_dev)
+                return true;
 
+        /* no more parents..stop recursion */
+-       if (net_dev->iflink == net_dev->ifindex)
++       if (net_dev->iflink == 0 || net_dev->iflink == net_dev->ifindex)
+                return false;
+
+        /* recurse over the parent device */
