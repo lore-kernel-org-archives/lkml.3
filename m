@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaEVHKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 03:10:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43797 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658AbaEVHKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 03:10:45 -0400
-Date: Thu, 22 May 2014 09:10:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [patch 4/6] rtmutex: Confine deadlock logic to futex
-Message-ID: <20140522071039.GO30445@twins.programming.kicks-ass.net>
-References: <20140522031841.797415507@linutronix.de>
- <20140522031950.044848781@linutronix.de>
+	id S1753860AbaEVHK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 03:10:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19937 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753795AbaEVHKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 03:10:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,885,1392192000"; 
+   d="scan'208";a="515861842"
+Message-ID: <537DA2CC.10306@intel.com>
+Date: Thu, 22 May 2014 10:10:04 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mKGVDr+iJdqKOcjA"
-Content-Disposition: inline
-In-Reply-To: <20140522031950.044848781@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: ye olde task_ctx_sched_out trace.
+References: <20140521150613.GA28702@redhat.com> <20140521151655.GG2485@laptop.programming.kicks-ass.net> <20140521153013.GG5226@laptop.programming.kicks-ass.net> <20140521153219.GH5226@laptop.programming.kicks-ass.net> <537D9EBE.7030806@intel.com> <20140522070414.GN30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140522070414.GN30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/22/2014 10:04 AM, Peter Zijlstra wrote:
+> On Thu, May 22, 2014 at 09:52:46AM +0300, Adrian Hunter wrote:
+>>> diff --git a/fs/exec.c b/fs/exec.c
+>>> index 476f3ebf437e..8d51d7ce3dcf 100644
+>>> --- a/fs/exec.c
+>>> +++ b/fs/exec.c
+>>> @@ -1111,6 +1111,7 @@ void setup_new_exec(struct linux_binprm * bprm)
+>>>  		set_dumpable(current->mm, suid_dumpable);
+>>>  
+>>>  	set_task_comm(current, kbasename(bprm->filename));
+>>> +	perf_event_exec();
+>>
+>> Shouldn't that be the other way around i.e.
+>>
+>> +	perf_event_exec();
+>> 	set_task_comm(current, kbasename(bprm->filename));
+> 
+> I suppose so indeed.
+> 
+>> Also what about flagging the comm event that corresponds to an exec e.g.
+> 
+> I think it was a mistake to conflate the two concepts, and separating
+> them into different functions makes things clearer.
 
---mKGVDr+iJdqKOcjA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+My patch was not related to that.  It was to get effectively an "exec"
+event, by piggybacking the comm event.
 
-On Thu, May 22, 2014 at 03:25:50AM -0000, Thomas Gleixner wrote:
-> The builtin tester is gone,, so the deadlock logic is now only
-> required for futexes.
->=20
-> Remove the extra arguments for the public functions and also for the
-> futex specific ones which get always called with deadlock detection
-> enabled.
-
-This reminds me, the raw rt_mutex primitives have no lockdep support,
-and we've grown a few users in-tree. We should fix that.
-
---mKGVDr+iJdqKOcjA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfaLvAAoJEHZH4aRLwOS6Ym8P/Rkc0ckgQ5NbJWjGDdZ/ygzy
-dPdeia/L5PX+JaG/cMrKw3ng1SutEbs8usLT6vMUvq91HRkZf3veYRIj5O+VY3tN
-2GZeoQzLnl8FdlgW+oyt/H6LqdTUT5Va2sqk/EIT8YJHdlpRs/pjo2Nqb8p+NkiS
-n3dlgOgsl5TkEsZDw9qX42sz0QFO8eYjaRSQu9Acq9FDYl9MdVipuoPc3mdbtIE/
-kr5qtNzq7wWoF4YFlEewM2KL4ObUjjjyBZV8REaaG/aeHRSBDIANERggXzeXe99q
-YMo/LQuP2DaYSJPJZmEaFwWF4zJVQJ4vKs8uNvwckCN4NvbB438P8ocmP6nTzUSN
-yJOpnxPE9K1/+3ED1s8rF+78aJJvS0EsX+P5ZnxcHKBmZuydIhdCwDNK0XH3Rhqo
-6w1NAI/1S9NEda2ZMSRdrTKtSEPWEeTShvWZxkRn1q4Cun8H9tY0CYjx++D4bVtQ
-rZaLrYNxgCrhdvWZ0ofLM+8selUBeWJoOXkNB61iJG/+VJP5lZPCPZ0L0AD5Apw5
-uNBQFj9JC4noF4AsUu0xjHh4Q8zK4ck3hbUj3G1laKoNNbSNh3rBvA4nyFyduYIt
-kvHpmzEYg2s7jm/zSnH/YcvEiHAo3AjlQc/Rfbge9ecZRDiHxhFNPVBGh+LQiLal
-I33vSfCarbWnvOvTqIjr
-=exIs
------END PGP SIGNATURE-----
-
---mKGVDr+iJdqKOcjA--
