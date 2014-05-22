@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaEVOKJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:10:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45862 "EHLO arroyo.ext.ti.com"
+	id S1752441AbaEVOKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:10:48 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:56367 "EHLO mail001.aei.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347AbaEVOKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:10:07 -0400
-Date: Thu, 22 May 2014 09:09:48 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-CC: <linux-kernel@vger.kernel.org>, <mingo@kernel.org>, <tglx@linutronix.de>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>
-Subject: Re: [PATCH v2] PREEMPT_RT: USB serial gadget: Fix locking issue
-Message-ID: <20140522140948.GB11707@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1400752728-9495-1-git-send-email-jjhiblot@traphandler.com>
+	id S1750984AbaEVOKr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 10:10:47 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+Subject: Re: [git pull] drm radeon and nouveau fixes
+Date: Thu, 22 May 2014 10:10:39 -0400
+Message-ID: <4272340.8uy863OffB@grover>
+Organization: me
+User-Agent: KMail/4.13.1 (Linux/3.15.0-1-git; KDE/4.13.1; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.00.1405220410520.25062@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1405220410520.25062@skynet.skynet.ie>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mxv5cy4qt+RJ9ypb"
-Content-Disposition: inline
-In-Reply-To: <1400752728-9495-1-git-send-email-jjhiblot@traphandler.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mxv5cy4qt+RJ9ypb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thursday 22 May 2014 04:13:22 Dave Airlie wrote:
+> 
+> Hi Linus,
+> 
+> Fixes for the other big two, the radeon VCE one is large but it fixes some 
+> userspace triggerable issues, otherwise its blackscreens and oopses,
+> 
+> nouveau fixes a bleeding laptop panel issue when displayport is used 
+> sometimes,
 
-Hi,
+Hi Dave,
 
-On Thu, May 22, 2014 at 11:58:48AM +0200, Jean-Jacques Hiblot wrote:
-> With CONFIG_PREEMPT_RT_FULL the tty_flip_buffer_push(..) actions are exec=
-uted
-> immeditely (same behaviour as if low_latency flag was set). We thus have =
-to
-> release port_lock before callng tty_flip_buffer_push().
->=20
-> This issue resultst of commits:
-> 44a0c019: USB: g_serial: don't set low_latency flag
-> dc0cbd1b: serial: 8250: Call flush_to_ldisc when the irq is threaded
->=20
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+These are not breaking anything here.  I also have v4 of Christian König's 
+VRAM page table entry compression patch applied.  Its also good here and
+speeds things up a few percent.
 
-can you please resend with linux-usb in copy ?
+Thanks
+Ed Tomlinson
 
---=20
-balbi
+> The following changes since commit 4b660a7f5c8099d88d1a43d8ae138965112592c7:
+> 
+>   Linux 3.15-rc6 (2014-05-22 06:42:02 +0900)
+> 
+> are available in the git repository at:
+> 
+>   git://people.freedesktop.org/~airlied/linux drm-fixes
+> 
+> for you to fetch changes up to 77c01bef72a5ce5cb24adae6066ed81a52004d30:
+> 
+>   Merge branch 'drm-fixes-3.15' of git://people.freedesktop.org/~deathsimple/linux into drm-fixes (2014-05-22 09:15:57 +1000)
+> 
+> ----------------------------------------------------------------
+> 
+> Alex Deucher (4):
+>       drm/radeon: fix DCE83 check for mullins
+>       drm/radeon: handle non-VGA class pci devices with ATRM
+>       drm/radeon: fix register typo on si
+>       drm/radeon/pm: don't allow debugfs/sysfs access when PX card is off (v2)
+> 
+> Ben Skeggs (1):
+>       drm/gf119-/disp: fix nasty bug which can clobber SOR0's clock setup
+> 
+> Christian König (4):
+>       drm/radeon: also try GART for CPU accessed buffers
+>       drm/radeon: fix page directory update size estimation
+>       drm/radeon: fix buffer placement under memory pressure v2
+>       drm/radeon: fix typo in finding PLL params
+> 
+> Dave Airlie (2):
+>       Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
+>       Merge branch 'drm-fixes-3.15' of git://people.freedesktop.org/~deathsimple/linux into drm-fixes
+> 
+> Jérôme Glisse (1):
+>       drm/radeon: avoid segfault on device open when accel is not working.
+> 
+> Leo Liu (1):
+>       drm/radeon: check VCE relocation buffer range v3
+> 
+> Martin Peres (1):
+>       drm/nvd9/therm: handle another kind of PWM fan
+> 
+>  drivers/gpu/drm/nouveau/core/engine/disp/nvd0.c  |   2 +-
+>  drivers/gpu/drm/nouveau/core/subdev/therm/nvd0.c |   1 +
+>  drivers/gpu/drm/radeon/radeon.h                  |   6 +-
+>  drivers/gpu/drm/radeon/radeon_bios.c             |  14 +++
+>  drivers/gpu/drm/radeon/radeon_display.c          |   2 +-
+>  drivers/gpu/drm/radeon/radeon_kms.c              |  55 +++++-----
+>  drivers/gpu/drm/radeon/radeon_object.c           |  40 ++++---
+>  drivers/gpu/drm/radeon/radeon_pm.c               |  42 +++++++-
+>  drivers/gpu/drm/radeon/radeon_vce.c              | 130 +++++++++++++++++------
+>  drivers/gpu/drm/radeon/radeon_vm.c               |   2 +-
+>  drivers/gpu/drm/radeon/sid.h                     |   4 +-
+>  11 files changed, 218 insertions(+), 80 deletions(-)
 
---mxv5cy4qt+RJ9ypb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTfgUsAAoJEIaOsuA1yqREKYYP+wRsL1g3xs3IARlanYieLkyD
-ExG7OhhN21daA4hsDKmhPj4CqT0bpUNov9l7ORcD8TYh3waDMtZYXnEm9cBurGw/
-x2k29rylVO2OI1HcnwbTxGko9R7RYG4bpjqf5cKXGdnMY0cFTSROxfNQN6bU71rS
-Pyltv+ZcQXefMwhGGtghutvsOE/gh8nQ6MIRlGYUc2/tWwQ82abw/4IjC1CXg3vI
-GegQHJpxts3hb5h/J0DnGhwZVAst62OYmpzbErzh55/SX/gfyrRnmcQpiRZiSYuv
-q1pvwsFqKB28PV8n0janXwNvxNf9WWFieQXjHJHcOca/haYJ1AxxHhkLpgky24Qh
-91yVEqqHyDQSe8SEYQifVsi+MoYBTHhKlmNdQtV93EnuJmPrmlvYLRseQ+pdDaSR
-tJDU8QzfGX+wBJvlNRmjDKheQ5r5iMPlrMRjhrPrywYLtDURiAdnyjGollXL/BbD
-LXHw3OHsFVo4fV7ikNMxNIuR2AvtnM8CSk/ObDtLrMpzYqzsl/wL7nPtPq0skQ6Q
-dj2PZ6vPvYgn2bvNZoeFhsosFPBp1batUCXMb9wrgVYtNySCO4t8dC/hDjIv+Gzf
-Hku3Lamf1yQUr1S7AYkbkWkXfZEAzoXJSuDNxtclN6r0uofSSqxAl+x6zLa74r4J
-cBUcWOsEfQWiRGstsW5f
-=VXeI
------END PGP SIGNATURE-----
-
---mxv5cy4qt+RJ9ypb--
