@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaEVOow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:44:52 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:36964 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaEVOou (ORCPT
+	id S1752745AbaEVOql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:46:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46634 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751374AbaEVOqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:44:50 -0400
-Date: Thu, 22 May 2014 16:44:46 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ARM: imx: add missing kfree call in error paths
-Message-ID: <20140522144446.GA7348@lianli>
-References: <1400764482-20147-1-git-send-email-emilgoode@gmail.com>
- <20140522135016.GK15585@mwanda>
+	Thu, 22 May 2014 10:46:39 -0400
+Date: Thu, 22 May 2014 11:46:00 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>
+Cc: Brian Norris <computersforpeace@gmail.com>, "Gupta, Pekon" <pekon@ti.com>,
+        Robert Nelson <robertcnelson@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, dwmw2@infradead.org, nsekhar@ti.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-mtd@lists.infradead.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [RFC PATCH 00/16] OMAP: GPMC: Restructure OMAP GPMC driver
+ (NAND) : DT binding change proposal
+Message-ID: <20140522144600.GA1785@arch.cereza>
+References: <1400671264-10702-1-git-send-email-rogerq@ti.com>
+ <20140521160818.GA1150@arch.cereza>
+ <537DB17A.6060608@ti.com>
+ <CABxcv=nbgGhVN+XYO8s=mYOpoLU9-kWuEqc+FLMaSbWS7BJNyQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140522135016.GK15585@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABxcv=nbgGhVN+XYO8s=mYOpoLU9-kWuEqc+FLMaSbWS7BJNyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan,
-
-On Thu, May 22, 2014 at 04:50:16PM +0300, Dan Carpenter wrote:
-> On Thu, May 22, 2014 at 03:14:42PM +0200, Emil Goode wrote:
-> > We forgot to free pdev->dev.dma_mask as it is not freed
-> > by platform_device_put().
-> > 
+On 22 May 01:51 PM, Javier Martinez Canillas wrote:
+> On Thu, May 22, 2014 at 10:12 AM, Roger Quadros <rogerq@ti.com> wrote:
+> >> On 21 May 02:20 PM, Roger Quadros wrote:
+> >>>
+> >>> For DT boot:
+> >>> - The GPMC controller node should have a chip select (CS) node for each used
+> >>>   chip select. The CS node must have a child device node for each device
+> >>>   attached to that chip select. Properties for that child are GPMC agnostic.
+> >>>
+> >>>   i.e.
+> >>>      gpmc {
+> >>>              cs0 {
+> >>>                      nand0 {
+> >>>                      }
+> >>>              };
+> >>>
+> >>>              cs1 {
+> >>>                      nor0 {
+> >>>                      }
+> >>>              }
+> >>>              ...
+> >>>      };
+> >>>
+> >>
+> >> While I agree that the GPMC driver is a bit messy, I'm not sure it's possible
+> >> to go through such a complete devicetree binding re-design (breaking backwards
+> >> compatibility) now that the binding is already in production.
+> >
+> > Why not? especially if the existing bindings are poorly dones. Is anyone using these
+> > bindings burning the DT into ROM and can't change it when they update the kernel?
+> >
 > 
-> Every function which calls imx31_alloc_mx3_camera() is buggy.  That
-> means that, at best, it is a 2 on Rusty's API rating.
-> http://sweng.the-davies.net/Home/rustys-api-design-manifesto
+> While I do agree that your DT bindings are much better than the
+> current ones, there is a policy that DT bindings are an external API
+> and once are released with a kernel are set in stone and can't be
+> changed.
 > 
-> The correct fix is to introduce an imx31_free_mx3_camera() otherwise we
-> will just keep introducing these bugs.
 
-I guess I could add this to arch/arm/mach-imx/devices/platform-ipu-core.c
-it would be a very small function though.
+Exactly. The DT binding is considered an ABI. Thus, invariant across kernel
+versions. Users can't be coherced into a DTB update after a kernel update.
 
-Best regards,
+That said, I don't really care if you break compatilibity in this case.
+Rather, I'm suggesting that you make sure this change is going to be accepted
+upstream, before doing any more work. The DT maintainers are reluctant to do
+so.
 
-Emil Goode
+On the other side, I guess you will also break bisectability while breaking
+backward compatibility. Doesn't sound very nice.
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
