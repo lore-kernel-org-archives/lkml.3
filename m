@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaEVWG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 18:06:28 -0400
-Received: from ozlabs.org ([103.22.144.67]:41880 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243AbaEVWG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 18:06:27 -0400
-Date: Fri, 23 May 2014 08:06:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: linux-next@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 21
-Message-ID: <20140523080618.618a7eb7@canb.auug.org.au>
-In-Reply-To: <CAHO5Pa0CDvUMdE1XZSzazdEDnt40_4nkkyopsa7Z-Um=MZn82Q@mail.gmail.com>
-References: <20140521175052.26721f72@canb.auug.org.au>
-	<CAHO5Pa0CDvUMdE1XZSzazdEDnt40_4nkkyopsa7Z-Um=MZn82Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752788AbaEVWGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 18:06:40 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38044 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243AbaEVWGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 18:06:38 -0400
+Message-ID: <537E74EC.1020004@codeaurora.org>
+Date: Thu, 22 May 2014 18:06:36 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/PJ8kWbv.OSOBEk_uXt2_jwc"; protocol="application/pgp-signature"
+To: Kumar Gala <galak@codeaurora.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [RFC] ARM: tty: Move HVC DCC assembly to arch/arm
+References: <1382120064-2459-1-git-send-email-cov@codeaurora.org> <B273A106-344F-4D36-998B-E44F889AD93F@codeaurora.org>
+In-Reply-To: <B273A106-344F-4D36-998B-E44F889AD93F@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PJ8kWbv.OSOBEk_uXt2_jwc
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Kumar,
 
-Hi Michael,
+On 10/23/2013 01:59 AM, Kumar Gala wrote:
+> 
+> On Oct 18, 2013, at 1:14 PM, Christopher Covington wrote:
+> 
+>> Put architecture-specific assembly code where it belongs,
+>> allowing for support of additional architectures such as arm64 in
+>> the future.
+>>
+>> Signed-off-by: Christopher Covington <cov@codeaurora.org>
+>> ---
+>> arch/arm/include/asm/dcc.h | 45 +++++++++++++++++++++++++++++++++++++++++++
+>> drivers/tty/hvc/hvc_dcc.c  | 48 ++--------------------------------------------
+>> 2 files changed, 47 insertions(+), 46 deletions(-)
+>> create mode 100644 arch/arm/include/asm/dcc.h
+>>
+>> diff --git a/arch/arm/include/asm/dcc.h b/arch/arm/include/asm/dcc.h
+>> new file mode 100644
+>> index 0000000..306d1fc
+>> --- /dev/null
+>> +++ b/arch/arm/include/asm/dcc.h
+>> @@ -0,0 +1,45 @@
+>> +/* Copyright (c) 2010, The Linux Foundation. All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 and
+>> + * only version 2 as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <asm/barrier.h>
+>> +
+>> +/* DCC Status Bits */
+>> +#define DCC_STATUS_RX		(1 << 30)
+>> +#define DCC_STATUS_TX		(1 << 29)
+>> +
+> 
+> Why'd you move these define's here? They don't seem to be arch specific
+> and I don't see them used in the asm anywhere.
 
-On Thu, 22 May 2014 12:45:05 +0200 Michael Kerrisk <mtk.manpages@gmail.com>=
- wrote:
->
-> On Wed, May 21, 2014 at 9:50 AM, Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
-> > You should use "git fetch" as mentioned in the FAQ on the wiki
-> > (see below).
->=20
-> There does not seem to be anything in the rest of your message about
-> this. Did I miss something?
+Fixed in v2.
 
-The wiki went away some time ago and so I removed the other reference
-to it, but missed this one.  I will try to revise this message today.
-Thanks for noticing - I sometimes wonder if anyone reads my release
-notes :-)
+Christopher
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/PJ8kWbv.OSOBEk_uXt2_jwc
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTfnTgAAoJEMDTa8Ir7ZwVaLEP+gLQzIl3gTSWrqkZf/TDksYt
-wZhsfxs+5y1k3TTrE+/BD7p9SCspmK+5I4EcWSKuZwT+/tt6qjhZts5puDkJEIAE
-uiNLeTTtKhM0LLZ6e2yfrfPx81yy8hnWiAFEpaBbki48S5z0pZxemWJERK+WGKX2
-m3kc4wzGs6AnPWPpjl4Ha8PTgZpsIfyqtjpwKj9wDAm2/V01RVj6ttFCZjUy9i6D
-wxVf+DTTybxq6EaWLEGC965tIp3NNUoZ98jE0HEMY+wXz/MD6nehAud1ahjlxXVC
-FabHcK/g4GRE7wB5Qv6GqiA8AcXeq3xSllsYpqm0TUK68NMjzO1FnK89BgQI8WdR
-pE6ikylx+O1R0KUTJaDYAniau3IkdHO7brrMejeIolNIMiI8RXQC/oplEZUQJYCa
-ECMXk9tGWcdY+URqNeJNGjhCa5nuKJ0XSYU0XchuVJgvQBYmBWR46+XFfchlcRhN
-d4M1m6ioGsSM2jsPZ1UFLGsDf/FgDj72cW7IFSrsCvOoFkxaI5Sg7S2XfVpU+rRq
-X/pJOJVGlBa2QR53p88JRc0bHA5e/hLaMWAah3YICuiz7r3yI72IG1BPH9iN2d+f
-SEdqSsaKUkJ/Ujibk7D4DA6mTYnqe15+ZT1zGbMf9I++jom1RjtgK+sfVu4U7j0J
-wNcWc+K58WGrg9MaFkiG
-=3+8g
------END PGP SIGNATURE-----
-
---Sig_/PJ8kWbv.OSOBEk_uXt2_jwc--
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
