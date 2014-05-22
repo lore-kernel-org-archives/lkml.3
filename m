@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaEVR40 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 13:56:26 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:50483 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965AbaEVR4Y (ORCPT
+	id S1751492AbaEVR5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 13:57:16 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36144 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaEVR5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 13:56:24 -0400
+	Thu, 22 May 2014 13:57:15 -0400
+Date: Thu, 22 May 2014 10:57:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Francesco Ruggeri <fruggeri@arista.com>
+Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
+        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: pci: kernel crash in bus_find_device
+Message-ID: <20140522175700.GA14814@roeck-us.net>
+References: <20140520195041.GA28913@roeck-us.net>
+ <CA+HUmGg4mE5RDxShNCK78yLi9gdX_FnHtWPKfGD4LaEqrCdj2Q@mail.gmail.com>
+ <20140520233812.GA15640@roeck-us.net>
+ <CA+HUmGge7AEpAnwAG_VJD2CKTtRBoC2bCGVU_t4qm-x6+OCr-g@mail.gmail.com>
+ <20140521193010.GA1721@roeck-us.net>
+ <CA+HUmGhm1VLTvMKW1TUUPqStUhD11M5u0VyTZyXyWz_ZS8uSVw@mail.gmail.com>
+ <20140521225958.GB2467@roeck-us.net>
+ <20140522071427.GA21230@kroah.com>
+ <537DA5C0.2070609@roeck-us.net>
+ <CA+HUmGhVhLoehT68=2fErGeYSjAC87Ria=5pXUNSpYLwdpXc2w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140521233802.GA21575@pd.tnic>
-References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140521233802.GA21575@pd.tnic>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 22 May 2014 11:56:03 -0600
-Message-ID: <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
-Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
-To: Borislav Petkov <bp@alien8.de>
-Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <rric@kernel.org>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+HUmGhVhLoehT68=2fErGeYSjAC87Ria=5pXUNSpYLwdpXc2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 5:38 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, May 21, 2014 at 05:18:17PM -0600, Bjorn Helgaas wrote:
->> ECS is an AMD mechanism that allows access to extended PCI config space
->> (offsets 256-4096) via I/O ports CF8/CFCh.  We normally use ECAM, i.e.,
->> MMCONFIG, to access that space, but apparently old machines have issues
->> that meant we couldn't use ECAM.
->>
->> The solution was to enable ECS so we could use configuration mechanism #1
->> (I/O ports CF8/CFCh) to access extended config space.  See 831d991821da
->> ("x86: add PCI extended config space access for AMD Barcelona").
->>
->> New machines should be able to use ECAM, which means they don't need the
->> CPU-specific code to enable ECS.  This patch leaves ECS the same on all
->> existing platforms, but stops enabling it on platforms after Fam16h.
->>
->> Those future platforms should be able to use the standard ACPI MCFG/_CBA
->> descriptions of the PCIe ECAM mechanism.
->>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Robert Richter <rric@kernel.org>
->> ---
->>  arch/x86/pci/amd_bus.c |    4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
->> index aa936e3a2019..67dadf179348 100644
->> --- a/arch/x86/pci/amd_bus.c
->> +++ b/arch/x86/pci/amd_bus.c
->> @@ -405,7 +405,9 @@ static int __init amd_postcore_init(void)
->>               return 0;
->>
->>       early_fill_mp_bus_info();
->> -     pci_io_ecs_init();
->> +
->> +     if (boot_cpu_data.x86 <= 0x16)
->
-> Fam 0x16, i.e. hex? I think we talked about fam 0x10, i.e. 16 decimal.
->
-> Oh well, that's an AMD call now.
+On Thu, May 22, 2014 at 09:19:40AM -0700, Francesco Ruggeri wrote:
+> Aborting a search does not sound like a correct solution.
+> How does a higher level user (eg for_each_pci_dev) know that a search
+> was aborted and decide whether it should try again, assuming it would
+> be ok repeating the action on the devices visited the first time?
+> 
+Agreed, it is less than desirable.
 
-I chose Fam16h (0x16) because it looks like that's the newest stuff
-that's in the field.  I suspect things would probably work if we
-changed this patch to leave ECS disabled on some Fam16h, Fam15h, etc.,
-but that would change behavior on existing systems, which obviously
-adds some risk.  I didn't think there was much benefit that makes the
-risk worthwhile.
+I would consider this to be a secondary problem, though, the immediate
+problem being the crash. One possible solution might be to have the various
+functions return error codes (ERR_PTR), but that would be quite invasive as
+well. I really think we need input from Greg and, if the solution touches
+the PCI subsystem, from Bjorn Helgaas to find an acceptable solution
+to that problem.
 
-My goal is to stop needing CPU-specific changes in the future, not
-necessarily to remove the CPU-specific code we already have.
+Guenter
 
-Does that make sense?  I'm not sure whether I understood your real question.
-
-Bjorn
+> Francesco
+> 
+> 
+> On Thu, May 22, 2014 at 12:22 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On 05/22/2014 12:14 AM, Greg Kroah-Hartmann wrote:
+> >>
+> >> On Wed, May 21, 2014 at 03:59:58PM -0700, Guenter Roeck wrote:
+> >>>
+> >>> On Wed, May 21, 2014 at 01:04:04PM -0700, Francesco Ruggeri wrote:
+> >>>>
+> >>>> I have been using an x86 platform.
+> >>>> When I started working on it I got early crashes until I added the
+> >>>> check for p not NULL in
+> >>>>
+> >>>> +void bus_release_device(struct device *dev)
+> >>>> +{
+> >>>> + struct device_private *p = dev->p;
+> >>>> +
+> >>>> + if (p && klist_node_attached(&p->knode_bus))
+> >>>> + klist_put_last(&p->knode_bus);
+> >>>> +}
+> >>>> +
+> >>>>
+> >>>> Maybe on powerpc *p is overriden between device_del and device_release?
+> >>>>
+> >>>> Or maybe some of the BUG_ONs in the patch? The ones on knode_dead are
+> >>>> treated as WARN_ONs in the current klist code.
+> >>>> The one in BUG_ON(!klist_dec_and_del(n)); is new, and in my tests I
+> >>>> ran into it without the second patch (but only when I ran my module
+> >>>> and tests).
+> >>>>
+> >>> Hi Francesco,
+> >>>
+> >>> I replaced the BUG_ON with WARN_ON; still crashes.
+> >>>
+> >>> Anyway, the problem seems to be known. I found two related exchanges.
+> >>>
+> >>> [1] describes pretty much the same problem. I don't see if/where it was
+> >>> ever fixed, though.
+> >>>
+> >>> [2] is a patch to fix the problem. It did not apply cleanly to 3.14,
+> >>> so I had to make some adjustments in klist_iter_init_node. Resulting
+> >>> patch is below. With this patch, the problem is gone. It is not perfect,
+> >>> as it aborts the loop if it encounters a deleted kobject, but it is
+> >>> better
+> >>> than nothing. Unfortunately, the patch never made it upstream; no idea
+> >>> why.
+> >>> Copying the author and Greg to get additional feedback.
+> >>>
+> >>> Guenter
+> >>>
+> >>> [1] https://lkml.org/lkml/2008/10/26/79
+> >>> [2] https://lkml.org/lkml/2012/4/16/218
+> >>
+> >>
+> >> 2 years ago?  I have no idea what was up with that, sorry...
+> >>
+> >
+> > Ok, but do you have comments on the patch itself in its current version ?
+> >
+> > Guenter
+> >
+> 
