@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaEVJvO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:51:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35306 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754455AbaEVJvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:51:12 -0400
-Date: Thu, 22 May 2014 19:50:56 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
- functions.
-Message-ID: <20140522195056.445f2dcb@notabene.brown>
-In-Reply-To: <20140522090502.GB30094@gmail.com>
-References: <20140501123738.3e64b2d2@notabene.brown>
-	<20140522090502.GB30094@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW"; protocol="application/pgp-signature"
+	id S1754460AbaEVJwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:52:34 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:51743 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753351AbaEVJwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 05:52:32 -0400
+Date: Thu, 22 May 2014 11:52:27 +0200
+From: Dongsu Park <dongsu.park@profitbricks.com>
+To: Daniel Phillips <daniel@phunq.net>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        tux3@tux3.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Tux3 for review
+Message-ID: <20140522095227.GA9176@gmail.com>
+References: <5376B273.7000800@partner.samsung.com>
+ <20140518235555.GC18954@dastard>
+ <537AA802.408@phunq.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <537AA802.408@phunq.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Thu, 22 May 2014 11:05:02 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+On 19.05.2014 17:55, Daniel Phillips wrote:
+> On 05/18/2014 04:55 PM, Dave Chinner wrote:
+> >On Fri, May 16, 2014 at 05:50:59PM -0700, Daniel Phillips wrote:
+> >>We would like to offer Tux3 for review for mainline merge. We have
+> >>prepared a new repository suitable for pulling:
+> >>
+> >>https://git.kernel.org/cgit/linux/kernel/git/daniel/linux-tux3.git/
 
->=20
-> * NeilBrown <neilb@suse.de> wrote:
->=20
-> > [[ get_maintainer.pl suggested 61 email address for this patch.
-> >    I've trimmed that list somewhat.  Hope I didn't miss anyone
-> >    important...
-> >    I'm hoping it will go in through the scheduler tree, but would
-> >    particularly like an Acked-by for the fscache parts.  Other acks
-> >    welcome.
-> > ]]
-> >=20
-> > The current "wait_on_bit" interface requires an 'action' function
-> > to be provided which does the actual waiting.
-> > There are over 20 such functions, many of them identical.
-> > Most cases can be satisfied by one of just two functions, one
-> > which uses io_schedule() and one which just uses schedule().
-> >=20
-> > So:
-> >  Rename wait_on_bit and        wait_on_bit_lock to
-> >         wait_on_bit_action and wait_on_bit_lock_action
-> >  to make it explicit that they need an action function.
-> >=20
-> >  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
-> >  which are *not* given an action function but implicitly use
-> >  a standard one.
-> >  The decision to error-out if a signal is pending is now made
-> >  based on the 'mode' argument rather than being encoded in the action
-> >  function.
->=20
-> this patch fails to build on x86-32 allyesconfigs.
+First of all, thank you for trying to merge it to mainline.
+Maybe I cannot say the code is clean enough, but basically
+the filesystem seems to work at least.
 
-Could you share the build errors?
+> >Then there's all the writeback hacks. You've simply copy-n-pasted
+> >most of fs-writeback.c, including duplicating structures like struct
+> >wb_writeback_work and then hacked in crap (kallsyms lookups!) to be
+> >able to access core structures from kernel module context
+> >(tux3_setup_writeback(), I'm looking at you).
+> This is intentional. The files named "*_hack" were kept as close as
+> possible to the original core code to clarify exactly where core
+> needs to change in order to remove our workarounds. If you think we
+> should pretty up that code then we will happily do it. Or maybe we
+> can hammer out acceptable core patches right now, and include those
+> with our merge proposal. That would make us even happier. We hate
+> those hacks as much as you do.
 
->=20
-> Could we keep the old names for a while, and remove them in the next=20
-> cycle or so?
+Looking up kallsyms is not only hacky, but also making the filesystem
+unable to be mounted at all, when CONFIG_KALLSYMS_ALL is not defined.
+I'll send out patches to fix that separately to tux3 mailing list.
 
-I don't see how changing the names later rather than now will reduce the
-chance of errors... maybe I'm missing something.
+Regards,
+Dongsu
 
-Thanks,
-NeilBrown
-
-
-
->=20
-> Thanks,
->=20
-> 	Ingo
-
-
---Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU33IgDnsnt1WYoG5AQL4zg/9EwXq3ga0dXQf8DsKuJ5gg0PFSywVLg53
-ov/ah4ODfC2IL9Cjq/vrfQ9hoV5XwIhpvr9Ooz1dvuHkJn2OKJU/C9+hD+vJmRlN
-0iJQBNkkdBj7XwEon+QXYgeeKIQNI6ErxHHIXN/FEtSZa4eWElBiUplTMcFY/TeJ
-erB7cJDQxk3jm7q3em4F1Scg1cc6q+rJb98WIXdSpfQCzZhC3xbke2dlAetjNgzY
-ea6yAhGIy0LcBevl8IGucX7FC9C6uOlxw4KhJ+i1LyaMMzwyZZ2zsipKEwSkdCug
-aN2b4MYE/6/1C0gME8FjpfxGFlw6/2a/KCmKQaxWowPtJa69xozl62ZVNZ1JrTV6
-0T8R+C4xsVzTn03KjgMdN5tUbQYT9RbF67ld0rGSfKowmtS+mP7SZnNRKib4PhAn
-0ZEayg4T4uq9z5SuJEhUKpyj7GEyeehW+luYJTVt8LTuH79qEi1GBTdCSZ2YkS/F
-zK5lRIUhzmlDd1RkvOrQaPzSjY6hxR2QEJZtY6r9i6W1QWYWJAMAxTTbYc8UYiGt
-qAmhwKe8neKmznogq85iNg5A+88v4JUiVwz1/jWP3PTwOGOo+F8d5Y+youB+TotD
-ZvZVSUwSfJfc8rn3cUCotypxfbkbsrP7fGIDkrD8/EfvY9YWtVdbGFWZzW8shFOA
-ief4BXTLFCg=
-=qy8/
------END PGP SIGNATURE-----
-
---Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW--
