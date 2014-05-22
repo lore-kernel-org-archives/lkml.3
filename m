@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaEVOV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:21:27 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:35435 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaEVOV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:21:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140522134758.GA5065@htj.dyndns.org>
-References: <1400748257-14165-1-git-send-email-laijs@cn.fujitsu.com>
-	<20140522134758.GA5065@htj.dyndns.org>
-Date: Thu, 22 May 2014 22:21:25 +0800
-X-Google-Sender-Auth: V4kDm1wvrqYgWty_xyQaQDYZSZo
-Message-ID: <CACvQF53Xs91KMdsYCsqM-NNJYtb+byajjc668aiM2vMFBv3JaA@mail.gmail.com>
-Subject: Re: [PATCH] workqueue: remove the unneeded cpu_relax() in __queue_work()
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752182AbaEVO0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:26:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49040 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751147AbaEVO0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 10:26:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,887,1392192000"; 
+   d="scan'208";a="435560446"
+Message-ID: <1400768808.27343.4.camel@rzhang1-toshiba>
+Subject: Re: [PATCH V6 09/11] ACPI: introduce flag .is_master_device
+From: Zhang Rui <rui.zhang@intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
+        "Lan, Tianyu" <tianyu.lan@intel.com>
+Date: Thu, 22 May 2014 22:26:48 +0800
+In-Reply-To: <20140522085135.GC1651@lahna.fi.intel.com>
+References: <1400136256-2218-1-git-send-email-rui.zhang@intel.com>
+	 <1400136256-2218-10-git-send-email-rui.zhang@intel.com>
+	 <20140521085207.GR1651@lahna.fi.intel.com>
+	 <1400683387.13930.26.camel@rzhang1-toshiba>
+	 <20140522085135.GC1651@lahna.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 9:47 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, May 22, 2014 at 04:44:16PM +0800, Lai Jiangshan wrote:
->> When pwq->refcnt == 0, the retrying is guaranteed to make forward-progress.
->> The comment above the code explains it well:
->>
->>       /*
->>        * pwq is determined and locked.  For unbound pools, we could have
->>        * raced with pwq release and it could already be dead.  If its
->>        * refcnt is zero, repeat pwq selection.  Note that pwqs never die
->>        * without another pwq replacing it in the numa_pwq_tbl or while
->>        * work items are executing on it, so the retrying is guaranteed to
->>        * make forward-progress.
->>        */
->>
->> It means the cpu_relax() here is useless and sometimes misleading,
->> it should retry directly and make some progress rather than waste time.
->
-> cpu_relax() doesn't have much to do with guaranteeing forward
-> progress.  It's about giving a breather during busy wait so that the
+On Thu, 2014-05-22 at 11:51 +0300, Mika Westerberg wrote:
+> On Wed, May 21, 2014 at 10:43:07PM +0800, Zhang Rui wrote:
+> > On 三, 2014-05-21 at 11:52 +0300, Mika Westerberg wrote:
+> > > On Thu, May 15, 2014 at 02:44:14PM +0800, Zhang Rui wrote:
+> > > > For some ACPI device objects, they represent master devices,
+> > > > and their children devices are enumerated by bus controller drivers
+> > > > for the buses they are on.
+> > > > 
+> > > > In this case, we do not want to enumerate their children devices to
+> > > > platform bus explicitly in acpi scan code.
+> > > > 
+> > > > Thus a new flag .is_master_device is introduced in this patch.
+> > > > 
+> > > > For devices with this flag set, we will not do default enumeration
+> > > > for their children.
+> > > 
+> > > Is there any particular reason we would like to enumerate everything
+> > > below the first device by default?
+> > 
+> > we do not enumerate everything below the first device by default, we
+> > just enumerate all the devices with _HID.
+> 
+> OK.
+> 
+> > But if a device has _HID and it is enumerated by its parents to a
+> > separate bus, we need this flag set for its parent.
+> 
+> How about checking if the device has *SerialBus() connector and in such
+> case skip the device (given that it is not listed in a special list,
+> like acpi_platform_device_ids)?
 
-This is not busy wait, the retry and numa_pwq_tbl() guarantee that
-the retry will get a new pwq (even without cpu_relax()) as the comments says,
-and the refcnt of this new pwq is very very likely non-zero and
-cpu_relax() can't
-increase the probability of non-zero-refcnt. cpu_relax() is useless here.
+This sounds like a good idea.
+I think we can just ignore devices with ACPI_RESOURCE_TYPE_SERIAL_BUS
+resources, and this can be done in drivers/acpi/scan.c for all _HID
+devices w/o handler attached, right?
 
-It is different from spin_lock() or some other spin code.
+thanks,
+rui
 
-it is similar to the loop of __task_rq_lock() which also guarantees progress.
-
-Thanks,
-Lai
-
-> waiting cpu doesn't busy loop claiming the same cache lines over and
-> over ultimately delaying the event being waited on.  If you're doing a
-> busy wait, you better use cpu_relax().
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
