@@ -1,275 +1,492 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790AbaEVXQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:16:41 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:50568 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605AbaEVXGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:06:33 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        liguang <lig.fnst@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-doc@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v5 6/6] seccomp: add SECCOMP_EXT_ACT_TSYNC and SECCOMP_FILTER_TSYNC
-Date: Thu, 22 May 2014 16:05:36 -0700
-Message-Id: <1400799936-26499-7-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400799936-26499-1-git-send-email-keescook@chromium.org>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1752124AbaEVX1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:27:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40656 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaEVX1g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:27:36 -0400
+Date: Thu, 22 May 2014 16:26:49 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+        Ulrich.Weigand@de.ibm.com, michael@ellerman.id.au,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1][v3] powerpc/perf: Adjust callchain based on DWARF debug
+ info
+Message-ID: <20140522232649.GA496@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052223-9332-0000-0000-000000E0C0B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applying restrictive seccomp filter programs to large or diverse
-codebases often requires handling threads which may be started early in
-the process lifetime (e.g., by code that is linked in). While it is
-possible to apply permissive programs prior to process start up, it is
-difficult to further restrict the kernel ABI to those threads after that
-point.
+powerpc/perf: Adjust callchain based on DWARF debug info
 
-This change adds a new seccomp extension action for synchronizing thread
-group seccomp filters and a prctl() for accessing that functionality,
-as well as a flag for SECCOMP_EXT_ACT_FILTER to perform sync at filter
-installation time.
+When saving the callchain on Power, the kernel conservatively saves excess
+entries in the callchain. A few of these entries are needed in some cases
+but not others. We should use the DWARF debug information to determine
+when the entries are  needed.
 
-When calling prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER,
-flags, filter) with flags containing SECCOMP_FILTER_TSYNC, or when calling
-prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0), it
-will attempt to synchronize all threads in current's threadgroup to its
-seccomp filter program. This is possible iff all threads are using a filter
-that is an ancestor to the filter current is attempting to synchronize to.
-NULL filters (where the task is running as SECCOMP_MODE_NONE) are also
-treated as ancestors allowing threads to be transitioned into
-SECCOMP_MODE_FILTER. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
-calling thread, no_new_privs will be set for all synchronized threads too.
-On success, 0 is returned. On failure, the pid of one of the failing threads
-will be returned, with as many filters installed as possible.
+Eg: the value in the link register (LR) is needed only when it holds the
+return address of a function. At other times it must be ignored.
 
-The race conditions are against another thread calling TSYNC, another
-thread performing a clone, and another thread changing its filter. The
-seccomp write lock is sufficient for these cases, though the clone
-case is assisted by the tasklist_lock so that new threads must have a
-duplicate of its parent seccomp state when it appears on the tasklist.
+If the unnecessary entries are not ignored, we end up with duplicate arcs
+in the call-graphs.
 
-Based on patches by Will Drewry.
+Use the DWARF debug information to determine if any callchain entries
+should be ignored when building call-graphs.
 
-Suggested-by: Julien Tinnes <jln@chromium.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Callgraph before the patch:
+
+    14.67%          2234  sprintft  libc-2.18.so       [.] __random
+            |
+            --- __random
+               |
+               |--61.12%-- __random
+               |          |
+               |          |--97.15%-- rand
+               |          |          do_my_sprintf
+               |          |          main
+               |          |          generic_start_main.isra.0
+               |          |          __libc_start_main
+               |          |          0x0
+               |          |
+               |           --2.85%-- do_my_sprintf
+               |                     main
+               |                     generic_start_main.isra.0
+               |                     __libc_start_main
+               |                     0x0
+               |
+                --38.88%-- rand
+                          |
+                          |--94.01%-- rand
+                          |          do_my_sprintf
+                          |          main
+                          |          generic_start_main.isra.0
+                          |          __libc_start_main
+                          |          0x0
+                          |
+                           --5.99%-- do_my_sprintf
+                                     main
+                                     generic_start_main.isra.0
+                                     __libc_start_main
+                                     0x0
+
+Callgraph after the patch:
+
+    14.67%          2234  sprintft  libc-2.18.so       [.] __random
+            |
+            --- __random
+               |
+               |--95.93%-- rand
+               |          do_my_sprintf
+               |          main
+               |          generic_start_main.isra.0
+               |          __libc_start_main
+               |          0x0
+               |
+                --4.07%-- do_my_sprintf
+                          main
+                          generic_start_main.isra.0
+                          __libc_start_main
+                          0x0
+
+TODO:	For split-debug info objects like glibc, we can only determine
+	the call-frame-address only when both .eh_frame and .debug_info
+	sections are available. We should be able to determin the CFA
+	even without the .eh_frame section.
+
+Fix suggested by Anton Blanchard.
+
+Thanks to valuable input on DWARF debug information from Ulrich Weigand.
+
+Reported-by: Maynard Johnson <maynard@us.ibm.com>
+Tested-by: Maynard Johnson <maynard@us.ibm.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- Documentation/prctl/seccomp_filter.txt |   22 ++++++-
- include/uapi/linux/seccomp.h           |    4 ++
- kernel/seccomp.c                       |  106 ++++++++++++++++++++++++++++++--
- 3 files changed, 126 insertions(+), 6 deletions(-)
+Changelog[v3]
+	[Jiri Olsa] Rename function to arch_skip_callchain_idx() to be
+		consistent with behavior.
+	[Jiri Olsa] Add '__maybe_unused' tags for unused parameters.
 
-diff --git a/Documentation/prctl/seccomp_filter.txt b/Documentation/prctl/seccomp_filter.txt
-index a5e47753b32d..2924a3450870 100644
---- a/Documentation/prctl/seccomp_filter.txt
-+++ b/Documentation/prctl/seccomp_filter.txt
-@@ -235,5 +235,23 @@ prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER, flags, prog):
- 	Attach filter, with flags.
- 
- 	This is the same as prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, prog)
--	except with the addition of optional "flags" argument. No flags
--	are currently recognized.
-+	except with the addition of optional "flags" argument:
-+
-+	SECCOMP_FILTER_TSYNC:
-+		After installing filter, perform threadgroup sync, as
-+		described below for SECCOMP_EXT_ACT_TSYNC.
-+
-+prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0):
-+	Thread synchronization.
-+
-+	The current thread requests to synchronize all threads in current's
-+	threadgroup to its seccomp filter program. This is possible iff all
-+	threads are using a filter that is an ancestor to the filter current
-+	is attempting to synchronize to, or the thread has not yet entered
-+	seccomp. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
-+	calling thread, no_new_privs will be set for all synchronized threads
-+	too.
-+
-+	On success, 0 is returned. On failure, all synchronizable threads
-+	will have been synchronized, and the pid of one of the failing
-+	threads will be returned.
-diff --git a/include/uapi/linux/seccomp.h b/include/uapi/linux/seccomp.h
-index d7ad626c684d..7f4431b90fd4 100644
---- a/include/uapi/linux/seccomp.h
-+++ b/include/uapi/linux/seccomp.h
-@@ -15,6 +15,10 @@
- 
- /* Valid extension actions as arg3 to prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT) */
- #define SECCOMP_EXT_ACT_FILTER	1 /* apply seccomp-bpf filter with flags */
-+#define SECCOMP_EXT_ACT_TSYNC	2 /* synchronize threadgroup filters */
-+
-+/* Flags for prctl arg4 when calling SECCOMP_EXT_ACT_FILTER */
-+#define SECCOMP_FILTER_TSYNC	1 /* synchronize threadgroup to filter */
- 
- /*
-  * All BPF programs must return a 32-bit value.
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 088244b2c765..d39c0dad9655 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -25,6 +25,7 @@
- #ifdef CONFIG_SECCOMP_FILTER
- #include <asm/syscall.h>
- #include <linux/filter.h>
-+#include <linux/pid.h>
- #include <linux/ptrace.h>
- #include <linux/security.h>
- #include <linux/tracehook.h>
-@@ -198,6 +199,93 @@ static u32 seccomp_run_filters(int syscall)
- 	return ret;
- }
- 
-+/* Returns 1 if the candidate is an ancestor. */
-+static int is_ancestor(struct seccomp_filter *candidate,
-+		       struct seccomp_filter *child)
-+{
-+	/* NULL is the root ancestor. */
-+	if (candidate == NULL)
-+		return 1;
-+	for (; child; child = child->prev)
-+		if (child == candidate)
-+			return 1;
-+	return 0;
-+}
-+
-+/* Expects locking and sync suitability to have been done already. */
-+static void seccomp_sync_thread(struct task_struct *caller,
-+				struct task_struct *thread)
-+{
-+	/* Get a task reference for the new leaf node. */
-+	get_seccomp_filter(caller);
-+	/*
-+	 * Drop the task reference to the shared ancestor since
-+	 * current's path will hold a reference.  (This also
-+	 * allows a put before the assignment.)
-+	 */
-+	put_seccomp_filter(thread);
-+	thread->seccomp.filter = caller->seccomp.filter;
-+	/* Opt the other thread into seccomp if needed.
-+	 * As threads are considered to be trust-realm
-+	 * equivalent (see ptrace_may_access), it is safe to
-+	 * allow one thread to transition the other.
-+	 */
-+	if (thread->seccomp.mode == SECCOMP_MODE_DISABLED) {
-+		thread->seccomp.mode = SECCOMP_MODE_FILTER;
-+		/*
-+		 * Don't let an unprivileged task work around
-+		 * the no_new_privs restriction by creating
-+		 * a thread that sets it up, enters seccomp,
-+		 * then dies.
-+		 */
-+		if (task_no_new_privs(caller))
-+			task_set_no_new_privs(thread);
-+		set_tsk_thread_flag(thread, TIF_SECCOMP);
-+	}
-+}
-+
-+/**
-+ * seccomp_act_sync_threads: sets all threads to use current's filter
+Changelog[v2]:
+        - Add missing dwfl_end()
+        - Fix merge conflicts due to some unwind code
+
+ tools/perf/arch/powerpc/Makefile                  |    1 +
+ tools/perf/arch/powerpc/util/skip-callchain-idx.c |  266 +++++++++++++++++++++
+ tools/perf/config/Makefile                        |    4 +
+ tools/perf/util/callchain.h                       |   13 +
+ tools/perf/util/machine.c                         |   16 +-
+ 5 files changed, 298 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/arch/powerpc/util/skip-callchain-idx.c
+
+diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
+index 744e629..b92219b 100644
+--- a/tools/perf/arch/powerpc/Makefile
++++ b/tools/perf/arch/powerpc/Makefile
+@@ -3,3 +3,4 @@ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+diff --git a/tools/perf/arch/powerpc/util/skip-callchain-idx.c b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+new file mode 100644
+index 0000000..a7c23a4
+--- /dev/null
++++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+@@ -0,0 +1,266 @@
++/*
++ * Use DWARF Debug information to skip unnecessary callchain entries.
 + *
-+ * Returns 0 on success, -ve on error, or the pid of a thread which was
-+ * either not in the correct seccomp mode or it did not have an ancestral
-+ * seccomp filter.
++ * Copyright (C) 2014 Sukadev Bhattiprolu, IBM Corporation.
++ * Copyright (C) 2014 Ulrich Weigand, IBM Corporation.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
-+static pid_t seccomp_act_sync_threads(void)
++#include <inttypes.h>
++#include <dwarf.h>
++#include <elfutils/libdwfl.h>
++
++#include "util/thread.h"
++#include "util/callchain.h"
++
++/*
++ * When saving the callchain on Power, the kernel conservatively saves
++ * excess entries in the callchain. A few of these entries are needed
++ * in some cases but not others. If the unnecessary entries are not
++ * ignored, we end up with duplicate arcs in the call-graphs. Use
++ * DWARF debug information to skip over any unnecessary callchain
++ * entries.
++ *
++ * See function header for arch_adjust_callchain() below for more details.
++ *
++ * The libdwfl code in this file is based on code from elfutils
++ * (libdwfl/argp-std.c, libdwfl/tests/addrcfi.c, etc).
++ */
++static char *debuginfo_path;
++
++static const Dwfl_Callbacks offline_callbacks = {
++	.debuginfo_path = &debuginfo_path,
++	.find_debuginfo = dwfl_standard_find_debuginfo,
++	.section_address = dwfl_offline_section_address,
++};
++
++
++/*
++ * Use the DWARF expression for the Call-frame-address and determine
++ * if return address is in LR and if a new frame was allocated.
++ */
++static int check_return_reg(int ra_regno, Dwarf_Frame *frame)
 +{
-+	struct task_struct *thread, *caller;
-+	unsigned long tflags;
-+	pid_t failed = 0;
++	Dwarf_Op ops_mem[2];
++	Dwarf_Op dummy;
++	Dwarf_Op *ops = &dummy;
++	size_t nops;
++	int result;
 +
-+	if (current->seccomp.mode != SECCOMP_MODE_FILTER)
-+		return -EACCES;
-+
-+	write_lock_irqsave(&tasklist_lock, tflags);
-+	thread = caller = current;
-+	while_each_thread(caller, thread) {
-+		unsigned long irqflags;
-+		seccomp_lock(thread, &irqflags);
-+		/*
-+		 * Validate thread being eligible for synchronization.
-+		 */
-+		if (thread->seccomp.mode == SECCOMP_MODE_DISABLED ||
-+		    (thread->seccomp.mode == SECCOMP_MODE_FILTER &&
-+		     is_ancestor(thread->seccomp.filter,
-+				 caller->seccomp.filter))) {
-+			seccomp_sync_thread(caller, thread);
-+		} else {
-+			/* Keep the last sibling that failed to return. */
-+			failed = task_pid_vnr(thread);
-+			/* If the pid cannot be resolved, then return -ESRCH */
-+			if (failed == 0)
-+				failed = -ESRCH;
-+		}
-+		seccomp_unlock(thread, irqflags);
++	result = dwarf_frame_register(frame, ra_regno, ops_mem, &ops, &nops);
++	if (result < 0) {
++		pr_debug("dwarf_frame_register() %s\n", dwarf_errmsg(-1));
++		return -1;
 +	}
-+	write_unlock_irqrestore(&tasklist_lock, tflags);
-+	return failed;
++
++	/*
++	 * Check if return address is on the stack.
++	 */
++	if (nops != 0 || ops != NULL)
++		return 0;
++
++	/*
++	 * Return address is in LR. Check if a frame was allocated
++	 * but not-yet used.
++	 */
++	result = dwarf_frame_cfa(frame, &ops, &nops);
++	if (result < 0) {
++		pr_debug("dwarf_frame_cfa() returns %d, %s\n", result,
++					dwarf_errmsg(-1));
++		return -1;
++	}
++
++	/*
++	 * If call frame address is in r1, no new frame was allocated.
++	 */
++	if (nops == 1 && ops[0].atom == DW_OP_bregx && ops[0].number == 1 &&
++				ops[0].number2 == 0)
++		return 1;
++
++	/*
++	 * A new frame was allocated but has not yet been used.
++	 */
++	return 2;
 +}
 +
- /**
-  * seccomp_prepare_filter: Prepares a seccomp filter for use.
-  * @fprog: BPF program to install
-@@ -340,19 +428,24 @@ static long _seccomp_attach_filter(struct seccomp_filter *filter)
-  * @flags:  flags from SECCOMP_FILTER_* to change behavior
-  * @filter: struct sock_fprog for use with SECCOMP_MODE_FILTER
-  *
-- * Return 0 on success, -ve on error.
-+ * Return 0 on success, -ve on error, or thread pid that caused failures.
-  */
- static long seccomp_act_filter(unsigned long flags, char * __user filter)
- {
- 	long ret;
- 
--	/* No flags currently recognized. */
--	if (flags != 0)
-+	/* Only SECCOMP_FILTER_TSYNC is recognized. */
-+	if ((flags & ~(SECCOMP_FILTER_TSYNC)) != 0)
- 		return -EINVAL;
- 
- 	ret = seccomp_set_mode(SECCOMP_MODE_FILTER, filter);
-+	if (ret)
-+		return ret;
- 
--	return ret;
-+	if (flags & SECCOMP_FILTER_TSYNC)
-+		return seccomp_act_sync_threads();
++/*
++ * Get the DWARF frame from the .eh_frame section.
++ */
++static Dwarf_Frame *get_eh_frame(Dwfl_Module *mod, Dwarf_Addr pc)
++{
++	int		result;
++	Dwarf_Addr	bias;
++	Dwarf_CFI	*cfi;
++	Dwarf_Frame	*frame;
 +
-+	return 0;
- }
++	cfi = dwfl_module_eh_cfi(mod, &bias);
++	if (!cfi) {
++		pr_debug("%s(): no CFI - %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	result = dwarf_cfi_addrframe(cfi, pc, &frame);
++	if (result) {
++		pr_debug("%s(): %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	return frame;
++}
++
++/*
++ * Get the DWARF frame from the .debug_frame section.
++ */
++static Dwarf_Frame *get_dwarf_frame(Dwfl_Module *mod, Dwarf_Addr pc)
++{
++	Dwarf_CFI       *cfi;
++	Dwarf_Addr      bias;
++	Dwarf_Frame     *frame;
++	int             result;
++
++	cfi = dwfl_module_dwarf_cfi(mod, &bias);
++	if (!cfi) {
++		pr_debug("%s(): no CFI - %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	result = dwarf_cfi_addrframe(cfi, pc, &frame);
++	if (result) {
++		pr_debug("%s(): %s\n", __func__, dwfl_errmsg(-1));
++		return NULL;
++	}
++
++	return frame;
++}
++
++/*
++ * Return:
++ *	0 if return address for the program counter @pc is on stack
++ *	1 if return address is in LR and no new stack frame was allocated
++ *	2 if return address is in LR and a new frame was allocated (but not
++ *		yet used)
++ *	-1 in case of errors
++ */
++static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
++{
++	int		rc = -1;
++	Dwfl		*dwfl;
++	Dwfl_Module	*mod;
++	Dwarf_Frame	*frame;
++	int		ra_regno;
++	Dwarf_Addr	start = pc;
++	Dwarf_Addr	end = pc;
++	bool		signalp;
++
++	dwfl = dwfl_begin(&offline_callbacks);
++	if (!dwfl) {
++		pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
++		return -1;
++	}
++
++	if (dwfl_report_offline(dwfl, "",  exec_file, -1) == NULL) {
++		pr_debug("dwfl_report_offline() failed %s\n", dwarf_errmsg(-1));
++		goto out;
++	}
++
++	mod = dwfl_addrmodule(dwfl, pc);
++	if (!mod) {
++		pr_debug("dwfl_addrmodule() failed, %s\n", dwarf_errmsg(-1));
++		goto out;
++	}
++
++	/*
++	 * To work with split debug info files (eg: glibc), check both
++	 * .eh_frame and .debug_frame sections of the ELF header.
++	 */
++	frame = get_eh_frame(mod, pc);
++	if (!frame) {
++		frame = get_dwarf_frame(mod, pc);
++		if (!frame)
++			goto out;
++	}
++
++	ra_regno = dwarf_frame_info(frame, &start, &end, &signalp);
++	if (ra_regno < 0) {
++		pr_debug("Return address register unavailable: %s\n",
++				dwarf_errmsg(-1));
++		goto out;
++	}
++
++	rc = check_return_reg(ra_regno, frame);
++
++out:
++	dwfl_end(dwfl);
++	return rc;
++}
++
++/*
++ * The callchain saved by the kernel always includes the link register (LR).
++ *
++ *	0:	PERF_CONTEXT_USER
++ *	1:	Program counter (Next instruction pointer)
++ *	2:	LR value
++ *	3:	Caller's caller
++ *	4:	...
++ *
++ * The value in LR is only needed when it holds a return address. If the
++ * return address is on the stack, we should ignore the LR value.
++ *
++ * Further, when the return address is in the LR, if a new frame was just
++ * allocated but the LR was not saved into it, then the LR contains the
++ * caller, slot 4: contains the caller's caller and the contents of slot 3:
++ * (chain->ips[3]) is undefined and must be ignored.
++ *
++ * Use DWARF debug information to determine if any entries need to be skipped.
++ *
++ * Return:
++ *	index:	of callchain entry that needs to be ignored (if any)
++ *	-1	if no entry needs to be ignored or in case of errors
++ */
++int arch_skip_callchain_idx(struct machine *machine, struct thread *thread,
++				struct ip_callchain *chain)
++{
++	struct addr_location al;
++	struct dso *dso = NULL;
++	int rc;
++	u64 ip;
++	u64 skip_slot = -1;
++
++	if (chain->nr < 3)
++		return skip_slot;
++
++	ip = chain->ips[2];
++
++	thread__find_addr_location(thread, machine, PERF_RECORD_MISC_USER,
++			MAP__FUNCTION, ip, &al);
++
++	if (al.map)
++		dso = al.map->dso;
++
++	if (!dso) {
++		pr_debug("%" PRIx64 " dso is NULL\n", ip);
++		return skip_slot;
++	}
++
++	rc = check_return_addr(dso->long_name, ip);
++
++	pr_debug("DSO %s, nr %" PRIx64 ", ip 0x%" PRIx64 "rc %d\n",
++				dso->long_name, chain->nr, ip, rc);
++
++	if (rc == 0) {
++		/*
++		 * Return address on stack. Ignore LR value in callchain
++		 */
++		skip_slot = 2;
++	} else if (rc == 2) {
++		/*
++		 * New frame allocated but return address still in LR.
++		 * Ignore the caller's caller entry in callchain.
++		 */
++		skip_slot = 3;
++	}
++	return skip_slot;
++}
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 729bbdf..8d1417d 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -48,6 +48,10 @@ ifneq ($(ARCH),$(filter $(ARCH),x86 arm))
+   NO_LIBDW_DWARF_UNWIND := 1
+ endif
  
- /**
-@@ -368,6 +461,11 @@ static long seccomp_extended_action(int action, unsigned long arg1,
- 	switch (action) {
- 	case SECCOMP_EXT_ACT_FILTER:
- 		return seccomp_act_filter(arg1, (char * __user)arg2);
-+	case SECCOMP_EXT_ACT_TSYNC:
-+		/* arg1 and arg2 are currently unused. */
-+		if (arg1 || arg2)
-+			return -EINVAL;
-+		return seccomp_act_sync_threads();
- 	default:
- 		break;
++ifeq ($(ARCH),powerpc)
++  CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
++endif
++
+ ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ else
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index bde2b0c..5176599 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -165,4 +165,17 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
+ 
+ extern const char record_callchain_help[];
+ int parse_callchain_report_opt(const char *arg);
++
++#ifdef HAVE_SKIP_CALLCHAIN_IDX
++extern int arch_skip_callchain_idx(struct machine *machine,
++			struct thread *thread, struct ip_callchain *chain);
++#else
++static inline int arch_skip_callchain_idx(struct machine *machine __maybe_unused,
++			struct thread *thread __maybe_unused,
++			struct ip_callchain *chain __maybe_unused)
++{
++	return -1;
++}
++#endif
++
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 7409ac8..bc93279 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1290,6 +1290,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	int chain_nr = min(max_stack, (int)chain->nr);
+ 	int i;
+ 	int err;
++	int skip_slot;
+ 
+ 	callchain_cursor_reset(&callchain_cursor);
+ 
+@@ -1298,14 +1299,25 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 		return 0;
  	}
+ 
++	/*
++	 * Based on DWARF debug information, some architectures skip
++	 * some of the callchain entries saved by the kernel.
++	 */
++	skip_slot = arch_skip_callchain_idx(machine, thread, chain);
++
+ 	for (i = 0; i < chain_nr; i++) {
+ 		u64 ip;
+ 		struct addr_location al;
+ 
+-		if (callchain_param.order == ORDER_CALLEE)
++		if (callchain_param.order == ORDER_CALLEE) {
++			if (i == skip_slot)
++				continue;
+ 			ip = chain->ips[i];
+-		else
++		} else {
++			if ((int)(chain->nr - i - 1) == skip_slot)
++				continue;
+ 			ip = chain->ips[chain->nr - i - 1];
++		}
+ 
+ 		if (ip >= PERF_CONTEXT_MAX) {
+ 			switch (ip) {
 -- 
 1.7.9.5
 
