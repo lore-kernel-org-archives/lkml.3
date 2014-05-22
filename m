@@ -1,117 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531AbaEVXJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:09:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20832 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753487AbaEVXJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:09:08 -0400
-Subject: [PATCH v4 16/16] PCI: Remove pci_get_dma_source()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
-        eddy0596@gmail.com, linux@horizon.com
-Date: Thu, 22 May 2014 17:09:04 -0600
-Message-ID: <20140522230903.2856.11320.stgit@bling.home>
-In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
-References: <20140522230230.2856.40017.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1753553AbaEVXJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:09:52 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:53832 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483AbaEVXJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:09:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1400799936-26499-5-git-send-email-keescook@chromium.org>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org> <1400799936-26499-5-git-send-email-keescook@chromium.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 May 2014 16:08:45 -0700
+Message-ID: <CALCETrVUfQasAX_JsRZ-HVbMjtxVJT2svwHk9vUOFdoB8H0kjw@mail.gmail.com>
+Subject: Re: [PATCH v5 4/6] seccomp: move no_new_privs into seccomp
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        liguang <lig.fnst@cn.fujitsu.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has no users; replaced by dma_alias_devfn.
+On Thu, May 22, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
+> Since seccomp transitions between threads requires updates to the
+> no_new_privs flag to be atomic, changes must be atomic. This moves the nnp
+> flag into the seccomp field as a separate unsigned long for atomic access.
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/pci/quirks.c |   51 --------------------------------------------------
- include/linux/pci.h  |    5 -----
- 2 files changed, 56 deletions(-)
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index ab620ac..f6a42bc 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3408,57 +3408,6 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
- /* Tundra 8113, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c43 */
- DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
- 
--static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
--{
--	if (!PCI_FUNC(dev->devfn))
--		return pci_dev_get(dev);
--
--	return pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
--}
--
--static const struct pci_dev_dma_source {
--	u16 vendor;
--	u16 device;
--	struct pci_dev *(*dma_source)(struct pci_dev *dev);
--} pci_dev_dma_source[] = {
--	/*
--	 * https://bugzilla.redhat.com/show_bug.cgi?id=605888
--	 *
--	 * Some Ricoh devices use the function 0 source ID for DMA on
--	 * other functions of a multifunction device.  The DMA devices
--	 * is therefore function 0, which will have implications of the
--	 * iommu grouping of these devices.
--	 */
--	{ PCI_VENDOR_ID_RICOH, 0xe822, pci_func_0_dma_source },
--	{ PCI_VENDOR_ID_RICOH, 0xe230, pci_func_0_dma_source },
--	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
--	{ PCI_VENDOR_ID_RICOH, 0xe476, pci_func_0_dma_source },
--	{ 0 }
--};
--
--/*
-- * IOMMUs with isolation capabilities need to be programmed with the
-- * correct source ID of a device.  In most cases, the source ID matches
-- * the device doing the DMA, but sometimes hardware is broken and will
-- * tag the DMA as being sourced from a different device.  This function
-- * allows that translation.  Note that the reference count of the
-- * returned device is incremented on all paths.
-- */
--struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
--{
--	const struct pci_dev_dma_source *i;
--
--	for (i = pci_dev_dma_source; i->dma_source; i++) {
--		if ((i->vendor == dev->vendor ||
--		     i->vendor == (u16)PCI_ANY_ID) &&
--		    (i->device == dev->device ||
--		     i->device == (u16)PCI_ANY_ID))
--			return i->dma_source(dev);
--	}
--
--	return pci_dev_get(dev);
--}
--
- /*
-  * AMD has indicated that the devices below do not support peer-to-peer
-  * in any system where they are found in the southbridge with an AMD
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 903c7d6..388857c 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1533,16 +1533,11 @@ enum pci_fixup_pass {
- 
- #ifdef CONFIG_PCI_QUIRKS
- void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
--struct pci_dev *pci_get_dma_source(struct pci_dev *dev);
- int pci_dev_specific_acs_enabled(struct pci_dev *dev, u16 acs_flags);
- void pci_dev_specific_enable_acs(struct pci_dev *dev);
- #else
- static inline void pci_fixup_device(enum pci_fixup_pass pass,
- 				    struct pci_dev *dev) { }
--static inline struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
--{
--	return pci_dev_get(dev);
--}
- static inline int pci_dev_specific_acs_enabled(struct pci_dev *dev,
- 					       u16 acs_flags)
- {
-
+Acked-by: Andy Lutomirski <luto@amacapital.net>
