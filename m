@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449AbaEVQqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:46:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39134 "EHLO comal.ext.ti.com"
+	id S1752606AbaEVQqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:46:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46363 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913AbaEVQqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:46:20 -0400
+	id S1751833AbaEVQqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:46:12 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
         <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
@@ -19,9 +19,9 @@ CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
         <sergei.shtylyov@cogentembedded.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v6 7/7] ARM: keystone: enable reset driver support
-Date: Thu, 22 May 2014 19:44:22 +0300
-Message-ID: <1400777062-19276-8-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [Patch v6 6/7] ARM: dts: keystone: update reset node to work with reset driver
+Date: Thu, 22 May 2014 19:44:21 +0300
+Message-ID: <1400777062-19276-7-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -31,29 +31,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable reset driver support in order to have opportunity
-to reboot SoC by watchdog and by software.
+The pll controller register set and device state control registers
+include sets of registers with different purposes, so it's logically
+to add syscon entry to be able to access them from appropriate places.
+
+So added pll controller and device state control syscon entries.
+
+The keystone driver requires the next additional properties:
+
+"ti,syscon-pll" - phandle/offset pair. The phandle to syscon used to
+		  access pll controller registers and the offset to use
+		  reset control registers.
+
+"ti,syscon-dev" - phandle/offset pair. The phandle to syscon used to
+		  access device state control registers and the offset
+		  in order to use mux block registers for all watchdogs.
+
+"ti,wdt_list"	- option to declare what watchdogs are used to reboot
+		  the SoC, so set "0" WDT as default.
 
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- arch/arm/configs/keystone_defconfig | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/boot/dts/keystone.dtsi | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index 07b4327..dc0da3f 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -132,6 +132,9 @@ CONFIG_SPI=y
- CONFIG_SPI_DAVINCI=y
- CONFIG_SPI_SPIDEV=y
- # CONFIG_HWMON is not set
-+CONFIG_POWER_SUPPLY=y
-+CONFIG_POWER_RESET=y
-+CONFIG_POWER_RESET_KEYSTONE=y
- CONFIG_WATCHDOG=y
- CONFIG_WATCHDOG_CORE=y
- CONFIG_DAVINCI_WATCHDOG=y
+diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
+index d9f99e7..b05def6 100644
+--- a/arch/arm/boot/dts/keystone.dtsi
++++ b/arch/arm/boot/dts/keystone.dtsi
+@@ -66,9 +66,21 @@
+ 		ranges = <0x0 0x0 0x0 0xc0000000>;
+ 		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+ 
++		pllctrl: pll-controller@02310000 {
++			compatible = "ti,keystone-pllctrl", "syscon";
++			reg = <0x02310000 0x200>;
++		};
++
++		devctrl: device-state-control@02620000 {
++			compatible = "ti,keystone-devctrl", "syscon";
++			reg = <0x02620000 0x1000>;
++		};
++
+ 		rstctrl: reset-controller {
+ 			compatible = "ti,keystone-reset";
+-			reg = <0x023100e8 4>;	/* pll reset control reg */
++			ti,syscon-pll = <&pllctrl 0xe4>;
++			ti,syscon-dev = <&devctrl 0x328>;
++			ti,wdt_list = <0>;
+ 		};
+ 
+ 		/include/ "keystone-clocks.dtsi"
 -- 
 1.8.3.2
 
