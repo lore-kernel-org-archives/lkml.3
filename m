@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaEVOKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 10:10:48 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:56367 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984AbaEVOKr convert rfc822-to-8bit (ORCPT
+	id S1752132AbaEVOOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 10:14:42 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:58954 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397AbaEVOOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 10:10:47 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm radeon and nouveau fixes
-Date: Thu, 22 May 2014 10:10:39 -0400
-Message-ID: <4272340.8uy863OffB@grover>
-Organization: me
-User-Agent: KMail/4.13.1 (Linux/3.15.0-1-git; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.00.1405220410520.25062@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1405220410520.25062@skynet.skynet.ie>
+	Thu, 22 May 2014 10:14:40 -0400
+Date: Thu, 22 May 2014 15:14:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, santosh.shilimkar@ti.com,
+        arnd@arndb.de, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, grygorii.strashko@ti.com,
+        linux@arm.linux.org.uk, sergei.shtylyov@cogentembedded.com,
+        linux-doc@vger.kernel.org, w-kwok2@ti.com, rdunlap@infradead.org,
+        sboyd@codeaurora.org, linux-kernel@vger.kernel.org,
+        m-karicheri2@ti.com, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch v5 3/7] mfd: ti-keystone-devctrl: add bindings for device
+ state control
+Message-ID: <20140522141432.GA19747@lee--X1>
+References: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com>
+ <1400766516-14537-4-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400766516-14537-4-git-send-email-ivan.khoronzhuk@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 May 2014 04:13:22 Dave Airlie wrote:
-> 
-> Hi Linus,
-> 
-> Fixes for the other big two, the radeon VCE one is large but it fixes some 
-> userspace triggerable issues, otherwise its blackscreens and oopses,
-> 
-> nouveau fixes a bleeding laptop panel issue when displayport is used 
-> sometimes,
+Why do I only have this patch?  Where is the rest of the set?  Also,
+it's on v5 and I don't recall seeing the other 4 versions?
 
-Hi Dave,
+> The Keystone II devices have a set of registers that are used to control
+> the status of its peripherals. This node is intended to allow access to
+> this functionality.
+> 
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>  .../devicetree/bindings/mfd/ti-keystone-devctrl.txt   | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+> new file mode 100644
+> index 0000000..35f7a66
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+> @@ -0,0 +1,19 @@
+> +* Device tree bindings for Texas Instruments keystone device state control
+> +
+> +The Keystone II devices have a set of registers that are used to control
+> +the status of its peripherals. This node is intended to allow access to
+> +this functionality.
+> +
+> +Required properties:
+> +
+> +- compatible:		"ti,keystone-devctrl", "syscon"
+> +
+> +- reg:			contains offset/length value for pll controller
+> +			registers space.
 
-These are not breaking anything here.  I also have v4 of Christian König's 
-VRAM page table entry compression patch applied.  Its also good here and
-speeds things up a few percent.
+Why have you tabbed out all that way?
 
-Thanks
-Ed Tomlinson
+> +Example:
+> +
+> +devctrl: device-state-control {
 
-> The following changes since commit 4b660a7f5c8099d88d1a43d8ae138965112592c7:
-> 
->   Linux 3.15-rc6 (2014-05-22 06:42:02 +0900)
-> 
-> are available in the git repository at:
-> 
->   git://people.freedesktop.org/~airlied/linux drm-fixes
-> 
-> for you to fetch changes up to 77c01bef72a5ce5cb24adae6066ed81a52004d30:
-> 
->   Merge branch 'drm-fixes-3.15' of git://people.freedesktop.org/~deathsimple/linux into drm-fixes (2014-05-22 09:15:57 +1000)
-> 
-> ----------------------------------------------------------------
-> 
-> Alex Deucher (4):
->       drm/radeon: fix DCE83 check for mullins
->       drm/radeon: handle non-VGA class pci devices with ATRM
->       drm/radeon: fix register typo on si
->       drm/radeon/pm: don't allow debugfs/sysfs access when PX card is off (v2)
-> 
-> Ben Skeggs (1):
->       drm/gf119-/disp: fix nasty bug which can clobber SOR0's clock setup
-> 
-> Christian König (4):
->       drm/radeon: also try GART for CPU accessed buffers
->       drm/radeon: fix page directory update size estimation
->       drm/radeon: fix buffer placement under memory pressure v2
->       drm/radeon: fix typo in finding PLL params
-> 
-> Dave Airlie (2):
->       Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
->       Merge branch 'drm-fixes-3.15' of git://people.freedesktop.org/~deathsimple/linux into drm-fixes
-> 
-> Jérôme Glisse (1):
->       drm/radeon: avoid segfault on device open when accel is not working.
-> 
-> Leo Liu (1):
->       drm/radeon: check VCE relocation buffer range v3
-> 
-> Martin Peres (1):
->       drm/nvd9/therm: handle another kind of PWM fan
-> 
->  drivers/gpu/drm/nouveau/core/engine/disp/nvd0.c  |   2 +-
->  drivers/gpu/drm/nouveau/core/subdev/therm/nvd0.c |   1 +
->  drivers/gpu/drm/radeon/radeon.h                  |   6 +-
->  drivers/gpu/drm/radeon/radeon_bios.c             |  14 +++
->  drivers/gpu/drm/radeon/radeon_display.c          |   2 +-
->  drivers/gpu/drm/radeon/radeon_kms.c              |  55 +++++-----
->  drivers/gpu/drm/radeon/radeon_object.c           |  40 ++++---
->  drivers/gpu/drm/radeon/radeon_pm.c               |  42 +++++++-
->  drivers/gpu/drm/radeon/radeon_vce.c              | 130 +++++++++++++++++------
->  drivers/gpu/drm/radeon/radeon_vm.c               |   2 +-
->  drivers/gpu/drm/radeon/sid.h                     |   4 +-
->  11 files changed, 218 insertions(+), 80 deletions(-)
+This node needs an address:
 
+devctrl: device-state-control@02620000 {
+
+> +	compatible = "ti,keystone-devctrl", "syscon";
+> +	reg = <0x02620000 0x1000>;
+> +};
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
