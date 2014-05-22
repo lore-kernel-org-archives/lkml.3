@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaEVM3Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:29:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51320 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaEVM3N (ORCPT
+	id S1755085AbaEVM3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:29:23 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:51077 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709AbaEVM3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:29:13 -0400
-Date: Thu, 22 May 2014 05:28:23 -0700
-From: tip-bot for Corey Minyard <tipbot@zytor.com>
-Message-ID: <tip-a803f0261bb2bb57aab5542af3174db43b2a3887@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, cminyard@mvista.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, cminyard@mvista.com
-In-Reply-To: <1399574859-11714-1-git-send-email-minyard@acm.org>
-References: <1399574859-11714-1-git-send-email-minyard@acm.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Initialize rq->
- age_stamp on processor start
-Git-Commit-ID: a803f0261bb2bb57aab5542af3174db43b2a3887
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 22 May 2014 08:29:18 -0400
+Date: Thu, 22 May 2014 14:29:09 +0200
+From: Michael Mueller <mimu@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>, linux-s390@vger.kernel.org,
+        kvm@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
+        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Andreas Faerber <afaerber@suse.de>,
+        Richard Henderson <rth@twiddle.net>,
+        Eduardo Habkost <ehabkost@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v1 RFC 6/6] KVM: s390: add cpu model
+ support
+Message-ID: <20140522142909.13fcd583@bee>
+In-Reply-To: <537DBB12.6070108@redhat.com>
+References: <1399993114-15333-1-git-send-email-mimu@linux.vnet.ibm.com>
+	<1399993114-15333-7-git-send-email-mimu@linux.vnet.ibm.com>
+	<5375FFB8.90504@suse.de>
+	<20140516173907.3b1c4efa@bee>
+	<53767590.2090605@suse.de>
+	<20140519125339.09840b9e@bee>
+	<5379EF78.9040209@suse.de>
+	<20140519161811.5a17bc66@bee>
+	<537A19F8.4060209@suse.de>
+	<20140519190318.6f92c1bd@bee>
+	<537A6608.8000608@suse.de>
+	<20140520120218.38eb7181@bee>
+	<537B2A0F.1030706@suse.de>
+	<20140521145652.197bff21@bee>
+	<537CA89B.6050803@suse.de>
+	<20140522102316.653f34ba@bee>
+	<537DBB12.6070108@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052212-2966-0000-0000-00000B5E5E1E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a803f0261bb2bb57aab5542af3174db43b2a3887
-Gitweb:     http://git.kernel.org/tip/a803f0261bb2bb57aab5542af3174db43b2a3887
-Author:     Corey Minyard <cminyard@mvista.com>
-AuthorDate: Thu, 8 May 2014 13:47:39 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 22 May 2014 11:16:35 +0200
+On Thu, 22 May 2014 10:53:38 +0200
+Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-sched: Initialize rq->age_stamp on processor start
+> Il 22/05/2014 10:23, Michael Mueller ha scritto:
+> > On Wed, 21 May 2014 15:22:35 +0200
+> > Alexander Graf <agraf@suse.de> wrote:
+> >
+> > I have seen the slides from Eduardo which he presented during this years
+> > DevConf in Brno and made my comments according the s390x implementation
+> > on that. Is you will see, this is mostly overlapping except for the model
+> > definition authority that I clearly see on qemu's side.
+> >
+> > See pdf attachment.
+> 
+> More comments:
+> 
+> - "Only one machine type in s390 case which is -machine s390-virtio-ccw"
+> 
+> This probably should change sooner or later, as soon as the 
+> implementation becomes stable enough.  Versioning is necessary for live 
+> migration across different QEMU version.  Perhaps start versioning in 
+> 2.2, i.e. start making s390-virtio-ccw-2.1 an alias for s390-virtio-ccw now?
 
-If the sched_clock time starts at a large value, the kernel will spin
-in sched_avg_update for a long time while rq->age_stamp catches up
-with rq->clock.
+Absolutely right, we did not do it yet.
 
-The comment in kernel/sched/clock.c says that there is no strict promise
-that it starts at zero.  So initialize rq->age_stamp when a cpu starts up
-to avoid this.
+> 
+> Note that new virtio device features can appear at any time outside the 
+> s390 code, and will take part in versioning as well.
 
-I was seeing long delays on a simulator that didn't start the clock at
-zero.  This might also be an issue on reboots on processors that don't
-re-initialize the timer to zero on reset, and when using kexec.
+These changes are then as well included in the machine version I guess. 
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1399574859-11714-1-git-send-email-minyard@acm.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+> 
+> - "No enforce option"
+> 
+> Strongly suggest making enforce the only possible behavior.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f5605b6..da302ca 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5089,10 +5089,20 @@ static struct notifier_block migration_notifier = {
- 	.priority = CPU_PRI_MIGRATION,
- };
- 
-+static void __cpuinit set_cpu_rq_start_time(void)
-+{
-+	int cpu = smp_processor_id();
-+	struct rq *rq = cpu_rq(cpu);
-+	rq->age_stamp = sched_clock_cpu(cpu);
-+}
-+
- static int sched_cpu_active(struct notifier_block *nfb,
- 				      unsigned long action, void *hcpu)
- {
- 	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_STARTING:
-+		set_cpu_rq_start_time();
-+		return NOTIFY_OK;
- 	case CPU_DOWN_FAILED:
- 		set_cpu_active((long)hcpu, true);
- 		return NOTIFY_OK;
-@@ -6970,6 +6980,7 @@ void __init sched_init(void)
- 	if (cpu_isolated_map == NULL)
- 		zalloc_cpumask_var(&cpu_isolated_map, GFP_NOWAIT);
- 	idle_thread_set_boot_cpu();
-+	set_cpu_rq_start_time();
- #endif
- 	init_sched_fair_class();
- 
+Right that's the plan.
+
+> 
+> - "Not in the s390x case, because the KVM facility mask limits the cpu 
+> model specific facilities"
+> 
+> What if the KVM facility mask changes?  For x86, nowadays new CPUID bits 
+> are only introduced in KVM when a new processors comes out.  But if we 
+> introduced an older CPUID bit, it would be a huge complication for 
+> backwards compatibility.  Is it different for s390?
+> 
+
+I'm thinking about this one currently. The ABI itself will not change
+because all facilities of the architecture will be defined in QEMU for the
+respective CPU model even though some of them are masked out upon request
+by KVM, but the mask is part of the interface itself and can be applied by
+QEMU already.  
+
+Michael 
+
+> Paolo
+> 
+
