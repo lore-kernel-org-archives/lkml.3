@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaEVFhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 01:37:53 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:34914 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810AbaEVFhu (ORCPT
+	id S1753448AbaEVFiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 01:38:01 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:64897 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810AbaEVFh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 01:37:50 -0400
+	Thu, 22 May 2014 01:37:58 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
         inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
         pavel@ucw.cz, len.brown@intel.com, sudeep.holla@arm.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3 1/8] cpufreq: cpufreq-cpu0: remove dependency on thermal
-Date: Thu, 22 May 2014 11:07:25 +0530
-Message-Id: <c73c825beda0207867bd29e40fece217cbf15925.1400736536.git.viresh.kumar@linaro.org>
+Subject: [PATCH V3 2/8] opp: of_init_opp_table(): return -ENOSYS when feature isn't implemented
+Date: Thu, 22 May 2014 11:07:26 +0530
+Message-Id: <7ad59da5b28e8ed632e833fa5095129628bd8deb.1400736536.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <cover.1400736536.git.viresh.kumar@linaro.org>
 References: <cover.1400736536.git.viresh.kumar@linaro.org>
@@ -26,31 +26,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpufreq-cpu0 uses thermal framework to register a cooling device, but doesn't
-depend on it as there are dummy calls provided by thermal layer when
-CONFIG_THERMAL=n. So, we don't really need to mention thermal as a dependency
-for cpufreq-cpu0 in Kconfig.
+When none of CONFIG_PM_OPP or CONFIG_OF is enabled we use the dummy
+implementation of of_init_opp_table() routine, which returns -EINVAL currently.
+-EINVAL can confuse the callers a bit as it can have other meanings for the
+actual implementation of this routine.
 
-Remove it.
+It is more appropriate to return -ENOSYS instead to avoid confusion at caller.
 
+Suggested-and-reviewed-by: Sudeep Holla <sudeep.holla@arm.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/Kconfig | 2 +-
+ include/linux/pm_opp.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 1fbe11f..4310997 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -185,7 +185,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
+diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
+index 0330217..6668150 100644
+--- a/include/linux/pm_opp.h
++++ b/include/linux/pm_opp.h
+@@ -112,7 +112,7 @@ int of_init_opp_table(struct device *dev);
+ #else
+ static inline int of_init_opp_table(struct device *dev)
+ {
+-	return -EINVAL;
++	return -ENOSYS;
+ }
+ #endif
  
- config GENERIC_CPUFREQ_CPU0
- 	tristate "Generic CPU0 cpufreq driver"
--	depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
-+	depends on HAVE_CLK && REGULATOR && OF
- 	select PM_OPP
- 	help
- 	  This adds a generic cpufreq driver for CPU0 frequency management.
 -- 
 2.0.0.rc2
 
