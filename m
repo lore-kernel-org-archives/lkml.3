@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaEVQ2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:28:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44546 "EHLO mx2.suse.de"
+	id S1751336AbaEVQa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:30:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44579 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869AbaEVQ2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:28:00 -0400
-Date: Thu, 22 May 2014 18:27:56 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
-        Flavio Leitner <fbl@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Flavio Leitner <fbl@sysclose.org>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] i8k: increase fan limit to 3
-Message-ID: <20140522182756.04afd351@endymion.delvare>
-In-Reply-To: <20140522151259.GC1001@roeck-us.net>
-References: <1400725168-21358-1-git-send-email-fbl@redhat.com>
-	<537D6FC8.5000105@roeck-us.net>
-	<20140522082831.GA16167@alpha.franken.de>
-	<20140522151259.GC1001@roeck-us.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1750747AbaEVQa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:30:57 -0400
+Date: Thu, 22 May 2014 17:30:51 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Dave Chinner <david@fromorbit.com>, Bob Liu <bob.liu@oracle.com>,
+        Jan Kara <jack@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Shrinkers and proportional reclaim
+Message-ID: <20140522163051.GJ23991@suse.de>
+References: <1400749779-24879-1-git-send-email-mgorman@suse.de>
+ <20140522161416.GD25013@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140522161416.GD25013@yliu-dev.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014 08:12:59 -0700, Guenter Roeck wrote:
-> On Thu, May 22, 2014 at 10:28:31AM +0200, Thomas Bogendoerfer wrote:
-> > On Wed, May 21, 2014 at 08:32:24PM -0700, Guenter Roeck wrote:
-> > > On 05/21/2014 07:19 PM, Flavio Leitner wrote:
-> > > >From: Flavio Leitner <fbl@sysclose.org>
-> > > >
-> > > >It is possible to increase left fan speed on a
-> > > >DELL Precision 490n system up to 3.
-> > > >
-> > > >     value    fan rpm
-> > > >       1      35460
-> > > >       2      64740
-> > > >       3      78510
-> > > >
-> > > Guess the speed factor 30 doesn't apply here.
-> > 
-> > on my vostro 1720 value 3 is default value and it looks like
-> > it's sort of an auto mode.
-> > 
-> > BTW. the only fan in the system is on the left side, but shows up as
-> > RigthFan. Wouldn't it be better to simply number the fans and let the
-> > "real" labeling be done via sensors.conf ?
-> > 
-> I agree. Jean, any comments ? Is it ok to drop the fan labels ?
+On Fri, May 23, 2014 at 12:14:16AM +0800, Yuanhan Liu wrote:
+> On Thu, May 22, 2014 at 10:09:36AM +0100, Mel Gorman wrote:
+> > This series is aimed at regressions noticed during reclaim activity. The
+> > first two patches are shrinker patches that were posted ages ago but never
+> > merged for reasons that are unclear to me. I'm posting them again to see if
+> > there was a reason they were dropped or if they just got lost. Dave?  Time?
+> > The last patch adjusts proportional reclaim. Yuanhan Liu, can you retest
+> > the vm scalability test cases on a larger machine? Hugh, does this work
+> > for you on the memcg test cases?
+> 
+> Sure, and here is the result. I applied these 3 patches on v3.15-rc6,
+> and head commit is 60c10afd. e82e0561 is the old commit that introduced
+> the regression.  The testserver has 512G memory and 120 CPU.
+> 
+> It's a simple result; if you need more data, I can gather them and send
+> it to you tomorrow:
+> 
+> e82e0561        v3.15-rc6       60c10afd
+> ----------------------------------------
+> 18560785        12232122        38868453
+>                 -34%            +109
+> 
+> As you can see, the performance is back, and it is way much better ;)
+> 
 
-Yes it is, I had that it mind already, just I don't have the time to do
-it.
+Thanks a lot for that and the quick response. It is much appreciated.
 
 -- 
-Jean Delvare
-SUSE L3 Support
+Mel Gorman
+SUSE Labs
