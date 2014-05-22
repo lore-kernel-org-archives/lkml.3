@@ -1,117 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaEVSVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:21:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57582 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503AbaEVSVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 14:21:06 -0400
-Message-ID: <537E3FB7.5050003@ti.com>
-Date: Thu, 22 May 2014 21:19:35 +0300
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
-        <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <grant.likely@linaro.org>
-CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
-        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>
-Subject: Re: [Patch v6 4/7] power: reset: add bindings for keystone reset
- driver
-References: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com> <1400777062-19276-5-git-send-email-ivan.khoronzhuk@ti.com> <537E3BDD.40106@cogentembedded.com>
-In-Reply-To: <537E3BDD.40106@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1751913AbaEVSYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:24:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59033 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaEVSX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 14:23:59 -0400
+Date: Thu, 22 May 2014 11:23:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 09/19] mm: page_alloc: Use word-based accesses for
+ get/set pageblock bitmaps
+Message-Id: <20140522112357.4715059bb69273f40c3ec4f2@linux-foundation.org>
+In-Reply-To: <537DC247.5020801@suse.cz>
+References: <1399974350-11089-1-git-send-email-mgorman@suse.de>
+	<1399974350-11089-10-git-send-email-mgorman@suse.de>
+	<537DC247.5020801@suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 22 May 2014 11:24:23 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
 
-On 05/22/2014 09:03 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 05/22/2014 08:44 PM, Ivan Khoronzhuk wrote:
->
->> This node is intended to allow SoC reset in case of software reset
->> or appropriate watchdogs.
->
->> The Keystone SoCs can contain up to 4 watchdog timers to reset
->> SoC. Each watchdog timer event input is connected to the Reset Mux
->> block. The Reset Mux block can be configured to cause reset or not.
->
->> Additionally soft or hard reset can be configured.
->
->> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> ---
->>   .../bindings/power/reset/keystone-reset.txt        | 67 
->> ++++++++++++++++++++++
->>   1 file changed, 67 insertions(+)
->>   create mode 100644 
->> Documentation/devicetree/bindings/power/reset/keystone-reset.txt
->
->> diff --git 
->> a/Documentation/devicetree/bindings/power/reset/keystone-reset.txt 
->> b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
->> new file mode 100644
->> index 0000000..a8a0c31
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
->> @@ -0,0 +1,67 @@
->> +* Device tree bindings for Texas Instruments keystone reset
->> +
->> +This node is intended to allow SoC reset in case of software reset
->> +of selected watchdogs.
->> +
->> +The Keystone SoCs can contain up to 4 watchdog timers to reset
->> +SoC. Each watchdog timer event input is connected to the Reset Mux
->> +block. The Reset Mux block can be configured to cause reset or not.
->> +
->> +Additionally soft or hard reset can be configured.
->> +
->> +Required properties:
->> +
->> +- compatible:        ti,keystone-reset
->> +
->> +- ti,syscon-pll:    phandle/offset pair. The phandle to syscon used to
->> +            access pll controller registers and the offset to use
->> +            reset control registers.
->> +
->> +- ti,syscon-dev:    phandle/offset pair. The phandle to syscon used to
->> +            access device state control registers and the offset
->> +            in order to use mux block registers for all watchdogs.
->> +
->> +Optional properties:
->> +
->> +- ti,soft-reset:    Boolean option indicating soft reset.
->> +            By default hard reset is used.
->> +
->> +- ti,wdt_list:        WDT list that can cause SoC reset. It's not 
->> related
->
->    Hm, why underscore in this property while hyphens are used in the 
-> others? Hyphen is generally preferrable in the device tree names...
+> > In a test running dd onto tmpfs the overhead of the pageblock-related
+> > functions went from 1.27% in profiles to 0.5%.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > Acked-by: Vlastimil Babka <vbabka@suse.cz>
+> 
+> Hi, I've tested if this closes the race I've been previously trying to fix
+> with the series in http://marc.info/?l=linux-mm&m=139359694028925&w=2
+> And indeed with this patch I wasn't able to reproduce it in my stress test
+> (which adds lots of memory isolation calls) anymore. So thanks to Mel I can
+> dump my series in the trashcan :P
+> 
+> Therefore I believe something like below should be added to the changelog,
+> and put to stable as well.
 
-Yes. You are right. I'll correct
-Thanks!
+OK, I made it so.
 
->
->> +            to WDT driver, it's just needed to enable a SoC related
->> +            reset that's triggered by one of WDTs. The list is
->> +            in format: <0>, <2>; It can be in random order and
->> +            begins from 0 to 3, as keystone can contain up to 4 SoC
->> +            reset watchdogs and can be in random order.
->
-> WBR, Sergei
->
-
--- 
-Regards,
-Ivan Khoronzhuk
-
+Miraculously, the patch applies OK to 3.14.  And it compiles!
