@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaEVWWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 18:22:46 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44274 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923AbaEVWWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 18:22:44 -0400
-Message-ID: <537E78AD.1040409@linux.vnet.ibm.com>
-Date: Thu, 22 May 2014 15:22:37 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752317AbaEVWX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 18:23:57 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:48109 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099AbaEVWXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 18:23:55 -0400
 MIME-Version: 1.0
-To: Ian Munsie <imunsie@au1.ibm.com>
-CC: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        scottwood <scottwood@freescale.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v4 09/11] powerpc/perf: add support for the hv 24x7 interface
-References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com> <1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com> <1400744950-sup-4804@delenn.ozlabs.ibm.com>
-In-Reply-To: <1400744950-sup-4804@delenn.ozlabs.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052222-0320-0000-0000-000003598D7C
+Date: Fri, 23 May 2014 00:23:54 +0200
+Message-ID: <CACRpkdZTez-OJgjNV8jKxgFEXhyXdsnv5bwSdLH_dRfok1u24g@mail.gmail.com>
+Subject: [GIT PULL] sound branch of STMPE cleanups
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 01:19 AM, Ian Munsie wrote:
-> Hi Cody,
->
-> I just tried building this with gcc 4.5, which failed with the following
-> warning (treated as an error):
->
-> cc1: warnings being treated as errors
-> arch/powerpc/perf/hv-24x7.c: In function 'single_24x7_request':
-> arch/powerpc/perf/hv-24x7.c:346:1: error: the frame size of 8192 bytes is larger than 2048 bytes
-> make[3]: *** [arch/powerpc/perf/hv-24x7.o] Error 1
-> make[2]: *** [arch/powerpc/perf] Error 2
->
-> My .config has CONFIG_FRAME_WARN=2048 (default on 64bit), but the
-> alignment constraints in this function may require 8K on the stack -
-> possibly a bit large?
->
+Hi Lee,
 
-Yep, it is a bit large. In other places in hv-24x7 that use similar 
-firmware interfaces (with similar alignment requirements), I've used a 
-kmem_cache (hv_page_cache). Testing out a patch that uses that here as well.
+as seen in linux-next something is screwed up on the immutable
+branch for STMPE cleanups, can you pull this instead, it is
+the known tested good version with no compilation regressions.
 
->
-> Notably for some reason this warning no longer seems to trigger on gcc
-> 4.8 (or at least somewhere between 4.5-4.8), though the assembly does
-> still show it aligning the buffers.
+I have no hurry to get this into the GPIO tree anymore, I will push
+additionall changes to the next merge window, simply.
 
-That's a bit concerning (and might be why I didn't pick it up, using gcc 
-4.9.0 over here). Looking at the gcc docs, it seems to indicate that 
-alloca() and VLAs aren't counted for -Wframe-larger-than. Perhaps gcc 
-decided to move locally defined structures with alignment requirements 
-into that same bucket? (while size of the structures is statically 
-determinable, the stack consumption due to alignment is [to some degree] 
-variable).
+Yours,
+Linus Walleij
 
+
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git
+stmpe-for-lee
+
+for you to fetch changes up to decc1ca8b2e5ae947fd9679f8adbd056d3b47d30:
+
+  mfd: stmpe: mask off unused blocks properly (2014-05-23 00:19:12 +0200)
+
+----------------------------------------------------------------
+Linus Walleij (4):
+      mfd: stmpe: root out static GPIO and IRQ assignments
+      mfd: stmpe: add optional regulators
+      mfd: stmpe: probe properly from the device tree
+      mfd: stmpe: mask off unused blocks properly
+
+ drivers/gpio/gpio-stmpe.c | 18 +++++-------------
+ drivers/mfd/Kconfig       |  1 +
+ drivers/mfd/stmpe-i2c.c   | 30 +++++++++++++++++++++++++++++-
+ drivers/mfd/stmpe.c       | 30 ++++++++++++++++++++++++++++--
+ drivers/mfd/stmpe.h       |  2 +-
+ include/linux/mfd/stmpe.h | 19 +++++--------------
+ 6 files changed, 69 insertions(+), 31 deletions(-)
