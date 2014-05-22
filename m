@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336AbaEVQa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:30:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44579 "EHLO mx2.suse.de"
+	id S1751670AbaEVQbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:31:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52790 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747AbaEVQa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:30:57 -0400
-Date: Thu, 22 May 2014 17:30:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Dave Chinner <david@fromorbit.com>, Bob Liu <bob.liu@oracle.com>,
-        Jan Kara <jack@suse.cz>, Rik van Riel <riel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Shrinkers and proportional reclaim
-Message-ID: <20140522163051.GJ23991@suse.de>
-References: <1400749779-24879-1-git-send-email-mgorman@suse.de>
- <20140522161416.GD25013@yliu-dev.sh.intel.com>
+	id S1750869AbaEVQbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:31:37 -0400
+Message-ID: <537E261F.10401@ti.com>
+Date: Thu, 22 May 2014 19:30:23 +0300
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140522161416.GD25013@yliu-dev.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>
+CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
+        <arnd@arndb.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        <linux@arm.linux.org.uk>, <sergei.shtylyov@cogentembedded.com>,
+        <linux-doc@vger.kernel.org>, <w-kwok2@ti.com>, <rdunlap@infradead.org>,
+        <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
+        <m-karicheri2@ti.com>, <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch v5 3/7] mfd: ti-keystone-devctrl: add bindings for device
+ state control
+References: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com> <1400766516-14537-4-git-send-email-ivan.khoronzhuk@ti.com> <20140522141432.GA19747@lee--X1> <537E0A87.5010408@ti.com> <20140522153309.GB19747@lee--X1> <537E224E.3060601@ti.com>
+In-Reply-To: <537E224E.3060601@ti.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 12:14:16AM +0800, Yuanhan Liu wrote:
-> On Thu, May 22, 2014 at 10:09:36AM +0100, Mel Gorman wrote:
-> > This series is aimed at regressions noticed during reclaim activity. The
-> > first two patches are shrinker patches that were posted ages ago but never
-> > merged for reasons that are unclear to me. I'm posting them again to see if
-> > there was a reason they were dropped or if they just got lost. Dave?  Time?
-> > The last patch adjusts proportional reclaim. Yuanhan Liu, can you retest
-> > the vm scalability test cases on a larger machine? Hugh, does this work
-> > for you on the memcg test cases?
-> 
-> Sure, and here is the result. I applied these 3 patches on v3.15-rc6,
-> and head commit is 60c10afd. e82e0561 is the old commit that introduced
-> the regression.  The testserver has 512G memory and 120 CPU.
-> 
-> It's a simple result; if you need more data, I can gather them and send
-> it to you tomorrow:
-> 
-> e82e0561        v3.15-rc6       60c10afd
-> ----------------------------------------
-> 18560785        12232122        38868453
->                 -34%            +109
-> 
-> As you can see, the performance is back, and it is way much better ;)
-> 
 
-Thanks a lot for that and the quick response. It is much appreciated.
+On 05/22/2014 07:14 PM, Ivan Khoronzhuk wrote:
+>
+> On 05/22/2014 06:33 PM, Lee Jones wrote:
+>>>> Why do I only have this patch?  Where is the rest of the set?  Also,
+>>>> it's on v5 and I don't recall seeing the other 4 versions?
+>>> It's strange I've sent whole series on
+>>>
+>>> linux-kernel@vger.kernel.org
+>>> linux-arm-kernel@lists.infradead.org
+>>> linux-doc@vger.kernel.org
+>>> devicetree@vger.kernel.org
+>>>
+>>> v4 is also was sent to lists in question:
+>>> https://lkml.org/lkml/2014/5/21/359
+>> But did you send them to me?  I don't parse the list.
+>>
+>
+> Sorry.
+> Becouse /scripts/get_maintainer.pl  patches/reset_driver_v6/* hadn't 
+> been listed you
+> It's because there is no patch with "code" for the bindings you've 
+> comment.
+>
+> I should check it by hand for mtd.
+>
+> The bindings for mtd device_state_control were added only on v5
+> And it's added only to describe what is the node we've used in a 
+> keystone DT.
+> The node is planned to be used only via syscon phandle, there is no 
+> driver for it,
+> and compatible string for "ti,keystone-devctrl" added only to be 
+> matched by
+> a high-level device driver if needed.
+>
+> I'll send new v6 series to you also.
+> Once again sorry.
+>
+
+s/mtd/mfd
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards,
+Ivan Khoronzhuk
+
