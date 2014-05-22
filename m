@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaEVPvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:51:24 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50695 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751146AbaEVPvV (ORCPT
+	id S1752477AbaEVPvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:51:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60482 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaEVPvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:51:21 -0400
-Message-ID: <537E1CD9.5020900@st.com>
-Date: Thu, 22 May 2014 17:50:49 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
+	Thu, 22 May 2014 11:51:42 -0400
+Message-ID: <537E1D0A.6020303@wwwdotorg.org>
+Date: Thu, 22 May 2014 09:51:38 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <patrice.chotard@st.com>, <srinivas.kandagatla@gmail.com>,
-        <chris@printf.net>, <ulf.hansson@linaro.org>
-Cc: <kernel@stlinux.com>, <lee.jones@linaro.org>, <linux-mmc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: Re: [PATCH 3/8] ARM: STi: DT: Add sdhci pins for stih416
-References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org> <1400771902-26553-4-git-send-email-peter.griffin@linaro.org>
-In-Reply-To: <1400771902-26553-4-git-send-email-peter.griffin@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Tushar Behera <tushar.behera@linaro.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+CC: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, dianders@chromium.org,
+        jerry.wong@maximintegrated.com
+Subject: Re: [PATCH 1/2] ASoC: max98090: Add master clock handling
+References: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org> <1400750228-13750-2-git-send-email-tushar.behera@linaro.org>
+In-Reply-To: <1400750228-13750-2-git-send-email-tushar.behera@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-22_03:2014-05-22,2014-05-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/22/2014 03:17 AM, Tushar Behera wrote:
+> If master clock is provided through device tree, then update
+> the master clock frequency during set_sysclk.
+> 
+> Documentation has been updated to reflect the change.
 
+> diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
 
-On 05/22/2014 05:18 PM, Peter Griffin wrote:
-> This adds the required pin config for both SDHCI controllers on
-> the stih416 SoC.
->
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> ---
->   arch/arm/boot/dts/stih416-pinctrl.dtsi | 39 ++++++++++++++++++++++++++++++++++
->   1 file changed, 39 insertions(+)
->
+> @@ -1929,6 +1930,11 @@ static int max98090_dai_set_sysclk(struct snd_soc_dai *dai,
+>  	if (freq == max98090->sysclk)
+>  		return 0;
+>  
+> +	if (!IS_ERR(max98090->mclk)) {
+> +		freq = clk_round_rate(max98090->mclk, freq);
+> +		clk_set_rate(max98090->mclk, freq);
+> +	}
 
+What are the intended semantics of set_sysclk()?
+sound/soc/tegra/tegra_wm98090.c assumes that set_sysclk() is a
+notification to the CODEC driver to tell it what rate the MCLK input is
+set to (the rate is set before calling set_sysclk), whereas the code
+above assumes that this function is to tell the CODEC to somehow
+configure its input clock to be a particular rate. I have a feeling the
+code above might fail on Tegra.
 
-For all the DT patches, once Lee's comments taken into account, you can 
-add my:
-
-Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
-
-Thanks!
-Maxime
