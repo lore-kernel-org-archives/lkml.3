@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaEVAlc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 20:41:32 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:50325 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaEVAla (ORCPT
+	id S1751842AbaEVAqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 20:46:53 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:54933 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaEVAqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 20:41:30 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH 2/2] staging: comedi: addi_apci_1564: move apci1564_do_insn_bits() to addi_apci_1564.c
-Date: Wed, 21 May 2014 19:41:15 -0500
-Message-Id: <1400719275-21780-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1400719209-21452-1-git-send-email-chase.southwood@gmail.com>
-References: <1400719209-21452-1-git-send-email-chase.southwood@gmail.com>
+	Wed, 21 May 2014 20:46:52 -0400
+Date: Thu, 22 May 2014 09:46:12 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: hjk@hansjkoch.de, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers: uio_dmem_genirq: Fix memory leak in
+ uio_dmem_genirq_probe()
+Message-ID: <20140522004611.GA1216@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is already compliant with the comedi API and is behaving as
-comedi core expects.  This patch moves it out of
-addi-data/hwdrv_apci1564.c and into the driver proper since no further
-work needs to be done on it.
+When platform_get_irq() is failed after "priv" allocated,
+it need to free "priv". But the label of bad0 doesn't try
+to free about "priv". So this patch changes that lable to "bad1".
+But "bad1" has pm_runtime_disable() call, this function should
+be called when uio_register_device() is failed. So it is moved
+into handling error for uio_register_device().
 
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-Just a couple patches in this set, but with these out of the way, the
-next patchset can focus entirely on getting the change-of-state interrupt
-functionality working.  Made sense to just finish up with DI/DO and start
-COS interrupts separately.
+ drivers/uio/uio_dmem_genirq.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- .../staging/comedi/drivers/addi-data/hwdrv_apci1564.c   | 17 -----------------
- drivers/staging/comedi/drivers/addi_apci_1564.c         | 17 +++++++++++++++++
- 2 files changed, 17 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-index 533d156..0ba5385 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-@@ -170,23 +170,6 @@ static int apci1564_do_config(struct comedi_device *dev,
- 	return insn->n;
- }
+diff --git a/drivers/uio/uio_dmem_genirq.c b/drivers/uio/uio_dmem_genirq.c
+index 1270f3b..8d0bba4 100644
+--- a/drivers/uio/uio_dmem_genirq.c
++++ b/drivers/uio/uio_dmem_genirq.c
+@@ -204,7 +204,7 @@ static int uio_dmem_genirq_probe(struct platform_device *pdev)
+ 		ret = platform_get_irq(pdev, 0);
+ 		if (ret < 0) {
+ 			dev_err(&pdev->dev, "failed to get IRQ\n");
+-			goto bad0;
++			goto bad1;
+ 		}
+ 		uioinfo->irq = ret;
+ 	}
+@@ -275,6 +275,7 @@ static int uio_dmem_genirq_probe(struct platform_device *pdev)
+ 	ret = uio_register_device(&pdev->dev, priv->uioinfo);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to register uio device\n");
++		pm_runtime_disable(&pdev->dev);
+ 		goto bad1;
+ 	}
  
--static int apci1564_do_insn_bits(struct comedi_device *dev,
--				 struct comedi_subdevice *s,
--				 struct comedi_insn *insn,
--				 unsigned int *data)
--{
--	struct addi_private *devpriv = dev->private;
--
--	s->state = inl(devpriv->i_IobaseAmcc + APCI1564_DO_REG);
--
--	if (comedi_dio_update_state(s, data))
--		outl(s->state, devpriv->i_IobaseAmcc + APCI1564_DO_REG);
--
--	data[1] = s->state;
--
--	return insn->n;
--}
--
- /*
-  * Configures The Timer, Counter or Watchdog
-  *
-diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
-index fe477cc5..13d9962 100644
---- a/drivers/staging/comedi/drivers/addi_apci_1564.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
-@@ -26,6 +26,23 @@ static int apci1564_di_insn_bits(struct comedi_device *dev,
- 	return insn->n;
- }
- 
-+static int apci1564_do_insn_bits(struct comedi_device *dev,
-+				 struct comedi_subdevice *s,
-+				 struct comedi_insn *insn,
-+				 unsigned int *data)
-+{
-+	struct addi_private *devpriv = dev->private;
-+
-+	s->state = inl(devpriv->i_IobaseAmcc + APCI1564_DO_REG);
-+
-+	if (comedi_dio_update_state(s, data))
-+		outl(s->state, devpriv->i_IobaseAmcc + APCI1564_DO_REG);
-+
-+	data[1] = s->state;
-+
-+	return insn->n;
-+}
-+
- static int apci1564_reset(struct comedi_device *dev)
- {
- 	struct addi_private *devpriv = dev->private;
+@@ -282,7 +283,6 @@ static int uio_dmem_genirq_probe(struct platform_device *pdev)
+ 	return 0;
+  bad1:
+ 	kfree(priv);
+-	pm_runtime_disable(&pdev->dev);
+  bad0:
+ 	/* kfree uioinfo for OF */
+ 	if (pdev->dev.of_node)
 -- 
-1.9.0
+1.7.1
 
