@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaEVGb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 02:31:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39620 "EHLO
+	id S1751877AbaEVGbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 02:31:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39631 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaEVGbW (ORCPT
+	with ESMTP id S1751417AbaEVGb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 02:31:22 -0400
+	Thu, 22 May 2014 02:31:29 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
 CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <zonque@gmail.com>,
         <b-liu@ti.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v5 1/6] usb: musb: core: Handle Babble condition only in HOST mode
-Date: Thu, 22 May 2014 11:59:36 +0530
-Message-ID: <1400740181-31213-2-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v5 3/6] usb: musb: dsps: Call usb_phy(_shutdown/_init) during musb_platform_reset()
+Date: Thu, 22 May 2014 11:59:38 +0530
+Message-ID: <1400740181-31213-4-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1400740181-31213-1-git-send-email-george.cherian@ti.com>
 References: <1400740181-31213-1-git-send-email-george.cherian@ti.com>
@@ -24,30 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BABBLE and RESET share the same interrupt. The interrupt
-is considered to be RESET if MUSB is in peripheral mode and
-as a BABBLE if MUSB is in HOST mode.
-
-Handle babble condition iff MUSB is in HOST mode.
+For DSPS platform usb_phy_vbus(_off/_on) are NOPs.
+So during musb_platform_reset() call usb_phy(_shutdown/_init)
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/usb/musb/musb_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/musb/musb_dsps.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 61da471..eff3c5c 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -849,7 +849,7 @@ b_host:
- 	}
+diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+index 51beb13..74c4193 100644
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -543,7 +543,11 @@ static void dsps_musb_reset(struct musb *musb)
+ 	const struct dsps_musb_wrapper *wrp = glue->wrp;
  
- 	/* handle babble condition */
--	if (int_usb & MUSB_INTR_BABBLE)
-+	if (int_usb & MUSB_INTR_BABBLE && is_host_active(musb))
- 		schedule_work(&musb->recover_work);
+ 	dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
+-	udelay(100);
++	usleep_range(100, 200);
++	usb_phy_shutdown(musb->xceiv);
++	usleep_range(100, 200);
++	usb_phy_init(musb->xceiv);
++
+ }
  
- #if 0
+ static struct musb_platform_ops dsps_ops = {
 -- 
 1.8.3.1
 
