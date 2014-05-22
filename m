@@ -1,226 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaEVM6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:58:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45299 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaEVM6Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:58:24 -0400
-Date: Thu, 22 May 2014 14:58:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
-Message-ID: <20140522125818.GV30445@twins.programming.kicks-ass.net>
-References: <20140411134243.160989490@infradead.org>
- <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
+	id S1754931AbaEVNAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:00:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40136 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752362AbaEVNAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 09:00:21 -0400
+Date: Thu, 22 May 2014 14:00:14 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] mm: filemap: Avoid unnecessary barriers and waitqueue
+ lookups in unlock_page fastpath v7
+Message-ID: <20140522130014.GF23991@suse.de>
+References: <20140515104808.GF23991@suse.de>
+ <20140515142414.16c47315a03160c58ceb9066@linux-foundation.org>
+ <20140521121501.GT23991@suse.de>
+ <20140521142622.049d0b3af5fc94912d5a1472@linux-foundation.org>
+ <20140521213354.GL2485@laptop.programming.kicks-ass.net>
+ <20140521145000.f130f8779f7641d0d8afcace@linux-foundation.org>
+ <20140522000715.GA23991@suse.de>
+ <20140522072001.GP30445@twins.programming.kicks-ass.net>
+ <20140522104051.GE23991@suse.de>
+ <20140522105638.GT30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NslO8/oLdnqAPeMq"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140522105638.GT30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 22, 2014 at 12:56:38PM +0200, Peter Zijlstra wrote:
+> On Thu, May 22, 2014 at 11:40:51AM +0100, Mel Gorman wrote:
+> > +void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, int bit)
+> > +{
+> > +	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
+> > +	unsigned long flags;
+> > +
+> > +	/* If there is no PG_waiters bit, always take the slow path */
+> 
+> That comment is misleading, this is actually a fast path for
+> !PG_waiters.
+> 
 
---NslO8/oLdnqAPeMq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+And could have been far better anyway now that you called me on it.
 
-On Fri, Apr 11, 2014 at 08:00:23AM -0700, Andy Lutomirski wrote:
->=20
-> That being said, I think that this addresses once one of the two major
-> issues.  While the race you're fixing is more interesting, I think its
-> impact is dwarfed by the fact that ttwu_queue_remote completely
-> ignores polling.  (NB: I haven't actually tested this patch set, but I
-> did try to instrument this stuff awhile ago.)
->=20
-> To fix this, presumably the wake-from-idle path needs a
-> sched_ttwu_pending call, and ttwu_queue_remote could use resched_task.
->  sched_ttwu_pending could benefit from a straightforward optimization:
-> it doesn't need rq->lock if llist is empty.
->=20
-> If you're not planning on trying to fix that, I can try to write up a
-> patch in the next day or two.
->=20
-> Even with all of this fixed, what happens when ttwu_queue_remote is
-> called with a task that has lower priority than whatever is currently
-> running on the targeted cpu?  I think the result is an IPI that serves
-> very little purpose other than avoiding taking a spinlock in the
-> waking thread.  This may be a bad tradeoff.  I doubt that this matters
-> for my particular workload, though.
->=20
+> > +	if (!__PG_WAITERS && waitqueue_active(wq)) {
+> > +		__wake_up(wq, TASK_NORMAL, 1, &key);
+> > +		return;
+> > +	}
+> > +
+> > +	/*
+> > +	 * Unlike __wake_up_bit it is necessary to check waitqueue_active to be
+> > +	 * checked under the wqh->lock to avoid races with parallel additions
+> > +	 * to the waitqueue. Otherwise races could result in lost wakeups
+> > +	 */
+> > +	spin_lock_irqsave(&wqh->lock, flags);
+> > +	if (waitqueue_active(wqh))
+> > +		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
+> > +	else
+> > +		ClearPageWaiters(page);
+> > +	spin_unlock_irqrestore(&wqh->lock, flags);
+> > +}
+> 
+> So I think you missed one Clear opportunity here that was in my original
+> proposal, possibly because you also frobbed PG_writeback in.
+> 
 
-Ok, now that that all settled, how about something like this on top?
+It got lost in the midst of all the other modifications to make this as
+"obvious" as possible.
 
----
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4ea7b3f1a087..a5da85fb3570 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -546,12 +546,38 @@ static bool set_nr_and_not_polling(struct task_struct=
- *p)
- 	struct thread_info *ti =3D task_thread_info(p);
- 	return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
- }
-+
-+/*
-+ * Atomically set TIF_NEED_RESCHED if TIF_POLLING_NRFLAG is set.
-+ */
-+static bool set_nr_if_polling(struct task_struct *p)
-+{
-+	struct thread_info *ti =3D task_thread_info(p);
-+	typeof(ti->flags) old, val =3D ti->flags;
-+
-+	for (;;) {
-+		if (!(val & _TIF_POLLING_NRFLAG))
-+			return false;
-+		if (val & _TIF_NEED_RESCHED)
-+			return true;
-+		old =3D cmpxchg(&ti->flags, val, val | _TIF_NEED_RESCHED);
-+		if (old =3D=3D val)
-+			return true;
-+		val =3D old;
-+	}
-+}
-+
- #else
- static bool set_nr_and_not_polling(struct task_struct *p)
+> <SNIP>
+>
+> I suppose the one thing to say for the big open coded loop is that its
+> much easier to read than this scattered stuff.
+> 
+
+Sure, but the end result of open coding this is duplicated code that will
+be harder to maintain overall. I could split __wake_up_bit and use that
+in both but I do not think it would make the code any clearer for the sake
+of two lines.  Untested but this on top?
+
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index 73cb8c6..d3a8c34 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -60,19 +60,26 @@ EXPORT_SYMBOL(remove_wait_queue);
+  * There are circumstances in which we can try to wake a task which has already
+  * started to run but is not in state TASK_RUNNING. try_to_wake_up() returns
+  * zero in this (rare) case, and we handle it by continuing to scan the queue.
++ *
++ * Returns true if a process was woken up
+  */
+-static void __wake_up_common(wait_queue_head_t *q, unsigned int mode,
++static bool __wake_up_common(wait_queue_head_t *q, unsigned int mode,
+ 			int nr_exclusive, int wake_flags, void *key)
  {
- 	set_tsk_need_resched(p);
- 	return true;
- }
-+
-+static bool set_nr_if_polling(struct task_struct *p)
-+{
-+	return false;
-+}
- #endif
-=20
- /*
-@@ -652,16 +678,7 @@ static void wake_up_idle_cpu(int cpu)
- 	if (rq->curr !=3D rq->idle)
- 		return;
-=20
--	/*
--	 * We can set TIF_RESCHED on the idle task of the other CPU
--	 * lockless. The worst case is that the other CPU runs the
--	 * idle task through an additional NOOP schedule()
--	 */
--	set_tsk_need_resched(rq->idle);
--
--	/* NEED_RESCHED must be visible before we test polling */
--	smp_mb();
--	if (!tsk_is_polling(rq->idle))
-+	if (set_nr_and_not_polling(rq->idle))
- 		smp_send_reschedule(cpu);
- }
-=20
-@@ -1521,12 +1538,15 @@ static int ttwu_remote(struct task_struct *p, int w=
-ake_flags)
- }
-=20
- #ifdef CONFIG_SMP
--static void sched_ttwu_pending(void)
-+void sched_ttwu_pending(void)
- {
- 	struct rq *rq =3D this_rq();
- 	struct llist_node *llist =3D llist_del_all(&rq->wake_list);
- 	struct task_struct *p;
-=20
-+	if (!llist)
-+		return;
-+
- 	raw_spin_lock(&rq->lock);
-=20
- 	while (llist) {
-@@ -1581,8 +1601,10 @@ void scheduler_ipi(void)
-=20
- static void ttwu_queue_remote(struct task_struct *p, int cpu)
- {
--	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
--		smp_send_reschedule(cpu);
-+	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list)) {
-+		if (!set_nr_if_polling(p))
-+			smp_send_reschedule(cpu);
-+	}
- }
-=20
- bool cpus_share_cache(int this_cpu, int that_cpu)
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 34083c9ac976..4286f2e59136 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -12,6 +12,8 @@
-=20
- #include <trace/events/power.h>
-=20
-+#include "sched.h"
-+
- static int __read_mostly cpu_idle_force_poll;
-=20
- void cpu_idle_poll_ctrl(bool enable)
-@@ -223,6 +225,7 @@ static void cpu_idle_loop(void)
- 		 */
- 		preempt_set_need_resched();
- 		tick_nohz_idle_exit();
-+		sched_ttwu_pending();
- 		schedule_preempt_disabled();
+ 	wait_queue_t *curr, *next;
++	bool woke = false;
+ 
+ 	list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
+ 		unsigned flags = curr->flags;
+ 
+-		if (curr->func(curr, mode, wake_flags, key) &&
+-				(flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
+-			break;
++		if (curr->func(curr, mode, wake_flags, key)) {
++			woke = true;
++			if ((flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
++				break;
++		}
  	}
++
++	return woke;
  }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index b2cbe81308af..2b35ec6df6b3 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -670,6 +670,8 @@ extern int migrate_swap(struct task_struct *, struct ta=
-sk_struct *);
-=20
- #ifdef CONFIG_SMP
-=20
-+extern void sched_ttwu_pending(void);
-+
- #define rcu_dereference_check_sched_domain(p) \
- 	rcu_dereference_check((p), \
- 			      lockdep_is_held(&sched_domains_mutex))
-@@ -787,6 +789,10 @@ static inline unsigned int group_first_cpu(struct sche=
-d_group *group)
-=20
- extern int group_balance_cpu(struct sched_group *sg);
-=20
-+#else
-+
-+static inline void sched_ttwu_pending(void) { }
-+
- #endif /* CONFIG_SMP */
-=20
- #include "stats.h"
+ 
+ /**
+@@ -441,9 +448,13 @@ void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, i
+ 	struct wait_bit_key key = __WAIT_BIT_KEY_INITIALIZER(word, bit);
+ 	unsigned long flags;
+ 
+-	/* If there is no PG_waiters bit, always take the slow path */
+-	if (!__PG_WAITERS && waitqueue_active(wq)) {
+-		__wake_up(wq, TASK_NORMAL, 1, &key);
++	/*
++	 * If there is no PG_waiters bit (32-bit), then waitqueue_active can be
++	 * checked without wqh->lock as there is no PG_waiters race to protect.
++	 */
++	if (!__PG_WAITERS) {
++		if (waitqueue_active(wqh))
++			__wake_up(wqh, TASK_NORMAL, 1, &key);
+ 		return;
+ 	}
+ 
+@@ -453,9 +464,8 @@ void __wake_up_page_bit(wait_queue_head_t *wqh, struct page *page, void *word, i
+ 	 * to the waitqueue. Otherwise races could result in lost wakeups
+ 	 */
+ 	spin_lock_irqsave(&wqh->lock, flags);
+-	if (waitqueue_active(wqh))
+-		__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key);
+-	else
++	if (!waitqueue_active(wqh) ||
++	    !__wake_up_common(wqh, TASK_NORMAL, 1, 0, &key))
+ 		ClearPageWaiters(page);
+ 	spin_unlock_irqrestore(&wqh->lock, flags);
+ }
 
---NslO8/oLdnqAPeMq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTffRqAAoJEHZH4aRLwOS6gvMP/0KPhGYN98oaickgJ9wg+szk
-VSE6ZSKG/ev8o6FoaWsggOxT+/6UeV9fmlRSH4HJYJIQPcAanrRVlJyqd7mjH050
-7EKNjJ5W9xdit7tmkanC/dGoS6Ea+4xY7xV15Bx6CvWjSfZQ+CESAk10XK4PPyFj
-oHWwxkL/NtETT2Qq5Gf3JbXTf3M9k7/ZKOV0sXsCYvvFA6cIVHxJYP8hUb5JPPO4
-nAPP3jKv6S3FhgkGBl3Id3WEFyjZT5hLGLvobMoiZYUyL6aASmJNjgnY4ITwayQK
-9d8FEGlKx8W/28furXk2HQm4LKID9se9kUlugWZv+fvLPrr9m3TVPBUlOebMJXbs
-oFidffWQ7B37IN5mot7NMkws8etpaCBDGCYQZgyjX3DQSUCTQO5cHZk40K9DCg8s
-04IX1CETl2+gFYIgCcnk0kQao4SPefZnoja8graHeO/reHMMbEtrqwn+L6H0U41J
-GZ+atPUJbkS5NweNLTlc4BvVHtz34W1TQHeE09ClfyR8AmipGQlfYLsYz4WXOh2i
-vdmKNyhUNWJAywliFED3UmCv6nxbFu8hLqZtJpFsJfSJy1eXDEMG8Jdlmq5qOO3W
-wLt71IlSUQlJMdqwp0qLqvUtC3ieR4GzGUXbzxLqvEpkrvBek/Aq/xamrIdhHQTd
-zeST2Ftogt5ekmOD8FUb
-=xUJh
------END PGP SIGNATURE-----
-
---NslO8/oLdnqAPeMq--
