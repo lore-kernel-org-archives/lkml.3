@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaEVQvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:51:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48895 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751825AbaEVQsY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:48:24 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
-        benh@kernel.crashing.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 10/18] m68k: io: implement dummy relaxed accessor macros for writes
-Date: Thu, 22 May 2014 17:47:22 +0100
-Message-Id: <1400777250-17335-11-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
-References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+	id S1753263AbaEVQwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:52:11 -0400
+Received: from tex.lwn.net ([70.33.254.29]:46087 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752010AbaEVQwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:52:08 -0400
+Date: Thu, 22 May 2014 10:52:06 -0600
+From: Jake Edge <jake@lwn.net>
+To: Anton Saraev <antonysaraev@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH 0/3] staging/skein: more cleanup
+Message-ID: <20140522105206.0115e1a4@chukar.edge2.net>
+In-Reply-To: <20140520215217.GB1692@Ruffial>
+References: <20140520075612.220a13ae@chukar.edge2.net>
+	<20140520144757.GA8664@titan.lakedaemon.net>
+	<20140520102411.413d565d@chukar.edge2.net>
+	<20140520215217.GB1692@Ruffial>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-write{b,w,l}_relaxed are implemented by some architectures in order to
-permit memory-mapped I/O accesses with weaker barrier semantics than the
-non-relaxed variants.
+On Wed, 21 May 2014 01:52:17 +0400 Anton Saraev wrote:
+> On Tue, May 20, 2014 at 10:24:11AM -0600, Jake Edge wrote:
+> > On Tue, 20 May 2014 10:47:57 -0400 Jason Cooper wrote:
+> >
+> > but some kind of tests are needed to ensure nothing breaks before
+> > digging into that ...
+> 
+> I have some test: slightly modified version of tests from
+> https://github.com/wernerd/Skein3Fish. It works as debugfs entry
+> and require some modification needed for module support
+> ("public" function must be extern). As I can understand Jason
+> has his own tests. That would be logical to share them but
+> I don't know where.
 
-This patch adds dummy macros for the write accessors to m68k, in the
-same vein as the dummy definitions for the relaxed read accessors.
-Additionally, the existing relaxed read accessors are moved into
-asm/io.h, so that they can be used by m68k targets with an MMU.
+well, it seems to me that we want tests that eventually can be added
+into the crypto test framework once skein moves out of staging and into
+crypto ... Jason's objdiff seems like it would be used as another
+development tool ...
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/m68k/include/asm/io.h    | 8 ++++++++
- arch/m68k/include/asm/io_no.h | 4 ----
- 2 files changed, 8 insertions(+), 4 deletions(-)
+so do you have your tests anywhere that we can look at them?  or,
+failing that, maybe you can just email me a copy off-list or something?
 
-diff --git a/arch/m68k/include/asm/io.h b/arch/m68k/include/asm/io.h
-index c70cc9155003..bccd5a914eb6 100644
---- a/arch/m68k/include/asm/io.h
-+++ b/arch/m68k/include/asm/io.h
-@@ -3,3 +3,11 @@
- #else
- #include <asm/io_mm.h>
- #endif
-+
-+#define readb_relaxed(addr)	readb(addr)
-+#define readw_relaxed(addr)	readw(addr)
-+#define readl_relaxed(addr)	readl(addr)
-+
-+#define writeb_relaxed(b, addr)	writeb(b, addr)
-+#define writew_relaxed(b, addr)	writew(b, addr)
-+#define writel_relaxed(b, addr)	writel(b, addr)
-diff --git a/arch/m68k/include/asm/io_no.h b/arch/m68k/include/asm/io_no.h
-index 52f7e8499172..19c237c63dc2 100644
---- a/arch/m68k/include/asm/io_no.h
-+++ b/arch/m68k/include/asm/io_no.h
-@@ -40,10 +40,6 @@ static inline unsigned int _swapl(volatile unsigned long v)
- #define readl(addr) \
-     ({ unsigned int __v = (*(volatile unsigned int *) (addr)); __v; })
- 
--#define readb_relaxed(addr) readb(addr)
--#define readw_relaxed(addr) readw(addr)
--#define readl_relaxed(addr) readl(addr)
--
- #define writeb(b,addr) (void)((*(volatile unsigned char *) (addr)) = (b))
- #define writew(b,addr) (void)((*(volatile unsigned short *) (addr)) = (b))
- #define writel(b,addr) (void)((*(volatile unsigned int *) (addr)) = (b))
+do you have patches pending for skein?  i might get a chance to hack on
+this some over the weekend, and we may as well try to avoid duplicating
+each other's efforts ...
+
+jake
+
 -- 
-1.9.2
-
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
