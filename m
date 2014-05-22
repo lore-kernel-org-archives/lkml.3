@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaEVJtF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:49:05 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44463 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324AbaEVJtD (ORCPT
+	id S1754409AbaEVJuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:50:24 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:43810 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700AbaEVJuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:49:03 -0400
-Message-ID: <537DC6D2.8040305@linux.vnet.ibm.com>
-Date: Thu, 22 May 2014 15:13:46 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 22 May 2014 05:50:23 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] intel_rapl: Correct hotplug correction
-References: <1400750624-19238-1-git-send-email-bp@alien8.de>
-In-Reply-To: <1400750624-19238-1-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052209-0260-0000-0000-000004FDE0D5
+In-Reply-To: <20140521193336.5df90456.akpm@linux-foundation.org>
+References: <1400639194-3743-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20140521154250.95bc3520ad8d192d95efe39b@linux-foundation.org>
+	<537d5ee4.4914e00a.5672.ffff85d5SMTPIN_ADDED_BROKEN@mx.google.com>
+	<20140521193336.5df90456.akpm@linux-foundation.org>
+Date: Thu, 22 May 2014 13:50:22 +0400
+Message-ID: <CALYGNiMeDtiaA6gfbEYcXbwkuFvTRCLC9KmMOPtopAgGg5b6AA@mail.gmail.com>
+Subject: Re: [PATCH 0/4] pagecache scanning with /proc/kpagecache
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 02:53 PM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> So 009f225ef050 ("powercap, intel-rapl: Fix CPU hotplug callback
-> registration") says how get_/put_online_cpus() should be replaced with
-> this cpu_notifier_register_begin/_done().
-> 
-> But they're still there so what's up?
-> 
+On Thu, May 22, 2014 at 6:33 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 21 May 2014 22:19:55 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+>
+>> > A much nicer interface would be for us to (finally!) implement
+>> > fincore(), perhaps with an enhanced per-present-page payload which
+>> > presents the info which you need (although we don't actually know what
+>> > that info is!).
+>>
+>> page/pfn of each page slot and its page cache tag as shown in patch 4/4.
+>>
+>> > This would require open() - it appears to be a requirement that the
+>> > caller not open the file, but no reason was given for this.
+>> >
+>> > Requiring open() would address some of the obvious security concerns,
+>> > but it will still be possible for processes to poke around and get some
+>> > understanding of the behaviour of other processes.  Careful attention
+>> > should be paid to this aspect of any such patchset.
+>>
+>> Sorry if I missed your point, but this interface defines fixed mapping
+>> between file position in /proc/kpagecache and in-file page offset of
+>> the target file. So we do not need to use seq_file mechanism, that's
+>> why open() is not defined and default one is used.
+>> The same thing is true for /proc/{kpagecount,kpageflags}, from which
+>> I copied/pasted some basic code.
+>
+> I think you did miss my point ;) Please do a web search for fincore -
+> it's a syscall similar to mincore(), only it queries pagecache:
+> fincore(int fd, loff_t offset, ...).  In its simplest form it queries
+> just for present/absent, but we could increase the query payload to
+> incorporate additional per-page info.
+>
+> It would take a lot of thought and discussion to nail down the
+> fincore() interface (we've already tried a couple of times).  But
+> unfortunately, fincore() is probably going to be implemented one day
+> and it will (or at least could) make /proc/kpagecache obsolete.
+>
 
-Ok, so I retained that because the comments in the code said that
-the caller of rapl_cleanup_data() should hold the hotplug lock.
+It seems fincore() also might obsolete /proc/kpageflags and /proc/pid/pagemap.
+because it might be implemented for /dev/mem and /proc/pid/mem as well
+as for normal files.
 
-Here is the snippet from the patch's changelog:
+Something like this:
+int fincore(int fd, u64 *kpf, u64 *pfn, size_t length, off_t offset)
 
-    ...
-    Fix the intel-rapl code in the powercap driver by using this latter form
-    of callback registration. But retain the calls to get/put_online_cpus(),
-    since they also protect the function rapl_cleanup_data(). By nesting
-    get/put_online_cpus() *inside* cpu_notifier_register_begin/done(), we avoid
-    the ABBA deadlock possibility mentioned above.
+It reports PFN and page-flags in KPF_* notation. PFN array is optional.
+KFP_NOPAGE reports hole, otherwise this is present page, but probably
+not-uptodate.
+KFP_SOFTDIRTY already here.
 
-But looking closer at the code, I think the only requirement is that
-rapl_cleanup_data() should be protected against CPU hotplug, and we
-don't actually need to hold the cpu_hotplug.lock per-se.
 
-cpu_notifier_register_begin()/end() also provide equivalent protection
-against CPU hotplug. So we should be able to remove the get/put_online_cpus()
-from intel-rapl driver.
-
-Jacob/Srinivas, is the above assumption correct for rapl?
-
-Regards,
-Srivatsa S. Bhat
-
-> Let me do what was supposed to be done.
-> 
-> Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  drivers/powercap/intel_rapl.c | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-> index d9a0770b6c73..9055f3df1f64 100644
-> --- a/drivers/powercap/intel_rapl.c
-> +++ b/drivers/powercap/intel_rapl.c
-> @@ -1377,8 +1377,6 @@ static int __init rapl_init(void)
-> 
->  	cpu_notifier_register_begin();
-> 
-> -	/* prevent CPU hotplug during detection */
-> -	get_online_cpus();
->  	ret = rapl_detect_topology();
->  	if (ret)
->  		goto done;
-> @@ -1390,7 +1388,6 @@ static int __init rapl_init(void)
->  	}
->  	__register_hotcpu_notifier(&rapl_cpu_notifier);
->  done:
-> -	put_online_cpus();
->  	cpu_notifier_register_done();
-> 
->  	return ret;
-> 
-
+Also we need new flag KFP_SWAPENTRY for vm/shmem to report swap-entry
+instead of pfn.
+Probably this is redundant, we cannot report pfn and swap-entry
+togerher if page present and in swap-cache.
