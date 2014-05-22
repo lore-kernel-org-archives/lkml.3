@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaEVQqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:46:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46363 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833AbaEVQqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:46:12 -0400
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
-        <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <grant.likely@linaro.org>
-CC: <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
-        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
-        <sergei.shtylyov@cogentembedded.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v6 6/7] ARM: dts: keystone: update reset node to work with reset driver
-Date: Thu, 22 May 2014 19:44:21 +0300
-Message-ID: <1400777062-19276-7-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com>
+	id S1752704AbaEVQrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:47:19 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:34398 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaEVQrP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 12:47:15 -0400
+X-Auth-Info: wtr8uP5fkFTqraTWj0XcE05TCW6fKMiFJlhvsJ+lHMw=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: fix typo 'CONFIG_PMAC'
+References: <1400617498.4912.66.camel@x220> <874n0j3yjf.fsf@igel.home>
+	<1400742620.21254.22.camel@x220>
+X-Yow: Why was I BORN?
+Date: Thu, 22 May 2014 18:47:07 +0200
+In-Reply-To: <1400742620.21254.22.camel@x220> (Paul Bolle's message of "Thu,
+	22 May 2014 09:10:20 +0200")
+Message-ID: <87lhttzrp0.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pll controller register set and device state control registers
-include sets of registers with different purposes, so it's logically
-to add syscon entry to be able to access them from appropriate places.
+Paul Bolle <pebolle@tiscali.nl> writes:
 
-So added pll controller and device state control syscon entries.
+> Do you want to know how to test this patch on a 32 bit powermac? Ie, see
+> if it has any effect, and whether that effect improves things or make
+> things worse.
 
-The keystone driver requires the next additional properties:
+Yes.
 
-"ti,syscon-pll" - phandle/offset pair. The phandle to syscon used to
-		  access pll controller registers and the offset to use
-		  reset control registers.
+Andreas.
 
-"ti,syscon-dev" - phandle/offset pair. The phandle to syscon used to
-		  access device state control registers and the offset
-		  in order to use mux block registers for all watchdogs.
-
-"ti,wdt_list"	- option to declare what watchdogs are used to reboot
-		  the SoC, so set "0" WDT as default.
-
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- arch/arm/boot/dts/keystone.dtsi | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
-index d9f99e7..b05def6 100644
---- a/arch/arm/boot/dts/keystone.dtsi
-+++ b/arch/arm/boot/dts/keystone.dtsi
-@@ -66,9 +66,21 @@
- 		ranges = <0x0 0x0 0x0 0xc0000000>;
- 		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
- 
-+		pllctrl: pll-controller@02310000 {
-+			compatible = "ti,keystone-pllctrl", "syscon";
-+			reg = <0x02310000 0x200>;
-+		};
-+
-+		devctrl: device-state-control@02620000 {
-+			compatible = "ti,keystone-devctrl", "syscon";
-+			reg = <0x02620000 0x1000>;
-+		};
-+
- 		rstctrl: reset-controller {
- 			compatible = "ti,keystone-reset";
--			reg = <0x023100e8 4>;	/* pll reset control reg */
-+			ti,syscon-pll = <&pllctrl 0xe4>;
-+			ti,syscon-dev = <&devctrl 0x328>;
-+			ti,wdt_list = <0>;
- 		};
- 
- 		/include/ "keystone-clocks.dtsi"
 -- 
-1.8.3.2
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
