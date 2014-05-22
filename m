@@ -1,57 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593AbaEVLj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 07:39:57 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:46044 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504AbaEVLjz (ORCPT
+	id S1754631AbaEVLkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 07:40:13 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:49759 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064AbaEVLkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 07:39:55 -0400
-Message-ID: <537DE20E.9050706@cogentembedded.com>
-Date: Thu, 22 May 2014 15:39:58 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 07:40:08 -0400
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org
-CC: gregkh@linuxfoundation.org, balbi@ti.com, zonque@gmail.com, b-liu@ti.com
-Subject: Re: [PATCH v5 5/6] usb: musb: dsps: Add the sw_babble_control()
-References: <1400740181-31213-1-git-send-email-george.cherian@ti.com> <1400740181-31213-6-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1400740181-31213-6-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140522112712.GT3693@n2100.arm.linux.org.uk>
+References: <1398644860-22973-1-git-send-email-mporter@linaro.org>
+ <20140428142950.GB30292@saruman.home> <20140428143709.GC7719@beef>
+ <20140428145223.GL26756@n2100.arm.linux.org.uk> <CAGsJ_4x1+eePRDMP0-0WeTG6ZJdzmMkN_9USbKt8joY8AKsDdw@mail.gmail.com>
+ <20140429151433.GD26756@n2100.arm.linux.org.uk> <CAGsJ_4yg2Dcwyj5cLc2DuYVOcWwmpkPzK_=BUZLqRLDyErBL=Q@mail.gmail.com>
+ <20140522093347.GS3693@n2100.arm.linux.org.uk> <CAGsJ_4yCaK8w3_vOw9uSyEtUGq0suWssrMnBHbQSU8rK0ibyUQ@mail.gmail.com>
+ <20140522112712.GT3693@n2100.arm.linux.org.uk>
+From: Barry Song <baohua@kernel.org>
+Date: Thu, 22 May 2014 19:39:47 +0800
+X-Google-Sender-Auth: PQ87lmRPlw13q8PtOZaoKlij1Vo
+Message-ID: <CAGsJ_4yc7ni9mgP-QL+73L5AbpejawWFePNLSdx1RCavjXf=9w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching nodes
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Matt Porter <mporter@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22-05-2014 10:29, George Cherian wrote:
-
-> Add sw_babble_control() logic to differentiate between transient
-> babble and real babble condition. Also add the SW babble control
-> register definitions.
-
-> Babble control register logic is implemented in the latest
-> revision of AM335x.
-
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->   drivers/usb/musb/musb_dsps.c | 50 ++++++++++++++++++++++++++++++++++++++++++++
->   drivers/usb/musb/musb_regs.h |  7 +++++++
->   2 files changed, 57 insertions(+)
-
-> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-> index f6f3087..868caf8 100644
-> --- a/drivers/usb/musb/musb_dsps.c
-> +++ b/drivers/usb/musb/musb_dsps.c
-> @@ -536,6 +536,56 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
->   	return 0;
->   }
+2014-05-22 19:27 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Thu, May 22, 2014 at 07:04:14PM +0800, Barry Song wrote:
+>> 2014-05-22 17:33 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>> > On Tue, Apr 29, 2014 at 11:40:33PM +0800, Barry Song wrote:
+>> >> 2014-04-29 23:14 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>> >> > On Tue, Apr 29, 2014 at 11:05:06PM +0800, Barry Song wrote:
+>> >> >> 2014-04-28 22:52 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>> >> >> > On Mon, Apr 28, 2014 at 10:37:09AM -0400, Matt Porter wrote:
+>> >> >> >> The "fix" is tested against bcm281xx and bcm21664 as that is what the
+>> >> >> >> l2c cleanup breaks in -next. As mentioned, I don't have the sirfsoc h/w
+>> >> >> >> so this first attempt at a fix also breaks their platform. It can be
+>> >> >> >> addressed by adding those platform specific compatibles back to the dts,
+>> >> >> >> of course.
+>> >> >> >>
+>> >> >> >> I'd much prefer that the sirfsoc folks fix this...it's going to break
+>> >> >> >> other platforms in a multi v7 build.
+>> >> >> >
+>> >> >> > Well, it's about time we got rid of this from platform specific code
+>> >> >> > anyway, taking it away from platform maintainers to mess around with.
+>> >> >> > So that's what I'm doing.
+>> >> >> >
+>> >> >> > It's worth noting that if you build a single zImage with exynos also
+>> >> >> > enabled, then you also end up with an unconditional call from that
+>> >> >> > code to l2x0_of_init() with it's own magic numbers - and that applies
+>> >> >> > before my changes.
+>> >> >> >
+>> >> >> > So let's fix this properly and yank this crap from platform maintainers
+>> >> >> > fingers.
+>> >> >>
+>> >> >> i mentioned dropping specific dts compatible prop will break non-csr
+>> >> >> platforms in the mail thread "ARM: prima2: remove L2 cache size
+>> >> >> override" and i said i was going to send v2. you said you need it
+>> >> >> before rc6. now it has been sent, but i am sorry it is not against
+>> >> >> next-20140424.
+>> >> >
+>> >> > FFS.  IT HASN'T BEEN SENT.  All that I did was drop it into linux-next
+>> >> > so that more people would get off their fat backsides and test this
+>> >> > fscking patch set - something which hasn't happened because no one
+>> >> > pays attention to emails sent to mailing lists.
+>> >>
+>> >> so your point is people don't pay attention to your mails? or you are
+>> >> ignored? i think that is 100% not real. i think your opinions and
+>> >> mails are always respected as you are the chief arm linux expert.
+>> >>
+>> >> >
+>> >> > I also told you that this was what I was going to do.  But... is it
+>> >> > really on to hold up such a large patch set which impacts virtually
+>> >> > everyone because _you_ don't have time to sort out your small special
+>> >> > requirements - no it is not, that's just fscking selfish.
+>> >> >
+>> >> > Anyway, I've had it with dealing with platform maintainers, I've yanked
+>> >> > this patch set, and I'm no longer planning to do anything with it -
+>> >> > platform maintainers have destroyed my will to get any of this series
+>> >> > into the kernel.
+>> >>
+>> >> no, i am trying to follow your suggestion to make patch set merged and
+>> >> l2 codes cleaned.
+>> >> i have been trying to follow your will until now, and from the beginning.
+>> >>
+>> >> >
+>> >> > So, the L2 cache code is going to remain in its current state, and it's
+>> >> > going to rot because it's _FAR_ too much effort dealing with slow people
+>> >> > like yourselves, or people who want the series split up, or people who
+>> >> > whinge that there aren't any acks there (WELL GET OFF YOUR FAT BACKSIDES
+>> >> > AND SEND ME SOME IF YOU CARE ABOUT THIS - no, don't, I'm no longer pushing
+>> >> > this series.)
+>> >>
+>> >> people might be "selfish", but people might have some reasons to
+>> >> response slowly, like holiday or family issue.
+>> >> how about taking it easy? it doesn't prove you are not respected by
+>> >> platform maintainers.
+>> >>
+>> >> >
+>> >> > This is the last time I'm going to ever try cleaning up any core ARM code.
+>> >> > Core ARM maintanence is impossible in this environment with arm-soc split
+>> >> > from core ARM stuff, because core ARM stuff /always/ impacts on SoC
+>> >> > specific code.  You can't get away from that.
+>> >> >
+>> >> > My position in this community has been made impossible and obsolete by
+>> >> > Linaro.  I'm at the point of walking away from this crap.
+>> >>
+>> >> just fix the relationship and communication, that is good enough. you
+>> >> have done things so well, there is no reason to give up.
+>> >
+>> > So, just as I thought...
+>> >
+>> > -rc6 has now been released, and YOU have done NOTHING to resolve any of
+>> > the issues you have with this patch set - which is precisely on track
+>> > with how you have behaved towards this set of changes on the past - where
+>> > you promised imformation/patches and never delivered.
+>> >
+>> > Well, right now I'm just not going to *care* one bit about Prima2.  If
+>> > this patch set breaks it, tough.  You've had plenty of opportunity to
+>> > deal with this, but instead you've chosen to just whinge about it and
+>> > then do precisely nothing to assist.
+>>
+>> i have no idea why you are saying this. if you checked the email, i
+>> have sent a patch in last month.
+>>
+>> http://www.spinics.net/lists/arm-kernel/msg327151.html
+>>
+>> but i got no reply and you said you will not handle l2....
 >
-> +static int sw_babble_control(struct musb *musb)
-> +{
+> I said I won't deal with this patch set anymore because I got *thoroughly*
+> frustrated with you and the lack of cooperation from many of the SoC people.
+> It seems that the only way to get things done around here is to railroad
+> them into linux-next and wait for people to notice the changes.  That's
+> really not an acceptable way of doing development, but it's the *only*
+> one which gets people's attention.  Sending emails does not work, because
+> people ignore them.
+>
+> Moreover, your patch is a total rewrite of several of my patches, and is
+> not an incremental set of changes.  Given that my patch set which was last
+> posted has the SoC changes done incrementally amongst the other changes,
+> this is just not an acceptable approach, so frankly the patch is useless
+> to me.
 
-    Doesn't gcc complain on this function being unused? I think you should 
-have added this function along with the caller, not separately.
+in v1, you suggested me moving l2x0_init to init_irq, right? so this
+was done five days after your suggestion. but you choiced to ignore it
+and didn't say your real intention to me. i am a completely stupid man
+and i can't figure out what is your final choice if you didn't say
+anything and just complained stupid man like me didn't assist you.
 
-WBR, Sergei
+if the information you wanted from me is
 
++       .l2c_aux_val
++       .l2c_aux_mask
+
+it is clear that my v1 and v2 have exposed enought information for
+that. why are you saying i didn't provide information to you?
+
+i have no idea what has been happening for the whole thing. i was
+asked to one thing in one way, then after one month, i was told it is
+useless.  i am totally confused.
+
+>
+> --
+> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+> improving, and getting towards what was expected from it.
+
+-barry
