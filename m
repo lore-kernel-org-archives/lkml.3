@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaEVCfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 22:35:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44867 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaEVCfP (ORCPT
+	id S1752113AbaEVCtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 22:49:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56210 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbaEVCtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 22:35:15 -0400
-Message-ID: <537D6244.6040106@oracle.com>
-Date: Wed, 21 May 2014 22:34:44 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 21 May 2014 22:49:13 -0400
+Date: Wed, 21 May 2014 19:49:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch -mm] mm, thp: avoid excessive compaction latency during
+ fault fix
+In-Reply-To: <5371ED3F.6070505@suse.cz>
+Message-ID: <alpine.DEB.2.02.1405211945140.13243@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061920470.18635@chino.kir.corp.google.com> <alpine.DEB.2.02.1405061922010.18635@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1405072229390.19108@chino.kir.corp.google.com> <5371ED3F.6070505@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: spinlock recursion in migrate_swap_stop
-References: <5371122D.6020605@oracle.com> <537AB86B.4020901@oracle.com> <20140520110431.GX2485@laptop.programming.kicks-ass.net> <537B52BD.1080807@oracle.com> <537CA54A.8030408@oracle.com> <20140521131948.GF2485@laptop.programming.kicks-ass.net> <20140521164959.GI5226@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140521164959.GI5226@laptop.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 12:49 PM, Peter Zijlstra wrote:
-> On Wed, May 21, 2014 at 03:19:48PM +0200, Peter Zijlstra wrote:
->> > On Wed, May 21, 2014 at 09:08:26AM -0400, Sasha Levin wrote:
->>> > > +++ b/kernel/sched/core.c
->>> > > @@ -1154,6 +1156,7 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
->>> > >                 goto out;
->>> > > 
->>> > >         trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
->>> > > +       BUG_ON(cur == p);
->>> > >         ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
->>> > > 
->>> > >  out:
->>> > > 
->>> > > 
->>> > > Which seems to get hit. This sounds like a race with task moving to
->>> > > other cpu maybe?
->> > 
->> > Oi, good call that, lemme go stare.
-> I think something simple like this should be sufficient to avoid the
-> problem of selecting oneself as a flip target.
+On Tue, 13 May 2014, Vlastimil Babka wrote:
 
-Why would that happen in the first place?
+> I wonder what about a process doing e.g. mmap() with MAP_POPULATE. It seems to
+> me that it would get only MIGRATE_ASYNC here, right? Since gfp_mask would
+> include __GFP_NO_KSWAPD and it won't have PF_KTHREAD.
+> I think that goes against the idea that with MAP_POPULATE you say you are
+> willing to wait to have everything in place before you actually use the
+> memory. So I guess you are also willing to wait for hugepages in that
+> situation?
+> 
 
-
-Thanks,
-Sasha
+I don't understand the distinction you're making between MAP_POPULATE and 
+simply a prefault of the anon memory.  What is the difference in semantics 
+between using MAP_POPULATE and touching a byte every page size along the 
+range?  In the latter, you'd be faulting thp with MIGRATE_ASYNC, so I 
+don't understand how MAP_POPULATE is any different or implies any 
+preference for hugepages.
