@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaEVMdW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 08:33:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33375 "EHLO mx1.redhat.com"
+	id S1755774AbaEVMda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 08:33:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8759 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754614AbaEVMdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 08:33:20 -0400
-Date: Thu, 22 May 2014 09:33:12 -0300
-From: Flavio Leitner <fbl@redhat.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Flavio Leitner <fbl@sysclose.org>
-Subject: Re: [PATCH] i8k: increase fan limit to 3
-Message-ID: <20140522123252.GF12759@t520.home>
-References: <1400725168-21358-1-git-send-email-fbl@redhat.com>
- <537D6FC8.5000105@roeck-us.net>
- <20140522034530.GD12759@t520.home>
- <537D8CED.4000603@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537D8CED.4000603@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754614AbaEVMd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 08:33:26 -0400
+Message-ID: <1400761961.15674.4.camel@dcbw.local>
+Subject: [PATCH] libertas: fix return value when processing invalid packet
+From: Dan Williams <dcbw@redhat.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: kernel-janitors@vger.kernel.org, libertas-dev@lists.infradead.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>
+Date: Thu, 22 May 2014 07:32:41 -0500
+In-Reply-To: <1400520341.3819.15.camel@dcbw.local>
+References: <1400473875-22228-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1400473875-22228-2-git-send-email-Julia.Lawall@lip6.fr>
+	 <5379FCD0.2030506@cogentembedded.com> <1400520341.3819.15.camel@dcbw.local>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 10:36:45PM -0700, Guenter Roeck wrote:
-> On 05/21/2014 08:45 PM, Flavio Leitner wrote:
-> >On Wed, May 21, 2014 at 08:32:24PM -0700, Guenter Roeck wrote:
-> >>On 05/21/2014 07:19 PM, Flavio Leitner wrote:
-> >>>From: Flavio Leitner <fbl@sysclose.org>
-> >>>
-> >>>It is possible to increase left fan speed on a
-> >>>DELL Precision 490n system up to 3.
-> >>>
-> >>>     value    fan rpm
-> >>>       1      35460
-> >>>       2      64740
-> >>>       3      78510
-> >>>
-> >>Guess the speed factor 30 doesn't apply here.
-> >
-> >Those are actual rpms, not just a multiplied rpm. What I mean
-> >is that you can hear the fan spinning up or down and the
-> >temperature going up or down accordingly.
-> >
-> I don't think there are any fans running at 78k rpm. The real speed
-> is 78,510 / 30 or 2,617 rpm. You should set the fan_mult module
-> parameter to 1 for your system.
+Nothing actually uses the return value yet, but we might as well
+make it correct, like process_rxed_802_11_packet() does for the
+same case.  Also ensure that if monitor mode is enabled (and
+thus process_rxed_802_11_packet() is called) that the debugging
+enter/leave functions are balanced.
 
-Sure. I will do that. I didn't want to change anything else besides
-the speed level and that is what sensors reports by default.
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+---
+ drivers/net/wireless/libertas/Makefile | 4 ++--
+ drivers/net/wireless/libertas/rx.c     | 8 +++++---
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-> >But even setting it to 3 is not enough to spin at maximum
-> >speed. Anyway, now I can load the system without the FBDIMM
-> >going above 75oC.
-> >
-> Did you try to set higher values ?
+diff --git a/drivers/net/wireless/libertas/rx.c b/drivers/net/wireless/libertas/rx.c
+index c7366b0..e446fed 100644
+--- a/drivers/net/wireless/libertas/rx.c
++++ b/drivers/net/wireless/libertas/rx.c
+@@ -67,30 +67,32 @@ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
+ 
+ 	lbs_deb_enter(LBS_DEB_RX);
+ 
+ 	BUG_ON(!skb);
+ 
+ 	skb->ip_summed = CHECKSUM_NONE;
+ 
+-	if (priv->wdev->iftype == NL80211_IFTYPE_MONITOR)
+-		return process_rxed_802_11_packet(priv, skb);
++	if (priv->wdev->iftype == NL80211_IFTYPE_MONITOR) {
++		ret = process_rxed_802_11_packet(priv, skb);
++		goto done;
++	}
+ 
+ 	p_rx_pd = (struct rxpd *) skb->data;
+ 	p_rx_pkt = (struct rxpackethdr *) ((u8 *)p_rx_pd +
+ 		le32_to_cpu(p_rx_pd->pkt_ptr));
+ 
+ 	dev = lbs_mesh_set_dev(priv, dev, p_rx_pd);
+ 
+ 	lbs_deb_hex(LBS_DEB_RX, "RX Data: Before chop rxpd", skb->data,
+ 		 min_t(unsigned int, skb->len, 100));
+ 
+ 	if (skb->len < (ETH_HLEN + 8 + sizeof(struct rxpd))) {
+ 		lbs_deb_rx("rx err: frame received with bad length\n");
+ 		dev->stats.rx_length_errors++;
+-		ret = 0;
++		ret = -EINVAL;
+ 		dev_kfree_skb(skb);
+ 		goto done;
+ 	}
+ 
+ 	lbs_deb_rx("rx data: skb->len - pkt_ptr = %d-%zd = %zd\n",
+ 		skb->len, (size_t)le32_to_cpu(p_rx_pd->pkt_ptr),
+ 		skb->len - (size_t)le32_to_cpu(p_rx_pd->pkt_ptr));
+-- 
+1.9.0
 
-Up to 4 which did nothing that I could notice.
-No difference regarding to noise or temp or rpm.
 
-fbl
