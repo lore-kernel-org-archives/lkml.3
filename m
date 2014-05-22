@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbaEVSFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:05:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50079 "EHLO bear.ext.ti.com"
+	id S1752946AbaEVSFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:05:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50078 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768AbaEVSFe convert rfc822-to-8bit (ORCPT
+	id S1751618AbaEVSFe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 May 2014 14:05:34 -0400
 From: "Gupta, Pekon" <pekon@ti.com>
@@ -12,12 +12,15 @@ To: Lee Jones <lee.jones@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 CC: "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
         "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>
-Subject: RE: [PATCH 04/47] mtd: nand: adding ST's BCH NAND Controller driver
-Thread-Topic: [PATCH 04/47] mtd: nand: adding ST's BCH NAND Controller driver
-Thread-Index: Ac916FY8LxdTVO2nQxaGJSNVNO8KzQ==
-Date: Thu, 22 May 2014 18:04:59 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAD8267@DBDE04.ent.ti.com>
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH 02/47] mtd: nand: stm_nand_bch: provide Device Tree
+ documentation
+Thread-Topic: [PATCH 02/47] mtd: nand: stm_nand_bch: provide Device Tree
+ documentation
+Thread-Index: Ac916Fnu9MieOYLQQS60OY/GFi7QEw==
+Date: Thu, 22 May 2014 18:05:03 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAD826F@DBDE04.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -30,135 +33,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: Lee Jones
+>From: linux-mtd [mailto:linux-mtd-bounces@lists.infradead.org] On Behalf Of Lee Jones
 >
->First introduction of the driver. Includes the basic device struct
->(some functionality isn't utilised as of yet) and supplies some of the
->important resources required for basic running of the Controller.
+>This is where we describe the different new and generic options used by
+>the ST BCH driver.
 >
+>Cc: devicetree@vger.kernel.org
 >Signed-off-by: Lee Jones <lee.jones@linaro.org>
 >---
+> Documentation/devicetree/bindings/mtd/stm-nand.txt | 123 +++++++++++++++++++++
+> 1 file changed, 123 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/mtd/stm-nand.txt
+>
+>diff --git a/Documentation/devicetree/bindings/mtd/stm-nand.txt
+>b/Documentation/devicetree/bindings/mtd/stm-nand.txt
+>new file mode 100644
+>index 0000000..9f9325f
 >--- /dev/null
->+++ b/drivers/mtd/nand/stm_nand_bch.c
-[...]
+>+++ b/Documentation/devicetree/bindings/mtd/stm-nand.txt
+>@@ -0,0 +1,123 @@
+>+STM BCH NAND Support
+>+--------------------
 >+
->+	uint32_t		page_shift;	/* Some working variables */
->+	uint32_t		block_shift;
+>+Required properties:
+>+
+>+- compatible		: Should be "st,nand-bch"
+>+- reg			: Should contain register's location and length
+>+- reg-names		: "nand_mem" - NAND Controller register map
+>+			  "nand_dma" - BCH Controller DMA configuration map
+>+- interrupts		: Interrupt number
+>+- interrupt-names	: "nand_irq" - NAND Controller IRQ
+>+- st,nand-banks		: Subnode representing one or more "banks" of NAND
+>+                          Flash, connected to an STM NAND Controller (see
+>+                          description below).
+>+- nand-ecc-strength	: Generic NAND property (See mtd/nand.txt)
+>+- st,bch-bitflip-threshold
+>+			: The threshold at which the number of corrected bit-
+>+			  flips per sector is deemed to have reached an
+>+			  excessive level (triggers '-EUCLEAN' to be returned
+>+			  to the caller).  The value should be in the range 1
+>+			  to <ecc-strength> where <ecc-strength> is 18 or 30,
+>+			  depending on the BCH ECC mode in operation.  A value
+>+			  of 0, or if left unspecified, is interpreted by the
+>+			  driver as <ecc-strength>.
+>+
+Please drop this one as discussed in other thread that bitflip_threshold
+does not qualify as DT binding (as it's not a hardware or const parameter).
 
-I think you don't really need these variables for 2 reasons:
-(1) Wherever you are using these variables, you can derive
-    struct *nand_chip and instead directly use
-	chip->page_shift;
-	chip->phys_erase_shift;
+>+Properties describing Bank of NAND Flash ("st,nand-banks"):
+>+
+>+- st,nand-csn		: Chip select associated with the Bank.
+>+- st,nand-timing-spec	: [Optional] NAND Device Timing Data.  All times
+>+                          expressed in ns, except where stated otherwise:
 
-(2) Difference chip-selects might be connected to different
- NAND devices having different  page-size and erase-size.
- I'm not sure how that is handled in current generic NAND
- framework (nand_base.c). But having different types of
- NAND devices connected to different chip-selects is possible.
+I think DT maintainers don't prefer NAND timings being passed by DT,
+Instead they want it parsed from ONFI.
+Refer comments by 'Rob Herring <robherring2@gmail.com>' on
+[PATCH RFC 1/3] Devicetree: Add pl353 smc controller devicetree binding information
 
 
->+	uint32_t		blocks_per_device;
->+	uint32_t		sectors_per_page;
->+
->+	uint8_t			*buf;		/* Some buffers to use */
->+	uint8_t			*page_buf;
->+	uint8_t			*oob_buf;
->+	uint32_t		*buf_list;
->+
->+	int			cached_page;	/* page number of page in */
->+						/* 'page_buf'             */
->+};
->+
->+static int remap_named_resource(struct platform_device *pdev,
->+				char *name,
->+				void __iomem **io_ptr)
->+{
->+	struct resource *res, *mem;
->+	resource_size_t size;
->+	void __iomem *p;
->+
->+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, name);
->+	if (!res)
->+		return -ENXIO;
->+
->+	size = resource_size(res);
->+
->+	mem = devm_request_mem_region(&pdev->dev, res->start, size, name);
->+	if (!mem)
->+		return -EBUSY;
->+
->+	p = devm_ioremap_nocache(&pdev->dev, res->start, size);
->+	if (!p)
->+		return -ENOMEM;
->+
->+	*io_ptr = p;
->+
->+	return 0;
->+}
->+
->+static struct nandi_controller *
->+nandi_init_resources(struct platform_device *pdev)
->+{
->+	struct nandi_controller *nandi;
->+	int err;
->+
->+	nandi = devm_kzalloc(&pdev->dev, sizeof(*nandi), GFP_KERNEL);
->+	if (!nandi) {
->+		dev_err(&pdev->dev,
->+			"failed to allocate NANDi controller data\n");
+>+                            tR           : Max Page Read delay [us]
 
-Jingoo Han <jg1.han@samsung.com> has been cleaning these driver
-specific OOM messages. So please drop dev_err(..) here. Refer
-	[Patch] mtd: xxxx: Remove unnecessary OOM messages
-	The site-specific OOM messages are unnecessary, because they
-	duplicate the MM subsystem generic OOM message.
-
->+		return ERR_PTR(-ENOMEM);
->+	}
->+
->+	nandi->dev = &pdev->dev;
->+
->+	err = remap_named_resource(pdev, "nand_mem", &nandi->base);
->+	if (err)
->+		return ERR_PTR(err);
->+
->+	err = remap_named_resource(pdev, "nand_dma", &nandi->dma);
->+	if (err)
->+		return ERR_PTR(err);
->+
->+	platform_set_drvdata(pdev, nandi);
->+
->+	return nandi;
->+}
+(1) Even if you end up requiring these bindings, then please add them
+to NAND generic bindings so that other drivers can re-use them.
+(2) It would be good to have DT-bindings suffixed with timing units
+like "ns" | "ps". Example: "tR-us" or something similar.
 
 [...]
 
+>+Note, during initialisation, the NAND Controller timing registers are configured
+>+according to one of the following methods, in order of precedence:
 >+
->+struct stm_plat_nand_bch_data {
->+	struct stm_nand_bank_data *bank;
->+	enum stm_nand_bch_ecc_config bch_ecc_cfg;
+>+           1. Configuration based on "st,nand_timing_spec" if supplied.
 >+
->+	/* The threshold at which the number of corrected bit-flips per sector
->+	 * is deemed to have reached an excessive level (triggers '-EUCLEAN' to
->+	 * be returned to the caller).  The value should be in the range 1 to
->+	 * <ecc-strength> where <ecc-strength> is 18 or 30, depending on the BCH
->+	 * ECC mode in operation.  A value of 0 is interpreted by the driver as
->+	 * <ecc-strength>.
->+	 */
->+	unsigned int bch_bitflip_threshold;
+Not sure if this mode is really required, as almost all devices are ONFI compliant.
+Please check with 'Rob Herring <robherring2@gmail.com>'
 
-As discussed in other thread, this is incorrect interpretation for
-bitflip_threshold. As per MTD sub-system bitflips_threshold == 0
-means ECC correction is not implemented.
-@@drivers/mtd/mtdcore.c: mtd_read()
-		return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
-
->+	bool flashss;
-
-I could not find the use of this member I current series.
-In your earlier version of patch this was used for DT binding "st,nand-flashss"
-Am I missing something ?
+>+           2. Configuration based on ONFI timing mode, as advertised by the
+>+              device during ONFI-probing (ONFI-compliant NAND only).
+>+
+>+           3. Use reset/safe timing values
+>+
 
 
 with regards, pekon
