@@ -1,115 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaEVUmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 16:42:55 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:64919 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaEVUmw (ORCPT
+	id S1752366AbaEVUnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 16:43:09 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:42134 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaEVUmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 16:42:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <537ADAEF.9060105@ti.com>
-References: <1400506776-2816-1-git-send-email-george.cherian@ti.com>
-	<1400506776-2816-2-git-send-email-george.cherian@ti.com>
-	<CADYTM3bd8Bq5QTn-HC4jYX-owEw_sF1DOtXsc-cMDqKHGJHXjQ@mail.gmail.com>
-	<537ADAEF.9060105@ti.com>
-Date: Thu, 22 May 2014 15:42:51 -0500
-Message-ID: <CADYTM3bO5FecJCMMv4iYzugF4DFNmGKs5gtFODLWqnq1u_BDHw@mail.gmail.com>
-Subject: Re: [PATCH v4 1/6] usb: musb: core: Handle Babble condition only in
- HOST mode
-From: Bin Liu <binmlist@gmail.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
-        zonque@gmail.com, b-liu@ti.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 22 May 2014 16:42:54 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: btrfs: volumes.c:  Fix for possible null pointer dereference
+Date: Thu, 22 May 2014 22:43:43 +0200
+Message-Id: <1400791423-11935-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George,
+There is otherwise a risk of a possible null pointer dereference.
 
-On Mon, May 19, 2014 at 11:32 PM, George Cherian <george.cherian@ti.com> wrote:
-> Hi Bin,
->
-> On 5/19/2014 9:24 PM, Bin Liu wrote:
->>
->> Hi,
->>
->> On Mon, May 19, 2014 at 8:39 AM, George Cherian <george.cherian@ti.com>
->> wrote:
->>>
->>> BABBLE and RESET share the same interrupt. The interrupt
->>> is considered to be RESET if MUSB is in peripheral mode and
->>> as a BABBLE if MUSB is in HOST mode.
->>>
->>> Handle babble condition iff MUSB is in HOST mode.
->>>
->>> Signed-off-by: George Cherian <george.cherian@ti.com>
->>> ---
->>>   drivers/usb/musb/musb_core.c | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
->>> index 61da471..eff3c5c 100644
->>> --- a/drivers/usb/musb/musb_core.c
->>> +++ b/drivers/usb/musb/musb_core.c
->>> @@ -849,7 +849,7 @@ b_host:
->>>          }
->>>
->>>          /* handle babble condition */
->>> -       if (int_usb & MUSB_INTR_BABBLE)
->>> +       if (int_usb & MUSB_INTR_BABBLE && is_host_active(musb))
->>>                  schedule_work(&musb->recover_work);
->>
->> I guess my following comments are for Daniel's patch as while which
->> initially added the babble work.
->>
->> Should this if statement be merged into the previous 'if(int_usb &
->> MUSB_INTR_RESET)' one, which handles the same interrupt and already
->> handles host and device mode respectively.
->
->
-> Initially I too had the babble handling as part of  'if(int_usb &
-> MUSB_INTR_RESET)'
-> one. But during my tests I hit a corner case where in we hit a BABBLE
-> condition
-> on disconnect. In such case the babble interrupt can be handled only if we
-> have a seperate
-> check, else its considered as a BUS RESET.
->
-> When all devices are disconnected  MUSB_DEVCTL_HM = 0 and the code always
-> enter the
-> else path. In this path it treats the BABBLE as a BUS RESET.
+Was largely found by using a static code analysis program called cppcheck.
 
-The code flow is a bit confusing, two if() handle the same interrupt.
-The second one implied using 'handled = IRQ_HANDLED;' from the first
-one.
-Also does the switch() in else{} in the first if() cause any side effect?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ fs/btrfs/volumes.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Since this babble handing is AM335x specific, how about handle it in
-dsps_interrupt() in musb_dsps.c, which already has an entry for babble
-interrupt? TI 3.2 kernel does this way.
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index 49d7fab..d85a225 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -1674,11 +1674,12 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
+ 		struct btrfs_fs_devices *fs_devices;
+ 		fs_devices = root->fs_info->fs_devices;
+ 		while (fs_devices) {
+-			if (fs_devices->seed == cur_devices)
++			if (fs_devices->seed == cur_devices) {
++				fs_devices->seed = cur_devices->seed;
+ 				break;
++			}
+ 			fs_devices = fs_devices->seed;
+ 		}
+-		fs_devices->seed = cur_devices->seed;
+ 		cur_devices->seed = NULL;
+ 		lock_chunks(root);
+ 		__btrfs_close_devices(cur_devices);
+-- 
+1.7.10.4
 
-Regards,
--Bin.
-
->
->
->> Regards,
->> -Bin.
->>
->>>   #if 0
->>> --
->>> 1.8.3.1
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
-> --
-> -George
->
