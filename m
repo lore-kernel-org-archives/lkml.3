@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaEVN7P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 09:59:15 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:56861 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaEVN7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 09:59:12 -0400
-Date: Thu, 22 May 2014 15:56:51 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 3/3] clocksource: tegra: Use uS counter as delay timer
-Message-ID: <20140522135650.GA11583@ulmo>
-References: <1400600176-435-1-git-send-email-pdeschrijver@nvidia.com>
- <1400600176-435-4-git-send-email-pdeschrijver@nvidia.com>
+	id S1754663AbaEVN73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 09:59:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59219 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145AbaEVN71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 09:59:27 -0400
+Message-ID: <537E027E.6040602@ti.com>
+Date: Thu, 22 May 2014 16:58:22 +0300
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
-Content-Disposition: inline
-In-Reply-To: <1400600176-435-4-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <grant.likely@linaro.org>, <rdunlap@infradead.org>,
+        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>, <olof@lixom.net>,
+        <w-kwok2@ti.com>, <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>
+Subject: Re: [Patch v5 0/7] Introduce keystone reset driver
+References: <1400766516-14537-1-git-send-email-ivan.khoronzhuk@ti.com> <537E011B.9090902@ti.com> <5069120.YZWxxyxdrl@wuerfel>
+In-Reply-To: <5069120.YZWxxyxdrl@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---liOOAslEiF7prFVr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 05/22/2014 04:54 PM, Arnd Bergmann wrote:
+> On Thursday 22 May 2014 09:52:27 Santosh Shilimkar wrote:
+>> On Thursday 22 May 2014 09:48 AM, Ivan Khoronzhuk wrote:
+>>> These patches introduce keystone reset driver.
+>>>
+>>> The keystone SoC can be rebooted in several ways. By external reset
+>>> pin, by soft and by watchdogs. This driver allows software reset and reset
+>>> by one of the watchdogs. Also added opportunity to set soft/hard reset type.
+>>>
+>>> Based on linux-next/master
+>>>
+>>> v5..v4
+>>>    power: reset: keystone-reset: introduce keystone reset driver
+>>>        - changed to get rsmux and rspll offsets from DT
+>>>    clock: keystone-pllctrl: add bindings for keystone pll controller
+>>>        - new patch
+>>>    mfd: ti-keystone-devctrl: add bindings for device state control
+>>>        - new patch
+>>>    power: reset: add bindings for keystone reset driver
+>>>        - corrected description of "ti,syscon-pll", "ti,syscon-dev" properties
+>>>        - corrected examples
+>>>    ARM: dts: keystone: update reset node to work with reset driver
+>>>        - added nodes for pll-controller and device-state-controll
+>>>        - added offsets to "ti,syscon-pll", "ti,syscon-dev" properties
+>>>
+>> Looks like you haven't collected Arnd's Reviewed-by tag on the patches.
+>> Can be added later as well while applying.
+>>
+>>
+> I was going to comment the same. Anyway here you have it for the remaining
+> patches:
+>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-In the subject: s/uS/us/; S == Siemens, s == second
+Thanks!
 
-Thierry
+-- 
+Regards,
+Ivan Khoronzhuk
 
---liOOAslEiF7prFVr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfgIiAAoJEN0jrNd/PrOh6FYP/1uuxFSHWhSpKhs63UylZzEJ
-tXP39rAW315oGREG+XwxrDJh0i7s9+Gs9s4TbJfBPAv2N+eSQmT9sk4PnNy+LKYa
-UBWRIQAACD0VaDyttqPaImF2hRDMYAeDoFUqPavVmUz694sCTG7sOuEYxVuFV3Sj
-kcUmNpF7WztqZVFlDy57TnKN0Aj5fozEp3FX1Xj/r8/J3/6Evc+R85VVWOBPj75Q
-AAuCjqiEp6gSNZLCJyxzNyPBBRp5lRB/+DD0jCUtGWBRoWPCGUQHR/4zev5X/b89
-bic37FDJK636gNabybAKXk+dnL2NE7CwvApeQzNbcYBFHnjobiarsA1eFZ5qntpJ
-8fl7wpu7YOTh+4z50h+9BYB6xUuXRY2P6qTQCJQVQuXW96Oqc+lCdC1NMAv0Nhkn
-tVNh5Q4LSqqRFlFsi02omeRq7tuwcCQyJ8wnq80UWng4orOY/qRQg7evVravAYSj
-8RZCgonOx9LmEM97+4FkkMOMC31qocLxKbYiaC1k1c6/3N3O/kOGkl09ISpK3ymU
-vgAnFg+iWnoBxZUfEgdYyxpRxVfFmMQ2xygtHA48SvKG1/iom1UHPtuaSWZmmViR
-gRqH3k2C+dcm1dQJYNzO0E9tqESpFT8iF3KVOaGul6Zn0/P4fc1Q0hPU63U1RF71
-ywCWpVHY71elsFj02AIe
-=Vbz5
------END PGP SIGNATURE-----
-
---liOOAslEiF7prFVr--
