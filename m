@@ -1,187 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaEVSF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:05:29 -0400
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:53862
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752872AbaEVSFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 14:05:24 -0400
-Date: Thu, 22 May 2014 11:03:00 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, <linux-pm@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Michal Simek <michal.simek@xilinx.com>, <cpufreq@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
-References: <20140519161949.GG16662@pengutronix.de>
- <db8633e5-01a9-4d3a-80e8-74e23a456d52@BN1BFFO11FD051.protection.gbl>
- <20140520073358.GJ16662@pengutronix.de>
- <4bb5f44a-60bb-4e34-8f88-f91b8419be8d@BL2FFO11FD050.protection.gbl>
- <537B957B.5010001@codeaurora.org>
- <668683e3-856e-4f30-9b11-8f3e91e12d1d@BL2FFO11FD038.protection.gbl>
- <20140521073457.GD31687@pengutronix.de>
- <e9090453-ce40-4662-a3ea-fbdaffdb2aa4@BN1AFFO11FD046.protection.gbl>
- <20140521182308.GN31687@pengutronix.de> <20140521203300.9521.67546@quantum>
+	id S1752983AbaEVSFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:05:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50079 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768AbaEVSFe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 14:05:34 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>
+Subject: RE: [PATCH 04/47] mtd: nand: adding ST's BCH NAND Controller driver
+Thread-Topic: [PATCH 04/47] mtd: nand: adding ST's BCH NAND Controller driver
+Thread-Index: Ac916FY8LxdTVO2nQxaGJSNVNO8KzQ==
+Date: Thu, 22 May 2014 18:04:59 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAD8267@DBDE04.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140521203300.9521.67546@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <ac335a38-b0f4-4d95-b111-56c05e1a6234@BN1BFFO11FD045.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(51704005)(377424004)(479174003)(189002)(199002)(54094003)(24454002)(92566001)(53416003)(81342001)(21056001)(81542001)(99396002)(76176999)(50986999)(46102001)(54356999)(74316001)(74502001)(74662001)(31966008)(4396001)(86362001)(31696002)(70736001)(92726001)(76482001)(79102001)(85182001)(50466002)(19580395003)(83322001)(87936001)(85202002)(64706001)(44976005)(33646001)(15975445006)(20776003)(47776003)(23676002)(80022001)(102836001)(85852003)(77982001)(83506001)(83072002)(23106003)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB046;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 021975AE46
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-21 at 01:33PM -0700, Mike Turquette wrote:
-> Quoting Uwe Kleine-König (2014-05-21 11:23:08)
-> > Hello Sören,
-> > 
-> > On Wed, May 21, 2014 at 08:58:10AM -0700, Sören Brinkmann wrote:
-> > > On Wed, 2014-05-21 at 09:34AM +0200, Uwe Kleine-König wrote:
-> > > > On Tue, May 20, 2014 at 02:48:20PM -0700, Sören Brinkmann wrote:
-> > > > > On Tue, 2014-05-20 at 10:48AM -0700, Stephen Boyd wrote:
-> > > > > > On 05/20/14 09:01, Sören Brinkmann wrote:
-> > > > > > >
-> > > > > > >>>>> +{
-> > > > > > >>>>> + unsigned long lower, upper, cur, lower_last, upper_last;
-> > > > > > >>>>> +
-> > > > > > >>>>> + lower = clk_round_rate(clk, rate);
-> > > > > > >>>>> + if (lower >= rate)
-> > > > > > >>>>> +         return lower;
-> > > > > > >>>> Is the >-case worth a warning?
-> > > > > > >>> No, it's correct behavior. If you request a rate that is way lower than what the
-> > > > > > >>> clock can generate, returning something larger is perfectly valid, IMHO.
-> > > > > > >>> Which reveals one problem in this whole discussion. The API does not
-> > > > > > >>> require clk_round_rate() to round down. It is actually an implementation
-> > > > > > >>> choice that had been made for clk-divider.
-> > > > > > >> I'm sure it's more than an implementation choice for clk-divider. But I
-> > > > > > >> don't find any respective documentation (but I didn't try hard).
-> > > > > > > A similar discussion - without final conclusion:
-> > > > > > > https://lkml.org/lkml/2010/7/14/260
-> > > > > > >
-> > > > > > >
-> > > > > > 
-> > > > > > Please call this new API something like clk_find_nearest_rate() or
-> > > > > > something. clk_round_rate() is supposed to return the rate that will be
-> > > > > > set if you call clk_set_rate() with the same arguments. It's up to the
-> > > > > > implementation to decide if that means rounding the rate up or down or
-> > > > > > to the nearest value.
-> > > > > 
-> > > > > Sounds good to me. Are there any cases of clocks that round up? I think
-> > > > > that case would not be handled correctly. But I also don't see a use
-> > > > > case for such an implementation.
-> > > > I don't really care which semantic (i.e. round up, round down or round
-> > > > closest) is picked, but I'd vote that all should pick up the same. I
-> > > > think the least surprising definition is to choose rounding down and add
-> > > > the function that is under discussion here to get a nearest match.
-> > > > 
-> > > > So I suggest:
-> > > > 
-> > > >     - if round_rate is given a rate that is smaller than the
-> > > >       smallest available rate, return 0
-> > > >     - add WARN_ONCE to round_rate and set_rate if they return with a
-> > > >       rate bigger than requested
-> > > 
-> > > Why do you think 0 is always valid? I think for a clock that can
-> > > generate 40, 70, 120, clk_round_rate(20) should return 40.
-> > I didn't say it's a valid value. It just makes the it possible to check
-> > for clk_round_rate(clk, rate) <= rate.
-> > 
-> > I grepped a bit around and found da850_round_armrate which implements a
-> > round_rate callback returning the best match.
-> > omap1_clk_round_rate_ckctl_arm can return a value < 0.
-> > s3c2412_roundrate_usbsrc can return values that are bigger than
-> > requested. (I wonder if that is a bug though.)
-> > 
-> > > >     - change the return values to unsigned long
-> > > 
-> > > Yep, I agree, this should happen.
-> > And we're using 0 as error value? e.g. for the case where
-> > omap1_clk_round_rate_ckctl_arm returns -EIO now?
-> 
-> No. clk_round_rate returns long for a reason, which is that we can
-> provide an error code to the caller. From include/linux/clk.h:
-> 
-> /**
->  * clk_round_rate - adjust a rate to the exact rate a clock can provide
->  * @clk: clock source
->  * @rate: desired clock rate in Hz
->  *
->  * Returns rounded clock rate in Hz, or negative errno.
->  */
-> 
-> This has the unfortunate side effect that the max value we can return
-> safely is 2147483647 (~2GHz). So another issue here is converting clock
-> rates to 64-bit values.
+>From: Lee Jones
+>
+>First introduction of the driver. Includes the basic device struct
+>(some functionality isn't utilised as of yet) and supplies some of the
+>important resources required for basic running of the Controller.
+>
+>Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>---
+>--- /dev/null
+>+++ b/drivers/mtd/nand/stm_nand_bch.c
+[...]
+>+
+>+	uint32_t		page_shift;	/* Some working variables */
+>+	uint32_t		block_shift;
 
-So, let's assume
- - a clock does either of these
-   - round down
-   - round nearest
-   - round up (is there any such case? I don't see a use-case for this)
- - or return an error
+I think you don't really need these variables for 2 reasons:
+(1) Wherever you are using these variables, you can derive
+    struct *nand_chip and instead directly use
+	chip->page_shift;
+	chip->phys_erase_shift;
 
-I think my latest try handles such cases, with the limitation of
-for a clock that rounds up, the up-rounded value is found instead of the
-nearest.
+(2) Difference chip-selects might be connected to different
+ NAND devices having different  page-size and erase-size.
+ I'm not sure how that is handled in current generic NAND
+ framework (nand_base.c). But having different types of
+ NAND devices connected to different chip-selects is possible.
 
 
-static long clk_find_nearest_rate(struct clk *clk, unsigned long rate)
-{
-	long ret;
-	unsigned long lower, upper;
+>+	uint32_t		blocks_per_device;
+>+	uint32_t		sectors_per_page;
+>+
+>+	uint8_t			*buf;		/* Some buffers to use */
+>+	uint8_t			*page_buf;
+>+	uint8_t			*oob_buf;
+>+	uint32_t		*buf_list;
+>+
+>+	int			cached_page;	/* page number of page in */
+>+						/* 'page_buf'             */
+>+};
+>+
+>+static int remap_named_resource(struct platform_device *pdev,
+>+				char *name,
+>+				void __iomem **io_ptr)
+>+{
+>+	struct resource *res, *mem;
+>+	resource_size_t size;
+>+	void __iomem *p;
+>+
+>+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, name);
+>+	if (!res)
+>+		return -ENXIO;
+>+
+>+	size = resource_size(res);
+>+
+>+	mem = devm_request_mem_region(&pdev->dev, res->start, size, name);
+>+	if (!mem)
+>+		return -EBUSY;
+>+
+>+	p = devm_ioremap_nocache(&pdev->dev, res->start, size);
+>+	if (!p)
+>+		return -ENOMEM;
+>+
+>+	*io_ptr = p;
+>+
+>+	return 0;
+>+}
+>+
+>+static struct nandi_controller *
+>+nandi_init_resources(struct platform_device *pdev)
+>+{
+>+	struct nandi_controller *nandi;
+>+	int err;
+>+
+>+	nandi = devm_kzalloc(&pdev->dev, sizeof(*nandi), GFP_KERNEL);
+>+	if (!nandi) {
+>+		dev_err(&pdev->dev,
+>+			"failed to allocate NANDi controller data\n");
 
-	clk_prepare_lock();
+Jingoo Han <jg1.han@samsung.com> has been cleaning these driver
+specific OOM messages. So please drop dev_err(..) here. Refer
+	[Patch] mtd: xxxx: Remove unnecessary OOM messages
+	The site-specific OOM messages are unnecessary, because they
+	duplicate the MM subsystem generic OOM message.
 
-	lower = __clk_round_rate(clk, rate);
-	if (lower >= rate || (long)lower < 0) {
-		ret = lower;
-		goto unlock;
-	}
+>+		return ERR_PTR(-ENOMEM);
+>+	}
+>+
+>+	nandi->dev = &pdev->dev;
+>+
+>+	err = remap_named_resource(pdev, "nand_mem", &nandi->base);
+>+	if (err)
+>+		return ERR_PTR(err);
+>+
+>+	err = remap_named_resource(pdev, "nand_dma", &nandi->dma);
+>+	if (err)
+>+		return ERR_PTR(err);
+>+
+>+	platform_set_drvdata(pdev, nandi);
+>+
+>+	return nandi;
+>+}
 
-	upper = rate + (rate - lower) - 1;
-	if (upper > LONG_MAX)
-		upper = LONG_MAX;
+[...]
 
-	upper = __clk_round_rate(clk, upper);
-	if (upper <= lower || (long)upper < 0) {
-		ret = lower;
-		goto unlock;
-	}
+>+
+>+struct stm_plat_nand_bch_data {
+>+	struct stm_nand_bank_data *bank;
+>+	enum stm_nand_bch_ecc_config bch_ecc_cfg;
+>+
+>+	/* The threshold at which the number of corrected bit-flips per sector
+>+	 * is deemed to have reached an excessive level (triggers '-EUCLEAN' to
+>+	 * be returned to the caller).  The value should be in the range 1 to
+>+	 * <ecc-strength> where <ecc-strength> is 18 or 30, depending on the BCH
+>+	 * ECC mode in operation.  A value of 0 is interpreted by the driver as
+>+	 * <ecc-strength>.
+>+	 */
+>+	unsigned int bch_bitflip_threshold;
 
-	lower = rate + 1;
-	while (lower < upper) {
-		unsigned long rounded, mid;
+As discussed in other thread, this is incorrect interpretation for
+bitflip_threshold. As per MTD sub-system bitflips_threshold == 0
+means ECC correction is not implemented.
+@@drivers/mtd/mtdcore.c: mtd_read()
+		return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
 
-		mid = lower + ((upper - lower) >> 1);
-		rounded = __clk_round_rate(clk, mid);
-		if (rounded < lower)
-			lower = mid + 1;
-		else
-			upper = rounded;
-	}
+>+	bool flashss;
 
-	ret = upper;
+I could not find the use of this member I current series.
+In your earlier version of patch this was used for DT binding "st,nand-flashss"
+Am I missing something ?
 
-unlock:
-	clk_prepare_unlock();
 
-	return ret;
-}
-
-	Sören
-
+with regards, pekon
