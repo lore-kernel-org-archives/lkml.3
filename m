@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaEVPjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:39:24 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:52782 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaEVPjW (ORCPT
+	id S1752602AbaEVPjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:39:39 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:39591 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaEVPjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:39:22 -0400
-Date: Thu, 22 May 2014 11:39:18 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: remove unused WORK_CPU_END
-Message-ID: <20140522153918.GC5065@htj.dyndns.org>
-References: <1400748224-14063-1-git-send-email-laijs@cn.fujitsu.com>
+	Thu, 22 May 2014 11:39:23 -0400
+Date: Thu, 22 May 2014 16:39:17 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, chris@printf.net,
+        ulf.hansson@linaro.org, kernel@stlinux.com, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 7/8] ARM: STi: DT: Enable second sdhci controller for
+ stih416 b2020 boards.
+Message-ID: <20140522153917.GD19747@lee--X1>
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+ <1400771902-26553-8-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1400748224-14063-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400771902-26553-8-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 04:43:44PM +0800, Lai Jiangshan wrote:
-> WORK_CPU_END is totally unused since 4e8b22bd. It should be removed.
+On Thu, 22 May 2014, Peter Griffin wrote:
 
-Please use 12_CHAR_PREFIX_OF_SHA1 ("SUBJ") when referring to other
-commits.
-
-> After it is removed, the comment "special cpu IDs" is not precise due to
-> there is only one special CPU ID (WORK_CPU_UNBOUND) left, so we also
-> change this comment to the description for WORK_CPU_UNBOUND.
+> The second controller is only present on the stih416 SoC. Also
+> mark this as non-removeable as its eMMC.
 > 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> ---
+>  arch/arm/boot/dts/stih416-b2020.dts | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+> index 4e2df66..6cde745 100644
+> --- a/arch/arm/boot/dts/stih416-b2020.dts
+> +++ b/arch/arm/boot/dts/stih416-b2020.dts
+> @@ -12,4 +12,12 @@
+>  / {
+>  	model = "STiH416 B2020";
+>  	compatible = "st,stih416-b2020", "st,stih416";
+> +
+> +	soc {
+> +		mmc1: sdhci@fe81f000 {
+> +			status = "okay";
+> +			non-removable;
+> +		};
+> +	};
+> +
 
-Applied to wq/for-3.16.
+Superfluous '\n'.
 
-Thanks.
+>  };
+
+Once rectified you can add my:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
 -- 
-tejun
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
