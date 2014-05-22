@@ -1,85 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaEVBBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 May 2014 21:01:47 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:44593 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaEVBBp (ORCPT
+	id S1752775AbaEVBC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 May 2014 21:02:56 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:37289 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaEVBCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 May 2014 21:01:45 -0400
-Message-ID: <537D4C73.40901@gmail.com>
-Date: Thu, 22 May 2014 09:01:39 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 21 May 2014 21:02:55 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <537D4CBB.80305@lge.com>
+Date: Thu, 22 May 2014 10:02:51 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-CC: gerrit@erg.abdn.ac.uk, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        David Miller <davem@davemloft.net>, dccp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFtQQVRDSCBsaW51eC1uZXh0XSBuZXQvZGNjcC8=?=
- =?UTF-8?B?dGltZXIuYzogdXNlICd1NjQnIGluc3RlYWQgb2YgJ3M2NCcgdG8gYXZvaWQgY28=?=
- =?UTF-8?B?bXBpbGVyJ3Mgd2FybmluZw==?=
-References: <1546102096.46113.1400718399706.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <1546102096.46113.1400718399706.JavaMail.root@bj-mail03.pku.edu.cn>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Nazarewicz <mina86@mina86.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>
+Subject: Re: [RFC PATCH] arm: dma-mapping: fallback allocation for cma failure
+References: <537AEEDB.2000001@lge.com> <20140520065222.GB8315@js1304-P5Q-DELUXE> <xa1t1tvo1fas.fsf@mina86.com> <537C5EA3.20709@lge.com> <xa1td2f699j4.fsf@mina86.com>
+In-Reply-To: <xa1td2f699j4.fsf@mina86.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 08:26 AM, 管雪涛 wrote:
-> 
-> ----- Chen Gang <gang.chen.5i5j@gmail.com> 写道：
->> 'dccp_timestamp_seed' is initialized once by ktime_get_real() in
->> dccp_timestamping_init(). It is always less than ktime_get_real()
->> in dccp_timestamp().
+I appreciate your comments.
+The previous patch was ugly. But now it's beautiful! Just 3 lines!
+
+I'm not familiar with kernel patch process.
+Can I have your name at Signed-off-by: line?
+What tag do I have to write your name in?
+
+
+--------------------------------- 8< ----------------------------------------------
+ From 135c986cfaa5a7291519308b3d47e58bf9f5af25 Mon Sep 17 00:00:00 2001
+From: Gioh Kim <gioh.kim@lge.com>
+Date: Tue, 20 May 2014 14:16:20 +0900
+Subject: [PATCH] arm: dma-mapping: add checking cma area initialized
+
+If CMA is turned on and CMA size is set to zero, kernel should
+behave as if CMA was not enabled at compile time.
+Every dma allocation should check existence of cma area
+before requesting memory.
+
+Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+  arch/arm/mm/dma-mapping.c |    7 ++++---
+  1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 18e98df..9173a13 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -390,12 +390,13 @@ static int __init atomic_pool_init(void)
+         if (!pages)
+                 goto no_pages;
+
+-       if (IS_ENABLED(CONFIG_DMA_CMA))
++       if (dev_get_cma_area(NULL))
+                 ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
+                                               atomic_pool_init);
+         else
+                 ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
+                                            atomic_pool_init);
++
+         if (ptr) {
+                 int i;
+
+@@ -701,7 +702,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+                 addr = __alloc_simple_buffer(dev, size, gfp, &page);
+         else if (!(gfp & __GFP_WAIT))
+                 addr = __alloc_from_pool(size, &page);
+-       else if (!IS_ENABLED(CONFIG_DMA_CMA))
++       else if (!dev_get_cma_area(dev))
+                 addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
+         else
+                 addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
+@@ -790,7 +791,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+                 __dma_free_buffer(page, size);
+         } else if (__free_from_pool(cpu_addr, size)) {
+                 return;
+-       } else if (!IS_ENABLED(CONFIG_DMA_CMA)) {
++       } else if (!dev_get_cma_area(dev)) {
+                 __dma_free_remap(cpu_addr, size);
+                 __dma_free_buffer(page, size);
+         } else {
+--
+1.7.9.5
+
+
+2014-05-22 오전 5:11, Michal Nazarewicz 쓴 글:
+> On Wed, May 21 2014, Gioh Kim <gioh.kim@lge.com> wrote:
+>> Date: Tue, 20 May 2014 14:16:20 +0900
+>> Subject: [PATCH] arm: dma-mapping: add checking cma area initialized
 >>
->> Then, ktime_us_delta() in dccp_timestamp() will always return positive
->> number. So can use manual type cast to let compiler and do_div() know
->> about it to avoid warning.
+>> If CMA is turned on and CMA size is set to zero, kernel should
+>> behave as if CMA was not enabled at compile time.
+>> Every dma allocation should check existence of cma area
+>> before requesting memory.
 >>
->> The related warning (with allmodconfig under unicore32):
->>
->>     CC [M]  net/dccp/timer.o
->>   net/dccp/timer.c: In function ‘dccp_timestamp’:
->>   net/dccp/timer.c:285: warning: comparison of distinct pointer types lacks a cast
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> Some minor comments.  Also, I'd love for someone more experienced with
+> ARM to take a look at this as well.
+>
 >> ---
->>  net/dccp/timer.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>    arch/arm/mm/dma-mapping.c |   12 ++++++++----
+>>    1 file changed, 8 insertions(+), 4 deletions(-)
 >>
->> diff --git a/net/dccp/timer.c b/net/dccp/timer.c
->> index 16f0b22..1cd46a3 100644
->> --- a/net/dccp/timer.c
->> +++ b/net/dccp/timer.c
->> @@ -280,7 +280,7 @@ static ktime_t dccp_timestamp_seed;
->>   */
->>  u32 dccp_timestamp(void)
->>  {
->> -	s64 delta = ktime_us_delta(ktime_get_real(), dccp_timestamp_seed);
->> +	u64 delta = (u64)ktime_us_delta(ktime_get_real(), dccp_timestamp_seed);
-> 
-> Do you assume that delta should be very small?
-> Otherwise, return value will be different if data type is changed.
-> 
-
-'u64' is a very very large number. after calculation, if it is based on
-nano second (although I am not quite sure whether it is based on it).
-
-        a hour,            3,600,000,000,000ns
-        a day,            90,000,000,000,000ns
-        a year,       50,000,000,000,000,000ns
-        10 years,    500,000,000,000,000,000ns
-        100 years, 5,000,000,000,000,000,000ns
-        4G * 4G = 16,000,000,000,000,000,000ns
-
-So we can assume it will never overflow for 'u64'.
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+>> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+>> index 18e98df..61f7b93 100644
+>> --- a/arch/arm/mm/dma-mapping.c
+>> +++ b/arch/arm/mm/dma-mapping.c
+>> @@ -379,7 +379,7 @@ static int __init atomic_pool_init(void)
+>>           unsigned long *bitmap;
+>>           struct page *page;
+>>           struct page **pages;
+>> -       void *ptr;
+>> +       void *ptr = NULL;
+>
+> This is unnecessary any more.
+>
+>>           int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
+>>
+>>           bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+>> @@ -390,12 +390,13 @@ static int __init atomic_pool_init(void)
+>>           if (!pages)
+>>                   goto no_pages;
+>>
+>> -       if (IS_ENABLED(CONFIG_DMA_CMA))
+>> +       if (IS_ENABLED(CONFIG_DMA_CMA) && dma_contiguous_default_area)
+>
+> +	if (dev_get_cma_area(NULL))
+>
+> dev_get_cma_area returns NULL if !IS_ENABLED(CONFIG_DMA_CMA) so there's
+> no need to check it explicitly.  And with NULL argument,
+> deg_get_cma_area returns the default area.
+>
+>>                   ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page,
+>>                                                 atomic_pool_init);
+>>           else
+>>                   ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
+>>                                              atomic_pool_init);
+>> +
+>>           if (ptr) {
+>>                   int i;
+>>
+>> @@ -669,6 +670,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+>>           u64 mask = get_coherent_dma_mask(dev);
+>>           struct page *page = NULL;
+>>           void *addr;
+>> +       struct cma *cma = dev_get_cma_area(dev);
+>>
+>>    #ifdef CONFIG_DMA_API_DEBUG
+>>           u64 limit = (mask + 1) & ~mask;
+>> @@ -701,7 +703,7 @@ static void *__dma_alloc(struct device *dev, size_t size, dma_addr_t *handle,
+>>                   addr = __alloc_simple_buffer(dev, size, gfp, &page);
+>>           else if (!(gfp & __GFP_WAIT))
+>>                   addr = __alloc_from_pool(size, &page);
+>> -       else if (!IS_ENABLED(CONFIG_DMA_CMA))
+>> +       else if (!IS_ENABLED(CONFIG_DMA_CMA) || !cma)
+>
+> Like above, just do:
+>
+> +	else if (!dev_get_cma_area(dev))
+>
+> This will also allow to drop the “cma” variable above.
+>
+>>                   addr = __alloc_remap_buffer(dev, size, gfp, prot, &page, caller);
+>>           else
+>>                   addr = __alloc_from_contiguous(dev, size, prot, &page, caller);
+>> @@ -780,6 +782,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+>>                              bool is_coherent)
+>>    {
+>>           struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
+>> +       struct cma *cma = dev_get_cma_area(dev);
+>>
+>>           if (dma_release_from_coherent(dev, get_order(size), cpu_addr))
+>>                   return;
+>> @@ -790,7 +793,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+>>                   __dma_free_buffer(page, size);
+>>           } else if (__free_from_pool(cpu_addr, size)) {
+>>                   return;
+>> -       } else if (!IS_ENABLED(CONFIG_DMA_CMA)) {
+>> +       } else if (!IS_ENABLED(CONFIG_DMA_CMA) || !cma) {
+>
+> Ditto.
+>
+>>                   __dma_free_remap(cpu_addr, size);
+>>                   __dma_free_buffer(page, size);
+>>           } else {
+>> @@ -798,6 +801,7 @@ static void __arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+>>                    * Non-atomic allocations cannot be freed with IRQs disabled
+>>                    */
+>>                   WARN_ON(irqs_disabled());
+>> +
+>
+> Unrelated change.
+>
+>>                   __free_from_contiguous(dev, page, cpu_addr, size);
+>>           }
+>>    }
+>> --
+>> 1.7.9.5
+>
