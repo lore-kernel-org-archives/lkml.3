@@ -1,182 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaEVXLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 19:11:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52211 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753401AbaEVXI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 19:08:58 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] PM / sleep: Use valid_state() for platform-dependent sleep states only
-Date: Fri, 23 May 2014 01:23:26 +0200
-Message-ID: <2601919.clnGLsRA6D@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1817539.9KW2IGGbDV@vostro.rjw.lan>
-References: <1817539.9KW2IGGbDV@vostro.rjw.lan>
+	id S1753391AbaEVXI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 19:08:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752617AbaEVXIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 19:08:53 -0400
+Subject: [PATCH v4 13/16] iommu/fsl: Use iommu_group_get_for_dev() for IOMMU
+ groups
+From: Alex Williamson <alex.williamson@redhat.com>
+To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, acooks@gmail.com, linux@horizon.com,
+        bhelgaas@google.com, Varun Sethi <varun.sethi@freescale.com>,
+        eddy0596@gmail.com
+Date: Thu, 22 May 2014 17:08:45 -0600
+Message-ID: <20140522230845.2856.95844.stgit@bling.home>
+In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
+References: <20140522230230.2856.40017.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Drop custom code and use IOMMU provided grouping support for PCI.
 
-Use the observation that, for platform-dependent sleep states
-(PM_SUSPEND_STANDBY, PM_SUSPEND_MEM), a given state is either
-always supported or always unsupported and store that information
-in pm_states[] instead of calling valid_state() every time we
-need to check it.
-
-Also do not use valid_state() for PM_SUSPEND_FREEZE, which is always
-valid, and move the pm_test_level validity check for PM_SUSPEND_FREEZE
-directly into enter_state().
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Varun Sethi <varun.sethi@freescale.com>
 ---
- kernel/power/main.c         |    9 ++++----
- kernel/power/power.h        |    2 -
- kernel/power/suspend.c      |   46 ++++++++++++++++++++++++--------------------
- kernel/power/suspend_test.c |    2 -
- 4 files changed, 32 insertions(+), 27 deletions(-)
+ drivers/iommu/fsl_pamu_domain.c |   66 +--------------------------------------
+ 1 file changed, 1 insertion(+), 65 deletions(-)
 
-Index: linux-pm/kernel/power/main.c
-===================================================================
---- linux-pm.orig/kernel/power/main.c
-+++ linux-pm/kernel/power/main.c
-@@ -296,7 +296,7 @@ static ssize_t state_show(struct kobject
- 	int i;
+diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+index 93072ba..d02d668 100644
+--- a/drivers/iommu/fsl_pamu_domain.c
++++ b/drivers/iommu/fsl_pamu_domain.c
+@@ -38,7 +38,6 @@
+ #include <sysdev/fsl_pci.h>
  
- 	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
--		if (valid_state(i))
-+		if (pm_states[i].state)
- 			s += sprintf(s,"%s ", pm_states[i].label);
+ #include "fsl_pamu_domain.h"
+-#include "pci.h"
  
- #endif
-@@ -328,8 +328,9 @@ static suspend_state_t decode_state(cons
- 
- #ifdef CONFIG_SUSPEND
- 	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++)
--		if (len == strlen(s->label) && !strncmp(buf, s->label, len))
--			return state;
-+		if (s->state && len == strlen(s->label)
-+		    && !strncmp(buf, s->label, len))
-+			return s->state;
- #endif
- 
- 	return PM_SUSPEND_ON;
-@@ -447,7 +448,7 @@ static ssize_t autosleep_show(struct kob
- 
- #ifdef CONFIG_SUSPEND
- 	if (state < PM_SUSPEND_MAX)
--		return sprintf(buf, "%s\n", valid_state(state) ?
-+		return sprintf(buf, "%s\n", pm_states[state].state ?
- 					pm_states[state].label : "error");
- #endif
- #ifdef CONFIG_HIBERNATION
-Index: linux-pm/kernel/power/power.h
-===================================================================
---- linux-pm.orig/kernel/power/power.h
-+++ linux-pm/kernel/power/power.h
-@@ -186,14 +186,12 @@ struct pm_sleep_state {
- /* kernel/power/suspend.c */
- extern struct pm_sleep_state pm_states[];
- 
--extern bool valid_state(suspend_state_t state);
- extern int suspend_devices_and_enter(suspend_state_t state);
- #else /* !CONFIG_SUSPEND */
- static inline int suspend_devices_and_enter(suspend_state_t state)
- {
- 	return -ENOSYS;
- }
--static inline bool valid_state(suspend_state_t state) { return false; }
- #endif /* !CONFIG_SUSPEND */
- 
- #ifdef CONFIG_PM_TEST_SUSPEND
-Index: linux-pm/kernel/power/suspend_test.c
-===================================================================
---- linux-pm.orig/kernel/power/suspend_test.c
-+++ linux-pm/kernel/power/suspend_test.c
-@@ -162,7 +162,7 @@ static int __init test_suspend(void)
- 	/* PM is initialized by now; is that state testable? */
- 	if (test_state == PM_SUSPEND_ON)
- 		goto done;
--	if (!valid_state(test_state)) {
-+	if (!pm_states[test_state].state) {
- 		printk(warn_bad_state, pm_states[test_state].label);
- 		goto done;
- 	}
-Index: linux-pm/kernel/power/suspend.c
-===================================================================
---- linux-pm.orig/kernel/power/suspend.c
-+++ linux-pm/kernel/power/suspend.c
-@@ -88,30 +88,28 @@ void suspend_set_ops(const struct platfo
- }
- EXPORT_SYMBOL_GPL(suspend_set_ops);
- 
--bool valid_state(suspend_state_t state)
-+static bool valid_state(suspend_state_t state)
- {
--	if (state == PM_SUSPEND_FREEZE) {
--#ifdef CONFIG_PM_DEBUG
--		if (pm_test_level != TEST_NONE &&
--		    pm_test_level != TEST_FREEZER &&
--		    pm_test_level != TEST_DEVICES &&
--		    pm_test_level != TEST_PLATFORM) {
--			printk(KERN_WARNING "Unsupported pm_test mode for "
--					"freeze state, please choose "
--					"none/freezer/devices/platform.\n");
--			return false;
--		}
--#endif
--			return true;
--	}
- 	/*
--	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEMORY states need lowlevel
--	 * support and need to be valid to the lowlevel
-+	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEM states need low level
-+	 * support and need to be valid to the low level
- 	 * implementation, no valid callback implies that none are valid.
- 	 */
- 	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
+ /*
+  * Global spinlock that needs to be held while
+@@ -892,8 +891,6 @@ static int fsl_pamu_get_domain_attr(struct iommu_domain *domain,
+ 	return ret;
  }
  
-+static int __init pm_suspend_states_init(void)
-+{
-+	suspend_state_t i;
-+
-+	for (i = PM_SUSPEND_STANDBY; i <= PM_SUSPEND_MEM; i++)
-+		if (!valid_state(i))
-+			pm_states[i].state = 0;
-+
-+	return 0;
-+}
-+fs_initcall(pm_suspend_states_init);
-+
- /**
-  * suspend_valid_only_mem - Generic memory-only valid callback.
-  *
-@@ -345,9 +343,17 @@ static int enter_state(suspend_state_t s
- {
- 	int error;
- 
--	if (!valid_state(state))
--		return -ENODEV;
+-#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
 -
-+	if (state == PM_SUSPEND_FREEZE) {
-+#ifdef CONFIG_PM_DEBUG
-+		if (pm_test_level != TEST_NONE && pm_test_level <= TEST_CPUS) {
-+			pr_warning("PM: Unsupported test mode for freeze state,"
-+				   "please choose none/freezer/devices/platform.\n");
-+			return -EAGAIN;
-+		}
-+#endif
-+	} else if (!valid_state(state)) {
-+		return -EINVAL;
-+	}
- 	if (!mutex_trylock(&pm_mutex))
- 		return -EBUSY;
+ static struct iommu_group *get_device_iommu_group(struct device *dev)
+ {
+ 	struct iommu_group *group;
+@@ -950,74 +947,13 @@ static struct iommu_group *get_pci_device_group(struct pci_dev *pdev)
+ 	struct pci_controller *pci_ctl;
+ 	bool pci_endpt_partioning;
+ 	struct iommu_group *group = NULL;
+-	struct pci_dev *bridge, *dma_pdev = NULL;
  
+ 	pci_ctl = pci_bus_to_host(pdev->bus);
+ 	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
+ 	/* We can partition PCIe devices so assign device group to the device */
+ 	if (pci_endpt_partioning) {
+-		bridge = pci_find_upstream_pcie_bridge(pdev);
+-		if (bridge) {
+-			if (pci_is_pcie(bridge))
+-				dma_pdev = pci_get_domain_bus_and_slot(
+-						pci_domain_nr(pdev->bus),
+-						bridge->subordinate->number, 0);
+-			if (!dma_pdev)
+-				dma_pdev = pci_dev_get(bridge);
+-		} else
+-			dma_pdev = pci_dev_get(pdev);
+-
+-		/* Account for quirked devices */
+-		swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
+-
+-		/*
+-		 * If it's a multifunction device that does not support our
+-		 * required ACS flags, add to the same group as lowest numbered
+-		 * function that also does not suport the required ACS flags.
+-		 */
+-		if (dma_pdev->multifunction &&
+-		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
+-			u8 i, slot = PCI_SLOT(dma_pdev->devfn);
+-
+-			for (i = 0; i < 8; i++) {
+-				struct pci_dev *tmp;
+-
+-				tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
+-				if (!tmp)
+-					continue;
+-
+-				if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
+-					swap_pci_ref(&dma_pdev, tmp);
+-					break;
+-				}
+-				pci_dev_put(tmp);
+-			}
+-		}
+-
+-		/*
+-		 * Devices on the root bus go through the iommu.  If that's not us,
+-		 * find the next upstream device and test ACS up to the root bus.
+-		 * Finding the next device may require skipping virtual buses.
+-		 */
+-		while (!pci_is_root_bus(dma_pdev->bus)) {
+-			struct pci_bus *bus = dma_pdev->bus;
+-
+-			while (!bus->self) {
+-				if (!pci_is_root_bus(bus))
+-					bus = bus->parent;
+-				else
+-					goto root_bus;
+-			}
+-
+-			if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
+-				break;
+-
+-			swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
+-		}
++		group = iommu_group_get_for_dev(&pdev->dev);
+ 
+-root_bus:
+-		group = get_device_iommu_group(&dma_pdev->dev);
+-		pci_dev_put(dma_pdev);
+ 		/*
+ 		 * PCIe controller is not a paritionable entity
+ 		 * free the controller device iommu_group.
+
