@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336AbaEVQxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 12:53:06 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:38413 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaEVQsU (ORCPT
+	id S1753309AbaEVQxE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 12:53:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48890 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752912AbaEVQsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 12:48:20 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, Florian Fainelli <f.fainelli@gmail.com>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>, Li Yang <leoli@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Aida Mynzhasova <aida.mynzhasova@skitlab.ru>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Claudiu Manoil <claudiu.manoil@freescale.com>,
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list),
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...)
-Subject: [PATCH net-next v2 4/9] net: systemport: use the new fixed PHY helpers
-Date: Thu, 22 May 2014 09:47:46 -0700
-Message-Id: <1400777271-32199-5-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400777271-32199-1-git-send-email-f.fainelli@gmail.com>
-References: <1400777271-32199-1-git-send-email-f.fainelli@gmail.com>
+	Thu, 22 May 2014 12:48:21 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
+        benh@kernel.crashing.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>,
+        Hirokazu Takata <takata@linux-m32r.org>
+Subject: [PATCH v2 09/18] m32r: io: implement dummy relaxed accessor macros for writes
+Date: Thu, 22 May 2014 17:47:21 +0100
+Message-Id: <1400777250-17335-10-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_phy_connect_fixed_link() is becoming obsolete, and also required
-platform code to register the fixed PHYs at the specified addresses for
-those to be usable. Get rid of it and use the new of_phy_is_fixed_link()
-plus of_phy_register_fixed_link() helpers to transition over the new
-scheme.
+write{b,w,l}_relaxed are implemented by some architectures in order to
+permit memory-mapped I/O accesses with weaker barrier semantics than the
+non-relaxed variants.
 
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+This patch adds dummy macros for the write accessors to m32r, in the
+same vein as the dummy definitions for the relaxed read accessors.
+
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
-No changes in v2
+ arch/m32r/include/asm/io.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
- drivers/net/ethernet/broadcom/bcmsysport.c | 17 +++++++++++++++--
- drivers/net/ethernet/broadcom/bcmsysport.h |  1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bcmsysport.c b/drivers/net/ethernet/broadcom/bcmsysport.c
-index d40c5b969e9e..dc708a888f80 100644
---- a/drivers/net/ethernet/broadcom/bcmsysport.c
-+++ b/drivers/net/ethernet/broadcom/bcmsysport.c
-@@ -1327,8 +1327,8 @@ static int bcm_sysport_open(struct net_device *dev)
- 	/* Read CRC forward */
- 	priv->crc_fwd = !!(umac_readl(priv, UMAC_CMD) & CMD_CRC_FWD);
+diff --git a/arch/m32r/include/asm/io.h b/arch/m32r/include/asm/io.h
+index 4010f1fc5b65..6e7787f3dac7 100644
+--- a/arch/m32r/include/asm/io.h
++++ b/arch/m32r/include/asm/io.h
+@@ -161,6 +161,9 @@ static inline void _writel(unsigned long l, unsigned long addr)
+ #define __raw_writeb writeb
+ #define __raw_writew writew
+ #define __raw_writel writel
++#define writeb_relaxed writeb
++#define writew_relaxed writew
++#define writel_relaxed writel
  
--	priv->phydev = of_phy_connect_fixed_link(dev, bcm_sysport_adj_link,
--							priv->phy_interface);
-+	priv->phydev = of_phy_connect(dev, priv->phy_dn, bcm_sysport_adj_link,
-+					0, priv->phy_interface);
- 	if (!priv->phydev) {
- 		netdev_err(dev, "could not attach to PHY\n");
- 		return -ENODEV;
-@@ -1551,6 +1551,19 @@ static int bcm_sysport_probe(struct platform_device *pdev)
- 	if (priv->phy_interface < 0)
- 		priv->phy_interface = PHY_INTERFACE_MODE_GMII;
- 
-+	/* In the case of a fixed PHY, the DT node associated
-+	 * to the PHY is the Ethernet MAC DT node.
-+	 */
-+	if (of_phy_is_fixed_link(dn)) {
-+		ret = of_phy_register_fixed_link(dn);
-+		if (ret) {
-+			dev_err(&pdev->dev, "failed to register fixed PHY\n");
-+			goto err;
-+		}
-+
-+		priv->phy_dn = dn;
-+	}
-+
- 	/* Initialize netdevice members */
- 	macaddr = of_get_mac_address(dn);
- 	if (!macaddr || !is_valid_ether_addr(macaddr)) {
-diff --git a/drivers/net/ethernet/broadcom/bcmsysport.h b/drivers/net/ethernet/broadcom/bcmsysport.h
-index abdeb62616df..73fd04a94797 100644
---- a/drivers/net/ethernet/broadcom/bcmsysport.h
-+++ b/drivers/net/ethernet/broadcom/bcmsysport.h
-@@ -656,6 +656,7 @@ struct bcm_sysport_priv {
- 	unsigned int		rx_c_index;
- 
- 	/* PHY device */
-+	struct device_node	*phy_dn;
- 	struct phy_device	*phydev;
- 	phy_interface_t		phy_interface;
- 	int			old_pause;
+ #define ioread8 read
+ #define ioread16 readw
 -- 
-1.9.1
+1.9.2
 
