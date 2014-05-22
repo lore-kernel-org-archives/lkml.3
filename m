@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaEVHB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 03:01:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43761 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaEVHBZ (ORCPT
+	id S1752162AbaEVHDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 03:03:43 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:42439 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaEVHDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 03:01:25 -0400
-Date: Thu, 22 May 2014 09:01:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Fwd: [V6 00/11] perf: New conditional branch filter
-Message-ID: <20140522070119.GM30445@twins.programming.kicks-ass.net>
-References: <1399280953-31442-1-git-send-email-khandual@linux.vnet.ibm.com>
- <537C6DDE.9000204@linux.vnet.ibm.com>
- <20140521092313.GF30445@twins.programming.kicks-ass.net>
- <537C827B.9090505@linux.vnet.ibm.com>
- <20140521120146.GD2485@laptop.programming.kicks-ass.net>
- <1400733004.14864.9.camel@concordia>
+	Thu, 22 May 2014 03:03:42 -0400
+Date: Thu, 22 May 2014 11:03:39 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, shawn@churchofgit.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, vdavydov@parallels.com,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [patch 3/3] timerfd: Implement write method
+Message-ID: <20140522070339.GB8946@moon>
+References: <20140428212517.200264067@openvz.org>
+ <20140428213301.507657833@openvz.org>
+ <alpine.DEB.2.02.1405220642100.9695@ionos.tec.linutronix.de>
+ <20140521215707.GH12819@moon>
+ <alpine.DEB.2.02.1405220658530.9695@ionos.tec.linutronix.de>
+ <20140521223511.GI12819@moon>
+ <CAHO5Pa3NFndwZUKGdEt8AYnYLXvd4aJB1RdWOQ-Kcht+Y0WEyA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wyYQCv9VYpiQX0rh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400733004.14864.9.camel@concordia>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAHO5Pa3NFndwZUKGdEt8AYnYLXvd4aJB1RdWOQ-Kcht+Y0WEyA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 22, 2014 at 08:32:45AM +0200, Michael Kerrisk wrote:
+> [Thomas, thanks for pinging me on this.]
+> 
+> Hi Cyril
+> 
+> Please CC linux-api on changes that affect kernel-user-space ABI/API.
 
---wyYQCv9VYpiQX0rh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, May 22, 2014 at 02:30:04PM +1000, Michael Ellerman wrote:
-> Can you take just the first 4 in your tree please. I asked Anshuman to ju=
-st
-> send those 4 but he & I seem to have miscommunicated on that.
->=20
-> We only depend on patch 1 in order for the powerpc parts to build, so I t=
-hink
-> we'll just merge that into the powerpc tree and it should merge fine when=
- it
-> hits next.
->=20
-
-OK, will do. Thanks!
-
---wyYQCv9VYpiQX0rh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTfaC/AAoJEHZH4aRLwOS6qBEP/Rb7hXOuh1Negul6/r/6j7zW
-3GJsLCv5V+5dH+6Kwu8mnc91Zoli1R4y05Okxyq1mkz0iuTXJsVmuUvG90SRqTt+
-EknsR+Vl02gIQTiQPOwgpFFmqI4f5Tbca5tNlWDQPjyQ5AIC9RCmE8/M7rWZPoNR
-m8OXlTarIfEj9LbndbUdfiqtocZU7akDdKIVrlla7D1CBj4I5dwUeBMLicppJTqT
-ONouCNGFIU+a/nvDSTcYpbaMPPicHXYZrfu/zbD4Q/At14oePUjj3qS67W5hWUwB
-RI0LzTL1qf/GgRBAP1q3mdRIb0iJ/3Xqib+vrGCQv3zXKdB/KqY+0v2eEtb/sXzs
-355HfeK0w7mDkzkfog7HltpzJ7brb3jY/vqSZ7FEXK65kirh8o2ESrpbZPMbjsIt
-NhdMZPRmlLjxIFX5e18HcbX9LNbYFqcN4HiE9GyCzJg+UuGgIH4+FJ6C9NJxLBL3
-CPmg+JdjfuQEdNGX9fCm9vyjrVD0xVSd0otgULN32wJGHrqKXcKOmaMvtb77qtuH
-Ugkrf2Bbaob+ms2ObNN3oihW//xdIM15zFyPfeDuLO+UGZIy1iT6FYwdu8M1xSPF
-nvink/50t6bHsjYmvF2Gtdva+txmLZ7y2qEKnK9QBR/mKVFsvG+PsdVqFdKDWhMv
-M3RhV2bqvZ0GH4LJvqlN
-=001L
------END PGP SIGNATURE-----
-
---wyYQCv9VYpiQX0rh--
+Sure!
