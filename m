@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441AbaEVJu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:50:57 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:39574 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429AbaEVJu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:50:56 -0400
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, tglx@linutronix.de, jon.povey@racelogic.co.uk,
-        gregkh@linuxfoundation.org, balbi@ti.com,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH] PREEMPT_RT: USB serial gadget: Fix locking issue
-Date: Thu, 22 May 2014 11:45:10 +0200
-Message-Id: <1400751910-5519-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.9.2
+	id S1754484AbaEVJvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:51:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35306 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754455AbaEVJvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 05:51:12 -0400
+Date: Thu, 22 May 2014 19:50:56 +1000
+From: NeilBrown <neilb@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
+        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
+ functions.
+Message-ID: <20140522195056.445f2dcb@notabene.brown>
+In-Reply-To: <20140522090502.GB30094@gmail.com>
+References: <20140501123738.3e64b2d2@notabene.brown>
+	<20140522090502.GB30094@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_PREEMPT_RT_FULL the tty_flip_buffer_push(..) actions are executed
-immeditely (same behaviour as if low_latency flag was set). We thus have to
-release port_lock before callng tty_flip_buffer_push().
+--Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This issue resultst of commits:
-44a0c019: USB: g_serial: don't set low_latency flag
-dc0cbd1b: serial: 8250: Call flush_to_ldisc when the irq is threaded
+On Thu, 22 May 2014 11:05:02 +0200 Ingo Molnar <mingo@kernel.org> wrote:
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- drivers/usb/gadget/u_serial.c | 23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+>=20
+> * NeilBrown <neilb@suse.de> wrote:
+>=20
+> > [[ get_maintainer.pl suggested 61 email address for this patch.
+> >    I've trimmed that list somewhat.  Hope I didn't miss anyone
+> >    important...
+> >    I'm hoping it will go in through the scheduler tree, but would
+> >    particularly like an Acked-by for the fscache parts.  Other acks
+> >    welcome.
+> > ]]
+> >=20
+> > The current "wait_on_bit" interface requires an 'action' function
+> > to be provided which does the actual waiting.
+> > There are over 20 such functions, many of them identical.
+> > Most cases can be satisfied by one of just two functions, one
+> > which uses io_schedule() and one which just uses schedule().
+> >=20
+> > So:
+> >  Rename wait_on_bit and        wait_on_bit_lock to
+> >         wait_on_bit_action and wait_on_bit_lock_action
+> >  to make it explicit that they need an action function.
+> >=20
+> >  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
+> >  which are *not* given an action function but implicitly use
+> >  a standard one.
+> >  The decision to error-out if a signal is pending is now made
+> >  based on the 'mode' argument rather than being encoded in the action
+> >  function.
+>=20
+> this patch fails to build on x86-32 allyesconfigs.
 
-diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-index b369292..1c4f404 100644
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -549,12 +549,25 @@ static void gs_rx_push(unsigned long _port)
- 		port->read_started--;
- 	}
- 
--	/* Push from tty to ldisc; without low_latency set this is handled by
--	 * a workqueue, so we won't get callbacks and can hold port_lock
--	 */
--	if (do_push)
-+	/* Push from tty to ldisc */
-+	if (do_push) {
-+#ifndef CONFIG_PREEMPT_RT_FULL
-+		/* without low_latency set this is handled by a workqueue, so
-+		 * we won't get callbacks and can hold port_lock
-+		*/
- 		tty_flip_buffer_push(&port->port);
--
-+#else
-+		/* CONFIG_PREEMPT_RT_FULL makes this a synchronous action. and
-+		 * it may trigger synchronous callbacks to this driver. We need
-+		 * to release the lock.
-+		*/
-+		spin_unlock_irq(&port->port_lock);
-+		tty_flip_buffer_push(&port->port);
-+		spin_lock_irq(&port->port_lock);
-+		/* tty may have been closed */
-+		tty = port->port_tty;
-+#endif
-+	}
- 
- 	/* We want our data queue to become empty ASAP, keeping data
- 	 * in the tty and ldisc (not here).  If we couldn't push any
--- 
-1.9.2
+Could you share the build errors?
 
+>=20
+> Could we keep the old names for a while, and remove them in the next=20
+> cycle or so?
+
+I don't see how changing the names later rather than now will reduce the
+chance of errors... maybe I'm missing something.
+
+Thanks,
+NeilBrown
+
+
+
+>=20
+> Thanks,
+>=20
+> 	Ingo
+
+
+--Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU33IgDnsnt1WYoG5AQL4zg/9EwXq3ga0dXQf8DsKuJ5gg0PFSywVLg53
+ov/ah4ODfC2IL9Cjq/vrfQ9hoV5XwIhpvr9Ooz1dvuHkJn2OKJU/C9+hD+vJmRlN
+0iJQBNkkdBj7XwEon+QXYgeeKIQNI6ErxHHIXN/FEtSZa4eWElBiUplTMcFY/TeJ
+erB7cJDQxk3jm7q3em4F1Scg1cc6q+rJb98WIXdSpfQCzZhC3xbke2dlAetjNgzY
+ea6yAhGIy0LcBevl8IGucX7FC9C6uOlxw4KhJ+i1LyaMMzwyZZ2zsipKEwSkdCug
+aN2b4MYE/6/1C0gME8FjpfxGFlw6/2a/KCmKQaxWowPtJa69xozl62ZVNZ1JrTV6
+0T8R+C4xsVzTn03KjgMdN5tUbQYT9RbF67ld0rGSfKowmtS+mP7SZnNRKib4PhAn
+0ZEayg4T4uq9z5SuJEhUKpyj7GEyeehW+luYJTVt8LTuH79qEi1GBTdCSZ2YkS/F
+zK5lRIUhzmlDd1RkvOrQaPzSjY6hxR2QEJZtY6r9i6W1QWYWJAMAxTTbYc8UYiGt
+qAmhwKe8neKmznogq85iNg5A+88v4JUiVwz1/jWP3PTwOGOo+F8d5Y+youB+TotD
+ZvZVSUwSfJfc8rn3cUCotypxfbkbsrP7fGIDkrD8/EfvY9YWtVdbGFWZzW8shFOA
+ief4BXTLFCg=
+=qy8/
+-----END PGP SIGNATURE-----
+
+--Sig_/SLj=Ra/Rg+8ROWmpsMdvvlW--
