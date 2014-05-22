@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317AbaEVWX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 18:23:57 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:48109 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaEVWXz (ORCPT
+	id S1752608AbaEVWYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 18:24:21 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:33785 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923AbaEVWYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 18:23:55 -0400
-MIME-Version: 1.0
-Date: Fri, 23 May 2014 00:23:54 +0200
-Message-ID: <CACRpkdZTez-OJgjNV8jKxgFEXhyXdsnv5bwSdLH_dRfok1u24g@mail.gmail.com>
-Subject: [GIT PULL] sound branch of STMPE cleanups
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
+	Thu, 22 May 2014 18:24:20 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/3]  x86_64,vsyscall: Minor cleanups and fixes
+Date: Thu, 22 May 2014 15:24:13 -0700
+Message-Id: <cover.1400797362.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+This turns the vsyscall page all the way off in vsyscall=none mode
+and fixes a bug in warn_bad_vsyscall that resulted in corrupt log
+lines.
 
-as seen in linux-next something is screwed up on the immutable
-branch for STMPE cleanups, can you pull this instead, it is
-the known tested good version with no compilation regressions.
+With this series applied, vsyscall=none results in a tidier
+/proc/PID/maps.
 
-I have no hurry to get this into the GPIO tree anymore, I will push
-additionall changes to the next merge window, simply.
+Andy Lutomirski (3):
+  x86_64,vsyscall: Move all of the gate_area code to vsyscall_64.c
+  x86_64,vsyscall: Turn vsyscalls all the way off when vsyscall=none
+  x86_64,vsyscall: Fix warn_bad_vsyscall log output
 
-Yours,
-Linus Walleij
+ arch/x86/kernel/vsyscall_64.c | 69 ++++++++++++++++++++++++++++++++++++++-----
+ arch/x86/mm/init_64.c         | 49 ------------------------------
+ 2 files changed, 61 insertions(+), 57 deletions(-)
 
+-- 
+1.9.0
 
-The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
-
-  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git
-stmpe-for-lee
-
-for you to fetch changes up to decc1ca8b2e5ae947fd9679f8adbd056d3b47d30:
-
-  mfd: stmpe: mask off unused blocks properly (2014-05-23 00:19:12 +0200)
-
-----------------------------------------------------------------
-Linus Walleij (4):
-      mfd: stmpe: root out static GPIO and IRQ assignments
-      mfd: stmpe: add optional regulators
-      mfd: stmpe: probe properly from the device tree
-      mfd: stmpe: mask off unused blocks properly
-
- drivers/gpio/gpio-stmpe.c | 18 +++++-------------
- drivers/mfd/Kconfig       |  1 +
- drivers/mfd/stmpe-i2c.c   | 30 +++++++++++++++++++++++++++++-
- drivers/mfd/stmpe.c       | 30 ++++++++++++++++++++++++++++--
- drivers/mfd/stmpe.h       |  2 +-
- include/linux/mfd/stmpe.h | 19 +++++--------------
- 6 files changed, 69 insertions(+), 31 deletions(-)
