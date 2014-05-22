@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230AbaEVJsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 05:48:14 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:48900 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518AbaEVJsM convert rfc822-to-8bit (ORCPT
+	id S1754363AbaEVJtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 05:49:05 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44463 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbaEVJtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 05:48:12 -0400
+	Thu, 22 May 2014 05:49:03 -0400
+Message-ID: <537DC6D2.8040305@linux.vnet.ibm.com>
+Date: Thu, 22 May 2014 15:13:46 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <CADbOyBTOQLewGSzXY6O1Rghw28bMtDYf5UdH9QU17DPur8hryw@mail.gmail.com>
-References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
-	<2965006.XKYHWj9YzJ@sigyn>
-	<865ad8dbc7ae0d13c045bd2a85cff2e2.squirrel@mungewell.org>
-	<6970969.ej8OFzkVkO@sigyn>
-	<CADbOyBTOQLewGSzXY6O1Rghw28bMtDYf5UdH9QU17DPur8hryw@mail.gmail.com>
-Date: Thu, 22 May 2014 11:48:11 +0200
-Message-ID: <CADbOyBTjC-Gfx+gKo0VRbnKMLFvNpQzo9a-VHRPMUuTNLGoiqw@mail.gmail.com>
-Subject: Re: [PATCH v4 01/24] input: Add ff-memless-next module
-From: Elias Vanderstuyft <elias.vds@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Simon Wood <simon@mungewell.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, Anssi Hannula <anssi.hannula@iki.fi>,
-        =?UTF-8?B?TWljaGFsIE1hbMO9?= <madcatxster@devoid-pointer.net>,
-        Roland Bosa <rbosa@logitech.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Borislav Petkov <bp@alien8.de>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH] intel_rapl: Correct hotplug correction
+References: <1400750624-19238-1-git-send-email-bp@alien8.de>
+In-Reply-To: <1400750624-19238-1-git-send-email-bp@alien8.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052209-0260-0000-0000-000004FDE0D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 11:26 PM, Elias Vanderstuyft
-<elias.vds@gmail.com> wrote:
-> On Tue, May 20, 2014 at 10:58 PM, Michal Malý
-> <madcatxster@devoid-pointer.net> wrote:
->> On Tuesday 20 of May 2014 16:16:12 simon@mungewell.org wrote:
->>> Regarding the question of emulated vs. real effects, can we extend the API
->>> so that applications can know which effects are really supported, and
->>> enable/disable emulation somehow?
->>
->> I suppose that a few extra flags (FF_PERIODIC_EMULATED etc.) defined in
->> "uapi/linux/input.h" should suffice.
->
-> @Dmitry:
-> Now that we're talking about API changes, I would like to propose some
-> additional things in the Linux FF API:
->
-> - Possibility to *get* FF state variables, such as the value of the
-> current GAIN, and the current AUTOCENTER:
-> At the moment, only *setting* is possible.
-> This poses a problem when implementing proper AUTOCENTER state
-> recovery (upon closing a Windows program) in Wine, because the initial
-> AUTOCENTER state was unknown.
-> The same applies for GAIN.
->
-> - Introduce multiple types of GAIN, apart from the current global
-> GAIN, e.g. GAIN_CONSTANT and GAIN_DAMPER:
-> This is mainly on request of some users, especially Logitech users: on
-> Windows Logitech additionally supports to set the global Damper and
-> Spring gain.
-> Maybe it would be nicer to create a global gain for every supported
-> Linux FF effect?
+On 05/22/2014 02:53 PM, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> So 009f225ef050 ("powercap, intel-rapl: Fix CPU hotplug callback
+> registration") says how get_/put_online_cpus() should be replaced with
+> this cpu_notifier_register_begin/_done().
+> 
+> But they're still there so what's up?
+> 
 
-And Roland Bosa (from Logitech) also agrees with the following
-addition/modification to the Linux FF API:
+Ok, so I retained that because the comments in the code said that
+the caller of rapl_cleanup_data() should hold the hotplug lock.
 
-- Infinite iterations, or in Linux FF terms: playback of an effect
-with an event count of infinity.
-Right now, an event count of zero stops the effect, while the maximum
-count is INT_MAX.
-An event count value of '-1' can be used to indicate infinity.
-(However note that it is somewhat inconsistent with the infinite
-effect "duration" we already support: in that case '0' is used)
-Is this feasible? (in terms of backward compatibility)
+Here is the snippet from the patch's changelog:
 
-Thanks,
-Elias
+    ...
+    Fix the intel-rapl code in the powercap driver by using this latter form
+    of callback registration. But retain the calls to get/put_online_cpus(),
+    since they also protect the function rapl_cleanup_data(). By nesting
+    get/put_online_cpus() *inside* cpu_notifier_register_begin/done(), we avoid
+    the ABBA deadlock possibility mentioned above.
+
+But looking closer at the code, I think the only requirement is that
+rapl_cleanup_data() should be protected against CPU hotplug, and we
+don't actually need to hold the cpu_hotplug.lock per-se.
+
+cpu_notifier_register_begin()/end() also provide equivalent protection
+against CPU hotplug. So we should be able to remove the get/put_online_cpus()
+from intel-rapl driver.
+
+Jacob/Srinivas, is the above assumption correct for rapl?
+
+Regards,
+Srivatsa S. Bhat
+
+> Let me do what was supposed to be done.
+> 
+> Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  drivers/powercap/intel_rapl.c | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+> index d9a0770b6c73..9055f3df1f64 100644
+> --- a/drivers/powercap/intel_rapl.c
+> +++ b/drivers/powercap/intel_rapl.c
+> @@ -1377,8 +1377,6 @@ static int __init rapl_init(void)
+> 
+>  	cpu_notifier_register_begin();
+> 
+> -	/* prevent CPU hotplug during detection */
+> -	get_online_cpus();
+>  	ret = rapl_detect_topology();
+>  	if (ret)
+>  		goto done;
+> @@ -1390,7 +1388,6 @@ static int __init rapl_init(void)
+>  	}
+>  	__register_hotcpu_notifier(&rapl_cpu_notifier);
+>  done:
+> -	put_online_cpus();
+>  	cpu_notifier_register_done();
+> 
+>  	return ret;
+> 
+
