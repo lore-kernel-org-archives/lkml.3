@@ -1,102 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaEVSDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 14:03:12 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:48876 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbaEVSDJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 14:03:09 -0400
-Message-ID: <537E3BDD.40106@cogentembedded.com>
-Date: Thu, 22 May 2014 22:03:09 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, lee.jones@linaro.org, santosh.shilimkar@ti.com,
-        arnd@arndb.de, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, grant.likely@linaro.org
-CC: rdunlap@infradead.org, linux@arm.linux.org.uk, grygorii.strashko@ti.com,
-        olof@lixom.net, w-kwok2@ti.com, sboyd@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        m-karicheri2@ti.com
-Subject: Re: [Patch v6 4/7] power: reset: add bindings for keystone reset
- driver
-References: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com> <1400777062-19276-5-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1400777062-19276-5-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752543AbaEVSDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 14:03:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51899 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752487AbaEVSDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 14:03:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,888,1392192000"; 
+   d="scan'208";a="516171764"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
+        mika.westerberg@linux.intel.com, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH V7 06/11] ACPI: always register container scan handler even if CONFIG_ACPI_CONTAINER is cleared
+Date: Fri, 23 May 2014 02:02:28 +0800
+Message-Id: <1400781753-2682-7-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+The new ACPI device enumeration mechanism, which will be introduced
+in a later patch, will enumerate the _HID devices w/o any scan
+handler attached to platform bus.
+This means that, for the devices that are attached to a configurable
+scan handler, we should make sure no platform devices would be
+created for them even if the scan handler is compiled out.
 
-On 05/22/2014 08:44 PM, Ivan Khoronzhuk wrote:
+Fix this problem for container devices by always registering the
+container scan handler, but with meaningful callbacks
+only when CONFIG_ACPI_CONTAINER is set.
 
-> This node is intended to allow SoC reset in case of software reset
-> or appropriate watchdogs.
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/acpi/Makefile    |  2 +-
+ drivers/acpi/container.c | 18 ++++++++++++------
+ drivers/acpi/internal.h  |  4 ----
+ 3 files changed, 13 insertions(+), 11 deletions(-)
 
-> The Keystone SoCs can contain up to 4 watchdog timers to reset
-> SoC. Each watchdog timer event input is connected to the Reset Mux
-> block. The Reset Mux block can be configured to cause reset or not.
-
-> Additionally soft or hard reset can be configured.
-
-> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
->   .../bindings/power/reset/keystone-reset.txt        | 67 ++++++++++++++++++++++
->   1 file changed, 67 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
-
-> diff --git a/Documentation/devicetree/bindings/power/reset/keystone-reset.txt b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
-> new file mode 100644
-> index 0000000..a8a0c31
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
-> @@ -0,0 +1,67 @@
-> +* Device tree bindings for Texas Instruments keystone reset
-> +
-> +This node is intended to allow SoC reset in case of software reset
-> +of selected watchdogs.
-> +
-> +The Keystone SoCs can contain up to 4 watchdog timers to reset
-> +SoC. Each watchdog timer event input is connected to the Reset Mux
-> +block. The Reset Mux block can be configured to cause reset or not.
-> +
-> +Additionally soft or hard reset can be configured.
-> +
-> +Required properties:
-> +
-> +- compatible:		ti,keystone-reset
-> +
-> +- ti,syscon-pll:	phandle/offset pair. The phandle to syscon used to
-> +			access pll controller registers and the offset to use
-> +			reset control registers.
-> +
-> +- ti,syscon-dev:	phandle/offset pair. The phandle to syscon used to
-> +			access device state control registers and the offset
-> +			in order to use mux block registers for all watchdogs.
-> +
-> +Optional properties:
-> +
-> +- ti,soft-reset:	Boolean option indicating soft reset.
-> +			By default hard reset is used.
-> +
-> +- ti,wdt_list:		WDT list that can cause SoC reset. It's not related
-
-    Hm, why underscore in this property while hyphens are used in the others? 
-Hyphen is generally preferrable in the device tree names...
-
-> +			to WDT driver, it's just needed to enable a SoC related
-> +			reset that's triggered by one of WDTs. The list is
-> +			in format: <0>, <2>; It can be in random order and
-> +			begins from 0 to 3, as keystone can contain up to 4 SoC
-> +			reset watchdogs and can be in random order.
-
-WBR, Sergei
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 9a43893..5611a07 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -63,7 +63,7 @@ obj-$(CONFIG_ACPI_FAN)		+= fan.o
+ obj-$(CONFIG_ACPI_VIDEO)	+= video.o
+ obj-$(CONFIG_ACPI_PCI_SLOT)	+= pci_slot.o
+ obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
+-obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
++obj-y				+= container.o
+ obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
+ obj-$(CONFIG_ACPI_HOTPLUG_MEMORY) += acpi_memhotplug.o
+ obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 63119d0..b78f52e 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -41,6 +41,8 @@ static const struct acpi_device_id container_device_ids[] = {
+ 	{"", 0},
+ };
+ 
++#ifdef CONFIG_ACPI_CONTAINER
++
+ static int acpi_container_offline(struct container_dev *cdev)
+ {
+ 	struct acpi_device *adev = ACPI_COMPANION(&cdev->dev);
+@@ -97,17 +99,21 @@ static void container_device_detach(struct acpi_device *adev)
+ 		device_unregister(dev);
+ }
+ 
++#endif /* CONFIG_ACPI_CONTAINER */
++
+ static struct acpi_scan_handler container_handler = {
+ 	.ids = container_device_ids,
+-	.attach = container_device_attach,
+-	.detach = container_device_detach,
+-	.hotplug = {
+-		.enabled = true,
+-		.demand_offline = true,
+-	},
+ };
+ 
+ void __init acpi_container_init(void)
+ {
++#ifdef CONFIG_ACPI_CONTAINER
++	container_handler.attach = container_device_attach;
++	container_handler.detach = container_device_detach;
++	container_handler.hotplug.enabled = true;
++	container_handler.hotplug.demand_offline = true;
+ 	acpi_scan_add_handler_with_hotplug(&container_handler, "container");
++#else
++	acpi_scan_add_handler(&container_handler);
++#endif /* CONFIG_ACPI_CONTAINER */
+ }
+diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+index 3a12866..499908e 100644
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -32,11 +32,7 @@ void acpi_processor_init(void);
+ void acpi_platform_init(void);
+ void acpi_pnp_init(void);
+ int acpi_sysfs_init(void);
+-#ifdef CONFIG_ACPI_CONTAINER
+ void acpi_container_init(void);
+-#else
+-static inline void acpi_container_init(void) {}
+-#endif
+ #ifdef CONFIG_ACPI_DOCK
+ void register_dock_dependent_device(struct acpi_device *adev,
+ 				    acpi_handle dshandle);
+-- 
+1.8.3.2
 
