@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaEVRRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 13:17:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48096 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052AbaEVRRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 13:17:32 -0400
-Message-ID: <537E30E0.8050403@ti.com>
-Date: Thu, 22 May 2014 20:16:16 +0300
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751257AbaEVRUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 13:20:48 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:57137 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaEVRUr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 13:20:47 -0400
+Date: Thu, 22 May 2014 10:20:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: Re: Linux 3.15-rc6
+Message-ID: <20140522172032.GA20975@roeck-us.net>
+References: <CA+55aFzwqPh+WUAxi2CY8D6k+LkDbUb__G98qVFrE-DHNMSPUw@mail.gmail.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <santosh.shilimkar@ti.com>,
-        <arnd@arndb.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <grant.likely@linaro.org>,
-        <rdunlap@infradead.org>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
-        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
-        <sergei.shtylyov@cogentembedded.com>
-Subject: Re: [Patch v6 3/7] mfd: ti-keystone-devctrl: add bindings for device
- state control
-References: <1400777062-19276-1-git-send-email-ivan.khoronzhuk@ti.com> <1400777062-19276-4-git-send-email-ivan.khoronzhuk@ti.com> <20140522171148.GL19747@lee--X1>
-In-Reply-To: <20140522171148.GL19747@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzwqPh+WUAxi2CY8D6k+LkDbUb__G98qVFrE-DHNMSPUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 22, 2014 at 07:47:35AM +0900, Linus Torvalds wrote:
+> Due to travels and related lack of internet access, the rc releases
+> haven't been following the normal Sunday release cycle, and since I
+> caught up with what happened while I was off-line, rather than wait
+> until next Sunday to reset to the normal cycle, I'm just releasing rc6
+> now mid-week from Tokyo.
+> 
+> With rc5 being a couple of days early, and rc6 being several days
+> late, we had almost two weeks in between them. The size of the result
+> is not twice as large, though, hopefully partially because it's
+> getting late in the rc series and things are supposed to be calming
+> down, but presumably also because some submaintainers just didn't send
+> their pull requests because they knew I was off-line. Whatever the
+> reason, things don't look bad.
+> 
+> The patch distribution looks pretty normal too. Mostly drivers (acpi,
+> sound, media, i915, clk, pci..) with the bulk of the rest being
+> various arch updates (notably MIPS, but arm and parisc too). And a
+> smattering of other random stuff in filesystems and core kernel code.
+> 
+Unfortunately it appears that the parisc changes cause build failures
+with parisc 64 bit builds.
 
-On 05/22/2014 08:11 PM, Lee Jones wrote:
-> On Thu, 22 May 2014, Ivan Khoronzhuk wrote:
->
->> The Keystone II devices have a set of registers that are used to control
->> the status of its peripherals. This node is intended to allow access to
->> this functionality.
->>
->> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> ---
->>   .../devicetree/bindings/mfd/ti-keystone-devctrl.txt   | 19 +++++++++++++++++++
->>   1 file changed, 19 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
-> Applied, thanks.
->
+Building parisc:a500_defconfig ... failed
+Building parisc:generic-64bit_defconfig ... failed
 
-Thanks.
+Error log:
+arch/parisc/kernel/built-in.o: In function `sys_call_table':
+(.rodata+0xad0): undefined reference to `compat_sys_renameat2'
+make: *** [vmlinux] Error 1
 
--- 
-Regards,
-Ivan Khoronzhuk
+parisc 32 bit builds (defconfig and generic-32bit_defconfig) are fine.
 
+Guenter
