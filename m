@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaEVPvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 11:51:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3018 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146AbaEVPvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 11:51:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,887,1392192000"; 
-   d="scan'208";a="435599008"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: RE: [PATCH] x86, MCE: Kill CPU_POST_DEAD
-Thread-Topic: [PATCH] x86, MCE: Kill CPU_POST_DEAD
-Thread-Index: AQHPddLE0hRWVs+cdkuAQt4Gebmk35tMvgMg
-Date: Thu, 22 May 2014 15:50:21 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F328133C0@ORSMSX114.amr.corp.intel.com>
-References: <1400750624-19238-1-git-send-email-bp@alien8.de>
- <537DC6D2.8040305@linux.vnet.ibm.com> <20140522100820.GE4383@pd.tnic>
- <537DE579.6000505@linux.vnet.ibm.com>
- <20140522123251.GU30445@twins.programming.kicks-ass.net>
- <20140522153006.GK4383@pd.tnic>
-In-Reply-To: <20140522153006.GK4383@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S1752104AbaEVPvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 11:51:24 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50695 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751146AbaEVPvV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 11:51:21 -0400
+Message-ID: <537E1CD9.5020900@st.com>
+Date: Thu, 22 May 2014 17:50:49 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <patrice.chotard@st.com>, <srinivas.kandagatla@gmail.com>,
+        <chris@printf.net>, <ulf.hansson@linaro.org>
+Cc: <kernel@stlinux.com>, <lee.jones@linaro.org>, <linux-mmc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 3/8] ARM: STi: DT: Add sdhci pins for stih416
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org> <1400771902-26553-4-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1400771902-26553-4-git-send-email-peter.griffin@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-22_03:2014-05-22,2014-05-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4MFpNEi027867
 
->> So I think we can reduce it to just the one rwsem (with recursion) if we
->> shoot CPU_POST_DEAD in the head.
+
+
+On 05/22/2014 05:18 PM, Peter Griffin wrote:
+> This adds the required pin config for both SDHCI controllers on
+> the stih416 SoC.
 >
-> Here's the first bullet. Stressing my box here with Steve's hotplug
-> script seems to work fine.
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> ---
+>   arch/arm/boot/dts/stih416-pinctrl.dtsi | 39 ++++++++++++++++++++++++++++++++++
+>   1 file changed, 39 insertions(+)
 >
-> Tony, any objections?
 
-what was this comment referring to:
 
-    /* intentionally ignoring frozen here */
+For all the DT patches, once Lee's comments taken into account, you can 
+add my:
 
-After you move the cmci_rediscover() call, it is now in a place where we are
-no longer ignoring frozen (i.e. the old placement did the rediscover even if the
-CPU_TASKS_FROZEN bit was set - with the new placement we will skip rediscovery.
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-So we were working around some interaction between cpu hotplug and frozen.
-Do we no longer need to do that?
-
--Tony
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks!
+Maxime
