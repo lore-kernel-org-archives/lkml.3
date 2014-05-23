@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaEWORl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:17:41 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:60036 "EHLO extserv.mm-sol.com"
+	id S1752709AbaEWOSX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:18:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60397 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128AbaEWORj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:17:39 -0400
-Message-ID: <537F5889.5080902@mm-sol.com>
-Date: Fri, 23 May 2014 17:17:45 +0300
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752607AbaEWOSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 10:18:22 -0400
+Date: Fri, 23 May 2014 16:18:20 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/9] mm: memcontrol: rewrite charge API
+Message-ID: <20140523141820.GE22135@dhcp22.suse.cz>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-9-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, sboyd@codeaurora.org,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v1 5/5] ARM: dts: qcom: Add APQ8084 serial port DT node
-References: <1400775885-10296-1-git-send-email-gdjakov@mm-sol.com> <1400775885-10296-6-git-send-email-gdjakov@mm-sol.com> <693A0E52-34CF-4A63-A8D0-A83780F969F0@codeaurora.org>
-In-Reply-To: <693A0E52-34CF-4A63-A8D0-A83780F969F0@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398889543-23671-9-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 07:32 PM, Kumar Gala wrote:
->
-> On May 22, 2014, at 11:24 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
->
->> Add the necessary DT node to probe the serial driver on
->> APQ8084 platforms.
->>
->> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
->> ---
->> arch/arm/boot/dts/qcom-apq8084.dtsi |    7 +++++++
->> 1 file changed, 7 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/qcom-apq8084.dtsi b/arch/arm/boot/dts/qcom-apq8084.dtsi
->> index 2dcd11e..c346549 100644
->> --- a/arch/arm/boot/dts/qcom-apq8084.dtsi
->> +++ b/arch/arm/boot/dts/qcom-apq8084.dtsi
->> @@ -185,5 +185,12 @@
->> 			reg = <0xfc400000 0x4000>;
->> 		};
->>
->> +		serial@f995e000 {
->
-> Mark it disabled in the soc.dtsi and “ok” in the board.
->
+On Wed 30-04-14 16:25:42, Johannes Weiner wrote:
+[...]
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index d3961fce1d54..6f48e292ffe7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2574,163 +2574,6 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
+>  	return NOTIFY_OK;
+>  }
+>  
+> -/**
+> - * mem_cgroup_try_charge - try charging a memcg
+> - * @memcg: memcg to charge
+> - * @nr_pages: number of pages to charge
+> - * @oom: trigger OOM if reclaim fails
+> - *
+> - * Returns 0 if @memcg was charged successfully, -EINTR if the charge
+> - * was bypassed to root_mem_cgroup, and -ENOMEM if the charge failed.
+> - */
+> -static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+> -				 gfp_t gfp_mask,
+> -				 unsigned int nr_pages,
+> -				 bool oom)
 
-Oh, of course!
-
-Thanks,
-Georgi
-
+Why haven't you simply renamed mem_cgroup_try_charge to try_charge here?
+The code move is really hard to review.
+[...]
+-- 
+Michal Hocko
+SUSE Labs
