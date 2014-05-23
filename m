@@ -1,174 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaEWALm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 20:11:42 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:55222 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaEWALl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 20:11:41 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Larry Bassel <larry.bassel@linaro.org>, catalin.marinas@arm.com,
-        will.deacon@arm.com, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        mark.rutland@arm.com
-Subject: Re: [PATCH v4 2/2] arm64: enable context tracking
-References: <1400786855-32656-1-git-send-email-larry.bassel@linaro.org>
-	<1400786855-32656-3-git-send-email-larry.bassel@linaro.org>
-	<537E5E1F.3050605@codeaurora.org>
-Date: Thu, 22 May 2014 17:11:38 -0700
-In-Reply-To: <537E5E1F.3050605@codeaurora.org> (Christopher Covington's
-	message of "Thu, 22 May 2014 16:29:19 -0400")
-Message-ID: <7hd2f5icat.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	id S1752084AbaEWAUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 20:20:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:40222 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310AbaEWAUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 20:20:54 -0400
+Date: Fri, 23 May 2014 10:20:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, michael@ellerman.id.au, mingo@redhat.com,
+        paulus@samba.org, imunsie@au1.ibm.com, acme@ghostprotocols.net,
+        scottwood@freescale.com, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2] powerpc/perf/hv-24x7: use kmem_cache instead of
+ aligned stack allocations
+Message-ID: <20140523102047.5d0a14a1@canb.auug.org.au>
+In-Reply-To: <537E8E1F.9020303@linux.vnet.ibm.com>
+References: <537E78AD.1040409@linux.vnet.ibm.com>
+	<1400798673-27522-1-git-send-email-cody@linux.vnet.ibm.com>
+	<20140523094929.15f4613c@canb.auug.org.au>
+	<537E8E1F.9020303@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/7lk7t3eNv3Dn+vbTnG_PRf="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Mark Rutland
+--Sig_/7lk7t3eNv3Dn+vbTnG_PRf=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Christopher Covington <cov@codeaurora.org> writes:
+Hi Cody,
 
-> Hi Larry,
+On Thu, 22 May 2014 16:54:07 -0700 Cody P Schafer <cody@linux.vnet.ibm.com>=
+ wrote:
 >
-> On 05/22/2014 03:27 PM, Larry Bassel wrote:
->> Make calls to ct_user_enter when the kernel is exited
->> and ct_user_exit when the kernel is entered (in el0_da,
->> el0_ia, el0_svc, el0_irq and all of the "error" paths).
->> 
->> These macros expand to function calls which will only work
->> properly if el0_sync and related code has been rearranged
->> (in a previous patch of this series).
->> 
->> The calls to ct_user_exit are made after hw debugging has been
->> enabled (enable_dbg_and_irq).
->> 
->> The call to ct_user_enter is made at the beginning of the
->> kernel_exit macro.
->> 
->> This patch is based on earlier work by Kevin Hilman.
->> Save/restore optimizations were also done by Kevin.
->
->> --- a/arch/arm64/kernel/entry.S
->> +++ b/arch/arm64/kernel/entry.S
->> @@ -30,6 +30,44 @@
->>  #include <asm/unistd32.h>
->>  
->>  /*
->> + * Context tracking subsystem.  Used to instrument transitions
->> + * between user and kernel mode.
->> + */
->> +	.macro ct_user_exit, restore = 0
->> +#ifdef CONFIG_CONTEXT_TRACKING
->> +	bl	context_tracking_user_exit
->> +	.if \restore == 1
->> +	/*
->> +	 * Save/restore needed during syscalls.  Restore syscall arguments from
->> +	 * the values already saved on stack during kernel_entry.
->> +	 */
->> +	ldp	x0, x1, [sp]
->> +	ldp	x2, x3, [sp, #S_X2]
->> +	ldp	x4, x5, [sp, #S_X4]
->> +	ldp	x6, x7, [sp, #S_X6]
->> +	.endif
->> +#endif
->> +	.endm
->> +
->> +	.macro ct_user_enter, save = 0
->> +#ifdef CONFIG_CONTEXT_TRACKING
->> +	.if \save == 1
->> +	/*
->> +	 * Save/restore only needed on syscall fastpath, which uses
->> +	 * x0-x2.
->> +	 */
->> +	push    x2, x3
->
-> Why is x3 saved?
+> I've got a slight preference toward keeping it as is, which lets all of=20
+> the non-error path code stay outside of if/else blocks (and the error=20
+> handling is kept ever so slightly more consistent).
 
-I'll respond here since I worked with Larry on the context save/restore
-part.
+No problem.
 
-[insert rather embarassing disclamer of ignorance of arm64 assembly]
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Based on my reading of the code, I figured only x0-x2 needed to be
-saved.  However, based on some experiments with intentionally clobbering
-the registers[1] (as suggested by Mark Rutland) in order to make sure
-we're saving/restoring the right things, I discovered x3 was needed too
-(I missed updating the comment to mention x0-x3.)
+--Sig_/7lk7t3eNv3Dn+vbTnG_PRf=
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Maybe Will/Catalin/Mark R. can shed some light here?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Kevin
+iQIcBAEBCAAGBQJTfpRjAAoJEMDTa8Ir7ZwVz+AP/0TqYIgIjw/zvJ/mGM6Xvn6f
+HlKSD6kOkyF37jTvve/rAM2C1Is8CG1O4gXoFYSBbaXncU4uHI8Xd9ZCciPxcEIm
+nlqcWKw1sIqGPpn4yHXc9y2YjnThlvsV8sEZ+KaNsLN5ORxa3zKIEmXq01O4++04
+iBuRaRirpc56asXHu75R3Lm9z9EICjKh0tGm3zSCLktRiOJfffQRYBD/o4l252M/
+yCuTqqg4wyv3f/QWu3mCt64/YAdZZtX3WCByX2CQZr0PT6gUXcBtSpi/nyZ95jvv
+cuM9H8b5hvFYZQQWYSZJHQ3SJdS5cIGkNbU0xhtM2qQcx+DmqRlLryRY8I2lehZ1
+TjqcfTxpXyYmf4vKqFE2A1NWz8JopyUd9f9F5x6al03PlyTmtBQJ+23qlM5M8U5D
+00PNRkhjAIKqyTmmt/lS4QBUVm8pG2vFiy95KreTiPOOBsB7VJktPNSpaLjNphuD
+EdHggtfRUT/C2yJ9FCl7jMy0nTV33G9mHn9r4/L2PSTl13lN7Ovr46uNRz36Se9s
+a+FrjKg6wm/SMU/5qjFEvZhd3t9jYieDzTPGqoETgsQlVDyhGsyqiTXgDri0Ndpf
+1MVj7mDuoKQnFQsxTUGono4tS9bv5ItnJ+lCV8dZzz7aUasuEj9xwnYVdIYg84dB
+EkGnst1dKvP10jHLEvsk
+=7txK
+-----END PGP SIGNATURE-----
 
-[1]
->From 8a8702b4d597d08def22221368beae5db2f4a8aa Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@linaro.org>
-Date: Fri, 9 May 2014 13:37:43 -0700
-Subject: [PATCH] KJH: test: clobber regs
-
----
- arch/arm64/kernel/entry.S | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
-
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index 520da4c02ece..232f0200e88d 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -36,6 +36,25 @@
- 	.macro ct_user_exit, restore = 0
- #ifdef CONFIG_CONTEXT_TRACKING
- 	bl	context_tracking_user_exit
-+ 	movz	x0, #0xff, lsl #48
-+	movz	x1, #0xff, lsl #48
-+	movz	x2, #0xff, lsl #48
-+	movz	x3, #0xff, lsl #48
-+	movz	x4, #0xff, lsl #48
-+	movz	x5, #0xff, lsl #48
-+	movz	x6, #0xff, lsl #48
-+	movz	x7, #0xff, lsl #48
-+	movz	x8, #0xff, lsl #48
-+	movz	x9, #0xff, lsl #48
-+	movz	x10, #0xff, lsl #48
-+	movz	x11, #0xff, lsl #48
-+	movz	x12, #0xff, lsl #48
-+	movz	x13, #0xff, lsl #48
-+	movz	x14, #0xff, lsl #48
-+	movz	x15, #0xff, lsl #48
-+	movz	x16, #0xff, lsl #48
-+	movz	x17, #0xff, lsl #48
-+	movz	x18, #0xff, lsl #48
- 	.if \restore == 1
- 	/*
- 	 * Save/restore needed during syscalls.  Restore syscall arguments from
-@@ -60,6 +79,25 @@
- 	push    x0, x1
- 	.endif
- 	bl	context_tracking_user_enter
-+ 	movz	x0, #0xff, lsl #48
-+	movz	x1, #0xff, lsl #48
-+	movz	x2, #0xff, lsl #48
-+	movz	x3, #0xff, lsl #48
-+	movz	x4, #0xff, lsl #48
-+	movz	x5, #0xff, lsl #48
-+	movz	x6, #0xff, lsl #48
-+	movz	x7, #0xff, lsl #48
-+	movz	x8, #0xff, lsl #48
-+	movz	x9, #0xff, lsl #48
-+	movz	x10, #0xff, lsl #48
-+	movz	x11, #0xff, lsl #48
-+	movz	x12, #0xff, lsl #48
-+	movz	x13, #0xff, lsl #48
-+	movz	x14, #0xff, lsl #48
-+	movz	x15, #0xff, lsl #48
-+	movz	x16, #0xff, lsl #48
-+	movz	x17, #0xff, lsl #48
-+	movz	x18, #0xff, lsl #48
- 	.if \save == 1
- 	pop     x0, x1
- 	pop     x2, x3
--- 
-1.9.2
-
+--Sig_/7lk7t3eNv3Dn+vbTnG_PRf=--
