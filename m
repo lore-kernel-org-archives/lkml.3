@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaEWRPI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:15:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3941 "EHLO mx1.redhat.com"
+	id S1753474AbaEWRQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:16:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17963 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683AbaEWRPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:15:06 -0400
-Date: Fri, 23 May 2014 19:14:26 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 7/7] perf: Add dcacheline sort
-Message-ID: <20140523171426.GG1074@krava>
-References: <1400526833-141779-1-git-send-email-dzickus@redhat.com>
- <1400526833-141779-8-git-send-email-dzickus@redhat.com>
+	id S1751186AbaEWRQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 13:16:43 -0400
+Message-ID: <537F825B.1090208@redhat.com>
+Date: Fri, 23 May 2014 13:16:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400526833-141779-8-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Davidlohr Bueso <davidlohr@hp.com>, akpm@linux-foundation.org
+CC: mingo@kernel.org, peterz@infradead.org, mgorman@suse.de, aswin@hp.com,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] mm,fs: introduce helpers around i_mmap_mutex
+References: <1400816006-3083-1-git-send-email-davidlohr@hp.com> <1400816006-3083-2-git-send-email-davidlohr@hp.com>
+In-Reply-To: <1400816006-3083-2-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 03:13:53PM -0400, Don Zickus wrote:
-> In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
-> particular sample instruction.  A bunch of those details relate to the data
-> address.
+On 05/22/2014 11:33 PM, Davidlohr Bueso wrote:
+> Various parts of the kernel acquire and release this mutex,
+> so add i_mmap_lock_write() and immap_unlock_write() helper
+> functions that will encapsulate this logic. The next patch
+> will make use of these.
 > 
-> One interesting thing you can do with data addresses is to convert them into a unique
-> cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
-> them can reveal cache contention.
-> 
-> This patch creates an alogorithm based on various sample details that can help group
-> entries together into data cachelines and allows 'perf report' to sort on it.
-> 
-> The algorithm relies on having proper mmap2 support in the kernel to help determine
-> if the memory map the data address belongs to is private to a pid or globally shared.
-> 
-> The alogortithm is as follows:
-> 
-> o group cpumodes together
-> o group entries with discovered maps together
-> o sort on major, minor, inode and inode generation numbers
-> o if userspace anon, then sort on pid
-> o sort on cachelines based on data addresses
-> 
-> The 'dcacheline' sort option in 'perf report' only works in 'mem-mode'.
-> 
-> Sample output:
-> 
->  #
->  # Samples: 206  of event 'cpu/mem-loads/pp'
->  # Total weight : 2534
->  # Sort order   : dcacheline,pid
->  #
->  # Overhead       Samples                                                          Data Cacheline       Command:  Pid
->  # ........  ............  ......................................................................  ..................
->  #
->     13.22%             1  [k] 0xffff88042f08ebc0                                                       swapper:    0
->      9.27%             1  [k] 0xffff88082e8cea80                                                       swapper:    0
->      3.59%             2  [k] 0xffffffff819ba180                                                       swapper:    0
->      0.32%             1  [k] arch_trigger_all_cpu_backtrace_handler_na.23901+0xffffffffffffffe0       swapper:    0
->      0.32%             1  [k] timekeeper_seq+0xfffffffffffffff8                                        swapper:    0
-> 
-> Note:  Added a '+1' to symlen size in hists__calc_col_len to prevent the next column
-> from prematurely tabbing over and mis-aligning.  Not sure what the problem is.
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 
-I think thats the extra '+' sign ;-) so +1 seems ok
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-jirka
+-- 
+All rights reversed
