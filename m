@@ -1,78 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaEXMVs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:21:48 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41116 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaEXMVq (ORCPT
+	id S1751429AbaEXMYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 08:24:16 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:63448 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaEXMYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:21:46 -0400
-Date: Sat, 24 May 2014 13:20:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140524122034.GQ22111@sirena.org.uk>
-References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
- <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
+	Sat, 24 May 2014 08:24:15 -0400
+Message-ID: <537EC987.4090809@gmail.com>
+Date: Fri, 23 May 2014 06:07:35 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3ruYQ6qMoy8hLjT"
-Content-Disposition: inline
-In-Reply-To: <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.116.200.249
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
- ks8851 SPI chips
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.67 is released
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Gidday,
 
---u3ruYQ6qMoy8hLjT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, May 23, 2014 at 12:57:17PM -0700, Stephen Boyd wrote:
+The Linux man-pages maintainer proudly announces:
 
->  Optional properties:
-> -- vdd-supply:	supply for Ethernet mac
-> +- vdd-supply: analog 3.3V supply for Ethernet mac
-> +- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
-> +- reset-gpios: reset_n input pin
+    man-pages-3.67 - man pages for Linux
 
-Are we *positive* that power is optional?  I do note that there aren't
-any mandatory supplies for the device which seems very strange...
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.67
 
---u3ruYQ6qMoy8hLjT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2014/05/man-pages-367-is-released.html
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
 
-iQIcBAEBAgAGBQJTgI6KAAoJELSic+t+oim9jkMP/0apfcgASMOjnBDo9tRCv9WT
-rKSTuqYvTTluzj3kNcdU4aJFg1Pb7hUnJHf5rRcpqvea54Nkg6uLHGI12Vratgxy
-pgc2Im+ohA6ld+e7uHXRYP/UOTYxFQ/qOtT4rGjqaWx4RHLp1eXvkR84uYBWD6hE
-7fjm0T2CultBNdbMFCTSXJve9oQufTkojTKrBNF/rVArDjXo+4PomjA9O3ccGGhs
-OcZ28+j4kZLvdkVlOtCzvHrfLIgfa7po6Xa9pg0pVmM1mvraLMGcY50toDAFNHTI
-65WkLrHwyfJ21tBupVSd+n7GF0iNQ0tZ623URygBkQpc8dq9wHFQKKD3Wwoy4HL5
-n2ogGavSyl9WBmVhOhkvgdRnE0VHW+yUi3Omj7qTONaQQxJ9ZyPw/fm8/XJVTcJh
-3T2CyzLXMESaljwe0wen4+jrKPSCkymJ0ib0EDBRXUsvATXEEicjg8ynY/BDOuzE
-TY8l+UG2/ojwgCR0IwVUFwgRavA7RqfsL0E8d0P7PILCunX9NAMuqkTaXRKRKoDV
-1CmcdpAHJEguQle3e5nF2JUS9Svptc1kZfB/RjMqVmJgkmrDDY/64qqyV7Y2/khN
-AS3QZERBnfJHe1gcrviMMeFgK1hVZ0i6BSluidmLlsDf5Imd6NUxY+IamUM1Lynq
-bbKnaOlxjDsG3Njafi8f
-=EOOE
------END PGP SIGNATURE-----
+A few changes in this release that may be of interest to readers of
+this list are given below.
 
---u3ruYQ6qMoy8hLjT--
+Cheers,
+
+Michael
+
+
+==================== Changes in man-pages-3.67 ====================
+
+
+New and rewritten pages
+-----------------------
+
+sched_setattr.2
+    Michael Kerrisk, Peter Zijlstra [Juri Lelli]
+        New page describing sched_setattr(2) and sched_getattr(2)
+
+system.3
+    Michael Kerrisk
+        Rewrote large parts of the page and added a number of details
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+sched.7
+    Peter Zijlstra, Michael Kerrisk  [Juri Lelli]
+        Document SCHED_DEADLINE
+
+
+Changes to individual pages
+---------------------------
+
+bind.2
+    Michael Kerrisk
+        ERRORS: Add EADDRINUSE for ephemeral port range exhaustion
+
+connect.2
+    Michael Kerrisk  [William Morriss]
+        ERRORS: Add EADDRNOTAVAIL for ephemeral port range exhaustion
+            Verified from testing and the kernel source.
+            See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=745775
+    Michael Kerrisk
+        Remove mention of ip_local_port_range under EAGAIN error
+
+execve.2
+    Michael Kerrisk  [Steven Stewart-Gallus]
+        Note SIGKILL case when execve() fails beyond the point of no return
+
+fanotify_init.2
+    Heinrich Schuchardt [Michael Kerrisk]
+        Document range of permitted flags for event_f_flags
+            With a new patch included in the mm tree, event_f_flags is
+            checked for allowable values.
+
+recvmmsg.2
+    Michael Kerrisk
+        Describe timeout bug
+            See https://bugzilla.kernel.org/show_bug.cgi?id=75371
+            and http://thread.gmane.org/gmane.linux.man/5677
+
+remap_file_pages.2
+    Andy Lutomirski [Christoph Hellwig, Andy Lutomirski]
+        remap_file_pages() has no benefit for real files
+            Linux commit 3ee6dafc677a68e461a7ddafc94a580ebab80735 caused
+            remap_file_pages to be emulated when used on real file.
+
+proc.5
+    Michael Kerrisk
+        Document /proc/timer_stats
+
+fanotify.7
+    Heinrich Schuchardt  [Jan Kara]
+        BUGS: error events can be lost when reading from fanotify FD
+
+ip.7
+    Michael Kerrisk
+        Note cases where an ephemeral port is used
+    Michael Kerrisk
+        Remove BUGS text on glibc failing to declare in_pktinfo
+    Michael Kerrisk
+        Clarify 'ip_local_port_range' and mention the term "ephemeral ports"
+    Michael Kerrisk
+        Note some more details about assignment of ephemeral ports
+    Michael Kerrisk
+        BUGS: ephemeral port range exhaustion is diagnosed inconsistently
+            Different system calls use different 'errno' values to diagnose
+            exhaustion of the ephemeral port range.
+
+sched.7
+    Michael Kerrisk
+        Document sched_rt_period_us and sched_rt_runtime_us /proc files
+            And rework and relocate the text on dealing with runaway
+            real-time processes.
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
