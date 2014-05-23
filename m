@@ -1,218 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaEWBeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 21:34:19 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:36570 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaEWBeR convert rfc822-to-8bit (ORCPT
+	id S1751459AbaEWBee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 21:34:34 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:35250 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaEWBec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 21:34:17 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "Rob Herring" <robherring2@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <5347DF4D.5000005@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        "Rob Herring" <robh+dt@kernel.org>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
-        "Sascha Hauer" <s.hauer@pengutronix.de>,
-        "Ben Dooks" <ben.dooks@codethink.co.uk>,
-        "Peter De Schrijver" <pdeschrijver@nvidia.com>,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Tero Kristo" <t-kristo@ti.com>, sw0312.kim@samsung.com,
-        "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Tomasz Figa" <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1397042790-10636-1-git-send-email-s.nawrocki@samsung.com>
- <1397042790-10636-3-git-send-email-s.nawrocki@samsung.com>
- <CAL_JsqKDJ_yFxFYnrTtmzMPoxO2rmypiujybwbhUh35y1LS-Mw@mail.gmail.com>
- <5347DF4D.5000005@samsung.com>
-Message-ID: <20140523013406.9521.82891@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH RFC v5 2/2] clk: Add handling of clk parent and rate assigned
- from DT
-Date: Thu, 22 May 2014 18:34:06 -0700
+	Thu, 22 May 2014 21:34:32 -0400
+Message-ID: <1400808739.19982.48.camel@debian>
+Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of
+ mces_seen to Per-CPU rather than only monarch CPU
+From: Chen Yucong <slaoub@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F328115FD@ORSMSX114.amr.corp.intel.com>
+References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
+	 <537C040E.3040901@jp.fujitsu.com> <1400637782.14703.32.camel@debian>
+	 <537C12BC.6080408@jp.fujitsu.com> <1400642398.14703.42.camel@debian>
+	 <537C1F24.8000604@jp.fujitsu.com>
+	 <3908561D78D1C84285E8C5FCA982C28F328115FD@ORSMSX114.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 May 2014 09:32:19 +0800
+Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4-3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sylwester Nawrocki (2014-04-11 05:25:49)
-> >> +==Assigned clock parents and rates==
-> >> +
-> >> +Some platforms require static initial configuration of parts of the clocks
-> >> +controller. Such a configuration can be specified in a clock consumer node
-> >> +through clock-parents and clock-rates DT properties. The former should
-> >> +contain a list of parent clocks in form of phandle and clock specifier pairs,
-> >> +the latter the list of assigned clock frequency values (one cell each).
-> >> +To skip setting parent or rate of a clock its corresponding entry should be
-> >> +set to 0, or can be omitted if it is not followed by any non-zero entry.
-> >> +
-> >> +    uart@a000 {
-> >> +        compatible = "fsl,imx-uart";
-> >> +        reg = <0xa000 0x1000>;
-> >> +        ...
-> >> +        clocks = <&clkcon 0>, <&clkcon 3>;
-> >> +        clock-names = "baud", "mux";
-> >> +
-> >> +        clock-parents = <0>, <&pll 1>;
-> >> +        clock-rates = <460800>;
-> > 
-> > Is this the input frequency or serial baud rate? Looks like a baud
-> > rate, but the clock framework needs input (to the uart) frequency. I
-> > would say this should be clock-frequency and specify the max baud rate
-> > as is being done with i2c bindings. The uart driver should know how to
-> > convert between input clock freq and baud rate.
-> 
-> This UART example is not quite representative for the issues I have been
-> trying to address with this patch set. There is a need to set (an initial)
-> input clock frequency. E.g. in case of multimedia devices there may be
-> a need to set clock parent and frequency of an input clock to multiple IP
-> blocks, so they are clocked synchronously and data is carried properly
-> across a whole processing chain. Thus there may not be even clock output
-> in an IP block, but still input clock needs to be set. IIUC there is
-> similar issue with audio, where it is difficult to calculate the clock
-> frequencies/determine parent clocks in individual drivers algorithmically.
-> 
-> >> +    };
-> >> +
-> >> +In this example the pll is set as parent of "mux" clock and frequency 
-> >> of "baud"
-> >> +clock is specified as 460800 Hz.
-> > 
-> > I don't really like clock-parents. The parent information is part of
-> > the clock source, not the consumer.
-> 
-> I'm not sure we must always consider the parent information as property
-> of a clock source. If for example we expose a structure like below as
-> single clock object, supporting clock gating, parent and frequency
-> setting the parent setting is still accessible from within a device
-> driver.
+On Wed, 2014-05-21 at 21:09 +0000, Luck, Tony wrote:
 
-The design of the ccf implementation certainly allows one to hide
-individually addressable/configurable clock nodes within a single struct
-clk. But should we? I have always maintained that a clock driver should
-enumerate clocks in the same way that the data sheet or technical
-reference manual states. I did make a recent exception[1], but that is
-going to be rolled back after the coordinated clock rate changes land in
-mainline.
+> Please do give us more detail on the scenario that you see that would
+> make your new version behave better.
+> 
+> I'm sure the current code has no races w.r.t. clearing mces_seen. The
+> monarch clears them all in mce_reign() before clearing mce_executing
+> at the foot of mce_end() and allowing the others to run again.
+> 
+Right. There are not races for cleaning mces_seen. But, if a timeout
+occurs in monarch, mces_seen will be not cleaned. It will affect all
+other CPUs.
+As Borislav Petkov says, if we reach a timeout, there is very little
+chance for recovering. Thought. the probability for this situation to
+happen is very slight, it's not impossible. Indeed, it's hard to know
+the precise causes for timeout.
 
-> And clock parent selection may depend on a system configuration
-> not immediately obvious from within a single device driver perspective.
-> 
->                          MUX
->                        ,-------.     DIVIDER      GATE
-> common clk source 1 -->|--.    |   ,--------.   ,--------.
->                        |   \   |   |        |   |        |
-> common clk source 2 -->|-   '--|-->|        |-->|        |--> consumer
->        ...             |       |   |        |   |        |
-> common clk source N -->|-      |   '--------'   '--------'
->                        '-------'
-> 
-> > We've somewhat decided against having every single clock defined in DT
-> > and rather only describe a clock controller with leaf clocks to
-> > devices. That is not a hard rule, but for complex clock trees that is
-> > the norm. Doing something like this will require all levels of the
-> > clock tree to be described. You may have multiple layers of parents
-> > that have to be configured correctly. How are you configuring the rest
-> > of the tree?
-> 
-> I believe even clock controllers where clocks are represented as flat
-> array often describe the clock tree entirely by parenthood, the tree
-> structure is just not obvious from the DT binding.
-> In addition, there seems to be appearing more and more clock controller
-> DT bindings describing their clocks individually.
+As Naoya Horiguchi says, this patch also have a small benefit that it
+can reduce the processing time of monarch CPU. 
+> Your code has the monarch release all the other cpus from the spinloop
+> in mce_end() so they will all rush together through the final lines of
+> do_machine_check().  
+No. My code just distribute cleaning operation to Per-CPU. And all other
+CPUs still have to wait for clearing mce_executing by monarch. 
 
-I've been discouraging these per-clock node bindings in favor of the
-per-controller node style.
+In fact, mces_seen is just used for system panics as quickly as possible
+if there is a truly data corrupting error. So there is not advantage for
+cleaning mces_seen in the monarch. 
+> Some of them will have work to do if they saw
+> errors - they may have to send signals, or log the error. Others can
+> fly directly to the end of do_machine_check() and clear MCG_STATUS
+> and return to executing whatever code was interrupted.
+> 
+> So it is possible that some processors will be out doing things that can
+> generate another machine check, before others have finished their
+> tasks and got to the point to clear mces_seen.(*)
+> 
+> -Tony
+> 
+> (*) maybe that doesn't matter because they haven't zeroed MCG_STATUS
+> yet - so this second machine check will force those cpus to shutdown. See MCIP
+> description in "15.3.1.2 IA32_MCG_STATUS_MSR" section of software
+> developer manual.
+Right. This I also know. This is the reason why you can find the
+following snippet in my code:
 
-> 
-> >> +Configuring a clock's parent and rate through the device node that uses
-> >> +the clock can be done only for clocks that have a single user. Specifying
-> >> +conflicting parent or rate configuration in multiple consumer nodes for
-> >> +a shared clock is forbidden.
-> >> +
-> >> +Configuration of common clocks, which affect multiple consumer devices
-> >> +can be specified in a dedicated 'assigned-clocks' subnode of a clock
-> >> +provider node, e.g.:
-> > 
-> > This seems like a work-around due to having clock-parents in the
-> > consumer node. If (I'm not convinced we should) we have a binding for
-> > parent config, it needs to be a single binding that works for both
-> > cases.
-> 
-> When this issue was first raised during an ARM kernel summit it was
-> proposed to add 'assigned' prefix to DT properties for such bindings.
-> 
+       /*
+        * Now clear the mces_seen of current CPU -*final - so that it
+does not
+        * reappear on the next mce.
+        */
+       memset(final, 0, sizeof(struct mce));
+       mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
 
-Yes, I like the "assigned-" prefix.
-
-> How about separate properties for the default clock configuration,
-> e.g. assigned-clocks/assigned-clock-parents/assigned-clock-rates ?
-> So a clock provider would look like:
-> 
->     clkcon {
->         ...
->         #clock-cells = <1>;
-> 
->         assigned-clocks = <&clkcon 16>, <&clkcon 17>;
->         assigned-clock-parents = <0>, <&clkcon 1>;
->         assigned-clock-rates = <200000>;
->     };
-> 
-> And a consumer device node:
-> 
->     uart@a000 {
->         compatible = "fsl,imx-uart";
->         reg = <0xa000 0x1000>;
->         ...
->         clocks = <&clkcon 0>;
->         clock-names = "baud";
-> 
->         assigned-clocks = <&clkcon 3>, <&clkcon 0>;
->         assigned-clock-parents = <&pll 1>;
->         assigned-clock-rates = <0>, <460800>;
-> };
-
-It looks like this idea was dropped for v6. Can we revisit it? Take a
-look at Tero's example implementation for OMAP using this binding:
-
-http://www.spinics.net/lists/linux-omap/msg104705.html
-
-There is a bogus "default-clocks" node made solely for storing this info
-within the OMAP PRCM clock provider node. This is basically faking a
-clock consumer. I think with the proposed solution above Tero could have
-avoided that node entirely and done the following:
-
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 649b5cd..e3ff1a7 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -145,6 +145,11 @@
- 			cm2_clocks: clocks {
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+
-+				assigned-clocks = <&abe_dpll_refclk_mux_ck>,
-+					<&dpll_usb_ck>, <&dpll_abe_ck>;
-+				assigned-clock-parents = <&sys_32k_ck>;
-+				assigned-clock-rates = <0>, <960000000>, <98304000>;
- 			};
- 
- 			cm2_clockdomains: clockdomains {
+---
+Thanks very much for your reply.
+cyc
 
 
-Tero, what do you think?
 
-Regards,
-Mike
 
-[1] http://www.spinics.net/lists/cpufreq/msg10071.html
