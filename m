@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaEWKEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:04:40 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49027 "EHLO
+	id S1752467AbaEWKEz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:04:55 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49347 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaEWKEf (ORCPT
+	with ESMTP id S1752171AbaEWKEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:04:35 -0400
+	Fri, 23 May 2014 06:04:38 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 02/26] perf hists: Add support for accumulated stat of hist entry
-Date: Fri, 23 May 2014 19:03:59 +0900
-Message-Id: <1400839463-21933-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 25/26] perf tests: Define and use symbolic names for fake symbols
+Date: Fri, 23 May 2014 19:04:22 +0900
+Message-Id: <1400839463-21933-26-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
@@ -28,130 +28,336 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maintain accumulated stat information in hist_entry->stat_acc if
-symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
-vaules initially, and will be updated as callchain is processed later.
+In various histogram test cases, fake symbols are used as raw numbers.
+Define macros for each pid, map, symbols so that it can increase
+readability somewhat.
 
-Tested-by: Arun Sharma <asharma@fb.com>
-Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c   | 28 ++++++++++++++++++++++++++--
- tools/perf/util/sort.h   |  1 +
- tools/perf/util/symbol.h |  1 +
- 3 files changed, 28 insertions(+), 2 deletions(-)
+ tools/perf/tests/hists_common.c | 47 ++++++++++++++++++++++-------------------
+ tools/perf/tests/hists_common.h | 32 ++++++++++++++++++++++++++--
+ tools/perf/tests/hists_filter.c | 23 ++++++++++----------
+ tools/perf/tests/hists_link.c   | 32 ++++++++++++++--------------
+ tools/perf/tests/hists_output.c | 20 +++++++++---------
+ 5 files changed, 92 insertions(+), 62 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 61cd2569dc2a..f231255116b0 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -232,6 +232,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 		return true;
+diff --git a/tools/perf/tests/hists_common.c b/tools/perf/tests/hists_common.c
+index e4e01aadc3be..e4e120d3c16f 100644
+--- a/tools/perf/tests/hists_common.c
++++ b/tools/perf/tests/hists_common.c
+@@ -12,9 +12,9 @@ static struct {
+ 	u32 pid;
+ 	const char *comm;
+ } fake_threads[] = {
+-	{ 100, "perf" },
+-	{ 200, "perf" },
+-	{ 300, "bash" },
++	{ FAKE_PID_PERF1, "perf" },
++	{ FAKE_PID_PERF2, "perf" },
++	{ FAKE_PID_BASH,  "bash" },
+ };
  
- 	he_stat__decay(&he->stat);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__decay(he->stat_acc);
+ static struct {
+@@ -22,15 +22,15 @@ static struct {
+ 	u64 start;
+ 	const char *filename;
+ } fake_mmap_info[] = {
+-	{ 100, 0x40000, "perf" },
+-	{ 100, 0x50000, "libc" },
+-	{ 100, 0xf0000, "[kernel]" },
+-	{ 200, 0x40000, "perf" },
+-	{ 200, 0x50000, "libc" },
+-	{ 200, 0xf0000, "[kernel]" },
+-	{ 300, 0x40000, "bash" },
+-	{ 300, 0x50000, "libc" },
+-	{ 300, 0xf0000, "[kernel]" },
++	{ FAKE_PID_PERF1, FAKE_MAP_PERF,   "perf" },
++	{ FAKE_PID_PERF1, FAKE_MAP_LIBC,   "libc" },
++	{ FAKE_PID_PERF1, FAKE_MAP_KERNEL, "[kernel]" },
++	{ FAKE_PID_PERF2, FAKE_MAP_PERF,   "perf" },
++	{ FAKE_PID_PERF2, FAKE_MAP_LIBC,   "libc" },
++	{ FAKE_PID_PERF2, FAKE_MAP_KERNEL, "[kernel]" },
++	{ FAKE_PID_BASH,  FAKE_MAP_BASH,   "bash" },
++	{ FAKE_PID_BASH,  FAKE_MAP_LIBC,   "libc" },
++	{ FAKE_PID_BASH,  FAKE_MAP_KERNEL, "[kernel]" },
+ };
  
- 	diff = prev_period - he->stat.period;
+ struct fake_sym {
+@@ -40,27 +40,30 @@ struct fake_sym {
+ };
  
-@@ -279,12 +281,26 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+ static struct fake_sym perf_syms[] = {
+-	{ 700, 100, "main" },
+-	{ 800, 100, "run_command" },
+-	{ 900, 100, "cmd_record" },
++	{ FAKE_SYM_OFFSET1, FAKE_SYM_LENGTH, "main" },
++	{ FAKE_SYM_OFFSET2, FAKE_SYM_LENGTH, "run_command" },
++	{ FAKE_SYM_OFFSET3, FAKE_SYM_LENGTH, "cmd_record" },
+ };
  
- static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ static struct fake_sym bash_syms[] = {
+-	{ 700, 100, "main" },
+-	{ 800, 100, "xmalloc" },
+-	{ 900, 100, "xfree" },
++	{ FAKE_SYM_OFFSET1, FAKE_SYM_LENGTH, "main" },
++	{ FAKE_SYM_OFFSET2, FAKE_SYM_LENGTH, "xmalloc" },
++	{ FAKE_SYM_OFFSET3, FAKE_SYM_LENGTH, "xfree" },
+ };
+ 
+ static struct fake_sym libc_syms[] = {
+ 	{ 700, 100, "malloc" },
+ 	{ 800, 100, "free" },
+ 	{ 900, 100, "realloc" },
++	{ FAKE_SYM_OFFSET1, FAKE_SYM_LENGTH, "malloc" },
++	{ FAKE_SYM_OFFSET2, FAKE_SYM_LENGTH, "free" },
++	{ FAKE_SYM_OFFSET3, FAKE_SYM_LENGTH, "realloc" },
+ };
+ 
+ static struct fake_sym kernel_syms[] = {
+-	{ 700, 100, "schedule" },
+-	{ 800, 100, "page_fault" },
+-	{ 900, 100, "sys_perf_event_open" },
++	{ FAKE_SYM_OFFSET1, FAKE_SYM_LENGTH, "schedule" },
++	{ FAKE_SYM_OFFSET2, FAKE_SYM_LENGTH, "page_fault" },
++	{ FAKE_SYM_OFFSET3, FAKE_SYM_LENGTH, "sys_perf_event_open" },
+ };
+ 
+ static struct {
+@@ -102,7 +105,7 @@ struct machine *setup_fake_machine(struct machines *machines)
+ 				.pid = fake_mmap_info[i].pid,
+ 				.tid = fake_mmap_info[i].pid,
+ 				.start = fake_mmap_info[i].start,
+-				.len = 0x1000ULL,
++				.len = FAKE_MAP_LENGTH,
+ 				.pgoff = 0ULL,
+ 			},
+ 		};
+diff --git a/tools/perf/tests/hists_common.h b/tools/perf/tests/hists_common.h
+index 1415ae69d7b6..888254e8665c 100644
+--- a/tools/perf/tests/hists_common.h
++++ b/tools/perf/tests/hists_common.h
+@@ -4,6 +4,34 @@
+ struct machine;
+ struct machines;
+ 
++#define FAKE_PID_PERF1  100
++#define FAKE_PID_PERF2  200
++#define FAKE_PID_BASH   300
++
++#define FAKE_MAP_PERF    0x400000
++#define FAKE_MAP_BASH    0x400000
++#define FAKE_MAP_LIBC    0x500000
++#define FAKE_MAP_KERNEL  0xf00000
++#define FAKE_MAP_LENGTH  0x100000
++
++#define FAKE_SYM_OFFSET1  700
++#define FAKE_SYM_OFFSET2  800
++#define FAKE_SYM_OFFSET3  900
++#define FAKE_SYM_LENGTH   100
++
++#define FAKE_IP_PERF_MAIN  FAKE_MAP_PERF + FAKE_SYM_OFFSET1
++#define FAKE_IP_PERF_RUN_COMMAND  FAKE_MAP_PERF + FAKE_SYM_OFFSET2
++#define FAKE_IP_PERF_CMD_RECORD  FAKE_MAP_PERF + FAKE_SYM_OFFSET3
++#define FAKE_IP_BASH_MAIN  FAKE_MAP_BASH + FAKE_SYM_OFFSET1
++#define FAKE_IP_BASH_XMALLOC  FAKE_MAP_BASH + FAKE_SYM_OFFSET2
++#define FAKE_IP_BASH_XFREE  FAKE_MAP_BASH + FAKE_SYM_OFFSET3
++#define FAKE_IP_LIBC_MALLOC  FAKE_MAP_LIBC + FAKE_SYM_OFFSET1
++#define FAKE_IP_LIBC_FREE  FAKE_MAP_LIBC + FAKE_SYM_OFFSET2
++#define FAKE_IP_LIBC_REALLOC  FAKE_MAP_LIBC + FAKE_SYM_OFFSET3
++#define FAKE_IP_KERNEL_SCHEDULE  FAKE_MAP_KERNEL + FAKE_SYM_OFFSET1
++#define FAKE_IP_KERNEL_PAGE_FAULT  FAKE_MAP_KERNEL + FAKE_SYM_OFFSET2
++#define FAKE_IP_KERNEL_SYS_PERF_EVENT_OPEN  FAKE_MAP_KERNEL + FAKE_SYM_OFFSET3
++
+ /*
+  * The setup_fake_machine() provides a test environment which consists
+  * of 3 processes that have 3 mappings and in turn, have 3 symbols
+@@ -13,7 +41,7 @@ struct machines;
+  * .............  .............  ...................
+  *    perf:  100           perf  main
+  *    perf:  100           perf  run_command
+- *    perf:  100           perf  comd_record
++ *    perf:  100           perf  cmd_record
+  *    perf:  100           libc  malloc
+  *    perf:  100           libc  free
+  *    perf:  100           libc  realloc
+@@ -22,7 +50,7 @@ struct machines;
+  *    perf:  100       [kernel]  sys_perf_event_open
+  *    perf:  200           perf  main
+  *    perf:  200           perf  run_command
+- *    perf:  200           perf  comd_record
++ *    perf:  200           perf  cmd_record
+  *    perf:  200           libc  malloc
+  *    perf:  200           libc  free
+  *    perf:  200           libc  realloc
+diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
+index 7063824c3566..06a7352a1a3d 100644
+--- a/tools/perf/tests/hists_filter.c
++++ b/tools/perf/tests/hists_filter.c
+@@ -21,25 +21,25 @@ struct sample {
+ /* For the numbers, see hists_common.c */
+ static struct sample fake_samples[] = {
+ 	/* perf [kernel] schedule() */
+-	{ .pid = 100, .ip = 0xf0000 + 700, },
++	{ .pid = FAKE_PID_PERF1, .ip = FAKE_IP_KERNEL_SCHEDULE, },
+ 	/* perf [perf]   main() */
+-	{ .pid = 100, .ip = 0x40000 + 700, },
++	{ .pid = FAKE_PID_PERF1, .ip = FAKE_IP_PERF_MAIN, },
+ 	/* perf [libc]   malloc() */
+-	{ .pid = 100, .ip = 0x50000 + 700, },
++	{ .pid = FAKE_PID_PERF1, .ip = FAKE_IP_LIBC_MALLOC, },
+ 	/* perf [perf]   main() */
+-	{ .pid = 200, .ip = 0x40000 + 700, }, /* will be merged */
++	{ .pid = FAKE_PID_PERF2, .ip = FAKE_IP_PERF_MAIN, }, /* will be merged */
+ 	/* perf [perf]   cmd_record() */
+-	{ .pid = 200, .ip = 0x40000 + 900, },
++	{ .pid = FAKE_PID_PERF2, .ip = FAKE_IP_PERF_CMD_RECORD, },
+ 	/* perf [kernel] page_fault() */
+-	{ .pid = 200, .ip = 0xf0000 + 800, },
++	{ .pid = FAKE_PID_PERF2, .ip = FAKE_IP_KERNEL_PAGE_FAULT, },
+ 	/* bash [bash]   main() */
+-	{ .pid = 300, .ip = 0x40000 + 700, },
++	{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_BASH_MAIN, },
+ 	/* bash [bash]   xmalloc() */
+-	{ .pid = 300, .ip = 0x40000 + 800, },
++	{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_BASH_XMALLOC, },
+ 	/* bash [libc]   malloc() */
+-	{ .pid = 300, .ip = 0x50000 + 700, },
++	{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_LIBC_MALLOC, },
+ 	/* bash [kernel] page_fault() */
+-	{ .pid = 300, .ip = 0xf0000 + 800, },
++	{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_KERNEL_PAGE_FAULT, },
+ };
+ 
+ static int count_sample(struct hist_entry_iter *iter,
+@@ -66,7 +66,7 @@ static int add_hist_entries(struct perf_evlist *evlist,
  {
--	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
--	struct hist_entry *he = zalloc(sizeof(*he) + callchain_size);
-+	size_t callchain_size = 0;
-+	struct hist_entry *he;
-+
-+	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain)
-+		callchain_size = sizeof(struct callchain_root);
-+
-+	he = zalloc(sizeof(*he) + callchain_size);
+ 	struct perf_evsel *evsel;
+ 	struct addr_location al;
+-	struct perf_sample sample = { .cpu = 0, };
++	struct perf_sample sample = { .period = 100, };
+ 	size_t i;
  
- 	if (he != NULL) {
- 		*he = *template;
+ 	/*
+@@ -95,7 +95,6 @@ static int add_hist_entries(struct perf_evlist *evlist,
+ 			sample.pid = fake_samples[i].pid;
+ 			sample.tid = fake_samples[i].pid;
+ 			sample.ip = fake_samples[i].ip;
+-			sample.period = 100;
  
-+		if (symbol_conf.cumulate_callchain) {
-+			he->stat_acc = malloc(sizeof(he->stat));
-+			if (he->stat_acc == NULL) {
-+				free(he);
-+				return NULL;
-+			}
-+			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-+		}
-+
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+ 							  &sample) < 0)
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index ca6693b37cd7..d4b34b0f50a2 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -21,41 +21,41 @@ struct sample {
+ /* For the numbers, see hists_common.c */
+ static struct sample fake_common_samples[] = {
+ 	/* perf [kernel] schedule() */
+-	{ .pid = 100, .ip = 0xf0000 + 700, },
++	{ .pid = FAKE_PID_PERF1, .ip = FAKE_IP_KERNEL_SCHEDULE, },
+ 	/* perf [perf]   main() */
+-	{ .pid = 200, .ip = 0x40000 + 700, },
++	{ .pid = FAKE_PID_PERF2, .ip = FAKE_IP_PERF_MAIN, },
+ 	/* perf [perf]   cmd_record() */
+-	{ .pid = 200, .ip = 0x40000 + 900, },
++	{ .pid = FAKE_PID_PERF2, .ip = FAKE_IP_PERF_CMD_RECORD, },
+ 	/* bash [bash]   xmalloc() */
+-	{ .pid = 300, .ip = 0x40000 + 800, },
++	{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_BASH_XMALLOC, },
+ 	/* bash [libc]   malloc() */
+-	{ .pid = 300, .ip = 0x50000 + 700, },
++	{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_LIBC_MALLOC, },
+ };
  
-@@ -296,6 +312,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 			 */
- 			he->branch_info = malloc(sizeof(*he->branch_info));
- 			if (he->branch_info == NULL) {
-+				free(he->stat_acc);
- 				free(he);
- 				return NULL;
- 			}
-@@ -359,6 +376,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ static struct sample fake_samples[][5] = {
+ 	{
+ 		/* perf [perf]   run_command() */
+-		{ .pid = 100, .ip = 0x40000 + 800, },
++		{ .pid = FAKE_PID_PERF1, .ip = FAKE_IP_PERF_RUN_COMMAND, },
+ 		/* perf [libc]   malloc() */
+-		{ .pid = 100, .ip = 0x50000 + 700, },
++		{ .pid = FAKE_PID_PERF1, .ip = FAKE_IP_LIBC_MALLOC, },
+ 		/* perf [kernel] page_fault() */
+-		{ .pid = 100, .ip = 0xf0000 + 800, },
++		{ .pid = FAKE_PID_PERF1, .ip = FAKE_IP_KERNEL_PAGE_FAULT, },
+ 		/* perf [kernel] sys_perf_event_open() */
+-		{ .pid = 200, .ip = 0xf0000 + 900, },
++		{ .pid = FAKE_PID_PERF2, .ip = FAKE_IP_KERNEL_SYS_PERF_EVENT_OPEN, },
+ 		/* bash [libc]   free() */
+-		{ .pid = 300, .ip = 0x50000 + 800, },
++		{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_LIBC_FREE, },
+ 	},
+ 	{
+ 		/* perf [libc]   free() */
+-		{ .pid = 200, .ip = 0x50000 + 800, },
++		{ .pid = FAKE_PID_PERF2, .ip = FAKE_IP_LIBC_FREE, },
+ 		/* bash [libc]   malloc() */
+-		{ .pid = 300, .ip = 0x50000 + 700, }, /* will be merged */
++		{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_LIBC_MALLOC, }, /* will be merged */
+ 		/* bash [bash]   xfee() */
+-		{ .pid = 300, .ip = 0x40000 + 900, },
++		{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_BASH_XFREE, },
+ 		/* bash [libc]   realloc() */
+-		{ .pid = 300, .ip = 0x50000 + 900, },
++		{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_LIBC_REALLOC, },
+ 		/* bash [kernel] page_fault() */
+-		{ .pid = 300, .ip = 0xf0000 + 800, },
++		{ .pid = FAKE_PID_BASH,  .ip = FAKE_IP_KERNEL_PAGE_FAULT, },
+ 	},
+ };
  
- 		if (!cmp) {
- 			he_stat__add_period(&he->stat, period, weight);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_period(he->stat_acc, period, weight);
+@@ -64,7 +64,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 	struct perf_evsel *evsel;
+ 	struct addr_location al;
+ 	struct hist_entry *he;
+-	struct perf_sample sample = { .cpu = 0, };
++	struct perf_sample sample = { .period = 1, };
+ 	size_t i = 0, k;
  
- 			/*
- 			 * This mem info was allocated from sample__resolve_mem
-@@ -394,6 +413,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
- 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
- 	return he;
- }
+ 	/*
+diff --git a/tools/perf/tests/hists_output.c b/tools/perf/tests/hists_output.c
+index d40461ecd210..e3bbd6c54c1b 100644
+--- a/tools/perf/tests/hists_output.c
++++ b/tools/perf/tests/hists_output.c
+@@ -22,25 +22,25 @@ struct sample {
+ /* For the numbers, see hists_common.c */
+ static struct sample fake_samples[] = {
+ 	/* perf [kernel] schedule() */
+-	{ .cpu = 0, .pid = 100, .ip = 0xf0000 + 700, },
++	{ .cpu = 0, .pid = FAKE_PID_PERF1, .ip = FAKE_IP_KERNEL_SCHEDULE, },
+ 	/* perf [perf]   main() */
+-	{ .cpu = 1, .pid = 100, .ip = 0x40000 + 700, },
++	{ .cpu = 1, .pid = FAKE_PID_PERF1, .ip = FAKE_IP_PERF_MAIN, },
+ 	/* perf [perf]   cmd_record() */
+-	{ .cpu = 1, .pid = 100, .ip = 0x40000 + 900, },
++	{ .cpu = 1, .pid = FAKE_PID_PERF1, .ip = FAKE_IP_PERF_CMD_RECORD, },
+ 	/* perf [libc]   malloc() */
+-	{ .cpu = 1, .pid = 100, .ip = 0x50000 + 700, },
++	{ .cpu = 1, .pid = FAKE_PID_PERF1, .ip = FAKE_IP_LIBC_MALLOC, },
+ 	/* perf [libc]   free() */
+-	{ .cpu = 2, .pid = 100, .ip = 0x50000 + 800, },
++	{ .cpu = 2, .pid = FAKE_PID_PERF1, .ip = FAKE_IP_LIBC_FREE, },
+ 	/* perf [perf]   main() */
+-	{ .cpu = 2, .pid = 200, .ip = 0x40000 + 700, },
++	{ .cpu = 2, .pid = FAKE_PID_PERF2, .ip = FAKE_IP_PERF_MAIN, },
+ 	/* perf [kernel] page_fault() */
+-	{ .cpu = 2, .pid = 200, .ip = 0xf0000 + 800, },
++	{ .cpu = 2, .pid = FAKE_PID_PERF2, .ip = FAKE_IP_KERNEL_PAGE_FAULT, },
+ 	/* bash [bash]   main() */
+-	{ .cpu = 3, .pid = 300, .ip = 0x40000 + 700, },
++	{ .cpu = 3, .pid = FAKE_PID_BASH,  .ip = FAKE_IP_BASH_MAIN, },
+ 	/* bash [bash]   xmalloc() */
+-	{ .cpu = 0, .pid = 300, .ip = 0x40000 + 800, },
++	{ .cpu = 0, .pid = FAKE_PID_BASH,  .ip = FAKE_IP_BASH_XMALLOC, },
+ 	/* bash [kernel] page_fault() */
+-	{ .cpu = 1, .pid = 300, .ip = 0xf0000 + 800, },
++	{ .cpu = 1, .pid = FAKE_PID_BASH,  .ip = FAKE_IP_KERNEL_PAGE_FAULT, },
+ };
  
-@@ -772,6 +793,7 @@ void hist_entry__free(struct hist_entry *he)
- {
- 	zfree(&he->branch_info);
- 	zfree(&he->mem_info);
-+	zfree(&he->stat_acc);
- 	free_srcline(he->srcline);
- 	free(he);
- }
-@@ -797,6 +819,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
- 
- 		if (!cmp) {
- 			he_stat__add_stat(&iter->stat, &he->stat);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_stat(iter->stat_acc, he->stat_acc);
- 
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 5f38d925e92f..c9ffa031becd 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -82,6 +82,7 @@ struct hist_entry {
- 		struct list_head head;
- 	} pairs;
- 	struct he_stat		stat;
-+	struct he_stat		*stat_acc;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	struct comm		*comm;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 33ede53fa6b9..615c752dd767 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -109,6 +109,7 @@ struct symbol_conf {
- 			show_nr_samples,
- 			show_total_period,
- 			use_callchain,
-+			cumulate_callchain,
- 			exclude_other,
- 			show_cpu_utilization,
- 			initialized,
+ static int add_hist_entries(struct hists *hists, struct machine *machine)
 -- 
 1.9.2
 
