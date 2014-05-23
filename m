@@ -1,112 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaEWEww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 00:52:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:10271 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaEWEwv (ORCPT
+	id S1751644AbaEWE7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 00:59:40 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:47238 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaEWE7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 00:52:51 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-1d-537ed41d8ec1
-Date: Fri, 23 May 2014 04:52:45 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] PM / devfreq: remove checks for CONFIG_EXYNOS_ASV
-To: Paul Bolle <pebolle@tiscali.nl>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        =?euc-kr?Q?=B1=E8=B1=B9=C1=F8?= <kgene.kim@samsung.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20140523045221440@myungjoo.ham
-Msgkey: 20140523045221440@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140523045221440@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <7638065.14871400820762911.JavaMail.weblogic@epml08>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSoCt7pS7YYPdFPovLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJXRPuEGc8E7vopl3Y+YGxh38HUxcnIICahLLFpykg3ElhAwkbhy
-	4gULhC0mceHeejaImqWMEhv/WcLUnHv1FqiGCyg+h1FiWts01i5GDg4WAVWJyZ0JICabgJ7E
-	zM/JIOXCAm4Sl7evYgYpFxFYzCjx5NBPdhCHWWAak8SDpdeZIRYoSazZ9wpsMa+AoMTJmU+g
-	jlCV6LvRxw4ylFdATaJjmiBEWEJi1vQLrBA2r8SM9qdQ5XIS076uYYawpSXOz9rACPPL4u+P
-	oeL8Esdu72ACGQnS++R+MMyY3Zu/QINBQGLqmYNQrVoShxbuY4Kw+STWLHzLAjNm16nlzDC9
-	97fMBathFlCUmNL9kB3C1pL48mMfG7qveAUcJJav2sY+gVF5FpLULCTts5C0I6tZwMiyilE0
-	tSC5oDgpvchIrzgxt7g0L10vOT93EyMwKZz+96xvB+PNA9aHGJOBMTKRWUo0OR+YVPJK4g2N
-	zYwsTE1MjY3MLc1IE1YS5130MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2O6hyjHofiS
-	N7t5zk1NXfX49dEerv7NBUdmhDRHl+x1zveeL35w9ffXeq5NxaJ7rkrXO1fPUVx9rNVb0fOt
-	1MqvZj7PjhSEfEy2bpuspcC7fe+h9oqfm+3yxMXetW7fqVkna8uXuOij5/E1Mg/3Ly7aeWua
-	3cnVcw+/3xziv9l7Rdnj3yWNgmVKLMUZiYZazEXFiQAcbvtqIAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPKsWRmVeSWpSXmKPExsVy+t/tXl3ZK3XBBoeOs1tc3jWHzYHR4/Mm
-	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIz2
-	CTeYC97xVSzrfsTcwLiDr4uRk0NIQF1i0ZKTbCC2hICJxLlXb1kgbDGJC/fWA8W5gGrmMEpM
-	a5vG2sXIwcEioCoxuTMBxGQT0JOY+TkZpFxYwE3i8vZVzCDlIgKLGSWeHPrJDuIwC0xjkniw
-	9DozxDIliTX7XoEt4BUQlDg58wnUMlWJvht97CBDeQXUJDqmCUKEJSRmTb/ACmHzSsxofwpV
-	Licx7esaZghbWuL8rA2MMDcv/v4YKs4vcez2DiaQkSC9T+4Hw4zZvfkL1LsCElPPHIRq1ZI4
-	tHAfE4TNJ7FmISwY+CV2nVrODNN7f8tcsBpmAUWJKd0P2SFsLYkvP/axofuKV8BBYvmqbewT
-	GOVmIUnNQtI+C0k7spoFjCyrGEVTC5ILipPSK0z0ihNzi0vz0vWS83M3MYKT07MlOxgbLlgf
-	YhTgYFTi4X3AVBcsxJpYVlyZe4hRgoNZSYTXJxQoxJuSWFmVWpQfX1Sak1p8iDEZGH8TmaVE
-	k/OBiTOvJN7Q2NjEzMTU0sTCwNScNGElcd4Ft5KChATSE0tSs1NTC1KLYLYwcXBKNTBucrjE
-	Ln868Out0mnnOjdwbWe4fepxc1FjQl+iY7vkMSGtX7ei1wRWa/TMnfS0yNO2OGwP2+YpekWy
-	hpdaJk5Ruqa4SWP7VuP/NxIilsQLMOcaXFvhunDJW/2AmbYf7Ke+ClV3P9bfxJe8u9v32Bq+
-	z4q743tmTd65S5lnaef1A0Za++qFV3EqsRRnJBpqMRcVJwIAb6T8/JIDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Fri, 23 May 2014 00:59:38 -0400
+Date: Fri, 23 May 2014 00:59:32 -0400 (EDT)
+From: Jon Maxwell <jmaxwell@redhat.com>
+To: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Cc: Jon Maxwell <jmaxwell37@gmail.com>, stephen@networkplumber.org,
+        davem@davemloft.net, vyasevic@redhat.com,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jpirko@redhat.com
+Message-ID: <1679971005.11740655.1400821172875.JavaMail.zimbra@redhat.com>
+In-Reply-To: <2052318198.6465872.1400101664337.JavaMail.zimbra@redhat.com>
+References: <1399967708-7283-1-git-send-email-jmaxwell@redhat.com> <5372BA1E.8000402@lab.ntt.co.jp> <2052318198.6465872.1400101664337.JavaMail.zimbra@redhat.com>
+Subject: Re: [PATCH net] bridge: notify user space of fdb port change
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
+Thread-Topic: bridge: notify user space of fdb port change
+Thread-Index: ET1+bksZ6Aw4NpCSgb3RmxDTqPgR6BR+3Y2L
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4N4r647031812
-
-On Thu, May 22, 2014 at 5:37 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Checks for CONFIG_EXYNOS_ASV were added in v3.3. But the related Kconfig
-> symbol has never been added to the tree. Remove these checks, as they
-> always evaluate to false.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-
-Thanks for pointing this out.
-
-ASV was supposed to be merged, but it appears it failed or never attempted.
-
-I will merge with the next batch (this week).
 
 
-Cheers,
-MyungJoo.
 
-> ---
-> 0) Untested.
->
-> 1) I do not really care much for this patch. Two years is not very long
-> for dead code to remain in the tree. There is, however, a trivial issue
-> that makes this patch stand out from the other patches in my current
-> sweep of the tree for Kconfig related problems.
->
-> See, here the use of an unknown Kconfig macro hides an obvious typo: it
-> should either be "exynos_result_of_asv" or "exynos4_result_of_asv", but
-> not both. Ie, this almost certainly wouldn't have compiled even if the
-> Kconfig symbol EXYNOS_ASV would have been part of the tree.
->
-> 2) So this makes me wonder whether there are any guidelines for using
-> Kconfig macros before the related Kconfig symbols are merged?
->
->  drivers/devfreq/Kconfig              |  3 +--
->  drivers/devfreq/exynos/exynos4_bus.c | 13 -------------
->  2 files changed, 1 insertion(+), 15 deletions(-)ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> ----- Original Message -----
+> > From: "Toshiaki Makita" <makita.toshiaki@lab.ntt.co.jp>
+> > To: "Jon Maxwell" <jmaxwell37@gmail.com>, stephen@networkplumber.org
+> > Cc: davem@davemloft.net, vyasevic@redhat.com,
+> > bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+> > linux-kernel@vger.kernel.org, jpirko@redhat.com, jmaxwell@redhat.com
+> > Sent: Wednesday, May 14, 2014 10:34:38 AM
+> > Subject: Re: [PATCH net] bridge: notify user space of fdb port change
+> > 
+> > (2014/05/13 16:55), Jon Maxwell wrote:
+> > > From: Jon Maxwell <jmaxwell37@gmail.com>
+> > > 
+> > > There has been a number incidents recently where customers running KVM
+> > > have
+> > > reported that VM hosts on different Hypervisors are unreachable. Based on
+> > > pcap traces we found that the bridge was broadcasting the ARP request out
+> > > onto the network. However some NICs have an inbuilt switch which on
+> > > occasions
+> > > were broadcasting the VMs ARP request back through the physical NIC on
+> > > the
+> > > Hypervisor. This resulted in the bridge changing ports and incorrectly
+> > > learning
+> > > that the VMs mac address was external. As a result the ARP reply was
+> > > directed
+> > > back onto the external network and VM never updated it's ARP cache. This
+> > > patch
+> > > will notify the bridge command to identify such port toggling.
+> > > 
+> > > Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
+> > > ---
+> > >  net/bridge/br_fdb.c | 2 ++
+> > >  1 file changed, 2 insertions(+)
+> > > 
+> > > diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
+> > > index 9203d5a..37742e2 100644
+> > > --- a/net/bridge/br_fdb.c
+> > > +++ b/net/bridge/br_fdb.c
+> > > @@ -507,6 +507,8 @@ void br_fdb_update(struct net_bridge *br, struct
+> > > net_bridge_port *source,
+> > >  					source->dev->name);
+> > >  		} else {
+> > >  			/* fastpath: update of existing entry */
+> > > +			if (source->port_no != fdb->dst->port_no)
+> > 
+> > It seems that we don't need to fetch port_no and it is enough to compare
+> > source and fdb->dst.
+> 
+> It may save a few instructions but I have not tested it.
+> 
+> > 
+> > > +				fdb_notify(br, fdb, RTM_NEWNEIGH);
+> > >  			fdb->dst = source;
+> > >  			fdb->updated = jiffies;
+> > >  			if (unlikely(added_by_user))
+> > > 
+> > 
+> > This notifies fdb entry before updating existing entry. Is this on purpose?
+> > I think we should notify the updated fdb entry.
+> > Similar code fdb_add_entry() does after updating it.
+> 
+> It was not on purpose but for this particular case there will be burst of
+> notifies
+> so it probably does not matter. However I agree it should be after the
+> update.
+> I will do that along with adding the unlikely() conditional and resubmit.
+> 
+> > 
+> > Also, isn't it better to move update of dst into "if" block?
+> 
+> I would prefer to leave this portion as alone and only use the if
+> statement for the notify.
+> 
+> > 
+> > 	if (source != fdb->dst) {
+> > 		fdb->dst = source;
+> > 		modified = true;
+> > 	}
+> > 	...
+> > 	if (modified) ...
+> > 
+
+Makita-san,
+
+I recoded this using your idea and ran it through a reproducer.
+It work fine. After some more consideration I agree that 
+setting fdb->dst = source is only required when source != fdb->dst.
+
+Thanks for your suggestions. This is the revised patch. It should 
+retain the original behaviour except for the notify after the fdb update.  
+
+Please let me know if you have any further input?
+
+$ diff -Naur br_fdb.c br_fdb.c.patch
+--- br_fdb.c        2014-05-17 12:43:23.346319609 +1000
++++ br_fdb.c.patch        2014-05-17 16:54:46.280235728 +1000
+@@ -487,6 +487,7 @@
+ {
+         struct hlist_head *head = &br->hash[br_mac_hash(addr, vid)];
+         struct net_bridge_fdb_entry *fdb;
++        bool fdb_modified = 0;
+ 
+         /* some users want to always flood. */
+         if (hold_time(br) == 0)
+@@ -507,10 +508,16 @@
+                                         source->dev->name);
+                 } else {
+                         /* fastpath: update of existing entry */
+-                        fdb->dst = source;
++                        if (unlikely(source != fdb->dst))
++                                {
++                                fdb->dst = source;
++                                fdb_modified = 1;
++                                }
+                         fdb->updated = jiffies;
+                         if (unlikely(added_by_user))
+                                 fdb->added_by_user = 1;
++                        if (unlikely(fdb_modified))
++                                fdb_notify(br, fdb, RTM_NEWNEIGH);
+                 }
+         } else {
+                 spin_lock(&br->hash_lock);
+
+
+> > Thanks,
+> > Toshiaki Makita
+> > 
+> 
+
+
+
