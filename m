@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaEWIWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:22:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60857 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaEWIWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:22:05 -0400
-Message-ID: <537F04D7.4000201@ti.com>
-Date: Fri, 23 May 2014 11:20:39 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Marek Belisko <marek@goldelico.com>, <tony@atomide.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <bcousson@baylibre.com>,
-        <linux@arm.linux.org.uk>, <plagnioj@jcrosoft.com>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-fbdev@vger.kernel.org>, <hns@goldelico.com>
-Subject: Re: [PATCH v3 2/3] ARM: dts: oma3-gta04: Add display support
-References: <1399580212-5183-1-git-send-email-marek@goldelico.com> <1399580212-5183-3-git-send-email-marek@goldelico.com>
-In-Reply-To: <1399580212-5183-3-git-send-email-marek@goldelico.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="1xVJCwgQitDeSfiF9inGJJ1rQ4AH41P3w"
+	id S1751236AbaEWI1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:27:18 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:39540 "EHLO
+	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaEWI1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 04:27:16 -0400
+X-Greylist: delayed 2095 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 May 2014 04:27:15 EDT
+From: Chen-Yu Tsai <wens@csie.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: [PATCH 06/22] clk: sunxi: Support factor clocks with N multiplier factor starting from 1
+Date: Fri, 23 May 2014 15:51:09 +0800
+Message-Id: <1400831485-28576-7-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1400831485-28576-1-git-send-email-wens@csie.org>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1xVJCwgQitDeSfiF9inGJJ1rQ4AH41P3w
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+The PLLs on newer Allwinner SoC's, such as the A31 and A23, have a
+N multiplier factor that starts from 1, not 0.
 
-On 08/05/14 23:16, Marek Belisko wrote:
-> This patch add support for lcd display on gta04 board. Display control
-> is connected to spi (used spi bitbang driver).
->=20
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-> ---
->  arch/arm/boot/dts/omap3-gta04.dts | 87 +++++++++++++++++++++++++++++++=
-++++++++
->  1 file changed, 87 insertions(+)
+This patch adds an option to the clock driver's config data structures
+to define the difference.
 
-I can take this via my tree.
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
+ drivers/clk/sunxi/clk-factors.c | 5 ++++-
+ drivers/clk/sunxi/clk-factors.h | 1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-Tony, can I have your ack on this?
+diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
+index 3806d97..399cf4d 100644
+--- a/drivers/clk/sunxi/clk-factors.c
++++ b/drivers/clk/sunxi/clk-factors.c
+@@ -62,7 +62,10 @@ static unsigned long clk_factors_recalc_rate(struct clk_hw *hw,
+ 		p = FACTOR_GET(config->pshift, config->pwidth, reg);
+ 
+ 	/* Calculate the rate */
+-	rate = (parent_rate * n * (k + 1) >> p) / (m + 1);
++	if (config->n_from_one)
++		rate = (parent_rate * (n + 1) * (k + 1) >> p) / (m + 1);
++	else
++		rate = (parent_rate * n * (k + 1) >> p) / (m + 1);
+ 
+ 	return rate;
+ }
+diff --git a/drivers/clk/sunxi/clk-factors.h b/drivers/clk/sunxi/clk-factors.h
+index 02e1a43..0484a48 100644
+--- a/drivers/clk/sunxi/clk-factors.h
++++ b/drivers/clk/sunxi/clk-factors.h
+@@ -15,6 +15,7 @@ struct clk_factors_config {
+ 	u8 mwidth;
+ 	u8 pshift;
+ 	u8 pwidth;
++	u8 n_from_one;
+ };
+ 
+ struct clk_factors {
+-- 
+2.0.0.rc2
 
- Tomi
-
-
-
---1xVJCwgQitDeSfiF9inGJJ1rQ4AH41P3w
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTfwTXAAoJEPo9qoy8lh71xtQP/1AaQcujZPBukzX0AnjmzEmd
-CSFR+ZOMA5kOv8MeVlVydnMCEEkBL9tbfwux34ynxZVLItKlidMJU/8dm+KArT4D
-BjZNS1WvlbBrWlEIzIJ0m35GDSElBlbGIbQOmKOqhSAwoSVeBR5A9C3AO/Usnnnu
-NGa4E2sjoK8vyTwlBEMzDIuMgawugmfyrFA7nnpRXIHIpA03bIqq4XE5xURTN+LM
-OIaQAQ61/M0mdVunfKIkkawSfLD7VS7UfnVvKPY3j9XhAciV415R1/aG+FszGUOX
-47xYPsiOmyXS59avWCs9zI+z7MgY+czkybyG85k+rqJ4aHYdLwYhVNwHaJwibDHM
-LHkyqRzZT4uylNjY2m81n1jI8cQFyoWsHUtnYiDxRgYOT4BoxaFXBYYYVSmGey/H
-9Wy3FkOtSAoAbPZCHiwIL//mhKBXDJjkSOYZT/m0T61S5aGegpEAR6+Yp7Og7FAp
-xHC5iUzTmrAf0BEtdaw4elFN5MYv6UJWNDaQOfN/xNa33sIexo3RXaqYUTziReBd
-VNOXWQmMC/xftx93J2Efee55Z8pNrhxP4rC2YyXkAybZIrExOS2wa9ttQVQPGXob
-a2TZcu+ZHUD/ny+lUAkwJ1NzJ2nx1o3o5z+ZUIvvdg5ODidwUv507BaoIMdR5N63
-puJySdapu2eGnhTmM/sX
-=JoXo
------END PGP SIGNATURE-----
-
---1xVJCwgQitDeSfiF9inGJJ1rQ4AH41P3w--
