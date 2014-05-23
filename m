@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaEWOA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:00:27 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:57549 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbaEWOAZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:00:25 -0400
-Message-ID: <1400853622.5367.196.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: skbuff truesize incorrect.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Jim Baxter <jim_baxter@mentor.com>, David Miller <davem@davemloft.net>,
+	id S1752609AbaEWODL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:03:11 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:50778 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751527AbaEWODI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 10:03:08 -0400
+Date: Fri, 23 May 2014 15:59:43 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Mathias Nyman <mathias.nyman@intel.com>, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kamal@canonical.com, edumazet@google.com,
-        mszeredi@suse.cz, fw@strlen.de
-Date: Fri, 23 May 2014 07:00:22 -0700
-In-Reply-To: <87vbsw4z5x.fsf@nemi.mork.no>
-References: <537E4AFD.20304@mentor.com>
-	 <1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1400792601.5367.176.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140522.171033.1040508444998374401.davem@davemloft.net>
-	 <87ppj5vupf.fsf@nemi.mork.no> <537F0DCA.6030901@mentor.com>
-	 <87vbsw4z5x.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+        Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 2/5] Documentation: dt-bindings: document the Armada 375
+ USB cluster binding
+Message-ID: <20140523135943.GC31314@lunn.ch>
+References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com>
+ <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com>
+ <537F13B2.6070500@ti.com>
+ <20140523132145.GA31314@lunn.ch>
+ <20140523133608.GB31314@lunn.ch>
+ <537F52B0.5030204@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537F52B0.5030204@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-23 at 11:33 +0200, Bjørn Mork wrote:
-> Jim Baxter <jim_baxter@mentor.com> writes:
+On Fri, May 23, 2014 at 07:22:48PM +0530, Kishon Vijay Abraham I wrote:
+> hI,
 > 
-> >> I'll create and test a patch for the cdc_ncm host driver unless someone
-> >> else wants to do that. I haven't really played with the gadget driver
-> >> before, so I'd prefer if someone knowing it (Jim maybe?) could take care
-> >> of it.  If not, then I can always make an attempt using dummy_hcd to
-> >> test it.
-> > I can create a patch for the host driver, I will issue the gadget patch
-> > first to resolve any issues, the fix would be similar.
+> On Friday 23 May 2014 07:06 PM, Andrew Lunn wrote:
+> >> Do you want one .txt file per driver, or can we combine binding
+> >> documentations into one file? There should already be a mvebu-phy.txt,
+> >> which contains the sata phy usable on some of the Armada SoC families.
+> >> This binding could be appended to it.
+> > 
+> > Ah. Humm, well! It seems the patch adding the mvebu-phy.txt fell
+> > through a crack when adding the driver.
+> > 
+> > Kishon could you take
+> > http://www.spinics.net/lists/devicetree/msg17018.html into your tree?
+> > It should of been taken the same time you took the actual driver,
+> > http://www.spinics.net/lists/devicetree/msg17011.html into your tree.
+> > 
+> > I can resend that one missing patch if you want.
 > 
-> Well, I couldn't help myself.  I just had to test it.  The attached
-> patch works for me, briefly tested with an Ericsson H5321gw NCM device.
-> I have no ideas about the performance impact as that modem is limited to
-> 21 Mbps HSDPA.
+> yes please. But it's already too late to go in the next merge window.
 
-Ideally, the skb_in should not be freed/reallocated, but recycled,
-especially if using 32KB.
+Gregory, could you pick it up and append your 375 binding to it? We
+can avoid merge conflicts that way.
 
-But thats a minor detail, this patch is already a huge win for a 21Mbps
-device.
-
-Acked-by: Eric Dumazet <edumazet@google.com>
-
-
+Thanks
+	Andrew
