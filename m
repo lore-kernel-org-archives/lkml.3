@@ -1,270 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaEWPB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:01:58 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:63457 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaEWPB4 (ORCPT
+	id S1752506AbaEWPFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:05:00 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:38960 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbaEWPE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:01:56 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: David Airlie <airlied@linux.ie>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
-        linux-doc@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: [RESEND PATCH] drm: Add 800x600 (SVGA) screen resolution to the built-in EDIDs
-Date: Fri, 23 May 2014 16:01:43 +0100
-Message-Id: <1400857303-7176-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1396010535-2654-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396010535-2654-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 23 May 2014 11:04:59 -0400
+Date: Fri, 23 May 2014 17:04:50 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, hch@infradead.org,
+        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
+        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+Message-ID: <20140523150447.GG1768@localhost.localdomain>
+References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com>
+ <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com>
+ <20140523132250.GA1768@localhost.localdomain>
+ <537F5F0F.5050802@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537F5F0F.5050802@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 800x600 (SVGA) screen resolution was lacking in the set of
-built-in selectable EDID screen resolutions that can be used to
-repair misbehaving monitor firmware.
+On Fri, May 23, 2014 at 08:15:35PM +0530, Srivatsa S. Bhat wrote:
+> On 05/23/2014 06:52 PM, Frederic Weisbecker wrote:
+> > On Fri, May 23, 2014 at 03:42:20PM +0530, Srivatsa S. Bhat wrote:
+> >> During CPU offline, stop-machine is used to take control over all the online
+> >> CPUs (via the per-cpu stopper thread) and then run take_cpu_down() on the CPU
+> >> that is to be taken offline.
+> >>
+> >> But stop-machine itself has several stages: _PREPARE, _DISABLE_IRQ, _RUN etc.
+> >> The important thing to note here is that the _DISABLE_IRQ stage comes much
+> >> later after starting stop-machine, and hence there is a large window where
+> >> other CPUs can send IPIs to the CPU going offline. As a result, we can
+> >> encounter a scenario as depicted below, which causes IPIs to be sent to the
+> >> CPU going offline, and that CPU notices them *after* it has gone offline,
+> >> triggering the "IPI-to-offline-CPU" warning from the smp-call-function code.
+> >>
+> >>
+> >>               CPU 1                                         CPU 2
+> >>           (Online CPU)                               (CPU going offline)
+> >>
+> >>        Enter _PREPARE stage                          Enter _PREPARE stage
+> >>
+> >>                                                      Enter _DISABLE_IRQ stage
+> >>
+> >>
+> >>                                                    =
+> >>        Got a device interrupt,                     | Didn't notice the IPI
+> >>        and the interrupt handler                   | since interrupts were
+> >>        called smp_call_function()                  | disabled on this CPU.
+> >>        and sent an IPI to CPU 2.                   |
+> >>                                                    =
+> >>
+> >>
+> >>        Enter _DISABLE_IRQ stage
+> >>
+> >>
+> >>        Enter _RUN stage                              Enter _RUN stage
+> >>
+> >>                                   =
+> >>        Busy loop with interrupts  |                  Invoke take_cpu_down()
+> >>        disabled.                  |                  and take CPU 2 offline
+> >>                                   =
+> >>
+> >>
+> >>        Enter _EXIT stage                             Enter _EXIT stage
+> >>
+> >>        Re-enable interrupts                          Re-enable interrupts
+> >>
+> >>                                                      The pending IPI is noted
+> >>                                                      immediately, but alas,
+> >>                                                      the CPU is offline at
+> >>                                                      this point.
+> >>
+> >>
+> >>
+> >> So, as we can observe from this scenario, the IPI was sent when CPU 2 was
+> >> still online, and hence it was perfectly legal. But unfortunately it was
+> >> noted only after CPU 2 went offline, resulting in the warning from the
+> >> IPI handling code. In other words, the fault was not at the sender, but
+> >> at the receiver side - and if we look closely, the real bug is in the
+> >> stop-machine sequence itself.
+> >>
+> >> The problem here is that the CPU going offline disabled its local interrupts
+> >> (by entering _DISABLE_IRQ phase) *before* the other CPUs. And that's the
+> >> reason why it was not able to respond to the IPI before going offline.
+> >>
+> >> A simple solution to this problem is to ensure that the CPU going offline
+> >> disables its interrupts only *after* the other CPUs do the same thing.
+> >> To achieve this, split the _DISABLE_IRQ state into 2 parts:
+> >>
+> >> 1st part: MULTI_STOP_DISABLE_IRQ_INACTIVE, where only the non-active CPUs
+> >> (i.e., the "other" CPUs) disable their interrupts.
+> >>
+> >> 2nd part: MULTI_STOP_DISABLE_IRQ_ACTIVE, where the active CPU (i.e., the
+> >> CPU going offline) disables its interrupts.
+> >>
+> >> With this in place, the CPU going offline will always be the last one to
+> >> disable interrupts. After this step, no further IPIs can be sent to the
+> >> outgoing CPU, since all the other CPUs would be executing the stop-machine
+> >> code with interrupts disabled. And by the time stop-machine ends, the CPU
+> >> would have gone offline and disappeared from the cpu_online_mask, and hence
+> >> future invocations of smp_call_function() and friends will automatically
+> >> prune that CPU out. Thus, we can guarantee that no CPU will end up
+> >> *inadvertently* sending IPIs to an offline CPU.
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> ---
+> >>
+> >>  kernel/stop_machine.c |   39 ++++++++++++++++++++++++++++++++++-----
+> >>  1 file changed, 34 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+> >> index 01fbae5..288f7fe 100644
+> >> --- a/kernel/stop_machine.c
+> >> +++ b/kernel/stop_machine.c
+> >> @@ -130,8 +130,10 @@ enum multi_stop_state {
+> >>  	MULTI_STOP_NONE,
+> >>  	/* Awaiting everyone to be scheduled. */
+> >>  	MULTI_STOP_PREPARE,
+> >> -	/* Disable interrupts. */
+> >> -	MULTI_STOP_DISABLE_IRQ,
+> >> +	/* Disable interrupts on CPUs not in ->active_cpus mask. */
+> >> +	MULTI_STOP_DISABLE_IRQ_INACTIVE,
+> >> +	/* Disable interrupts on CPUs in ->active_cpus mask. */
+> >> +	MULTI_STOP_DISABLE_IRQ_ACTIVE,
+> >>  	/* Run the function */
+> >>  	MULTI_STOP_RUN,
+> >>  	/* Exit */
+> >> @@ -189,12 +191,39 @@ static int multi_cpu_stop(void *data)
+> >>  	do {
+> >>  		/* Chill out and ensure we re-read multi_stop_state. */
+> >>  		cpu_relax();
+> >> +
+> >> +		/*
+> >> +		 * We use 2 separate stages to disable interrupts, namely
+> >> +		 * _INACTIVE and _ACTIVE, to ensure that the inactive CPUs
+> >> +		 * disable their interrupts first, followed by the active CPUs.
+> >> +		 *
+> >> +		 * This is done to avoid a race in the CPU offline path, which
+> >> +		 * can lead to receiving IPIs on the outgoing CPU *after* it
+> >> +		 * has gone offline.
+> >> +		 *
+> >> +		 * During CPU offline, we don't want the other CPUs to send
+> >> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
+> >> +		 * disabled interrupts (because, then it will notice the IPIs
+> >> +		 * only after it has gone offline). We can prevent this by
+> >> +		 * making the other CPUs disable their interrupts first - that
+> >> +		 * way, they will run the stop-machine code with interrupts
+> >> +		 * disabled, and hence won't send IPIs after that point.
+> >> +		 */
+> >> +
+> >>  		if (msdata->state != curstate) {
+> >>  			curstate = msdata->state;
+> >>  			switch (curstate) {
+> >> -			case MULTI_STOP_DISABLE_IRQ:
+> >> -				local_irq_disable();
+> >> -				hard_irq_disable();
+> >> +			case MULTI_STOP_DISABLE_IRQ_INACTIVE:
+> >> +				if (!is_active) {
+> >> +					local_irq_disable();
+> >> +					hard_irq_disable();
+> >> +				}
+> >> +				break;
+> >> +			case MULTI_STOP_DISABLE_IRQ_ACTIVE:
+> >> +				if (is_active) {
+> >> +					local_irq_disable();
+> >> +					hard_irq_disable();
+> >> +				}
+> > 
+> > Do we actually need that now that we are flushing the ipi queue on CPU dying?
+> > 
+> 
+> Yes, we do. Flushing the IPI queue is one thing - it guarantees that a CPU
+> doesn't go offline without finishing its work. Not receiving IPIs after going
+> offline is a different thing - it helps avoid warnings from the IPI handling
+> code (although it will be harmless if the queue had been flushed earlier).
 
-This patch adds the related data set and expands the documentation.
-Note that the SVGA bit occupies a different byte to all the existing
-users of the established timing bits forcing a rework of the
-ESTABLISHED_TIMINGS_BITS macro.
+I'm confused. Perhaps I don't understand well how things mix up. How does it avoid the warning.
+Isn't there still a risk that some IPI don't fire due to hardware latency.
 
-Tested new EDID on an aged (and misbehaving) industrial LCD panel;
-existing EDIDs still pass edid-decode's checksum checks.
+I mean either we do:
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: David Airlie <airlied@linux.ie>
-Cc: Carsten Emde <C.Emde@osadl.org>
-Cc: linux-doc@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
----
- Documentation/EDID/1024x768.S   |  2 +-
- Documentation/EDID/1280x1024.S  |  2 +-
- Documentation/EDID/1600x1200.S  |  2 +-
- Documentation/EDID/1680x1050.S  |  2 +-
- Documentation/EDID/1920x1080.S  |  2 +-
- Documentation/EDID/800x600.S    | 41 +++++++++++++++++++++++++++++++++++++++++
- Documentation/EDID/HOWTO.txt    |  2 +-
- Documentation/EDID/edid.S       | 17 ++++++++++++++---
- drivers/gpu/drm/drm_edid_load.c | 21 ++++++++++++++++++++-
- 9 files changed, 81 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/EDID/800x600.S
+    local_irq_enable()
+    wait_for_pending_ipi()
+    local_irq_disable()
 
-diff --git a/Documentation/EDID/1024x768.S b/Documentation/EDID/1024x768.S
-index 4b486fe..6f3e4b7 100644
---- a/Documentation/EDID/1024x768.S
-+++ b/Documentation/EDID/1024x768.S
-@@ -36,7 +36,7 @@
- #define DPI 72
- #define VFREQ 60 /* Hz */
- #define TIMING_NAME "Linux XGA"
--#define ESTABLISHED_TIMINGS_BITS 0x08 /* Bit 3 -> 1024x768 @60 Hz */
-+#define ESTABLISHED_TIMING2_BITS 0x08 /* Bit 3 -> 1024x768 @60 Hz */
- #define HSYNC_POL 0
- #define VSYNC_POL 0
- #define CRC 0x55
-diff --git a/Documentation/EDID/1280x1024.S b/Documentation/EDID/1280x1024.S
-index a2799fe..bd9bef2 100644
---- a/Documentation/EDID/1280x1024.S
-+++ b/Documentation/EDID/1280x1024.S
-@@ -36,7 +36,7 @@
- #define DPI 72
- #define VFREQ 60 /* Hz */
- #define TIMING_NAME "Linux SXGA"
--#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
-+/* No ESTABLISHED_TIMINGx_BITS */
- #define HSYNC_POL 1
- #define VSYNC_POL 1
- #define CRC 0xa0
-diff --git a/Documentation/EDID/1600x1200.S b/Documentation/EDID/1600x1200.S
-index 0ded64c..a45101c 100644
---- a/Documentation/EDID/1600x1200.S
-+++ b/Documentation/EDID/1600x1200.S
-@@ -36,7 +36,7 @@
- #define DPI 72
- #define VFREQ 60 /* Hz */
- #define TIMING_NAME "Linux UXGA"
--#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
-+/* No ESTABLISHED_TIMINGx_BITS */
- #define HSYNC_POL 1
- #define VSYNC_POL 1
- #define CRC 0x9d
-diff --git a/Documentation/EDID/1680x1050.S b/Documentation/EDID/1680x1050.S
-index 96f67ca..b0d7c69 100644
---- a/Documentation/EDID/1680x1050.S
-+++ b/Documentation/EDID/1680x1050.S
-@@ -36,7 +36,7 @@
- #define DPI 96
- #define VFREQ 60 /* Hz */
- #define TIMING_NAME "Linux WSXGA"
--#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
-+/* No ESTABLISHED_TIMINGx_BITS */
- #define HSYNC_POL 1
- #define VSYNC_POL 1
- #define CRC 0x26
-diff --git a/Documentation/EDID/1920x1080.S b/Documentation/EDID/1920x1080.S
-index 36ed5d5..3084355e 100644
---- a/Documentation/EDID/1920x1080.S
-+++ b/Documentation/EDID/1920x1080.S
-@@ -36,7 +36,7 @@
- #define DPI 96
- #define VFREQ 60 /* Hz */
- #define TIMING_NAME "Linux FHD"
--#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
-+/* No ESTABLISHED_TIMINGx_BITS */
- #define HSYNC_POL 1
- #define VSYNC_POL 1
- #define CRC 0x05
-diff --git a/Documentation/EDID/800x600.S b/Documentation/EDID/800x600.S
-new file mode 100644
-index 0000000..6644e26
---- /dev/null
-+++ b/Documentation/EDID/800x600.S
-@@ -0,0 +1,41 @@
-+/*
-+   800x600.S: EDID data set for standard 800x600 60 Hz monitor
-+
-+   Copyright (C) 2011 Carsten Emde <C.Emde@osadl.org>
-+   Copyright (C) 2014 Linaro Limited
-+
-+   This program is free software; you can redistribute it and/or
-+   modify it under the terms of the GNU General Public License
-+   as published by the Free Software Foundation; either version 2
-+   of the License, or (at your option) any later version.
-+
-+   This program is distributed in the hope that it will be useful,
-+   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+   GNU General Public License for more details.
-+*/
-+
-+/* EDID */
-+#define VERSION 1
-+#define REVISION 3
-+
-+/* Display */
-+#define CLOCK 40000 /* kHz */
-+#define XPIX 800
-+#define YPIX 600
-+#define XY_RATIO XY_RATIO_4_3
-+#define XBLANK 256
-+#define YBLANK 28
-+#define XOFFSET 40
-+#define XPULSE 128
-+#define YOFFSET (63+1)
-+#define YPULSE (63+4)
-+#define DPI 72
-+#define VFREQ 60 /* Hz */
-+#define TIMING_NAME "Linux SVGA"
-+#define ESTABLISHED_TIMING1_BITS 0x01 /* Bit 0: 800x600 @ 60Hz */
-+#define HSYNC_POL 1
-+#define VSYNC_POL 1
-+#define CRC 0xc2
-+
-+#include "edid.S"
-diff --git a/Documentation/EDID/HOWTO.txt b/Documentation/EDID/HOWTO.txt
-index 7146db1..835db33 100644
---- a/Documentation/EDID/HOWTO.txt
-+++ b/Documentation/EDID/HOWTO.txt
-@@ -18,7 +18,7 @@ CONFIG_DRM_LOAD_EDID_FIRMWARE was introduced. It allows to provide an
- individually prepared or corrected EDID data set in the /lib/firmware
- directory from where it is loaded via the firmware interface. The code
- (see drivers/gpu/drm/drm_edid_load.c) contains built-in data sets for
--commonly used screen resolutions (1024x768, 1280x1024, 1600x1200,
-+commonly used screen resolutions (800x600, 1024x768, 1280x1024, 1600x1200,
- 1680x1050, 1920x1080) as binary blobs, but the kernel source tree does
- not contain code to create these data. In order to elucidate the origin
- of the built-in binary EDID blobs and to facilitate the creation of
-diff --git a/Documentation/EDID/edid.S b/Documentation/EDID/edid.S
-index ea97ae2..7ac0327 100644
---- a/Documentation/EDID/edid.S
-+++ b/Documentation/EDID/edid.S
-@@ -33,6 +33,17 @@
- #define XY_RATIO_5_4	0b10
- #define XY_RATIO_16_9	0b11
- 
-+/* Provide defaults for the timing bits */
-+#ifndef ESTABLISHED_TIMING1_BITS
-+#define ESTABLISHED_TIMING1_BITS 0x00
-+#endif
-+#ifndef ESTABLISHED_TIMING2_BITS
-+#define ESTABLISHED_TIMING2_BITS 0x00
-+#endif
-+#ifndef ESTABLISHED_TIMING3_BITS
-+#define ESTABLISHED_TIMING3_BITS 0x00
-+#endif
-+
- #define mfgname2id(v1,v2,v3) \
- 	((((v1-'@')&0x1f)<<10)+(((v2-'@')&0x1f)<<5)+((v3-'@')&0x1f))
- #define swap16(v1) ((v1>>8)+((v1&0xff)<<8))
-@@ -139,7 +150,7 @@ white_x_y_msb:	.byte	0x50,0x54
-    Bit 2	640x480 @ 75 Hz
-    Bit 1	800x600 @ 56 Hz
-    Bit 0	800x600 @ 60 Hz */
--estbl_timing1:	.byte	0x00
-+estbl_timing1:	.byte	ESTABLISHED_TIMING1_BITS
- 
- /* Bit 7	800x600 @ 72 Hz
-    Bit 6	800x600 @ 75 Hz
-@@ -149,11 +160,11 @@ estbl_timing1:	.byte	0x00
-    Bit 2	1024x768 @ 72 Hz
-    Bit 1	1024x768 @ 75 Hz
-    Bit 0	1280x1024 @ 75 Hz */
--estbl_timing2:	.byte	ESTABLISHED_TIMINGS_BITS
-+estbl_timing2:	.byte	ESTABLISHED_TIMING2_BITS
- 
- /* Bit 7	1152x870 @ 75 Hz (Apple Macintosh II)
-    Bits 6-0 	Other manufacturer-specific display mod */
--estbl_timing3:	.byte	0x00
-+estbl_timing3:	.byte	ESTABLISHED_TIMING3_BITS
- 
- /* Standard timing */
- /* X resolution, less 31, divided by 8 (256-2288 pixels) */
-diff --git a/drivers/gpu/drm/drm_edid_load.c b/drivers/gpu/drm/drm_edid_load.c
-index 1b4c7a5..6e09f61 100644
---- a/drivers/gpu/drm/drm_edid_load.c
-+++ b/drivers/gpu/drm/drm_edid_load.c
-@@ -31,8 +31,9 @@ module_param_string(edid_firmware, edid_firmware, sizeof(edid_firmware), 0644);
- MODULE_PARM_DESC(edid_firmware, "Do not probe monitor, use specified EDID blob "
- 	"from built-in data or /lib/firmware instead. ");
- 
--#define GENERIC_EDIDS 5
-+#define GENERIC_EDIDS 6
- static const char *generic_edid_name[GENERIC_EDIDS] = {
-+	"edid/800x600.bin",
- 	"edid/1024x768.bin",
- 	"edid/1280x1024.bin",
- 	"edid/1600x1200.bin",
-@@ -44,6 +45,24 @@ static const u8 generic_edid[GENERIC_EDIDS][128] = {
- 	{
- 	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
- 	0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x05, 0x16, 0x01, 0x03, 0x6d, 0x1b, 0x14, 0x78,
-+	0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
-+	0x20, 0x50, 0x54, 0x01, 0x00, 0x00, 0x45, 0x40,
-+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xa0, 0x0f,
-+	0x20, 0x00, 0x31, 0x58, 0x1c, 0x20, 0x28, 0x80,
-+	0x14, 0x00, 0x15, 0xd0, 0x10, 0x00, 0x00, 0x1e,
-+	0x00, 0x00, 0x00, 0xff, 0x00, 0x4c, 0x69, 0x6e,
-+	0x75, 0x78, 0x20, 0x23, 0x30, 0x0a, 0x20, 0x20,
-+	0x20, 0x20, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x3b,
-+	0x3d, 0x24, 0x26, 0x05, 0x00, 0x0a, 0x20, 0x20,
-+	0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
-+	0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x53,
-+	0x56, 0x47, 0x41, 0x0a, 0x20, 0x20, 0x00, 0xc2,
-+	},
-+	{
-+	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
-+	0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
- 	0x05, 0x16, 0x01, 0x03, 0x6d, 0x23, 0x1a, 0x78,
- 	0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
- 	0x20, 0x50, 0x54, 0x00, 0x08, 0x00, 0x61, 0x40,
--- 
-1.9.0
+Or we do
 
+    hotplug_cpu_down {
+        flush_ipi()
+    }
+
+But something in between looks broken:
+
+    local_irq_disable()
+    local_irq_enable()
+
+    flush_ipi()
+
+
+> 
+> So I think it is good to have both, so that we can keep CPU offline very
+> clean - no pending work left around, as well as no possibility of (real or
+> spurious) warnings.
+
+Ah may be what you want to avoid is this:
+
+    CPU 0               CPU 1
+    -------------------------
+
+    send IPI to 1
+
+                        flush_ipi()
+                        set_cpu_offline()
+                        get_ipi()
+                        //get late IPI but queue is flushed already
+                        smp_single_function_interrupt() {
+                               WARN()
+
+Yeah but still, your patch doesn't deal with late hardware IPI.
+How about we move the warning to the IPI callback iterator:
+
+-       WARN_ON_ONCE(cpu_is_offline())
+
+        llist_for_each(...) {
++            WARN_ON_ONCE(cpu_is_offline())
+             csd->func()
+        }
+
+Since what matters is that all functions are executed before going offline.
