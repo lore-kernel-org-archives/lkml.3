@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaEWPyl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:54:41 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:56726 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaEWPyj (ORCPT
+	id S1753366AbaEWPyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:54:33 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:58711 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213AbaEWPyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:54:39 -0400
-Message-ID: <537F6EF1.9050204@linux.vnet.ibm.com>
-Date: Fri, 23 May 2014 21:23:21 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, tglx@linutronix.de,
-        mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com> <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com> <20140523132250.GA1768@localhost.localdomain> <537F5F0F.5050802@linux.vnet.ibm.com> <20140523151252.GE30445@twins.programming.kicks-ass.net> <537F66AF.30303@linux.vnet.ibm.com> <20140523153113.GG30445@twins.programming.kicks-ass.net> <537F6A53.1080703@linux.vnet.ibm.com> <537F6B2E.5080907@linux.vnet.ibm.com> <20140523154858.GH30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140523154858.GH30445@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052315-9264-0000-0000-0000062788E4
+	Fri, 23 May 2014 11:54:24 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
+Cc: preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v2 10/11] sched: move cfs task on a CPU with higher capacity
+Date: Fri, 23 May 2014 17:53:04 +0200
+Message-Id: <1400860385-14555-11-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 09:18 PM, Peter Zijlstra wrote:
-> On Fri, May 23, 2014 at 09:07:18PM +0530, Srivatsa S. Bhat wrote:
->> On 05/23/2014 09:03 PM, Srivatsa S. Bhat wrote:
->>> On 05/23/2014 09:01 PM, Peter Zijlstra wrote:
->>>> On Fri, May 23, 2014 at 08:48:07PM +0530, Srivatsa S. Bhat wrote:
->>>>> On 05/23/2014 08:42 PM, Peter Zijlstra wrote:
->>>>>> On Fri, May 23, 2014 at 08:15:35PM +0530, Srivatsa S. Bhat wrote:
->>>>>>>>> +		 * During CPU offline, we don't want the other CPUs to send
->>>>>>>>> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
->>>>>>>>> +		 * disabled interrupts (because, then it will notice the IPIs
->>>>>>>>> +		 * only after it has gone offline). We can prevent this by
->>>>>>>>> +		 * making the other CPUs disable their interrupts first - that
->>>>>>>>> +		 * way, they will run the stop-machine code with interrupts
->>>>>>>>> +		 * disabled, and hence won't send IPIs after that point.
->>>>>>
->>>>>> That's complete nonsense, you can send IPIs all you want with interrupts
->>>>>> disabled.
->>>>>>
->>>>>
->>>>> True, but that's not what the comment says. It says "you can't send IPIs
->>>>> because you are running the *stop-machine* loop, because the stop-machine loop
->>>>> doesn't send IPIs itself! The only possibility of sending IPIs from within
->>>>> stop-machine is if that CPU can takes an interrupt and the *interrupt handler*
->>>>> sends the IPI (like what the block layer used to do) - and we precisely avoid
->>>>> that possibility by disabling interrupts. So no IPIs will be sent beyond
->>>>> this point.
->>>>
->>>> but one of those CPUs is running the stop machine function, which calls
->>>> CPU_DYING which runs all kinds of nonsense and therefore can send IPIs
->>>> all it wants, right?
->>>>
->>>
->>> Yes, but that CPU certainly won't IPI itself! (We are trying to avoid getting
->>> IPIs on precisely that CPU - the one which is about to go offline).
->>>
->>
->> And the comment makes that distinction between the "active-cpu" and "other CPUs"
->> (where active-cpu is the one which runs the stop-machine function and eventually
->> goes offline). Thus "other CPUs" won't send IPIs after that point, because they
->> are running the stop-machine loop with interrupts disabled. This ensures that
->> the "active-cpu" doesn't get any IPIs - which is what we want.
-> 
-> OK, so clearly I'm having trouble reading today :/ Makes sense now.
-> 
-> But yes, its unlikely for CPU_DYING to self-IPI, although if you really
-> want, I can do ;-)
->
+If the CPU is used for handling lot of IRQs, trig a load balance to check if
+it's worth moving its tasks on another CPU that has more capacity
 
-Haha :-)
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e8a30f9..2501e49 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5948,6 +5948,13 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+ 	if (sgs->sum_nr_running > sgs->group_capacity)
+ 		return true;
  
-> And I guess the one extra state doesn't hurt too bad for
-> stop_two_cpus().
-> 
-
-Ok, that's good then.
-
-Regards,
-Srivatsa S. Bhat
++	/*
++	 * The group capacity is reduced probably because of activity from other
++	 * sched class or interrupts which use part of the available capacity
++	 */
++	if ((sg->sgp->power_orig * 100) > (sgs->group_power * env->sd->imbalance_pct))
++		return true;
++
+ 	if (sgs->group_imb)
+ 		return true;
+ 
+@@ -7282,6 +7289,12 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 
+ 		if (nr_busy > 1)
+ 			goto need_kick_unlock;
++
++		if ((rq->cfs.h_nr_running >= 1)
++		 && ((rq->cpu_power * sd->imbalance_pct) <
++					(rq->cpu_power_orig * 100)))
++			goto need_kick_unlock;
++
+ 	}
+ 
+ 	sd = rcu_dereference(per_cpu(sd_asym, cpu));
+-- 
+1.9.1
 
