@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaEWO6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:58:44 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47622 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750981AbaEWO6m (ORCPT
+	id S1752649AbaEWPBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:01:00 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:34832 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889AbaEWPA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:58:42 -0400
-Date: Fri, 23 May 2014 15:57:58 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v2 16/18] x86: io: implement dummy relaxed accessor
- macros for writes
-Message-ID: <20140523145758.GG21319@arm.com>
-References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
- <1400777250-17335-17-git-send-email-will.deacon@arm.com>
- <537E30AF.4070501@zytor.com>
- <20140523144604.GF21319@arm.com>
- <537F60E0.1060307@zytor.com>
+	Fri, 23 May 2014 11:00:58 -0400
+Message-ID: <537F62A4.1020707@mentor.com>
+Date: Fri, 23 May 2014 16:00:52 +0100
+From: Jim Baxter <jim_baxter@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537F60E0.1060307@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Laight <David.Laight@ACULAB.COM>,
+        =?UTF-8?B?J0Jqw7hybiBNb3JrJw==?= <bjorn@mork.no>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "kamal@canonical.com" <kamal@canonical.com>,
+        "edumazet@google.com" <edumazet@google.com>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
+Subject: Re: skbuff truesize incorrect.
+References: <537E4AFD.20304@mentor.com>		<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>		<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>	 <87r43k4yhe.fsf@nemi.mork.no>	 <063D6719AE5E284EB5DD2968C1650D6D1724C7A1@AcuExch.aculab.com>	 <537F2D53.5020408@mentor.com> <1400852843.5367.191.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1400852843.5367.191.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
+X-OriginalArrivalTime: 23 May 2014 15:00:55.0698 (UTC) FILETIME=[CC502F20:01CF7697]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 03:53:20PM +0100, H. Peter Anvin wrote:
-> On 05/23/2014 07:46 AM, Will Deacon wrote:
-> > 
-> > I would like the relaxed accessors to be ordered with respect to each other...
-> > 
-> > What do you think?
-> > 
+On 23/05/14 14:47, Eric Dumazet wrote:
+> On Fri, 2014-05-23 at 12:13 +0100, Jim Baxter wrote:
 > 
-> I think "I would like" isn't a very good motivation.  What are the
-> semantics of these things supposed to be?  It seems more than a bit odd
-> to require them to be ordered with respect to each other and everything
-> else (which is what a memory clobber does) and then call them "relaxed".
+>> What are the side effects of changing the truesize, if the original
+>> uncloned skb has the full truesize then isn't the potential memory usage
+>> still counted for the avoidance of OOM?
+> 
+> Nope. This can be disastrous.
+> 
+> A malicious remote peer can crash your host by sending specially cooked
+> TCP messages.
+> 
+> Send messages with one byte of payload, and out of order so that they
+> cant be consumed by receiver, and cant be coalesced/collapsed.
+> 
+> If you claim the true size is sizeof(sk_buff) + 512, TCP stack will
+> accumulate these messages in out of order queue, and will not bother
+> with them, unless you hit sk_rcvbuf limit.
+> 
+> But in reality these messages uses sizeof(sk_buff) + 32768 bytes.
+> 
+> Divide your physical memory by 32768 : How many such messages will fit
+> in memory before the host crashes ?
+> 
+> I've seen that kind of attacks in real cases.
+> 
+> Even the fast clones sk_buff mismatch can be noticed. Luckily a 10%
+> error has no severe impact.
+> 
+> TCP stack uses fast clones, and current stack gives them a truesize of
+> 2048 + sizeof(sk_buff), while it really should be 2048 +
+> 2*sizeof(sk_buff)
+> 
+> Luckily, GSO/TSO tends to reduce the error, as skbs overhead is lower.
+> 
+> 
 
-I suggested some informal semantics in the cover letter:
-
-  https://lkml.org/lkml/2014/4/17/269
-
-Basically, if we define relaxed accesses not to be ordered against anything
-apart from other accesses (relaxed or otherwise) to the same device, then
-they become a tonne cheaper on arm/arm64/powerpc. Currently we have to
-include expensive memory barriers in order to synchronise with accesses to
-DMA buffers which is rarely needed.
-
-For those requirements, I don't think we need the "memory" clobber for x86,
-but would appreciate your views on this.
-
-Will
+Thank you for clarifying, that is useful to know.
