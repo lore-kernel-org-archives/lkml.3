@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaEWRGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:06:36 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:60355 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683AbaEWRGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:06:32 -0400
-Message-ID: <537F7FC8.4070602@linux.vnet.ibm.com>
-Date: Fri, 23 May 2014 22:35:12 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1752717AbaEWRJN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:09:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752533AbaEWRJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 13:09:11 -0400
+Date: Fri, 23 May 2014 14:09:04 -0300
+From: Flavio Leitner <fbl@redhat.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] i8k: increase fan limit to 3
+Message-ID: <20140523170904.GA2498@t520.home>
+References: <1400725168-21358-1-git-send-email-fbl@redhat.com>
+ <20140522151048.GB1001@roeck-us.net>
+ <20140522155458.GI12759@t520.home>
+ <20140522180023.GB14814@roeck-us.net>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, tglx@linutronix.de,
-        mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com> <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com> <20140523132250.GA1768@localhost.localdomain> <537F5F0F.5050802@linux.vnet.ibm.com> <20140523151252.GE30445@twins.programming.kicks-ass.net> <537F66AF.30303@linux.vnet.ibm.com> <20140523153113.GG30445@twins.programming.kicks-ass.net> <537F6A53.1080703@linux.vnet.ibm.com> <537F6B2E.5080907@linux.vnet.ibm.com> <20140523154858.GH30445@twins.programming.kicks-ass.net> <537F6EF1.9050204@linux.vnet.ibm.com>
-In-Reply-To: <537F6EF1.9050204@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052317-5140-0000-0000-0000052D2356
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140522180023.GB14814@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 09:23 PM, Srivatsa S. Bhat wrote:
-> On 05/23/2014 09:18 PM, Peter Zijlstra wrote:
->> On Fri, May 23, 2014 at 09:07:18PM +0530, Srivatsa S. Bhat wrote:
->>> On 05/23/2014 09:03 PM, Srivatsa S. Bhat wrote:
->>>> On 05/23/2014 09:01 PM, Peter Zijlstra wrote:
->>>>> On Fri, May 23, 2014 at 08:48:07PM +0530, Srivatsa S. Bhat wrote:
->>>>>> On 05/23/2014 08:42 PM, Peter Zijlstra wrote:
->>>>>>> On Fri, May 23, 2014 at 08:15:35PM +0530, Srivatsa S. Bhat wrote:
->>>>>>>>>> +		 * During CPU offline, we don't want the other CPUs to send
->>>>>>>>>> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
->>>>>>>>>> +		 * disabled interrupts (because, then it will notice the IPIs
->>>>>>>>>> +		 * only after it has gone offline). We can prevent this by
->>>>>>>>>> +		 * making the other CPUs disable their interrupts first - that
->>>>>>>>>> +		 * way, they will run the stop-machine code with interrupts
->>>>>>>>>> +		 * disabled, and hence won't send IPIs after that point.
->>>>>>>
->>>>>>> That's complete nonsense, you can send IPIs all you want with interrupts
->>>>>>> disabled.
->>>>>>>
->>>>>>
->>>>>> True, but that's not what the comment says. It says "you can't send IPIs
->>>>>> because you are running the *stop-machine* loop, because the stop-machine loop
->>>>>> doesn't send IPIs itself! The only possibility of sending IPIs from within
->>>>>> stop-machine is if that CPU can takes an interrupt and the *interrupt handler*
->>>>>> sends the IPI (like what the block layer used to do) - and we precisely avoid
->>>>>> that possibility by disabling interrupts. So no IPIs will be sent beyond
->>>>>> this point.
->>>>>
->>>>> but one of those CPUs is running the stop machine function, which calls
->>>>> CPU_DYING which runs all kinds of nonsense and therefore can send IPIs
->>>>> all it wants, right?
->>>>>
->>>>
->>>> Yes, but that CPU certainly won't IPI itself! (We are trying to avoid getting
->>>> IPIs on precisely that CPU - the one which is about to go offline).
->>>>
->>>
->>> And the comment makes that distinction between the "active-cpu" and "other CPUs"
->>> (where active-cpu is the one which runs the stop-machine function and eventually
->>> goes offline). Thus "other CPUs" won't send IPIs after that point, because they
->>> are running the stop-machine loop with interrupts disabled. This ensures that
->>> the "active-cpu" doesn't get any IPIs - which is what we want.
->>
->> OK, so clearly I'm having trouble reading today :/ Makes sense now.
->>
->> But yes, its unlikely for CPU_DYING to self-IPI, although if you really
->> want, I can do ;-)
->>
-> 
-> Haha :-)
->  
->> And I guess the one extra state doesn't hurt too bad for
->> stop_two_cpus().
->>
-> 
-> Ok, that's good then.
-> 
+On Thu, May 22, 2014 at 11:00:23AM -0700, Guenter Roeck wrote:
+> On Thu, May 22, 2014 at 12:54:58PM -0300, Flavio Leitner wrote:
+> > On Thu, May 22, 2014 at 08:10:48AM -0700, Guenter Roeck wrote:
+> > > On Wed, May 21, 2014 at 11:19:28PM -0300, Flavio Leitner wrote:
+> > > > From: Flavio Leitner <fbl@sysclose.org>
+> > I volunteer to test on precision 490n and on latitude D520.
+> > 
+> Can you send me dmi information for those systems ?
+> The output of "grep . /sys/class/dmi/id/*" should do.
 
-Actually, this entire patch 2 becomes unnecessary by going with what Frederic
-suggested. If we change the warning condition in patch 3 to "if cpu is offline
-and there were pending callbacks, only then complain" instead of "if cpu is
-offline and we got an IPI, then complain", then it doesn't matter if an IPI
-arrives late (either due to hardware latency or due to stop-machine related
-race), as long as we flush the callbacks before going offline.
+490n:
+# grep . /sys/class/dmi/id/*
+/sys/class/dmi/id/bios_date:05/24/2007
+/sys/class/dmi/id/bios_vendor:Dell Inc.                
+/sys/class/dmi/id/bios_version:A05
+/sys/class/dmi/id/board_name:0GU083
+/sys/class/dmi/id/board_serial:..CN1374075H003N.
+/sys/class/dmi/id/board_vendor:Dell Inc.          
+/sys/class/dmi/id/board_version:A00
+/sys/class/dmi/id/chassis_asset_tag:        
+/sys/class/dmi/id/chassis_serial:69FS6D1
+/sys/class/dmi/id/chassis_type:7
+/sys/class/dmi/id/chassis_vendor:Dell Inc.                
+/sys/class/dmi/id/modalias:dmi:bvnDellInc.:bvrA05:bd05/24/2007:svnDellInc.:pnPrecisionWorkStation490:pvr:rvnDellInc.:rn0GU083:rvrA00:cvnDellInc.:ct7:cvr:
+grep: /sys/class/dmi/id/power: Is a directory
+/sys/class/dmi/id/product_name:Precision WorkStation 490    
+/sys/class/dmi/id/product_serial:69FS6D1
+/sys/class/dmi/id/product_uuid:44454C4C-3900-1046-8053-B6C04F364431
+grep: /sys/class/dmi/id/subsystem: Is a directory
+/sys/class/dmi/id/sys_vendor:Dell Inc.                
+/sys/class/dmi/id/uevent:MODALIAS=dmi:bvnDellInc.:bvrA05:bd05/24/2007:svnDellInc.:pnPrecisionWorkStation490:pvr:rvnDellInc.:rn0GU083:rvrA00:cvnDellInc.:ct7:cvr:
 
-I'll explain this in more detail in the next version of the patchset.
 
-Regards,
-Srivatsa S. Bhat
+d520:
+#  grep . /sys/class/dmi/id/*
+/sys/class/dmi/id/bios_date:10/13/2006
+/sys/class/dmi/id/bios_vendor:Dell Inc.
+/sys/class/dmi/id/bios_version:A02
+/sys/class/dmi/id/board_asset_tag:        
+/sys/class/dmi/id/board_name:0NF744
+/sys/class/dmi/id/board_serial:.JYCM0C1.CN4864368I4174.
+/sys/class/dmi/id/board_vendor:Dell Inc.
+/sys/class/dmi/id/board_version:   
+/sys/class/dmi/id/chassis_serial:JYCM0C1
+/sys/class/dmi/id/chassis_type:8
+/sys/class/dmi/id/chassis_vendor:Dell Inc.
+/sys/class/dmi/id/modalias:dmi:bvnDellInc.:bvrA02:bd10/13/2006:svnDellInc.:pnLatitudeD520:pvr:rvnDellInc.:rn0NF744:rvr:cvnDellInc.:ct8:cvr:
+grep: /sys/class/dmi/id/power: Is a directory
+/sys/class/dmi/id/product_name:Latitude D520                   
+/sys/class/dmi/id/product_serial:JYCM0C1
+/sys/class/dmi/id/product_uuid:44454C4C-5900-1043-804D-CAC04F304331
+grep: /sys/class/dmi/id/subsystem: Is a directory
+/sys/class/dmi/id/sys_vendor:Dell Inc.
+/sys/class/dmi/id/uevent:MODALIAS=dmi:bvnDellInc.:bvrA02:bd10/13/2006:svnDellInc.:pnLatitudeD520:pvr:rvnDellInc.:rn0NF744:rvr:cvnDellInc.:ct8:cvr:
 
+fbl
