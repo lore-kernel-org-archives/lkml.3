@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377AbaEWV6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 17:58:04 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:45563 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079AbaEWV6C convert rfc822-to-8bit (ORCPT
+	id S1751260AbaEWWBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 18:01:49 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:43189 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaEWWBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 17:58:02 -0400
+	Fri, 23 May 2014 18:01:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400880835-29537-1-git-send-email-cengelma@gmx.at>
-References: <1400880835-29537-1-git-send-email-cengelma@gmx.at>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Fri, 23 May 2014 14:57:21 -0700
-Message-ID: <CAGVrzcY6CCAFO-vrkB7+H+XfSnPT7uhF2VbDzY5YC_XYa7fTRg@mail.gmail.com>
-Subject: Re: [PATCH] of: mdio: fix compile warning in of_mdiobus_register_phy()
-To: Christian Engelmayer <cengelma@gmx.at>
-Cc: netdev <netdev@vger.kernel.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Originating-IP: [2620:0:1000:157d:f9b2:89f2:5bde:a33c]
+In-Reply-To: <20140523215544.GI13642@piout.net>
+References: <1400775895-31183-1-git-send-email-nicolas.ferre@atmel.com>
+	<201405232327.52312.arnd@arndb.de>
+	<20140523215544.GI13642@piout.net>
+Date: Fri, 23 May 2014 15:01:47 -0700
+Message-ID: <CAOesGMioT1QSaBY6vs30E5ez5OouzaHhZE8dTEK1Rf0NekCZjg@mail.gmail.com>
+Subject: Re: [GIT PULL] at91: DT for 3.16 at91-dt3 #3
+From: Olof Johansson <olof@lixom.net>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-23 14:33 GMT-07:00 Christian Engelmayer <cengelma@gmx.at>:
-> Commit de906af1 (net: phy: make of_set_phy_supported work with genphy driver)
-> removed the last user of variable 'max_speed' in function
-> of_mdiobus_register_phy(), leading to compile warning "unused variable
-> ‘max_speed’ [-Wunused-variable]". Thus remove it.
+On Fri, May 23, 2014 at 2:55 PM, Alexandre Belloni
+<alexandre.belloni@free-electrons.com> wrote:
+> On 23/05/2014 at 23:27:51 +0200, Arnd Bergmann wrote :
+>> On Thursday 22 May 2014, Nicolas Ferre wrote:
+>> > Another AT91 DT pull-request for 3.16. This one is the conversion of two more
+>> > SoC to Common Clock Framework (aka CCF). I identified it as a "DT" pull-request
+>> > but it modifies slightly a couple of files in mach-at91 (use of a configuration
+>> > option).
+>>
+>> Four done, four more to go? Nice progress!
+>>
 >
-> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+> I'm on it ;) I actually have two more almost ready but I will submit the
+> remaining four for 3.17. I don't think this is urgent enough to rush it
+> and I'd like to test it enough before we start removing the old clock
+> implementation and board files.
 
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+I think we should spend some more time discussing DTS naming instead!
 
-> ---
-> Compile tested. Applies against branch master in tree
-> git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
-> ---
->  drivers/of/of_mdio.c | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index b857094..7c6e277 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -46,7 +46,6 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
->         struct phy_device *phy;
->         bool is_c45;
->         int rc;
-> -       u32 max_speed = 0;
->         u32 phy_id;
->
->         is_c45 = of_device_is_compatible(child,
-> --
-> 1.9.1
->
+(Just kidding, good progress. Agreed, let it go in when it's ready,
+it's why we do frequent kernel releases)
 
 
-
--- 
-Florian
+-Olof
