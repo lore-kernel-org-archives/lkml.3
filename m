@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbaEWQ0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 12:26:52 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:59925 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822AbaEWQ0v (ORCPT
+	id S1752933AbaEWQbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 12:31:42 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:58017 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822AbaEWQbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 12:26:51 -0400
+	Fri, 23 May 2014 12:31:41 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:28bb:28d7:2f5:fb73]
-In-Reply-To: <20140523134152.GA8664@titan.lakedaemon.net>
-References: <1400522571-10799-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CAPDyKFo8CdyDbJEP0GkFTHdzpkyRBZEp-jAyrU4y8qi__zChkA@mail.gmail.com>
-	<CAOesGMjyk=n7MyVisfjYze9UuEb7XNv5O+c1Tndc+q1Q=PEetQ@mail.gmail.com>
-	<CAPDyKFp7Sf0sdReOyC8V_-F6ozB6Vh8CEbc+R7eoe6H4t-OmYA@mail.gmail.com>
-	<20140523134152.GA8664@titan.lakedaemon.net>
-Date: Fri, 23 May 2014 09:26:50 -0700
-Message-ID: <CAOesGMig6YGLsNvnJx-4FM=Q1sen7xU=5Ejpwdu-FzK2D+zd+w@mail.gmail.com>
-Subject: Re: [PATCH RESEND] mmc: dove: fix missing MACH_DOVE dependency
-From: Olof Johansson <olof@lixom.net>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Chris Ball <chris@printf.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140523155626.GI30445@twins.programming.kicks-ass.net>
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+	<1400777250-17335-17-git-send-email-will.deacon@arm.com>
+	<537E30AF.4070501@zytor.com>
+	<20140523144604.GF21319@arm.com>
+	<537F60E0.1060307@zytor.com>
+	<20140523145758.GG21319@arm.com>
+	<537F6728.3090600@zytor.com>
+	<20140523153409.GI21319@arm.com>
+	<537F6C85.107@zytor.com>
+	<20140523155626.GI30445@twins.programming.kicks-ass.net>
+Date: Fri, 23 May 2014 18:31:40 +0200
+X-Google-Sender-Auth: eXAU7MX-iXxUoXhzu-Hs50QC8tM
+Message-ID: <CAMuHMdW2rVvcORs6tbChxKVoVUnq0j8cfJa+GY6XH_=Tfr+Xcw@mail.gmail.com>
+Subject: Re: [PATCH v2 16/18] x86: io: implement dummy relaxed accessor macros
+ for writes
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Will Deacon <will.deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 6:41 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Fri, May 23, 2014 at 09:40:55AM +0200, Ulf Hansson wrote:
->> On 23 May 2014 09:16, Olof Johansson <olof@lixom.net> wrote:
->> > On Thu, May 22, 2014 at 2:09 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> >> On 19 May 2014 20:02, Sebastian Hesselbarth
->> >> <sebastian.hesselbarth@gmail.com> wrote:
->> >>> DT-enabled Dove moved over from ARCH_DOVE in mach-dove to MACH_DOVE in
->> >>> mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
->> >>> DT-only MACH_DOVE Kconfig. This slipped through the cracks and now is
->> >>> a fix to allow to build Dove's SDHCI driver for mach-mvebu on v3.15-rc.
->> >>>
->> >>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> >>> Acked-by: Jason Cooper <jason@lakedaemon.net>
->> >>
->> >> Thanks! Picked up for the PR I send to Chris.
->> >
->> > Ulf, you might consider adding your tree to linux-next if this is
->> > going to be a common work flow for you guys.
->>
->> That's done already. :-) There are patches which makes this visible in
->> the MAINTAINERS as well, queued for 3.16.
->>
->> git://git.linaro.org/people/ulf.hansson/mmc.git next
->>
->> Though due to merge conflicts, during this release cycle, I didn't
->> want to queue any patches besides for the mmci host driver.
->>
->> >
->> > It's partially up to Chris though, if he's OK with patches going into
->> > your branch more or less being guaranteed to make it into his as well.
->> >
->>
->> Yes, we need to figure out a good work flow when using two separate
->> trees. Thanks for bringing this up!
->
-> If you have any questions, please ask.  mvebu has been doing this for
-> several release cycles now, and I'm also doing it for irqchip now.
->
-> The biggest rule is that once you sign a tag and send a pull-request for
-> it, the branch is immutable up to and including that tag.
+On Fri, May 23, 2014 at 5:56 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> So the one issue I had with that, is that if one tries to send an email
+> to all arch maintainers + linux-arch + linux-kernel, the header gets too
+> big and vger chokes and davem slaps you.
 
-...unless you get asked to respin based on review from the person
-you're sending the request to.
+The arch maintainers are (supposed to be) on linux-arch.
 
-This is the main problem with multi-level maintainer trees: It's hard
-to run a stable non-rebasing tree as a downstream tree since there's
-no actual guarantee that it'll go in as-is.
+Gr{oetje,eeting}s,
 
+                        Geert
 
--Olof
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
