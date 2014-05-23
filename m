@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaEWKwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:52:44 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:41206 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbaEWKbx (ORCPT
+	id S1753908AbaEWKxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:53:00 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:54310 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaEWKbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:31:53 -0400
+	Fri, 23 May 2014 06:31:51 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 13/71] clocksource: sh_cmt: Set cpumask to cpu_possible_mask
-Date: Fri, 23 May 2014 12:30:53 +0200
-Message-Id: <1400841111-6683-13-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 11/71] clocksource: sh_cmt: Split static information from sh_cmt_device
+Date: Fri, 23 May 2014 12:30:51 +0200
+Message-Id: <1400841111-6683-11-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -23,62 +23,318 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-The CMT is a global timer not restricted to a single CPU. It has a lower
-rating than the TMU or ARM architected timer, but is still useful on
-systems where the other timers are stopped during CPU sleep.
-
-When multiple timers are available the timers core selects which timer
-to use based on timer ratings.
-
-On SMP systems where timer broadcasting is required, one dummy timer is
-instantiated per CPU with a rating of 100. On those systems the CMT
-timer has a rating of 80, which makes the dummy timer selected by
-default on all CPUs. The CMT is then available, and will be used as a
-broadcast timer.
-
-On UP systems no dummy timer is instantiated. The CMT timer has a rating
-of 125 on those systems and is used directly as a clock event device for
-CPU0 without broadcasting.
-
-The CMT rating shouldn't depend on whether we boot a UP or SMP system.
-We can't raise the CMT rating to 125 on SMP systems. This would select
-CMT as the clock event device for CPU0 as its rating is higher than the
-dummy timer rating, and would leave the system without a broadcast
-timer. We could instead lower the rating to 80 on all systems, but that
-wouldn't reflect reality as ratings between 1 and 99 are documented as
-"unfit for real use".
-
-We should raise the rating above 99 and still have the CMT selected as a
-broadcast timer. This can be done by changing the cpumask from
-cpumask_of(0) to cpu_possible_mask. In that case the timer selection
-logic will prefer the previously probed and already selected dummy timer
-for all CPUs based on the fact that already selected per-cpu timers are
-preferred over new global timers, regardless of their respective
-ratings. This also better reflects reality, as the CMT is not tied to
-the boot CPU.
-
-Ideally the timer selection logic should realize that the CMT needs to
-be used as a broadcast timer on SMP systems as no other broadcast timer
-is available, regardless of the cpumask and rating.
+Create a new sh_cmt_info structure to hold static information about the
+device model and reference that structure from the sh_cmt_device
+structure.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/clocksource/sh_cmt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/clocksource/sh_cmt.c |  192 +++++++++++++++++++++++++++---------------
+ 1 file changed, 122 insertions(+), 70 deletions(-)
 
 diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index ce00baa..926abe2 100644
+index f94db32..879b8c2 100644
 --- a/drivers/clocksource/sh_cmt.c
 +++ b/drivers/clocksource/sh_cmt.c
-@@ -776,7 +776,7 @@ static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
- 	ced->features = CLOCK_EVT_FEAT_PERIODIC;
- 	ced->features |= CLOCK_EVT_FEAT_ONESHOT;
- 	ced->rating = rating;
--	ced->cpumask = cpumask_of(0);
-+	ced->cpumask = cpu_possible_mask;
- 	ced->set_next_event = sh_cmt_clock_event_next;
- 	ced->set_mode = sh_cmt_clock_event_mode;
- 	ced->suspend = sh_cmt_clock_event_suspend;
+@@ -37,6 +37,52 @@
+ 
+ struct sh_cmt_device;
+ 
++/*
++ * The CMT comes in 5 different identified flavours, depending not only on the
++ * SoC but also on the particular instance. The following table lists the main
++ * characteristics of those flavours.
++ *
++ *			16B	32B	32B-F	48B	48B-2
++ * -----------------------------------------------------------------------------
++ * Channels		2	1/4	1	6	2/8
++ * Control Width	16	16	16	16	32
++ * Counter Width	16	32	32	32/48	32/48
++ * Shared Start/Stop	Y	Y	Y	Y	N
++ *
++ * The 48-bit gen2 version has a per-channel start/stop register located in the
++ * channel registers block. All other versions have a shared start/stop register
++ * located in the global space.
++ *
++ * Note that CMT0 on r8a73a4, r8a7790 and r8a7791, while implementing 32-bit
++ * channels only, is a 48-bit gen2 CMT with the 48-bit channels unavailable.
++ */
++
++enum sh_cmt_model {
++	SH_CMT_16BIT,
++	SH_CMT_32BIT,
++	SH_CMT_32BIT_FAST,
++	SH_CMT_48BIT,
++	SH_CMT_48BIT_GEN2,
++};
++
++struct sh_cmt_info {
++	enum sh_cmt_model model;
++
++	unsigned long width; /* 16 or 32 bit version of hardware block */
++	unsigned long overflow_bit;
++	unsigned long clear_bits;
++
++	/* callbacks for CMSTR and CMCSR access */
++	unsigned long (*read_control)(void __iomem *base, unsigned long offs);
++	void (*write_control)(void __iomem *base, unsigned long offs,
++			      unsigned long value);
++
++	/* callbacks for CMCNT and CMCOR access */
++	unsigned long (*read_count)(void __iomem *base, unsigned long offs);
++	void (*write_count)(void __iomem *base, unsigned long offs,
++			    unsigned long value);
++};
++
+ struct sh_cmt_channel {
+ 	struct sh_cmt_device *cmt;
+ 	unsigned int index;
+@@ -58,49 +104,16 @@ struct sh_cmt_channel {
+ struct sh_cmt_device {
+ 	struct platform_device *pdev;
+ 
++	const struct sh_cmt_info *info;
++
+ 	void __iomem *mapbase_ch;
+ 	void __iomem *mapbase;
+ 	struct clk *clk;
+ 
+ 	struct sh_cmt_channel *channels;
+ 	unsigned int num_channels;
+-
+-	unsigned long width; /* 16 or 32 bit version of hardware block */
+-	unsigned long overflow_bit;
+-	unsigned long clear_bits;
+-
+-	/* callbacks for CMSTR and CMCSR access */
+-	unsigned long (*read_control)(void __iomem *base, unsigned long offs);
+-	void (*write_control)(void __iomem *base, unsigned long offs,
+-			      unsigned long value);
+-
+-	/* callbacks for CMCNT and CMCOR access */
+-	unsigned long (*read_count)(void __iomem *base, unsigned long offs);
+-	void (*write_count)(void __iomem *base, unsigned long offs,
+-			    unsigned long value);
+ };
+ 
+-/* Examples of supported CMT timer register layouts and I/O access widths:
+- *
+- * "16-bit counter and 16-bit control" as found on sh7263:
+- * CMSTR 0xfffec000 16-bit
+- * CMCSR 0xfffec002 16-bit
+- * CMCNT 0xfffec004 16-bit
+- * CMCOR 0xfffec006 16-bit
+- *
+- * "32-bit counter and 16-bit control" as found on sh7372, sh73a0, r8a7740:
+- * CMSTR 0xffca0000 16-bit
+- * CMCSR 0xffca0060 16-bit
+- * CMCNT 0xffca0064 32-bit
+- * CMCOR 0xffca0068 32-bit
+- *
+- * "32-bit counter and 32-bit control" as found on r8a73a4 and r8a7790:
+- * CMSTR 0xffca0500 32-bit
+- * CMCSR 0xffca0510 32-bit
+- * CMCNT 0xffca0514 32-bit
+- * CMCOR 0xffca0518 32-bit
+- */
+-
+ static unsigned long sh_cmt_read16(void __iomem *base, unsigned long offs)
+ {
+ 	return ioread16(base + (offs << 1));
+@@ -123,47 +136,100 @@ static void sh_cmt_write32(void __iomem *base, unsigned long offs,
+ 	iowrite32(value, base + (offs << 2));
+ }
+ 
++static const struct sh_cmt_info sh_cmt_info[] = {
++	[SH_CMT_16BIT] = {
++		.model = SH_CMT_16BIT,
++		.width = 16,
++		.overflow_bit = 0x80,
++		.clear_bits = ~0x80,
++		.read_control = sh_cmt_read16,
++		.write_control = sh_cmt_write16,
++		.read_count = sh_cmt_read16,
++		.write_count = sh_cmt_write16,
++	},
++	[SH_CMT_32BIT] = {
++		.model = SH_CMT_32BIT,
++		.width = 32,
++		.overflow_bit = 0x8000,
++		.clear_bits = ~0xc000,
++		.read_control = sh_cmt_read16,
++		.write_control = sh_cmt_write16,
++		.read_count = sh_cmt_read32,
++		.write_count = sh_cmt_write32,
++	},
++	[SH_CMT_32BIT_FAST] = {
++		.model = SH_CMT_32BIT_FAST,
++		.width = 32,
++		.overflow_bit = 0x8000,
++		.clear_bits = ~0xc000,
++		.read_control = sh_cmt_read16,
++		.write_control = sh_cmt_write16,
++		.read_count = sh_cmt_read32,
++		.write_count = sh_cmt_write32,
++	},
++	[SH_CMT_48BIT] = {
++		.model = SH_CMT_48BIT,
++		.width = 32,
++		.overflow_bit = 0x8000,
++		.clear_bits = ~0xc000,
++		.read_control = sh_cmt_read32,
++		.write_control = sh_cmt_write32,
++		.read_count = sh_cmt_read32,
++		.write_count = sh_cmt_write32,
++	},
++	[SH_CMT_48BIT_GEN2] = {
++		.model = SH_CMT_48BIT_GEN2,
++		.width = 32,
++		.overflow_bit = 0x8000,
++		.clear_bits = ~0xc000,
++		.read_control = sh_cmt_read32,
++		.write_control = sh_cmt_write32,
++		.read_count = sh_cmt_read32,
++		.write_count = sh_cmt_write32,
++	},
++};
++
+ #define CMCSR 0 /* channel register */
+ #define CMCNT 1 /* channel register */
+ #define CMCOR 2 /* channel register */
+ 
+ static inline unsigned long sh_cmt_read_cmstr(struct sh_cmt_channel *ch)
+ {
+-	return ch->cmt->read_control(ch->cmt->mapbase, 0);
++	return ch->cmt->info->read_control(ch->cmt->mapbase, 0);
+ }
+ 
+ static inline unsigned long sh_cmt_read_cmcsr(struct sh_cmt_channel *ch)
+ {
+-	return ch->cmt->read_control(ch->base, CMCSR);
++	return ch->cmt->info->read_control(ch->base, CMCSR);
+ }
+ 
+ static inline unsigned long sh_cmt_read_cmcnt(struct sh_cmt_channel *ch)
+ {
+-	return ch->cmt->read_count(ch->base, CMCNT);
++	return ch->cmt->info->read_count(ch->base, CMCNT);
+ }
+ 
+ static inline void sh_cmt_write_cmstr(struct sh_cmt_channel *ch,
+ 				      unsigned long value)
+ {
+-	ch->cmt->write_control(ch->cmt->mapbase, 0, value);
++	ch->cmt->info->write_control(ch->cmt->mapbase, 0, value);
+ }
+ 
+ static inline void sh_cmt_write_cmcsr(struct sh_cmt_channel *ch,
+ 				      unsigned long value)
+ {
+-	ch->cmt->write_control(ch->base, CMCSR, value);
++	ch->cmt->info->write_control(ch->base, CMCSR, value);
+ }
+ 
+ static inline void sh_cmt_write_cmcnt(struct sh_cmt_channel *ch,
+ 				      unsigned long value)
+ {
+-	ch->cmt->write_count(ch->base, CMCNT, value);
++	ch->cmt->info->write_count(ch->base, CMCNT, value);
+ }
+ 
+ static inline void sh_cmt_write_cmcor(struct sh_cmt_channel *ch,
+ 				      unsigned long value)
+ {
+-	ch->cmt->write_count(ch->base, CMCOR, value);
++	ch->cmt->info->write_count(ch->base, CMCOR, value);
+ }
+ 
+ static unsigned long sh_cmt_get_counter(struct sh_cmt_channel *ch,
+@@ -172,7 +238,7 @@ static unsigned long sh_cmt_get_counter(struct sh_cmt_channel *ch,
+ 	unsigned long v1, v2, v3;
+ 	int o1, o2;
+ 
+-	o1 = sh_cmt_read_cmcsr(ch) & ch->cmt->overflow_bit;
++	o1 = sh_cmt_read_cmcsr(ch) & ch->cmt->info->overflow_bit;
+ 
+ 	/* Make sure the timer value is stable. Stolen from acpi_pm.c */
+ 	do {
+@@ -180,7 +246,7 @@ static unsigned long sh_cmt_get_counter(struct sh_cmt_channel *ch,
+ 		v1 = sh_cmt_read_cmcnt(ch);
+ 		v2 = sh_cmt_read_cmcnt(ch);
+ 		v3 = sh_cmt_read_cmcnt(ch);
+-		o1 = sh_cmt_read_cmcsr(ch) & ch->cmt->overflow_bit;
++		o1 = sh_cmt_read_cmcsr(ch) & ch->cmt->info->overflow_bit;
+ 	} while (unlikely((o1 != o2) || (v1 > v2 && v1 < v3)
+ 			  || (v2 > v3 && v2 < v1) || (v3 > v1 && v3 < v2)));
+ 
+@@ -227,7 +293,7 @@ static int sh_cmt_enable(struct sh_cmt_channel *ch, unsigned long *rate)
+ 	sh_cmt_start_stop_ch(ch, 0);
+ 
+ 	/* configure channel, periodic mode and maximum timeout */
+-	if (ch->cmt->width == 16) {
++	if (ch->cmt->info->width == 16) {
+ 		*rate = clk_get_rate(ch->cmt->clk) / 512;
+ 		sh_cmt_write_cmcsr(ch, 0x43);
+ 	} else {
+@@ -405,7 +471,8 @@ static irqreturn_t sh_cmt_interrupt(int irq, void *dev_id)
+ 	struct sh_cmt_channel *ch = dev_id;
+ 
+ 	/* clear flags */
+-	sh_cmt_write_cmcsr(ch, sh_cmt_read_cmcsr(ch) & ch->cmt->clear_bits);
++	sh_cmt_write_cmcsr(ch, sh_cmt_read_cmcsr(ch) &
++			   ch->cmt->info->clear_bits);
+ 
+ 	/* update clock source counter to begin with if enabled
+ 	 * the wrap flag should be cleared by the timer specific
+@@ -719,10 +786,10 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
+ 		return irq;
+ 	}
+ 
+-	if (cmt->width == (sizeof(ch->max_match_value) * 8))
++	if (cmt->info->width == (sizeof(ch->max_match_value) * 8))
+ 		ch->max_match_value = ~0;
+ 	else
+-		ch->max_match_value = (1 << cmt->width) - 1;
++		ch->max_match_value = (1 << cmt->info->width) - 1;
+ 
+ 	ch->match_value = ch->max_match_value;
+ 	raw_spin_lock_init(&ch->lock);
+@@ -800,28 +867,13 @@ static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
+ 	if (ret < 0)
+ 		goto err3;
+ 
+-	if (res2 && (resource_size(res2) == 4)) {
+-		/* assume both CMSTR and CMCSR to be 32-bit */
+-		cmt->read_control = sh_cmt_read32;
+-		cmt->write_control = sh_cmt_write32;
+-	} else {
+-		cmt->read_control = sh_cmt_read16;
+-		cmt->write_control = sh_cmt_write16;
+-	}
+-
+-	if (resource_size(res) == 6) {
+-		cmt->width = 16;
+-		cmt->read_count = sh_cmt_read16;
+-		cmt->write_count = sh_cmt_write16;
+-		cmt->overflow_bit = 0x80;
+-		cmt->clear_bits = ~0x80;
+-	} else {
+-		cmt->width = 32;
+-		cmt->read_count = sh_cmt_read32;
+-		cmt->write_count = sh_cmt_write32;
+-		cmt->overflow_bit = 0x8000;
+-		cmt->clear_bits = ~0xc000;
+-	}
++	/* identify the model based on the resources */
++	if (resource_size(res) == 6)
++		cmt->info = &sh_cmt_info[SH_CMT_16BIT];
++	else if (res2 && (resource_size(res2) == 4))
++		cmt->info = &sh_cmt_info[SH_CMT_48BIT_GEN2];
++	else
++		cmt->info = &sh_cmt_info[SH_CMT_32BIT];
+ 
+ 	cmt->channels = kzalloc(sizeof(*cmt->channels), GFP_KERNEL);
+ 	if (cmt->channels == NULL) {
 -- 
 1.7.9.5
 
