@@ -1,149 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524AbaEWKBK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:01:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55384 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350AbaEWKBJ (ORCPT
+	id S1751710AbaEWKDr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:03:47 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:54682 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaEWKDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:01:09 -0400
-Message-ID: <1400839186.4921.17.camel@weser.hi.pengutronix.de>
-Subject: Re: [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 23 May 2014 11:59:46 +0200
-In-Reply-To: <537F1853.7050800@nvidia.com>
-References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
-		 <1400493433.8467.24.camel@weser.hi.pengutronix.de>
-		 <5379D7A0.3050509@nvidia.com>
-		 <1400494582.8467.28.camel@weser.hi.pengutronix.de>
-		 <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
-	 <1400837055.4921.4.camel@weser.hi.pengutronix.de>
-	 <537F1853.7050800@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 23 May 2014 06:03:46 -0400
+Date: Fri, 23 May 2014 11:03:39 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Hans de Goede <hdegoede@redhat.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dev@linux-sunxi.org, Carlo Caione <carlo@caione.org>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com
+Subject: Re: [RFC PATCH 1/3] mfd: AXP22x: add support for APX221 PMIC
+Message-ID: <20140523100339.GO19747@lee--X1>
+References: <1400176305-22737-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1400176305-22737-2-git-send-email-boris.brezillon@free-electrons.com>
+ <20140519172817.GE20435@lee--X1>
+ <537A4324.4060905@free-electrons.com>
+ <537B06A0.3040706@redhat.com>
+ <20140520074810.GE20874@lee--X1>
+ <537EF4A6.2050405@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537EF4A6.2050405@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 23.05.2014, 18:43 +0900 schrieb Alexandre Courbot:
-> On 05/23/2014 06:24 PM, Lucas Stach wrote:
-> > Am Freitag, den 23.05.2014, 16:10 +0900 schrieb Alexandre Courbot:
-> >> On Mon, May 19, 2014 at 7:16 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
-> >>> Am Montag, den 19.05.2014, 19:06 +0900 schrieb Alexandre Courbot:
-> >>>> On 05/19/2014 06:57 PM, Lucas Stach wrote:
-> >>>>> Am Montag, den 19.05.2014, 18:46 +0900 schrieb Alexandre Courbot:
-> >>>>>> This patch is not meant to be merged, but rather to try and understand
-> >>>>>> why this is needed and what a more suitable solution could be.
-> >>>>>>
-> >>>>>> Allowing BOs to be write-cached results in the following happening when
-> >>>>>> trying to run any program on Tegra/GK20A:
-> >>>>>>
-> >>>>>> Unhandled fault: external abort on non-linefetch (0x1008) at 0xf0036010
-> >>>>>> ...
-> >>>>>> (nouveau_bo_rd32) from [<c0357d00>] (nouveau_fence_update+0x5c/0x80)
-> >>>>>> (nouveau_fence_update) from [<c0357d40>] (nouveau_fence_done+0x1c/0x38)
-> >>>>>> (nouveau_fence_done) from [<c02c3d00>] (ttm_bo_wait+0xec/0x168)
-> >>>>>> (ttm_bo_wait) from [<c035e334>] (nouveau_gem_ioctl_cpu_prep+0x44/0x100)
-> >>>>>> (nouveau_gem_ioctl_cpu_prep) from [<c02aaa84>] (drm_ioctl+0x1d8/0x4f4)
-> >>>>>> (drm_ioctl) from [<c0355394>] (nouveau_drm_ioctl+0x54/0x80)
-> >>>>>> (nouveau_drm_ioctl) from [<c00ee7b0>] (do_vfs_ioctl+0x3dc/0x5a0)
-> >>>>>> (do_vfs_ioctl) from [<c00ee9a8>] (SyS_ioctl+0x34/0x5c)
-> >>>>>> (SyS_ioctl) from [<c000e6e0>] (ret_fast_syscall+0x0/0x30
-> >>>>>>
-> >>>>>> The offending nouveau_bo_rd32 is done over an IO-mapped BO, e.g. a BO
-> >>>>>> mapped through the BAR.
-> >>>>>>
-> >>>>> Um wait, this memory is behind an already mapped bar? I think ioremap on
-> >>>>> ARM defaults to uncached mappings, so if you want to access the memory
-> >>>>> behind this bar as WC you need to map the BAR as a whole as WC by using
-> >>>>> ioremap_wc.
+> >>>>> This patch introduces preliminary support for the X-Powers AXP221 PMIC.
+> >>>>> The AXP221 is typically used on boards using Allwinner's A31 SoC.
+> >>>>>
+> >>>>> At the moment, this driver only exposes regulator devices, but other
+> >>>>> subdevices.
+> >>>>>
+> >>>>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> >>>>> ---
+> >>>>>  drivers/mfd/Kconfig        |  12 +++
+> >>>>>  drivers/mfd/Makefile       |   1 +
+> >>>>>  drivers/mfd/axp22x.c       | 237 +++++++++++++++++++++++++++++++++++++++++++++
+> >>>>>  include/linux/mfd/axp22x.h | 149 ++++++++++++++++++++++++++++
+> >>>>>  4 files changed, 399 insertions(+)
+> >>>>>  create mode 100644 drivers/mfd/axp22x.c
+> >>>>>  create mode 100644 include/linux/mfd/axp22x.h
+> >>>> Not a chance.
 > >>>>
-> >>>> Tried mapping the BAR using ioremap_wc(), but to no avail. On the other
-> >>>> hand, could it be that VRAM BOs end up creating a mapping over an
-> >>>> already-mapped region? I seem to remember that ARM might not like it...
+> >>>> Farrrr, too much common code with axp20x.c - please merge into one file.
+> >>>>
+> >>> This was one of the questions I asked in my cover letter (could you take
+> >>> a look at it and tell me what's your prefered solution ?) ;-).
 > >>>
-> >>> Multiple mapping are generally allowed, as long as they have the same
-> >>> caching state. It's conflicting mappings (uncached vs cached, or cached
-> >>> vs wc), that are documented to yield undefined results.
+> >>> I first tried to reuse the axp20x drivers, but ended up copying almost
+> >>> all definitions, hence I decided to first do a different driver and ask
+> >>> for advices.
+> >> I've just taken a good look at this (I'm planning on doing an axp152 driver
+> >> myself), and it seems that using a single mfd driver for the 20x and 221 should
+> >> be quite feasible:
 > >>
-> >> Sorry about the confusion. The BAR is *not* mapped to the kernel yet
-> >> (it is BAR1, there is no BAR3 on GK20A) and an ioremap_*() is
-> >> performed in ttm_bo_ioremap() to make the part of the BAR where the
-> >> buffer is mapped visible. It seems that doing an ioremap_wc() on the
-> >> BAR area on Tegra is what leads to these errors. ioremap() or
-> >> ioremap_nocache() (which are in effect the same on ARM) do not cause
-> >> this issue.
+> >> - axp20x.h would get some new register defines for registers which are
+> >>   different (or unique) to the 221 prefixed with aXP221
+> >> - An axp20x_writeable_ranges would need
+> >>   to be extended with a third range going from AXP221_BAT_CAP1 (0xe0)
+> >>   to AXP221_BAT_LOW_THRESH (0xe6)
+> >> - axp20x_writeable_table would get .n_yes_ranges set to 2, and a new
+> >>   apx22x_writeable_table would be introduced with n_yes_ranges set to 3.
+> >> - add a new axp221_supplies array
+> >> - add a new axp221_cells array
+> >> - and finally use the proper structs in axp20x_i2c_probe depending on the type
 > >>
-> > It would be cool if you could ask HW, or the blob developers, if this is
-> > a general issue. The external abort is clearly the GPUs AXI client
-> > responding with an error to the read request, though I'm not clear where
-> > a WC read differs from an uncached one.
-> 
-> Will check that.
-> 
+> >> Note that this means sharing ie the interrupt table, which is ok since they
+> >> are the same, except that the 221 has a couple of interrupts missing, but
+> >> the ones which are shared are all at the same place.
+> > Exactly.  As .probe() is identical, you only require some device
+> > matching and some extra structs where the data actually differs
+> > between devices.
 > >
-> >> The best way to solve this issue would be to not use the BAR at all
-> >> since the memory behind these objects can be directly accessed by the
-> >> CPU. As such it would better be mapped using ttm_bo_kmap_ttm()
-> >> instead. But right now this is clearly not how nouveau_bo.c is written
-> >> and it does not look like this can easily be done. :/
-> >
-> > Yeah, it sounds like we want this shortcut for stolen VRAM
-> > implementations.
 > 
-> Actually, isn't it the case that we do not want to use TTM at all for 
-> stolen VRAM (UMA) devices?
-> 
-> I am trying to wrap my head around this since a while already, and could 
-> not think of a way to use the current TTM-based nouveau_bo optimally for 
-> GK20A. Because we cannot do without the idea of VRAM and GART, we will 
-> always have to "move" objects from one location to another, or deal with 
-> constraints that do not make sense for UMA devices (like in the current 
-> case, accessing VRAM objects through the BAR).
-> 
-> I am currently contemplating the idea of writing an alternative non-TTM 
-> implementation of nouveau_bo for UMA devices, that would (hopefully) be 
-> much simpler and would spare us a lot of stunts.
-> 
-> On the other hand, this sounds like a considerable work and I would like 
-> to make sure that my lack of understanding of TTM is not driving me to 
-> the wrong solution. Thoughts?
-> 
-You may want to make yourself aware of all the quirks required for
-sharing memory between the GPU and CPU on an ARM host. I think there are
-far more involved than what you see now and writing an replacement for
-TTM will not be an easy task.
+> I think you've applied this patch on your for-next tree by mistake.
+> As stated above, this driver should be merged with the axp20x one.
 
-Doing away with the concept of two memory areas will not get you to a
-single unified address space. You would have to deal with things like
-not being able to change the caching state of pages in the systems
-lowmem yourself. You will still have to deal with remapping pages that
-aren't currently visible to the CPU (ok this is not an issue on Jetson
-right now as it only has 2GB of RAM), because it's in systems highmem,
-or even in a different LPAE area.
-
-You really want to be sure you are aware of all the consequences of
-this, before considering this task.
-
-Regards,
-Lucas
+You're right, I added it for testing, but removed it soon after.  I've
+now re-pushed the branch, so it should be gone now.
 
 -- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
