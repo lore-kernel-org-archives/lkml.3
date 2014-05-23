@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaEWODL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:03:11 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:50778 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527AbaEWODI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:03:08 -0400
-Date: Fri, 23 May 2014 15:59:43 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Mathias Nyman <mathias.nyman@intel.com>, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 2/5] Documentation: dt-bindings: document the Armada 375
- USB cluster binding
-Message-ID: <20140523135943.GC31314@lunn.ch>
-References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com>
- <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com>
- <537F13B2.6070500@ti.com>
- <20140523132145.GA31314@lunn.ch>
- <20140523133608.GB31314@lunn.ch>
- <537F52B0.5030204@ti.com>
+	id S1752518AbaEWOHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:07:20 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:65204 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaEWOHS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 10:07:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH v2 2/2] of: Stop naming platform_device using dcr address
+Date: Fri, 23 May 2014 16:07:08 +0200
+Message-ID: <4587381.5n3eMGkKaq@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400801769-4506-3-git-send-email-grant.likely@linaro.org>
+References: <1400801769-4506-1-git-send-email-grant.likely@linaro.org> <1400801769-4506-3-git-send-email-grant.likely@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537F52B0.5030204@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:B1Fe6dHzIj7a9DLrZBmAK7Y71WDQBITPDU/fe3F1H62
+ Ly47GBYdJMmEVjAAib/B7LoHWowSaC7PKm95IJ0zqrEcoDCRhJ
+ bJ+qkBFYaX1UR9RAfeqv6ERSM7lpX3O99D1SMIPgGanmM0TN0g
+ Gtmeb0HL6p/QOdoremm2b1U2WcK0fJtIqTwlW5g17H1NQjdyg1
+ q1YLaSfafhG6BJf9xpLNB/4xmtQVbxFTMjYfE5D9wlnlZe2PdQ
+ 5QKlC8QUqu62WF6TvgosSToCeuruUhZsI2qMy1dpdjBKOLyTgJ
+ N3V2mHJJug31Tyarja70NGJlcvjqwkPqNpnzsQrwCYRkAfiwf6
+ HIqGEf0OocI5F8Si28lQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 07:22:48PM +0530, Kishon Vijay Abraham I wrote:
-> hI,
+On Friday 23 May 2014 08:36:09 Grant Likely wrote:
+> There is now a way to ensure all platform devices get a unique name when
+> populated from the device tree, and the DCR_NATIVE code path is broken
+> anyway. PowerPC Cell (PS3) is the only platform that actually uses this
+> path.  Most likely nobody will notice if it is killed. Remove the code
+> and associated ugly #ifdef.
 > 
-> On Friday 23 May 2014 07:06 PM, Andrew Lunn wrote:
-> >> Do you want one .txt file per driver, or can we combine binding
-> >> documentations into one file? There should already be a mvebu-phy.txt,
-> >> which contains the sata phy usable on some of the Armada SoC families.
-> >> This binding could be appended to it.
-> > 
-> > Ah. Humm, well! It seems the patch adding the mvebu-phy.txt fell
-> > through a crack when adding the driver.
-> > 
-> > Kishon could you take
-> > http://www.spinics.net/lists/devicetree/msg17018.html into your tree?
-> > It should of been taken the same time you took the actual driver,
-> > http://www.spinics.net/lists/devicetree/msg17011.html into your tree.
-> > 
-> > I can resend that one missing patch if you want.
-> 
-> yes please. But it's already too late to go in the next merge window.
+> The user-visible impact of this patch is that any DCR device on Cell
+> will get a new name in the /sys/devices hierarchy.
 
-Gregory, could you pick it up and append your 375 binding to it? We
-can avoid merge conflicts that way.
+Isn't this used on all ppc440+ as well?
 
-Thanks
-	Andrew
+I don't think PS3 has it either, it should only be the second generation
+Cell blade doing this, which uses ppc440-derived I/O devices.
+
+We will probably see a bunch of the same devices on APM's X-gene ARM64
+machines as well, but we don't have to maintain a stable device name for
+those yet.
+
+	Arnd
