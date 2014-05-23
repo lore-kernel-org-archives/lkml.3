@@ -1,340 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaEWPQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:16:33 -0400
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:23590 "EHLO
-	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbaEWPQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:16:31 -0400
-Message-ID: <1400858184.2527.2.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH v3] mutex: Documentation rewrite
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Cc: akpm@linux-foundation.org, tim.c.chen@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, hpa@zytor.com, davidlohr@hp.com,
-        waiman.long@hp.com, jason.low2@hp.com, aswin@hp.com,
-        linux-kernel@vger.kernel.org
-Date: Fri, 23 May 2014 08:16:24 -0700
-In-Reply-To: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
-References: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752908AbaEWPQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:16:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752771AbaEWPQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:16:04 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/2] perf tools: Move elide bool into perf_hpp_fmt struct
+Date: Fri, 23 May 2014 17:15:47 +0200
+Message-Id: <1400858147-7155-3-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1400858147-7155-1-git-send-email-jolsa@kernel.org>
+References: <1400858147-7155-1-git-send-email-jolsa@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+After output/sort fields refactoring, it's expensive
+to check the elide bool in its current location inside
+the 'struct sort_entry'.
 
-Our mutexes have gone a long ways since the original implementation
-back in 2005/2006. However, the mutex-design.txt document is still
-stuck in the past, to the point where most of the information there
-is practically useless and, more important, simply incorrect. This
-patch pretty much rewrites it to resemble what we have nowadays.
+The perf_hpp__should_skip function gets highly noticable in
+workloads with high number of output/sort fields, like for:
 
-Since regular semaphores are almost much extinct in the kernel
-(most users now rely on mutexes or rwsems), it no longer makes
-sense to have such a close comparison, which was copied from most
-of the cover letter when Ingo introduced the generic mutex subsystem.
+  $ perf report -i perf-test.data -F overhead,sample,period,comm,pid,dso,symbol,cpu --stdio
 
-Note that ww_mutexes are intentionally left out, leaving things as
-generic as possible.
+Performance report:
+   9.70%  perf  [.] perf_hpp__should_skip                                                                          ◆
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Moving the elide bool into the 'struct perf_hpp_fmt', which
+makes the perf_hpp__should_skip just single struct read.
+
+Got speedup of around 22% for my test perf.data workload.
+The change should not harm any other workload types.
+
+Performance counter stats for (10 runs):
+  before:
+   358,319,732,626      cycles                    ( +-  0.55% )
+   467,129,581,515      instructions              #    1.30  insns per cycle          ( +-  0.00% )
+
+     150.943975206 seconds time elapsed           ( +-  0.62% )
+
+  now:
+   278,785,972,990      cycles                    ( +-  0.12% )
+   370,146,797,640      instructions              #    1.33  insns per cycle          ( +-  0.00% )
+
+     116.416670507 seconds time elapsed           ( +-  0.31% )
+
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
-Changes from v2:
- - More grammar corrections from Randy.
+ tools/perf/ui/browsers/hists.c |  8 ++--
+ tools/perf/util/hist.h         |  8 +++-
+ tools/perf/util/sort.c         | 89 ++++++++++++++++++++++++++----------------
+ tools/perf/util/sort.h         |  2 +-
+ 4 files changed, 67 insertions(+), 40 deletions(-)
 
-Changes from v1:
- - Grammar corrections from Tim.
- - Document cancelable MCS properties per Jason.
-
- Documentation/mutex-design.txt | 252 ++++++++++++++++++++++-------------------
- 1 file changed, 135 insertions(+), 117 deletions(-)
-
-diff --git a/Documentation/mutex-design.txt b/Documentation/mutex-design.txt
-index 1dfe62c..d10657b 100644
---- a/Documentation/mutex-design.txt
-+++ b/Documentation/mutex-design.txt
-@@ -1,139 +1,157 @@
- Generic Mutex Subsystem
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 1c331b9..418a435 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1699,14 +1699,14 @@ zoom_dso:
+ zoom_out_dso:
+ 				ui_helpline__pop();
+ 				browser->hists->dso_filter = NULL;
+-				sort_dso.elide = false;
++				perf_hpp__set_elide(HISTC_DSO, false);
+ 			} else {
+ 				if (dso == NULL)
+ 					continue;
+ 				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s DSO\"",
+ 						   dso->kernel ? "the Kernel" : dso->short_name);
+ 				browser->hists->dso_filter = dso;
+-				sort_dso.elide = true;
++				perf_hpp__set_elide(HISTC_DSO, true);
+ 				pstack__push(fstack, &browser->hists->dso_filter);
+ 			}
+ 			hists__filter_by_dso(hists);
+@@ -1718,13 +1718,13 @@ zoom_thread:
+ zoom_out_thread:
+ 				ui_helpline__pop();
+ 				browser->hists->thread_filter = NULL;
+-				sort_thread.elide = false;
++				perf_hpp__set_elide(HISTC_THREAD, false);
+ 			} else {
+ 				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s(%d) thread\"",
+ 						   thread->comm_set ? thread__comm_str(thread) : "",
+ 						   thread->tid);
+ 				browser->hists->thread_filter = thread;
+-				sort_thread.elide = true;
++				perf_hpp__set_elide(HISTC_THREAD, false);
+ 				pstack__push(fstack, &browser->hists->thread_filter);
+ 			}
+ 			hists__filter_by_thread(hists);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a8418d1..dd3d763 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -166,6 +166,7 @@ struct perf_hpp_fmt {
  
- started by Ingo Molnar <mingo@redhat.com>
-+updated by Davidlohr Bueso <davidlohr@hp.com>
+ 	struct list_head list;
+ 	struct list_head sort_list;
++	bool elide;
+ };
  
--  "Why on earth do we need a new mutex subsystem, and what's wrong
--   with semaphores?"
-+What are mutexes?
-+-----------------
+ extern struct list_head perf_hpp__list;
+@@ -208,7 +209,12 @@ void perf_hpp__append_sort_keys(void);
  
--firstly, there's nothing wrong with semaphores. But if the simpler
--mutex semantics are sufficient for your code, then there are a couple
--of advantages of mutexes:
-+In the Linux kernel, mutexes refer to a particular locking primitive
-+that enforces serialization on shared memory systems, and not only to
-+the generic term referring to 'mutual exclusion' found in academia
-+or similar theoretical text books. Mutexes are sleeping locks which
-+behave similarly to binary semaphores, and were introduced in 2006[1]
-+as an alternative to these. This new data structure provided a number
-+of advantages, including simpler interfaces, and at that time smaller
-+code (see Disadvantages).
+ bool perf_hpp__is_sort_entry(struct perf_hpp_fmt *format);
+ bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b);
+-bool perf_hpp__should_skip(struct perf_hpp_fmt *format);
++
++static inline bool perf_hpp__should_skip(struct perf_hpp_fmt *format)
++{
++	return format->elide;
++}
++
+ void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists);
  
-- - 'struct mutex' is smaller on most architectures: E.g. on x86,
--   'struct semaphore' is 20 bytes, 'struct mutex' is 16 bytes.
--   A smaller structure size means less RAM footprint, and better
--   CPU-cache utilization.
-+[1] http://lwn.net/Articles/164802/
+ typedef u64 (*hpp_field_fn)(struct hist_entry *he);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index a1a5ba3..48cb026 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1363,27 +1363,64 @@ static int __setup_sorting(void)
+ 	return ret;
+ }
  
-- - tighter code. On x86 i get the following .text sizes when
--   switching all mutex-alike semaphores in the kernel to the mutex
--   subsystem:
-+Implementation
-+--------------
+-bool perf_hpp__should_skip(struct perf_hpp_fmt *format)
++void perf_hpp__set_elide(int idx, bool elide)
+ {
+-	if (perf_hpp__is_sort_entry(format)) {
+-		struct hpp_sort_entry *hse;
++	struct perf_hpp_fmt *fmt;
++	struct hpp_sort_entry *hse;
  
--        text    data     bss     dec     hex filename
--     3280380  868188  396860 4545428  455b94 vmlinux-semaphore
--     3255329  865296  396732 4517357  44eded vmlinux-mutex
-+Mutexes are represented by 'struct mutex', defined in include/linux/mutex.h
-+and implemented in kernel/locking/mutex.c. These locks use a three
-+state atomic counter (->count) to represent the different possible
-+transitions that can occur during the lifetime of a lock:
+-		hse = container_of(format, struct hpp_sort_entry, hpp);
+-		return hse->se->elide;
++	perf_hpp__for_each_format(fmt) {
++		if (!perf_hpp__is_sort_entry(fmt))
++			continue;
++
++		hse = container_of(fmt, struct hpp_sort_entry, hpp);
++		if (hse->se->se_width_idx == idx) {
++			fmt->elide = elide;
++			break;
++		}
+ 	}
+-	return false;
+ }
  
--   that's 25051 bytes of code saved, or a 0.76% win - off the hottest
--   codepaths of the kernel. (The .data savings are 2892 bytes, or 0.33%)
--   Smaller code means better icache footprint, which is one of the
--   major optimization goals in the Linux kernel currently.
-+	  1: unlocked
-+	  0: locked, no waiters
-+   negative: locked, with potential waiters
+-static void sort_entry__setup_elide(struct sort_entry *se,
+-				    struct strlist *list,
+-				    const char *list_name, FILE *fp)
++static bool __get_elide(struct strlist *list, const char *list_name, FILE *fp)
+ {
+ 	if (list && strlist__nr_entries(list) == 1) {
+ 		if (fp != NULL)
+ 			fprintf(fp, "# %s: %s\n", list_name,
+ 				strlist__entry(list, 0)->s);
+-		se->elide = true;
++		return true;
++	}
++	return false;
++}
++
++static bool get_elide(int idx, FILE *output)
++{
++	switch (idx) {
++	case HISTC_SYMBOL:
++		return __get_elide(symbol_conf.sym_list, "symbol", output);
++	case HISTC_DSO:
++		return __get_elide(symbol_conf.dso_list, "dso", output);
++	case HISTC_COMM:
++		return __get_elide(symbol_conf.comm_list, "comm", output);
++	default:
++		break;
+ 	}
++
++	if (sort__mode != SORT_MODE__BRANCH)
++		return false;
++
++	switch (idx) {
++	case HISTC_SYMBOL_FROM:
++		return __get_elide(symbol_conf.sym_from_list, "sym_from", output);
++	case HISTC_SYMBOL_TO:
++		return __get_elide(symbol_conf.sym_to_list, "sym_to", output);
++	case HISTC_DSO_FROM:
++		return __get_elide(symbol_conf.dso_from_list, "dso_from", output);
++	case HISTC_DSO_TO:
++		return __get_elide(symbol_conf.dso_to_list, "dso_to", output);
++	default:
++		break;
++	}
++
++	return false;
+ }
  
-- - the mutex subsystem is slightly faster and has better scalability for
--   contended workloads. On an 8-way x86 system, running a mutex-based
--   kernel and testing creat+unlink+close (of separate, per-task files)
--   in /tmp with 16 parallel tasks, the average number of ops/sec is:
-+In its most basic form it also includes a wait-queue and a spinlock
-+that serializes access to it. CONFIG_SMP systems can also include
-+a pointer to the lock task owner (->owner) as well as a spinner MCS
-+lock (->osq), both described below in (ii).
+ void sort__setup_elide(FILE *output)
+@@ -1391,26 +1428,12 @@ void sort__setup_elide(FILE *output)
+ 	struct perf_hpp_fmt *fmt;
+ 	struct hpp_sort_entry *hse;
  
--    Semaphores:                        Mutexes:
-+When acquiring a mutex, there are three possible paths that can be
-+taken, depending on the state of the lock:
- 
--    $ ./test-mutex V 16 10             $ ./test-mutex V 16 10
--    8 CPUs, running 16 tasks.          8 CPUs, running 16 tasks.
--    checking VFS performance.          checking VFS performance.
--    avg loops/sec:      34713          avg loops/sec:      84153
--    CPU utilization:    63%            CPU utilization:    22%
-+(i) fastpath: tries to atomically acquire the lock by decrementing the
-+    counter. If it was already taken by another task it goes to the next
-+    possible path. This logic is architecture specific. On x86-64, the
-+    locking fastpath is 2 instructions:
- 
--   i.e. in this workload, the mutex based kernel was 2.4 times faster
--   than the semaphore based kernel, _and_ it also had 2.8 times less CPU
--   utilization. (In terms of 'ops per CPU cycle', the semaphore kernel
--   performed 551 ops/sec per 1% of CPU time used, while the mutex kernel
--   performed 3825 ops/sec per 1% of CPU time used - it was 6.9 times
--   more efficient.)
+-	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
+-				"dso", output);
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list,
+-				"comm", output);
+-	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list,
+-				"symbol", output);
 -
--   the scalability difference is visible even on a 2-way P4 HT box:
--
--    Semaphores:                        Mutexes:
--
--    $ ./test-mutex V 16 10             $ ./test-mutex V 16 10
--    4 CPUs, running 16 tasks.          8 CPUs, running 16 tasks.
--    checking VFS performance.          checking VFS performance.
--    avg loops/sec:      127659         avg loops/sec:      181082
--    CPU utilization:    100%           CPU utilization:    34%
--
--   (the straight performance advantage of mutexes is 41%, the per-cycle
--    efficiency of mutexes is 4.1 times better.)
--
-- - there are no fastpath tradeoffs, the mutex fastpath is just as tight
--   as the semaphore fastpath. On x86, the locking fastpath is 2
--   instructions:
--
--    c0377ccb <mutex_lock>:
--    c0377ccb:       f0 ff 08                lock decl (%eax)
--    c0377cce:       78 0e                   js     c0377cde <.text..lock.mutex>
--    c0377cd0:       c3                      ret
-+    0000000000000e10 <mutex_lock>:
-+    e21:   f0 ff 0b                lock decl (%rbx)
-+    e24:   79 08                   jns    e2e <mutex_lock+0x1e>
+-	if (sort__mode == SORT_MODE__BRANCH) {
+-		sort_entry__setup_elide(&sort_dso_from,
+-					symbol_conf.dso_from_list,
+-					"dso_from", output);
+-		sort_entry__setup_elide(&sort_dso_to,
+-					symbol_conf.dso_to_list,
+-					"dso_to", output);
+-		sort_entry__setup_elide(&sort_sym_from,
+-					symbol_conf.sym_from_list,
+-					"sym_from", output);
+-		sort_entry__setup_elide(&sort_sym_to,
+-					symbol_conf.sym_to_list,
+-					"sym_to", output);
++	perf_hpp__for_each_format(fmt) {
++		if (!perf_hpp__is_sort_entry(fmt))
++			continue;
++
++		hse = container_of(fmt, struct hpp_sort_entry, hpp);
++		fmt->elide = get_elide(hse->se->se_width_idx, output);
+ 	}
  
-    the unlocking fastpath is equally tight:
+ 	/*
+@@ -1421,8 +1444,7 @@ void sort__setup_elide(FILE *output)
+ 		if (!perf_hpp__is_sort_entry(fmt))
+ 			continue;
  
--    c0377cd1 <mutex_unlock>:
--    c0377cd1:       f0 ff 00                lock incl (%eax)
--    c0377cd4:       7e 0f                   jle    c0377ce5 <.text..lock.mutex+0x7>
--    c0377cd6:       c3                      ret
--
-- - 'struct mutex' semantics are well-defined and are enforced if
--   CONFIG_DEBUG_MUTEXES is turned on. Semaphores on the other hand have
--   virtually no debugging code or instrumentation. The mutex subsystem
--   checks and enforces the following rules:
--
--   * - only one task can hold the mutex at a time
--   * - only the owner can unlock the mutex
--   * - multiple unlocks are not permitted
--   * - recursive locking is not permitted
--   * - a mutex object must be initialized via the API
--   * - a mutex object must not be initialized via memset or copying
--   * - task may not exit with mutex held
--   * - memory areas where held locks reside must not be freed
--   * - held mutexes must not be reinitialized
--   * - mutexes may not be used in hardware or software interrupt
--   *   contexts such as tasklets and timers
--
--   furthermore, there are also convenience features in the debugging
--   code:
--
--   * - uses symbolic names of mutexes, whenever they are printed in debug output
--   * - point-of-acquire tracking, symbolic lookup of function names
--   * - list of all locks held in the system, printout of them
--   * - owner tracking
--   * - detects self-recursing locks and prints out all relevant info
--   * - detects multi-task circular deadlocks and prints out all affected
--   *   locks and tasks (and only those tasks)
-+    0000000000000bc0 <mutex_unlock>:
-+    bc8:   f0 ff 07                lock incl (%rdi)
-+    bcb:   7f 0a                   jg     bd7 <mutex_unlock+0x17>
-+
-+
-+(ii) midpath: aka optimistic spinning, tries to spin for acquisition
-+     when there are no pending waiters and the lock owner is currently
-+     running on a different CPU. The rationale is that if the lock owner
-+     is running, it is likely to release the lock soon. The mutex spinners
-+     are queued up using MCS lock so that only one spinner can compete for
-+     the mutex.
-+
-+     The MCS lock (proposed by Mellor-Crummey and Scott) is a simple spinlock
-+     with the desirable properties of being fair and with each cpu trying
-+     to acquire the lock spinning on a local variable. It avoids expensive
-+     cacheline bouncing that common test-and-set spinlock implementations
-+     incur. An MCS-like lock is specially tailored for optimistic spinning
-+     for sleeping lock implementation. An important feature of the customized
-+     MCS lock is that it has the extra property that spinners are able to exit
-+     the MCS spinlock queue when they need to reschedule. This further helps
-+     avoid situations where MCS spinners that need to reschedule would continue
-+     waiting to spin on mutex owner, only to go directly to slowpath upon
-+     obtaining the MCS lock.
-+
-+
-+(iii) slowpath: last resort, if the lock is still unable to be acquired,
-+      the task is added to the wait-queue and sleeps until it can be taken.
-+      Under normal circumstances it blocks as TASK_UNINTERRUPTIBLE.
-+
-+While formally kernel mutexes are sleepable locks, it is path (ii) that
-+makes them more practically a hybrid type. By simply not interrupting a
-+task and busy-waiting for a few cycles instead of immediately sleeping,
-+the performance of this lock has been seen to significantly improve a
-+number of workloads. Note that this technique is also used for rw-semaphores.
-+
-+Semantics
-+---------
-+
-+The mutex subsystem checks and enforces the following rules:
-+
-+    - Only one task can hold the mutex at a time.
-+    - Only the owner can unlock the mutex.
-+    - Multiple unlocks are not permitted.
-+    - Recursive locking/unlocking is not permitted.
-+    - A mutex must only be initialized via the API (see below).
-+    - A task may not exit with a mutex held.
-+    - Memory areas where held locks reside must not be freed.
-+    - Held mutexes must not be reinitialized.
-+    - Mutexes may not be used in hardware or software interrupt
-+      contexts such as tasklets and timers.
-+
-+These semantics are fully enforced when CONFIG DEBUG_MUTEXES is enabled.
-+In addition, the mutex debugging code also implements a number of other
-+features that make lock debugging easier and faster:
-+
-+    - Uses symbolic names of mutexes, whenever they are printed
-+      in debug output.
-+    - Point-of-acquire tracking, symbolic lookup of function names,
-+      list of all locks held in the system, printout of them.
-+    - Owner tracking.
-+    - Detects self-recursing locks and prints out all relevant info.
-+    - Detects multi-task circular deadlocks and prints out all affected
-+      locks and tasks (and only those tasks).
-+
-+
-+Interfaces
-+----------
-+Statically define the mutex:
-+   DEFINE_MUTEX(name);
-+
-+Dynamically initialize the mutex:
-+   mutex_init(mutex);
-+
-+Acquire the mutex, uninterruptible:
-+   void mutex_lock(struct mutex *lock);
-+   void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
-+   int  mutex_trylock(struct mutex *lock);
-+
-+Acquire the mutex, interruptible:
-+   int mutex_lock_interruptible_nested(struct mutex *lock,
-+				       unsigned int subclass);
-+   int mutex_lock_interruptible(struct mutex *lock);
-+
-+Acquire the mutex, interruptible, if dec to 0:
-+   int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
-+
-+Unlock the mutex:
-+   void mutex_unlock(struct mutex *lock);
-+
-+Test if the mutex is taken:
-+   int mutex_is_locked(struct mutex *lock);
+-		hse = container_of(fmt, struct hpp_sort_entry, hpp);
+-		if (!hse->se->elide)
++		if (!fmt->elide)
+ 			return;
+ 	}
  
- Disadvantages
- -------------
+@@ -1430,8 +1452,7 @@ void sort__setup_elide(FILE *output)
+ 		if (!perf_hpp__is_sort_entry(fmt))
+ 			continue;
  
--The stricter mutex API means you cannot use mutexes the same way you
--can use semaphores: e.g. they cannot be used from an interrupt context,
--nor can they be unlocked from a different context that which acquired
--it. [ I'm not aware of any other (e.g. performance) disadvantages from
--using mutexes at the moment, please let me know if you find any. ]
--
--Implementation of mutexes
---------------------------
--
--'struct mutex' is the new mutex type, defined in include/linux/mutex.h and
--implemented in kernel/locking/mutex.c. It is a counter-based mutex with a
--spinlock and a wait-list. The counter has 3 states: 1 for "unlocked", 0 for
--"locked" and negative numbers (usually -1) for "locked, potential waiters
--queued".
--
--the APIs of 'struct mutex' have been streamlined:
--
-- DEFINE_MUTEX(name);
-+Unlike its original design and purpose, 'struct mutex' is larger than
-+most locks in the kernel. E.g: on x86-64 it is 40 bytes, almost twice
-+as large as 'struct semaphore' (24 bytes) and 8 bytes shy of the
-+'struct rw_semaphore' variant. Larger structure sizes mean more CPU
-+cache and memory footprint.
+-		hse = container_of(fmt, struct hpp_sort_entry, hpp);
+-		hse->se->elide = false;
++		fmt->elide = false;
+ 	}
+ }
  
-- mutex_init(mutex);
-+When to use mutexes
-+-------------------
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 5f38d92..776aa41 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -186,7 +186,6 @@ struct sort_entry {
+ 	int	(*se_snprintf)(struct hist_entry *he, char *bf, size_t size,
+ 			       unsigned int width);
+ 	u8	se_width_idx;
+-	bool	elide;
+ };
  
-- void mutex_lock(struct mutex *lock);
-- int  mutex_lock_interruptible(struct mutex *lock);
-- int  mutex_trylock(struct mutex *lock);
-- void mutex_unlock(struct mutex *lock);
-- int  mutex_is_locked(struct mutex *lock);
-- void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
-- int  mutex_lock_interruptible_nested(struct mutex *lock,
--                                      unsigned int subclass);
-- int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
-+Unless the strict semantics of mutexes are unsuitable and/or the critical
-+region prevents the lock from being shared, always prefer them to any other
-+locking primitive.
+ extern struct sort_entry sort_thread;
+@@ -197,6 +196,7 @@ int setup_output_field(void);
+ void reset_output_field(void);
+ extern int sort_dimension__add(const char *);
+ void sort__setup_elide(FILE *fp);
++void perf_hpp__set_elide(int idx, bool elide);
+ 
+ int report_parse_ignore_callees_opt(const struct option *opt, const char *arg, int unset);
+ 
 -- 
-1.8.1.4
-
-
+1.8.3.1
 
