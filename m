@@ -1,176 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaEWKNy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:13:54 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49098 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaEWKNw (ORCPT
+	id S1752856AbaEWKMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:12:53 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49033 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaEWKEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:13:52 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 3/3] CPU hotplug,
- smp: Flush any pending IPI callbacks before CPU offline
-To: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
-        hch@infradead.org
-Cc: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Fri, 23 May 2014 15:42:35 +0530
-Message-ID: <20140523101229.17924.50256.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com>
-References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052310-3864-0000-0000-00000E60298C
+	Fri, 23 May 2014 06:04:35 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: [PATCH 05/26] perf tools: Update cpumode for each cumulative entry
+Date: Fri, 23 May 2014 19:04:02 +0900
+Message-Id: <1400839463-21933-6-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During CPU offline, in the stop-machine loop, we use 2 separate stages to
-disable interrupts, to ensure that the CPU going offline doesn't get any new
-IPIs from the other CPUs after it has gone offline.
+The cpumode and level in struct addr_localtion was set for a sample
+and but updated as cumulative callchains were added.  This led to have
+non-matching symbol and cpumode in the output.
 
-However, an IPI sent much earlier might arrive late on the target CPU
-(possibly _after_ the CPU has gone offline) due to hardware latencies,
-and if this happens, then the smp-call-function callbacks queued on the
-outgoing CPU will not get noticed (and hence not executed) at all.
+Update it accordingly based on the fact whether the map is a part of
+the kernel or not.  This is a reverse of what thread__find_addr_map()
+does.
 
-This is somewhat theoretical, but in any case, it makes sense to explicitly
-loop through the call_single_queue and flush any pending callbacks before the
-CPU goes completely offline. So, perform this step in the CPU_DYING stage of
-CPU offline. That way, we would have handled all the queued callbacks before
-going offline, and also, no new IPIs can be sent by the other CPUs to the
-outgoing CPU at that point, because they will all be executing the stop-machine
-code with interrupts disabled.
-
-But since the outgoing CPU is already marked offline at this point, we can't
-directly invoke generic_smp_call_function_single_interrupt() from CPU_DYING
-notifier, because it will trigger the "IPI to offline CPU" warning. Hence,
-separate out its functionality into to a new function called
-'flush_smp_call_function_queue' which skips the "is-cpu-online?" check, and
-call this instead (since we know what we are doing in this path).
-
-(Aside: 'generic_smp_call_function_single_interrupt' is too long a name already,
-so I didn't want to add an uglier-looking double-underscore prefixed version.
-'flush_smp_call_function_queue' is a much more meaningful name).
-
-Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Tested-by: Arun Sharma <asharma@fb.com>
+Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
+ tools/perf/util/callchain.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/callchain.h |  2 ++
+ tools/perf/util/hist.c      | 13 ++-----------
+ 3 files changed, 46 insertions(+), 11 deletions(-)
 
- kernel/smp.c |   59 +++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 50 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 306f818..b7a527b 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -29,6 +29,8 @@ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
- 
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct llist_head, call_single_queue);
- 
-+static void flush_smp_call_function_queue(void);
-+
- static int
- hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- {
-@@ -52,6 +54,18 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
- 
-+	case CPU_DYING:
-+	case CPU_DYING_FROZEN:
-+		/*
-+		 * The IPIs for the smp-call-function callbacks queued by other
-+		 * CPUs might arrive late due to hardware latencies. So flush
-+		 * out any pending IPI callbacks explicitly (without waiting for
-+		 * the IPIs to arrive), to ensure that the outgoing CPU doesn't
-+		 * go offline with work still pending.
-+		 */
-+		flush_smp_call_function_queue();
-+		break;
-+
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		free_cpumask_var(cfd->cpumask);
-@@ -177,26 +191,56 @@ static int generic_exec_single(int cpu, struct call_single_data *csd,
- 	return 0;
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 2af69c47b725..48b6d3f50012 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -630,3 +630,45 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
+ 		return 0;
+ 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
  }
- 
--/*
-- * Invoked by arch to handle an IPI for call function single. Must be
-- * called from the arch with interrupts disabled.
-+/**
-+ * flush_smp_call_function_queue - Flush pending smp-call-function callbacks
-+ *
-+ * Flush any pending smp-call-function callbacks queued on this CPU. This is
-+ * invoked by the generic IPI handler, as well as by a CPU about to go offline,
-+ * to ensure that all pending IPI functions are run before it goes completely
-+ * offline.
-+ *
-+ * Loop through the call_single_queue and run all the queued functions.
-+ * Must be called with interrupts disabled.
-  */
--void generic_smp_call_function_single_interrupt(void)
-+static void flush_smp_call_function_queue(void)
- {
- 	struct llist_node *entry;
- 	struct call_single_data *csd, *csd_next;
--	static bool warned;
- 
- 	entry = llist_del_all(&__get_cpu_var(call_single_queue));
- 	entry = llist_reverse_order(entry);
- 
-+	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
-+		csd->func(csd->info);
-+		csd_unlock(csd);
-+	}
-+}
 +
-+/**
-+ * generic_smp_call_function_single_interrupt - Execute SMP IPI callbacks
-+ *
-+ * Invoked by arch to handle an IPI for call function single.
-+ * Must be called with interrupts disabled.
-+ */
-+void generic_smp_call_function_single_interrupt(void)
++int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *node,
++			bool hide_unresolved)
 +{
-+	static bool warned;
++	al->map = node->map;
++	al->sym = node->sym;
++	if (node->map)
++		al->addr = node->map->map_ip(node->map, node->ip);
++	else
++		al->addr = node->ip;
 +
-+	WARN_ON(!irqs_disabled());
++	if (al->sym == NULL) {
++		if (hide_unresolved)
++			return 0;
++		if (al->map == NULL)
++			goto out;
++	}
 +
- 	/*
- 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
- 	 */
- 	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
-+		struct llist_node *entry;
-+		struct call_single_data *csd;
++	if (al->map->groups == &al->machine->kmaps) {
++		if (machine__is_host(al->machine)) {
++			al->cpumode = PERF_RECORD_MISC_KERNEL;
++			al->level = 'k';
++		} else {
++			al->cpumode = PERF_RECORD_MISC_GUEST_KERNEL;
++			al->level = 'g';
++		}
++	} else {
++		if (machine__is_host(al->machine)) {
++			al->cpumode = PERF_RECORD_MISC_USER;
++			al->level = '.';
++		} else if (perf_guest) {
++			al->cpumode = PERF_RECORD_MISC_GUEST_USER;
++			al->level = 'u';
++		} else {
++			al->cpumode = PERF_RECORD_MISC_HYPERVISOR;
++			al->level = 'H';
++		}
++	}
 +
- 		warned = true;
- 		WARN(1, "IPI on offline CPU %d\n", smp_processor_id());
++out:
++	return 1;
++}
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index bde2b0cc24cf..24a53d562d0a 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -162,6 +162,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+ 			      struct perf_evsel *evsel, struct addr_location *al,
+ 			      int max_stack);
+ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample);
++int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *node,
++			bool hide_unresolved);
  
-+		entry = llist_del_all(&__get_cpu_var(call_single_queue));
-+		entry = llist_reverse_order(entry);
-+
- 		/*
- 		 * We don't have to use the _safe() variant here
- 		 * because we are not invoking the IPI handlers yet.
-@@ -206,10 +250,7 @@ void generic_smp_call_function_single_interrupt(void)
- 				csd->func);
- 	}
+ extern const char record_callchain_help[];
+ int parse_callchain_report_opt(const char *arg);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index ddd487fc6c6e..802af8495f83 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -736,18 +736,9 @@ iter_next_cumulative_entry(struct hist_entry_iter *iter,
+ 	if (node == NULL)
+ 		return 0;
  
--	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
--		csd->func(csd->info);
--		csd_unlock(csd);
--	}
-+	flush_smp_call_function_queue();
+-	al->map = node->map;
+-	al->sym = node->sym;
+-	if (node->map)
+-		al->addr = node->map->map_ip(node->map, node->ip);
+-	else
+-		al->addr = node->ip;
+-
+-	if (iter->hide_unresolved && al->sym == NULL)
+-		return 0;
+-
+ 	callchain_cursor_advance(&callchain_cursor);
+-	return 1;
++
++	return fill_callchain_info(al, node, iter->hide_unresolved);
  }
  
- /*
+ static int
+-- 
+1.9.2
 
