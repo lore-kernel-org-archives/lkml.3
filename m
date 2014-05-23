@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678AbaEWCzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 22:55:18 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:54752 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaEWCzP (ORCPT
+	id S1751573AbaEWDKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 23:10:34 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:46525 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaEWDKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 22:55:15 -0400
+	Thu, 22 May 2014 23:10:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <537E8ACF.6000103@amd.com>
-References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521233802.GA21575@pd.tnic> <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
- <20140522191746.GL4383@pd.tnic> <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
- <537E8ACF.6000103@amd.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 22 May 2014 20:54:54 -0600
-Message-ID: <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
-Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: Borislav Petkov <bp@alien8.de>, Robert Richter <rric@kernel.org>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
+In-Reply-To: <1400790060-10977-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1400790060-10977-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Fri, 23 May 2014 08:40:32 +0530
+Message-ID: <CAHbNUh0cdV3-o+gQaKF3xKH77SRQLJkLGJTr660Bze8kQNDUfw@mail.gmail.com>
+Subject: Re: [PATCH] sound: soc: samsung: dma.c: Fix to remove null pointer
+ checks that could never happen
+From: Tushar Behera <tushar.behera@linaro.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Linux-ALSA <alsa-devel@alsa-project.org>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 5:39 PM, Suravee Suthikulanit
-<suravee.suthikulpanit@amd.com> wrote:
-> On 5/22/2014 3:20 PM, Bjorn Helgaas wrote:
->> On Thu, May 22, 2014 at 1:17 PM, Borislav Petkov <bp@alien8.de> wrote:
->>> On Thu, May 22, 2014 at 11:56:03AM -0600, Bjorn Helgaas wrote:
->>>>
->>>> I chose Fam16h (0x16) because it looks like that's the newest stuff
->>>> that's in the field. I suspect things would probably work if we
->>>> changed this patch to leave ECS disabled on some Fam16h, Fam15h, etc.,
->>>> but that would change behavior on existing systems, which obviously
->>>> adds some risk. I didn't think there was much benefit that makes the
->>>> risk worthwhile.
->>>>
->>>> My goal is to stop needing CPU-specific changes in the future, not
->>>> necessarily to remove the CPU-specific code we already have.
->>>>
->>>> Does that make sense? I'm not sure whether I understood your real
->>>> question.
->>>
->>> No, you got it right. I'm just wondering why only the newest stuff.
->>> MMCONFIG is supposed to work just fine on everything from Fam10h
->>> onwards, I'm not sure all Fam10h supported it though. Maybe Suravee can
->>> verify that...
->>
->> Even if MMCONFIG does work fine on everything from Fam10h onwards, we
->> still depend on the BIOS to provide a correct MCFG table.  I don't
->> think we can guarantee that changing from ECS to MMCONFIG on a Fam16h
->> box in the field is safe, because we'd then be using a feature we've
->> never used before.
+On 23 May 2014 01:51, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Removal of null pointer checks that could never happen
 >
-> At this point, family11h and later (upto 16h which is our most current
-> processor) should already have supports for the MCFG. However, we can't
-> guarantee that all the systems currently out there would not use the ECS.
-> So, I think it is ok to say we won't support it post 16h as Bjorn suggests.
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
 
-I think this is more a BIOS question than a hardware question.  I'm
-sure all current AMD hardware supports ECAM just fine.  But it's still
-up to the BIOS to produce a valid MCFG table, so OEMs could still have
-issues, and *that's* what I'm worried about.
+The subject should probably be (at least should start with "ASoC: samsung:")
+"ASoC: samsung: Remove redundant null pointer check from dma.c"
 
-I've been poking around for recent dmesg logs that contain "PCI: Using
-configuration type 1 for extended access", and there are quite a few.
-In most cases there *is* an MCFG table, but apparently we decide not
-to use it for some reason (unfortunately we don't print the specific
-reason).  One example is at
-https://bugzilla.kernel.org/show_bug.cgi?id=68591 .
+With that change,
+Reviewed-by: Tushar Behera <tushar.behera@linaro.org>
 
-I'm going to go out on a limb and guess that Windows does not enable
-ECS, so it probably uses ECAM.  Therefore, I suspect Linux's parsing
-of MCFG is broken in some way, and we probably *could* use ECAM in all
-these cases I'm seeing.
+>  sound/soc/samsung/dma.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+> index dc09b71..0f17ae0 100644
+> --- a/sound/soc/samsung/dma.c
+> +++ b/sound/soc/samsung/dma.c
+> @@ -124,8 +124,7 @@ static void audio_buffdone(void *data)
+>                 if (prtd->dma_pos >= prtd->dma_end)
+>                         prtd->dma_pos = prtd->dma_start;
+>
+> -               if (substream)
+> -                       snd_pcm_period_elapsed(substream);
+> +               snd_pcm_period_elapsed(substream);
+>
+>                 spin_lock(&prtd->lock);
+>                 if (!samsung_dma_has_circular()) {
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-It would probably be prudent to figure out why Linux is rejecting
-these MCFG tables.  We'll probably see similar tables on Fam17h
-systems, and if we continue rejecting them, and we don't turn on ECS,
-we won't be able to access extended config space.
 
-I opened a bugzilla for this issue:
-https://bugzilla.kernel.org/show_bug.cgi?id=76771
 
-I'm wavering on whether it's a good idea to put this patch in before
-understanding the issue.  As much as I'd like to stop fiddling with
-ECS, we'd likely end up with a v3.15 where extended config space
-doesn't work on some Fam17h systems.
-
-Bjorn
+-- 
+Tushar Behera
