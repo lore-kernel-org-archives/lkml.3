@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaEWItl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:49:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46659 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaEWIti (ORCPT
+	id S1752467AbaEWIuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:50:14 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:39011 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaEWIuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:49:38 -0400
-Date: Fri, 23 May 2014 10:49:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        liguang <lig.fnst@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-doc@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v5 3/6] seccomp: introduce writer locking
-Message-ID: <20140523084914.GA30445@twins.programming.kicks-ass.net>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
- <1400799936-26499-4-git-send-email-keescook@chromium.org>
+	Fri, 23 May 2014 04:50:11 -0400
+Date: Fri, 23 May 2014 09:50:06 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL v2] mfd/gpio: New pull request with irq_base removed
+Message-ID: <20140523085006.GN19747@lee--X1>
+References: <20140520180159.3a70193c@canb.auug.org.au>
+ <CACRpkdY9taDGRKj_ivkcYaHu+Jz8LnVDt-QQSntkwrcBuLitHA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wqJKAkAJyMuynVpZ"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1400799936-26499-4-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdY9taDGRKj_ivkcYaHu+Jz8LnVDt-QQSntkwrcBuLitHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > drivers/mfd/stmpe.c: In function 'stmpe_irq_init':
+> > drivers/mfd/stmpe.c:1000:15: error: 'struct stmpe' has no member named 'irq_base'
+> >    base = stmpe->irq_base;
+> >                ^
+> >
+> > Caused by commit 3ba1d516d5fe ("mfd: stmpe: root out static GPIO and
+> > IRQ assignments").
+> 
+> Some mishap in merging these patches I think. I don't have that
+> line in my branch with the latest patches,
 
---wqJKAkAJyMuynVpZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm not sure that's true:
 
-On Thu, May 22, 2014 at 04:05:33PM -0700, Kees Cook wrote:
-> Normally, task_struct.seccomp.filter is only ever read or modified by
-> the task that owns it (current). This property aids in fast access
-> during system call filtering as read access is lockless.
->=20
-> Updating the pointer from another task, however, opens up race
-> conditions. To allow cross-task filter pointer updates, writes to the
-> seccomp fields are now protected by a spinlock.  Read access remains
-> lockless because pointer updates themselves are atomic.  However, writes
-> (or cloning) often entail additional checking (like maximum instruction
-> counts) which require locking to perform safely.
->=20
-> In the case of cloning threads, the child is invisible to the system
-> until it enters the task list. To make sure a child can't be cloned
-> from a thread and left in a prior state, seccomp duplication is moved
-> under the tasklist_lock. Then parent and child are certain have the same
-> seccomp state when they exit the lock.
->=20
+`git grep irq_base linusw-next/stmpe-for-lee -- drivers/mfd/stmpe.c`
 
-So I'm a complete noob on the whole seccomp thing, so maybe this is a
-silly question, but.. what about object lifetimes?
+  linusw-next/stmpe-for-lee:drivers/mfd/stmpe.c: base = stmpe->irq_base;
 
-Looking at put_seccomp_filter() it explicitly takes a tsk pointer,
-suggesting one can call it on !current. And while it does a dec_and_test
-on the object itself, run_filter() does nothing with refcounts, and
-therefore can be touching dead memory.
+>I'll get the proper versions to Lee somehow.
 
+I've fixed up the branch and re-pushed:
 
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
---wqJKAkAJyMuynVpZ
-Content-Type: application/pgp-signature
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+are available in the git repository at:
 
-iQIcBAEBAgAGBQJTfwuDAAoJEHZH4aRLwOS6ZoQP/29ZW6HhMmxlYpJH6Mwq+ho9
-d0bA9y8fJswBsxR/7XMrp8sKsflO6J5Hut5M1E85vul/bGogqcgUY9gvF4S+evp6
-ozkcd/ekfBu5iDPpIvsBMxYCMV1vgndpO+ihr2zyrjABmbe5ZJ3pifVvTSjTWAJV
-/y/d3BPtyPjnK8gL5PFnPjwJsxSEUsrboCivFZCTVenPZD9m+4wuLxz0hfPfwOdq
-HqX8J9iWDqNgnwsNo02FnaumOrWA7GIlqdED6MyriesmaXKhyHyx80dRcK35wmow
-CkZNGNFCeXxkheiFL41BJAjcqOZqpA4UfDpVBR23TpyuTyofSruWFDeaT7mAeW/h
-vJI8+7+NVQIpHuYdMPtBlT67bDiwt0NUPELgtHE2zJdgnNteJoLPqpu0M10970Zm
-kbogt3lDFi0N7RIXhJwKM3e6Uxt3PVYUVWODMS9BoMCkEnVBWfnx0P5DT+Zdvwke
-tML6wptg1Jv56oeroytCapT8zJ8iOHyD7oiEFRbz4w7+lBOzwucxe2aCRwPd8PjF
-CGZHUnTahxEN9CP8qMtUIDsxqpySXHMpq20Q4n7Ek7C5ymibF1RH7/H5YKUeF9MF
-B8L/+NffyLbmb0Fhfq44yALmADjxzlwOpwLy2ky0dMVemr+bwhfSdJ9UNbS9QHu5
-4L4p7FL1KL7r1qaTCJ6E
-=nL7H
------END PGP SIGNATURE-----
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-v3.16
 
---wqJKAkAJyMuynVpZ--
+for you to fetch changes up to 9e9dc7d9597bd6881b3e7ae6ae3d710319605c47:
+
+  mfd: stmpe: root out static GPIO and IRQ assignments (2014-05-23 09:41:01 +0100)
+
+----------------------------------------------------------------
+Immutable branch between MFD and GPIO due for the v3.16 merge window.
+
+----------------------------------------------------------------
+Linus Walleij (4):
+      mfd: stmpe: mask off unused blocks properly
+      mfd: stmpe: Probe properly from the Device Tree
+      mfd: stmpe: add optional regulators
+      mfd: stmpe: root out static GPIO and IRQ assignments
+
+ drivers/gpio/gpio-stmpe.c | 18 +++++-------------
+ drivers/mfd/Kconfig       |  1 +
+ drivers/mfd/stmpe-i2c.c   | 30 +++++++++++++++++++++++++++++-
+ drivers/mfd/stmpe.c       | 33 ++++++++++++++++++++++++++++-----
+ drivers/mfd/stmpe.h       |  2 +-
+ include/linux/mfd/stmpe.h | 19 +++++--------------
+ 6 files changed, 69 insertions(+), 34 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
