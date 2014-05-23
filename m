@@ -1,131 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaEWKru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:47:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53163 "EHLO mx1.redhat.com"
+	id S1753299AbaEWKs2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:48:28 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38123 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753325AbaEWKrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:47:48 -0400
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Benoit Taine <benoit.taine@lip6.fr>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: Use kmemdup() instead of memcpy() to duplicate memory
-References: <1400764113-15933-1-git-send-email-benoit.taine@lip6.fr>
-Date: Fri, 23 May 2014 12:47:39 +0200
-In-Reply-To: <1400764113-15933-1-git-send-email-benoit.taine@lip6.fr> (Benoit
-	Taine's message of "Thu, 22 May 2014 15:08:33 +0200")
-Message-ID: <wrfjha4gai0k.fsf@ultrasam.lan.trained-monkey.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752707AbaEWKcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 06:32:09 -0400
+Message-ID: <537F239B.9010504@ti.com>
+Date: Fri, 23 May 2014 13:31:55 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] video: of: display_timing: fix default native-mode setting
+References: <1399643592-17125-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1399643592-17125-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="d4UQeRwg49oKxoqsXg4gdUoXgSrU0m7Lm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit Taine <benoit.taine@lip6.fr> writes:
-> This issue was reported by coccicheck using the semantic patch 
-> at scripts/coccinelle/api/memdup.cocci, and tested by compilation.
->
-> Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+--d4UQeRwg49oKxoqsXg4gdUoXgSrU0m7Lm
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 09/05/14 16:53, Boris BREZILLON wrote:
+> Set native mode to the first child node of the display-timings node and=
+ not
+> the first child node of the display-timings parent node.
+>=20
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 > ---
->  drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c |    3 +--
->  drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c |   17 +++++++----------
->  2 files changed, 8 insertions(+), 12 deletions(-)
+>  drivers/video/of_display_timing.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/of_display_timing.c b/drivers/video/of_displ=
+ay_timing.c
+> index ba5b40f..19dd752 100644
+> --- a/drivers/video/of_display_timing.c
+> +++ b/drivers/video/of_display_timing.c
+> @@ -164,7 +164,7 @@ struct display_timings *of_get_display_timings(stru=
+ct device_node *np)
+>  	entry =3D of_parse_phandle(timings_np, "native-mode", 0);
+>  	/* assume first child as native mode if none provided */
+>  	if (!entry)
+> -		entry =3D of_get_next_child(np, NULL);
+> +		entry =3D of_get_next_child(timings_np, NULL);
+>  	/* if there is no child, it is useless to go on */
+>  	if (!entry) {
+>  		pr_err("%s: no timing specifications given\n",
+>=20
 
-Looks reasonable - I'll add it to the rtl8723au-devel tree and include
-it with my next submission to Greg.
+Queued for 3.16.
 
-Thanks,
-Jes
+ Tomi
 
->
-> diff --git a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-> index e2d426a..f917edd 100644
-> --- a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-> +++ b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-> @@ -339,12 +339,11 @@ int rtl8723a_FirmwareDownload(struct rtw_adapter *padapter)
->  		rtStatus = _FAIL;
->  		goto Exit;
->  	}
-> -	firmware_buf = kzalloc(fw->size, GFP_KERNEL);
-> +	firmware_buf = kmemdup(fw->data, fw->size, GFP_KERNEL);
->  	if (!firmware_buf) {
->  		rtStatus = _FAIL;
->  		goto Exit;
->  	}
-> -	memcpy(firmware_buf, fw->data, fw->size);
->  	buf = firmware_buf;
->  	fw_size = fw->size;
->  	release_firmware(fw);
-> diff --git a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-> index 182f57c..c88a416 100644
-> --- a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-> +++ b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-> @@ -1426,14 +1426,14 @@ static int rtw_cfg80211_set_probe_req_wpsp2pie(struct rtw_adapter *padapter,
->  				pmlmepriv->wps_probe_req_ie = NULL;
->  			}
->  
-> -			pmlmepriv->wps_probe_req_ie =
-> -				kmalloc(wps_ielen, GFP_KERNEL);
-> +			pmlmepriv->wps_probe_req_ie = kmemdup(wps_ie,
-> +							      wps_ielen,
-> +							      GFP_KERNEL);
->  			if (pmlmepriv->wps_probe_req_ie == NULL) {
->  				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
->  					  __func__, __LINE__);
->  				return -EINVAL;
->  			}
-> -			memcpy(pmlmepriv->wps_probe_req_ie, wps_ie, wps_ielen);
->  			pmlmepriv->wps_probe_req_ie_len = wps_ielen;
->  		}
->  	}
-> @@ -1697,12 +1697,11 @@ static int rtw_cfg80211_set_wpa_ie(struct rtw_adapter *padapter, const u8 *pie,
->  		ret = -EINVAL;
->  		goto exit;
->  	}
-> -	buf = kzalloc(ielen, GFP_KERNEL);
-> +	buf = kmemdup(pie, ielen, GFP_KERNEL);
->  	if (buf == NULL) {
->  		ret = -ENOMEM;
->  		goto exit;
->  	}
-> -	memcpy(buf, pie, ielen);
->  
->  	/* dump */
->  	DBG_8723A("set wpa_ie(length:%zu):\n", ielen);
-> @@ -3178,14 +3177,13 @@ static int rtw_cfg80211_set_beacon_wpsp2pie(struct net_device *ndev, char *buf,
->  				pmlmepriv->wps_beacon_ie = NULL;
->  			}
->  
-> -			pmlmepriv->wps_beacon_ie =
-> -				kmalloc(wps_ielen, GFP_KERNEL);
-> +			pmlmepriv->wps_beacon_ie = kmemdup(wps_ie, wps_ielen,
-> +							   GFP_KERNEL);
->  			if (pmlmepriv->wps_beacon_ie == NULL) {
->  				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
->  					  __func__, __LINE__);
->  				return -EINVAL;
->  			}
-> -			memcpy(pmlmepriv->wps_beacon_ie, wps_ie, wps_ielen);
->  			pmlmepriv->wps_beacon_ie_len = wps_ielen;
->  
->  #ifdef CONFIG_8723AU_AP_MODE
-> @@ -3270,14 +3268,13 @@ static int rtw_cfg80211_set_assoc_resp_wpsp2pie(struct net_device *net,
->  			pmlmepriv->wps_assoc_resp_ie = NULL;
->  		}
->  
-> -		pmlmepriv->wps_assoc_resp_ie = kmalloc(len, GFP_KERNEL);
-> +		pmlmepriv->wps_assoc_resp_ie = kmemdup(buf, len, GFP_KERNEL);
->  		if (pmlmepriv->wps_assoc_resp_ie == NULL) {
->  			DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
->  				  __func__, __LINE__);
->  			return -EINVAL;
->  
->  		}
-> -		memcpy(pmlmepriv->wps_assoc_resp_ie, buf, len);
->  		pmlmepriv->wps_assoc_resp_ie_len = len;
->  	}
->  
+
+
+--d4UQeRwg49oKxoqsXg4gdUoXgSrU0m7Lm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTfyOhAAoJEPo9qoy8lh71uMcQAKB0BbU+4iPV+Sp99XZGMapt
+HVWxnoYwQkyZsbJVltI3O7WTRRJMXEuHpOizraUKBz5yQgHd9BPcqRInswyzoSsM
+/9U8TNDoYlU9g6uglbUC08gupOeC4PIqLt6whECle9w1WstatbYNSKBAOGKnI6Rm
+OhNkKCQY0aRVb63j4EXwaoDo8+LclslsYQMqqqiFiWvSN8swT5eOWD2wiDOFLY2V
+btsQKbn4B7c7TZNUQWSGzV4UjZ82bnj6vn3GeMgRG+wKUaBujte/qJdDNP1hnrkK
+sqmDEgYzmtLcNCHPLsam20PiY3BRpZxZ59wvspy8mlPHD7iDqUAETNbjumU97a/Q
+meGjOtxPe0GlmZ7wcmwiCfI3tWTDdRmighv+N+TFTukjDsCqzxUFfGjJuZV+rIYq
+BgiJsgboAB2ZPDgE0QHzbsL89gVFh1C1IwS+yS9ocv6DvGwPJeiOZFliaNWnAz2e
+9DWJcsjnHkuQ+OKmfJ/3pBwFIWF0bvSu72/olVXDag6WpLqgL1HZB4ntW2dLSQdu
+WqFsa01dzbhbVI2zcptT1mnGV4jGwleWRc8X760b9+Mo+dQn0sOL7aSC5w2Dz519
+gM39rSOtbyuV/wvuTAm5dJP9j0m63wj4er2ahyGLQoEp0orpWscyCHIUfT1+uRRU
+RBocjUMWfGBbYDy9s7sh
+=pyiQ
+-----END PGP SIGNATURE-----
+
+--d4UQeRwg49oKxoqsXg4gdUoXgSrU0m7Lm--
