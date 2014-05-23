@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031AbaEWKZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:25:34 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:17087 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaEWKZa (ORCPT
+	id S1752255AbaEWKZu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:25:50 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28806 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbaEWKZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:25:30 -0400
-X-AuditID: cbfee690-b7fb56d000003439-3c-537f221314a9
+	Fri, 23 May 2014 06:25:46 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-6f-537f22139d65
 From: Jaehoon Chung <jh80.chung@samsung.com>
 To: linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
@@ -15,37 +15,36 @@ Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         Seungwon Jeon <tgih.jun@samsung.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         Jaehoon Chung <jh80.chung@samsung.com>
-Subject: [PATCH 3/3] ARM: dts: replace the broken-cd property into slot node
- for dwmmc.
-Date: Fri, 23 May 2014 19:25:21 +0900
-Message-id: <1400840721-11050-4-git-send-email-jh80.chung@samsung.com>
+Subject: [PATCH 2/3] mmc: dw_mmc: use the __mmc_of_parse to parse the slot node
+Date: Fri, 23 May 2014 19:25:20 +0900
+Message-id: <1400840721-11050-3-git-send-email-jh80.chung@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1400840721-11050-1-git-send-email-jh80.chung@samsung.com>
 References: <1400840721-11050-1-git-send-email-jh80.chung@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkQFdEqT7YYM9yJosJl7czWsw/co7V
-	4savNlaLy7vmsFkc+d/PaDHj/D4mi0Mzky0+3L/IbHF8bbgDp8eCX1tZPO5c28PmcePVQiaP
-	vi2rGD0+b5ILYI3isklJzcksSy3St0vgythxejVTQZ9JxcFHOxgbGJ9rdDFyckgImEh8+vyA
-	HcIWk7hwbz0biC0ksJRR4s1UUZiazU0fgeJcQPFFjBI3Ni9ghnDamCTarp9gAaliE9CR2P7t
-	OBOILSIgK/HzzwWwDmaB1UwSR5f/ZgZJCAtESsxt3QzWwCKgKnF/4UlGEJtXwE1iw939QM0c
-	QOsUJOZMsgEJcwq4S8ybe5EV4iI3iQ/b57FBXLSOXeLjRX2IMQIS3yYfYoFolZXYdIAZokRS
-	4uCKGywTGIUXMDKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/dxAgM+tP/nk3YwXjvgPUhxmSg
-	cROZpUST84FRk1cSb2hsZmRhamJqbGRuaUaasJI4r9qjpCAhgfTEktTs1NSC1KL4otKc1OJD
-	jEwcnFINjIUNh9x3/b1wSMPIeoP5UWHGE9V/XB+3z7uraT/zwIf3Tt+e7bdSiHqfJOJzodpS
-	zVj2xQFXoy+ON2wOpb666Lddaffu2hcbK49ymJatXKa3pTZT71+xiIz+4vd1+5wXT7OKPioZ
-	lBvnEilbsK2pOfKCWkLG9w2H/Wf6bFlyLvmsV7nF6uxUayWW4oxEQy3mouJEAPEHlqGQAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAV1hpfpgg949phYTLm9ntJh/5Byr
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkWFdYqT7YYEmbmcWEy9sZLeYfOcdq
+	ceNXG6vF5V1z2CyO/O9ntJhxfh+TxaGZyRYf7l9ktji+NtyB02PBr60sHneu7WHzuPFqIZNH
+	35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZey53s5W8Fykou/vDqYGxibBLkZODgkBE4m2LW9Z
+	IGwxiQv31rN1MXJxCAksZZQ4ev4EC0zRxW/NTBCJRYwSnWfmsUI4bUwSbdchqtgEdCS2fzvO
+	BGKLCMhK/PxzAWwUs8BqJomjy38zgySEBfwl2u5tZwexWQRUJZa2gezj5OAVcJNo650FNJUD
+	aJ2CxJxJNiBhTgF3iXlzL7KC2EJAJR+2zwObKSGwjl3i86PjrBBzBCS+TT7EAtErK7HpADPE
+	1ZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kbFecWJucWleul5yfu4mRmDgn/73rH8H490D1ocY
+	k4HGTWSWEk3OB0ZOXkm8obGZkYWpiamxkbmlGWnCSuK89x8mBQkJpCeWpGanphakFsUXleak
+	Fh9iZOLglGpg3LjczcMo2cPxjNW7RONX1xXVPX87lRZOzxcTmHRdqvRNi7VbhvKHg5wON41k
+	Jgo76BteFeF7MeXQfeb9QTGRa90MBN5IKSn0HXxsUNevX7BTNio4xfTBrUdnd3fJtEcJsDvG
+	r9mQYnn2+7ToZ9t9bbPtJlz3evspSMDf8GaZ1iq945K6ibuVWIozEg21mIuKEwG7eGyXkgIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAV1hpfpgg7n9ehYTLm9ntJh/5Byr
 	xY1fbawWl3fNYbM48r+f0WLG+X1MFodmJlt8uH+R2eL42nAHTo8Fv7ayeNy5tofN48arhUwe
 	fVtWMXp83iQXwBrVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk
-	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFjx+nVTAV9
-	JhUHH+1gbGB8rtHFyMkhIWAisbnpIxuELSZx4d56IJuLQ0hgEaPEjc0LmCGcNiaJtusnWECq
-	2AR0JLZ/O84EYosIyEr8/HMBrINZYDWTxNHlv5lBEsICkRJzWzeDNbAIqErcX3iSEcTmFXCT
-	2HB3P1AzB9A6BYk5k2xAwpwC7hLz5l5kBbGFgEo+bJ/HNoGRdwEjwypG0dSC5ILipPRcQ73i
-	xNzi0rx0veT83E2M4Lh6JrWDcWWDxSFGAQ5GJR7eB0x1wUKsiWXFlbmHGCU4mJVEeM/I1gcL
-	8aYkVlalFuXHF5XmpBYfYkwGOmois5Rocj4w5vNK4g2NTcyMLI3MDS2MjM1JE1YS5z3Qah0o
-	JJCeWJKanZpakFoEs4WJg1OqgXHatb+bTsTtyfKx2ZH752H1wtog3ppsFwGBrav7NcXCU8sU
-	l33eLVUy7e8vCxMP50lKH+UYa/xSuPjCYrfLaZxmVBJumdttsTKuK6zk8BTOFVcFT05JPaq9
-	48FPKSa9XxNdk6anXhB9+15Dcm7BnyNsjquvz7j3TXCawuETGxjrDt29NL/xTJoSS3FGoqEW
-	c1FxIgCEVq+17wIAAA==
+	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFjz/V2toLn
+	IhV9f3cwNTA2CXYxcnJICJhIXPzWzARhi0lcuLeerYuRi0NIYBGjROeZeawQThuTRNv1Eywg
+	VWwCOhLbvx0H6xARkJX4+ecCWAezwGomiaPLfzODJIQF/CXa7m1nB7FZBFQllraBjOXk4BVw
+	k2jrnQU0lQNonYLEnEk2IGFOAXeJeXMvsoLYQkAlH7bPY5vAyLuAkWEVo2hqQXJBcVJ6rqFe
+	cWJucWleul5yfu4mRnBcPZPawbiyweIQowAHoxIP7wOmumAh1sSy4srcQ4wSHMxKIrxnZOuD
+	hXhTEiurUovy44tKc1KLDzEmAx01kVlKNDkfGPN5JfGGxiZmRpZG5oYWRsbmpAkrifMeaLUO
+	FBJITyxJzU5NLUgtgtnCxMEp1cC4rXH1jJXR1t4B2TWBa9NYdijWe/09JDf3zIGVQm/+amWm
+	RapcT9h193blugXNCy1jdPm2riv3zn53+uWz71L+P970u78sPrvVuuRTjX17r6hD+wee//vn
+	XFhecCKMZ14uv6OWQeiML59n7uzQkkq5r2vYOUFv+uFAqzRVL5f5d7RbFiZ26s5QYinOSDTU
+	Yi4qTgQA4hSboO8CAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,253 +52,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dw-mmc controller can be support the multiple slot.
-So each slot's property can be difference.
+dw-mmc controller have the multiple slot.
+Then it needs to parse the property for each slot.
 
 Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
 ---
- arch/arm/boot/dts/exynos4412-odroidx.dts      |    2 +-
- arch/arm/boot/dts/exynos4412-origen.dts       |    2 +-
- arch/arm/boot/dts/exynos4412-trats2.dts       |    4 ++--
- arch/arm/boot/dts/exynos5250-arndale.dts      |    2 +-
- arch/arm/boot/dts/exynos5250-cros-common.dtsi |    4 ++--
- arch/arm/boot/dts/exynos5250-smdk5250.dts     |    2 +-
- arch/arm/boot/dts/exynos5420-arndale-octa.dts |    2 +-
- arch/arm/boot/dts/rk3066a-bqcurie2.dts        |    2 +-
- arch/arm/boot/dts/socfpga_arria5.dtsi         |    2 +-
- arch/arm/boot/dts/socfpga_cyclone5.dtsi       |    2 +-
- arch/arm/boot/dts/socfpga_vt.dts              |    2 +-
- 11 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/mmc/host/dw_mmc.c |   25 ++++++-------------------
+ 1 file changed, 6 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts b/arch/arm/boot/dts/exynos4412-odroidx.dts
-index 31db28a..24ec351 100644
---- a/arch/arm/boot/dts/exynos4412-odroidx.dts
-+++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
-@@ -46,7 +46,6 @@
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 1ac227c..d4800f8 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -1015,12 +1015,11 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
+ {
+ 	int present;
+ 	struct dw_mci_slot *slot = mmc_priv(mmc);
+-	struct dw_mci_board *brd = slot->host->pdata;
+ 	struct dw_mci *host = slot->host;
+ 	int gpio_cd = mmc_gpio_get_cd(mmc);
  
- 		num-slots = <1>;
- 		supports-highspeed;
--		broken-cd;
- 		card-detect-delay = <200>;
- 		samsung,dw-mshc-ciu-div = <3>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
-@@ -55,6 +54,7 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <8>;
-+			broken-cd;
- 		};
- 	};
+ 	/* Use platform get_cd function, else try onboard card detect */
+-	if (brd->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
++	if (slot->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
+ 		present = 1;
+ 	else if (!IS_ERR_VALUE(gpio_cd))
+ 		present = gpio_cd;
+@@ -2010,6 +2009,9 @@ static struct dw_mci_of_slot_quirks {
+ 	{
+ 		.quirk	= "disable-wp",
+ 		.id	= DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT,
++	}, {
++		.quirk	= "broken-cd",
++		.id	= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
+ 	},
+ };
  
-diff --git a/arch/arm/boot/dts/exynos4412-origen.dts b/arch/arm/boot/dts/exynos4412-origen.dts
-index e2c0dca..ed712a6 100644
---- a/arch/arm/boot/dts/exynos4412-origen.dts
-+++ b/arch/arm/boot/dts/exynos4412-origen.dts
-@@ -129,7 +129,6 @@
+@@ -2088,7 +2090,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 	if (host->pdata->caps2)
+ 		mmc->caps2 = host->pdata->caps2;
  
- 		num-slots = <1>;
- 		supports-highspeed;
--		broken-cd;
- 		card-detect-delay = <200>;
- 		samsung,dw-mshc-ciu-div = <3>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
-@@ -138,6 +137,7 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <8>;
-+			broken-cd;
- 		};
- 	};
+-	mmc_of_parse(mmc);
++	__mmc_of_parse(mmc, dw_mci_of_find_slot_node(host->dev, slot->id));
  
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index 9583563..294a586 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -460,8 +460,6 @@
- 	mmc@12550000 {
- 		num-slots = <1>;
- 		supports-highspeed;
--		broken-cd;
--		non-removable;
- 		card-detect-delay = <200>;
- 		vmmc-supply = <&vemmc_reg>;
- 		clock-frequency = <400000000>;
-@@ -475,6 +473,8 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <8>;
-+			non-removable;
-+			broken-cd;
- 		};
- 	};
+ 	if (host->pdata->blk_settings) {
+ 		mmc->max_segs = host->pdata->blk_settings->max_segs;
+@@ -2231,23 +2233,13 @@ static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host)
+ }
  
-diff --git a/arch/arm/boot/dts/exynos5250-arndale.dts b/arch/arm/boot/dts/exynos5250-arndale.dts
-index 090f983..0c9a7da 100644
---- a/arch/arm/boot/dts/exynos5250-arndale.dts
-+++ b/arch/arm/boot/dts/exynos5250-arndale.dts
-@@ -400,7 +400,6 @@
- 		status = "okay";
- 		num-slots = <1>;
- 		supports-highspeed;
--		broken-cd;
- 		card-detect-delay = <200>;
- 		samsung,dw-mshc-ciu-div = <3>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
-@@ -412,6 +411,7 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <8>;
-+			broken-cd;
- 		};
- 	};
+ #ifdef CONFIG_OF
+-static struct dw_mci_of_quirks {
+-	char *quirk;
+-	int id;
+-} of_quirks[] = {
+-	{
+-		.quirk	= "broken-cd",
+-		.id	= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
+-	},
+-};
+-
+ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
+ {
+ 	struct dw_mci_board *pdata;
+ 	struct device *dev = host->dev;
+ 	struct device_node *np = dev->of_node;
+ 	const struct dw_mci_drv_data *drv_data = host->drv_data;
+-	int idx, ret;
++	int ret;
+ 	u32 clock_frequency;
  
-diff --git a/arch/arm/boot/dts/exynos5250-cros-common.dtsi b/arch/arm/boot/dts/exynos5250-cros-common.dtsi
-index 2c1560d..7ab3b94 100644
---- a/arch/arm/boot/dts/exynos5250-cros-common.dtsi
-+++ b/arch/arm/boot/dts/exynos5250-cros-common.dtsi
-@@ -249,7 +249,6 @@
- 	mmc@12200000 {
- 		num-slots = <1>;
- 		supports-highspeed;
--		broken-cd;
- 		card-detect-delay = <200>;
- 		samsung,dw-mshc-ciu-div = <3>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
-@@ -260,6 +259,7 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <8>;
-+			broken-cd;
- 		};
- 	};
+ 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+@@ -2264,11 +2256,6 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
+ 		pdata->num_slots = 1;
+ 	}
  
-@@ -283,7 +283,6 @@
- 	mmc@12230000 {
- 		num-slots = <1>;
- 		supports-highspeed;
--		broken-cd;
- 		card-detect-delay = <200>;
- 		samsung,dw-mshc-ciu-div = <3>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
-@@ -293,6 +292,7 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <4>;
-+			broken-cd;
- 		};
- 	};
- 
-diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-index a794a70..feffe24 100644
---- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-+++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-@@ -283,7 +283,6 @@
- 		status = "okay";
- 		num-slots = <1>;
- 		supports-highspeed;
--		broken-cd;
- 		card-detect-delay = <200>;
- 		samsung,dw-mshc-ciu-div = <3>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
-@@ -294,6 +293,7 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <8>;
-+			broken-cd;
- 		};
- 	};
- 
-diff --git a/arch/arm/boot/dts/exynos5420-arndale-octa.dts b/arch/arm/boot/dts/exynos5420-arndale-octa.dts
-index 80a3bf4..0d3b467 100644
---- a/arch/arm/boot/dts/exynos5420-arndale-octa.dts
-+++ b/arch/arm/boot/dts/exynos5420-arndale-octa.dts
-@@ -39,7 +39,6 @@
- 
- 	mmc@12200000 {
- 		status = "okay";
--		broken-cd;
- 		supports-highspeed;
- 		card-detect-delay = <200>;
- 		samsung,dw-mshc-ciu-div = <3>;
-@@ -52,6 +51,7 @@
- 		slot@0 {
- 			reg = <0>;
- 			bus-width = <8>;
-+			broken-cd;
- 		};
- 	};
- 
-diff --git a/arch/arm/boot/dts/rk3066a-bqcurie2.dts b/arch/arm/boot/dts/rk3066a-bqcurie2.dts
-index 035df40..62c7484 100644
---- a/arch/arm/boot/dts/rk3066a-bqcurie2.dts
-+++ b/arch/arm/boot/dts/rk3066a-bqcurie2.dts
-@@ -69,7 +69,6 @@
- 		dwmmc@10218000 { /* wifi */
- 			num-slots = <1>;
- 			status = "okay";
--			non-removable;
- 
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&sd1_clk &sd1_cmd &sd1_bus4>;
-@@ -78,6 +77,7 @@
- 				reg = <0>;
- 				bus-width = <4>;
- 				disable-wp;
-+				non-removable;
- 			};
- 		};
- 
-diff --git a/arch/arm/boot/dts/socfpga_arria5.dtsi b/arch/arm/boot/dts/socfpga_arria5.dtsi
-index 6c87b70..9c2b933 100644
---- a/arch/arm/boot/dts/socfpga_arria5.dtsi
-+++ b/arch/arm/boot/dts/socfpga_arria5.dtsi
-@@ -30,11 +30,11 @@
- 		dwmmc0@ff704000 {
- 			num-slots = <1>;
- 			supports-highspeed;
--			broken-cd;
- 
- 			slot@0 {
- 				reg = <0>;
- 				bus-width = <4>;
-+				broken-cd;
- 			};
- 		};
- 
-diff --git a/arch/arm/boot/dts/socfpga_cyclone5.dtsi b/arch/arm/boot/dts/socfpga_cyclone5.dtsi
-index ca41b0e..c5c7b5f 100644
---- a/arch/arm/boot/dts/socfpga_cyclone5.dtsi
-+++ b/arch/arm/boot/dts/socfpga_cyclone5.dtsi
-@@ -31,11 +31,11 @@
- 		dwmmc0@ff704000 {
- 			num-slots = <1>;
- 			supports-highspeed;
--			broken-cd;
- 
- 			slot@0 {
- 				reg = <0>;
- 				bus-width = <4>;
-+				broken-cd;
- 			};
- 		};
- 
-diff --git a/arch/arm/boot/dts/socfpga_vt.dts b/arch/arm/boot/dts/socfpga_vt.dts
-index 87d6f75..ff1111e 100644
---- a/arch/arm/boot/dts/socfpga_vt.dts
-+++ b/arch/arm/boot/dts/socfpga_vt.dts
-@@ -44,11 +44,11 @@
- 		dwmmc0@ff704000 {
- 			num-slots = <1>;
- 			supports-highspeed;
--			broken-cd;
- 
- 			slot@0 {
- 				reg = <0>;
- 				bus-width = <4>;
-+				broken-cd;
- 			};
- 		};
- 
+-	/* get quirks */
+-	for (idx = 0; idx < ARRAY_SIZE(of_quirks); idx++)
+-		if (of_get_property(np, of_quirks[idx].quirk, NULL))
+-			pdata->quirks |= of_quirks[idx].id;
+-
+ 	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
+ 		dev_info(dev, "fifo-depth property not found, using "
+ 				"value of FIFOTH register as default\n");
 -- 
 1.7.9.5
 
