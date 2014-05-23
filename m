@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbaEWKcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:32:43 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:46727 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893AbaEWKce (ORCPT
+	id S1753466AbaEWKja (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:39:30 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:56695 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021AbaEWKcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:34 -0400
+	Fri, 23 May 2014 06:32:42 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 46/71] clocksource: sh_mtu2: Replace hardcoded register values with macros
-Date: Fri, 23 May 2014 12:31:26 +0200
-Message-Id: <1400841111-6683-46-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 53/71] clocksource: arm_global_timer: Only check for unusable timer on A9
+Date: Fri, 23 May 2014 12:31:33 +0200
+Message-Id: <1400841111-6683-53-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -21,141 +21,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+From: Matthew Leach <matthew.leach@arm.com>
 
-Define symbolic macros for all used registers bits.
+The check for a usable global timer in the probe code does not enquire
+which CPU we are currently running on. This can cause the driver to
+incorrectly assume we have an unusable global timer if we are running
+on a CPU other than A9.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Tested-by: Wolfram Sang <wsa@sang-engineering.com>
+Before checking the CPU revision, ensure we are running on an A9 CPU.
+
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Matthew Leach <matthew.leach@arm.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/sh_mtu2.c |   98 ++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 92 insertions(+), 6 deletions(-)
+ drivers/clocksource/arm_global_timer.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-index 45e1e85..2cf0048 100644
---- a/drivers/clocksource/sh_mtu2.c
-+++ b/drivers/clocksource/sh_mtu2.c
-@@ -67,6 +67,88 @@ static DEFINE_RAW_SPINLOCK(sh_mtu2_lock);
- #define TCNT 5 /* channel register */
- #define TGR  6 /* channel register */
+diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
+index 0fc31d0..60e5a170 100644
+--- a/drivers/clocksource/arm_global_timer.c
++++ b/drivers/clocksource/arm_global_timer.c
+@@ -246,11 +246,12 @@ static void __init global_timer_of_register(struct device_node *np)
+ 	int err = 0;
  
-+#define TCR_CCLR_NONE		(0 << 5)
-+#define TCR_CCLR_TGRA		(1 << 5)
-+#define TCR_CCLR_TGRB		(2 << 5)
-+#define TCR_CCLR_SYNC		(3 << 5)
-+#define TCR_CCLR_TGRC		(5 << 5)
-+#define TCR_CCLR_TGRD		(6 << 5)
-+#define TCR_CCLR_MASK		(7 << 5)
-+#define TCR_CKEG_RISING		(0 << 3)
-+#define TCR_CKEG_FALLING	(1 << 3)
-+#define TCR_CKEG_BOTH		(2 << 3)
-+#define TCR_CKEG_MASK		(3 << 3)
-+/* Values 4 to 7 are channel-dependent */
-+#define TCR_TPSC_P1		(0 << 0)
-+#define TCR_TPSC_P4		(1 << 0)
-+#define TCR_TPSC_P16		(2 << 0)
-+#define TCR_TPSC_P64		(3 << 0)
-+#define TCR_TPSC_CH0_TCLKA	(4 << 0)
-+#define TCR_TPSC_CH0_TCLKB	(5 << 0)
-+#define TCR_TPSC_CH0_TCLKC	(6 << 0)
-+#define TCR_TPSC_CH0_TCLKD	(7 << 0)
-+#define TCR_TPSC_CH1_TCLKA	(4 << 0)
-+#define TCR_TPSC_CH1_TCLKB	(5 << 0)
-+#define TCR_TPSC_CH1_P256	(6 << 0)
-+#define TCR_TPSC_CH1_TCNT2	(7 << 0)
-+#define TCR_TPSC_CH2_TCLKA	(4 << 0)
-+#define TCR_TPSC_CH2_TCLKB	(5 << 0)
-+#define TCR_TPSC_CH2_TCLKC	(6 << 0)
-+#define TCR_TPSC_CH2_P1024	(7 << 0)
-+#define TCR_TPSC_CH34_P256	(4 << 0)
-+#define TCR_TPSC_CH34_P1024	(5 << 0)
-+#define TCR_TPSC_CH34_TCLKA	(6 << 0)
-+#define TCR_TPSC_CH34_TCLKB	(7 << 0)
-+#define TCR_TPSC_MASK		(7 << 0)
-+
-+#define TMDR_BFE		(1 << 6)
-+#define TMDR_BFB		(1 << 5)
-+#define TMDR_BFA		(1 << 4)
-+#define TMDR_MD_NORMAL		(0 << 0)
-+#define TMDR_MD_PWM_1		(2 << 0)
-+#define TMDR_MD_PWM_2		(3 << 0)
-+#define TMDR_MD_PHASE_1		(4 << 0)
-+#define TMDR_MD_PHASE_2		(5 << 0)
-+#define TMDR_MD_PHASE_3		(6 << 0)
-+#define TMDR_MD_PHASE_4		(7 << 0)
-+#define TMDR_MD_PWM_SYNC	(8 << 0)
-+#define TMDR_MD_PWM_COMP_CREST	(13 << 0)
-+#define TMDR_MD_PWM_COMP_TROUGH	(14 << 0)
-+#define TMDR_MD_PWM_COMP_BOTH	(15 << 0)
-+#define TMDR_MD_MASK		(15 << 0)
-+
-+#define TIOC_IOCH(n)		((n) << 4)
-+#define TIOC_IOCL(n)		((n) << 0)
-+#define TIOR_OC_RETAIN		(0 << 0)
-+#define TIOR_OC_0_CLEAR		(1 << 0)
-+#define TIOR_OC_0_SET		(2 << 0)
-+#define TIOR_OC_0_TOGGLE	(3 << 0)
-+#define TIOR_OC_1_CLEAR		(5 << 0)
-+#define TIOR_OC_1_SET		(6 << 0)
-+#define TIOR_OC_1_TOGGLE	(7 << 0)
-+#define TIOR_IC_RISING		(8 << 0)
-+#define TIOR_IC_FALLING		(9 << 0)
-+#define TIOR_IC_BOTH		(10 << 0)
-+#define TIOR_IC_TCNT		(12 << 0)
-+#define TIOR_MASK		(15 << 0)
-+
-+#define TIER_TTGE		(1 << 7)
-+#define TIER_TTGE2		(1 << 6)
-+#define TIER_TCIEU		(1 << 5)
-+#define TIER_TCIEV		(1 << 4)
-+#define TIER_TGIED		(1 << 3)
-+#define TIER_TGIEC		(1 << 2)
-+#define TIER_TGIEB		(1 << 1)
-+#define TIER_TGIEA		(1 << 0)
-+
-+#define TSR_TCFD		(1 << 7)
-+#define TSR_TCFU		(1 << 5)
-+#define TSR_TCFV		(1 << 4)
-+#define TSR_TGFD		(1 << 3)
-+#define TSR_TGFC		(1 << 2)
-+#define TSR_TGFB		(1 << 1)
-+#define TSR_TGFA		(1 << 0)
-+
- static unsigned long mtu2_reg_offs[] = {
- 	[TCR] = 0,
- 	[TMDR] = 1,
-@@ -150,13 +232,17 @@ static int sh_mtu2_enable(struct sh_mtu2_channel *ch)
- 	rate = clk_get_rate(ch->mtu->clk) / 64;
- 	periodic = (rate + HZ/2) / HZ;
- 
--	/* "Periodic Counter Operation" */
--	sh_mtu2_write(ch, TCR, 0x23); /* TGRA clear, divide clock by 64 */
--	sh_mtu2_write(ch, TIOR, 0);
-+	/*
-+	 * "Periodic Counter Operation"
-+	 * Clear on TGRA compare match, divide clock by 64.
-+	 */
-+	sh_mtu2_write(ch, TCR, TCR_CCLR_TGRA | TCR_TPSC_P64);
-+	sh_mtu2_write(ch, TIOR, TIOC_IOCH(TIOR_OC_0_CLEAR) |
-+		      TIOC_IOCL(TIOR_OC_0_CLEAR));
- 	sh_mtu2_write(ch, TGR, periodic);
- 	sh_mtu2_write(ch, TCNT, 0);
--	sh_mtu2_write(ch, TMDR, 0);
--	sh_mtu2_write(ch, TIER, 0x01);
-+	sh_mtu2_write(ch, TMDR, TMDR_MD_NORMAL);
-+	sh_mtu2_write(ch, TIER, TIER_TGIEA);
- 
- 	/* enable channel */
- 	sh_mtu2_start_stop_ch(ch, 1);
-@@ -182,7 +268,7 @@ static irqreturn_t sh_mtu2_interrupt(int irq, void *dev_id)
- 
- 	/* acknowledge interrupt */
- 	sh_mtu2_read(ch, TSR);
--	sh_mtu2_write(ch, TSR, 0xfe);
-+	sh_mtu2_write(ch, TSR, ~TSR_TGFA);
- 
- 	/* notify clockevent layer */
- 	ch->ced.event_handler(&ch->ced);
+ 	/*
+-	 * In r2p0 the comparators for each processor with the global timer
++	 * In A9 r2p0 the comparators for each processor with the global timer
+ 	 * fire when the timer value is greater than or equal to. In previous
+ 	 * revisions the comparators fired when the timer value was equal to.
+ 	 */
+-	if ((read_cpuid_id() & 0xf0000f) < 0x200000) {
++	if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A9
++	    && (read_cpuid_id() & 0xf0000f) < 0x200000) {
+ 		pr_warn("global-timer: non support for this cpu version.\n");
+ 		return;
+ 	}
 -- 
 1.7.9.5
 
