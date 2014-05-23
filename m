@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaEWMCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:02:47 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:48992 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaEWMCp (ORCPT
+	id S1751795AbaEWMGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:06:04 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62422 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439AbaEWMGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:02:45 -0400
+	Fri, 23 May 2014 08:06:01 -0400
+Message-ID: <537F39D7.6090309@linaro.org>
+Date: Fri, 23 May 2014 14:06:47 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140523114113.GE12304@sirena.org.uk>
-References: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org>
-	<1400750228-13750-2-git-send-email-tushar.behera@linaro.org>
-	<20140522103039.GD12304@sirena.org.uk>
-	<CAHbNUh2QHv8n7Y19qfO7BagX5AWe0i17MjDvr7yOpHf6YNGW4A@mail.gmail.com>
-	<20140523111446.GA12304@sirena.org.uk>
-	<CAHbNUh152xgyVxcCHiv0M6PLw8DE7KZ990WG7uRWWFBc8sPWRQ@mail.gmail.com>
-	<20140523114113.GE12304@sirena.org.uk>
-Date: Fri, 23 May 2014 17:32:45 +0530
-Message-ID: <CAHbNUh2P7gdYPSdNRx8QbxuSc9n38yq3D_TWX2jdkcpE1_N8Rw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ASoC: max98090: Add master clock handling
-From: Tushar Behera <tushar.behera@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linux-ALSA <alsa-devel@alsa-project.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Doug Anderson <dianders@chromium.org>,
-        "jerry.wong" <jerry.wong@maximintegrated.com>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@alien8.de>
+CC: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
+        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 4/7] acpi, apei, ghes: Factor out NMI error notification
+ context.
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org> <1397056476-9183-5-git-send-email-tomasz.nowicki@linaro.org> <20140513194125.GD8760@pd.tnic>
+In-Reply-To: <20140513194125.GD8760@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 2014 17:11, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, May 23, 2014 at 05:06:27PM +0530, Tushar Behera wrote:
->> On 23 May 2014 16:44, Mark Brown <broonie@kernel.org> wrote:
->
->> > Should be clk_prepare_enable() and similarly for the disable and you
->> > should check the error codes but yes, that looks good.
->
->> I was planning to keep clk_prepare/clk_unprepare in probe/remove.
->
-> Why - what purpose would it serve to leave the clock prepared but not
-> enabled?
+On 13.05.2014 21:41, Borislav Petkov wrote:
+> On Wed, Apr 09, 2014 at 05:14:32PM +0200, Tomasz Nowicki wrote:
+>> Use CONFIG_ACPI_APEI_NMI to isolate NMI error notification path. NMI related
+>> data and functions are grouped so they can be wrapped inside one
+I have missed end of sentence. I should goes like that:
 
-I was getting some kernel slow path warning initially while preparing
-this code, but not able to reproduce that warning now.
+Use CONFIG_ACPI_APEI_NMI to isolate NMI error notification path. NMI 
+related data and functions are grouped so they can be wrapped inside one
+#ifdefs CONFIG_ACPI_APEI_NMI.
 
--- 
-Tushar Behera
+>>
+>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>> ---
+>>   drivers/acpi/apei/ghes.c |   54 +++++++++++++++++++++++++---------------------
+>>   1 file changed, 30 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+>> index ca8387e..7a0d66e 100644
+>> --- a/drivers/acpi/apei/ghes.c
+>> +++ b/drivers/acpi/apei/ghes.c
+>> @@ -53,7 +53,9 @@
+>>   #include <asm/mce.h>
+>>   #endif
+>>   #include <asm/tlbflush.h>
+>> +#ifdef CONFIG_ACPI_APEI_NMI
+>>   #include <asm/nmi.h>
+>> +#endif
+>
+> This, again, can be avoided with adding arch-specific versions and empty
+> default stubs.
+>
+
+I had that thoughts too. Looking at simple MCE calls, yes, it does make 
+sense to create corresponding arch-specific version and provide logic as 
+needed. I think that NMI is much more complicated. NMI context is 
+tightly coupled with the rest of GHES mechanisms like pool memory, list 
+locks etc. which are GHES locally available. I am not saying it is 
+impossible, I am just concerned if it makes sense to create e.g. 
+apei-nmi.c arch-specific file and export necessary GHES mechanisms just 
+for NMI purpose. Please let me know your opinion on this.
+
+Regards,
+Tomasz
