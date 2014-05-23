@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618AbaEWKn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:43:56 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:63605 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaEWKcW (ORCPT
+	id S1753638AbaEWKoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:44:07 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:59464 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935AbaEWKoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:22 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: tglx@linutronix.de, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 37/71] clocksource: sh_mtu2: Turn sh_mtu2_priv fields into local variables
-Date: Fri, 23 May 2014 12:31:17 +0200
-Message-Id: <1400841111-6683-37-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
-References: <537F214C.8000700@linaro.org>
- <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+	Fri, 23 May 2014 06:44:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400840721-11050-2-git-send-email-jh80.chung@samsung.com>
+References: <1400840721-11050-1-git-send-email-jh80.chung@samsung.com>
+	<1400840721-11050-2-git-send-email-jh80.chung@samsung.com>
+Date: Fri, 23 May 2014 16:14:01 +0530
+Message-ID: <CAHbNUh0pmG0vkOvM9fhcy_kPU1uDOUVCeTkgw1QQPG62c51CVQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mmc: host: add slot argument to mmc_of_parse
+From: Tushar Behera <tushar.behera@linaro.org>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+On 23 May 2014 15:55, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> From: Ludovic Desroches <ludovic.desroches@atmel.com>
+>
+> Some hosts manage several slots. In these case information such as the
+> bus width, chi detect and others are into the slot node. So we have to
+> parse child node. If not NULL, slot node will be used instead of the
+> device node.
+>
+> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+> ---
+>  drivers/mmc/core/host.c  |   13 +++++++++----
+>  include/linux/mmc/host.h |   10 +++++++++-
+>  2 files changed, 18 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> index 95cceae..0f677b3 100644
+> --- a/drivers/mmc/core/host.c
+> +++ b/drivers/mmc/core/host.c
+> @@ -298,15 +298,17 @@ static inline void mmc_host_clk_sysfs_init(struct mmc_host *host)
+>  #endif
+>
+>  /**
+> - *     mmc_of_parse() - parse host's device-tree node
+> + *     __mmc_of_parse() - parse host's device-tree node
 
-The rate and periodic fields are used in a single function only, as
-local variables. Remove them from the structure.
+IMO it would be better to rename this function, something like
+mmc_of_parse_slot().
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Tested-by: Wolfram Sang <wsa@sang-engineering.com>
----
- drivers/clocksource/sh_mtu2.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-index 77992e0..6668455 100644
---- a/drivers/clocksource/sh_mtu2.c
-+++ b/drivers/clocksource/sh_mtu2.c
-@@ -39,8 +39,6 @@ struct sh_mtu2_priv {
- 	struct clk *clk;
- 	int irq;
- 	struct platform_device *pdev;
--	unsigned long rate;
--	unsigned long periodic;
- 	struct clock_event_device ced;
- };
- 
-@@ -122,6 +120,8 @@ static void sh_mtu2_start_stop_ch(struct sh_mtu2_priv *p, int start)
- 
- static int sh_mtu2_enable(struct sh_mtu2_priv *p)
- {
-+	unsigned long periodic;
-+	unsigned long rate;
- 	int ret;
- 
- 	pm_runtime_get_sync(&p->pdev->dev);
-@@ -137,13 +137,13 @@ static int sh_mtu2_enable(struct sh_mtu2_priv *p)
- 	/* make sure channel is disabled */
- 	sh_mtu2_start_stop_ch(p, 0);
- 
--	p->rate = clk_get_rate(p->clk) / 64;
--	p->periodic = (p->rate + HZ/2) / HZ;
-+	rate = clk_get_rate(p->clk) / 64;
-+	periodic = (rate + HZ/2) / HZ;
- 
- 	/* "Periodic Counter Operation" */
- 	sh_mtu2_write(p, TCR, 0x23); /* TGRA clear, divide clock by 64 */
- 	sh_mtu2_write(p, TIOR, 0);
--	sh_mtu2_write(p, TGR, p->periodic);
-+	sh_mtu2_write(p, TGR, periodic);
- 	sh_mtu2_write(p, TCNT, 0);
- 	sh_mtu2_write(p, TMDR, 0);
- 	sh_mtu2_write(p, TIER, 0x01);
 -- 
-1.7.9.5
-
+Tushar Behera
