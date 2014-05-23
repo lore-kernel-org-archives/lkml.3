@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaEWKjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:39:53 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:39696 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992AbaEWKcl (ORCPT
+	id S1753487AbaEWKkD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:40:03 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:37850 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992AbaEWKkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:41 -0400
+	Fri, 23 May 2014 06:40:00 -0400
+Message-ID: <537F2589.5050807@linaro.org>
+Date: Fri, 23 May 2014 12:40:09 +0200
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: tglx@linutronix.de, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 52/71] clocksource: sh_mtu2: Sort headers alphabetically
-Date: Fri, 23 May 2014 12:31:32 +0200
-Message-Id: <1400841111-6683-52-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
-References: <537F214C.8000700@linaro.org>
- <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Jander <david@protonic.nl>, Zhiwu Song <Zhiwu.Song@csr.com>
+Subject: [GIT PULL] clockevents: fixes for 3.15
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-This helps locating duplicates and inserting new headers.
+Hi Thomas, Ingo,
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Tested-by: Wolfram Sang <wsa@sang-engineering.com>
----
- drivers/clocksource/sh_mtu2.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+this pull request contains a couple of fixes:
 
-diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-index 510bd32..f2c1c36 100644
---- a/drivers/clocksource/sh_mtu2.c
-+++ b/drivers/clocksource/sh_mtu2.c
-@@ -13,22 +13,22 @@
-  * GNU General Public License for more details.
-  */
- 
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
- #include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/spinlock.h>
- #include <linux/interrupt.h>
--#include <linux/ioport.h>
--#include <linux/delay.h>
- #include <linux/io.h>
--#include <linux/clk.h>
-+#include <linux/ioport.h>
- #include <linux/irq.h>
--#include <linux/err.h>
--#include <linux/clockchips.h>
--#include <linux/sh_timer.h>
--#include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/platform_device.h>
- #include <linux/pm_domain.h>
- #include <linux/pm_runtime.h>
-+#include <linux/sh_timer.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
- 
- struct sh_mtu2_device;
- 
+  * David Jander fixed the calls to clk_disable/clk_enable in the 
+tc_mode function as this could be called in an interrupt context
+
+  * Zhiwu Song forces the irq affinity on the marco timer as the 
+initialization can happen before the cpu to affine is up
+
+Thanks
+   -- Daniel
+
+
+The following changes since commit 84ea7fe37908254c3bd90910921f6e1045c1747a:
+
+   hrtimer: Set expiry time before switch_hrtimer_base() (2014-05-12 
+10:47:39 +0200)
+
+are available in the git repository at:
+
+   git://git.linaro.org/people/daniel.lezcano/linux.git 
+clockevents/3.15-fixes
+
+for you to fetch changes up to acbf6d21ac81195071b97ebb114b0b37bd9fcc86:
+
+   clocksource: tcb_clksrc: Make tc_mode interrupt safe (2014-05-22 
+18:54:58 +0200)
+
+----------------------------------------------------------------
+David Jander (1):
+       clocksource: tcb_clksrc: Make tc_mode interrupt safe
+
+Zhiwu Song (1):
+       clocksource: marco: Fix the affinity set for local timer of CPU1
+
+  drivers/clocksource/tcb_clksrc.c  |    8 ++++----
+  drivers/clocksource/timer-marco.c |    2 +-
+  2 files changed, 5 insertions(+), 5 deletions(-)
+
+
 -- 
-1.7.9.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
