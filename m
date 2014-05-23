@@ -1,129 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaEWNkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:40:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59662 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178AbaEWNkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:40:14 -0400
-Date: Fri, 23 May 2014 15:40:12 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [patch 7/9] mm: memcontrol: do not acquire page_cgroup lock for
- kmem pages
-Message-ID: <20140523134012.GD22135@dhcp22.suse.cz>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
- <1398889543-23671-8-git-send-email-hannes@cmpxchg.org>
- <20140523133938.GC22135@dhcp22.suse.cz>
+	id S1752681AbaEWNmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:42:13 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16766 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751146AbaEWNmL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 09:42:11 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19shl1i8Tb309RgXExgjzrMW0u8k+MV4nQ=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 562DC57E1D0
+Date: Fri, 23 May 2014 09:41:52 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Chris Ball <chris@printf.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] mmc: dove: fix missing MACH_DOVE dependency
+Message-ID: <20140523134152.GA8664@titan.lakedaemon.net>
+References: <1400522571-10799-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <CAPDyKFo8CdyDbJEP0GkFTHdzpkyRBZEp-jAyrU4y8qi__zChkA@mail.gmail.com>
+ <CAOesGMjyk=n7MyVisfjYze9UuEb7XNv5O+c1Tndc+q1Q=PEetQ@mail.gmail.com>
+ <CAPDyKFp7Sf0sdReOyC8V_-F6ozB6Vh8CEbc+R7eoe6H4t-OmYA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140523133938.GC22135@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPDyKFp7Sf0sdReOyC8V_-F6ozB6Vh8CEbc+R7eoe6H4t-OmYA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-05-14 15:39:38, Michal Hocko wrote:
-> I am adding Vladimir to CC
+On Fri, May 23, 2014 at 09:40:55AM +0200, Ulf Hansson wrote:
+> On 23 May 2014 09:16, Olof Johansson <olof@lixom.net> wrote:
+> > On Thu, May 22, 2014 at 2:09 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> >> On 19 May 2014 20:02, Sebastian Hesselbarth
+> >> <sebastian.hesselbarth@gmail.com> wrote:
+> >>> DT-enabled Dove moved over from ARCH_DOVE in mach-dove to MACH_DOVE in
+> >>> mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
+> >>> DT-only MACH_DOVE Kconfig. This slipped through the cracks and now is
+> >>> a fix to allow to build Dove's SDHCI driver for mach-mvebu on v3.15-rc.
+> >>>
+> >>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>> Acked-by: Jason Cooper <jason@lakedaemon.net>
+> >>
+> >> Thanks! Picked up for the PR I send to Chris.
+> >
+> > Ulf, you might consider adding your tree to linux-next if this is
+> > going to be a common work flow for you guys.
+> 
+> That's done already. :-) There are patches which makes this visible in
+> the MAINTAINERS as well, queued for 3.16.
+> 
+> git://git.linaro.org/people/ulf.hansson/mmc.git next
+> 
+> Though due to merge conflicts, during this release cycle, I didn't
+> want to queue any patches besides for the mmci host driver.
+> 
+> >
+> > It's partially up to Chris though, if he's OK with patches going into
+> > your branch more or less being guaranteed to make it into his as well.
+> >
+> 
+> Yes, we need to figure out a good work flow when using two separate
+> trees. Thanks for bringing this up!
 
-And now for real
-> 
-> On Wed 30-04-14 16:25:41, Johannes Weiner wrote:
-> > Kmem page charging and uncharging is serialized by means of exclusive
-> > access to the page.  Do not take the page_cgroup lock and don't set
-> > pc->flags atomically.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> The patch is correct I just have some comments below.
-> Anyway
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> 
-> > ---
-> >  mm/memcontrol.c | 16 +++-------------
-> >  1 file changed, 3 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index c528ae9ac230..d3961fce1d54 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -3535,10 +3535,8 @@ void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
-> >  	}
-> >  
-> 
-> 	/*
-> 	 * given page is newly allocated and invisible to everybody but
-> 	 * the caller so there is no need to use page_cgroup lock nor
-> 	 * SetPageCgroupUsed
-> 	 */
-> 
-> would be helpful?
-> 
-> >  	pc = lookup_page_cgroup(page);
-> > -	lock_page_cgroup(pc);
-> >  	pc->mem_cgroup = memcg;
-> > -	SetPageCgroupUsed(pc);
-> > -	unlock_page_cgroup(pc);
-> > +	pc->flags = PCG_USED;
-> >  }
-> >  
-> >  void __memcg_kmem_uncharge_pages(struct page *page, int order)
-> > @@ -3548,19 +3546,11 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
-> >  
-> >  
-> >  	pc = lookup_page_cgroup(page);
-> > -	/*
-> > -	 * Fast unlocked return. Theoretically might have changed, have to
-> > -	 * check again after locking.
-> > -	 */
-> 
-> This comment was there since the code has been merged. Maybe it was true
-> at the time but after "mm: get rid of __GFP_KMEMCG" it is definitely out
-> of date.
-> 
-> 	/*
-> 	 * the pages is going away and will be freed and nobody can see
-> 	 * it anymore so no need to take page_cgroup lock.
-> 	 */
-> >  	if (!PageCgroupUsed(pc))
-> >  		return;
-> >  
-> > -	lock_page_cgroup(pc);
-> > -	if (PageCgroupUsed(pc)) {
-> > -		memcg = pc->mem_cgroup;
-> > -		ClearPageCgroupUsed(pc);
-> > -	}
-> > -	unlock_page_cgroup(pc);
-> 
-> maybe add
-> 	WARN_ON_ONCE(pc->flags != PCG_USED);
-> 
-> to check for an unexpected flags usage in the kmem path?
-> 
-> > +	memcg = pc->mem_cgroup;
-> > +	pc->flags = 0;
-> >  
-> >  	/*
-> >  	 * We trust that only if there is a memcg associated with the page, it
-> > -- 
-> > 1.9.2
-> > 
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+If you have any questions, please ask.  mvebu has been doing this for
+several release cycles now, and I'm also doing it for irqchip now.
 
--- 
-Michal Hocko
-SUSE Labs
+The biggest rule is that once you sign a tag and send a pull-request for
+it, the branch is immutable up to and including that tag.
+
+thx,
+
+Jason.
