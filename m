@@ -1,130 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaEWM3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:29:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23986 "EHLO mga01.intel.com"
+	id S1751842AbaEWMbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:31:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24097 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981AbaEWM3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:29:21 -0400
+	id S1750981AbaEWMbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 08:31:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,893,1392192000"; 
-   d="scan'208";a="536578845"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Hugh Dickins <hughd@google.com>,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
-        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
-        mingo@kernel.org, dave.hansen@intel.com
-In-Reply-To: <20140521133408.4d2f1a551e9652fb0e12265f@linux-foundation.org>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
- <537479E7.90806@linux.vnet.ibm.com>
- <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
- <87wqdik4n5.fsf@rustcorp.com.au>
- <53797511.1050409@linux.vnet.ibm.com>
- <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
- <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
- <20140520004429.E660AE009B@blue.fi.intel.com>
- <87oaythsvk.fsf@rustcorp.com.au>
- <20140520102738.7F096E009B@blue.fi.intel.com>
- <20140520125956.aa61a3bfd84d4d6190740ce2@linux-foundation.org>
- <20140521134027.263DDE009B@blue.fi.intel.com>
- <20140521133408.4d2f1a551e9652fb0e12265f@linux-foundation.org>
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
- for powerpc
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140523122854.BDB36E009B@blue.fi.intel.com>
-Date: Fri, 23 May 2014 15:28:54 +0300 (EEST)
+   d="scan'208";a="545503605"
+Date: Fri, 23 May 2014 15:30:53 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mike Turquette <mturquette@linaro.org>, Jin Yao <yao.jin@linux.intel.com>,
+        Li Aubrey <aubrey.li@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 2/4] ACPI / LPSS: custom power domain for LPSS
+Message-ID: <20140523123052.GA18308@xps8300>
+References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <4546817.Xm9e491t74@vostro.rjw.lan>
+ <20140521105258.GB29349@xps8300>
+ <1484699.LPqrzmlevB@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1484699.LPqrzmlevB@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Wed, 21 May 2014 16:40:27 +0300 (EEST) "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > > Or something.  Can we please get some code commentary over
-> > > do_fault_around() describing this design decision and explaining the
-> > > reasoning behind it?
+On Thu, May 22, 2014 at 01:28:16AM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, May 21, 2014 01:52:58 PM Heikki Krogerus wrote:
+> > On Wed, May 21, 2014 at 01:01:31PM +0200, Rafael J. Wysocki wrote:
+> > > On Wednesday, May 21, 2014 01:05:11 PM Heikki Krogerus wrote:
+> > > > On Tue, May 20, 2014 at 11:33:09PM +0200, Rafael J. Wysocki wrote:
+> > > > > First, is the 10 ms sleep really necessary?  I'd expect the AML to take care of
+> > > > > such delays (this is not a PCI device formally).
+> > > > 
+> > > > Unfortunately that is not the case. There is nothing in the AML for
+> > > > this. Mika, correct me if I'm wrong.
+> > > > 
+> > > > > And because this is not a PCI device formally, why is the comment talking about
+> > > > > the PCI spec?  Why is PCI relevant in any way here?
+> > > > 
+> > > > Under the hood the devices are still PCI devices, even if they
+> > > > formally aren't. Maybe I should point that out in the comment..
+> > > > 
+> > > > We put the sleep there because without it there was no guarantee if
+> > > > the device was properly resumed by the time the drivers resume hooks
+> > > > were called. The symptom in case of a failure was simply that the
+> > > > registers could not be written, which leads into timeouts at least in
+> > > > case of the I2C and UART and making them unusable until the next
+> > > > suspend followed by resume.
+> > > 
+> > > OK, so the msleep() is functionally necessary.  Instead of talking about the
+> > > PCI in the comment, which will make a casual reader think "What the heck?",
+> > > please say something like "the delay is necessary for the subsequent register
+> > > writes to succeed on <example system>".
 > > 
-> > I'll do this. But if do_fault_around() rework is needed, I want to do that
-> > first.
+> > OK.
 > 
-> This sort of thing should be at least partially driven by observation
-> and I don't have the data for that.  My seat of the pants feel is that
-> after the first fault, accesses at higher addresses are more
-> common/probable than accesses at lower addresses.
+> So I have one more concern.  Namely, async suspend is not enabled for the LPSS
+> devices, so the delays will accumulate for them and that may become a big deal
+> at one point.
+> 
+> This may be addressed either (1) by enabling async suspend for them or, which would
+> be more complicated, by doing the msleep() once for the whole LPSS in .resume_early()
+> and restoring the register values in .resume() without delaying.
+> 
+> For (1) I have the following untested patch (on top of my bleeding-edge branch, but
+> it should apply to the mainline too if I haven't overlooked anything).  Can you
+> please try it on boxes with LPSS and see if it doesn't break suspend/resume on them?
 
-It's probably true for data, but the feature is mostly targeted to code pages
-and situation is not that obvious to me with all jumps.
+Done, and there were no problems. I tested it with HSW, BYT and also BDW.
 
-> But we don't need to do all that right now.  Let's get the current
-> implementation wrapped up for 3.15: get the interface finalized (bytes,
-> not pages!)
+Thanks,
 
-The patch above by thread is okay for that, right?
-
-> and get the current design decisions appropriately documented.
-
-Here it is. Based on patch to convert order->bytes.
-
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Fri, 23 May 2014 15:16:47 +0300
-Subject: [PATCH] mm: document do_fault_around() feature
-
-Some clarification on how faultaround works.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/memory.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 252b319e8cdf..8d723b8d3c86 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3404,6 +3404,10 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
- 
- static unsigned long fault_around_bytes = 65536;
- 
-+/*
-+ * fault_around_pages() and fault_around_mask() round down fault_around_bytes
-+ * to nearest page order. It's what do_fault_around() expects to see.
-+ */
- static inline unsigned long fault_around_pages(void)
- {
- 	return rounddown_pow_of_two(fault_around_bytes) / PAGE_SIZE;
-@@ -3445,6 +3449,29 @@ static int __init fault_around_debugfs(void)
- late_initcall(fault_around_debugfs);
- #endif
- 
-+/*
-+ * do_fault_around() tries to map few pages around the fault address. The hope
-+ * is that the pages will be needed soon and this would lower the number of
-+ * faults to handle.
-+ *
-+ * It uses vm_ops->map_pages() to map the pages, which skips the page if it's
-+ * not ready to be mapped: not up-to-date, locked, etc.
-+ *
-+ * This function is called with the page table lock taken. In the split ptlock
-+ * case the page table lock only protects only those entries which belong to
-+ * page table corresponding to the fault address.
-+ *
-+ * This function don't cross the VMA boundaries in order to call map_pages()
-+ * only once.
-+ *
-+ * fault_around_pages() defines how many pages we'll try to map.
-+ * do_fault_around() expects it to be power of two and less or equal to
-+ * PTRS_PER_PTE.
-+ *
-+ * The virtual address of the area that we map is naturally aligned to the
-+ * fault_around_pages() (and therefore to page order). This way it's easier to
-+ * guarantee that we don't cross the page table boundaries.
-+ */
- static void do_fault_around(struct vm_area_struct *vma, unsigned long address,
- 		pte_t *pte, pgoff_t pgoff, unsigned int flags)
- {
 -- 
- Kirill A. Shutemov
+heikki
