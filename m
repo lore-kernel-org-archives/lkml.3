@@ -1,121 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaEWIjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:39:53 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:39549 "EHLO
-	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaEWI12 (ORCPT
+	id S1752352AbaEWIkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:40:07 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:59917 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255AbaEWIkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:27:28 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: [PATCH 20/22] ARM: sun8i: Add SMP support for the Allwinner A23
-Date: Fri, 23 May 2014 15:51:23 +0800
-Message-Id: <1400831485-28576-21-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1400831485-28576-1-git-send-email-wens@csie.org>
-References: <1400831485-28576-1-git-send-email-wens@csie.org>
+	Fri, 23 May 2014 04:40:01 -0400
+Message-ID: <537F0951.5010904@lab.ntt.co.jp>
+Date: Fri, 23 May 2014 17:39:45 +0900
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Jon Maxwell <jmaxwell@redhat.com>
+CC: Jon Maxwell <jmaxwell37@gmail.com>, stephen@networkplumber.org,
+        davem@davemloft.net, vyasevic@redhat.com,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jpirko@redhat.com
+Subject: Re: [PATCH net] bridge: notify user space of fdb port change
+References: <1399967708-7283-1-git-send-email-jmaxwell@redhat.com> <5372BA1E.8000402@lab.ntt.co.jp> <2052318198.6465872.1400101664337.JavaMail.zimbra@redhat.com> <1679971005.11740655.1400821172875.JavaMail.zimbra@redhat.com>
+In-Reply-To: <1679971005.11740655.1400821172875.JavaMail.zimbra@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A23 is a dual Cortex-A7. Add the logic to use the IPs used to
-control the CPU configuration and the CPU power so that we can
-bring up secondary CPUs at boot.
+(2014/05/23 13:59), Jon Maxwell wrote:
+...
+> Makita-san,
+> 
+> I recoded this using your idea and ran it through a reproducer.
+> It work fine. After some more consideration I agree that 
+> setting fdb->dst = source is only required when source != fdb->dst.
+> 
+> Thanks for your suggestions. This is the revised patch. It should 
+> retain the original behaviour except for the notify after the fdb update.  
+> 
+> Please let me know if you have any further input?
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- arch/arm/mach-sunxi/platsmp.c | 69 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
+I have no more comments except for style problems (bracket position,
+indentation, type mismatch).
+thank you for rewriting :)
 
-diff --git a/arch/arm/mach-sunxi/platsmp.c b/arch/arm/mach-sunxi/platsmp.c
-index c53077b..688faaf 100644
---- a/arch/arm/mach-sunxi/platsmp.c
-+++ b/arch/arm/mach-sunxi/platsmp.c
-@@ -121,3 +121,72 @@ struct smp_operations sun6i_smp_ops __initdata = {
- 	.smp_boot_secondary	= sun6i_smp_boot_secondary,
- };
- CPU_METHOD_OF_DECLARE(sun6i_smp, "allwinner,sun6i-a31", &sun6i_smp_ops);
-+
-+static void __init sun8i_smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "allwinner,sun8i-a23-prcm");
-+	if (!node) {
-+		pr_err("Missing A23 PRCM node in the device tree\n");
-+		return;
-+	}
-+
-+	prcm_membase = of_iomap(node, 0);
-+	if (!prcm_membase) {
-+		pr_err("Couldn't map A23 PRCM registers\n");
-+		return;
-+	}
-+
-+	node = of_find_compatible_node(NULL, NULL,
-+				       "allwinner,sun8i-a23-cpuconfig");
-+	if (!node) {
-+		pr_err("Missing A23 CPU config node in the device tree\n");
-+		return;
-+	}
-+
-+	cpucfg_membase = of_iomap(node, 0);
-+	if (!cpucfg_membase)
-+		pr_err("Couldn't map A23 CPU config registers\n");
-+
-+}
-+
-+static int sun8i_smp_boot_secondary(unsigned int cpu,
-+				    struct task_struct *idle)
-+{
-+	u32 reg;
-+
-+	if (!(prcm_membase && cpucfg_membase))
-+		return -EFAULT;
-+
-+	spin_lock(&cpu_lock);
-+
-+	/* Set CPU boot address */
-+	writel(virt_to_phys(secondary_startup),
-+	       cpucfg_membase + CPUCFG_PRIVATE0_REG);
-+
-+	/* Assert the CPU core in reset */
-+	writel(0, cpucfg_membase + CPUCFG_CPU_RST_CTRL_REG(cpu));
-+
-+	/* Assert the L1 cache in reset */
-+	reg = readl(cpucfg_membase + CPUCFG_GEN_CTRL_REG);
-+	writel(reg & ~BIT(cpu), cpucfg_membase + CPUCFG_GEN_CTRL_REG);
-+
-+	/* Clear CPU power-off gating */
-+	reg = readl(prcm_membase + PRCM_CPU_PWROFF_REG);
-+	writel(reg & ~BIT(cpu), prcm_membase + PRCM_CPU_PWROFF_REG);
-+	mdelay(1);
-+
-+	/* Deassert the CPU core reset */
-+	writel(3, cpucfg_membase + CPUCFG_CPU_RST_CTRL_REG(cpu));
-+
-+	spin_unlock(&cpu_lock);
-+
-+	return 0;
-+}
-+
-+struct smp_operations sun8i_smp_ops __initdata = {
-+	.smp_prepare_cpus	= sun8i_smp_prepare_cpus,
-+	.smp_boot_secondary	= sun8i_smp_boot_secondary,
-+};
-+CPU_METHOD_OF_DECLARE(sun8i_smp, "allwinner,sun8i-a23", &sun8i_smp_ops);
--- 
-2.0.0.rc2
+Thanks,
+Toshiaki Makita
 
+> 
+> $ diff -Naur br_fdb.c br_fdb.c.patch
+> --- br_fdb.c        2014-05-17 12:43:23.346319609 +1000
+> +++ br_fdb.c.patch        2014-05-17 16:54:46.280235728 +1000
+> @@ -487,6 +487,7 @@
+>  {
+>          struct hlist_head *head = &br->hash[br_mac_hash(addr, vid)];
+>          struct net_bridge_fdb_entry *fdb;
+> +        bool fdb_modified = 0;
+>  
+>          /* some users want to always flood. */
+>          if (hold_time(br) == 0)
+> @@ -507,10 +508,16 @@
+>                                          source->dev->name);
+>                  } else {
+>                          /* fastpath: update of existing entry */
+> -                        fdb->dst = source;
+> +                        if (unlikely(source != fdb->dst))
+> +                                {
+> +                                fdb->dst = source;
+> +                                fdb_modified = 1;
+> +                                }
+>                          fdb->updated = jiffies;
+>                          if (unlikely(added_by_user))
+>                                  fdb->added_by_user = 1;
+> +                        if (unlikely(fdb_modified))
+> +                                fdb_notify(br, fdb, RTM_NEWNEIGH);
+>                  }
+>          } else {
+>                  spin_lock(&br->hash_lock);
+> 
+> 
