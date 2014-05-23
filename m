@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbaEWMwv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:52:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752966AbaEWMwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:52:49 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 4/4] AFS: Pass an afs_call* to call->async_workfn() instead
- of a work_struct*
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: Tejun Heo <tj@kernel.org>, dhowells@redhat.com,
-        Nathaniel Wesley Filardo <nwf@cs.jhu.edu>,
-        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 23 May 2014 13:52:29 +0100
-Message-ID: <20140523125229.25385.25445.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20140523125200.25385.8586.stgit@warthog.procyon.org.uk>
-References: <20140523125200.25385.8586.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753096AbaEWMw7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:52:59 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:34702 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaEWMwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 08:52:53 -0400
+From: srinivas.kandagatla@linaro.org
+To: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v3 11/13] mmc: mmci: Add support to data commands via variant structure.
+Date: Fri, 23 May 2014 13:52:48 +0100
+Message-Id: <1400849568-7543-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-call->async_workfn() can take an afs_call* arg rather than a work_struct* as
-the functions assigned there are now called from afs_async_workfn() which has
-to call container_of() anyway.
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Nathaniel Wesley Filardo <nwf@cs.jhu.edu>
-Reviewed-by: Tejun Heo <tj@kernel.org>
+On some SOCs like Qcom there are explicit bits in the command register
+to specify if its a data transfer command or not. So this patch adds
+support to such bits in variant data, giving more flexibility to the
+driver.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 ---
+ drivers/mmc/host/mmci.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
- fs/afs/internal.h |    2 +-
- fs/afs/rxrpc.c    |   14 ++++----------
- 2 files changed, 5 insertions(+), 11 deletions(-)
-
-diff --git a/fs/afs/internal.h b/fs/afs/internal.h
-index be75b500005d..590b55f46d61 100644
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -75,7 +75,7 @@ struct afs_call {
- 	const struct afs_call_type *type;	/* type of call */
- 	const struct afs_wait_mode *wait_mode;	/* completion wait mode */
- 	wait_queue_head_t	waitq;		/* processes awaiting completion */
--	work_func_t		async_workfn;
-+	void (*async_workfn)(struct afs_call *call); /* asynchronous work function */
- 	struct work_struct	async_work;	/* asynchronous work processor */
- 	struct work_struct	work;		/* actual work processor */
- 	struct sk_buff_head	rx_queue;	/* received packets */
-diff --git a/fs/afs/rxrpc.c b/fs/afs/rxrpc.c
-index 5a05014ea7b0..03a3beb17004 100644
---- a/fs/afs/rxrpc.c
-+++ b/fs/afs/rxrpc.c
-@@ -25,7 +25,7 @@ static void afs_wake_up_call_waiter(struct afs_call *);
- static int afs_wait_for_call_to_complete(struct afs_call *);
- static void afs_wake_up_async_call(struct afs_call *);
- static int afs_dont_wait_for_call_to_complete(struct afs_call *);
--static void afs_process_async_call(struct work_struct *);
-+static void afs_process_async_call(struct afs_call *);
- static void afs_rx_interceptor(struct sock *, unsigned long, struct sk_buff *);
- static int afs_deliver_cm_op_id(struct afs_call *, struct sk_buff *, bool);
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 6434f5b1..5cbf644 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -59,6 +59,7 @@ static unsigned int fmax = 515633;
+  *	      is asserted (likewise for RX)
+  * @fifohalfsize: number of bytes that can be written when MCI_TXFIFOHALFEMPTY
+  *		  is asserted (likewise for RX)
++ * @data_cmd_enable: enable value for data commands.
+  * @sdio: variant supports SDIO
+  * @st_clkdiv: true if using a ST-specific clock divider algorithm
+  * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
+@@ -81,6 +82,7 @@ struct variant_data {
+ 	unsigned int		datalength_bits;
+ 	unsigned int		fifosize;
+ 	unsigned int		fifohalfsize;
++	unsigned int		data_cmd_enable;
+ 	unsigned int		datactrl_mask_ddrmode;
+ 	bool			sdio;
+ 	bool			st_clkdiv;
+@@ -189,6 +191,7 @@ static struct variant_data variant_qcom = {
+ 				  MCI_QCOM_CLK_FEEDBACK_CLK,
+ 	.clkreg_8bit_bus_enable = MCI_QCOM_CLK_WIDEBUS_8,
+ 	.datactrl_mask_ddrmode	= MCI_QCOM_CLK_DDR_MODE,
++	.data_cmd_enable	= MCI_QCOM_CSPM_DATCMD,
+ 	.blksz_datactrl4	= true,
+ 	.datalength_bits	= 24,
+ 	.blksz_datactrl4	= true,
+@@ -875,6 +878,9 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
+ 	if (/*interrupt*/0)
+ 		c |= MCI_CPSM_INTERRUPT;
  
-@@ -62,7 +62,7 @@ static void afs_async_workfn(struct work_struct *work)
- {
- 	struct afs_call *call = container_of(work, struct afs_call, async_work);
++	if (mmc_cmd_type(cmd) == MMC_CMD_ADTC)
++		c |= host->variant->data_cmd_enable;
++
+ 	host->cmd = cmd;
  
--	call->async_workfn(work);
-+	call->async_workfn(call);
- }
- 
- /*
-@@ -623,11 +623,8 @@ static int afs_dont_wait_for_call_to_complete(struct afs_call *call)
- /*
-  * delete an asynchronous call
-  */
--static void afs_delete_async_call(struct work_struct *work)
-+static void afs_delete_async_call(struct afs_call *call)
- {
--	struct afs_call *call =
--		container_of(work, struct afs_call, async_work);
--
- 	_enter("");
- 
- 	afs_free_call(call);
-@@ -640,11 +637,8 @@ static void afs_delete_async_call(struct work_struct *work)
-  * - on a multiple-thread workqueue this work item may try to run on several
-  *   CPUs at the same time
-  */
--static void afs_process_async_call(struct work_struct *work)
-+static void afs_process_async_call(struct afs_call *call)
- {
--	struct afs_call *call =
--		container_of(work, struct afs_call, async_work);
--
- 	_enter("");
- 
- 	if (!skb_queue_empty(&call->rx_queue))
+ 	mmci_writel(host, cmd->arg, MMCIARGUMENT);
+-- 
+1.9.1
 
