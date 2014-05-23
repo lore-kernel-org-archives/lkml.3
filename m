@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbaEWSuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:50:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54564 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaEWSuD (ORCPT
+	id S1751721AbaEWSuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:50:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44374 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaEWSuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:50:03 -0400
-Date: Fri, 23 May 2014 14:50:01 -0400 (EDT)
-Message-Id: <20140523.145001.2140056621716323006.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net-next] Add hash value into RNDIS Per-packet info
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1400702139-29280-1-git-send-email-haiyangz@microsoft.com>
-References: <1400702139-29280-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 23 May 2014 11:50:03 -0700 (PDT)
+	Fri, 23 May 2014 14:50:51 -0400
+Date: Sat, 24 May 2014 01:53:35 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Luis Ortega <luiorpe1@gmail.com>
+Cc: pe1dnn@amsat.org, devel@driverdev.osuosl.org, josh@joshtriplett.org,
+        linux-kernel@vger.kernel.org, monamagarwal123@gmail.com,
+        paulmck@linux.vnet.ibm.com, archanakumari959@gmail.com
+Subject: Re: [PATCH] staging: wlags49_h2: fix sparse warning "should it be
+ static"
+Message-ID: <20140523165335.GA6883@kroah.com>
+References: <1399480308-15869-1-git-send-email-luiorpe1@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399480308-15869-1-git-send-email-luiorpe1@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Wed, 21 May 2014 12:55:39 -0700
-
-> It passes the hash value as the RNDIS Per-packet info to the Hyper-V host,
-> so that the send completion notices can be spread across multiple channels.
-> MS-TFS: 140273
+On Wed, May 07, 2014 at 06:31:48PM +0200, Luis Ortega wrote:
+> Fixes the following warning:
+> drivers/staging/wlags49_h2/sta_h2.c:4471:10: warning: symbol 'fw_image' was not declared. Should it be static?
 > 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: Luis Ortega <luiorpe1@gmail.com>
+> ---
+>  drivers/staging/wlags49_h2/sta_h2.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/wlags49_h2/sta_h2.c b/drivers/staging/wlags49_h2/sta_h2.c
+> index 0ba8def..2838faa 100644
+> --- a/drivers/staging/wlags49_h2/sta_h2.c
+> +++ b/drivers/staging/wlags49_h2/sta_h2.c
+> @@ -4468,7 +4468,7 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
+>  	{ 0000, 0000, 0000, 0000, { { 0000, 0000, 0000 } } }	/* endsentinel */
+>  };
+> 
+> -memimage fw_image = {
+> +static memimage fw_image = {
+>  	"FUPU7D37dhfwci\001C",			/* signature, <format number>, C/Bin type */
+>  	(CFG_PROG_STRCT *) fw_image_code,
+>  	0x000F368E,
 
-Applied, but please craft your Subject lines correctly in the future.
+ALWAYS test build your patches.  This patch breaks the build :(
 
-You did not specify a subsystem prefix, which in this case should
-have been something like "hyperv: "
-
-Otherwise people scanning the commit log headers have no idea where
-your changes might be taking place.
-
-I fixed it up this time for you.
-
-Thanks.
+greg k-h
