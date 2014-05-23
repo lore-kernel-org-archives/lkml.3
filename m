@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaEWM5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:57:19 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:39107 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaEWMvL (ORCPT
+	id S1752681AbaEWNCE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:02:04 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53091 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbaEWNCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:51:11 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH v2 2/2] of: Stop naming platform_device using dcr address
-Date: Fri, 23 May 2014 08:36:09 +0900
-Message-Id: <1400801769-4506-3-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400801769-4506-1-git-send-email-grant.likely@linaro.org>
-References: <1400801769-4506-1-git-send-email-grant.likely@linaro.org>
+	Fri, 23 May 2014 09:02:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140523115622.GU27560@rric.localhost>
+References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521233802.GA21575@pd.tnic> <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
+ <20140522191746.GL4383@pd.tnic> <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
+ <537E8ACF.6000103@amd.com> <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
+ <20140523115622.GU27560@rric.localhost>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 23 May 2014 07:01:41 -0600
+Message-ID: <CAErSpo5t+u+AYS5m6wo+AG7uXEkseUcmK9d-FF+SwpkcEWnkqA@mail.gmail.com>
+Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
+To: Robert Richter <rric@kernel.org>
+Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is now a way to ensure all platform devices get a unique name when
-populated from the device tree, and the DCR_NATIVE code path is broken
-anyway. PowerPC Cell (PS3) is the only platform that actually uses this
-path.  Most likely nobody will notice if it is killed. Remove the code
-and associated ugly #ifdef.
+On Fri, May 23, 2014 at 5:56 AM, Robert Richter <rric@kernel.org> wrote:
+> On 22.05.14 20:54:54, Bjorn Helgaas wrote:
+>> I'm going to go out on a limb and guess that Windows does not enable
+>> ECS, so it probably uses ECAM.  Therefore, I suspect Linux's parsing
+>> of MCFG is broken in some way, and we probably *could* use ECAM in all
+>> these cases I'm seeing.
+>
+> Even if ECS is not enabled the system should be fine anyway, as ECS is
+> only used to enable certain features. For family 10h this was
+> originally the IBS EILVT (extended interrupt local vector table,
+> needed for hw profiling) setup which need to be set by the OS which
+> the BIOS didn't right. This should be fixed now and properly set by
+> the BIOS on 15h+ systems.
+>
+> I don't remember what was added to 16h where ECS was needed, I think
+> there was one (Suravee?). Not sure if this is essential.
+>
+> So using MCFG should be fine, since if in the rare case when it is
+> broken, the system should work properly anyway without it and only
+> some special features, if any, do not work anymore (e.g. IBS should
+> work fine).
 
-The user-visible impact of this patch is that any DCR device on Cell
-will get a new name in the /sys/devices hierarchy.
+[I guess I've been using the wrong term here.  I think "ECS" just
+refers to the extended config space itself, and I should have been
+saying "IO ECS" or "EnableCf8ExtCfg".]
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- arch/powerpc/include/asm/dcr-mmio.h |  4 ----
- arch/powerpc/sysdev/dcr.c           |  6 +++---
- drivers/of/platform.c               | 24 ------------------------
- 3 files changed, 3 insertions(+), 31 deletions(-)
+My understanding was that if we don't enable IO ECS and we don't have
+MCFG, we will not be able to access extended config space.  The system
+can certainly boot without extended config space, but some drivers may
+not work correctly, so it would be a regression from the user point of
+view.
 
-diff --git a/arch/powerpc/include/asm/dcr-mmio.h b/arch/powerpc/include/asm/dcr-mmio.h
-index acd491dbd45a..93a68b28e695 100644
---- a/arch/powerpc/include/asm/dcr-mmio.h
-+++ b/arch/powerpc/include/asm/dcr-mmio.h
-@@ -51,10 +51,6 @@ static inline void dcr_write_mmio(dcr_host_mmio_t host,
- 	out_be32(host.token + ((host.base + dcr_n) * host.stride), value);
- }
- 
--extern u64 of_translate_dcr_address(struct device_node *dev,
--				    unsigned int dcr_n,
--				    unsigned int *stride);
--
- #endif /* __KERNEL__ */
- #endif /* _ASM_POWERPC_DCR_MMIO_H */
- 
-diff --git a/arch/powerpc/sysdev/dcr.c b/arch/powerpc/sysdev/dcr.c
-index 1bd0eba4d355..e9056e438575 100644
---- a/arch/powerpc/sysdev/dcr.c
-+++ b/arch/powerpc/sysdev/dcr.c
-@@ -152,9 +152,9 @@ EXPORT_SYMBOL_GPL(dcr_resource_len);
- 
- #ifdef CONFIG_PPC_DCR_MMIO
- 
--u64 of_translate_dcr_address(struct device_node *dev,
--			     unsigned int dcr_n,
--			     unsigned int *out_stride)
-+static u64 of_translate_dcr_address(struct device_node *dev,
-+				    unsigned int dcr_n,
-+				    unsigned int *out_stride)
- {
- 	struct device_node *dp;
- 	const u32 *p;
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 95c133a0554b..52780a72d09d 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -51,10 +51,6 @@ struct platform_device *of_find_device_by_node(struct device_node *np)
- }
- EXPORT_SYMBOL(of_find_device_by_node);
- 
--#if defined(CONFIG_PPC_DCR)
--#include <asm/dcr.h>
--#endif
--
- #ifdef CONFIG_OF_ADDRESS
- /*
-  * The following routines scan a subtree and registers a device for
-@@ -78,26 +74,6 @@ void of_device_make_bus_id(struct device *dev)
- 	const __be32 *reg;
- 	u64 addr;
- 
--#ifdef CONFIG_PPC_DCR
--	/*
--	 * If it's a DCR based device, use 'd' for native DCRs
--	 * and 'D' for MMIO DCRs.
--	 */
--	reg = of_get_property(node, "dcr-reg", NULL);
--	if (reg) {
--#ifdef CONFIG_PPC_DCR_NATIVE
--		dev_set_name(dev, "d%x.%s", *reg, node->name);
--#else /* CONFIG_PPC_DCR_NATIVE */
--		u64 addr = of_translate_dcr_address(node, *reg, NULL);
--		if (addr != OF_BAD_ADDR) {
--			dev_set_name(dev, "D%llx.%s",
--				     (unsigned long long)addr, node->name);
--			return;
--		}
--#endif /* !CONFIG_PPC_DCR_NATIVE */
--	}
--#endif /* CONFIG_PPC_DCR */
--
- 	/* Construct the name, using parent nodes if necessary to ensure uniqueness */
- 	while (node->parent) {
- 		/*
--- 
-1.9.1
+The case where MCFG is broken may be rare, but I still want to avoid
+the regression.  And my guess is that the MCFG is not really broken in
+these cases, because I suspect Windows is using it.  Our MCFG parsing
+code is a mess, and I suspect that we are claiming MCFG is broken when
+it really isn't.
 
+If I understand correctly, IO ECS is also limited to domain 0, so if
+we have multiple PCI host bridges, i.e., multiple PNP0A03/PNP0A08
+devices, and we want them in different domains, we'd have to use ECAM.
+
+Bjorn
