@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaEWN2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:28:17 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:48756 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511AbaEWN2O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:28:14 -0400
-Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH V3 1/8] cpufreq: cpufreq-cpu0: remove dependency on thermal
-From: Viresh Kumar <viresh.kumar@linaro.org>
-X-Mailer: iPad Mail (11D201)
-In-Reply-To: <20140523132144.GA3138@developer>
-Date: Fri, 23 May 2014 18:58:24 +0530
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
-        Sudeep Holla <sudeep.holla@arm.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <711BA092-F65D-4D62-9D94-E246387065A4@linaro.org>
-References: <cover.1400736536.git.viresh.kumar@linaro.org> <c73c825beda0207867bd29e40fece217cbf15925.1400736536.git.viresh.kumar@linaro.org> <20140522145209.GA5246@developer> <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com> <20140523132144.GA3138@developer>
-To: Eduardo Valentin <edubezval@gmail.com>
+	id S1751935AbaEWNfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:35:40 -0400
+Received: from fieldses.org ([174.143.236.118]:57013 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069AbaEWNfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 09:35:39 -0400
+Date: Fri, 23 May 2014 09:35:37 -0400
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        trond.myklebust@primarydata.com, NeilBrown <neilb@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: NFS issue while copying huge file
+Message-ID: <20140523133537.GI25423@fieldses.org>
+References: <CAFLxGvw_7=AuBqxNhAHpQAXq2aTqc8Afa6Z62=YCsFXcJx0Hug@mail.gmail.com>
+ <CAFLxGvxm43MaOqv1JQ8vxkn4s50uHZ8Js6A-Ec+O_sjvFszehQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvxm43MaOqv1JQ8vxkn4s50uHZ8Js6A-Ec+O_sjvFszehQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 22, 2014 at 12:50:34PM +0200, Richard Weinberger wrote:
+> On Wed, May 21, 2014 at 11:33 PM, Richard Weinberger
+> <richard.weinberger@gmail.com> wrote:
+> > Hi!
+> >
+> > My backup server runs CentOS6 with kernel 2.6.32-431.17.1.el6.x86_64.
+> > Many servers copy theirs backups to it. This setups works perfectly
+> > fine since ages.
+> > Today I've configured a new server which runs Kernel 3.12.20 to store
+> > it's backups to the NFS server too.
+...
+> Just gave 3.15-rc6 a try, it happens here too.
 
-> On 23-May-2014, at 6:51 pm, Eduardo Valentin <edubezval@gmail.com> wrote:
-> I agree. We need to have runtime dependency, and that is the major
-> concern on my behalf. The problem of Kconfig dependency is that it
-> imposes sequencing only on module loading, not at boot sequencing.
-> 
-> Another way around is returning -EPROBE_DEFER when some API is not ready at device probing for instance.
+I was reading a little quickly and assumed all these kernel versions
+described the NFS server, now I understand you're varying only the NFS
+client; so against that CentOS 2.6.32 server, you're seeing the problem
+when the NFS client is 3.12.20 or 3.15-rc6, but not if the NFS client is
+running the same CentOS 2.6.32 version.  Got it, sorry for the
+confusion.
 
-Okay, coming back to this patch. This driver is usable without thermal.
-And so the dependencies better be dropped ?
+So with my upstream hat on that's a little less interesting since
+upstream is pretty far from any 2.6.32-based kernel at this point.
+
+--b.
