@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaEWKJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:09:32 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49029 "EHLO
+	id S1752342AbaEWKJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:09:31 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49149 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993AbaEWKEf (ORCPT
+	with ESMTP id S1752059AbaEWKEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 May 2014 06:04:35 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -18,300 +18,82 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCHSET 00/26] perf tools: Add support to accumulate hist periods (v10)
-Date: Fri, 23 May 2014 19:03:57 +0900
-Message-Id: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 14/26] perf report: Add --children option
+Date: Fri, 23 May 2014 19:04:11 +0900
+Message-Id: <1400839463-21933-15-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The --children option is for showing accumulated overhead (period)
+value as well as self overhead.
 
-This is a new attempt to implement cumulative hist period report.
-This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
-rewrote it from scratch.
-
-This patchset basically adds period in a sample to every node in the
-callchain.  A hist_entry now has an additional fields to keep the
-cumulative period if --children option is given on perf report.
-
-I changed the option as a separate --children and added a new
-"Children" column (and renamed the default "Overhead" column into
-"Self").  The output will be sorted by children (cumulative) overhead
-for now.  It also adds 'overhead_children' field to -F/--fields option
-to be selected by user and it'll show you "N/A" if the cumulation is
-not supported (due to missing callchain).
-
-I added Tested-by from Rodrigo Campos since this version is basically
-rebase of previous series + bugfix.  But it still needs to be tested
-more intensively IMHO.  Also note that, this will change default
-behavior of perf report/top if callchain is recorded, so might confuse
-old users.  Let's see how many of them come to shout. :)  I think we
-need to merge Jiri's TUI column header patch at least.
-
-
- * changes in v10:
-  - fix callchain display bug in stdio, gtk
-  - add a testcase
-  - add Tested-by from Rodrigo
-
- * changes in v9:
-  - support output field option
-  - add Acked-by tags from Jiri
-
- * changes in v8:
-  - not depends on --percentage patchkit
-  - fix callchain resolving bug (Jiri)
-  - convert to sample__resolve_{mem,bstack}
-  - eliminate 'event' field from hist_entry_iter
-
- * changes in v7:
-  - add Tested-by tags from Arun
-  - rebase onto current acme/perf/core
-
- * changes in v6:
-  - separate struct hist_iter_ops (Jiri)
-  - check iter->he before calling ->add_entry_cb (Jiri)
-  - fix locking issue on perf top (Jiri)
-
- * changes in v5:
-  - support both of --children and --call-graph (Arun)
-  - refactor hist_entry_iter to share with perf top (Jiri)
-  - various cleanups and fixes (Jiri)
-  - add ack's from Jiri
-
- * changes in v4:
-  - change to --children option (Ingo)
-  - rebased on new annotation change (Arnaldo)
-  - support perf top also
-  - enable --children option by default (Ingo)
-
- * changes in v3:
-  - change to --cumulate option
-  - fix a couple of bugs (Jiri, Rodrigo)
-  - rename some help functions (Arnaldo)
-  - cache previous hist entries rathen than just symbol and dso
-  - add some preparatory cleanups
-  - add report.cumulate config option
-
-
-Let me show you an example:
-
-  $ cat abc.c
-  #define barrier() asm volatile("" ::: "memory")
-
-  void a(void)
-  {
-  	int i;
-  	for (i = 0; i < 1000000; i++)
-  		barrier();
-  }
-  void b(void)
-  {
-  	a();
-  }
-  void c(void)
-  {
-  	b();
-  }
-  int main(void)
-  {
-  	c();
-  	return 0;
-  }
-
-With this simple program I ran perf record and report:
-
-  $ perf record -g -e cycles:u ./abc
-
-
-Case 1.
-
-  $ perf report --stdio --no-call-graph --no-children
-
-  # Overhead  Command      Shared Object          Symbol
-  # ........  .......  .................  ..............
-  #
-      91.50%      abc  abc                [.] a         
-       8.18%      abc  ld-2.17.so         [.] strlen    
-       0.31%      abc  [kernel.kallsyms]  [k] page_fault
-       0.01%      abc  ld-2.17.so         [.] _start    
-
-
-Case 2. (current default behavior)
-
-  $ perf report --stdio --call-graph --no-children
-
-  # Overhead  Command      Shared Object          Symbol
-  # ........  .......  .................  ..............
-  #
-      91.50%      abc  abc                [.] a         
-                  |
-                  --- a
-                      b
-                      c
-                      main
-                      __libc_start_main
-
-       8.18%      abc  ld-2.17.so         [.] strlen    
-                  |
-                  --- strlen
-                      _dl_sysdep_start
-
-       0.31%      abc  [kernel.kallsyms]  [k] page_fault
-                  |
-                  --- page_fault
-                      _start
-
-       0.01%      abc  ld-2.17.so         [.] _start    
-                  |
-                  --- _start
-
-
-Case 3.
-
-  $ perf report --no-call-graph --children --stdio
-
-  #     Self  Children  Command      Shared Object                 Symbol
-  # ........  ........  .......  .................  .....................
-  #
-       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
-       0.00%    91.50%      abc  abc                [.] main             
-       0.00%    91.50%      abc  abc                [.] c                
-       0.00%    91.50%      abc  abc                [.] b                
-      91.50%    91.50%      abc  abc                [.] a                
-       0.00%     8.18%      abc  ld-2.17.so         [.] _dl_sysdep_start 
-       8.18%     8.18%      abc  ld-2.17.so         [.] strlen           
-       0.01%     0.33%      abc  ld-2.17.so         [.] _start           
-       0.31%     0.31%      abc  [kernel.kallsyms]  [k] page_fault       
-
-As you can see __libc_start_main -> main -> c -> b -> a callchain show
-up in the output.
-
-Finally, it looks like below with both option enabled:
-
-Case 4. (default behavior?)
-
-  $ perf report --call-graph --children --stdio
-
-  #     Self  Children  Command      Shared Object                 Symbol
-  # ........  ........  .......  .................  .....................
-  #
-       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
-                  |
-                  --- __libc_start_main
-
-       0.00%    91.50%      abc  abc                [.] main             
-                  |
-                  --- main
-                      __libc_start_main
-
-       0.00%    91.50%      abc  abc                [.] c                
-                  |
-                  --- c
-                      main
-                      __libc_start_main
-
-       0.00%    91.50%      abc  abc                [.] b                
-                  |
-                  --- b
-                      c
-                      main
-                      __libc_start_main
-
-      91.50%    91.50%      abc  abc                [.] a                
-                  |
-                  --- a
-                      b
-                      c
-                      main
-                      __libc_start_main
-  ...
-
-
-Currently the perf enables both of --call-graph and --children when it
-finds callchains in the samples.  While this is useful for TUI or GTK,
-I'm not sure for stdio as it'd consume so much lines.
-
-It does not handle all kind of cases like event annotation yet, but I
-really want to release it and get reviews.
-
-You can also get this series on 'perf/cumulate-v10' branch in my tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Any comments are welcome, thanks.
-Namhyung
-
-
-Cc: Arun Sharma <asharma@fb.com>
+Tested-by: Arun Sharma <asharma@fb.com>
+Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Documentation/perf-report.txt |  7 ++++++-
+ tools/perf/builtin-report.c              | 10 ++++++++++
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
-[1] https://lkml.org/lkml/2012/3/31/6
-[2] https://lkml.org/lkml/2014/3/10/48
-[3] https://lkml.org/lkml/2014/3/19/689
-
-
-Namhyung Kim (26):
-  perf tools: Introduce struct hist_entry_iter
-  perf hists: Add support for accumulated stat of hist entry
-  perf hists: Check if accumulated when adding a hist entry
-  perf hists: Accumulate hist entry stat based on the callchain
-  perf tools: Update cpumode for each cumulative entry
-  perf report: Cache cumulative callchains
-  perf callchain: Add callchain_cursor_snapshot()
-  perf tools: Save callchain info for each cumulative entry
-  perf ui/hist: Add support to accumulated hist stat
-  perf ui/browser: Add support to accumulated hist stat
-  perf ui/gtk: Add support to accumulated hist stat
-  perf tools: Apply percent-limit to cumulative percentage
-  perf tools: Add more hpp helper functions
-  perf report: Add --children option
-  perf report: Add report.children config option
-  perf tools: Do not auto-remove Children column if --fields given
-  perf tools: Add callback function to hist_entry_iter
-  perf top: Convert to hist_entry_iter
-  perf top: Add --children option
-  perf top: Add top.children config option
-  perf tools: Enable --children option by default
-  perf ui/stdio: Fix invalid percentage value of cumulated hist entries
-  perf ui/gtk: Fix callchain display
-  perf tools: Reset output/sort order to default
-  perf tests: Define and use symbolic names for fake symbols
-  perf tests: Add a test case for cumulating callchains
-
- tools/perf/Documentation/perf-report.txt |   7 +-
- tools/perf/Documentation/perf-top.txt    |   8 +-
- tools/perf/Makefile.perf                 |   1 +
- tools/perf/builtin-annotate.c            |   3 +-
- tools/perf/builtin-diff.c                |   2 +-
- tools/perf/builtin-report.c              | 186 ++------
- tools/perf/builtin-top.c                 |  95 ++--
- tools/perf/tests/builtin-test.c          |   4 +
- tools/perf/tests/hists_common.c          |  52 ++-
- tools/perf/tests/hists_common.h          |  32 +-
- tools/perf/tests/hists_cumulate.c        | 726 +++++++++++++++++++++++++++++++
- tools/perf/tests/hists_filter.c          |  59 ++-
- tools/perf/tests/hists_link.c            |  36 +-
- tools/perf/tests/hists_output.c          |  31 +-
- tools/perf/tests/tests.h                 |   1 +
- tools/perf/ui/browsers/hists.c           |  66 +--
- tools/perf/ui/gtk/hists.c                |  33 +-
- tools/perf/ui/hist.c                     | 119 +++++
- tools/perf/ui/stdio/hist.c               |   8 +-
- tools/perf/util/callchain.c              |  45 +-
- tools/perf/util/callchain.h              |  11 +
- tools/perf/util/hist.c                   | 490 ++++++++++++++++++++-
- tools/perf/util/hist.h                   |  49 ++-
- tools/perf/util/sort.c                   |   4 +
- tools/perf/util/sort.h                   |  18 +-
- tools/perf/util/symbol.c                 |  11 +-
- tools/perf/util/symbol.h                 |   1 +
- 27 files changed, 1782 insertions(+), 316 deletions(-)
- create mode 100644 tools/perf/tests/hists_cumulate.c
-
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index a1b5185402d5..cefdf430d1b4 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -111,7 +111,7 @@ OPTIONS
+ --fields=::
+ 	Specify output field - multiple keys can be specified in CSV format.
+ 	Following fields are available:
+-	overhead, overhead_sys, overhead_us, sample and period.
++	overhead, overhead_sys, overhead_us, overhead_children, sample and period.
+ 	Also it can contain any sort key(s).
+ 
+ 	By default, every sort keys not specified in -F will be appended
+@@ -163,6 +163,11 @@ OPTIONS
+ 
+ 	Default: fractal,0.5,callee,function.
+ 
++--children::
++	Accumulate callchain of children to parent entry so that then can
++	show up in the output.  The output will have a new "Children" column
++	and will be sorted on the data.  It requires callchains are recorded.
++
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+ 	beyond the specified depth will be ignored. This is a trade-off
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index a783135388ba..6a9f0b38eb38 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -175,6 +175,14 @@ static int report__setup_sample_type(struct report *rep)
+ 			}
+ 	}
+ 
++	if (symbol_conf.cumulate_callchain) {
++		/* Silently ignore if callchain is missing */
++		if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
++			symbol_conf.cumulate_callchain = false;
++			perf_hpp__cancel_cumulate();
++		}
++	}
++
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+ 		if (!is_pipe &&
+ 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+@@ -558,6 +566,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+ 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+ 		     "Default: fractal,0.5,callee,function", &report_parse_callchain_opt, callchain_default_opt),
++	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
++		    "Accumulate callchains of children and show total overhead as well"),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain, "
+ 		    "anything beyond the specified depth will be ignored. "
 -- 
 1.9.2
 
