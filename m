@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769AbaEWKrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:47:00 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:62813 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaEWKcL (ORCPT
+	id S1753783AbaEWKrS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:47:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43744 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752AbaEWKq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:11 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: tglx@linutronix.de, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 28/71] clocksource: sh_tmu: Replace kmalloc + memset with kzalloc
-Date: Fri, 23 May 2014 12:31:08 +0200
-Message-Id: <1400841111-6683-28-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
-References: <537F214C.8000700@linaro.org>
- <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+	Fri, 23 May 2014 06:46:58 -0400
+Date: Fri, 23 May 2014 12:46:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] sched: signedness bug in yield_to()
+Message-ID: <20140523104648.GC30445@twins.programming.kicks-ass.net>
+References: <20140523102042.GA7267@mwanda>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3tBQ62Qve5jUyRDo"
+Content-Disposition: inline
+In-Reply-To: <20140523102042.GA7267@mwanda>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-One kzalloc a day keeps the bugs away.
+--3tBQ62Qve5jUyRDo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/clocksource/sh_tmu.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+On Fri, May 23, 2014 at 01:20:42PM +0300, Dan Carpenter wrote:
+> yield_to() is supposed to return -ESRCH if there is no task to
+> yield to, but because the type is bool that is the same as returning
+> true.
+>=20
+> The only place I see which cares is kvm_vcpu_on_spin().
+>=20
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-diff --git a/drivers/clocksource/sh_tmu.c b/drivers/clocksource/sh_tmu.c
-index e304304..26a9f7d 100644
---- a/drivers/clocksource/sh_tmu.c
-+++ b/drivers/clocksource/sh_tmu.c
-@@ -397,8 +397,6 @@ static void sh_tmu_register_clockevent(struct sh_tmu_channel *ch,
- 	struct clock_event_device *ced = &ch->ced;
- 	int ret;
- 
--	memset(ced, 0, sizeof(*ced));
--
- 	ced->name = name;
- 	ced->features = CLOCK_EVT_FEAT_PERIODIC;
- 	ced->features |= CLOCK_EVT_FEAT_ONESHOT;
-@@ -441,7 +439,6 @@ static int sh_tmu_channel_setup(struct sh_tmu_channel *ch,
- {
- 	struct sh_timer_config *cfg = tmu->pdev->dev.platform_data;
- 
--	memset(ch, 0, sizeof(*ch));
- 	ch->tmu = tmu;
- 
- 	/*
-@@ -475,7 +472,6 @@ static int sh_tmu_setup(struct sh_tmu_device *tmu, struct platform_device *pdev)
- 	int ret;
- 	ret = -ENXIO;
- 
--	memset(tmu, 0, sizeof(*tmu));
- 	tmu->pdev = pdev;
- 
- 	if (!cfg) {
-@@ -547,7 +543,7 @@ static int sh_tmu_probe(struct platform_device *pdev)
- 		goto out;
- 	}
- 
--	tmu = kmalloc(sizeof(*tmu), GFP_KERNEL);
-+	tmu = kzalloc(sizeof(*tmu), GFP_KERNEL);
- 	if (tmu == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate driver data\n");
- 		return -ENOMEM;
--- 
-1.7.9.5
+Thanks Dan!
 
+--3tBQ62Qve5jUyRDo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfycYAAoJEHZH4aRLwOS6zRoP/3qj10vYVhd6BCBcxmxgG60z
+ILeADetiXfLbT+EjTEk+2wDw51tE8e48rJJaWI57XRDcQpG+L1UDuIKr/6pskGOx
+XYM4ioDtYa2RNve2fdFvawekzg69kxrhX9jboCwF8cUARPcltcQFhTqzCuCjlKvS
+2UlU1IWSf+l3bDDseUBUCYkqkxxUVk0fv4QoQyPiTOoZFCTkuEgp1B1rFwlONb3O
+zMBGkoIt+wN9UmiE15fq3/OEWQFkaLYmaQKcSObSBSTSsTXH+1l1AuKy5QIKV3gr
+0NGzw/quJB/PUb2v3QmE2+unZPvD+u1fx/rjcRvmVV9rc+o86fUrn6zeT924HFUY
+4y9ep1VcQsR75WQcVABOaUhx/T1/yOCwVRnh5h/lUjkkSvV06mA6ujA02c+06cbG
+yAnc00pUo8P3newSm+yo6kKIAkBrzKT6uPAc1nHes8OeccJUShQUkj9RszmwX5s+
+0S3PHVQo9DDNEmiUhrz2XTY8Nf+eEHf/5FB5htBUlxC2w6WvEI2lMyxnq4Tm3vO9
+LD3Uhn4A/0NprLAp89DDqwe+s6+qp8EThCN7lUtvzMEGDyIIjGsGXucg/9M2+tR7
+iD55umd19usfUryAGlVVMmuPzLH9RU5fK+1KU4oKOhmTFKn1WuK9WqJD/bVr8Es+
+SQz8aMx6O4Y2arQy49a9
+=dxlD
+-----END PGP SIGNATURE-----
+
+--3tBQ62Qve5jUyRDo--
