@@ -1,65 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbaEWKHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:07:45 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:62566 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752069AbaEWKGj (ORCPT
+	id S1752767AbaEWKGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:06:38 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49216 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069AbaEWKEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:06:39 -0400
-Message-ID: <1400839597.31526.21.camel@x220>
-Subject: Re: powerpc: remove checks for CONFIG_BOOK3E_MMU_TLB_STATS
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 23 May 2014 12:06:37 +0200
-In-Reply-To: <1400830406.31526.6.camel@x220>
-References: <1400608550.4912.48.camel@x220>
-	 <20140522223758.GA20343@home.buserror.net> <1400830406.31526.6.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 May 2014 10:06:37.0506 (UTC) FILETIME=[AF35EA20:01CF766E]
-X-RcptDomain: vger.kernel.org
+	Fri, 23 May 2014 06:04:35 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: [PATCH 18/26] perf top: Convert to hist_entry_iter
+Date: Fri, 23 May 2014 19:04:15 +0900
+Message-Id: <1400839463-21933-19-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-23 at 09:33 +0200, Paul Bolle wrote:
-> Scott,
-> 
-> On Thu, 2014-05-22 at 17:37 -0500, Scott Wood wrote:
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S: Assembler messages:
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:89: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:238: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:269: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:281: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:441: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:510: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:881: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> > /home/scott/fsl/git/linux/upstream/arch/powerpc/mm/tlb_low_64e.S:918: Error: unrecognized opcode: `tlb_miss_prolog_stats'
-> 
-> Thanks for testing!
-> 
-> That's a bit surprising. The patch is intended to be a non event. Ie, it
-> only removes what the preprocessor would have removed anyway. Unless I
-> botched it, of course.
-> 
-> What exactly did you test there?
+Reuse hist_entry_iter__add() function to share the similar code with
+perf report.  Note that it needs to be called with hists.lock so tweak
+some internal functions not to deadlock or hold the lock too long.
 
-For what it's worth: I can't reproduce this error with the cross
-compiler now shipped with Fedora 20 (ie, powerpc64-linux-gnu-gcc (GCC)
-4.8.1 20130717 (Red Hat 4.8.1-5)). It shows a nice and clean
-     AS      arch/powerpc/mm/tlb_low_64e.o
+Tested-by: Arun Sharma <asharma@fb.com>
+Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-top.c | 84 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 46 insertions(+), 38 deletions(-)
 
-in the output.
-
-That's v3.15-rc6, with just this patch, and using a .config generated,
-with "make oldconfig", from arch/powerpc/configs/ppc64e_defconfig.
-
-
-Paul Bolle
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e7a0f8bc2fa7..2465215eff39 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -196,6 +196,12 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+ 
+ 	pthread_mutex_unlock(&notes->lock);
+ 
++	/*
++	 * This function is now called with he->hists->lock held.
++	 * Release it before going to sleep.
++	 */
++	pthread_mutex_unlock(&he->hists->lock);
++
+ 	if (err == -ERANGE && !he->ms.map->erange_warned)
+ 		ui__warn_map_erange(he->ms.map, sym, ip);
+ 	else if (err == -ENOMEM) {
+@@ -203,6 +209,8 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+ 		       sym->name);
+ 		sleep(1);
+ 	}
++
++	pthread_mutex_lock(&he->hists->lock);
+ }
+ 
+ static void perf_top__show_details(struct perf_top *top)
+@@ -238,27 +246,6 @@ out_unlock:
+ 	pthread_mutex_unlock(&notes->lock);
+ }
+ 
+-static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+-						     struct addr_location *al,
+-						     struct perf_sample *sample)
+-{
+-	struct hist_entry *he;
+-
+-	pthread_mutex_lock(&evsel->hists.lock);
+-	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
+-				sample->period, sample->weight,
+-				sample->transaction, true);
+-	pthread_mutex_unlock(&evsel->hists.lock);
+-	if (he == NULL)
+-		return NULL;
+-
+-	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-	if (!he->filtered)
+-		evsel->hists.stats.nr_non_filtered_samples++;
+-
+-	return he;
+-}
+-
+ static void perf_top__print_sym_table(struct perf_top *top)
+ {
+ 	char bf[160];
+@@ -662,6 +649,31 @@ static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
+ 	return 0;
+ }
+ 
++static int hist_iter_cb(struct hist_entry_iter *iter, struct addr_location *al,
++			bool single, void *arg)
++{
++	struct perf_top *top = arg;
++	struct hist_entry *he = iter->he;
++	struct perf_evsel *evsel = iter->evsel;
++
++	if (single) {
++		hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++		if (!he->filtered)
++			evsel->hists.stats.nr_non_filtered_samples++;
++	}
++
++	if (sort__has_sym) {
++		u64 ip = al->addr;
++
++		if (al->map)
++			ip = al->map->unmap_ip(al->map, ip);
++
++		perf_top__record_precise_ip(top, he, evsel->idx, ip);
++	}
++
++	return 0;
++}
++
+ static void perf_event__process_sample(struct perf_tool *tool,
+ 				       const union perf_event *event,
+ 				       struct perf_evsel *evsel,
+@@ -669,8 +681,6 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 				       struct machine *machine)
+ {
+ 	struct perf_top *top = container_of(tool, struct perf_top, tool);
+-	struct symbol *parent = NULL;
+-	u64 ip = sample->ip;
+ 	struct addr_location al;
+ 	int err;
+ 
+@@ -745,25 +755,23 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 	}
+ 
+ 	if (al.sym == NULL || !al.sym->ignore) {
+-		struct hist_entry *he;
++		struct hist_entry_iter iter = {
++			.add_entry_cb = hist_iter_cb,
++		};
+ 
+-		err = sample__resolve_callchain(sample, &parent, evsel, &al,
+-						top->max_stack);
+-		if (err)
+-			return;
++		if (symbol_conf.cumulate_callchain)
++			iter.ops = &hist_iter_cumulative;
++		else
++			iter.ops = &hist_iter_normal;
+ 
+-		he = perf_evsel__add_hist_entry(evsel, &al, sample);
+-		if (he == NULL) {
+-			pr_err("Problem incrementing symbol period, skipping event\n");
+-			return;
+-		}
++		pthread_mutex_lock(&evsel->hists.lock);
+ 
+-		err = hist_entry__append_callchain(he, sample);
+-		if (err)
+-			return;
++		err = hist_entry_iter__add(&iter, &al, evsel, sample,
++					   top->max_stack, top);
++		if (err < 0)
++			pr_err("Problem incrementing symbol period, skipping event\n");
+ 
+-		if (sort__has_sym)
+-			perf_top__record_precise_ip(top, he, evsel->idx, ip);
++		pthread_mutex_unlock(&evsel->hists.lock);
+ 	}
+ 
+ 	return;
+-- 
+1.9.2
 
