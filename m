@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548AbaEWJlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:41:24 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52808 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350AbaEWJlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:41:22 -0400
-Message-ID: <1400838066.29150.69.camel@pasglop>
-Subject: [PATCH] tty/hvc/hvc_console: Fix wakeup of HVC thread on hvc_kick()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>
-Date: Fri, 23 May 2014 19:41:06 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
+	id S1751803AbaEWJnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:43:03 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60237 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659AbaEWJnB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 05:43:01 -0400
+Message-ID: <537F1821.4060109@linaro.org>
+Date: Fri, 23 May 2014 10:42:57 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v2 14/14] mmc: mmci: Add Qcom specific pio_read function.
+References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>	<1400146684-30384-1-git-send-email-srinivas.kandagatla@linaro.org> <CACRpkdbQ_uNoZpW9w7Yf==wt44wun4e+P7WzMp_t0tuCVeUX_g@mail.gmail.com>
+In-Reply-To: <CACRpkdbQ_uNoZpW9w7Yf==wt44wun4e+P7WzMp_t0tuCVeUX_g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some backends call hvc_kick() to wakeup the HVC thread from its
-slumber upon incoming characters. This however doesn't work
-properly because it uses msleep_interruptible() which is mostly
-immune to wake_up_process(). It will basically go back to sleep
-until the timeout is expired (only signals can really wake it).
-
-Replace it with a simple shedule_timeout_interruptible() instead,
-which may wakeup earlier every now and then but we really don't
-care in this case.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- drivers/tty/hvc/hvc_console.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index 94f9e3a..1094265 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -760,10 +760,17 @@ static int khvcd(void *unused)
- 			if (poll_mask == 0)
- 				schedule();
- 			else {
-+				unsigned long j_timeout;
-+
- 				if (timeout < MAX_TIMEOUT)
- 					timeout += (timeout >> 6) + 1;
- 
--				msleep_interruptible(timeout);
-+				/*
-+				 * We don't use msleep_interruptible otherwise
-+				 * "kick" will fail to wake us up
-+				 */
-+				j_timeout = msecs_to_jiffies(timeout) + 1;
-+				schedule_timeout_interruptible(j_timeout);
- 			}
- 		}
- 		__set_current_state(TASK_RUNNING);
 
 
+On 23/05/14 10:31, Linus Walleij wrote:
+> On Thu, May 15, 2014 at 11:38 AM,  <srinivas.kandagatla@linaro.org> wrote:
+>
+>> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>>
+>> MCIFIFOCNT register behaviour on Qcom chips is very different than the other
+>> pl180 integrations. MCIFIFOCNT register contains the number of
+>> words that are still waiting to be transferred through the FIFO. It keeps
+>> decrementing once the host CPU reads the MCIFIFO. With the existing logic and
+>> the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
+>> register will always return transfer size before reading the FIFO.
+>>
+>> Also the data sheet states that "This register is only useful for debug
+>> purposes and should not be used for normal operation since it does not reflect
+>> data which may or may not be in the pipeline".
+>>
+>> This patch implements qcom_pio_read function so as existing mmci_pio_read is
+>> not suitable for Qcom SOCs. qcom_pio_read function is only selected
+>> based on qcom_fifo flag in variant data structure.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> (...)
+>
+>> +static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
+>> +                        unsigned int remain)
+>> +{
+>> +       uint32_t        *ptr = (uint32_t *) buffer;
+>
+Oops..
+
+Sorry Linus, I think this change-set got something different than what I 
+did. I remember your comments in the last review, I did take care of 
+them but some how It got missed... I will fix these and send a new version.
+
+> Just use u32 like the rest of the driver does.
+>
+>> +       int             fifo_size = variant->fifosize;
+>> +
+>> +       if (remain % 4)
+
+>
+> And another variant is to count the *number or words*
+> to read from the FIFO rather than the number of bytes! I would do it
+> like this:
+>
+> static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
+>                          unsigned int remain)
+> {
+>         u32 *ptr = (u32*) buffer;
+>         unsigned int count = 0;
+>         unsigned int words;
+>         unsigned int fifo_size = host->variant->fifosize;
+>
+>         words = DIV_ROUND_UP(remain, 4);
+>         while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
+>                 *ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
+>                 ptr++;
+>                 count += 4;
+>                 remain--;
+>                 if (!remain)
+>                         break;
+>         }
+>         return count;
+> }
+>
+> I guess you will run into additional problems when you come to doing
+> SDIO. This function can return *more* bytes than asked for, as it rounds
+> up. It won't happen with MMC/SD transfers since these are always
+> divisible by 8, but it *will* happen on SDIO!
+>
+> If you look carefully at the comments in mmci_pio_read() you will
+> see how this is handled. Are you sure this function cannot be
+> augmented to handle the qcom variant as well so you don't get this
+> problem further down the road?
+
+I did try to customize the mmci_pio_read function but I failed all the 
+time. The reason being the behaviour of MCI_FIFOCNT register which is 
+totally different to the way the function is written. I will give a try 
+again.
+
+Thanks,
+srini
+>
+> Yours,
+> Linus Walleij
+>
