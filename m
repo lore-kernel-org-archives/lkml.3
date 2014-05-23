@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaEWWsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 18:48:35 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64284 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaEWWsd (ORCPT
+	id S1751454AbaEWWtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 18:49:33 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:59523 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaEWWtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 18:48:33 -0400
+	Fri, 23 May 2014 18:49:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kumar Gala <galak@codeaurora.org>
+Subject: Re: [GIT PULL] qcom driver changes for v3.16
+Date: Sat, 24 May 2014 00:48:52 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
+        "linux-arm-msm" <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        paul@pwsan.com, santosh.shilimkar@ti.com, agross@codeaurora.org,
+        sandeep_n@ti.com
+References: <alpine.DEB.2.00.1405231342160.15680@galak-ubuntu.qualcomm.com>
+In-Reply-To: <alpine.DEB.2.00.1405231342160.15680@galak-ubuntu.qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <CANhyOUd8Q2nzh_bF6LZNuv8keVUB3F45PocYrLP_B=D_Q3tWuQ@mail.gmail.com>
-References: <1400841343-6016-1-git-send-email-t.dakhran@samsung.com>
-	<1400841343-6016-2-git-send-email-t.dakhran@samsung.com>
-	<537FB995.5070604@gmail.com>
-	<CANhyOUd8Q2nzh_bF6LZNuv8keVUB3F45PocYrLP_B=D_Q3tWuQ@mail.gmail.com>
-Date: Sat, 24 May 2014 02:48:31 +0400
-Message-ID: <CANhyOUfp1AL6wJ1Q9kWj=v-n9e2CyxkQOPb8_50M5bY_JN2f9A@mail.gmail.com>
-Subject: Re: [PATCH v10 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
-From: Tarek Dakhran <t.dakhran@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Tarek Dakhran <t.dakhran@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201405240048.52555.arnd@arndb.de>
+X-Provags-ID: V02:K0:QPDF3QZOkBQcIwyRAGm3tGqMOBNsK+692yfttHTWMkW
+ FKLhZLwip+ZXH6K4esBmmRlxVDT0NPjWPN526LUHrwi55YiqSJ
+ IzVj6ySYE6CpKdKrjcqt+6Nid1g/XyAu0qDqfJO2cBsc5DBOWO
+ 321BPeH+0Nc6Zrob1mrC8PaLgdPD79Z5O7cns9KS3v5sp7MPz6
+ poC+dD+oFmHVa7blIs2fA0X6onBQnMjq1kcaMRq5bj9B4ZzbTv
+ ao0JulXVBcbRK0Ch1+JdslW26I2LPQWey9W2TD8x9FPKa7iZAR
+ MSZPG5Jc7gGMygKFdCUQLufCooK45wK3GVsUGxycmlqhQQU70f
+ e5L0dJWxcKqaaAMtTYWw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, only now catch it!
-I agree, this patch is not needed anymore, except Kconfig option.
-config SOC_EXYNOS5410 is needed to build clock stuff.
-What is your opinion, Tomasz?
+On Friday 23 May 2014, Kumar Gala wrote:
+> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+> 
+>    Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+> 
+> are available in the git repository at:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-drivers-for-3.16
+> 
+> for you to fetch changes up to 5d144e36b7c51612922fa05d37ff3a869261cc82:
+> 
+>    soc: qcom: Add GSBI driver (2014-05-23 11:38:04 -0500)
+> 
+> ----------------------------------------------------------------
+> Qualcomm ARM Based driver Updates for v3.16
+> 
+> * Introduce drivers/soc directory for misc SoC specific code
+> * Add driver to configure GSBI device
 
-On Sat, May 24, 2014 at 2:44 AM, Tarek Dakhran <t.dakhran@gmail.com> wrote:
-> Hi Tomazs,
->
-> On Sat, May 24, 2014 at 1:11 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->> Hi Tarek,
->>
->> With v2 of the series I mentioned in review of previous version [1],
->> this patch can be skipped.
->>
->> [1] http://www.spinics.net/lists/linux-samsung-soc/msg31258.html
->>
->> Best regards,
->> Tomasz
->>
->> On 23.05.2014 12:35, Tarek Dakhran wrote:
-> [snip]
->>> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
->>> index 739bdc8..971baf0 100644
->>> --- a/arch/arm/mach-exynos/firmware.c
->>> +++ b/arch/arm/mach-exynos/firmware.c
->>> @@ -50,7 +50,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
->>>
->>>       boot_reg = sysram_ns_base_addr + 0x1c;
->>>
->>> -     if (!soc_is_exynos4212())
->>> +     if (!soc_is_exynos4212() && !soc_is_exynos5410())
->>>               boot_reg += 4*cpu;
->>>
->>>       __raw_writel(boot_addr, boot_reg);
->>>
->
-> I need to define SoC type to set correct bootreg in firmware,
-> otherwise only one cpu can be booted.
-> So, this stuff is needed.
->
-> Best regards,
->      Tarek
+Merged into next/drivers, thanks
+
+	Arnd
