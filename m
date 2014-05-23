@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaEWIRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:17:17 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56094 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146AbaEWIRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:17:14 -0400
-Message-ID: <537F03C8.3070101@ti.com>
-Date: Fri, 23 May 2014 11:16:08 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751200AbaEWIUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:20:05 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:62311 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaEWIUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 04:20:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 01/22] serial: 8250_dw: Add optional reset control support
+Date: Fri, 23 May 2014 10:19:47 +0200
+Message-ID: <8689536.mXHvcWVbGA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400831485-28576-2-git-send-email-wens@csie.org>
+References: <1400831485-28576-1-git-send-email-wens@csie.org> <1400831485-28576-2-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>
-CC: Brian Norris <computersforpeace@gmail.com>, "Gupta, Pekon" <pekon@ti.com>,
-        Robert Nelson <robertcnelson@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>, <dwmw2@infradead.org>,
-        <nsekhar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH 00/16] OMAP: GPMC: Restructure OMAP GPMC driver (NAND)
- : DT binding change proposal
-References: <1400671264-10702-1-git-send-email-rogerq@ti.com> <20140521160818.GA1150@arch.cereza> <537DB17A.6060608@ti.com> <CABxcv=nbgGhVN+XYO8s=mYOpoLU9-kWuEqc+FLMaSbWS7BJNyQ@mail.gmail.com> <20140522144600.GA1785@arch.cereza>
-In-Reply-To: <20140522144600.GA1785@arch.cereza>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Dov30ilL6oWx1ikcy1/B/1RTRvjFUX3cLYmhomp1e1f
+ JQRy5gP+PHlfBrtlm4c29skBFGdzl3voR9W3I7PRitAKMUNT2L
+ kG8Q+KzdSGGLAstIJVpr0WgRQKu5nS46CrAVQ14PzIBaHFtakl
+ P21O/C6rT0MvKNVSr2wQe6S0plarqytg5ERgv4im7k9PqjXHVy
+ LgVyPnaKSy6nGnDox48xK5o0RYS3QTom+UTLqNnS2JN3NthxMc
+ YAFHreSe/KdfqihofDGAMWg6mydaEdk48PKhLEmSuH4kEcpa7F
+ pDVh2J5zhQP2gkuJ8056QeHFP1v2Wu3/gywlgeZ25FUK2ufm3+
+ ZDCDLlg/1GZxdb5tnVDs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ezequiel & Javier,
+On Friday 23 May 2014 15:51:04 Chen-Yu Tsai wrote:
+>                 p->regshift = val;
+>  
+> +       data->rst = devm_reset_control_get_optional(p->dev, NULL);
+> +
+>         /* clock got configured through clk api, all done */
+>         if (p->uartclk)
+>                 return 0;
+> @@ -362,6 +366,9 @@ static int dw8250_probe(struct platform_device *pdev)
+>                 return -ENODEV;
+>         }
+>  
+> +       if (!IS_ERR_OR_NULL(data->rst))
+> +               reset_control_deassert(data->rst);
+> +
 
-On 05/22/2014 05:46 PM, Ezequiel Garcia wrote:
-> On 22 May 01:51 PM, Javier Martinez Canillas wrote:
->> On Thu, May 22, 2014 at 10:12 AM, Roger Quadros <rogerq@ti.com> wrote:
->>>> On 21 May 02:20 PM, Roger Quadros wrote:
->>>>>
->>>>> For DT boot:
->>>>> - The GPMC controller node should have a chip select (CS) node for each used
->>>>>   chip select. The CS node must have a child device node for each device
->>>>>   attached to that chip select. Properties for that child are GPMC agnostic.
->>>>>
->>>>>   i.e.
->>>>>      gpmc {
->>>>>              cs0 {
->>>>>                      nand0 {
->>>>>                      }
->>>>>              };
->>>>>
->>>>>              cs1 {
->>>>>                      nor0 {
->>>>>                      }
->>>>>              }
->>>>>              ...
->>>>>      };
->>>>>
->>>>
->>>> While I agree that the GPMC driver is a bit messy, I'm not sure it's possible
->>>> to go through such a complete devicetree binding re-design (breaking backwards
->>>> compatibility) now that the binding is already in production.
->>>
->>> Why not? especially if the existing bindings are poorly dones. Is anyone using these
->>> bindings burning the DT into ROM and can't change it when they update the kernel?
->>>
->>
->> While I do agree that your DT bindings are much better than the
->> current ones, there is a policy that DT bindings are an external API
->> and once are released with a kernel are set in stone and can't be
->> changed.
->>
-> 
-> Exactly. The DT binding is considered an ABI. Thus, invariant across kernel
-> versions. Users can't be coherced into a DTB update after a kernel update.
-> 
-> That said, I don't really care if you break compatilibity in this case.
-> Rather, I'm suggesting that you make sure this change is going to be accepted
-> upstream, before doing any more work. The DT maintainers are reluctant to do
-> so.
+You should basically never use IS_ERR_OR_NULL(). devm_reset_control_get_optional()
+doesn't return NULL, so IS_ERR() should be safe.
 
-Appreciate your concern.
+Alternatively, change the code above to set data->rst to NULL if there
+is no reset line or error out if you get a different error (e.g. EPROBE_DEFER).
 
-Would be really nice if you can review patches 1-12. They have nothing to do with DT changes.
-Thanks.
-
-cheers,
--roger
-
-> 
-> On the other side, I guess you will also break bisectability while breaking
-> backward compatibility. Doesn't sound very nice.
-> 
-
+	Arnd
