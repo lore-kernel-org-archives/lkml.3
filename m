@@ -1,105 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaEWJeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:34:07 -0400
-Received: from canardo.mork.no ([148.122.252.1]:55199 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178AbaEWJeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:34:04 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Jim Baxter <jim_baxter@mentor.com>
-Cc: David Miller <davem@davemloft.net>, <eric.dumazet@gmail.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <kamal@canonical.com>, <edumazet@google.com>,
-        <mszeredi@suse.cz>, <fw@strlen.de>
-Subject: Re: skbuff truesize incorrect.
-Organization: m
-References: <537E4AFD.20304@mentor.com>
-	<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
-	<1400792601.5367.176.camel@edumazet-glaptop2.roam.corp.google.com>
-	<20140522.171033.1040508444998374401.davem@davemloft.net>
-	<87ppj5vupf.fsf@nemi.mork.no> <537F0DCA.6030901@mentor.com>
-Date: Fri, 23 May 2014 11:33:46 +0200
-In-Reply-To: <537F0DCA.6030901@mentor.com> (Jim Baxter's message of "Fri, 23
-	May 2014 09:58:50 +0100")
-Message-ID: <87vbsw4z5x.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+	id S1751419AbaEWJkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:40:17 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:55109 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaEWJkN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 05:40:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+X-Originating-IP: [95.23.101.217]
+In-Reply-To: <537F03C8.3070101@ti.com>
+References: <1400671264-10702-1-git-send-email-rogerq@ti.com>
+	<20140521160818.GA1150@arch.cereza>
+	<537DB17A.6060608@ti.com>
+	<CABxcv=nbgGhVN+XYO8s=mYOpoLU9-kWuEqc+FLMaSbWS7BJNyQ@mail.gmail.com>
+	<20140522144600.GA1785@arch.cereza>
+	<537F03C8.3070101@ti.com>
+Date: Fri, 23 May 2014 11:40:11 +0200
+Message-ID: <CABxcv=kJA-kWpvcU0Jiy-gJYZP7W0kJjGtq3Fjr0VUBBC_znHg@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/16] OMAP: GPMC: Restructure OMAP GPMC driver (NAND)
+ : DT binding change proposal
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "Gupta, Pekon" <pekon@ti.com>, Robert Nelson <robertcnelson@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>, nsekhar@ti.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-mtd@lists.infradead.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hello Roger,
 
-Jim Baxter <jim_baxter@mentor.com> writes:
+On Fri, May 23, 2014 at 10:16 AM, Roger Quadros <rogerq@ti.com> wrote:
+> Ezequiel & Javier,
+>
+> On 05/22/2014 05:46 PM, Ezequiel Garcia wrote:
+>> On 22 May 01:51 PM, Javier Martinez Canillas wrote:
+>>> On Thu, May 22, 2014 at 10:12 AM, Roger Quadros <rogerq@ti.com> wrote:
+>>>>> On 21 May 02:20 PM, Roger Quadros wrote:
+>>>>>>
+>>>>>> For DT boot:
+>>>>>> - The GPMC controller node should have a chip select (CS) node for each used
+>>>>>>   chip select. The CS node must have a child device node for each device
+>>>>>>   attached to that chip select. Properties for that child are GPMC agnostic.
+>>>>>>
+>>>>>>   i.e.
+>>>>>>      gpmc {
+>>>>>>              cs0 {
+>>>>>>                      nand0 {
+>>>>>>                      }
+>>>>>>              };
+>>>>>>
+>>>>>>              cs1 {
+>>>>>>                      nor0 {
+>>>>>>                      }
+>>>>>>              }
+>>>>>>              ...
+>>>>>>      };
+>>>>>>
+>>>>>
+>>>>> While I agree that the GPMC driver is a bit messy, I'm not sure it's possible
+>>>>> to go through such a complete devicetree binding re-design (breaking backwards
+>>>>> compatibility) now that the binding is already in production.
+>>>>
+>>>> Why not? especially if the existing bindings are poorly dones. Is anyone using these
+>>>> bindings burning the DT into ROM and can't change it when they update the kernel?
+>>>>
+>>>
+>>> While I do agree that your DT bindings are much better than the
+>>> current ones, there is a policy that DT bindings are an external API
+>>> and once are released with a kernel are set in stone and can't be
+>>> changed.
+>>>
+>>
+>> Exactly. The DT binding is considered an ABI. Thus, invariant across kernel
+>> versions. Users can't be coherced into a DTB update after a kernel update.
+>>
+>> That said, I don't really care if you break compatilibity in this case.
+>> Rather, I'm suggesting that you make sure this change is going to be accepted
+>> upstream, before doing any more work. The DT maintainers are reluctant to do
+>> so.
+>
+> Appreciate your concern.
+>
+> Would be really nice if you can review patches 1-12. They have nothing to do with DT changes.
+> Thanks.
+>
 
->> I'll create and test a patch for the cdc_ncm host driver unless someone
->> else wants to do that. I haven't really played with the gadget driver
->> before, so I'd prefer if someone knowing it (Jim maybe?) could take care
->> of it.  If not, then I can always make an attempt using dummy_hcd to
->> test it.
-> I can create a patch for the host driver, I will issue the gadget patch
-> first to resolve any issues, the fix would be similar.
+Overall your patches looks good to me. But I think it's better to wait
+until Tony removes the legacy board files for OMAP2+ since AFAIU at
+least the following patches could be dropped or trimmed down when
+board files are gone:
 
-Well, I couldn't help myself.  I just had to test it.  The attached
-patch works for me, briefly tested with an Ericsson H5321gw NCM device.
-I have no ideas about the performance impact as that modem is limited to
-21 Mbps HSDPA.
+[RFC PATCH 04/16] ARM: OMAP2+: gpmc: use platform data to configure CS
+space and poplulate
+[RFC PATCH 06/16] ARM: OMAP2+: gpmc: add NAND specific setup
+[RFC PATCH 07/16] ARM: OMAP2+: nand: Update gpmc_nand_init() to use
+generic_gpmc_init()
 
+Patches 1-3 and 5 are independent and can be applied in the meantime
+as a preparation for further changes following board files removal.
 
-Bj=C3=B8rn
+I really like patches 9-12 since those moves some NAND add-hoc code to
+the NAND driver where it really belongs. I think that similar changes
+can be made for OneNAND and push the special case handling code from
+GPMC driver to drivers/mtd/onenand/omap2.c.
 
+Other devices (nor, ethernet, uart, etc) are already using
+gpmc_probe_generic_child() so I hope we can isolate the NAND and
+OneNAND specific changes and just use a single probe function for all
+child devices and possibly get even need the enum gpmc_omap_type you
+are adding on your struct gpmc_omap_cs_data.
 
---=-=-=
-Content-Type: text/x-diff; charset=utf-8
-Content-Disposition: inline;
- filename=0001-net-cdc_ncm-reduce-skb-truesize-in-rx-path.patch
-Content-Transfer-Encoding: quoted-printable
+So what do you think if as a first step we add the platform data as
+you propose with all the commons timings and settings there, move all
+the possible code to NAND and OneNAND drivers and try to use a single
+configuration function for all child devices?
 
->From 4c7431cd046a6972e153e23249ad490a3692f9a3 Mon Sep 17 00:00:00 2001
-From: =3D?UTF-8?q?Bj=3DC3=3DB8rn=3D20Mork?=3D <bjorn@mork.no>
-Date: Fri, 23 May 2014 09:40:51 +0200
-Subject: [RFC] net: cdc_ncm: reduce skb truesize in rx path
-MIME-Version: 1.0
-Content-Type: text/plain; charset=3DUTF-8
-Content-Transfer-Encoding: 8bit
+Then once board files are gone we can do further cleanup in the driver
+and then we can discuss about changing the DT bindings. Maybe we can
+even change it while keeping backwards compatibility? Although I'm not
+sure about the last point I think that at least is worth to discuss
+it.
 
-Cloning the big skbs we use for USB buffering chokes up TCP and
-SCTP because the socket memory limits are hitting earlier than
-they should. It is better to unconditionally copy the unwrapped
-packets to freshly allocated skbs.
+> cheers,
+> -roger
+>
 
-Reported-by: Jim Baxter <jim_baxter@mentor.com>
-Signed-off-by: Bj=C3=B8rn Mork <bjorn@mork.no>
----
- drivers/net/usb/cdc_ncm.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+Thanks a lot and best regards,
+Javier
 
-diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
-index 93c9ca9924eb..2bbbd65591c7 100644
---- a/drivers/net/usb/cdc_ncm.c
-+++ b/drivers/net/usb/cdc_ncm.c
-@@ -1289,12 +1289,11 @@ next_ndp:
- 			break;
-=20
- 		} else {
--			skb =3D skb_clone(skb_in, GFP_ATOMIC);
-+			/* create a fresh copy to reduce truesize */
-+			skb =3D netdev_alloc_skb_ip_align(dev->net,  len);
- 			if (!skb)
- 				goto error;
--			skb->len =3D len;
--			skb->data =3D ((u8 *)skb_in->data) + offset;
--			skb_set_tail_pointer(skb, len);
-+			memcpy(skb_put(skb, len), skb_in->data + offset, len);
- 			usbnet_skb_return(dev, skb);
- 			payload +=3D len;	/* count payload bytes in this NTB */
- 		}
---=20
-2.0.0.rc4
-
-
---=-=-=--
+>>
+>> On the other side, I guess you will also break bisectability while breaking
+>> backward compatibility. Doesn't sound very nice.
+>>
+>
