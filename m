@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaEWWtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 18:49:33 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:59523 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaEWWtc (ORCPT
+	id S1751321AbaEWWv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 18:51:56 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:55844 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaEWWvy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 18:49:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kumar Gala <galak@codeaurora.org>
-Subject: Re: [GIT PULL] qcom driver changes for v3.16
-Date: Sat, 24 May 2014 00:48:52 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        "linux-arm-msm" <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
-        paul@pwsan.com, santosh.shilimkar@ti.com, agross@codeaurora.org,
-        sandeep_n@ti.com
-References: <alpine.DEB.2.00.1405231342160.15680@galak-ubuntu.qualcomm.com>
-In-Reply-To: <alpine.DEB.2.00.1405231342160.15680@galak-ubuntu.qualcomm.com>
+	Fri, 23 May 2014 18:51:54 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201405240048.52555.arnd@arndb.de>
-X-Provags-ID: V02:K0:QPDF3QZOkBQcIwyRAGm3tGqMOBNsK+692yfttHTWMkW
- FKLhZLwip+ZXH6K4esBmmRlxVDT0NPjWPN526LUHrwi55YiqSJ
- IzVj6ySYE6CpKdKrjcqt+6Nid1g/XyAu0qDqfJO2cBsc5DBOWO
- 321BPeH+0Nc6Zrob1mrC8PaLgdPD79Z5O7cns9KS3v5sp7MPz6
- poC+dD+oFmHVa7blIs2fA0X6onBQnMjq1kcaMRq5bj9B4ZzbTv
- ao0JulXVBcbRK0Ch1+JdslW26I2LPQWey9W2TD8x9FPKa7iZAR
- MSZPG5Jc7gGMygKFdCUQLufCooK45wK3GVsUGxycmlqhQQU70f
- e5L0dJWxcKqaaAMtTYWw=
+Content-Transfer-Encoding: 8BIT
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1400671381-14792-1-git-send-email-k.kozlowski@samsung.com>
+Cc: "Lee Jones" <lee.jones@linaro.org>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
+        "Tomasz Figa" <t.figa@samsung.com>,
+        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>
+References: <1400671381-14792-1-git-send-email-k.kozlowski@samsung.com>
+Message-ID: <20140523225143.23136.5825@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v4 0/3] clk: s2mps11: Fixes and add support for S2MPS14 clocks
+Date: Fri, 23 May 2014 15:51:43 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 May 2014, Kumar Gala wrote:
-> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+Quoting Krzysztof Kozlowski (2014-05-21 04:22:58)
+> Hi,
 > 
->    Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 > 
-> are available in the git repository at:
+> This is actually a resend of previous patches, rebased on latest
+> 3.15-rc5. There are no changes, beside rebasing.
 > 
->    git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-drivers-for-3.16
+> The first two fixes were posted previously as separate patches and they
+> didn't get review [1]. I am attaching them here.
+> The last patch adds support for S2MPS14 device and already was
+> reviewed/acked [2].
 > 
-> for you to fetch changes up to 5d144e36b7c51612922fa05d37ff3a869261cc82:
-> 
->    soc: qcom: Add GSBI driver (2014-05-23 11:38:04 -0500)
-> 
-> ----------------------------------------------------------------
-> Qualcomm ARM Based driver Updates for v3.16
-> 
-> * Introduce drivers/soc directory for misc SoC specific code
-> * Add driver to configure GSBI device
+> Mike, could you pick them up or should they go through MFD tree?
 
-Merged into next/drivers, thanks
+Applied to clk-next.
 
-	Arnd
+Regards,
+Mike
+
+> 
+> 
+> [1] https://lkml.org/lkml/2014/4/7/42
+> [2] http://thread.gmane.org/gmane.linux.kernel.samsung-soc/28039/focus=310279
+> 
+> 
+> Changes since v3:
+> =================
+> 1. Add Mike's acked-by (see [2]).
+> 2. Rebase patch 3/3 on the fixes (patches 1 and 2).
+> 3. Rebase on v3.15-rc5-157-g60b5f90d0fac
+> 
+> Changes since v2:
+> =================
+> 1. Patch 2/3: Remove MFD cells of_compatible which aren't used by child
+>    drivers and are not documented.
+> 2. Added Tomasz's Review-by.
+> 
+> Changes since v1:
+> =================
+> 1. Patch 1/3: Update driver description in Kconfig.
+> 2. Patch 2/3: Add of_compatible to all MFD cells.
+> 3. Add Yadwinder's Review-by.
+> 
+> 
+> Best regards,
+> Krzysztof
+> 
+> 
+> Krzysztof Kozlowski (3):
+>   clk: s2mps11: Add missing of_node_put and of_clk_del_provider
+>   clk: s2mps11: Remove useless check for clk_table
+>   clk: s2mps11: Add support for S2MPS14 clocks
+> 
+>  drivers/clk/Kconfig       |  8 ++---
+>  drivers/clk/clk-s2mps11.c | 88 +++++++++++++++++++++++++++++++++--------------
+>  2 files changed, 66 insertions(+), 30 deletions(-)
+> 
+> -- 
+> 1.9.1
+> 
