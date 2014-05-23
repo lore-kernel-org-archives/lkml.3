@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672AbaEWOMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:12:12 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:59644 "EHLO extserv.mm-sol.com"
+	id S1752594AbaEWORl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:17:41 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:60036 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264AbaEWOML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:12:11 -0400
-Message-ID: <1400854329.25785.0.camel@violet>
-Subject: Re: [PATCH] pinctrl: Enable "power-source" to be extracted from DT
- files
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 23 May 2014 17:12:09 +0300
-In-Reply-To: <CACRpkdZyLxMTSygRP6pD-mxghQ_D6tQ821tvn8GYw0Rnh9hZoQ@mail.gmail.com>
-References: <1400685297-30754-1-git-send-email-iivanov@mm-sol.com>
-	 <CACRpkdZyLxMTSygRP6pD-mxghQ_D6tQ821tvn8GYw0Rnh9hZoQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752128AbaEWORj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 10:17:39 -0400
+Message-ID: <537F5889.5080902@mm-sol.com>
+Date: Fri, 23 May 2014 17:17:45 +0300
+From: Georgi Djakov <gdjakov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>
+CC: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, sboyd@codeaurora.org,
+        rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1 5/5] ARM: dts: qcom: Add APQ8084 serial port DT node
+References: <1400775885-10296-1-git-send-email-gdjakov@mm-sol.com> <1400775885-10296-6-git-send-email-gdjakov@mm-sol.com> <693A0E52-34CF-4A63-A8D0-A83780F969F0@codeaurora.org>
+In-Reply-To: <693A0E52-34CF-4A63-A8D0-A83780F969F0@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-23 at 15:58 +0200, Linus Walleij wrote:
-> On Wed, May 21, 2014 at 5:14 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> 
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >
-> > Add "power-source" property to generic options used for DT parsing files.
-> > This  enables drivers, which use generic pin configurations, to get the
-> > value passed to this property.
-> >
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> 
-> Great! But please also patch:
-> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> 
-> In this same patch to add the binding, and respin.
+On 05/22/2014 07:32 PM, Kumar Gala wrote:
+>
+> On May 22, 2014, at 11:24 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+>
+>> Add the necessary DT node to probe the serial driver on
+>> APQ8084 platforms.
+>>
+>> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+>> ---
+>> arch/arm/boot/dts/qcom-apq8084.dtsi |    7 +++++++
+>> 1 file changed, 7 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/qcom-apq8084.dtsi b/arch/arm/boot/dts/qcom-apq8084.dtsi
+>> index 2dcd11e..c346549 100644
+>> --- a/arch/arm/boot/dts/qcom-apq8084.dtsi
+>> +++ b/arch/arm/boot/dts/qcom-apq8084.dtsi
+>> @@ -185,5 +185,12 @@
+>> 			reg = <0xfc400000 0x4000>;
+>> 		};
+>>
+>> +		serial@f995e000 {
+>
+> Mark it disabled in the soc.dtsi and “ok” in the board.
+>
 
+Oh, of course!
 
-Sure. Thanks
-
-Ivan
-
-> 
-> Yours,
-> Linus Walleij
-
+Thanks,
+Georgi
 
