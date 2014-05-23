@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaEWLA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 07:00:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54726 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaEWLA4 (ORCPT
+	id S1752436AbaEWLFX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 07:05:23 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:42877 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaEWLFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 07:00:56 -0400
-Message-ID: <537F2A15.9060901@ti.com>
-Date: Fri, 23 May 2014 16:29:33 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 23 May 2014 07:05:22 -0400
+From: <Wei.Yang@windriver.com>
+To: <peppe.cavallaro@st.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v1] net: driver: stmicro: Remove some useless the lock protection
+Date: Fri, 23 May 2014 19:05:03 +0800
+Message-ID: <1400843103-19433-1-git-send-email-Wei.Yang@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
-        <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
-        <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <broonie@linaro.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] mfd: tps65917: Add driver for the TPS65917 PMIC
-References: <1400731239-3180-1-git-send-email-j-keerthy@ti.com> <1400731239-3180-4-git-send-email-j-keerthy@ti.com> <20140522083707.GM6679@lee--X1> <537DD836.3040501@ti.com> <20140522114808.GU6679@lee--X1> <537EBEE4.9050309@ti.com> <20140523100634.GP19747@lee--X1>
-In-Reply-To: <20140523100634.GP19747@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 May 2014 03:36 PM, Lee Jones wrote:
->>>>>> The TPS65917 chip is a power management IC for Portable Navigation Systems
->>>>>> and Tablet Computing devices. It contains the following components:
->>>>>>
->>>>>>   - Regulators.
->>>>>>   - Over Temperature warning and Shut down.
->>>>>>
->>>>>> This patch adds support for tps65917 mfd device. At this time only
->>>>>> the regulator functionality is made available.
->>>>>>
->>>>>> Signed-off-by: Keerthy <j-keerthy@ti.com>
->>>>>> ---
->>>>>> v3 Changes:
->>>>>>
->>>>>>   * Header file formating
->>>>>>   * Changed the cache_type to REGCACHE_RBTREE
->>>>>>   * removed unnecessary code
->>>>>>   * Corrected documentation style
->>>>>>   * Added pm_power_off function
->>>>>>
->>>>>>   v2 Changes:
->>>>>>
->>>>>>   * Added volatile register check as some of the registers
->>>>>>     in the set are volatile.
->>>>>> drivers/mfd/Kconfig          |   12 +
->>>>>>   drivers/mfd/Makefile         |    1 +
->>>>>>   drivers/mfd/tps65917.c       |  594 +++++++++++++++++
->>>>>>   include/linux/mfd/tps65917.h | 1485 ++++++++++++++++++++++++++++++++++++++++++
->>>>>>   4 files changed, 2092 insertions(+)
->>>>>>   create mode 100644 drivers/mfd/tps65917.c
->>>>>>   create mode 100644 include/linux/mfd/tps65917.h
-> [...]
->
->>>>>> +		ret = regmap_read(tps65917->regmap[slave], addr, &reg);
->>>>>> +		if (ret)
->>>>>> +			goto err_irq;
->>>>>> +	}i
->>>>> What does the read do?  You're not doing anything with the value.
->>>> This pad1 and pad2 stuff is not needed. I will remove this.
->>> Then why is it in here?
->>>
->>> Did you copy this code from somewhere, if so, where?
->>>
->>> Okay, I just answered my own question.  There is so much common code
->>> in between this and palmas, there is no way I'm going to accept this
->>> driver.  Please merge it in with the palmas driver!
->>>
->> The chip is more like a subset of palmas with lot of register offset changes
->> and register bit field changes. Adding this would make it clumsy.
->> There could
->> be lot of checks. That is why i chose to write a new driver.
->>
->> Palmas driver already supports palmas variants and tps659038. Merging
->> this would mean more and more checks :-/.
-> Then find an elegant way of representing the variants.  I'm not
-> prepared to carry that much duplicated code in MFD.  It's already
-> overladened and in need of an overhaul.  This will exacerbate the
-> matter.
->
+From: Yang Wei <Wei.Yang@windriver.com>
 
-Okay. I am working on that.
+kernel always invokes a pair of rtnl_lock adn rtnl_unlock to
+protect dev_ethtool(), so its not neccessary to invoke spin_lock/unlock
+in ethtool_ops.
 
-Regards,
-Keerthy
+Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+---
+
+ .../net/ethernet/stmicro/stmmac/stmmac_ethtool.c   |    8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+index a49339d..a2f19e1 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+@@ -231,9 +231,7 @@ static int stmmac_ethtool_getsettings(struct net_device *dev,
+ 		return -EBUSY;
+ 	}
+ 	cmd->transceiver = XCVR_INTERNAL;
+-	spin_lock_irq(&priv->lock);
+ 	rc = phy_ethtool_gset(phy, cmd);
+-	spin_unlock_irq(&priv->lock);
+ 	return rc;
+ }
+ 
+@@ -244,9 +242,7 @@ static int stmmac_ethtool_setsettings(struct net_device *dev,
+ 	struct phy_device *phy = priv->phydev;
+ 	int rc;
+ 
+-	spin_lock(&priv->lock);
+ 	rc = phy_ethtool_sset(phy, cmd);
+-	spin_unlock(&priv->lock);
+ 
+ 	return rc;
+ }
+@@ -313,7 +309,6 @@ stmmac_get_pauseparam(struct net_device *netdev,
+ {
+ 	struct stmmac_priv *priv = netdev_priv(netdev);
+ 
+-	spin_lock(&priv->lock);
+ 
+ 	pause->rx_pause = 0;
+ 	pause->tx_pause = 0;
+@@ -324,7 +319,6 @@ stmmac_get_pauseparam(struct net_device *netdev,
+ 	if (priv->flow_ctrl & FLOW_TX)
+ 		pause->tx_pause = 1;
+ 
+-	spin_unlock(&priv->lock);
+ }
+ 
+ static int
+@@ -336,7 +330,6 @@ stmmac_set_pauseparam(struct net_device *netdev,
+ 	int new_pause = FLOW_OFF;
+ 	int ret = 0;
+ 
+-	spin_lock(&priv->lock);
+ 
+ 	if (pause->rx_pause)
+ 		new_pause |= FLOW_RX;
+@@ -352,7 +345,6 @@ stmmac_set_pauseparam(struct net_device *netdev,
+ 	} else
+ 		priv->hw->mac->flow_ctrl(priv->ioaddr, phy->duplex,
+ 					 priv->flow_ctrl, priv->pause);
+-	spin_unlock(&priv->lock);
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
+
