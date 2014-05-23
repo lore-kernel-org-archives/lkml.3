@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaEWCxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 22:53:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22425 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaEWCxq (ORCPT
+	id S1751678AbaEWCzS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 22:55:18 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:54752 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaEWCzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 22:53:46 -0400
-Message-ID: <537EB82E.1000907@oracle.com>
-Date: Thu, 22 May 2014 22:53:34 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 22 May 2014 22:55:15 -0400
 MIME-Version: 1.0
-To: m.chehab@samsung.com, hans.verkuil@cisco.com
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        linux-media@vger.kernel.org
-Subject: Re: v4l2: circular locking between mmap_sem and device mutex
-References: <5367B2F8.7020905@oracle.com>
-In-Reply-To: <5367B2F8.7020905@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <537E8ACF.6000103@amd.com>
+References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521233802.GA21575@pd.tnic> <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
+ <20140522191746.GL4383@pd.tnic> <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
+ <537E8ACF.6000103@amd.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 22 May 2014 20:54:54 -0600
+Message-ID: <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
+Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: Borislav Petkov <bp@alien8.de>, Robert Richter <rric@kernel.org>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+On Thu, May 22, 2014 at 5:39 PM, Suravee Suthikulanit
+<suravee.suthikulpanit@amd.com> wrote:
+> On 5/22/2014 3:20 PM, Bjorn Helgaas wrote:
+>> On Thu, May 22, 2014 at 1:17 PM, Borislav Petkov <bp@alien8.de> wrote:
+>>> On Thu, May 22, 2014 at 11:56:03AM -0600, Bjorn Helgaas wrote:
+>>>>
+>>>> I chose Fam16h (0x16) because it looks like that's the newest stuff
+>>>> that's in the field. I suspect things would probably work if we
+>>>> changed this patch to leave ECS disabled on some Fam16h, Fam15h, etc.,
+>>>> but that would change behavior on existing systems, which obviously
+>>>> adds some risk. I didn't think there was much benefit that makes the
+>>>> risk worthwhile.
+>>>>
+>>>> My goal is to stop needing CPU-specific changes in the future, not
+>>>> necessarily to remove the CPU-specific code we already have.
+>>>>
+>>>> Does that make sense? I'm not sure whether I understood your real
+>>>> question.
+>>>
+>>> No, you got it right. I'm just wondering why only the newest stuff.
+>>> MMCONFIG is supposed to work just fine on everything from Fam10h
+>>> onwards, I'm not sure all Fam10h supported it though. Maybe Suravee can
+>>> verify that...
+>>
+>> Even if MMCONFIG does work fine on everything from Fam10h onwards, we
+>> still depend on the BIOS to provide a correct MCFG table.  I don't
+>> think we can guarantee that changing from ECS to MMCONFIG on a Fam16h
+>> box in the field is safe, because we'd then be using a feature we've
+>> never used before.
+>
+> At this point, family11h and later (upto 16h which is our most current
+> processor) should already have supports for the MCFG. However, we can't
+> guarantee that all the systems currently out there would not use the ECS.
+> So, I think it is ok to say we won't support it post 16h as Bjorn suggests.
 
-On 05/05/2014 11:49 AM, Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running latest -next
-> kernel I've stumbled on the following:
-> 
-> 
-> [ 2179.111265] ======================================================
-> [ 2179.112228] [ INFO: possible circular locking dependency detected ]
-> [ 2179.113144] 3.15.0-rc3-next-20140502-sasha-00020-g3183c20 #432 Tainted: G        W
-> [ 2179.114325] -------------------------------------------------------
-> [ 2179.115286] trinity-c15/27050 is trying to acquire lock:
-> [ 2179.116071] (&dev->mutex#3){+.+.+.}, at: vb2_fop_mmap (drivers/media/v4l2-core/videobuf2-core.c:3029 (discriminator 1))
-> [ 2179.117347]
-> [ 2179.117347] but task is already holding lock:
-> [ 2179.118185] (&mm->mmap_sem){++++++}, at: vm_mmap_pgoff (mm/util.c:398)
-> [ 2179.120023]
-> [ 2179.120023] which lock already depends on the new lock.
-> [ 2179.120023]
-> [ 2179.120036]
-> [ 2179.120036] the existing dependency chain (in reverse order) is:
-> [ 2179.120036]
-> -> #1 (&mm->mmap_sem){++++++}:
-> [ 2179.120036] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-> [ 2179.120036] might_fault (mm/memory.c:4368)
-> [ 2179.120036] video_usercopy (arch/x86/include/asm/uaccess.h:713 drivers/media/v4l2-core/v4l2-ioctl.c:2369)
-> [ 2179.120036] video_ioctl2 (drivers/media/v4l2-core/v4l2-ioctl.c:2445)
-> [ 2179.120036] v4l2_ioctl (drivers/media/v4l2-core/v4l2-dev.c:355)
-> [ 2179.120036] do_vfs_ioctl (fs/ioctl.c:44 fs/ioctl.c:598)
-> [ 2179.120036] SyS_ioctl (include/linux/file.h:38 fs/ioctl.c:614 fs/ioctl.c:604)
-> [ 2179.120036] tracesys (arch/x86/kernel/entry_64.S:746)
-> [ 2179.120036]
-> -> #0 (&dev->mutex#3){+.+.+.}:
-> [ 2179.120036] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-> [ 2179.120036] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-> [ 2179.120036] mutex_lock_interruptible_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:616)
-> [ 2179.120036] vb2_fop_mmap (drivers/media/v4l2-core/videobuf2-core.c:3029 (discriminator 1))
-> [ 2179.120036] v4l2_mmap (drivers/media/v4l2-core/v4l2-dev.c:427)
-> [ 2179.120036] mmap_region (mm/mmap.c:1577)
-> [ 2179.120036] do_mmap_pgoff (mm/mmap.c:1369)
-> [ 2179.120036] vm_mmap_pgoff (mm/util.c:400)
-> [ 2179.120036] SyS_mmap_pgoff (mm/mmap.c:1418 mm/mmap.c:1378)
-> [ 2179.120036] SyS_mmap (arch/x86/kernel/sys_x86_64.c:72)
-> [ 2179.120036] tracesys (arch/x86/kernel/entry_64.S:746)
-> [ 2179.120036]
-> [ 2179.120036] other info that might help us debug this:
-> [ 2179.120036]
-> [ 2179.120036]  Possible unsafe locking scenario:
-> [ 2179.120036]
-> [ 2179.120036]        CPU0                    CPU1
-> [ 2179.120036]        ----                    ----
-> [ 2179.120036]   lock(&mm->mmap_sem);
-> [ 2179.120036]                                lock(&dev->mutex#3);
-> [ 2179.120036]                                lock(&mm->mmap_sem);
-> [ 2179.120036]   lock(&dev->mutex#3);
-> [ 2179.120036]
-> [ 2179.120036]  *** DEADLOCK ***
-> [ 2179.120036]
-> [ 2179.120036] 1 lock held by trinity-c15/27050:
-> [ 2179.120036] #0: (&mm->mmap_sem){++++++}, at: vm_mmap_pgoff (mm/util.c:398)
-> [ 2179.120036]
-> [ 2179.120036] stack backtrace:
-> [ 2179.120036] CPU: 1 PID: 27050 Comm: trinity-c15 Tainted: G        W     3.15.0-rc3-next-20140502-sasha-00020-g3183c20 #432
-> [ 2179.120036]  ffffffffbaa718e0 ffff88065df9dab8 ffffffffb75326bb 0000000000000002
-> [ 2179.120036]  ffffffffbaa718e0 ffff88065df9db08 ffffffffb7525488 0000000000000001
-> [ 2179.120036]  ffff88065df9db98 ffff88065df9db08 ffff88065dd63cf0 ffff88065dd63d28
-> [ 2179.120036] Call Trace:
-> [ 2179.120036] dump_stack (lib/dump_stack.c:52)
-> [ 2179.120036] print_circular_bug (kernel/locking/lockdep.c:1216)
-> [ 2179.120036] __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-> [ 2179.120036] ? mmap_region (mm/mmap.c:1556)
-> [ 2179.120036] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-> [ 2179.120036] ? vb2_fop_mmap (drivers/media/v4l2-core/videobuf2-core.c:3029 (discriminator 1))
-> [ 2179.120036] mutex_lock_interruptible_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:616)
-> [ 2179.120036] ? vb2_fop_mmap (drivers/media/v4l2-core/videobuf2-core.c:3029 (discriminator 1))
-> [ 2179.120036] ? vb2_fop_mmap (drivers/media/v4l2-core/videobuf2-core.c:3029 (discriminator 1))
-> [ 2179.120036] ? get_parent_ip (kernel/sched/core.c:2485)
-> [ 2179.120036] vb2_fop_mmap (drivers/media/v4l2-core/videobuf2-core.c:3029 (discriminator 1))
-> [ 2179.120036] ? mmap_region (mm/mmap.c:1556)
-> [ 2179.120036] ? mmap_region (mm/mmap.c:1556)
-> [ 2179.120036] v4l2_mmap (drivers/media/v4l2-core/v4l2-dev.c:427)
-> [ 2179.120036] mmap_region (mm/mmap.c:1577)
-> [ 2179.120036] do_mmap_pgoff (mm/mmap.c:1369)
-> [ 2179.120036] ? vm_mmap_pgoff (mm/util.c:398)
-> [ 2179.120036] vm_mmap_pgoff (mm/util.c:400)
-> [ 2179.120036] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-> [ 2179.120036] ? __fget (fs/file.c:633)
-> [ 2179.120036] SyS_mmap_pgoff (mm/mmap.c:1418 mm/mmap.c:1378)
-> [ 2179.120036] SyS_mmap (arch/x86/kernel/sys_x86_64.c:72)
-> [ 2179.120036] tracesys (arch/x86/kernel/entry_64.S:746)
-> 
-> 
-> Thanks,
-> Sasha
-> 
+I think this is more a BIOS question than a hardware question.  I'm
+sure all current AMD hardware supports ECAM just fine.  But it's still
+up to the BIOS to produce a valid MCFG table, so OEMs could still have
+issues, and *that's* what I'm worried about.
 
+I've been poking around for recent dmesg logs that contain "PCI: Using
+configuration type 1 for extended access", and there are quite a few.
+In most cases there *is* an MCFG table, but apparently we decide not
+to use it for some reason (unfortunately we don't print the specific
+reason).  One example is at
+https://bugzilla.kernel.org/show_bug.cgi?id=68591 .
+
+I'm going to go out on a limb and guess that Windows does not enable
+ECS, so it probably uses ECAM.  Therefore, I suspect Linux's parsing
+of MCFG is broken in some way, and we probably *could* use ECAM in all
+these cases I'm seeing.
+
+It would probably be prudent to figure out why Linux is rejecting
+these MCFG tables.  We'll probably see similar tables on Fam17h
+systems, and if we continue rejecting them, and we don't turn on ECS,
+we won't be able to access extended config space.
+
+I opened a bugzilla for this issue:
+https://bugzilla.kernel.org/show_bug.cgi?id=76771
+
+I'm wavering on whether it's a good idea to put this patch in before
+understanding the issue.  As much as I'd like to stop fiddling with
+ECS, we'd likely end up with a v3.15 where extended config space
+doesn't work on some Fam17h systems.
+
+Bjorn
