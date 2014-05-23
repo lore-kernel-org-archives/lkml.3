@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaEWPgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:36:14 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:56038 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaEWPgN (ORCPT
+	id S1752578AbaEWPii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:38:38 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47446 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaEWPih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:36:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Paul Bolle <pebolle@tiscali.nl>,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH v5 3/5] ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
-Date: Fri, 23 May 2014 17:35:34 +0200
-Message-ID: <5013253.K6sZTxep7b@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400857819-7975-4-git-send-email-daniel.thompson@linaro.org>
-References: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org> <1400857819-7975-1-git-send-email-daniel.thompson@linaro.org> <1400857819-7975-4-git-send-email-daniel.thompson@linaro.org>
+	Fri, 23 May 2014 11:38:37 -0400
+Message-ID: <537F6B2E.5080907@linux.vnet.ibm.com>
+Date: Fri, 23 May 2014 21:07:18 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:KN48WyE/8OUgOlwO70kTmaobWZOtUEHjDGCsyXpdzZI
- 8lPkNZhoAqkGO+OlVMBaQq0vqv0MN2p2BypLTt7S6oCOtI04ql
- f307I110DJzhPTG0BIvVAcksNho9pssTCR445vcMGoOBSIpNRF
- TL5VqJkHUN8iMwC2RW9sSkzVt4KjjNMgRQV+IlqNzg5+EU6AII
- Gbu/P2xyksd6AydZ7UW+DfRCH6QHYnTYpwCFrqKssZeUKpmIff
- rKlHQh673daZASBYACALVUnZF76sXLWodKY4FDqrACv+o676lr
- KkjSJ74Xvjm3g1Y0L1J6Dluds8riKn3QcT6QNwRtJQRkef8uEs
- rPXtrB8yKtrlPzThLeoA=
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, tglx@linutronix.de,
+        mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, hch@infradead.org, mgorman@suse.de,
+        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
+        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com> <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com> <20140523132250.GA1768@localhost.localdomain> <537F5F0F.5050802@linux.vnet.ibm.com> <20140523151252.GE30445@twins.programming.kicks-ass.net> <537F66AF.30303@linux.vnet.ibm.com> <20140523153113.GG30445@twins.programming.kicks-ass.net> <537F6A53.1080703@linux.vnet.ibm.com>
+In-Reply-To: <537F6A53.1080703@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052315-1396-0000-0000-000004E6743E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 May 2014 16:10:17 Daniel Thompson wrote:
-> Only a small handful of platforms support DEBUG_LL_UART_NONE but it
-> lurks in the menus of every single platform config ready to break the
-> build. This is an especial problem for defconfigs since it is often
-> selected by default.
+On 05/23/2014 09:03 PM, Srivatsa S. Bhat wrote:
+> On 05/23/2014 09:01 PM, Peter Zijlstra wrote:
+>> On Fri, May 23, 2014 at 08:48:07PM +0530, Srivatsa S. Bhat wrote:
+>>> On 05/23/2014 08:42 PM, Peter Zijlstra wrote:
+>>>> On Fri, May 23, 2014 at 08:15:35PM +0530, Srivatsa S. Bhat wrote:
+>>>>>>> +		 * During CPU offline, we don't want the other CPUs to send
+>>>>>>> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
+>>>>>>> +		 * disabled interrupts (because, then it will notice the IPIs
+>>>>>>> +		 * only after it has gone offline). We can prevent this by
+>>>>>>> +		 * making the other CPUs disable their interrupts first - that
+>>>>>>> +		 * way, they will run the stop-machine code with interrupts
+>>>>>>> +		 * disabled, and hence won't send IPIs after that point.
+>>>>
+>>>> That's complete nonsense, you can send IPIs all you want with interrupts
+>>>> disabled.
+>>>>
+>>>
+>>> True, but that's not what the comment says. It says "you can't send IPIs
+>>> because you are running the *stop-machine* loop, because the stop-machine loop
+>>> doesn't send IPIs itself! The only possibility of sending IPIs from within
+>>> stop-machine is if that CPU can takes an interrupt and the *interrupt handler*
+>>> sends the IPI (like what the block layer used to do) - and we precisely avoid
+>>> that possibility by disabling interrupts. So no IPIs will be sent beyond
+>>> this point.
+>>
+>> but one of those CPUs is running the stop machine function, which calls
+>> CPU_DYING which runs all kinds of nonsense and therefore can send IPIs
+>> all it wants, right?
+>>
 > 
-> This patch limit this choice only to platforms capable of supporting it.
+> Yes, but that CPU certainly won't IPI itself! (We are trying to avoid getting
+> IPIs on precisely that CPU - the one which is about to go offline).
 > 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> ---
->  arch/arm/Kconfig.debug | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index eab8ecb..4c8d7db 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -842,7 +842,18 @@ choice
->  
->  	config DEBUG_LL_UART_NONE
->  		bool "No low-level debugging UART"
-> -		depends on !ARCH_MULTIPLATFORM
-> +		depends on ARCH_AT91 || \
-> +			ARCH_CLPS711X || \
-> +			ARCH_FOOTBRIDGE || \
-> +			ARCH_KS8695 || \
-> +			ARCH_NETX || \
-> +			ARCH_OMAP1 || \
-> +			ARCH_SA1100 || \
-> +			ARCH_S3C24XX || \
-> +			ARCH_S3C64XX || \
-> +			ARCH_S5P64X0 || \
-> +			ARCH_S5PC100 || \
-> +			ARCH_S5PV210
->  		help
->  		  Say Y here if your platform doesn't provide a UART option
->  		  above. This relies on your platform choosing the right UART
 
-ARCH_S3C24XX has been moved over in linux-next to use debug/s3c24xx.S.
-A few others will likely move soon (AT91, CLPS711x, S5PV210), as the
-platforms get moved to ARCH_MULTIPLATFORM.
+And the comment makes that distinction between the "active-cpu" and "other CPUs"
+(where active-cpu is the one which runs the stop-machine function and eventually
+goes offline). Thus "other CPUs" won't send IPIs after that point, because they
+are running the stop-machine loop with interrupts disabled. This ensures that
+the "active-cpu" doesn't get any IPIs - which is what we want.
 
-As an alternative to your patch, we could decide to move the remaining
-files as well.
+Regards,
+Srivatsa S. Bhat
 
-	Arnd
