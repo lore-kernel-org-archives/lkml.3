@@ -1,250 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaEWPpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:45:08 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47328 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753087AbaEWPpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:45:04 -0400
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
-        <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <grant.likely@linaro.org>
-CC: <rdunlap@infradead.org>, <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
-        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
-        <sergei.shtylyov@cogentembedded.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v7 1/7] power: reset: keystone-reset: introduce keystone reset driver
-Date: Fri, 23 May 2014 18:43:26 +0300
-Message-ID: <1400859812-5761-2-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
+	id S1752841AbaEWPtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:49:20 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54753 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaEWPtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:49:19 -0400
+Date: Fri, 23 May 2014 17:48:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, tglx@linutronix.de,
+        mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, hch@infradead.org, mgorman@suse.de,
+        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
+        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+Message-ID: <20140523154858.GH30445@twins.programming.kicks-ass.net>
+References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com>
+ <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com>
+ <20140523132250.GA1768@localhost.localdomain>
+ <537F5F0F.5050802@linux.vnet.ibm.com>
+ <20140523151252.GE30445@twins.programming.kicks-ass.net>
+ <537F66AF.30303@linux.vnet.ibm.com>
+ <20140523153113.GG30445@twins.programming.kicks-ass.net>
+ <537F6A53.1080703@linux.vnet.ibm.com>
+ <537F6B2E.5080907@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eW1Iu04vutECMx4l"
+Content-Disposition: inline
+In-Reply-To: <537F6B2E.5080907@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The keystone SoC can be rebooted in several ways. By external reset
-pin, by soft and by watchdogs. To allow keystone SoC reset if
-watchdog is triggered we have to enable it in reset mux configuration
-register regarding of watchdog configuration. Also we need to set
-soft/hard reset we are going to use.
 
-So add keystone reset driver to handle all this stuff.
+--eW1Iu04vutECMx4l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- drivers/power/reset/Kconfig          |   8 ++
- drivers/power/reset/Makefile         |   1 +
- drivers/power/reset/keystone-reset.c | 166 +++++++++++++++++++++++++++++++++++
- 3 files changed, 175 insertions(+)
- create mode 100644 drivers/power/reset/keystone-reset.c
+On Fri, May 23, 2014 at 09:07:18PM +0530, Srivatsa S. Bhat wrote:
+> On 05/23/2014 09:03 PM, Srivatsa S. Bhat wrote:
+> > On 05/23/2014 09:01 PM, Peter Zijlstra wrote:
+> >> On Fri, May 23, 2014 at 08:48:07PM +0530, Srivatsa S. Bhat wrote:
+> >>> On 05/23/2014 08:42 PM, Peter Zijlstra wrote:
+> >>>> On Fri, May 23, 2014 at 08:15:35PM +0530, Srivatsa S. Bhat wrote:
+> >>>>>>> +		 * During CPU offline, we don't want the other CPUs to send
+> >>>>>>> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
+> >>>>>>> +		 * disabled interrupts (because, then it will notice the IPIs
+> >>>>>>> +		 * only after it has gone offline). We can prevent this by
+> >>>>>>> +		 * making the other CPUs disable their interrupts first - that
+> >>>>>>> +		 * way, they will run the stop-machine code with interrupts
+> >>>>>>> +		 * disabled, and hence won't send IPIs after that point.
+> >>>>
+> >>>> That's complete nonsense, you can send IPIs all you want with interr=
+upts
+> >>>> disabled.
+> >>>>
+> >>>
+> >>> True, but that's not what the comment says. It says "you can't send I=
+PIs
+> >>> because you are running the *stop-machine* loop, because the stop-mac=
+hine loop
+> >>> doesn't send IPIs itself! The only possibility of sending IPIs from w=
+ithin
+> >>> stop-machine is if that CPU can takes an interrupt and the *interrupt=
+ handler*
+> >>> sends the IPI (like what the block layer used to do) - and we precise=
+ly avoid
+> >>> that possibility by disabling interrupts. So no IPIs will be sent bey=
+ond
+> >>> this point.
+> >>
+> >> but one of those CPUs is running the stop machine function, which calls
+> >> CPU_DYING which runs all kinds of nonsense and therefore can send IPIs
+> >> all it wants, right?
+> >>
+> >=20
+> > Yes, but that CPU certainly won't IPI itself! (We are trying to avoid g=
+etting
+> > IPIs on precisely that CPU - the one which is about to go offline).
+> >=20
+>=20
+> And the comment makes that distinction between the "active-cpu" and "othe=
+r CPUs"
+> (where active-cpu is the one which runs the stop-machine function and eve=
+ntually
+> goes offline). Thus "other CPUs" won't send IPIs after that point, becaus=
+e they
+> are running the stop-machine loop with interrupts disabled. This ensures =
+that
+> the "active-cpu" doesn't get any IPIs - which is what we want.
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index fa0e4e0..d095e5b 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -57,3 +57,11 @@ config POWER_RESET_XGENE
- 	depends on POWER_RESET
- 	help
- 	  Reboot support for the APM SoC X-Gene Eval boards.
-+
-+config POWER_RESET_KEYSTONE
-+	bool "Keystone reset driver"
-+	depends on ARCH_KEYSTONE
-+	select MFD_SYSCON
-+	help
-+	  Reboot support for the KEYSTONE SoCs.
-+
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index a5b4a77..802a420 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -5,3 +5,4 @@ obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
- obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
- obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
- obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
-+obj-$(CONFIG_POWER_RESET_KEYSTONE) += keystone-reset.o
-diff --git a/drivers/power/reset/keystone-reset.c b/drivers/power/reset/keystone-reset.c
-new file mode 100644
-index 0000000..408a18f
---- /dev/null
-+++ b/drivers/power/reset/keystone-reset.c
-@@ -0,0 +1,166 @@
-+/*
-+ * TI keystone reboot driver
-+ *
-+ * Copyright (C) 2014 Texas Instruments Incorporated. http://www.ti.com/
-+ *
-+ * Author: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/reboot.h>
-+#include <linux/regmap.h>
-+#include <asm/system_misc.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/of_platform.h>
-+
-+#define RSTYPE_RG			0x0
-+#define RSCTRL_RG			0x4
-+#define RSCFG_RG			0x8
-+#define RSISO_RG			0xc
-+
-+#define RSCTRL_KEY_MASK			0x0000ffff
-+#define RSCTRL_RESET_MASK		BIT(16)
-+#define RSCTRL_KEY			0x5a69
-+
-+#define RSMUX_OMODE_MASK		0xe
-+#define RSMUX_OMODE_RESET_ON		0xa
-+#define RSMUX_OMODE_RESET_OFF		0x0
-+#define RSMUX_LOCK_MASK			0x1
-+#define RSMUX_LOCK_SET			0x1
-+
-+#define RSCFG_RSTYPE_SOFT		0x300f
-+#define RSCFG_RSTYPE_HARD		0x0
-+
-+#define WDT_MUX_NUMBER			0x4
-+
-+static int rspll_offset;
-+static struct regmap *pllctrl_regs;
-+
-+/**
-+ * rsctrl_enable_rspll_write - enable access to RSCTRL, RSCFG
-+ * To be able to access to RSCTRL, RSCFG registers
-+ * we have to write a key before
-+ */
-+static inline int rsctrl_enable_rspll_write(void)
-+{
-+	return regmap_update_bits(pllctrl_regs, rspll_offset + RSCTRL_RG,
-+				  RSCTRL_KEY_MASK, RSCTRL_KEY);
-+}
-+
-+static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	/* enable write access to RSTCTRL */
-+	rsctrl_enable_rspll_write();
-+
-+	/* reset the SOC */
-+	regmap_update_bits(pllctrl_regs, rspll_offset + RSCTRL_RG,
-+			   RSCTRL_RESET_MASK, 0);
-+}
-+
-+static struct of_device_id rsctrl_of_match[] = {
-+	{.compatible = "ti,keystone-reset", },
-+	{},
-+};
-+
-+static int rsctrl_probe(struct platform_device *pdev)
-+{
-+	int i;
-+	int ret;
-+	u32 val;
-+	unsigned int rg;
-+	u32 rsmux_offset;
-+	struct regmap *devctrl_regs;
-+	struct device *dev = &pdev->dev;
-+	struct device_node *np = dev->of_node;
-+
-+	if (!np)
-+		return -ENODEV;
-+
-+	/* get regmaps */
-+	pllctrl_regs = syscon_regmap_lookup_by_phandle(np, "ti,syscon-pll");
-+	if (IS_ERR(pllctrl_regs))
-+		return PTR_ERR(pllctrl_regs);
-+
-+	devctrl_regs = syscon_regmap_lookup_by_phandle(np, "ti,syscon-dev");
-+	if (IS_ERR(devctrl_regs))
-+		return PTR_ERR(devctrl_regs);
-+
-+	ret = of_property_read_u32_index(np, "ti,syscon-pll", 1, &rspll_offset);
-+	if (ret) {
-+		dev_err(dev, "couldn't read the reset pll offset!\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = of_property_read_u32_index(np, "ti,syscon-dev", 1, &rsmux_offset);
-+	if (ret) {
-+		dev_err(dev, "couldn't read the rsmux offset!\n");
-+		return -EINVAL;
-+	}
-+
-+	/* set soft/hard reset */
-+	val = of_property_read_bool(np, "ti,soft-reset");
-+	val = val ? RSCFG_RSTYPE_SOFT : RSCFG_RSTYPE_HARD;
-+
-+	ret = rsctrl_enable_rspll_write();
-+	if (ret)
-+		return ret;
-+
-+	ret = regmap_write(pllctrl_regs, rspll_offset + RSCFG_RG, val);
-+	if (ret)
-+		return ret;
-+
-+	arm_pm_restart = rsctrl_restart;
-+
-+	/* disable a reset isolation for all module clocks */
-+	ret = regmap_write(pllctrl_regs, rspll_offset + RSISO_RG, 0);
-+	if (ret)
-+		return ret;
-+
-+	/* enable a reset for watchdogs from wdt-list */
-+	for (i = 0; i < WDT_MUX_NUMBER; i++) {
-+		ret = of_property_read_u32_index(np, "ti,wdt-list", i, &val);
-+		if (ret == -EOVERFLOW && !i) {
-+			dev_err(dev, "ti,wdt-list property has to contain at"
-+				"least one entry\n");
-+			return -EINVAL;
-+		} else if (ret) {
-+			break;
-+		}
-+
-+		if (val >= WDT_MUX_NUMBER) {
-+			dev_err(dev, "ti,wdt-list property can contain"
-+				"only numbers < 4\n");
-+			return -EINVAL;
-+		}
-+
-+		rg = rsmux_offset + val * 4;
-+
-+		ret = regmap_update_bits(devctrl_regs, rg, RSMUX_OMODE_MASK,
-+					 RSMUX_OMODE_RESET_ON |
-+					 RSMUX_LOCK_SET);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver rsctrl_driver = {
-+	.probe = rsctrl_probe,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = KBUILD_MODNAME,
-+		.of_match_table = rsctrl_of_match,
-+	},
-+};
-+module_platform_driver(rsctrl_driver);
-+
-+MODULE_AUTHOR("Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>");
-+MODULE_DESCRIPTION("Texas Instruments keystone reset driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:" KBUILD_MODNAME);
--- 
-1.8.3.2
+OK, so clearly I'm having trouble reading today :/ Makes sense now.
 
+But yes, its unlikely for CPU_DYING to self-IPI, although if you really
+want, I can do ;-)
+
+And I guess the one extra state doesn't hurt too bad for
+stop_two_cpus().
+
+--eW1Iu04vutECMx4l
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTf23qAAoJEHZH4aRLwOS6OuIQAI4x9qxsWzVrf9Tx6T4vrrFm
+1cYP1NzHdtyjl2hW2svI/4B91cuOq7PAv8F39xWmD/mFT6KD2mNjk/r8W2vjPV8A
+cf+SdIjldAFqOgpLFSwnBqzmwDTnfWzn3JgmhzN3IU8ZYc+26e7zOWKEFa/yA9cT
+ZJ0l8LwKa0sVVw0a3kqFno3LJOcA342OabcvfSa/rzEANNXPVVK2pBL8j0yPbdeE
+WsFkcVQr/aI5HWtKFTQogXekYAiZTq71Nsq7UMzukIA5t07Nip4LZhAQdA3uoeI0
+c+EJJPP+dt5Iy+SZKrCDY51rDhYPtiwsXQv0Cbm7sO/+ofIIVsEIXL+VJbLIe944
+Baek+TJlJaGEtK2hWczJISaZNk6vbC4Upuhckzp0Pn3D2Q6Rgydh2xxJyl5kR5rp
+1skSOBySnRknUuSUviLu8zVXRV+/CfK0Qo5lcwzz2AWAq5tzv4Klnd6kn38p7e3I
++RdThtxMvcHt8Ekql05olzv2BAE8M++l9Bs41xT9lr9UwxF23kP51IBBQ2nlU7mt
+S/D9+Ji2tWzRV67jhEDzbOsTHjFGd91IXnGVJAm58qdZs8KWclqK30ZE9RQln/WF
+Mgs3hS849kiOrxdQdDhahY7IzJk746KBktKlK7MlH5WOvBgwPPWsTbi4HqAt16Y1
+/q0c+zaa0o7R7vMhUiAh
+=RcN5
+-----END PGP SIGNATURE-----
+
+--eW1Iu04vutECMx4l--
