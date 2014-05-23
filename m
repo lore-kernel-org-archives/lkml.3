@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaEWRv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:51:57 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:50422 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751168AbaEWRv4 (ORCPT
+	id S1751534AbaEWRyA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:54:00 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40463 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaEWRx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:51:56 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 May 2014 13:51:56 EDT
-Date: Fri, 23 May 2014 12:45:48 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: hannes@cmpxchg.org, mhocko@suse.cz, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH RFC 3/3] slub: reparent memcg caches' slabs on memcg
- offline
-In-Reply-To: <20140523152642.GD3147@esperanza>
-Message-ID: <alpine.DEB.2.10.1405231241250.22913@gentwo.org>
-References: <20140516132234.GF32113@esperanza> <alpine.DEB.2.10.1405160957100.32249@gentwo.org> <20140519152437.GB25889@esperanza> <alpine.DEB.2.10.1405191056580.22956@gentwo.org> <537A4D27.1050909@parallels.com> <alpine.DEB.2.10.1405210937440.8038@gentwo.org>
- <20140521150408.GB23193@esperanza> <alpine.DEB.2.10.1405211912400.4433@gentwo.org> <20140522134726.GA3147@esperanza> <alpine.DEB.2.10.1405221422390.15766@gentwo.org> <20140523152642.GD3147@esperanza>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 23 May 2014 13:53:58 -0400
+Date: Fri, 23 May 2014 18:53:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Message-ID: <20140523175312.GI22111@sirena.org.uk>
+References: <1400805629-10322-1-git-send-email-lejun.zhu@linux.intel.com>
+ <1400805629-10322-3-git-send-email-lejun.zhu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X/KOvfZbhhxWSrMq"
+Content-Disposition: inline
+In-Reply-To: <1400805629-10322-3-git-send-email-lejun.zhu@linux.intel.com>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.164.182
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RESEND v2 2/4] mfd: intel_soc_pmic: I2C interface
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 May 2014, Vladimir Davydov wrote:
 
-> On Thu, May 22, 2014 at 02:25:30PM -0500, Christoph Lameter wrote:
-> > slab_free calls __slab_free which can release slabs via
-> > put_cpu_partial()/unfreeze_partials()/discard_slab() to the page
-> > allocator. I'd rather have preemption enabled there.
->
-> Hmm, why? IMO, calling __free_pages with preempt disabled won't hurt
-> latency, because it proceeds really fast. BTW, we already call it for a
-> bunch of pages from __slab_free() -> put_cpu_partial() ->
-> unfreeze_partials() with irqs disabled, which is harder. FWIW, SLAB has
-> the whole obj free path executed under local_irq_save/restore, and it
-> doesn't bother enabling irqs for freeing pages.
->
-> IMO, the latency improvement we can achieve by enabling preemption while
-> calling __free_pages is rather minor, and it isn't worth complicating
-> the code.
+--X/KOvfZbhhxWSrMq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If you look at the end of unfreeze_partials() you see that we release
-locks and therefore enable preempt before calling into the page allocator.
+On Fri, May 23, 2014 at 08:40:27AM +0800, Zhu, Lejun wrote:
 
-You never know what other new features they are going to be adding to the
-page allocator. I'd rather be safe than sorry on this one. We have had
-some trouble in the past with some debugging logic triggering.
+> +static int pmic_i2c_lookup_gpio(struct device *dev, int acpi_index)
+> +{
+> +	struct gpio_desc *desc;
+> +	int gpio;
+> +
+> +	desc = gpiod_get_index(dev, KBUILD_MODNAME, acpi_index);
+> +	if (IS_ERR(desc))
+> +		return PTR_ERR(desc);
+> +
+> +	gpio = desc_to_gpio(desc);
+> +
+> +	gpiod_put(desc);
+> +
+> +	return gpio;
+> +}
 
+Why not just have the driver work with the gpiod API, is there any real
+need to convert to a GPIO number?
 
+> +static const struct i2c_device_id pmic_i2c_id[] = {
+> +	{ "crystal_cove", (kernel_ulong_t)&crystal_cove_pmic},
+> +	{ "INT33FD", (kernel_ulong_t)&crystal_cove_pmic},
+> +	{ "INT33FD:00", (kernel_ulong_t)&crystal_cove_pmic},
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, pmic_i2c_id);
+
+The INT33FD ones here look like they should only be in the ACPI table.
+
+> +static int __init pmic_i2c_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = i2c_add_driver(&pmic_i2c_driver);
+> +	if (ret != 0)
+> +		pr_err("Failed to register pmic I2C driver: %d\n", ret);
+> +
+> +	return ret;
+> +}
+> +subsys_initcall(pmic_i2c_init);
+
+module_i2c_driver() - you shouldn't need subsys_initcall().
+
+--X/KOvfZbhhxWSrMq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTf4sFAAoJELSic+t+oim9/mEP/ithUto1grzbjt7jm4cfgoX6
+oH2mbr+GTG8zWLqPwbeCaahGuMlWzfgFveaiIwqjtolzZwRBz16tpEfZM5WTRD0u
+I4dPWfgNtL4/GlEZKhoMWYzvOAp43DMWm3pId6L7391p8IWU32oIuqtVRGf/hreQ
+iGLwtw/9n6XhWzdF+/ow5sbuaMMAIriqDzVD4RfqM2uGCsC/tqeOVnTLxmjffH5l
+Kcl1OafBV0QppqztmDgWNs/utPOx+Qumqs1ShUu6qbQjOAukSIgfO5INHb3n0IMR
+d2p9sOpgKx72hMGSN0+3XlB4Bejem7RpermSpTDamTcZqxpKOCc6Jrn2qN4KBqhZ
+How5RsjJL113PeI4SVCDfi07wVa2KittgWE/Iuf52ACYTSmKSjXlRbzdw7Gmcwt0
+70YilcqcXyxujME+Ve5dqHhsobUvB1zier37SYi01nFuXEQYuN2gLC6EqreoliWP
+8RUjhsGkxSukgvEs8AEwL7Olnut+xONHg5XJxKGf8DVyGocav2OwrEUSGoGo/Ia5
+VDYErVVIc2X9E0fwFsovi0EhJZ/Ydl8leX1NL/LDg6YrT06PDVP1bVfVYtU2hvWc
+8UJgX9ju2Ipo3ybBE2FHwcvZmdUevant1aoNbU8fOhIZpMkAN50el3Jhb+D3sMCR
+3FrRl8wH4PvKteF7NZWw
+=7ylG
+-----END PGP SIGNATURE-----
+
+--X/KOvfZbhhxWSrMq--
