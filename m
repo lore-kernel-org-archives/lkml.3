@@ -1,85 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbaEWP4P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:56:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57447 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532AbaEWP4K (ORCPT
+	id S1753508AbaEWP42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:56:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48981 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752532AbaEWP4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:56:10 -0400
-Message-ID: <537F6F94.7040900@wwwdotorg.org>
-Date: Fri, 23 May 2014 09:56:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 23 May 2014 11:56:25 -0400
+Date: Fri, 23 May 2014 16:55:44 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        Larry Bassel <larry.bassel@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/2] arm64: enable context tracking
+Message-ID: <20140523155544.GA24994@leverpostej>
+References: <1400786855-32656-1-git-send-email-larry.bassel@linaro.org>
+ <1400786855-32656-3-git-send-email-larry.bassel@linaro.org>
+ <537E5E1F.3050605@codeaurora.org>
+ <7hd2f5icat.fsf@paris.lan>
+ <20140523145107.GO9252@arm.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH V4 2/3] cpufreq: add support for intermediate (stable)
- frequencies
-References: <cover.1400662383.git.viresh.kumar@linaro.org>	<59e1185a31e61c428aca9f4b8f0a69f182ee458e.1400662383.git.viresh.kumar@linaro.org>	<537E27DA.9040709@wwwdotorg.org> <CAKohpokhiTpTd-ByFUuOL1hR7MnKPPQj-peH7S5oFxowKt0BeQ@mail.gmail.com>
-In-Reply-To: <CAKohpokhiTpTd-ByFUuOL1hR7MnKPPQj-peH7S5oFxowKt0BeQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140523145107.GO9252@arm.com>
+Thread-Topic: [PATCH v4 2/2] arm64: enable context tracking
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 10:24 PM, Viresh Kumar wrote:
-> On 22 May 2014 22:07, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> It seems rather odd to set both freqs->old and freqs->new to the
->> intermediate frequency upon success. It feels like it would make more
->> sense to remove that final else clause above, and do the following where
->> this function is called:
+On Fri, May 23, 2014 at 03:51:07PM +0100, Catalin Marinas wrote:
+> On Fri, May 23, 2014 at 01:11:38AM +0100, Kevin Hilman wrote:
+> > Christopher Covington <cov@codeaurora.org> writes:
+> > > On 05/22/2014 03:27 PM, Larry Bassel wrote:
+> > >> Make calls to ct_user_enter when the kernel is exited
+> > >> and ct_user_exit when the kernel is entered (in el0_da,
+> > >> el0_ia, el0_svc, el0_irq and all of the "error" paths).
+> > >> 
+> > >> These macros expand to function calls which will only work
+> > >> properly if el0_sync and related code has been rearranged
+> > >> (in a previous patch of this series).
+> > >> 
+> > >> The calls to ct_user_exit are made after hw debugging has been
+> > >> enabled (enable_dbg_and_irq).
+> > >> 
+> > >> The call to ct_user_enter is made at the beginning of the
+> > >> kernel_exit macro.
+> > >> 
+> > >> This patch is based on earlier work by Kevin Hilman.
+> > >> Save/restore optimizations were also done by Kevin.
+> > >
+> > >> --- a/arch/arm64/kernel/entry.S
+> > >> +++ b/arch/arm64/kernel/entry.S
+> > >> @@ -30,6 +30,44 @@
+> > >>  #include <asm/unistd32.h>
+> > >>  
+> > >>  /*
+> > >> + * Context tracking subsystem.  Used to instrument transitions
+> > >> + * between user and kernel mode.
+> > >> + */
+> > >> +	.macro ct_user_exit, restore = 0
+> > >> +#ifdef CONFIG_CONTEXT_TRACKING
+> > >> +	bl	context_tracking_user_exit
+> > >> +	.if \restore == 1
+> > >> +	/*
+> > >> +	 * Save/restore needed during syscalls.  Restore syscall arguments from
+> > >> +	 * the values already saved on stack during kernel_entry.
+> > >> +	 */
+> > >> +	ldp	x0, x1, [sp]
+> > >> +	ldp	x2, x3, [sp, #S_X2]
+> > >> +	ldp	x4, x5, [sp, #S_X4]
+> > >> +	ldp	x6, x7, [sp, #S_X6]
+> > >> +	.endif
+> > >> +#endif
+> > >> +	.endm
+> > >> +
+> > >> +	.macro ct_user_enter, save = 0
+> > >> +#ifdef CONFIG_CONTEXT_TRACKING
+> > >> +	.if \save == 1
+> > >> +	/*
+> > >> +	 * Save/restore only needed on syscall fastpath, which uses
+> > >> +	 * x0-x2.
+> > >> +	 */
+> > >> +	push    x2, x3
+> > >
+> > > Why is x3 saved?
+> > 
+> > I'll respond here since I worked with Larry on the context save/restore
+> > part.
+> > 
+> > [insert rather embarassing disclamer of ignorance of arm64 assembly]
+> > 
+> > Based on my reading of the code, I figured only x0-x2 needed to be
+> > saved.  However, based on some experiments with intentionally clobbering
+> > the registers[1] (as suggested by Mark Rutland) in order to make sure
+> > we're saving/restoring the right things, I discovered x3 was needed too
+> > (I missed updating the comment to mention x0-x3.)
+> > 
+> > Maybe Will/Catalin/Mark R. can shed some light here?
+> 
+> I haven't checked all the code paths but at least for pushing onto the
+> stack we must keep it 16-bytes aligned (architecture requirement).
 
->>>  static int __target_index(struct cpufreq_policy *policy,
->>>                         struct cpufreq_frequency_table *freq_table, int index)
->>>  {
->>> -     struct cpufreq_freqs freqs;
->>> +     struct cpufreq_freqs freqs = {.old = policy->cur, .flags = 0};
->>> +     unsigned int intermediate_freq = 0;
->>>       int retval = -EINVAL;
->>>       bool notify;
->>>
->>>       notify = !(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION);
->>> -
->>>       if (notify) {
->>> -             freqs.old = policy->cur;
->>> -             freqs.new = freq_table[index].frequency;
->>> -             freqs.flags = 0;
->>> +             /* Handle switching to intermediate frequency */
->>> +             if (cpufreq_driver->get_intermediate) {
->>> +                     retval = __target_intermediate(policy, &freqs, index);
->>> +                     if (retval)
->>> +                             return retval;
->>
->> Shouldn't this all be outside the if (notify) block, so that
->> __target_intermediate is always called, and it's just the notify
->> callbacks that gets skipped if (!notify)?
-> 
-> So, this is logic I had:
-> 
-> Should we support 'intermediate freq' infrastructure when driver wants
-> to handle notifications themselves?
-> 
-> Probably not.
-> 
-> The whole point of implementing this 'intermediate freq' infrastructure is to
-> get rid of code redundancy while sending notifications. If drivers want to
-> handle notifications then they better handle intermediate freqs as well in
-> their target_index() callback. They don't need to implement another routine
-> for intermediate stuff..
+Sure -- if modifying the stack we need to push/pop pairs of registers to
+keep it aligned. It might be better to use xzr as the dummy value in
+that case to make it clear that the value doesn't really matter.
 
-Oh OK, I guess the "notify" value is static then, and driver defined, so
-this is fine.
+That said, ct_user_enter is only called in kernel_exit before we restore
+the values off the stack, and the only register I can spot that we need
+to preserve is x0 for the syscall return value. I can't see x1 or x2
+being used any more specially than the rest of the remaining registers.
+Am I missing something, or would it be sufficient to do the following?
 
+push	x0, xzr
+bl	context_tacking_user_enter
+pop	x0, xzr
+
+Cheers,
+Mark.
