@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408AbaEWKbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:31:45 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:50791 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220AbaEWKbn (ORCPT
+	id S1752496AbaEWKbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:31:48 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:32875 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373AbaEWKbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:31:43 -0400
+	Fri, 23 May 2014 06:31:46 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 05/71] clocksource: sh_cmt: Constify name argument to sh_cmt_register()
-Date: Fri, 23 May 2014 12:30:45 +0200
-Message-Id: <1400841111-6683-5-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 07/71] clocksource: sh_cmt: Add memory base to sh_cmt_channel structure
+Date: Fri, 23 May 2014 12:30:47 +0200
+Message-Id: <1400841111-6683-7-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -23,54 +23,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-The name argument is assigned to const structure fields only, constify
-it.
+The channel memory base is channel-specific, add it to the channel
+structure in preparation for support of multiple channels per device.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/clocksource/sh_cmt.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/clocksource/sh_cmt.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 26f73cf..febd6bf 100644
+index eb93b88..4fcb05d 100644
 --- a/drivers/clocksource/sh_cmt.c
 +++ b/drivers/clocksource/sh_cmt.c
-@@ -549,7 +549,7 @@ static void sh_cmt_clocksource_resume(struct clocksource *cs)
+@@ -40,6 +40,8 @@ struct sh_cmt_device;
+ struct sh_cmt_channel {
+ 	struct sh_cmt_device *cmt;
+ 
++	void __iomem *base;
++
+ 	unsigned long flags;
+ 	unsigned long match_value;
+ 	unsigned long next_match_value;
+@@ -130,12 +132,12 @@ static inline unsigned long sh_cmt_read_cmstr(struct sh_cmt_channel *ch)
+ 
+ static inline unsigned long sh_cmt_read_cmcsr(struct sh_cmt_channel *ch)
+ {
+-	return ch->cmt->read_control(ch->cmt->mapbase_ch, CMCSR);
++	return ch->cmt->read_control(ch->base, CMCSR);
  }
  
- static int sh_cmt_register_clocksource(struct sh_cmt_channel *ch,
--				       char *name, unsigned long rating)
-+				       const char *name, unsigned long rating)
+ static inline unsigned long sh_cmt_read_cmcnt(struct sh_cmt_channel *ch)
  {
- 	struct clocksource *cs = &ch->cs;
- 
-@@ -660,7 +660,7 @@ static void sh_cmt_clock_event_resume(struct clock_event_device *ced)
+-	return ch->cmt->read_count(ch->cmt->mapbase_ch, CMCNT);
++	return ch->cmt->read_count(ch->base, CMCNT);
  }
  
- static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
--				       char *name, unsigned long rating)
-+				       const char *name, unsigned long rating)
+ static inline void sh_cmt_write_cmstr(struct sh_cmt_channel *ch,
+@@ -147,19 +149,19 @@ static inline void sh_cmt_write_cmstr(struct sh_cmt_channel *ch,
+ static inline void sh_cmt_write_cmcsr(struct sh_cmt_channel *ch,
+ 				      unsigned long value)
  {
- 	struct clock_event_device *ced = &ch->ced;
- 
-@@ -680,7 +680,7 @@ static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
- 	clockevents_register_device(ced);
+-	ch->cmt->write_control(ch->cmt->mapbase_ch, CMCSR, value);
++	ch->cmt->write_control(ch->base, CMCSR, value);
  }
  
--static int sh_cmt_register(struct sh_cmt_channel *ch, char *name,
-+static int sh_cmt_register(struct sh_cmt_channel *ch, const char *name,
- 			   unsigned long clockevent_rating,
- 			   unsigned long clocksource_rating)
+ static inline void sh_cmt_write_cmcnt(struct sh_cmt_channel *ch,
+ 				      unsigned long value)
  {
-@@ -717,7 +717,7 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch,
- 	ch->match_value = ch->max_match_value;
- 	raw_spin_lock_init(&ch->lock);
+-	ch->cmt->write_count(ch->cmt->mapbase_ch, CMCNT, value);
++	ch->cmt->write_count(ch->base, CMCNT, value);
+ }
  
--	ret = sh_cmt_register(ch, (char *)dev_name(&cmt->pdev->dev),
-+	ret = sh_cmt_register(ch, dev_name(&cmt->pdev->dev),
- 			      cfg->clockevent_rating,
- 			      cfg->clocksource_rating);
- 	if (ret) {
+ static inline void sh_cmt_write_cmcor(struct sh_cmt_channel *ch,
+ 				      unsigned long value)
+ {
+-	ch->cmt->write_count(ch->cmt->mapbase_ch, CMCOR, value);
++	ch->cmt->write_count(ch->base, CMCOR, value);
+ }
+ 
+ static unsigned long sh_cmt_get_counter(struct sh_cmt_channel *ch,
+@@ -702,6 +704,7 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch,
+ 
+ 	memset(ch, 0, sizeof(*ch));
+ 	ch->cmt = cmt;
++	ch->base = cmt->mapbase_ch;
+ 
+ 	irq = platform_get_irq(cmt->pdev, 0);
+ 	if (irq < 0) {
 -- 
 1.7.9.5
 
