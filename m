@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaEWJoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:44:08 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:50123 "EHLO
+	id S1752506AbaEWJo1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:44:27 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:61261 "EHLO
 	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040AbaEWJoF (ORCPT
+	with ESMTP id S1752462AbaEWJoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:44:05 -0400
+	Fri, 23 May 2014 05:44:24 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
         ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@gmail.com,
         hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: [PATCH 06/13] vfs: add whiteout support
-Date: Fri, 23 May 2014 11:43:36 +0200
-Message-Id: <1400838223-30844-7-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 12/13] fs: limit filesystem stacking depth
+Date: Fri, 23 May 2014 11:43:42 +0200
+Message-Id: <1400838223-30844-13-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
 References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
@@ -26,87 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Whiteout isn't actually a new file type, but is represented as a char
-device (Linus's idea) with 0/0 device number.
+Add a simple read-only counter to super_block that indicates how deep this
+is in the stack of filesystems.  Previously ecryptfs was the only stackable
+filesystem and it explicitly disallowed multiple layers of itself.
 
-This has several advantages compared to introducing a new whiteout file
-type:
+Overlayfs, however, can be stacked recursively and also may be stacked
+on top of ecryptfs or vice versa.
 
- - no userspace API changes (e.g. trivial to make backups of upper layer
-   filesystem, without losing whiteouts)
-
- - no fs image format changes (you can boot an old kernel/fsck without
-   whiteout support and things won't break)
-
- - implementation is trivial
+To limit the kernel stack usage we must limit the depth of the
+filesystem stack.  Initially the limit is set to 2.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c         | 14 ++++++++++++++
- include/linux/fs.h | 11 +++++++++++
- 2 files changed, 25 insertions(+)
+ fs/ecryptfs/main.c   |  7 +++++++
+ fs/overlayfs/super.c | 10 ++++++++++
+ include/linux/fs.h   | 11 +++++++++++
+ 3 files changed, 28 insertions(+)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 1039eef0e22c..413d7c138e95 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -4323,6 +4323,20 @@ SYSCALL_DEFINE2(rename, const char __user *, oldname, const char __user *, newna
- 	return sys_renameat2(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
- }
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 1b119d3bf924..c4cd1fd86cc2 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -566,6 +566,13 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+ 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
+ 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
+ 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
++	s->s_stack_depth = path.dentry->d_sb->s_stack_depth + 1;
++
++	rc = -EINVAL;
++	if (s->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
++		pr_err("eCryptfs: maximum fs stacking depth exceeded\n");
++		goto out_free;
++	}
  
-+int vfs_whiteout(struct inode *dir, struct dentry *dentry)
-+{
-+	int error = may_create(dir, dentry);
-+	if (error)
-+		return error;
+ 	inode = ecryptfs_get_inode(path.dentry->d_inode, s);
+ 	rc = PTR_ERR(inode);
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index fcbd92a14e69..04879abbbf98 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -644,6 +644,16 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 	ufs->lower_namelen = statfs.f_namelen;
+ 
++	sb->s_stack_depth = max(upperpath.mnt->mnt_sb->s_stack_depth,
++				lowerpath.mnt->mnt_sb->s_stack_depth) + 1;
 +
-+	if (!dir->i_op->mknod)
-+		return -EPERM;
++	err = -EINVAL;
++	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
++		pr_err("overlayfs: maximum fs stacking depth exceeded\n");
++		goto out_put_lowerpath;
++	}
 +
-+	return dir->i_op->mknod(dir, dentry,
-+				S_IFCHR | WHITEOUT_MODE, WHITEOUT_DEV);
-+}
-+EXPORT_SYMBOL(vfs_whiteout);
 +
- int readlink_copy(char __user *buffer, int buflen, const char *link)
- {
- 	int len = PTR_ERR(link);
+ 	ufs->upper_mnt = clone_private_mount(&upperpath);
+ 	err = PTR_ERR(ufs->upper_mnt);
+ 	if (IS_ERR(ufs->upper_mnt)) {
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9d821253379d..88ec7a2878bc 100644
+index 48d3bd908b5d..340c5e3be0d0 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -221,6 +221,13 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
- #define ATTR_TIMES_SET	(1 << 16)
+@@ -266,6 +266,12 @@ struct iattr {
+  */
+ #include <linux/quota.h>
  
- /*
-+ * Whiteout is represented by a char device.  The following constants define the
-+ * mode and device number to use.
-+ */
-+#define WHITEOUT_MODE 0
-+#define WHITEOUT_DEV 0
-+
 +/*
-  * This is the Inode Attributes structure, used for notify_change().  It
-  * uses the above definitions as flags, to know which values have changed.
-  * Also, in this manner, a Filesystem can look at only the values it cares
-@@ -1387,6 +1394,7 @@ extern int vfs_link(struct dentry *, struct inode *, struct dentry *, struct ino
- extern int vfs_rmdir(struct inode *, struct dentry *);
- extern int vfs_unlink(struct inode *, struct dentry *, struct inode **);
- extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *, struct inode **, unsigned int);
-+extern int vfs_whiteout(struct inode *, struct dentry *);
- 
- /*
-  * VFS dentry helper functions.
-@@ -1611,6 +1619,9 @@ struct super_operations {
- #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
- #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
- 
-+#define IS_WHITEOUT(inode)	(S_ISCHR(inode->i_mode) && \
-+				 (inode)->i_rdev == WHITEOUT_DEV)
++ * Maximum number of layers of fs stack.  Needs to be limited to
++ * prevent kernel stack overflow
++ */
++#define FILESYSTEM_MAX_STACK_DEPTH 2
 +
- /*
-  * Inode state bits.  Protected by inode->i_lock
+ /** 
+  * enum positive_aop_returns - aop return codes with specific semantics
   *
+@@ -1269,6 +1275,11 @@ struct super_block {
+ 	struct list_lru		s_dentry_lru ____cacheline_aligned_in_smp;
+ 	struct list_lru		s_inode_lru ____cacheline_aligned_in_smp;
+ 	struct rcu_head		rcu;
++
++	/*
++	 * Indicates how deep in a filesystem stack this SB is
++	 */
++	int s_stack_depth;
+ };
+ 
+ extern struct timespec current_fs_time(struct super_block *sb);
 -- 
 1.8.1.4
 
