@@ -1,37 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaEWShI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:37:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51803 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971AbaEWShG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:37:06 -0400
-Message-ID: <537F9534.7020603@redhat.com>
-Date: Fri, 23 May 2014 14:36:36 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751881AbaEWSiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:38:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53770 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaEWSiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 14:38:07 -0400
+Date: Fri, 23 May 2014 13:37:58 -0500 (CDT)
+From: Kumar Gala <galak@codeaurora.org>
+X-X-Sender: galak@galak-ubuntu.qualcomm.com
+To: arm@kernel.org
+cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
+        gdjakov@mm-sol.com, iivanov@mm-sol.com
+Subject: [GIT PULL] qcom DT changes for v3.15
+Message-ID: <alpine.DEB.2.00.1405231337490.15680@galak-ubuntu.qualcomm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>, akpm@linux-foundation.org
-CC: mingo@kernel.org, peterz@infradead.org, mgorman@suse.de, aswin@hp.com,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] mm: rename leftover i_mmap_mutex
-References: <1400816006-3083-1-git-send-email-davidlohr@hp.com> <1400816006-3083-6-git-send-email-davidlohr@hp.com>
-In-Reply-To: <1400816006-3083-6-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 11:33 PM, Davidlohr Bueso wrote:
-> Update the lock to i_mmap_rwsem throughout the kernel.
-> All changes are in comments and documentation.
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
-Acked-by: Rik van Riel <riel@redhat.com>
+   Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
+are available in the git repository at:
 
--- 
-All rights reversed
+   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.16
+
+for you to fetch changes up to 08f9234ad6b0b8bc51046346eabf5b92e631e62a:
+
+   soc: qcom: Add device tree binding for GSBI (2014-05-23 11:38:53 -0500)
+
+----------------------------------------------------------------
+Qualcomm ARM Based Device Tree Updates for v3.16
+
+* Added device tree nodes for pinctrl and SDHC for msm8974 SoC/DB8074 board
+* Added binding spec for GSBI configuration node
+
+----------------------------------------------------------------
+Andy Gross (1):
+       soc: qcom: Add device tree binding for GSBI
+
+Georgi Djakov (1):
+       ARM: dts: msm: Add SDHC controller nodes for MSM8974 and DB8074 board
+
+Ivan T. Ivanov (1):
+       ARM: dts: MSM8974: Add pinctrl node
+
+  .../devicetree/bindings/soc/qcom/qcom,gsbi.txt     | 78 ++++++++++++++++++++++
+  arch/arm/boot/dts/qcom-apq8074-dragonboard.dts     | 13 ++++
+  arch/arm/boot/dts/qcom-msm8974.dtsi                | 51 ++++++++++++++
+  include/dt-bindings/soc/qcom,gsbi.h                | 26 ++++++++
+  4 files changed, 168 insertions(+)
+  create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt
+  create mode 100644 include/dt-bindings/soc/qcom,gsbi.h
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
