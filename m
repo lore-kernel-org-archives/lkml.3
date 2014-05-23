@@ -1,58 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaEWJMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:12:49 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:37471 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaEWJMp (ORCPT
+	id S1752507AbaEWJNf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:13:35 -0400
+Received: from exprod7og112.obsmtp.com ([64.18.2.177]:35955 "EHLO
+	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaEWJJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:12:45 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <CA+55aFzk3Xw8VsYMmiGvXxzrkh7zenFUrpyobaK_q+17PSh=ww@mail.gmail.com>
-References: <CA+55aFzwqPh+WUAxi2CY8D6k+LkDbUb__G98qVFrE-DHNMSPUw@mail.gmail.com>
-	<20140522172032.GA20975@roeck-us.net>
-	<CA+55aFw_kOE1Y4qkLW4rWfB_NaYYDwFeU=t5swsJCTMq-3J6nA@mail.gmail.com>
-	<537E9F47.5020809@roeck-us.net>
-	<CA+55aFzk3Xw8VsYMmiGvXxzrkh7zenFUrpyobaK_q+17PSh=ww@mail.gmail.com>
-Date: Fri, 23 May 2014 11:12:44 +0200
-Message-ID: <CAJfpeguNGFDw_7C1JgZv3Wjgd0ku9QhEkUy_+gprOS58sBXaSQ@mail.gmail.com>
-Subject: Re: Linux 3.15-rc6
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Helge Deller <deller@gmx.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 23 May 2014 05:09:25 -0400
+From: Anders Berg <anders.berg@avagotech.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Anders Berg <anders.berg@lsi.com>
+Subject: [PATCH v4 1/5] ARM: Add platform support for LSI AXM55xx SoC
+Date: Fri, 23 May 2014 11:08:35 +0200
+Message-Id: <d6f29ce8411a42115c10996a0c118c584c292b94.1400834521.git.anders.berg@avagotech.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1400834521.git.anders.berg@avagotech.com>
+References: <cover.1400834521.git.anders.berg@avagotech.com>
+In-Reply-To: <cover.1400834521.git.anders.berg@avagotech.com>
+References: <cover.1400834521.git.anders.berg@avagotech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 3:27 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, May 22, 2014 at 6:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 05/22/2014 05:43 PM, Linus Torvalds wrote:
->>>
->>>
->>> only s390 seems to need a compat wrapper, and s390 is kind of odd in
->>> many respects, so I suspect renameat2 should just use ENTRY_SAME() on
->>> parisc, but without any way to *test* it I won't apply the patch.
->>>
->>> Guenter, I assume that changing the
->>>
->>>          ENTRY_COMP(renameat2)
->>>
->>> line in arch/parisc/kernel/syscall_table.S to use ENTRY_SAME() at
->>> least fixes the compile error?
->>
->> Yes, it fixes the build error for parisc64, and parisc (32 bit) still
->> builds.
->
-> Ok. I'd like to get some kind of confirmation that it is expected to
-> work too. Miklos/Helge?
+From: Anders Berg <anders.berg@lsi.com>
 
-Oops, yes, it should be ENTRY_SAME().
+The AXM55xx family consists of devices that may contain up to 16 ARM Cortex-A15
+cores (in a 4x4 cluster configuration). The cores within each cluster share an
+L2 cache, and the clusters are connected to each other via a CCN-504 cache
+coherent interconnect.
 
-Thanks,
-Miklos
+This machine requires CONFIG_ARM_LPAE enabled as all peripherals are located
+above 4GB in the memory map.
+
+Signed-off-by: Anders Berg <anders.berg@lsi.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ Documentation/devicetree/bindings/arm/axxia.txt | 12 ++++
+ arch/arm/Kconfig                                |  2 +
+ arch/arm/Makefile                               |  2 +
+ arch/arm/mach-axxia/Kconfig                     | 16 +++++
+ arch/arm/mach-axxia/Makefile                    |  2 +
+ arch/arm/mach-axxia/axxia.c                     | 28 ++++++++
+ arch/arm/mach-axxia/platsmp.c                   | 89 +++++++++++++++++++++++++
+ include/dt-bindings/clock/lsi,axm5516-clks.h    | 36 ++++++++++
+ 8 files changed, 187 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/axxia.txt
+ create mode 100644 arch/arm/mach-axxia/Kconfig
+ create mode 100644 arch/arm/mach-axxia/Makefile
+ create mode 100644 arch/arm/mach-axxia/axxia.c
+ create mode 100644 arch/arm/mach-axxia/platsmp.c
+ create mode 100644 include/dt-bindings/clock/lsi,axm5516-clks.h
+
+diff --git a/Documentation/devicetree/bindings/arm/axxia.txt b/Documentation/devicetree/bindings/arm/axxia.txt
+new file mode 100644
+index 0000000..7b4ef9c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/axxia.txt
+@@ -0,0 +1,12 @@
++Axxia AXM55xx device tree bindings
++
++Boards using the AXM55xx SoC need to have the following properties:
++
++Required root node property:
++
++  - compatible = "lsi,axm5516"
++
++Boards:
++
++  LSI AXM5516 Validation board (Amarillo)
++	compatible = "lsi,axm5516-amarillo", "lsi,axm5516"
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 2bb6bce..3bf7041 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -951,6 +951,8 @@ source "arch/arm/mach-mvebu/Kconfig"
+ 
+ source "arch/arm/mach-at91/Kconfig"
+ 
++source "arch/arm/mach-axxia/Kconfig"
++
+ source "arch/arm/mach-bcm/Kconfig"
+ 
+ source "arch/arm/mach-berlin/Kconfig"
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 41c1931..6721fab 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -138,10 +138,12 @@ endif
+ textofs-$(CONFIG_ARCH_MSM7X30) := 0x00208000
+ textofs-$(CONFIG_ARCH_MSM8X60) := 0x00208000
+ textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
++textofs-$(CONFIG_ARCH_AXXIA) := 0x00308000
+ 
+ # Machine directory name.  This list is sorted alphanumerically
+ # by CONFIG_* macro name.
+ machine-$(CONFIG_ARCH_AT91)		+= at91
++machine-$(CONFIG_ARCH_AXXIA)		+= axxia
+ machine-$(CONFIG_ARCH_BCM)		+= bcm
+ machine-$(CONFIG_ARCH_BERLIN)		+= berlin
+ machine-$(CONFIG_ARCH_CLPS711X)		+= clps711x
+diff --git a/arch/arm/mach-axxia/Kconfig b/arch/arm/mach-axxia/Kconfig
+new file mode 100644
+index 0000000..8be7e0a
+--- /dev/null
++++ b/arch/arm/mach-axxia/Kconfig
+@@ -0,0 +1,16 @@
++config ARCH_AXXIA
++	bool "LSI Axxia platforms" if (ARCH_MULTI_V7 && ARM_LPAE)
++	select ARCH_DMA_ADDR_T_64BIT
++	select ARM_AMBA
++	select ARM_GIC
++	select ARM_TIMER_SP804
++	select HAVE_ARM_ARCH_TIMER
++	select MFD_SYSCON
++	select MIGHT_HAVE_PCI
++	select PCI_DOMAINS if PCI
++	select ZONE_DMA
++	help
++	  This enables support for the LSI Axxia devices.
++
++	  The LSI Axxia platforms require a Flattened Device Tree to be passed
++	  to the kernel.
+diff --git a/arch/arm/mach-axxia/Makefile b/arch/arm/mach-axxia/Makefile
+new file mode 100644
+index 0000000..ec4f68b
+--- /dev/null
++++ b/arch/arm/mach-axxia/Makefile
+@@ -0,0 +1,2 @@
++obj-y				+= axxia.o
++obj-$(CONFIG_SMP)		+= platsmp.o
+diff --git a/arch/arm/mach-axxia/axxia.c b/arch/arm/mach-axxia/axxia.c
+new file mode 100644
+index 0000000..19e5a1d
+--- /dev/null
++++ b/arch/arm/mach-axxia/axxia.c
+@@ -0,0 +1,28 @@
++/*
++ * Support for the LSI Axxia SoC devices based on ARM cores.
++ *
++ * Copyright (C) 2012 LSI
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/init.h>
++#include <asm/mach/arch.h>
++
++static const char *axxia_dt_match[] __initconst = {
++	"lsi,axm5516",
++	"lsi,axm5516-sim",
++	"lsi,axm5516-emu",
++	NULL
++};
++
++DT_MACHINE_START(AXXIA_DT, "LSI Axxia AXM55XX")
++	.dt_compat = axxia_dt_match,
++MACHINE_END
+diff --git a/arch/arm/mach-axxia/platsmp.c b/arch/arm/mach-axxia/platsmp.c
+new file mode 100644
+index 0000000..959d4df
+--- /dev/null
++++ b/arch/arm/mach-axxia/platsmp.c
+@@ -0,0 +1,89 @@
++/*
++ * linux/arch/arm/mach-axxia/platsmp.c
++ *
++ * Copyright (C) 2012 LSI Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/smp.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <asm/cacheflush.h>
++
++/* Syscon register offsets for releasing cores from reset */
++#define SC_CRIT_WRITE_KEY	0x1000
++#define SC_RST_CPU_HOLD		0x1010
++
++/*
++ * Write the kernel entry point for secondary CPUs to the specified address
++ */
++static void write_release_addr(u32 release_phys)
++{
++	u32 *virt = (u32 *) phys_to_virt(release_phys);
++	writel_relaxed(virt_to_phys(secondary_startup), virt);
++	/* Make sure this store is visible to other CPUs */
++	smp_wmb();
++	__cpuc_flush_dcache_area(virt, sizeof(u32));
++}
++
++static int axxia_boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	struct device_node *syscon_np;
++	void __iomem *syscon;
++	u32 tmp;
++
++	syscon_np = of_find_compatible_node(NULL, NULL, "lsi,axxia-syscon");
++	if (!syscon_np)
++		return -ENOENT;
++
++	syscon = of_iomap(syscon_np, 0);
++	if (!syscon)
++		return -ENOMEM;
++
++	tmp = readl(syscon + SC_RST_CPU_HOLD);
++	writel(0xab, syscon + SC_CRIT_WRITE_KEY);
++	tmp &= ~(1 << cpu);
++	writel(tmp, syscon + SC_RST_CPU_HOLD);
++
++	return 0;
++}
++
++static void __init axxia_smp_prepare_cpus(unsigned int max_cpus)
++{
++	int cpu_count = 0;
++	int cpu;
++
++	/*
++	 * Initialise the present map, which describes the set of CPUs actually
++	 * populated at the present time.
++	 */
++	for_each_possible_cpu(cpu) {
++		struct device_node *np;
++		u32 release_phys;
++
++		np = of_get_cpu_node(cpu, NULL);
++		if (!np)
++			continue;
++		if (of_property_read_u32(np, "cpu-release-addr", &release_phys))
++			continue;
++
++		if (cpu_count < max_cpus) {
++			set_cpu_present(cpu, true);
++			cpu_count++;
++		}
++
++		if (release_phys != 0)
++			write_release_addr(release_phys);
++	}
++}
++
++static struct smp_operations axxia_smp_ops __initdata = {
++	.smp_prepare_cpus	= axxia_smp_prepare_cpus,
++	.smp_boot_secondary	= axxia_boot_secondary,
++};
++CPU_METHOD_OF_DECLARE(axxia_smp, "lsi,syscon-release", &axxia_smp_ops);
+diff --git a/include/dt-bindings/clock/lsi,axm5516-clks.h b/include/dt-bindings/clock/lsi,axm5516-clks.h
+new file mode 100644
+index 0000000..beb41ac
+--- /dev/null
++++ b/include/dt-bindings/clock/lsi,axm5516-clks.h
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (c) 2014 LSI Corporation
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ */
++
++#ifndef _DT_BINDINGS_CLK_AXM5516_H
++#define _DT_BINDINGS_CLK_AXM5516_H
++
++#define AXXIA_CLK_FAB_PLL	0
++#define AXXIA_CLK_CPU_PLL	1
++#define AXXIA_CLK_SYS_PLL	2
++#define AXXIA_CLK_SM0_PLL	3
++#define AXXIA_CLK_SM1_PLL	4
++#define AXXIA_CLK_FAB_DIV	5
++#define AXXIA_CLK_SYS_DIV	6
++#define AXXIA_CLK_NRCP_DIV	7
++#define AXXIA_CLK_CPU0_DIV	8
++#define AXXIA_CLK_CPU1_DIV	9
++#define AXXIA_CLK_CPU2_DIV	10
++#define AXXIA_CLK_CPU3_DIV	11
++#define AXXIA_CLK_PER_DIV	12
++#define AXXIA_CLK_MMC_DIV	13
++#define AXXIA_CLK_FAB		14
++#define AXXIA_CLK_SYS		15
++#define AXXIA_CLK_NRCP		16
++#define AXXIA_CLK_CPU0		17
++#define AXXIA_CLK_CPU1		18
++#define AXXIA_CLK_CPU2		19
++#define AXXIA_CLK_CPU3		20
++#define AXXIA_CLK_PER		21
++#define AXXIA_CLK_MMC		22
++
++#endif
+-- 
+1.8.3.2
+
