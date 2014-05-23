@@ -1,97 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaEWPqV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:46:21 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58857 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753205AbaEWPqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:46:19 -0400
-Date: Fri, 23 May 2014 16:44:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Waldemar Brodkorb <mail@waldemar-brodkorb.de>,
-        Waldemar Brodkorb <wbx@openadk.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, linux-kernel@vger.kernel.org,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: oops on cubox-i (v3.15-rc4)
-Message-ID: <20140523154453.GY3693@n2100.arm.linux.org.uk>
-References: <20140509144438.GW14063@waldemar-brodkorb.de> <20140511002506.GN12708@titan.lakedaemon.net> <20140523101751.GH618@waldemar-brodkorb.de> <20140523143845.GD8664@titan.lakedaemon.net>
+	id S1753393AbaEWPqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:46:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50451 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753087AbaEWPpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:45:09 -0400
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
+        <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <grant.likely@linaro.org>
+CC: <rdunlap@infradead.org>, <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
+        <grygorii.strashko@ti.com>, <olof@lixom.net>, <w-kwok2@ti.com>,
+        <sboyd@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [Patch v7 4/7] power: reset: add bindings for keystone reset driver
+Date: Fri, 23 May 2014 18:43:29 +0300
+Message-ID: <1400859812-5761-5-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140523143845.GD8664@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 10:38:45AM -0400, Jason Cooper wrote:
-> On Fri, May 23, 2014 at 12:17:51PM +0200, Waldemar Brodkorb wrote:
-> > Hi Jason,
-> > Jason Cooper wrote,
-> > 
-> > > Waldemar,
-> > > 
-> > > + Russell King, linux-arm-kernel ML, Shawn Guo
-> > > 
-> > > I'm not familiar with the platform, but I almost missed this in the
-> > > flood from lkml.  I've added some folks to the Cc who I know work with
-> > > this platform and I've also corrected the Subject line so others
-> > > familiar with the Cubox-i might catch it.
-> > 
-> > Thanks. Problem still exist with 3.15-rc6. 
-> > It also happens with a NFSv3 exported filesystem.
-> > It works nearly stable with 3.10.30 kernel from here:
-> > https://github.com/linux4kix/linux-linaro-stable-mx6
-> > (a crash after 3 days uptime)
-> > 
-> > Anything I can do to help debugging?
-> > 
-> > best regards
-> >         Waldemar
-> >  
-> > > hth,
-> > > 
-> > > Jason.
-> > > 
-> > > On Fri, May 09, 2014 at 04:44:38PM +0200, Waldemar Brodkorb wrote:
-> > > > Dear Kernel Hackers,
-> > > > 
-> > > > I am getting kernel oopses on my cubox-i (i2ultra) running
-> > > > Linux 3.15-rc4, when using the box as a samba server with 
-> > > > a local attached 8 GB usb stick. (it also happen with a smaller
-> > > > video on the micro-sd card)
-> > > > The oops happens while playing a movie (4 GB file) on a samba client 
-> > > > (macos x maverick macbook) via vlc (after 5-15 minutes). 
-> > > > 
-> > > > Both systems are connected to a gigabit ethernet switch.
-> > > > 
-> > > > The oops happens with ntfs-3g, ntfs, vfat and ext4 filesystem.
-> 
-> Can you get an oops from when it's on ext4?  It looks like this is going
-> through fuse which opens a whole can of unknown worms.
+This node is intended to allow SoC reset in case of software reset
+or appropriate watchdogs.
 
-Waldemar mentioned ext4.
+The Keystone SoCs can contain up to 4 watchdog timers to reset
+SoC. Each watchdog timer event input is connected to the Reset Mux
+block. The Reset Mux block can be configured to cause reset or not.
 
-I don't think there's anything specific about it to the Cubox-i, and I'd
-also suggest that it's got nothing to do with ARM either - the iMX6 are
-PIPT data caches so there can't be any issues with D-cache aliasing with
-fuse.
+Additionally soft or hard reset can be configured.
 
-It must be a bug in generic code.
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ .../bindings/power/reset/keystone-reset.txt        | 67 ++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
 
-> > > > Booting Linux on physical CPU 0x0
-> > > > Linux version 3.15.0-rc4 (wbx@kop-brodkorbw) (gcc version 4.8.2 (GCC) ) #1 SMP Fri May 9 12:58:45 CEST 2014
-> > > > CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
-> > > > CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
-> > > > Machine model: SolidRun Cubox-i Dual/Quad
-> > > > Truncating RAM at 10000000-4fffffff to -3f7fffff (vmalloc region overlap).
-
-Also worth noting that 1/4 of the RAM is not used because highmem is not
-enabled.  Also L2 cache is disabled (so it's running slower than it
-should...)
-
+diff --git a/Documentation/devicetree/bindings/power/reset/keystone-reset.txt b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
+new file mode 100644
+index 0000000..c82f12e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power/reset/keystone-reset.txt
+@@ -0,0 +1,67 @@
++* Device tree bindings for Texas Instruments keystone reset
++
++This node is intended to allow SoC reset in case of software reset
++of selected watchdogs.
++
++The Keystone SoCs can contain up to 4 watchdog timers to reset
++SoC. Each watchdog timer event input is connected to the Reset Mux
++block. The Reset Mux block can be configured to cause reset or not.
++
++Additionally soft or hard reset can be configured.
++
++Required properties:
++
++- compatible:		ti,keystone-reset
++
++- ti,syscon-pll:	phandle/offset pair. The phandle to syscon used to
++			access pll controller registers and the offset to use
++			reset control registers.
++
++- ti,syscon-dev:	phandle/offset pair. The phandle to syscon used to
++			access device state control registers and the offset
++			in order to use mux block registers for all watchdogs.
++
++Optional properties:
++
++- ti,soft-reset:	Boolean option indicating soft reset.
++			By default hard reset is used.
++
++- ti,wdt-list:		WDT list that can cause SoC reset. It's not related
++			to WDT driver, it's just needed to enable a SoC related
++			reset that's triggered by one of WDTs. The list is
++			in format: <0>, <2>; It can be in random order and
++			begins from 0 to 3, as keystone can contain up to 4 SoC
++			reset watchdogs and can be in random order.
++
++Example 1:
++Setup keystone reset so that in case software reset or
++WDT0 is triggered it issues hard reset for SoC.
++
++pllctrl: pll-controller@02310000 {
++	compatible = "ti,keystone-pllctrl", "syscon";
++	reg = <0x02310000 0x200>;
++};
++
++devctrl: device-state-control@02620000 {
++	compatible = "ti,keystone-devctrl", "syscon";
++	reg = <0x02620000 0x1000>;
++};
++
++rstctrl: reset-controller {
++	compatible = "ti,keystone-reset";
++	ti,syscon-pll = <&pllctrl 0xe4>;
++	ti,syscon-dev = <&devctrl 0x328>;
++	ti,wdt-list = <0>;
++};
++
++Example 2:
++Setup keystone reset so that in case of software reset or
++WDT0 or WDT2 is triggered it issues soft reset for SoC.
++
++rstctrl: reset-controller {
++	compatible = "ti,keystone-reset";
++	ti,syscon-pll = <&pllctrl 0xe4>;
++	ti,syscon-dev = <&devctrl 0x328>;
++	ti,wdt-list = <0>, <2>;
++	ti,soft-reset;
++};
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.8.3.2
+
