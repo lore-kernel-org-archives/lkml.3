@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaEWPO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:14:27 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:36503 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351AbaEWPOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:14:25 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, sboyd@codeaurora.org, rvaswani@codeaurora.org,
-        davidb@codeaurora.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v2 4/4] ARM: debug: qcom: add UART addresses to Kconfig help
-Date: Fri, 23 May 2014 18:12:32 +0300
-Message-Id: <1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
-References: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
+	id S1752934AbaEWPPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:15:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:58738 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241AbaEWPPL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:15:11 -0400
+Date: Fri, 23 May 2014 11:07:34 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2014-05-23
+Message-ID: <20140523150733.GC13311@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add information about the APQ8084 debug UART physical and virtual
-addresses in the DEBUG_QCOM_UARTDM Kconfig help section.
-Requires: https://lkml.org/lkml/2014/4/14/312
+Dave,
 
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+I have two more fixes intended for the 3.15 stream...
+
+For the iwlwifi one, Emmanuel says:
+
+"A race has been discovered in the beacon filtering code. Since the
+fix is too big for 3.15, I disable here the feature."
+
+For the bluetooth one, Gustavo says:
+
+"This pull request contains a very important fix for 3.15. Here we fix the
+permissions of a debugfs file that would otherwise allow unauthorized users
+to write content to it."
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
 ---
- arch/arm/Kconfig.debug |    1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 40ee328..e71723d 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -376,6 +376,7 @@ choice
- 		  their output to the serial port on Qualcomm devices.
+The following changes since commit b6ed5498601df40489606dbc14a9c7011c16630b:
+
+  batman: fix a bogus warning from batadv_is_on_batman_iface() (2014-05-22 17:23:00 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
+
+for you to fetch changes up to 5ca2504ea36df1da815029a9e9277c08540042eb:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless into for-davem (2014-05-23 10:55:58 -0400)
+
+----------------------------------------------------------------
+
+Emmanuel Grumbach (1):
+      iwlwifi: mvm: disable beacon filtering
+
+John W. Linville (3):
+      Merge branch 'master' of git://git.kernel.org/.../bluetooth/bluetooth
+      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Samuel Ortiz (1):
+      Bluetooth: Fix L2CAP LE debugfs entries permissions
+
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c | 2 +-
+ net/bluetooth/l2cap_core.c                  | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+index b41dc84e9431..8735ef1f44ae 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -826,7 +826,7 @@ static int iwl_mvm_mac_add_interface(struct ieee80211_hw *hw,
+ 	if (ret)
+ 		goto out_remove_mac;
  
- 		  ARCH      DEBUG_UART_PHYS   DEBUG_UART_BASE
-+		  APQ8084   0xf995e000        0xfa75e000
- 		  MSM8X60   0x19c40000        0xf0040000
- 		  MSM8960   0x16440000        0xf0040000
- 		  MSM8974   0xf991e000        0xfa71e000
+-	if (!mvm->bf_allowed_vif &&
++	if (!mvm->bf_allowed_vif && false &&
+ 	    vif->type == NL80211_IFTYPE_STATION && !vif->p2p &&
+ 	    mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_BF_UPDATED){
+ 		mvm->bf_allowed_vif = mvmvif;
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index a1e5bb7d06e8..dc4d301d3a72 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -7519,9 +7519,9 @@ int __init l2cap_init(void)
+ 	l2cap_debugfs = debugfs_create_file("l2cap", 0444, bt_debugfs,
+ 					    NULL, &l2cap_debugfs_fops);
+ 
+-	debugfs_create_u16("l2cap_le_max_credits", 0466, bt_debugfs,
++	debugfs_create_u16("l2cap_le_max_credits", 0644, bt_debugfs,
+ 			   &le_max_credits);
+-	debugfs_create_u16("l2cap_le_default_mps", 0466, bt_debugfs,
++	debugfs_create_u16("l2cap_le_default_mps", 0644, bt_debugfs,
+ 			   &le_default_mps);
+ 
+ 	bt_6lowpan_init();
 -- 
-1.7.9.5
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
