@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaEWKcX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:32:23 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64856 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaEWKcU (ORCPT
+	id S1752754AbaEWKcN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:32:13 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:42523 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730AbaEWKcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:20 -0400
+	Fri, 23 May 2014 06:32:10 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 35/71] clocksource: sh_tmu: Sort headers alphabetically
-Date: Fri, 23 May 2014 12:31:15 +0200
-Message-Id: <1400841111-6683-35-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 27/71] clocksource: sh_tmu: Add index to struct sh_tmu_channel
+Date: Fri, 23 May 2014 12:31:07 +0200
+Message-Id: <1400841111-6683-27-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -23,51 +23,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-This helps locating duplicates and inserting new headers.
+Use the index as the timer start/stop bit and when printing messages to
+identify the channel.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/clocksource/sh_tmu.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/clocksource/sh_tmu.c |   35 ++++++++++++++++++++++++-----------
+ 1 file changed, 24 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/clocksource/sh_tmu.c b/drivers/clocksource/sh_tmu.c
-index 981f8d3..4ba2c0f 100644
+index a464ed8..e304304 100644
 --- a/drivers/clocksource/sh_tmu.c
 +++ b/drivers/clocksource/sh_tmu.c
-@@ -13,23 +13,23 @@
-  * GNU General Public License for more details.
-  */
+@@ -39,6 +39,7 @@ struct sh_tmu_device;
  
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
-+#include <linux/clocksource.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
- #include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/spinlock.h>
- #include <linux/interrupt.h>
--#include <linux/ioport.h>
--#include <linux/delay.h>
- #include <linux/io.h>
--#include <linux/clk.h>
-+#include <linux/ioport.h>
- #include <linux/irq.h>
--#include <linux/err.h>
--#include <linux/clocksource.h>
--#include <linux/clockchips.h>
--#include <linux/sh_timer.h>
--#include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/platform_device.h>
- #include <linux/pm_domain.h>
- #include <linux/pm_runtime.h>
-+#include <linux/sh_timer.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
+ struct sh_tmu_channel {
+ 	struct sh_tmu_device *tmu;
++	unsigned int index;
  
- enum sh_tmu_model {
- 	SH_TMU_LEGACY,
+ 	void __iomem *base;
+ 	int irq;
+@@ -102,7 +103,6 @@ static inline void sh_tmu_write(struct sh_tmu_channel *ch, int reg_nr,
+ 
+ static void sh_tmu_start_stop_ch(struct sh_tmu_channel *ch, int start)
+ {
+-	struct sh_timer_config *cfg = ch->tmu->pdev->dev.platform_data;
+ 	unsigned long flags, value;
+ 
+ 	/* start stop register shared by multiple timer channels */
+@@ -110,9 +110,9 @@ static void sh_tmu_start_stop_ch(struct sh_tmu_channel *ch, int start)
+ 	value = sh_tmu_read(ch, TSTR);
+ 
+ 	if (start)
+-		value |= 1 << cfg->timer_bit;
++		value |= 1 << ch->index;
+ 	else
+-		value &= ~(1 << cfg->timer_bit);
++		value &= ~(1 << ch->index);
+ 
+ 	sh_tmu_write(ch, TSTR, value);
+ 	raw_spin_unlock_irqrestore(&sh_tmu_lock, flags);
+@@ -125,7 +125,8 @@ static int __sh_tmu_enable(struct sh_tmu_channel *ch)
+ 	/* enable clock */
+ 	ret = clk_enable(ch->tmu->clk);
+ 	if (ret) {
+-		dev_err(&ch->tmu->pdev->dev, "cannot enable clock\n");
++		dev_err(&ch->tmu->pdev->dev, "ch%u: cannot enable clock\n",
++			ch->index);
+ 		return ret;
+ 	}
+ 
+@@ -303,7 +304,8 @@ static int sh_tmu_register_clocksource(struct sh_tmu_channel *ch,
+ 	cs->mask = CLOCKSOURCE_MASK(32);
+ 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
+ 
+-	dev_info(&ch->tmu->pdev->dev, "used as clock source\n");
++	dev_info(&ch->tmu->pdev->dev, "ch%u: used as clock source\n",
++		 ch->index);
+ 
+ 	/* Register with dummy 1 Hz value, gets updated in ->enable() */
+ 	clocksource_register_hz(cs, 1);
+@@ -349,12 +351,12 @@ static void sh_tmu_clock_event_mode(enum clock_event_mode mode,
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
+ 		dev_info(&ch->tmu->pdev->dev,
+-			 "used for periodic clock events\n");
++			 "ch%u: used for periodic clock events\n", ch->index);
+ 		sh_tmu_clock_event_start(ch, 1);
+ 		break;
+ 	case CLOCK_EVT_MODE_ONESHOT:
+ 		dev_info(&ch->tmu->pdev->dev,
+-			 "used for oneshot clock events\n");
++			 "ch%u: used for oneshot clock events\n", ch->index);
+ 		sh_tmu_clock_event_start(ch, 0);
+ 		break;
+ 	case CLOCK_EVT_MODE_UNUSED:
+@@ -407,7 +409,8 @@ static void sh_tmu_register_clockevent(struct sh_tmu_channel *ch,
+ 	ced->suspend = sh_tmu_clock_event_suspend;
+ 	ced->resume = sh_tmu_clock_event_resume;
+ 
+-	dev_info(&ch->tmu->pdev->dev, "used for clock events\n");
++	dev_info(&ch->tmu->pdev->dev, "ch%u: used for clock events\n",
++		 ch->index);
+ 
+ 	clockevents_config_and_register(ced, 1, 0x300, 0xffffffff);
+ 
+@@ -415,8 +418,8 @@ static void sh_tmu_register_clockevent(struct sh_tmu_channel *ch,
+ 			  IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING,
+ 			  dev_name(&ch->tmu->pdev->dev), ch);
+ 	if (ret) {
+-		dev_err(&ch->tmu->pdev->dev, "failed to request irq %d\n",
+-			ch->irq);
++		dev_err(&ch->tmu->pdev->dev, "ch%u: failed to request irq %d\n",
++			ch->index, ch->irq);
+ 		return;
+ 	}
+ }
+@@ -441,9 +444,19 @@ static int sh_tmu_channel_setup(struct sh_tmu_channel *ch,
+ 	memset(ch, 0, sizeof(*ch));
+ 	ch->tmu = tmu;
+ 
++	/*
++	 * The SH3 variant (SH770x, SH7705, SH7710 and SH7720) maps channel
++	 * registers blocks at base + 2 + 12 * index, while all other variants
++	 * map them at base + 4 + 12 * index. We can compute the index by just
++	 * dividing by 12, the 2 bytes or 4 bytes offset being hidden by the
++	 * integer division.
++	 */
++	ch->index = cfg->channel_offset / 12;
++
+ 	ch->irq = platform_get_irq(tmu->pdev, 0);
+ 	if (ch->irq < 0) {
+-		dev_err(&tmu->pdev->dev, "failed to get irq\n");
++		dev_err(&tmu->pdev->dev, "ch%u: failed to get irq\n",
++			ch->index);
+ 		return ch->irq;
+ 	}
+ 
 -- 
 1.7.9.5
 
