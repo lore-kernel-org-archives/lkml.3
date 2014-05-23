@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaEWG4K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 02:56:10 -0400
-Received: from mx1.emlix.com ([88.198.240.195]:37716 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329AbaEWG4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 02:56:07 -0400
-From: Rolf Eike Beer <eb@emlix.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
-        awilliam@redhat.com, lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch V2 0/9] I2C ACPI operation region handler support
-Date: Fri, 23 May 2014 08:55:55 +0200
-Message-ID: <1481506.mZgg6LykyH@devpool02>
-Organization: Emlix GmbH
-User-Agent: KMail/4.13 (Linux/3.14.3-1.g2a280a3-desktop; KDE/4.13.0; x86_64; ; )
-In-Reply-To: <537E143F.7060701@intel.com>
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <4867018.HWMf8AlFN3@devpool02> <537E143F.7060701@intel.com>
+	id S1752739AbaEWG55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 02:57:57 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:46694 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaEWG5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 02:57:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1922782.EugPuHskmN"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+In-Reply-To: <1400771902-26553-3-git-send-email-peter.griffin@linaro.org>
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+	<1400771902-26553-3-git-send-email-peter.griffin@linaro.org>
+Date: Fri, 23 May 2014 08:57:54 +0200
+Message-ID: <CAPDyKFrvx5mLcgXTjK5Hap0Vj_edUH4OmHtxHXt4h3Mqa+cxHA@mail.gmail.com>
+Subject: Re: [PATCH 2/8] mmc: sdhci-st: STMicroelectronics SDHCI binding documentation.
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        srinivas.kandagatla@gmail.com, Chris Ball <chris@printf.net>,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22 May 2014 17:18, Peter Griffin <peter.griffin@linaro.org> wrote:
+> This patch adds the device tree binding documentation for ST
+> SDHCI driver. It contains the differences between the core properties
+> in mmc.txt and the properties used by the sdhci-st driver.
+>
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 
---nextPart1922782.EugPuHskmN
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="iso-8859-1"
+Assuming this patch adds does what is says; the patch1 - adding the
+actual driver will have checkpatch warnings around missing
+DT-bindings.
 
-Lan Tianyu wrote:
-> On 05/20/2014 10:17 PM, Rolf Eike Beer wrote:
+Kind regards
+Ulf Hansson
 
-> > It may be that I have taken the wrong ACPI files. This is the resul=
-t of a
-> > fresh run of acpidump, together with the most recent dmesg.log, jus=
-t in
-> > case I messed it up.
->=20
-> =09I have check the log. I2C ACPI operation region targets to I2C con=
-troller
-> which has one ACPI node in the ACPI table and is associated with one =
-I2C
-> adapter. Graphic with one ACPI handle registers several I2C adapters.=
- This
-> causes attach data to the ACPI handle with the same handler several t=
-ime.
-> The ACPICA function will return ALREADY EXIST error code and causes t=
-he log
-> you mentioned. There is no I2C ACPI operation region under graphic de=
-vice
-> node and so not break function. To avoid these noise logs, I make the=
-m only
-> appear under dynamic debug mode in the my V3 patchset.
-
-Hi,
-
-thanks for the clarification.
-
-Greetings,
-
-Eike
-=2D-=20
-Rolf Eike Beer, emlix GmbH, http://www.emlix.com
-Fon +49 551 30664-0, Fax +49 551 30664-11
-Bertha-von-Suttner-Str. 9, 37085 G=F6ttingen, Germany
-Sitz der Gesellschaft: G=F6ttingen, Amtsgericht G=F6ttingen HR B 3160
-Gesch=E4ftsf=FChrung: Dr. Uwe Kracke, Ust-IdNr.: DE 205 198 055
-
-emlix - smart embedded open source
-
---nextPart1922782.EugPuHskmN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iJwEAAECAAYFAlN+8QAACgkQq+RR+17trfxx1wP8DoKWvPE+OkJHU9GNtZGvMc5O
-QB+oE0ze1TOja0pudZ0Dm1uQsu7tYwriyTf7mmeaVRs7dq4bhN9xKdbJgacKaLdd
-DlvaCU5dtvwpPEiAMdRvce+vDdeymXIMmwN5duuxg/q/bUFkUTjS3RFzTjBj8du1
-IiQakdk/fHAToXf8gMo=
-=xs/A
------END PGP SIGNATURE-----
-
---nextPart1922782.EugPuHskmN--
-
+> ---
+>  Documentation/devicetree/bindings/mmc/sdhci-st.txt | 26 ++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-st.txt
+>
+> diff --git a/Documentation/devicetree/bindings/mmc/sdhci-st.txt b/Documentation/devicetree/bindings/mmc/sdhci-st.txt
+> new file mode 100644
+> index 0000000..ae3dae0
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/sdhci-st.txt
+> @@ -0,0 +1,26 @@
+> +* STMicroelectronics sdhci-st MMC/SD controller
+> +
+> +This file documents differences between the core properties in mmc.txt
+> +and the properties used by the sdhci-st driver
+> +
+> +Required properties:
+> +- compatible: "st,sdhci"
+> +- clocks: card clock, must be "mmc".
+> +
+> +Optional properties:
+> +- reset: to provide a reset to the HC.
+> +- non-removable: non-removable slot (bindings/mmc/mmc.txt).
+> +
+> +Example:
+> +
+> +mmc0: sdhci@fe81e000 {
+> +       compatible      = "st,sdhci";
+> +       status          = "disabled";
+> +       reg             = <0xfe81e000 0x1000>;
+> +       interrupts      = <GIC_SPI 127 IRQ_TYPE_NONE>;
+> +       interrupt-names = "mmcirq";
+> +       pinctrl-names   = "default";
+> +       pinctrl-0       = <&pinctrl_mmc0>;
+> +       clock-names     = "mmc";
+> +       clocks          = <&clk_s_a1_ls 1>;
+> +};
+> --
+> 1.9.1
+>
