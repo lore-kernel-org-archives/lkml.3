@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798AbaEWIih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:38:37 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:39556 "EHLO
+	id S1752200AbaEWIjS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:39:18 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:39553 "EHLO
 	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaEWI1b (ORCPT
+	with ESMTP id S1751377AbaEWI13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:27:31 -0400
+	Fri, 23 May 2014 04:27:29 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
@@ -20,9 +20,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>,
         Luc Verhaegen <libv@skynet.be>
-Subject: [PATCH 01/22] serial: 8250_dw: Add optional reset control support
-Date: Fri, 23 May 2014 15:51:04 +0800
-Message-Id: <1400831485-28576-2-git-send-email-wens@csie.org>
+Subject: [PATCH 19/22] ARM: sunxi: Add earlyprintk support using R_UART (sun6i/sun8i)
+Date: Fri, 23 May 2014 15:51:22 +0800
+Message-Id: <1400831485-28576-20-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1400831485-28576-1-git-send-email-wens@csie.org>
 References: <1400831485-28576-1-git-send-email-wens@csie.org>
@@ -30,78 +30,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 and A23 SoCs have a reset controller
-maintaining the UART in reset by default.
-
-This patch adds optional reset support to the driver.
+sun6i/sun8i have a UART in the RTC block group, which can be used
+as an early console. This is most useful on sun8i as UART0 is muxed
+with MMC0, which is not available if we boot from MMC.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt |  1 +
- drivers/tty/serial/8250/8250_dw.c                             | 10 ++++++++++
- 2 files changed, 11 insertions(+)
+ arch/arm/Kconfig.debug | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt b/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt
-index f13f1c5..cb9af84 100644
---- a/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt
-+++ b/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt
-@@ -7,6 +7,7 @@ Required properties:
- - clock-frequency : the input clock frequency for the UART.
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index eab8ecb..9e22708 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -694,6 +694,14 @@ choice
+ 		  Say Y here if you want kernel low-level debugging support
+ 		  on Allwinner A1X based platforms on the UART1.
  
- Optional properties:
-+- resets : phandle to the parent reset controller.
- - reg-shift : quantity to shift the register offsets by.  If this property is
-   not present then the register offsets are not shifted.
- - reg-io-width : the size (in bytes) of the IO accesses that should be
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index ed31135..d0c6d080 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -26,6 +26,7 @@
- #include <linux/slab.h>
- #include <linux/acpi.h>
- #include <linux/clk.h>
-+#include <linux/reset.h>
- #include <linux/pm_runtime.h>
- 
- #include <asm/byteorder.h>
-@@ -59,6 +60,7 @@ struct dw8250_data {
- 	int			last_mcr;
- 	int			line;
- 	struct clk		*clk;
-+	struct reset_control	*rst;
- 	struct uart_8250_dma	dma;
- };
- 
-@@ -259,6 +261,8 @@ static int dw8250_probe_of(struct uart_port *p,
- 	if (!of_property_read_u32(np, "reg-shift", &val))
- 		p->regshift = val;
- 
-+	data->rst = devm_reset_control_get_optional(p->dev, NULL);
++	config DEBUG_SUNXI_R_UART
++		bool "Kernel low-level debugging messages via sunXi R_UART"
++		depends on ARCH_SUNXI
++		select DEBUG_UART_8250
++		help
++		  Say Y here if you want kernel low-level debugging support
++		  on Allwinner A31 based platforms on the R_UART.
 +
- 	/* clock got configured through clk api, all done */
- 	if (p->uartclk)
- 		return 0;
-@@ -362,6 +366,9 @@ static int dw8250_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
-+	if (!IS_ERR_OR_NULL(data->rst))
-+		reset_control_deassert(data->rst);
-+
- 	data->line = serial8250_register_8250_port(&uart);
- 	if (data->line < 0)
- 		return data->line;
-@@ -382,6 +389,9 @@ static int dw8250_remove(struct platform_device *pdev)
- 
- 	serial8250_unregister_port(data->line);
- 
-+	if (!IS_ERR_OR_NULL(data->rst))
-+		reset_control_assert(data->rst);
-+
- 	if (!IS_ERR(data->clk))
- 		clk_disable_unprepare(data->clk);
- 
+ 	config TEGRA_DEBUG_UART_AUTO_ODMDATA
+ 		bool "Kernel low-level debugging messages via Tegra UART via ODMDATA"
+ 		depends on ARCH_TEGRA
+@@ -1007,6 +1015,7 @@ config DEBUG_UART_PHYS
+ 	default 0x01c28400 if DEBUG_SUNXI_UART1
+ 	default 0x01d0c000 if DEBUG_DAVINCI_DA8XX_UART1
+ 	default 0x01d0d000 if DEBUG_DAVINCI_DA8XX_UART2
++	default 0x01f02800 if DEBUG_SUNXI_R_UART
+ 	default 0x02530c00 if DEBUG_KEYSTONE_UART0
+ 	default 0x02531000 if DEBUG_KEYSTONE_UART1
+ 	default 0x03010fe0 if ARCH_RPC
+@@ -1072,6 +1081,7 @@ config DEBUG_UART_VIRT
+ 	default 0xf1600000 if ARCH_INTEGRATOR
+ 	default 0xf1c28000 if DEBUG_SUNXI_UART0
+ 	default 0xf1c28400 if DEBUG_SUNXI_UART1
++	default 0xf1f02800 if DEBUG_SUNXI_R_UART
+ 	default 0xf2100000 if DEBUG_PXA_UART1
+ 	default 0xf4090000 if ARCH_LPC32XX
+ 	default 0xf4200000 if ARCH_GEMINI
 -- 
 2.0.0.rc2
 
