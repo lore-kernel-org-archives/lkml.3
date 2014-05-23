@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaEWJDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:03:51 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:35092 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaEWJDt (ORCPT
+	id S1752526AbaEWJDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:03:42 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:50560 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaEWJDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:03:49 -0400
-Date: Fri, 23 May 2014 11:03:48 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: Subject: Build regressions/improvements in v3.15-rc6
-In-Reply-To: <alpine.DEB.2.02.1405231102060.22585@ayla.of.borg>
-Message-ID: <alpine.DEB.2.02.1405231102350.22600@ayla.of.borg>
-References: <alpine.DEB.2.02.1405231102060.22585@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 23 May 2014 05:03:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1400146621-30056-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1400146621-30056-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Fri, 23 May 2014 11:03:38 +0200
+Message-ID: <CACRpkdYN3fg9Qd0oMYd3ghx4+8dqh8WwF5Aa-VjRDaxcOBZoKg@mail.gmail.com>
+Subject: Re: [PATCH v2 06/14] mmc: mmci: Qcomm: Add 3 clock cycle delay after
+ register write
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 May 2014, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.15-rc6[1]  to v3.15-rc5[3], the summaries are:
->   - build errors: +1/-3
+On Thu, May 15, 2014 at 11:37 AM,  <srinivas.kandagatla@linaro.org> wrote:
 
-  + error: initramfs.c: undefined reference to `__stack_chk_guard':  => .init.text+0x1528)
+> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> Most of the Qcomm SD card controller registers must be updated to the MCLK
+> domain so subsequent writes to registers will be ignored until 3 clock cycles
+> have passed.
+>
+> This patch adds a 3 clock cycle delay required after writing to controller
+> registers on Qualcomm SOCs. Without this delay all the register writes are not
+> successful, resulting in not detecting cards. The write clock delay is
+> activated by setting up mclk_delayed_writes variable in variant data.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-x86_64-randconfig
+OK this is looking good.
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7497/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7468/ (all 119 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Yours,
+Linus Walleij
