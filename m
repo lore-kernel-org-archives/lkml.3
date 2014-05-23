@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaEWPHL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:07:11 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:61072 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaEWPHJ (ORCPT
+	id S1752087AbaEWPKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:10:39 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:48672 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaEWPKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:07:09 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Shawn Guo <shawn.guo@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock and need_sched() contention
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
-	<1400233673-11477-1-git-send-email-vbabka@suse.cz>
-	<CAGa+x87-NRyK6kUiXNL_bRNEGm+DR6M3HPSLYEoq4t6Nrtnd_g@mail.gmail.com>
-	<CAAQ0ZWQDVxAzZVm86ATXd1JGUVoLXj_Y5Ske7htxH_6a4GPKRg@mail.gmail.com>
-	<537F082F.50501@suse.cz>
-Date: Fri, 23 May 2014 08:07:06 -0700
-In-Reply-To: <537F082F.50501@suse.cz> (Vlastimil Babka's message of "Fri, 23
-	May 2014 10:34:55 +0200")
-Message-ID: <7hvbswfs9x.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 23 May 2014 11:10:38 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: [RESEND PATCH v5 0/5] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+Date: Fri, 23 May 2014 16:10:14 +0100
+Message-Id: <1400857819-7975-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
+References: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vlastimil Babka <vbabka@suse.cz> writes:
+This patchset removes some single-platform compatibility tricks related
+to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
+to enable DEBUG_LL without forcibly selecting of the PL01X's DEBUG_LL
+implementation (which doesn't work on some platforms).
 
-> On 05/23/2014 04:48 AM, Shawn Guo wrote:
->> On 23 May 2014 07:49, Kevin Hilman <khilman@linaro.org> wrote:
->>> On Fri, May 16, 2014 at 2:47 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
->>>> Compaction uses compact_checklock_irqsave() function to periodically check for
->>>> lock contention and need_resched() to either abort async compaction, or to
->>>> free the lock, schedule and retake the lock. When aborting, cc->contended is
->>>> set to signal the contended state to the caller. Two problems have been
->>>> identified in this mechanism.
->>>
->>> This patch (or later version) has hit next-20140522 (in the form
->>> commit 645ceea9331bfd851bc21eea456dda27862a10f4) and according to my
->>> bisect, appears to be the culprit of several boot failures on ARM
->>> platforms.
->> 
->> On i.MX6 where CMA is enabled, the commit causes the drivers calling
->> dma_alloc_coherent() fail to probe.  Tracing it a little bit, it seems
->> dma_alloc_from_contiguous() always return page as NULL after this
->> commit.
->> 
->> Shawn
->> 
->
-> Really sorry, guys :/
->
-> -----8<-----
-> From: Vlastimil Babka <vbabka@suse.cz>
-> Date: Fri, 23 May 2014 10:18:56 +0200
-> Subject: mm-compaction-properly-signal-and-act-upon-lock-and-need_sched-contention-fix2
->
-> Step 1: Change function name and comment between v1 and v2 so that the return
->         value signals the opposite thing.
-> Step 2: Change the call sites to reflect the opposite return value.
-> Step 3: ???
-> Step 4: Make a complete fool of yourself.
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+* Tidy a couple of existing defconfig's so they continue to issue
+  DEBUG_LL messages to PL01X when the subsequent changes come along.
+* Limit DEBUG_LL_UART_NONE to platforms that support it
+* Fix a potential build problem on EP93XX
+* Get rid of the compatibility code that causes us to forcibly enable
+  DEBUG_UART_PL01X 
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
+Changes since v4:
 
-I verified that this fixes the boot failures I've seen on ARM (i.MX6 and
-Marvell Armada 370).
+* Rebased to latest mainline (and tested again). No functional changes.
 
-Thanks for the quick fix.
+Changes since v3:
 
-Kevin
+* Converted from a single patch to a series.
+* Tested defconfig builds of all impacted platforms.
+
+Changes since v2:
+
+* Switch from def_bool to bool (thanks Russell King)
+
+Changes since v1:
+
+* Remove pointless single platform support (thanks Arnd Bergmann)
+
+
+Daniel Thompson (5):
+  ARM: versatile: Enable DEBUG_LL_UART_PL01X
+  ARM: ep93xx: Enable DEBUG_LL_UART_PL01X
+  ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
+  arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+  arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+
+ arch/arm/Kconfig.debug               | 23 +++++++++++++++--------
+ arch/arm/configs/ep93xx_defconfig    |  1 +
+ arch/arm/configs/versatile_defconfig |  1 +
+ 3 files changed, 17 insertions(+), 8 deletions(-)
+
+-- 
+1.9.0
+
