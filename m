@@ -1,96 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751161AbaEWApo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 20:45:44 -0400
-Received: from ozlabs.org ([103.22.144.67]:54055 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897AbaEWApm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 20:45:42 -0400
-Date: Fri, 23 May 2014 10:45:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20140523104534.467b452b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751481AbaEWAtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 20:49:21 -0400
+Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:16863
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750808AbaEWAtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 20:49:19 -0400
+X-WSS-ID: 0N604Y1-08-XO4-02
+X-M-MSG: 
+Message-ID: <537E9B0A.9050704@amd.com>
+Date: Thu, 22 May 2014 19:49:14 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/fE4MEu.KO8c1fYRI9E7cmaq"; protocol="application/pgp-signature"
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Robert Richter <rric@kernel.org>, Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        <linux-pci@vger.kernel.org>, "Borislav Petkov" <bp@suse.de>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH V5 0/4] x86/pci Fix numa_node info for AMD hostbridge
+ and misc clean up
+References: <1399567461-15928-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(54534003)(51704005)(199002)(189002)(24454002)(479174003)(377454003)(101416001)(97736001)(84676001)(31966008)(83506001)(44976005)(80316001)(33656002)(83322001)(68736004)(21056001)(86362001)(74662001)(50986999)(92726001)(92566001)(76176999)(99396002)(54356999)(77096999)(87266999)(85852003)(561944003)(81342001)(23676002)(102836001)(64126003)(81542001)(79102001)(65956001)(65806001)(80022001)(64706001)(20776003)(47776003)(36756003)(46102001)(87936001)(76482001)(50466002)(83072002)(59896001)(4396001)(77982001)(74502001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB472;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 0220D4B98D
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/fE4MEu.KO8c1fYRI9E7cmaq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+[Resending due to mail client crashing]
 
-Hi all,
+On 5/21/2014 6:17 PM, Bjorn Helgaas wrote:
+> [resending because I forgot to copy the lists, sorry guys]
+>
+> Hi Suravee,
+>
+> Sorry it took me so long to get to these patches.  Here's my proposal.  I
+> reordered them and added some comments in the code and changelogs, but I
+> think your patches look fine as-is.
+>
+> So I just need comments on these two significant changes:
+>
+>    1) I added a patch to stop enabling ECS after Fam16h, because that's
+>    another case of CPU-dependent code that we should not need to keep
+>    carrying.  I don't think there are any post-Fam16h CPUs yet, but I
+>    certainly don't want to do anything that will keep them from working when
+>    they do arrive.  It would be useful if somebody could test this on
+>    current platforms by tweaking the patch so we don't enable ECS on Fam15h.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-mvebu/board-v7.c between commit 8ae2473d96f1 ("ARM: l2c:
-mvebu: convert to generic l2c OF initialisation") from the arm tree and
-commit 5686a1e5aa43 ("bus: mvebu: pass the coherency availability
-information at init time") from the arm-soc tree.
+I'm okay with this. In my V4 patch, I also tested disabling ECS on 
+family15h already and that seems to work fine.  But I would not mind 
+deprecate this for post fam16h processors.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+>
+>    2) I dropped the quirk_amd_nb_node() removal.  I could be convinced
+>    otherwise, but I don't really object to the quirk because it is already
+>    explicitly limited to specific devices, and removing it will change
+>    things in sysfs.  I think the changes would be harmless as far as the
+>    kernel is concerned, since there are no drivers for these devices.  But
+>    Andreas added the quirk because of complaints, so apparently somebody is
+>    looking at what's in sysfs, and I don't want to get the same complaints
+>    again by removing it.  However, I will certainly ask questions if I see
+>    the quirk being extended to more devices.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'm okay with keeping this.
 
-diff --cc arch/arm/mach-mvebu/board-v7.c
-index 48169caa56ea,01cfce6ac20b..000000000000
---- a/arch/arm/mach-mvebu/board-v7.c
-+++ b/arch/arm/mach-mvebu/board-v7.c
-@@@ -57,8 -75,10 +75,9 @@@ static void __init mvebu_timer_and_clk_
-  {
-  	of_clk_init(NULL);
-  	clocksource_of_init();
-+ 	mvebu_scu_enable();
-  	coherency_init();
-- 	BUG_ON(mvebu_mbus_dt_init());
-+ 	BUG_ON(mvebu_mbus_dt_init(coherency_available()));
- -	l2x0_of_init(0, ~0UL);
- =20
-  	if (of_machine_is_compatible("marvell,armada375"))
-  		hook_fault_code(16 + 6, armada_375_external_abort_wa, SIGBUS, 0,
-@@@ -121,9 -195,8 +196,10 @@@ static const char * const armada_375_dt
-  };
- =20
-  DT_MACHINE_START(ARMADA_375_DT, "Marvell Armada 375 (Device Tree)")
- +	.l2c_aux_val	=3D 0,
- +	.l2c_aux_mask	=3D ~0,
-  	.init_time	=3D mvebu_timer_and_clk_init,
-+ 	.init_machine	=3D mvebu_dt_init,
-  	.restart	=3D mvebu_restart,
-  	.dt_compat	=3D armada_375_dt_compat,
-  MACHINE_END
+> The AMD BKDG does say the BIOS should provide an MCFG table (sec 2.8 of
+> 42301), so I think it provides guidance matching the intent of my "stop
+> enabling ECS" patch.  But the BKDG doesn't mention _PXM at all.  Is there
+> any chance you could squeeze in a mention of that, so BIOS writers know
+> that they *should* provide it?  I want to avoid more fire-drills in the
+> future.
+>
+> Bjorn
 
---Sig_/fE4MEu.KO8c1fYRI9E7cmaq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+The ship for family15h stuff have sailed and we probably would not be 
+able to get them to change.  We are going to have to keep an eye on the 
+future platforms to make sure that the _PXM info is documented for 
+future platforms.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+I have tested this patch set and they seems to be ok now.
 
-iQIcBAEBCAAGBQJTfpozAAoJEMDTa8Ir7ZwVoe4P+wQXx3OAJfT5h+BhDXAEtYf2
-+hQkd492AABHO5K+wjbgXRZ5of53N4aRq4dSsNCVkWqT/wZbP5mx1EI0I4UvrjDf
-NKUV9qLllu7NkBYWCvuDNbenvsn5T0rxLh+pJOuag4AtUZhoGBMimPZmnf5atKcX
-eKZEjZdEf2ODCDYaXC6mVPA5BJdaAHQQ0F/4cT8wL2DDJ1QZ7kWZ5NHnPanymhhf
-6wLEbD3z7yh8edcwnxHu0gku0yqtRZPIs/9tlRdyyHq1zJyEbPbUmS760haVGG94
-VcDJSl0F5AA+MiPwPkqV0QTJ5Ii24GPmky1admMVJYQie00Y3T5d9InIy1ezZs5D
-hAdvj7LwqBI7lCC7wW+9OmwpJIcPSqrhw8GwWWfkj+uemDE8QRL/FpdlaFMXtSps
-P657HqS+ftdQmU2wKbZmEaL3XfB1t883vNMFAw2r0L/8+yYBp5hgJAJAJ83ssHbF
-xeTsxHmK7l0CAV2nWdYx0Zi3Q2mThcXDwwlzxjT7ZMJuMccentXMXiwMnBglbaS+
-RRF8v1VxlynTnbaJFq7cpwOcn/8JDIBlFxWbKWIOXBkWvGxkUGsKegqNJZL0Flx0
-rW+qcATtKValBzP/IKGMP1VUCSKaBm/rvz12thAivNie1aMHvS0fII1MT/GylaOd
-OIDDJt4GjmloOG0UG4FR
-=9889
------END PGP SIGNATURE-----
+Suravee
 
---Sig_/fE4MEu.KO8c1fYRI9E7cmaq--
+>
+> ---
+>
+> Bjorn Helgaas (1):
+>        x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
+>
+> Myron Stowe (1):
+>        x86/PCI: Warn if we have to "guess" host bridge node information
+>
+> Suravee Suthikulpanit (2):
+>        x86/PCI: Work around AMD Fam15h BIOSes that fail to provide _PXM
+>        x86/PCI: Clean up and mark early_root_info_init() as deprecated
+>
+>
+>   arch/x86/pci/acpi.c    |    6 +++
+>   arch/x86/pci/amd_bus.c |   87 +++++++++++++++++++++++++++++++-----------------
+>   2 files changed, 62 insertions(+), 31 deletions(-)
+>
+
