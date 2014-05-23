@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaEWPPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:15:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:58738 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaEWPPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:15:11 -0400
-Date: Fri, 23 May 2014 11:07:34 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2014-05-23
-Message-ID: <20140523150733.GC13311@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753264AbaEWPOQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:14:16 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:36436 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752141AbaEWPOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:14:12 -0400
+From: Georgi Djakov <gdjakov@mm-sol.com>
+To: linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, sboyd@codeaurora.org, rvaswani@codeaurora.org,
+        davidb@codeaurora.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [PATCH v2 0/4] Add Qualcomm APQ8084 SoC support
+Date: Fri, 23 May 2014 18:12:28 +0300
+Message-Id: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+This patchset adds basic support for the Qualcomm Snapdragon 805 APQ8084 SoC.
 
-I have two more fixes intended for the 3.15 stream...
+The first two patches add device-tree files for the SoC and the board, the
+third adds a board compatible string to the DT machine descriptor.
+The last one adds information about the low-level debug UART base address
+to the DEBUG_QCOM_UARTDM Kconfig help section introduced by [1].
 
-For the iwlwifi one, Emmanuel says:
+Tested on APQ8084-MTP board.
 
-"A race has been discovered in the beacon filtering code. Since the
-fix is too big for 3.15, I disable here the feature."
+Changes from v1:
+ - Remove the interrupts property from the l2-cache node as it is still not
+   accepted (suggested by Stephen Boyd)
+ - Move the timer node out of the soc container (suggested by Stephen Boyd)
+ - Add just "qcom,apq8084" in the board machine descriptors to cover other
+   future boards based on apq8084 (suggested by Kumar Gala)
+ - Change the last patch (debug UART) to just add info about the SoC PHYS/VIRT
+   addresses. Requires [1]. (suggestions by Arnd Bergmann and Ivan Ivanov)
 
-For the bluetooth one, Gustavo says:
+[1] https://lkml.org/lkml/2014/4/14/312
 
-"This pull request contains a very important fix for 3.15. Here we fix the
-permissions of a debugfs file that would otherwise allow unauthorized users
-to write content to it."
+Georgi Djakov (4):
+  ARM: dts: qcom: Add APQ8084 SoC support
+  ARM: dts: qcom: Add APQ8084-MTP board support
+  ARM: qcom: Add APQ8084 to mach-qcom
+  ARM: debug: qcom: add UART addresses to Kconfig help
 
-Please let me know if there are problems!
+ arch/arm/Kconfig.debug                 |    1 +
+ arch/arm/boot/dts/Makefile             |    3 +-
+ arch/arm/boot/dts/qcom-apq8084-mtp.dts |    6 ++
+ arch/arm/boot/dts/qcom-apq8084.dtsi    |  179 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-qcom/board.c             |    1 +
+ 5 files changed, 189 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/qcom-apq8084-mtp.dts
+ create mode 100644 arch/arm/boot/dts/qcom-apq8084.dtsi
 
-Thanks,
-
-John
-
----
-
-The following changes since commit b6ed5498601df40489606dbc14a9c7011c16630b:
-
-  batman: fix a bogus warning from batadv_is_on_batman_iface() (2014-05-22 17:23:00 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
-
-for you to fetch changes up to 5ca2504ea36df1da815029a9e9277c08540042eb:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless into for-davem (2014-05-23 10:55:58 -0400)
-
-----------------------------------------------------------------
-
-Emmanuel Grumbach (1):
-      iwlwifi: mvm: disable beacon filtering
-
-John W. Linville (3):
-      Merge branch 'master' of git://git.kernel.org/.../bluetooth/bluetooth
-      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Samuel Ortiz (1):
-      Bluetooth: Fix L2CAP LE debugfs entries permissions
-
- drivers/net/wireless/iwlwifi/mvm/mac80211.c | 2 +-
- net/bluetooth/l2cap_core.c                  | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-index b41dc84e9431..8735ef1f44ae 100644
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -826,7 +826,7 @@ static int iwl_mvm_mac_add_interface(struct ieee80211_hw *hw,
- 	if (ret)
- 		goto out_remove_mac;
- 
--	if (!mvm->bf_allowed_vif &&
-+	if (!mvm->bf_allowed_vif && false &&
- 	    vif->type == NL80211_IFTYPE_STATION && !vif->p2p &&
- 	    mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_BF_UPDATED){
- 		mvm->bf_allowed_vif = mvmvif;
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index a1e5bb7d06e8..dc4d301d3a72 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -7519,9 +7519,9 @@ int __init l2cap_init(void)
- 	l2cap_debugfs = debugfs_create_file("l2cap", 0444, bt_debugfs,
- 					    NULL, &l2cap_debugfs_fops);
- 
--	debugfs_create_u16("l2cap_le_max_credits", 0466, bt_debugfs,
-+	debugfs_create_u16("l2cap_le_max_credits", 0644, bt_debugfs,
- 			   &le_max_credits);
--	debugfs_create_u16("l2cap_le_default_mps", 0466, bt_debugfs,
-+	debugfs_create_u16("l2cap_le_default_mps", 0644, bt_debugfs,
- 			   &le_default_mps);
- 
- 	bt_6lowpan_init();
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.7.9.5
+
