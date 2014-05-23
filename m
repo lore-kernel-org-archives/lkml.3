@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaEWJJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:09:05 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:46840 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaEWJJC (ORCPT
+	id S1752864AbaEWJJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:09:28 -0400
+Received: from exprod7og105.obsmtp.com ([64.18.2.163]:47167 "EHLO
+	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaEWJJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:09:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400146660-30261-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400146660-30261-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Fri, 23 May 2014 11:09:02 +0200
-Message-ID: <CACRpkdYZOpqyGJT4_Kf-TetiQoQrJwWbSrqUxDuRszutEM0HWw@mail.gmail.com>
-Subject: Re: [PATCH v2 11/14] mmc: mmci: Add support to data commands via
- variant structure.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 23 May 2014 05:09:24 -0400
+From: Anders Berg <anders.berg@avagotech.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Anders Berg <anders.berg@avagotech.com>
+Subject: [PATCH v4 0/5] Add platform support for LSI AXM55xx
+Date: Fri, 23 May 2014 11:08:34 +0200
+Message-Id: <cover.1400834521.git.anders.berg@avagotech.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:37 AM,  <srinivas.kandagatla@linaro.org> wrote:
+Hi,
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> On some SOCs like Qcom there are explicit bits in the command register
-> to specify if its a data transfer command or not. So this patch adds
-> support to such bits in variant data, giving more flexibility to the
-> driver.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Here is version 4 of platform support for AXM5516 SoC.
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+The clk driver is now applied to clk-next. The rest should be ready for
+arm-soc. Haven't got any response from the power/reset maintainers... I hope
+this driver can be taken via arm-soc as well.
 
-Yours,
-Linus Walleij
+Changes:
+
+v4:
+    * Updated DTS according to new clk driver binding.
+    * Dropped the clk driver from this series.
+
+v3:
+    * Sorted Kconfig entries alphabetically
+
+v2:
+    * Rebased to arm-soc/for-next
+    * Removed redundant HAVE_SMP and ARCH_WANT_OPTIONAL_GPIOLIB from Kconfig
+    * Use CPU_METHOD_OF_DECLARE to register smp_operations
+    * Rework smp operations to avoid holding pen and custom headsmp.S
+    * Clean up board file
+    * Corrected clock properties for arm,sp804 dts node.
+    * Changed machine compatible strings to include full model number.
+    * Break out clk-axxia driver as separate patch
+    * Removed Makefile.boot
+
+
+Anders Berg (5):
+  ARM: Add platform support for LSI AXM55xx SoC
+  ARM: dts: Device tree for AXM55xx.
+  ARM: axxia: Adding defconfig for AXM55xx
+  power: reset: Add Axxia system reset driver
+  ARM: dts: axxia: Add reset controller
+
+ Documentation/devicetree/bindings/arm/axxia.txt    |  12 +
+ .../bindings/power_supply/axxia-reset.txt          |  20 ++
+ arch/arm/Kconfig                                   |   2 +
+ arch/arm/Makefile                                  |   2 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/axm5516-amarillo.dts             |  51 +++++
+ arch/arm/boot/dts/axm5516-cpus.dtsi                | 204 +++++++++++++++++
+ arch/arm/boot/dts/axm55xx.dtsi                     | 204 +++++++++++++++++
+ arch/arm/configs/axm55xx_defconfig                 | 248 +++++++++++++++++++++
+ arch/arm/mach-axxia/Kconfig                        |  16 ++
+ arch/arm/mach-axxia/Makefile                       |   2 +
+ arch/arm/mach-axxia/axxia.c                        |  28 +++
+ arch/arm/mach-axxia/platsmp.c                      |  89 ++++++++
+ drivers/power/reset/Kconfig                        |   8 +
+ drivers/power/reset/Makefile                       |   1 +
+ drivers/power/reset/axxia-reset.c                  |  88 ++++++++
+ include/dt-bindings/clock/lsi,axm5516-clks.h       |  36 +++
+ 17 files changed, 1012 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/axxia.txt
+ create mode 100644 Documentation/devicetree/bindings/power_supply/axxia-reset.txt
+ create mode 100644 arch/arm/boot/dts/axm5516-amarillo.dts
+ create mode 100644 arch/arm/boot/dts/axm5516-cpus.dtsi
+ create mode 100644 arch/arm/boot/dts/axm55xx.dtsi
+ create mode 100644 arch/arm/configs/axm55xx_defconfig
+ create mode 100644 arch/arm/mach-axxia/Kconfig
+ create mode 100644 arch/arm/mach-axxia/Makefile
+ create mode 100644 arch/arm/mach-axxia/axxia.c
+ create mode 100644 arch/arm/mach-axxia/platsmp.c
+ create mode 100644 drivers/power/reset/axxia-reset.c
+ create mode 100644 include/dt-bindings/clock/lsi,axm5516-clks.h
+
+-- 
+1.8.3.2
+
