@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaEWKGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:06:43 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49168 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061AbaEWKEf (ORCPT
+	id S1752878AbaEWKG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:06:59 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:50818 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810AbaEWKGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:04:35 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 15/26] perf report: Add report.children config option
-Date: Fri, 23 May 2014 19:04:12 +0900
-Message-Id: <1400839463-21933-16-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
-References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+	Fri, 23 May 2014 06:06:41 -0400
+Date: Fri, 23 May 2014 11:06:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Keerthy <a0393675@ti.com>
+Cc: Keerthy <j-keerthy@ti.com>, devicetree@vger.kernel.org, robh+dt@kernel.org,
+        mark.rutland@arm.com, sameo@linux.intel.com, grant.likely@linaro.org,
+        ian@slimlogic.co.uk, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, broonie@linaro.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v3 3/4] mfd: tps65917: Add driver for the TPS65917 PMIC
+Message-ID: <20140523100634.GP19747@lee--X1>
+References: <1400731239-3180-1-git-send-email-j-keerthy@ti.com>
+ <1400731239-3180-4-git-send-email-j-keerthy@ti.com>
+ <20140522083707.GM6679@lee--X1>
+ <537DD836.3040501@ti.com>
+ <20140522114808.GU6679@lee--X1>
+ <537EBEE4.9050309@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537EBEE4.9050309@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add report.children config option for setting default value of
-callchain accumulation.  It affects the report output only if
-perf.data contains callchain info.
+> >>>>The TPS65917 chip is a power management IC for Portable Navigation Systems
+> >>>>and Tablet Computing devices. It contains the following components:
+> >>>>
+> >>>>  - Regulators.
+> >>>>  - Over Temperature warning and Shut down.
+> >>>>
+> >>>>This patch adds support for tps65917 mfd device. At this time only
+> >>>>the regulator functionality is made available.
+> >>>>
+> >>>>Signed-off-by: Keerthy <j-keerthy@ti.com>
+> >>>>---
+> >>>>v3 Changes:
+> >>>>
+> >>>>  * Header file formating
+> >>>>  * Changed the cache_type to REGCACHE_RBTREE
+> >>>>  * removed unnecessary code
+> >>>>  * Corrected documentation style
+> >>>>  * Added pm_power_off function
+> >>>>
+> >>>>  v2 Changes:
+> >>>>
+> >>>>  * Added volatile register check as some of the registers
+> >>>>    in the set are volatile.
+> >>>>drivers/mfd/Kconfig          |   12 +
+> >>>>  drivers/mfd/Makefile         |    1 +
+> >>>>  drivers/mfd/tps65917.c       |  594 +++++++++++++++++
+> >>>>  include/linux/mfd/tps65917.h | 1485 ++++++++++++++++++++++++++++++++++++++++++
+> >>>>  4 files changed, 2092 insertions(+)
+> >>>>  create mode 100644 drivers/mfd/tps65917.c
+> >>>>  create mode 100644 include/linux/mfd/tps65917.h
 
-A user can write .perfconfig file like below to enable accumulation
-by default:
+[...]
 
-  $ cat ~/.perfconfig
-  [report]
-  children = true
+> >>>>+		ret = regmap_read(tps65917->regmap[slave], addr, &reg);
+> >>>>+		if (ret)
+> >>>>+			goto err_irq;
+> >>>>+	}i
+> >>>What does the read do?  You're not doing anything with the value.
+> >>This pad1 and pad2 stuff is not needed. I will remove this.
+> >Then why is it in here?
+> >
+> >Did you copy this code from somewhere, if so, where?
+> >
+> >Okay, I just answered my own question.  There is so much common code
+> >in between this and palmas, there is no way I'm going to accept this
+> >driver.  Please merge it in with the palmas driver!
+> >
+> The chip is more like a subset of palmas with lot of register offset changes
+> and register bit field changes. Adding this would make it clumsy.
+> There could
+> be lot of checks. That is why i chose to write a new driver.
+> 
+> Palmas driver already supports palmas variants and tps659038. Merging
+> this would mean more and more checks :-/.
 
-And it can be disabled through command line:
+Then find an elegant way of representing the variants.  I'm not
+prepared to carry that much duplicated code in MFD.  It's already
+overladened and in need of an overhaul.  This will exacerbate the
+matter.
 
-  $ perf report --no-children
-
-Tested-by: Arun Sharma <asharma@fb.com>
-Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 6a9f0b38eb38..df7d431c0cbf 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -72,6 +72,10 @@ static int report__config(const char *var, const char *value, void *cb)
- 		rep->min_percent = strtof(value, NULL);
- 		return 0;
- 	}
-+	if (!strcmp(var, "report.children")) {
-+		symbol_conf.cumulate_callchain = perf_config_bool(var, value);
-+		return 0;
-+	}
- 
- 	return perf_default_config(var, value, cb);
- }
 -- 
-1.9.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
