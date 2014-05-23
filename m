@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaEWPFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:05:09 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:57293 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750922AbaEWPFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:05:05 -0400
-Message-ID: <1400857500.31526.52.camel@x220>
-Subject: [PATCH v2] cpufreq: s5pv210: drop check for CONFIG_PM_VERBOSE
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 23 May 2014 17:05:00 +0200
-In-Reply-To: <CAK9yfHzf-Z3AQ4+-sF7xqqUw4dN8aULkCNvLQnmusp_ZiOg+Rw@mail.gmail.com>
-References: <1400702036.30334.6.camel@x220>
-	 <CAK9yfHz2kdfkf+o7fKMRu=nMXxbcHJ227bjpvA=WXt6ptH3QRA@mail.gmail.com>
-	 <1400740894.21254.8.camel@x220>
-	 <CAK9yfHzf-Z3AQ4+-sF7xqqUw4dN8aULkCNvLQnmusp_ZiOg+Rw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 May 2014 15:05:01.0411 (UTC) FILETIME=[5EC50330:01CF7698]
-X-RcptDomain: vger.kernel.org
+	id S1752526AbaEWPFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:05:31 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35065 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752103AbaEWPF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:05:26 -0400
+Date: Fri, 23 May 2014 17:05:18 +0200
+From: Robert Richter <rric@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after
+ Fam16h
+Message-ID: <20140523150518.GW27560@rric.localhost>
+References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521233802.GA21575@pd.tnic>
+ <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
+ <20140522191746.GL4383@pd.tnic>
+ <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
+ <537E8ACF.6000103@amd.com>
+ <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
+ <20140523115622.GU27560@rric.localhost>
+ <CAErSpo5t+u+AYS5m6wo+AG7uXEkseUcmK9d-FF+SwpkcEWnkqA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5t+u+AYS5m6wo+AG7uXEkseUcmK9d-FF+SwpkcEWnkqA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A pr_err() was added in v3.1. It was guarded by a check for
-CONFIG_PM_VERBOSE. The Kconfig symbol PM_VERBOSE was removed in v3.0. So
-this pr_err() has never been used. Drop that check and clean up the
-message a bit.
+On 23.05.14 07:01:41, Bjorn Helgaas wrote:
+> [I guess I've been using the wrong term here.  I think "ECS" just
+> refers to the extended config space itself, and I should have been
+> saying "IO ECS" or "EnableCf8ExtCfg".]
+> 
+> My understanding was that if we don't enable IO ECS and we don't have
+> MCFG, we will not be able to access extended config space.  The system
+> can certainly boot without extended config space, but some drivers may
+> not work correctly, so it would be a regression from the user point of
+> view.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-v1 was called "cpufreq: s5pv210: remove unused call of pr_err()". v2
-keeps the pr_err() and trims down its arguments, as Sachin requested.
+No, I got you right. If we disable IO ECS there is no fallback if MCFG
+fails... and this may cause a regression then.
 
-Still untested.
+I might be completely wrong here, but as I remember IO ECS only
+affects access to cpu devices (bus 0, slot 0x18-0x1f). Thus, esp. PCIe
+extended config space access works since a different host controller
+handles this. So only cpu devices would see a regression and thus cpu
+bringup code. I don't think ECS (either MCFG or IO ECS) is needed
+anymore for cpu bringup (this is true for IBS, but I don't know of
+other cpu features requiring ECS, though family 16h might introduced
+new ones).
 
- drivers/cpufreq/s5pv210-cpufreq.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+IMHO device drivers are not affected and wont get broken.
 
-diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
-index ab2c1a40d437..19a10b89fef7 100644
---- a/drivers/cpufreq/s5pv210-cpufreq.c
-+++ b/drivers/cpufreq/s5pv210-cpufreq.c
-@@ -175,10 +175,8 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
- 	mutex_lock(&set_freq_lock);
- 
- 	if (no_cpufreq_access) {
--#ifdef CONFIG_PM_VERBOSE
--		pr_err("%s:%d denied access to %s as it is disabled"
--				"temporarily\n", __FILE__, __LINE__, __func__);
--#endif
-+		pr_err("Denied access to %s as it is disabled temporarily\n",
-+		       __func__);
- 		ret = -EINVAL;
- 		goto exit;
- 	}
--- 
-1.9.0
-
+-Robert
