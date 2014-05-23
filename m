@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389AbaEWBv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 21:51:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54845 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaEWBvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 21:51:54 -0400
-Date: Fri, 23 May 2014 10:51:50 +0900 (JST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-cc: linux-arm-kernel@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, jason@lakedaemon.net
-Subject: Re: [PATCH v2 1/2] irqchip: add Broadcom Set Top Box Level-2 interrupt
- controller
-In-Reply-To: <1400776606-22427-2-git-send-email-f.fainelli@gmail.com>
-Message-ID: <alpine.DEB.2.02.1405231047050.9995@ionos.tec.linutronix.de>
-References: <1400776606-22427-1-git-send-email-f.fainelli@gmail.com> <1400776606-22427-2-git-send-email-f.fainelli@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1751391AbaEWByg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 21:54:36 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:56132
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaEWBye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 21:54:34 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, jasowang@redhat.com, apw@canonical.com,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>
+Subject: [PATCH 1/1] Drivers: scsi: storvsc: Change the limits to reflect the values on the host
+Date: Thu, 22 May 2014 19:51:52 -0700
+Message-Id: <1400813512-22394-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014, Florian Fainelli wrote:
-> +static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
-> +{
-> +	struct brcmstb_l2_intc_data *b = irq_desc_get_handler_data(desc);
-> +	struct irq_chip *chip = irq_get_chip(irq);
+Hyper-V hosts can support multiple targets and multiple channels and larger number of
+LUNs per target. Update the code to reflect this. With this patch we can correctly
+enumerate all the paths in a multi-path storage environment.
 
-irq_desc_get_chip() is what you want here. irq_get_chip() is doing a
-full lookop of desc, which is silly as you have desc already.
+MS-TFS: 173725
 
-Thanks,
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>
+---
+ drivers/scsi/storvsc_drv.c |   36 ++++++++++++++++++++++--------------
+ 1 files changed, 22 insertions(+), 14 deletions(-)
 
-	tglx
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 9969fa1..5a63772 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -331,16 +331,15 @@ static int storvsc_timeout = 180;
+ static void storvsc_on_channel_callback(void *context);
+ 
+ /*
+- * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
+- * reality, the path/target is not used (ie always set to 0) so our
+- * scsi host adapter essentially has 1 bus with 1 target that contains
+- * up to 256 luns.
++ * In Hyper-V, each port/path/target maps to 1 scsi host adapter.
+  */
+-#define STORVSC_MAX_LUNS_PER_TARGET			64
+-#define STORVSC_MAX_TARGETS				1
+-#define STORVSC_MAX_CHANNELS				1
+-
++#define STORVSC_MAX_LUNS_PER_TARGET			255
++#define STORVSC_MAX_TARGETS				2
++#define STORVSC_MAX_CHANNELS				8
+ 
++#define STORVSC_FC_MAX_LUNS_PER_TARGET			255
++#define STORVSC_FC_MAX_TARGETS				128
++#define STORVSC_FC_MAX_CHANNELS				8
+ 
+ struct storvsc_cmd_request {
+ 	struct list_head entry;
+@@ -1789,12 +1788,21 @@ static int storvsc_probe(struct hv_device *device,
+ 	host_dev->path = stor_device->path_id;
+ 	host_dev->target = stor_device->target_id;
+ 
+-	/* max # of devices per target */
+-	host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
+-	/* max # of targets per channel */
+-	host->max_id = STORVSC_MAX_TARGETS;
+-	/* max # of channels */
+-	host->max_channel = STORVSC_MAX_CHANNELS - 1;
++	if (dev_id->driver_data == SFC_GUID) {
++		/* max # of devices per target */
++		host->max_lun = STORVSC_FC_MAX_LUNS_PER_TARGET;
++		/* max # of targets per channel */
++		host->max_id = STORVSC_FC_MAX_TARGETS;
++		/* max # of channels */
++		host->max_channel = STORVSC_FC_MAX_CHANNELS - 1;
++	} else {
++		/* max # of devices per target */
++		host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
++		/* max # of targets per channel */
++		host->max_id = STORVSC_MAX_TARGETS;
++		/* max # of channels */
++		host->max_channel = STORVSC_MAX_CHANNELS - 1;
++	}
+ 	/* max cmd length */
+ 	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
+ 
+-- 
+1.7.4.1
+
