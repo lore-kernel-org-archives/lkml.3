@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaEWT62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 15:58:28 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:32839 "EHLO
+	id S1751605AbaEWT6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 15:58:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:32832 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275AbaEWT5Z (ORCPT
+	with ESMTP id S1751257AbaEWT5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 May 2014 15:57:25 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: "David S . Miller" <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: [PATCH v2 4/4] net: ks8851: Add of match table
-Date: Fri, 23 May 2014 12:57:20 -0700
-Message-Id: <1400875040-13269-5-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        Nishanth Menon <nm@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>
+Subject: [PATCH v2 1/4] devicetree: bindings: Properly document micrel ks8851 SPI chips
+Date: Fri, 23 May 2014 12:57:17 -0700
+Message-Id: <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 In-Reply-To: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
 References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
@@ -21,35 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users are currently just providing "ks8851" as the compatible for
-this driver in device tree. Add a compatible string that provides
-the vendor name along with the device name to be more explicit.
+The ks8851 SPI ethernet wasn't documented, but we documented the
+optional regulator supply for it under the mll based ethernet
+chip. Furthermore, that compatible string needed another 'l'. Fix
+all of this and document the optional vdd-io and reset-gpios
+properties.
 
+Cc: Nishanth Menon <nm@ti.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/net/ethernet/micrel/ks8851.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ Documentation/devicetree/bindings/net/micrel-ks8851.txt | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
-index 3a322daba5ff..e72918970a58 100644
---- a/drivers/net/ethernet/micrel/ks8851.c
-+++ b/drivers/net/ethernet/micrel/ks8851.c
-@@ -1603,9 +1603,15 @@ static int ks8851_remove(struct spi_device *spi)
- 	return 0;
- }
+diff --git a/Documentation/devicetree/bindings/net/micrel-ks8851.txt b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
+index d54d0cc79487..bbdf9a7359a2 100644
+--- a/Documentation/devicetree/bindings/net/micrel-ks8851.txt
++++ b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
+@@ -1,9 +1,18 @@
+-Micrel KS8851 Ethernet mac
++Micrel KS8851 Ethernet mac (MLL)
  
-+static const struct of_device_id ks8851_match_table[] = {
-+	{ .compatible = "micrel,ks8851" },
-+	{ }
-+};
+ Required properties:
+-- compatible = "micrel,ks8851-ml" of parallel interface
++- compatible = "micrel,ks8851-mll" of parallel interface
+ - reg : 2 physical address and size of registers for data and command
+ - interrupts : interrupt connection
+ 
++Micrel KS8851 Ethernet mac (SPI)
 +
- static struct spi_driver ks8851_driver = {
- 	.driver = {
- 		.name = "ks8851",
-+		.of_match_table = ks8851_match_table,
- 		.owner = THIS_MODULE,
- 		.pm = &ks8851_pm_ops,
- 	},
++Required properties:
++- compatible = "micrel,ks8851" or the deprecated "ks8851"
++- reg : chip select number
++- interrupts : interrupt connection
++
+ Optional properties:
+-- vdd-supply:	supply for Ethernet mac
++- vdd-supply: analog 3.3V supply for Ethernet mac
++- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
++- reset-gpios: reset_n input pin
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
