@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaEWG55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 02:57:57 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:46694 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaEWG5z (ORCPT
+	id S1752835AbaEWG6w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 02:58:52 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:33850 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503AbaEWG6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 02:57:55 -0400
+	Fri, 23 May 2014 02:58:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400771902-26553-3-git-send-email-peter.griffin@linaro.org>
-References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
-	<1400771902-26553-3-git-send-email-peter.griffin@linaro.org>
-Date: Fri, 23 May 2014 08:57:54 +0200
-Message-ID: <CAPDyKFrvx5mLcgXTjK5Hap0Vj_edUH4OmHtxHXt4h3Mqa+cxHA@mail.gmail.com>
-Subject: Re: [PATCH 2/8] mmc: sdhci-st: STMicroelectronics SDHCI binding documentation.
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        srinivas.kandagatla@gmail.com, Chris Ball <chris@printf.net>,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+In-Reply-To: <20140519100316.GE7138@ulmo>
+References: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
+ <1400483458-9648-5-git-send-email-acourbot@nvidia.com> <20140519090202.GC7138@ulmo>
+ <1400491331.8467.8.camel@weser.hi.pengutronix.de> <20140519100316.GE7138@ulmo>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 23 May 2014 15:58:30 +0900
+Message-ID: <CAAVeFu+TaRahuv+7e90W5ZOH86jT4Nt3k0O24dZKX-DgQQqp5w@mail.gmail.com>
+Subject: Re: [PATCH 4/4] drm/nouveau: introduce CPU cache flushing macro
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Lucas Stach <l.stach@pengutronix.de>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 May 2014 17:18, Peter Griffin <peter.griffin@linaro.org> wrote:
-> This patch adds the device tree binding documentation for ST
-> SDHCI driver. It contains the differences between the core properties
-> in mmc.txt and the properties used by the sdhci-st driver.
+On Mon, May 19, 2014 at 7:03 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Mon, May 19, 2014 at 11:22:11AM +0200, Lucas Stach wrote:
+>> Am Montag, den 19.05.2014, 11:02 +0200 schrieb Thierry Reding:
+>> > On Mon, May 19, 2014 at 04:10:58PM +0900, Alexandre Courbot wrote:
+>> > > Some architectures (e.g. ARM) need the CPU buffers to be explicitely
+>> > > flushed for a memory write to take effect. Not doing so results in
+>> > > synchronization issues, especially after writing to BOs.
+>> >
+>> > It seems to me that the above is generally true for all architectures,
+>> > not just ARM.
+>> >
+>> No, on PCI coherent arches, like x86 and some PowerPCs, the GPU will
+>> snoop the CPU caches and therefore an explicit cache flush is not
+>> required.
 >
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-
-Assuming this patch adds does what is says; the patch1 - adding the
-actual driver will have checkpatch warnings around missing
-DT-bindings.
-
-Kind regards
-Ulf Hansson
-
-> ---
->  Documentation/devicetree/bindings/mmc/sdhci-st.txt | 26 ++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-st.txt
+> I was criticizing the wording in the commit message. Perhaps it could be
+> enhanced with what you just said.
 >
-> diff --git a/Documentation/devicetree/bindings/mmc/sdhci-st.txt b/Documentation/devicetree/bindings/mmc/sdhci-st.txt
-> new file mode 100644
-> index 0000000..ae3dae0
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/sdhci-st.txt
-> @@ -0,0 +1,26 @@
-> +* STMicroelectronics sdhci-st MMC/SD controller
-> +
-> +This file documents differences between the core properties in mmc.txt
-> +and the properties used by the sdhci-st driver
-> +
-> +Required properties:
-> +- compatible: "st,sdhci"
-> +- clocks: card clock, must be "mmc".
-> +
-> +Optional properties:
-> +- reset: to provide a reset to the HC.
-> +- non-removable: non-removable slot (bindings/mmc/mmc.txt).
-> +
-> +Example:
-> +
-> +mmc0: sdhci@fe81e000 {
-> +       compatible      = "st,sdhci";
-> +       status          = "disabled";
-> +       reg             = <0xfe81e000 0x1000>;
-> +       interrupts      = <GIC_SPI 127 IRQ_TYPE_NONE>;
-> +       interrupt-names = "mmcirq";
-> +       pinctrl-names   = "default";
-> +       pinctrl-0       = <&pinctrl_mmc0>;
-> +       clock-names     = "mmc";
-> +       clocks          = <&clk_s_a1_ls 1>;
-> +};
-> --
-> 1.9.1
+>> > > diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+>> > [...]
+>> > > index 0886f47e5244..b9c9729c5733 100644
+>> > > --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
+>> > > +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+>> > > @@ -437,8 +437,10 @@ nouveau_bo_wr16(struct nouveau_bo *nvbo, unsigned index, u16 val)
+>> > >   mem = &mem[index];
+>> > >   if (is_iomem)
+>> > >           iowrite16_native(val, (void __force __iomem *)mem);
+>> > > - else
+>> > > + else {
+>> > >           *mem = val;
+>> > > +         nv_cpu_cache_flush_area(mem, 2);
+>> > > + }
+>> > >  }
+>> > >
+>> > >  u32
+>> > > @@ -461,8 +463,10 @@ nouveau_bo_wr32(struct nouveau_bo *nvbo, unsigned index, u32 val)
+>> > >   mem = &mem[index];
+>> > >   if (is_iomem)
+>> > >           iowrite32_native(val, (void __force __iomem *)mem);
+>> > > - else
+>> > > + else {
+>> > >           *mem = val;
+>> > > +         nv_cpu_cache_flush_area(mem, 4);
+>> > > + }
+>> >
+>> > This looks rather like a sledgehammer to me. Effectively this turns nvbo
+>> > into an uncached buffer. With additional overhead of constantly flushing
+>> > caches. Wouldn't it make more sense to locate the places where these are
+>> > called and flush the cache after all the writes have completed?
+>> >
+>> I don't think the explicit flushing for those things makes sense. I
+>> think it is a lot more effective to just map the BOs write-combined on
+>> PCI non-coherent arches. This way any writes will be buffered. Reads
+>> will be slow, but I don't think nouveau is reading back a lot from those
+>> buffers.
+>> Using the write-combining buffer doesn't need any additional
+>> synchronization as it will get flushed on pushbuf kickoff anyways.
 >
+> Sounds good to me.
+
+I will need to wrap my head around TTM some more to understand how to
+do this the right way, but it is true that brute-forcing in-memory BO
+mappings to be WC make the addition of nv_cpu_cache_flush_area()
+unneeded. Is that the direction we want to take with this?
