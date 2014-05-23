@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895AbaEWKwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:52:31 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:37865 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaEWKby (ORCPT
+	id S1752531AbaEWKbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:31:52 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59913 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaEWKbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:31:54 -0400
+	Fri, 23 May 2014 06:31:48 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 14/71] clocksource: sh_cmt: Hardcode CMT clock event rating to 125
-Date: Fri, 23 May 2014 12:30:54 +0200
-Message-Id: <1400841111-6683-14-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 09/71] clocksource: sh_cmt: Replace kmalloc + memset with kzalloc
+Date: Fri, 23 May 2014 12:30:49 +0200
+Message-Id: <1400841111-6683-9-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -23,59 +23,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-All boards use or should use a clock event rating of 125 for the CMT,
-hardcode it in the driver.
+One kzalloc a day keeps the bugs away.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/clocksource/sh_cmt.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/clocksource/sh_cmt.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 926abe2..75b1f83 100644
+index 6b65621..0779bf1 100644
 --- a/drivers/clocksource/sh_cmt.c
 +++ b/drivers/clocksource/sh_cmt.c
-@@ -768,14 +768,14 @@ static void sh_cmt_clock_event_resume(struct clock_event_device *ced)
- }
- 
- static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
--				       const char *name, unsigned long rating)
-+				       const char *name)
+@@ -672,8 +672,6 @@ static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
  {
  	struct clock_event_device *ced = &ch->ced;
  
+-	memset(ced, 0, sizeof(*ced));
+-
  	ced->name = name;
  	ced->features = CLOCK_EVT_FEAT_PERIODIC;
  	ced->features |= CLOCK_EVT_FEAT_ONESHOT;
--	ced->rating = rating;
-+	ced->rating = 125;
- 	ced->cpumask = cpu_possible_mask;
- 	ced->set_next_event = sh_cmt_clock_event_next;
- 	ced->set_mode = sh_cmt_clock_event_mode;
-@@ -788,11 +788,10 @@ static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
- }
+@@ -709,7 +707,6 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
+ 	int irq;
+ 	int ret;
  
- static int sh_cmt_register(struct sh_cmt_channel *ch, const char *name,
--			   unsigned long clockevent_rating,
--			   unsigned long clocksource_rating)
-+			   bool clockevent, unsigned long clocksource_rating)
- {
--	if (clockevent_rating)
--		sh_cmt_register_clockevent(ch, name, clockevent_rating);
-+	if (clockevent)
-+		sh_cmt_register_clockevent(ch, name);
+-	memset(ch, 0, sizeof(*ch));
+ 	ch->cmt = cmt;
+ 	ch->base = cmt->mapbase_ch;
+ 	ch->index = index;
+@@ -758,7 +755,6 @@ static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
+ 	int ret;
+ 	ret = -ENXIO;
  
- 	if (clocksource_rating)
- 		sh_cmt_register_clocksource(ch, name, clocksource_rating);
-@@ -827,7 +826,7 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
- 	raw_spin_lock_init(&ch->lock);
+-	memset(cmt, 0, sizeof(*cmt));
+ 	cmt->pdev = pdev;
  
- 	ret = sh_cmt_register(ch, dev_name(&cmt->pdev->dev),
--			      cfg->clockevent_rating,
-+			      cfg->clockevent_rating != 0,
- 			      cfg->clocksource_rating);
- 	if (ret) {
- 		dev_err(&cmt->pdev->dev, "ch%u: registration failed\n",
+ 	if (!cfg) {
+@@ -861,7 +857,7 @@ static int sh_cmt_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
+-	cmt = kmalloc(sizeof(*cmt), GFP_KERNEL);
++	cmt = kzalloc(sizeof(*cmt), GFP_KERNEL);
+ 	if (cmt == NULL) {
+ 		dev_err(&pdev->dev, "failed to allocate driver data\n");
+ 		return -ENOMEM;
 -- 
 1.7.9.5
 
