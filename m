@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaEWSke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:40:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43895 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaEWSkd (ORCPT
+	id S1752078AbaEWSk5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:40:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54137 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaEWSk4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:40:33 -0400
-Date: Fri, 23 May 2014 20:33:46 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dominique van den Broeck <domdevlin@free.fr>
-Cc: Willy Tarreau <willy@meta-x.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: panel: (coding style) Multiple assignments
-Message-ID: <20140523113346.GA10649@kroah.com>
-References: <1400674201-9560-1-git-send-email-domdevlin@free.fr>
- <1400674201-9560-3-git-send-email-domdevlin@free.fr>
-MIME-Version: 1.0
+	Fri, 23 May 2014 14:40:56 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400674201-9560-3-git-send-email-domdevlin@free.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [GIT PULL] qcom DT changes for v3.16
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <alpine.DEB.2.00.1405231337490.15680@galak-ubuntu.qualcomm.com>
+Date: Fri, 23 May 2014 13:40:51 -0500
+Cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
+        Georgi Djakov <gdjakov@mm-sol.com>, iivanov@mm-sol.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CC35DC70-4F17-4BF1-AFB8-3F5488C580B6@codeaurora.org>
+References: <alpine.DEB.2.00.1405231337490.15680@galak-ubuntu.qualcomm.com>
+To: arm@kernel.org
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 02:10:01PM +0200, Dominique van den Broeck wrote:
-> Style-only modifications to comply with checkpatch.pl --strict --file. 
-> . Breaks down compound assignments.
+(updated subject line)
+
+On May 23, 2014, at 1:37 PM, Kumar Gala <galak@codeaurora.org> wrote:
+
+> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 > 
-> Signed-off-by: Dominique van den Broeck <domdevlin@free.fr>
-> ---
-> Apply on linux-next tree, above:
-> commit 4151fa6adc65da14673ece623bbb2acc6936f8be
-> "Add linux-next specific files for 20140516"
+>  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 > 
-> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> index 1ac5e25..8d15b04 100644
-> --- a/drivers/staging/panel/panel.c
-> +++ b/drivers/staging/panel/panel.c
-> @@ -664,8 +664,8 @@ static void pin_to_bits(int pin, unsigned char *d_val, unsigned char *c_val)
->  {
->  	int d_bit, c_bit, inv;
->  
-> -	d_val[0] = c_val[0] = d_val[1] = c_val[1] = 0;
-> -	d_val[2] = c_val[2] = 0xFF;
-> +	d_val[0] = 0 ; c_val[0] = 0 ; d_val[1] = 0 ; c_val[1] = 0;
-> +	d_val[2] = 0xFF; c_val[2] = 0xFF;
+> are available in the git repository at:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.16
+> 
+> for you to fetch changes up to 08f9234ad6b0b8bc51046346eabf5b92e631e62a:
+> 
+>  soc: qcom: Add device tree binding for GSBI (2014-05-23 11:38:53 -0500)
+> 
+> ----------------------------------------------------------------
+> Qualcomm ARM Based Device Tree Updates for v3.16
+> 
+> * Added device tree nodes for pinctrl and SDHC for msm8974 SoC/DB8074 board
+> * Added binding spec for GSBI configuration node
+> 
+> ----------------------------------------------------------------
+> Andy Gross (1):
+>      soc: qcom: Add device tree binding for GSBI
+> 
+> Georgi Djakov (1):
+>      ARM: dts: msm: Add SDHC controller nodes for MSM8974 and DB8074 board
+> 
+> Ivan T. Ivanov (1):
+>      ARM: dts: MSM8974: Add pinctrl node
+> 
+> .../devicetree/bindings/soc/qcom/qcom,gsbi.txt     | 78 ++++++++++++++++++++++
+> arch/arm/boot/dts/qcom-apq8074-dragonboard.dts     | 13 ++++
+> arch/arm/boot/dts/qcom-msm8974.dtsi                | 51 ++++++++++++++
+> include/dt-bindings/soc/qcom,gsbi.h                | 26 ++++++++
+> 4 files changed, 168 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt
+> create mode 100644 include/dt-bindings/soc/qcom,gsbi.h
+> 
+> --
+> Employee of Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Honestly, that's harder to read now, so I'll just leave this all alone
-and not apply this patch.
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
-Becides, you got the ; wrong...
-
-thanks,
-
-greg k-h
