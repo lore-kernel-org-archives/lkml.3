@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaEWREu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:04:50 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:52486 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792AbaEWREs (ORCPT
+	id S1753603AbaEWRFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:05:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61210 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068AbaEWRFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:04:48 -0400
-Date: Fri, 23 May 2014 10:04:30 -0700
-From: Larry Bassel <larry.bassel@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Larry Bassel <larry.bassel@linaro.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/2] arm64: adjust el0_sync so that a function can
- be called
-Message-ID: <20140523170430.GB7953@ubuette>
-References: <1400786855-32656-1-git-send-email-larry.bassel@linaro.org>
- <1400786855-32656-2-git-send-email-larry.bassel@linaro.org>
- <537E5CD9.80501@codeaurora.org>
- <20140522223520.GA7953@ubuette>
- <20140523144457.GN9252@arm.com>
+	Fri, 23 May 2014 13:05:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140523144457.GN9252@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrWR6s7wqSwEeygOYqizrxy8eAyHb3SqvLoTooMZ+MfdqA@mail.gmail.com>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
+	<1400799936-26499-7-git-send-email-keescook@chromium.org>
+	<CALCETrWR6s7wqSwEeygOYqizrxy8eAyHb3SqvLoTooMZ+MfdqA@mail.gmail.com>
+Date: Fri, 23 May 2014 10:05:01 -0700
+X-Google-Sender-Auth: bNQY9KARbWLosY0yt3XoJFfRqjQ
+Message-ID: <CAGXu5j+=itFtHe25pZxXsk+1C1Cca4DGm83SC93=xRctUdeXsw@mail.gmail.com>
+Subject: Re: [PATCH v5 6/6] seccomp: add SECCOMP_EXT_ACT_TSYNC and SECCOMP_FILTER_TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        liguang <lig.fnst@cn.fujitsu.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 14 15:44, Catalin Marinas wrote:
-> On Thu, May 22, 2014 at 11:35:20PM +0100, Larry Bassel wrote:
-> > > On 05/22/2014 03:27 PM, Larry Bassel wrote:
-> > > > To implement the context tracker properly on arm64,
-> > > > a function call needs to be made after debugging and
-> > > > interrupts are turned on, but before the lr is changed
-> > > > to point to ret_to_user(). If the function call
-> > > > is made after the lr is changed the function will not
-> > > > return to the correct place.
-> > > > 
-> > > > For similar reasons, defer the setting of x0 so that
-> > > > it doesn't need to be saved around the function call
-> > > > (save far_el1 in x26 temporarily instead).
-> > > > 
-> > > > Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
-> > > > ---
-> > > >  arch/arm64/kernel/entry.S | 24 +++++++++++++++++-------
-> > > >  1 file changed, 17 insertions(+), 7 deletions(-)
-> > > > 
-> > > > diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> > > > index e8b23a3..20b336e 100644
-> > > > --- a/arch/arm64/kernel/entry.S
-> > > > +++ b/arch/arm64/kernel/entry.S
-> > > > @@ -354,7 +354,6 @@ el0_sync:
-> > > >  	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
-> > > >  	cmp	x24, #ESR_EL1_EC_SVC64		// SVC in 64-bit state
-> > > >  	b.eq	el0_svc
-> > > > -	adr	lr, ret_to_user
-> > > >  	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
-> > > >  	b.eq	el0_da
-> > > >  	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
-> > > > @@ -383,7 +382,6 @@ el0_sync_compat:
-> > > >  	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
-> > > >  	cmp	x24, #ESR_EL1_EC_SVC32		// SVC in 32-bit state
-> > > >  	b.eq	el0_svc_compat
-> > > > -	adr	lr, ret_to_user
-> > > >  	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
-> > > >  	b.eq	el0_da
-> > > >  	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
-> > > > @@ -426,22 +424,26 @@ el0_da:
-> > > >  	/*
-> > > >  	 * Data abort handling
-> > > >  	 */
-> > > > -	mrs	x0, far_el1
-> > > > -	bic	x0, x0, #(0xff << 56)
-> > > > +	mrs	x26, far_el1
-> > > >  	// enable interrupts before calling the main handler
-> > > >  	enable_dbg_and_irq
-> > > > +	mov	x0, x26
-> > > > +	bic	x0, x0, #(0xff << 56)
-> > > 
-> > > Nit: I believe you can bit clear with x26 as the source register and omit the
-> > > move instruction.
-> > 
-> > Is that really an improvement (assuming it works)? Are we saving
-> > any cycles here? If so, does it matter? It is easy to see what
-> > the move instruction is doing.
-> 
-> Even if it's not noticeable, I would still reduce the number of lines by
-> one. BIC with immediate is just an alias for AND and it supports
-> different source and destination.
+On Thu, May 22, 2014 at 4:11 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, May 22, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
+>> Applying restrictive seccomp filter programs to large or diverse
+>> codebases often requires handling threads which may be started early in
+>> the process lifetime (e.g., by code that is linked in). While it is
+>> possible to apply permissive programs prior to process start up, it is
+>> difficult to further restrict the kernel ABI to those threads after that
+>> point.
+>>
+>> This change adds a new seccomp extension action for synchronizing thread
+>> group seccomp filters and a prctl() for accessing that functionality,
+>> as well as a flag for SECCOMP_EXT_ACT_FILTER to perform sync at filter
+>> installation time.
+>>
+>> When calling prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER,
+>> flags, filter) with flags containing SECCOMP_FILTER_TSYNC, or when calling
+>> prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0), it
+>> will attempt to synchronize all threads in current's threadgroup to its
+>> seccomp filter program. This is possible iff all threads are using a filter
+>> that is an ancestor to the filter current is attempting to synchronize to.
+>> NULL filters (where the task is running as SECCOMP_MODE_NONE) are also
+>> treated as ancestors allowing threads to be transitioned into
+>> SECCOMP_MODE_FILTER. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
+>> calling thread, no_new_privs will be set for all synchronized threads too.
+>> On success, 0 is returned. On failure, the pid of one of the failing threads
+>> will be returned, with as many filters installed as possible.
+>
+> Is there a use case for adding a filter and synchronizing filters
+> being separate operations?  If not, I think this would be easier to
+> understand and to use if there was just a single operation.
 
-Ack.
+Yes: if the other thread's lifetime is not well controlled, it's good
+to be able to have a distinct interface to retry the thread sync that
+doesn't require adding "no-op" filters.
 
-> 
-> -- 
-> Catalin
+> If you did that, you'd have to decide whether to continue requiring
+> that all the other threads have a filter that's an ancestor of the
+> current thread's filter.
 
-Larry
+This is required no matter what to make sure there is no way to
+replace a filter tree with a different one (allowing accidental
+bypasses, misbehavior, etc).
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
