@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaEWLns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 07:43:48 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:62651 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186AbaEWLnr (ORCPT
+	id S1751537AbaEWLuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 07:50:18 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:55138 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751186AbaEWLuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 07:43:47 -0400
-Date: Fri, 23 May 2014 12:43:41 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: axp20x: Remove unnecessary const qualifier from
- axp20x_supplies[]
-Message-ID: <20140523114341.GX19747@lee--X1>
-References: <1400750311-15323-1-git-send-email-lee.jones@linaro.org>
- <1400750311-15323-2-git-send-email-lee.jones@linaro.org>
- <1400774373.21099.1.camel@joe-AO725>
- <20140522160856.GJ19747@lee--X1>
- <1400777136.21099.6.camel@joe-AO725>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1400777136.21099.6.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 May 2014 07:50:16 -0400
+Message-ID: <1400845814.31526.29.camel@x220>
+Subject: [PATCH v2] ARM: at91: #if 0 out ISI code for AT91SAM9263
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Josh Wu <josh.wu@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 23 May 2014 13:50:14 +0200
+In-Reply-To: <F4C251BF-666E-4E89-A6F7-3D96A669A8D8@jcrosoft.com>
+References: <1400142868.20469.12.camel@x220>
+	 <F4C251BF-666E-4E89-A6F7-3D96A669A8D8@jcrosoft.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 May 2014 11:50:14.0265 (UTC) FILETIME=[28B00E90:01CF767D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > To be frank, I've never known what the double const means.  Care to
-> > enlighten?
-> 
-> There's a nice table here:
-> 
-> http://stackoverflow.com/questions/14562845/why-does-passing-char-as-const-char-generate-a-warning
+In v2.6.25 code was added for an Image Sensor Interface (ISI) for
+AT91SAM9263. That code depended on the Kconfig macro
+CONFIG_VIDEO_AT91_ISI and its MODULE variant. The related Kconfig symbol
+has never been added to the tree. The net effect of this was that
+at91_add_device_isi() was a NOP. No one noticed because no callers of
+that function were added to the tree at that time.
 
-Okay, I get it. I think you're right, I'll make the change and see
-what else breaks and try to fix that too.
+The first caller of a function with that name was added in v3.4. But
+that caller apparently only called the function defined for AT91SAM9G45.
+(that function was also added in v3.4). So even then AT91SAM9263's NOP
+version of at91_add_device_isi() remained unused.
 
+This means that the ISI code for AT91SAM9263 could be removed. But,
+since it can be useful for future reference, let's "#if 0" it instead.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+v2: Jean-Christophe would like to keep the information currently hidden
+behind "#if defined(CONFIG_VIDEO_AT91_ISI) [...]". I'd like the
+reference to that Kconfig macro dropped. Using "#if 0" will do both, so
+that makes for a nice compromise, I'd say.
+
+Josh verified that this definition of at91_add_device_isi() never will
+be called. Thanks!
+
+Still untested!
+
+ arch/arm/mach-at91/at91sam9263_devices.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+index 43d53d6156dd..30af3048ade5 100644
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -900,8 +900,7 @@ void __init at91_add_device_lcdc(struct atmel_lcdfb_pdata *data) {}
+  *  Image Sensor Interface
+  * -------------------------------------------------------------------- */
+ 
+-#if defined(CONFIG_VIDEO_AT91_ISI) || defined(CONFIG_VIDEO_AT91_ISI_MODULE)
+-
++#if 0 /* keep for future reference */
+ struct resource isi_resources[] = {
+ 	[0] = {
+ 		.start	= AT91SAM9263_BASE_ISI,
+@@ -947,9 +946,6 @@ void __init at91_add_device_isi(struct isi_platform_data *data,
+ 		/* TODO: register the PCK for ISI_MCK and set its parent */
+ 	}
+ }
+-#else
+-void __init at91_add_device_isi(struct isi_platform_data *data,
+-		bool use_pck_as_mck) {}
+ #endif
+ 
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.0
+
