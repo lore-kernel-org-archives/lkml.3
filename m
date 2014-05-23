@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963AbaEWPo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:44:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39135 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186AbaEWPoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:44:54 -0400
+	id S1753065AbaEWPpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:45:01 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38898 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981AbaEWPo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:44:57 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
         <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
@@ -19,99 +20,54 @@ CC: <rdunlap@infradead.org>, <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
         <sergei.shtylyov@cogentembedded.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v7 0/7] Introduce keystone reset driver
-Date: Fri, 23 May 2014 18:43:25 +0300
-Message-ID: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [Patch v7 3/7] mfd: ti-keystone-devctrl: add bindings for device state control
+Date: Fri, 23 May 2014 18:43:28 +0300
+Message-ID: <1400859812-5761-4-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches introduce keystone reset driver.
+The Keystone II devices have a set of registers that are used to control
+the status of its peripherals. This node is intended to allow access to
+this functionality.
 
-The keystone SoC can be rebooted in several ways. By external reset
-pin, by soft and by watchdogs. This driver allows software reset and reset
-by one of the watchdogs. Also added opportunity to set soft/hard reset type.
-
-Based on linux-next/master
-
-v7..v6
-  power: reset: keystone-reset: introduce keystone reset driver
-  power: reset: add bindings for keystone reset driver
-  ARM: dts: keystone: update reset node to work with reset driver
-	- s/wdt_list/wdt-list/g
-
-v6..v5
-  clock: keystone-pllctrl: add bindings for keystone pll controller
-  mfd: ti-keystone-devctrl: add bindings for device state control
-  power: reset: add bindings for keystone reset driver
-  ARM: dts: keystone: update reset node to work with reset driver
-  	- for nodes s/device-state-control/device-state-control@02620000/g
-  	- for nodes s/pll-controller/pll-controller@02310000/g
-  mfd: ti-keystone-devctrl: add bindings for device state control
-  	- corrected description for reg property
-
-v5..v4
-  power: reset: keystone-reset: introduce keystone reset driver
-  	- changed to get rsmux and rspll offsets from DT
-  clock: keystone-pllctrl: add bindings for keystone pll controller
-  	- new patch
-  mfd: ti-keystone-devctrl: add bindings for device state control
-  	- new patch
-  power: reset: add bindings for keystone reset driver
-  	- corrected description of "ti,syscon-pll", "ti,syscon-dev" properties
-	- corrected examples
-  ARM: dts: keystone: update reset node to work with reset driver
-  	- added nodes for pll-controller and device-state-controll
-	- added offsets to "ti,syscon-pll", "ti,syscon-dev" properties
-
-v4..v3
-  Power: reset: keystone-reset: introduce keystone reset driver
-  	- changed to use syscon framework
-  	- changed to use regmap to access registers
-  Power: reset: add bindings for keystone reset driver
-  	- deleted properties "reg", "reg-names"
-	- added properties "ti,syscon-pll", "ti,syscon-dev"
-  ARM: dts: keystone: update reset node to work with reset driver
-  	- deleted properties "reg", "reg-names"
-	- added properties "ti,syscon-pll", "ti,syscon-dev"
-
-v2..v3
-  Power: reset: keystone-reset: introduce keystone reset driver
-	- no functional changes, only sanity
-  Power: reset: add bindings for keystone reset driver
-  	- corrected WDT numeration in examples
-	- extended description of wdt_list property
-
-v1..v2
-	- re based on v3.15-rc1 without changes
-
-Ivan Khoronzhuk (7):
-  power: reset: keystone-reset: introduce keystone reset driver
-  clock: keystone-pllctrl: add bindings for keystone pll controller
-  mfd: ti-keystone-devctrl: add bindings for device state control
-  power: reset: add bindings for keystone reset driver
-  ARM: keystone: remove redundant reset stuff
-  ARM: dts: keystone: update reset node to work with reset driver
-  ARM: keystone: enable reset driver support
-
- .../bindings/clock/ti-keystone-pllctrl.txt         |  20 +++
- .../bindings/mfd/ti-keystone-devctrl.txt           |  19 +++
- .../bindings/power/reset/keystone-reset.txt        |  67 +++++++++
- arch/arm/boot/dts/keystone.dtsi                    |  14 +-
- arch/arm/configs/keystone_defconfig                |   3 +
- arch/arm/mach-keystone/keystone.c                  |  34 -----
- drivers/power/reset/Kconfig                        |   8 +
- drivers/power/reset/Makefile                       |   1 +
- drivers/power/reset/keystone-reset.c               | 166 +++++++++++++++++++++
- 9 files changed, 297 insertions(+), 35 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ .../devicetree/bindings/mfd/ti-keystone-devctrl.txt   | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
- create mode 100644 Documentation/devicetree/bindings/power/reset/keystone-reset.txt
- create mode 100644 drivers/power/reset/keystone-reset.c
 
+diff --git a/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+new file mode 100644
+index 0000000..20963c7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+@@ -0,0 +1,19 @@
++* Device tree bindings for Texas Instruments keystone device state control
++
++The Keystone II devices have a set of registers that are used to control
++the status of its peripherals. This node is intended to allow access to
++this functionality.
++
++Required properties:
++
++- compatible:		"ti,keystone-devctrl", "syscon"
++
++- reg:			contains offset/length value for device state control
++			registers space.
++
++Example:
++
++devctrl: device-state-control@0x02620000 {
++	compatible = "ti,keystone-devctrl", "syscon";
++	reg = <0x02620000 0x1000>;
++};
 -- 
 1.8.3.2
 
