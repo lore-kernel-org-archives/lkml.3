@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331AbaEWWTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 18:19:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45532 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaEWWTm (ORCPT
+	id S1751265AbaEWWX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 18:23:58 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:38538 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038AbaEWWX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 18:19:42 -0400
-Date: Sat, 24 May 2014 07:19:40 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
-        kishon@ti.com, hdegoede@redhat.com,
-        Boris Brezillon <boris@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH RESEND v4 0/8] Add Allwinner A31 USB support
-Message-ID: <20140523221940.GB18106@kroah.com>
-References: <20140514160520.GA4679@kroah.com>
- <20140523183339.GC10768@lukather>
+	Fri, 23 May 2014 18:23:56 -0400
+Date: Fri, 23 May 2014 23:23:52 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [GIT PULL] EFI changes for arm64
+Message-ID: <20140523222352.GB23963@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140523183339.GC10768@lukather>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 08:33:39PM +0200, Maxime Ripard wrote:
-> Hi Greg,
-> 
-> On Wed, May 14, 2014 at 06:05:20PM +0200, Greg Kroah-Hartman wrote:
-> > On Wed, May 14, 2014 at 02:34:19PM +0200, Maxime Ripard wrote:
-> > > On Tue, May 13, 2014 at 05:44:14PM +0200, Maxime Ripard wrote:
-> > > > Hi everyone,
-> > > > 
-> > > > This patchset adds support for the USB controllers found in the
-> > > > Allwinner A31.
-> > > > 
-> > > > While the design is similar to the earlier Allwinner SoCs that are
-> > > > already supported, a few details here and there change, like the fact
-> > > > that the PHYs now have one clock per phy, while it used to be only one
-> > > > for all the PHYs.
-> > > > 
-> > > > Resent adding Alan Stern's Acked-by and puting Greg KH in the
-> > > > recipients this time...
-> > > 
-> > > Applied patches 2, 7 and 8.
-> > 
-> > Feel free to apply patches 5 and 6 to your tree, as your branch needs
-> > these, with my:
-> > 
-> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > Or, if you want me to take them, just let me know and I will.
-> 
-> It looks like it's still not in your tree (or at least, I haven't
-> received the usual mail notifications).
-> 
-> Is this expected?
+Catalin reports that the arm64 EFI changes in tip/arm64/efi are causing
+boot issues when trying to run on a non-EFI machine. The below fix from
+Leif skips the EFI code on such machines.
 
-Given that I haven't applied any USB patches in a week or so, yes, it is
-expected...
+The following changes since commit 345c736edd07b657a8c48190baed2719b85d0938:
 
-Give me a week or so to catch up, I've been on the road for a month
-now, and am finally home.
+  efi/arm64: ignore dtb= when UEFI SecureBoot is enabled (2014-04-30 19:57:06 +0100)
 
-greg k-h
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git arm64-efi
+
+for you to fetch changes up to 74bcc2499291d38b6253f9dbd6af33a195222208:
+
+  arm64: efi: only attempt efi map setup if booting via EFI (2014-05-23 15:29:43 +0100)
+
+----------------------------------------------------------------
+Leif Lindholm (1):
+      arm64: efi: only attempt efi map setup if booting via EFI
+
+ arch/arm64/kernel/efi.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
