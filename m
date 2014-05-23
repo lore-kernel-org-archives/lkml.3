@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716AbaEWKGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:06:35 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49231 "EHLO
+	id S1752682AbaEWKGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:06:33 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49268 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071AbaEWKEg (ORCPT
+	with ESMTP id S1752080AbaEWKEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 May 2014 06:04:36 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 19/26] perf top: Add --children option
-Date: Fri, 23 May 2014 19:04:16 +0900
-Message-Id: <1400839463-21933-20-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 20/26] perf top: Add top.children config option
+Date: Fri, 23 May 2014 19:04:17 +0900
+Message-Id: <1400839463-21933-21-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
@@ -28,9 +28,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The --children option is for showing accumulated overhead (period)
-value as well as self overhead.  It should be used with one of -g or
---call-graph option.
+Add top.children config option for setting default value of
+callchain accumulation.  It affects the output only if one of
+-g or --call-graph option is given as well.
+
+A user can write .perfconfig file like below to enable accumulation
+by default:
+
+  $ cat ~/.perfconfig
+  [top]
+  children = true
+
+And it can be disabled through command line:
+
+  $ perf top --no-children
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
@@ -38,61 +49,24 @@ Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-top.txt | 8 +++++++-
- tools/perf/builtin-top.c              | 7 +++++++
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ tools/perf/builtin-top.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index dcfa54c851e9..180ae02137a5 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -119,7 +119,7 @@ Default is to monitor all CPUS.
- --fields=::
- 	Specify output field - multiple keys can be specified in CSV format.
- 	Following fields are available:
--	overhead, overhead_sys, overhead_us, sample and period.
-+	overhead, overhead_sys, overhead_us, overhead_children, sample and period.
- 	Also it can contain any sort key(s).
- 
- 	By default, every sort keys not specified in --field will be appended
-@@ -161,6 +161,12 @@ Default is to monitor all CPUS.
- 	Setup and enable call-graph (stack chain/backtrace) recording,
- 	implies -g.
- 
-+--children::
-+	Accumulate callchain of children to parent entry so that then can
-+	show up in the output.  The output will have a new "Children" column
-+	and will be sorted on the data.  It requires -g/--call-graph option
-+	enabled.
-+
- --max-stack::
- 	Set the stack depth limit when parsing the callchain, anything
- 	beyond the specified depth will be ignored. This is a trade-off
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2465215eff39..3f581a074c3d 100644
+index 3f581a074c3d..ecf42417e497 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -1103,6 +1103,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK(0, "call-graph", &top.record_opts,
- 		     "mode[,dump_size]", record_callchain_help,
- 		     &parse_callchain_opt),
-+	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
-+		    "Accumulate callchains of children and show total overhead as well"),
- 	OPT_INTEGER(0, "max-stack", &top.max_stack,
- 		    "Set the maximum stack depth when parsing the callchain. "
- 		    "Default: " __stringify(PERF_MAX_STACK_DEPTH)),
-@@ -1208,6 +1210,11 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+@@ -1009,6 +1009,10 @@ static int perf_top_config(const char *var, const char *value, void *cb)
  
- 	top.sym_evsel = perf_evlist__first(top.evlist);
- 
-+	if (!symbol_conf.use_callchain) {
-+		symbol_conf.cumulate_callchain = false;
-+		perf_hpp__cancel_cumulate();
+ 	if (!strcmp(var, "top.call-graph"))
+ 		return record_parse_callchain(value, &top->record_opts);
++	if (!strcmp(var, "top.children")) {
++		symbol_conf.cumulate_callchain = perf_config_bool(var, value);
++		return 0;
 +	}
-+
- 	symbol_conf.priv_size = sizeof(struct annotation);
  
- 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
+ 	return perf_default_config(var, value, cb);
+ }
 -- 
 1.9.2
 
