@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaEWHNV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 03:13:21 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:48051 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503AbaEWHNT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 03:13:19 -0400
-Message-ID: <537EF50B.2010101@linaro.org>
-Date: Fri, 23 May 2014 08:13:15 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753127AbaEWHOD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 03:14:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64044 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752331AbaEWHOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 03:14:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,892,1392192000"; 
+   d="scan'208";a="536463264"
+Message-ID: <537EF534.5060908@linux.intel.com>
+Date: Fri, 23 May 2014 10:13:56 +0300
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-CC: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH v2 00/14] Add Qualcomm SD Card Controller support
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org> <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-In-Reply-To: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
+To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Wenkai Du <wenkai.du@intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Christian Engelmayer <cengelma@gmx.at>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: Intel: avoid format string leak to thread name
+References: <20140522184355.GA8301@www.outflux.net>
+In-Reply-To: <20140522184355.GA8301@www.outflux.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
-I like to get this patches for v3.16,  any chance of considering these 
-patches to v3.16 ?
+On 05/22/2014 09:43 PM, Kees Cook wrote:
+> This makes sure a format string can never get processed into the worker
+> thread name from the device name.
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>   sound/soc/intel/sst-baytrail-ipc.c |    2 +-
+>   sound/soc/intel/sst-haswell-ipc.c  |    2 +-
+>   2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/sound/soc/intel/sst-baytrail-ipc.c b/sound/soc/intel/sst-baytrail-ipc.c
+> index 0d31dbbf4806..1b25bf168beb 100644
+> --- a/sound/soc/intel/sst-baytrail-ipc.c
+> +++ b/sound/soc/intel/sst-baytrail-ipc.c
+> @@ -809,7 +809,7 @@ int sst_byt_dsp_init(struct device *dev, struct sst_pdata *pdata)
+>   	/* start the IPC message thread */
+>   	init_kthread_worker(&byt->kworker);
+>   	byt->tx_thread = kthread_run(kthread_worker_fn,
+> -				     &byt->kworker,
+> +				     &byt->kworker, "%s",
+>   				     dev_name(byt->dev));
+>   	if (IS_ERR(byt->tx_thread)) {
+>   		err = PTR_ERR(byt->tx_thread);
+> diff --git a/sound/soc/intel/sst-haswell-ipc.c b/sound/soc/intel/sst-haswell-ipc.c
+> index e7996b39a484..a8fd60c67341 100644
+> --- a/sound/soc/intel/sst-haswell-ipc.c
+> +++ b/sound/soc/intel/sst-haswell-ipc.c
+> @@ -1735,7 +1735,7 @@ int sst_hsw_dsp_init(struct device *dev, struct sst_pdata *pdata)
+>   	/* start the IPC message thread */
+>   	init_kthread_worker(&hsw->kworker);
+>   	hsw->tx_thread = kthread_run(kthread_worker_fn,
+> -					   &hsw->kworker,
+> +					   &hsw->kworker, "%s",
+>   					   dev_name(hsw->dev));
+>   	if (IS_ERR(hsw->tx_thread)) {
+>   		ret = PTR_ERR(hsw->tx_thread);
+This is not very fatal as name comes from sound/soc/intel/sst-acpi.c so 
+only developer can hit this but to be on safe side:
 
---srini
-
-On 15/05/14 10:34, srinivas.kandagatla@linaro.org wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> Thankyou everyone for reviewing both RFC and v1 patches.
->
-> This patch series adds Qualcomm SD Card Controller support in pl180 mmci
-> driver. QCom SDCC is basically a pl180, but bit more customized, some of the
-> register layouts and offsets are different to the ones mentioned in pl180
-> datasheet. The plan is to totally remove the standalone SDCC driver
-> drivers/mmc/host/msm_sdcc.* and start using generic mmci driver for all
-> Qualcomm parts, as we get chance to test on other Qcom boards.
->
-> To start using the existing mmci driver, a fake amba id for Qualcomm is added
-> in patches:
->   mmc: mmci: Add Qualcomm Id to amba id table.
->
-> Second change is, adding a 3 clock cycle delay for register writes on QCOM SDCC
-> registers, which is done in patches:
->    mmc: mmci: Add register read/write wrappers.
->    mmc: mmci: Qcomm: Add 3 clock cycle delay after register write
->
-> Third change is to accommodate CLK, DATCTRL and MMCICLK register layout changes
-> in Qcom SDCC and provide more flexibity in driver to specify these changes via
-> variant datastructure. Which are done in patches:
->    mmc: mmci: Add Qcom datactrl register variant
->    mmc: mmci: add ddrmode mask to variant data
->    mmc: mmci: add 8bit bus support in variant data
->    mmc: mmci: add edge support to data and command out in variant data.
->    mmc: mmci: add Qcom specifics of clk and datactrl registers.
->    mmc: mmci: Add support to data commands via variant structure.
->    mmc: mmci: add support for fbclk to latch data and cmd.
->    mmc: mmci: add qcom specific clk control
->
-> Fourth major change was to add qcom specfic pio read function, the need for
-> this is because the way MCIFIFOCNT register behaved in QCOM SDCC is very
->   different to the one in pl180. This change is done in patch:
->    mmc: mmci: Add Qcom specific pio_read function.
->
-> Last some Qcom unrelated changes/cleanup to driver are done in patches:
->    mmc: mmci: use NSEC_PER_SEC macro
->    mmc: mmci: convert register bits to use BIT() macro.
->
-> This patches are tested in PIO mode on IFC8064 board with both eMMC and
-> external SD card. I would like to get this support in v3.16.
->
-> Changes from v1:
-> 	- moved most of the SOC specifics to variant parameters as suggested
-> 	  by Linus W.
-> 	- renamed registers as suggested by Linus W.
-> 	- Added comments in the code as suggested by Linus W.
-> 	- moved out AMBA ID addition patch from this series.
-> 	- rebased the patches to
-> 		git://git.linaro.org/people/ulf.hansson/mmc.git next
-> 	  as suggested by Ulf H.
->
-> Changes from RFC:
-> 	- moved out clk setup out of spinlock as pointed by Stephen B.
-> 	
-> Thanks,
-> srini
->
-> Srinivas Kandagatla (14):
->    mmc: mmci: use NSEC_PER_SEC macro
->    mmc: mmci: convert register bits to use BIT() macro.
->    mmc: mmci: Add Qualcomm Id to amba id table
->    mmc: mmci: Add Qcom datactrl register variant
->    mmc: mmci: Add register read/write wrappers.
->    mmc: mmci: Qcomm: Add 3 clock cycle delay after register write
->    mmc: mmci: add ddrmode mask to variant data
->    mmc: mmci: add 8bit bus support in variant data
->    mmc: mmci: add edge support to data and command out in variant data.
->    mmc: mmci: add Qcom specifics of clk and datactrl registers.
->    mmc: mmci: Add support to data commands via variant structure.
->    mmc: mmci: add support for fbclk to latch data and cmd.
->    mmc: mmci: add qcom specific clk control
->    mmc: mmci: Add Qcom specific pio_read function.
->
->   drivers/mmc/host/mmci.c | 245 ++++++++++++++++++++++++++++++++++++------------
->   drivers/mmc/host/mmci.h | 232 +++++++++++++++++++++++++--------------------
->   2 files changed, 311 insertions(+), 166 deletions(-)
->
+Acked-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
