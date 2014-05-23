@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336AbaEWUIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 16:08:18 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:45764 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaEWUIR (ORCPT
+	id S1751399AbaEWUJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 16:09:16 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:49155 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaEWUJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 16:08:17 -0400
+	Fri, 23 May 2014 16:09:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Anders Berg <anders.berg@avagotech.com>
+Subject: Re: [PATCH v4 0/5] Add platform support for LSI AXM55xx
+Date: Fri, 23 May 2014 22:08:56 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <cover.1400834521.git.anders.berg@avagotech.com>
+In-Reply-To: <cover.1400834521.git.anders.berg@avagotech.com>
 MIME-Version: 1.0
-In-Reply-To: <20140523111454.GA3992@kroah.com>
-References: <1400819147-14236-1-git-send-email-matlackdavid@gmail.com> <20140523111454.GA3992@kroah.com>
-From: David Matlack <matlackdavid@gmail.com>
-Date: Fri, 23 May 2014 13:07:55 -0700
-Message-ID: <CANoiuG+5qYQkgmzPXoCTMY9C5Z3P0_K-rXHjN3k50CJhv+E5Qw@mail.gmail.com>
-Subject: Re: [PATCH] staging: slicoss: fix use-after-free in slic_entry_probe
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, charrer@alacritech.com,
-        linux-kernel@vger.kernel.org, Lior Dotan <liodot@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201405232208.56676.arnd@arndb.de>
+X-Provags-ID: V02:K0:MZUH/WSqdaQrBcu7obA5Iwxn3MIZc+z1tAX13BwR73Y
+ hUWhYqkmyoWlmQeF/Jv6lbNWEkaufWFrbrsm85U3fxVkYtIzSE
+ vJi/Um2M3IYgkc4TPo32IrVntJzU/f4Bjjrmpo7rH8pypB6eRg
+ QpRcwUglI09hItIF+6/9hUFzU//5O85b/iKx4xRSUvrgy50BbL
+ 7uptdkfREbfkVk+qUijEIt4HlaxZBGY17HhXY6upxDU2/7OvYT
+ /iD7chC5eHpfLodGXIk/DePyUkoc5VfmQlEWW02NyOqhr1bCyk
+ FPFGIAw0ctJ+kQT7pDyxgKcMaArKDpShWxtp5nxN+63PrZh9pX
+ xrsaKlFBxXLEBrfceRbo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 4:14 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> I think I've already applied all of these, if not, please let me know.
->
-> Also, you forgot to number these patches to let me know what order to
-> apply them in :(
->
-> thanks,
->
-> greg k-h
+On Friday 23 May 2014, Anders Berg wrote:
+> Hi,
+> 
+> Here is version 4 of platform support for AXM5516 SoC.
+> 
+> The clk driver is now applied to clk-next. The rest should be ready for
+> arm-soc. Haven't got any response from the power/reset maintainers... I hope
+> this driver can be taken via arm-soc as well.
 
-Thanks Greg. Sorry for the confusion. I resent these patches without numbers
-because in retrospect, they were all independent changes and could be applied
-in any order. In retro-retrospect, that probably just piled onto the confusion
-:)
+I've merged it all into the next/soc branch now, thanks!
 
-Looking at the emails I got from you about staging-next, _almost_ all the
-patches were applied. I reply to the ones directly that were dropped.
+In the future when submitting patches for inclusion, please add the arm@kernel.org
+alias to Cc to ensure we don't miss it.
 
-Thanks!
+	ARnd
