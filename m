@@ -1,89 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaEWLuS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 07:50:18 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:55138 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751186AbaEWLuQ (ORCPT
+	id S1751962AbaEWLve (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 07:51:34 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:33450 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaEWLvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 07:50:16 -0400
-Message-ID: <1400845814.31526.29.camel@x220>
-Subject: [PATCH v2] ARM: at91: #if 0 out ISI code for AT91SAM9263
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Josh Wu <josh.wu@atmel.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 23 May 2014 13:50:14 +0200
-In-Reply-To: <F4C251BF-666E-4E89-A6F7-3D96A669A8D8@jcrosoft.com>
-References: <1400142868.20469.12.camel@x220>
-	 <F4C251BF-666E-4E89-A6F7-3D96A669A8D8@jcrosoft.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Fri, 23 May 2014 07:51:32 -0400
+Message-ID: <537F363D.7020906@hitachi.com>
+Date: Fri, 23 May 2014 20:51:25 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "Frank Ch. Eigler" <fche@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] x86: extend insn decoder to understand xop and evex prefixes
+References: <1400513196-12767-1-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1400513196-12767-1-git-send-email-dvlasenk@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 May 2014 11:50:14.0265 (UTC) FILETIME=[28B00E90:01CF767D]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In v2.6.25 code was added for an Image Sensor Interface (ISI) for
-AT91SAM9263. That code depended on the Kconfig macro
-CONFIG_VIDEO_AT91_ISI and its MODULE variant. The related Kconfig symbol
-has never been added to the tree. The net effect of this was that
-at91_add_device_isi() was a NOP. No one noticed because no callers of
-that function were added to the tree at that time.
+(2014/05/20 0:26), Denys Vlasenko wrote:
+> Since xop and evex prefixes are extensions of vex mechanism,
+> they have similar bit layouts, and they can never be combined
+> (an instruction can have only one of them),
+> (ab)use insn->vex_prefix to store data of xop and evex too.
+> 
+> Users will need to conditionalize on insn->vex_prefix.bytes[0]
+> instead of insn->vex_prefix.nbytes if they want to determine
+> which of vex(-like) prefixes are there.
+> 
+> v2: on Masami's request, retained use of inattr bits
+> for determining prefixes.
 
-The first caller of a function with that name was added in v3.4. But
-that caller apparently only called the function defined for AT91SAM9G45.
-(that function was also added in v3.4). So even then AT91SAM9263's NOP
-version of at91_add_device_isi() remained unused.
+This basically looks OK for me, but I'd like to do double check
+this is enough for supporting all EVEX/XOP instructions by referring
+Intel's manual. Let me check...
 
-This means that the ISI code for AT91SAM9263 could be removed. But,
-since it can be useful for future reference, let's "#if 0" it instead.
+Thank you,
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-v2: Jean-Christophe would like to keep the information currently hidden
-behind "#if defined(CONFIG_VIDEO_AT91_ISI) [...]". I'd like the
-reference to that Kconfig macro dropped. Using "#if 0" will do both, so
-that makes for a nice compromise, I'd say.
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Frank Ch. Eigler <fche@redhat.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/include/asm/inat.h          | 26 +++++++++++++----
+>  arch/x86/lib/insn.c                  | 54 ++++++++++++++++++++++++------------
+>  arch/x86/lib/x86-opcode-map.txt      |  4 +--
+>  arch/x86/tools/gen-insn-attr-x86.awk |  2 ++
+>  4 files changed, 62 insertions(+), 24 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/inat.h b/arch/x86/include/asm/inat.h
+> index 74a2e31..2c7b4cc 100644
+> --- a/arch/x86/include/asm/inat.h
+> +++ b/arch/x86/include/asm/inat.h
+> @@ -48,6 +48,8 @@
+>  /* AVX VEX prefixes */
+>  #define INAT_PFX_VEX2	13	/* 2-bytes VEX prefix */
+>  #define INAT_PFX_VEX3	14	/* 3-bytes VEX prefix */
+> +#define INAT_PFX_XOP    15      /* 3-bytes XOP prefix */
+> +#define INAT_PFX_EVEX   16      /* 4-bytes EVEX prefix */
+>  
+>  #define INAT_LSTPFX_MAX	3
+>  #define INAT_LGCPFX_MAX	11
+> @@ -63,7 +65,7 @@
+>  
+>  /* Legacy prefix */
+>  #define INAT_PFX_OFFS	0
+> -#define INAT_PFX_BITS	4
+> +#define INAT_PFX_BITS	5
+>  #define INAT_PFX_MAX    ((1 << INAT_PFX_BITS) - 1)
+>  #define INAT_PFX_MASK	(INAT_PFX_MAX << INAT_PFX_OFFS)
+>  /* Escape opcodes */
+> @@ -138,15 +140,29 @@ static inline int inat_last_prefix_id(insn_attr_t attr)
+>  		return attr & INAT_PFX_MASK;
+>  }
+>  
+> +static inline int inat_is_vex3_prefix(insn_attr_t attr)
+> +{
+> +	return attr & INAT_PFX_VEX3;
+> +}
+> +
+> +static inline int inat_is_vex2_prefix(insn_attr_t attr)
+> +{
+> +	return attr & INAT_PFX_VEX2;
+> +}
+> +
+> +static inline int inat_is_xop_prefix(insn_attr_t attr)
+> +{
+> +	return attr & INAT_PFX_XOP;
+> +}
+> +
+>  static inline int inat_is_vex_prefix(insn_attr_t attr)
+>  {
+> -	attr &= INAT_PFX_MASK;
+> -	return attr == INAT_PFX_VEX2 || attr == INAT_PFX_VEX3;
+> +	return attr & (INAT_PFX_VEX2 | INAT_PFX_VEX3);
+>  }
+>  
+> -static inline int inat_is_vex3_prefix(insn_attr_t attr)
+> +static inline int inat_is_vex_like_prefix(insn_attr_t attr)
+>  {
+> -	return (attr & INAT_PFX_MASK) == INAT_PFX_VEX3;
+> +	return attr & (INAT_PFX_VEX2 | INAT_PFX_VEX3 | INAT_PFX_XOP | INAT_PFX_EVEX);
+>  }
+>  
+>  static inline int inat_is_escape(insn_attr_t attr)
+> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+> index 829ca4c..def44c8 100644
+> --- a/arch/x86/lib/insn.c
+> +++ b/arch/x86/lib/insn.c
+> @@ -138,40 +138,60 @@ found:
+>  	}
+>  	insn->rex_prefix.got = 1;
+>  
+> -	/* Decode VEX prefix */
+> +	/* Decode VEX prefixes et al. Layouts are:
+> +	 * vex2:     c5    rvvvvLpp
+> +	 * vex3/xop: c4/8f rxbmmmmm wvvvvLpp
+> +	 * evex:     62    rxbR00mm wvvvv1pp zllBVaaa
+> +	 */
+>  	b = peek_next(insn_byte_t, insn);
+>  	attr = inat_get_opcode_attribute(b);
+> -	if (inat_is_vex_prefix(attr)) {
+> -		insn_byte_t b2 = peek_nbyte_next(insn_byte_t, insn, 1);
+> -		if (!insn->x86_64) {
+> +	if (inat_is_vex_like_prefix(attr)) {
+> +		insn_byte_t b2;
+> +
+> +		b2 = peek_nbyte_next(insn_byte_t, insn, 1);
+> +		if (inat_is_xop_prefix(attr)) {
+>  			/*
+> -			 * In 32-bits mode, if the [7:6] bits (mod bits of
+> -			 * ModRM) on the second byte are not 11b, it is
+> -			 * LDS or LES.
+> +			 * XOP: If modrm.reg bits are 000, it's POP reg/mem.
+> +			 */
+> +			if (X86_MODRM_REG(b2) == 0)
+> +				goto vex_end;
+> +		}
+> +		else if (!insn->x86_64) {
+> +			/*
+> +			 * [E]VEX: In 32-bits mode, if modrm.mod bits
+> +			 * are not 11b, it is LDS, LES or BOUND.
+>  			 */
+>  			if (X86_MODRM_MOD(b2) != 3)
+>  				goto vex_end;
+>  		}
+>  		insn->vex_prefix.bytes[0] = b;
+>  		insn->vex_prefix.bytes[1] = b2;
+> -		if (inat_is_vex3_prefix(attr)) {
+> -			b2 = peek_nbyte_next(insn_byte_t, insn, 2);
+> -			insn->vex_prefix.bytes[2] = b2;
+> -			insn->vex_prefix.nbytes = 3;
+> -			insn->next_byte += 3;
+> -			if (insn->x86_64 && X86_VEX_W(b2))
+> -				/* VEX.W overrides opnd_size */
+> -				insn->opnd_bytes = 8;
+> -		} else {
+> +		if (inat_is_vex2_prefix(attr)) {
+>  			/*
+>  			 * For VEX2, fake VEX3-like byte#2.
+>  			 * Makes it easier to decode vex.W, vex.vvvv,
+> -			 * vex.L and vex.pp. Masking with 0x7f sets vex.W == 0.
+> +			 * vex.L and vex.pp. Masking with 0x7f sets vex.W = 0.
+>  			 */
+>  			insn->vex_prefix.bytes[2] = b2 & 0x7f;
+>  			insn->vex_prefix.nbytes = 2;
+>  			insn->next_byte += 2;
+> +			goto vex_end;
+> +		}
+> +		b2 = peek_nbyte_next(insn_byte_t, insn, 2);
+> +		insn->vex_prefix.bytes[2] = b2;
+> +		if (insn->x86_64 && X86_VEX_W(b2)) {
+> +			/* VEX.W overrides opnd_size */
+> +			insn->opnd_bytes = 8;
+> +		}
+> +		if (inat_is_vex3_prefix(attr) || inat_is_xop_prefix(attr)) {
+> +			insn->vex_prefix.nbytes = 3;
+> +			insn->next_byte += 3;
+> +			goto vex_end;
+>  		}
+> +		b2 = peek_nbyte_next(insn_byte_t, insn, 3);
+> +		insn->vex_prefix.bytes[3] = b2;
+> +		insn->vex_prefix.nbytes = 4;
+> +		insn->next_byte += 4;
+>  	}
+>  vex_end:
+>  	insn->vex_prefix.got = 1;
+> diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
+> index 1a2be7c..9d8a964 100644
+> --- a/arch/x86/lib/x86-opcode-map.txt
+> +++ b/arch/x86/lib/x86-opcode-map.txt
+> @@ -137,7 +137,7 @@ AVXcode:
+>  # 0x60 - 0x6f
+>  60: PUSHA/PUSHAD (i64)
+>  61: POPA/POPAD (i64)
+> -62: BOUND Gv,Ma (i64)
+> +62: BOUND Gv,Ma (i64) | EVEX+3byte (Prefix)
+>  63: ARPL Ew,Gw (i64) | MOVSXD Gv,Ev (o64)
+>  64: SEG=FS (Prefix)
+>  65: SEG=GS (Prefix)
+> @@ -184,7 +184,7 @@ AVXcode:
+>  8c: MOV Ev,Sw
+>  8d: LEA Gv,M
+>  8e: MOV Sw,Ew
+> -8f: Grp1A (1A) | POP Ev (d64)
+> +8f: Grp1A (1A) | POP Ev (d64) | XOP+2byte (Prefix)
+>  # 0x90 - 0x9f
+>  90: NOP | PAUSE (F3) | XCHG r8,rAX
+>  91: XCHG rCX/r9,rAX
+> diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
+> index 093a892..d288754 100644
+> --- a/arch/x86/tools/gen-insn-attr-x86.awk
+> +++ b/arch/x86/tools/gen-insn-attr-x86.awk
+> @@ -95,6 +95,8 @@ BEGIN {
+>  	prefix_num["Address-Size"] = "INAT_PFX_ADDRSZ"
+>  	prefix_num["VEX+1byte"] = "INAT_PFX_VEX2"
+>  	prefix_num["VEX+2byte"] = "INAT_PFX_VEX3"
+> +	prefix_num["XOP+2byte"] = "INAT_PFX_XOP"
+> +	prefix_num["EVEX+3byte"] = "INAT_PFX_EVEX"
+>  
+>  	clear_vars()
+>  }
+> 
 
-Josh verified that this definition of at91_add_device_isi() never will
-be called. Thanks!
 
-Still untested!
-
- arch/arm/mach-at91/at91sam9263_devices.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-index 43d53d6156dd..30af3048ade5 100644
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -900,8 +900,7 @@ void __init at91_add_device_lcdc(struct atmel_lcdfb_pdata *data) {}
-  *  Image Sensor Interface
-  * -------------------------------------------------------------------- */
- 
--#if defined(CONFIG_VIDEO_AT91_ISI) || defined(CONFIG_VIDEO_AT91_ISI_MODULE)
--
-+#if 0 /* keep for future reference */
- struct resource isi_resources[] = {
- 	[0] = {
- 		.start	= AT91SAM9263_BASE_ISI,
-@@ -947,9 +946,6 @@ void __init at91_add_device_isi(struct isi_platform_data *data,
- 		/* TODO: register the PCK for ISI_MCK and set its parent */
- 	}
- }
--#else
--void __init at91_add_device_isi(struct isi_platform_data *data,
--		bool use_pck_as_mck) {}
- #endif
- 
- 
 -- 
-1.9.0
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
