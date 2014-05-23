@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaEWMwZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1752873AbaEWMwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:52:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1777 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752819AbaEWMwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 May 2014 08:52:25 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:37869 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbaEWMwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:52:22 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v3 09/13] mmc: mmci: add edge support to data and command out in variant data.
-Date: Fri, 23 May 2014 13:52:17 +0100
-Message-Id: <1400849537-7425-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH 0/4] AFS: Fixes and cleanups
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 23 May 2014 13:52:00 +0100
+Message-ID: <20140523125200.25385.8586.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-This patch adds edge support for data and command out to variant structure
-giving more flexibility to the driver to support more SOCs which have
-different clock register layout.
+Hi Linus,
 
-Without this patch other new SOCs like Qcom will have to add more code to
-special case them
+Here are some patches to the AFS filesystem:
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+ (1) Fix problems in the clean-up parts of the cache manager service handler.
+
+ (2) Split afs_end_call() introduced in (1) and replace some identical code
+     elsewhere with a call to the first half of the split function.
+
+ (3) Fix an error introduced in the workqueue PREPARE_WORK() elimination
+     commits.
+
+ (4) Clean up argument passing to functions called from the workqueue as
+     there's now an insulating layer between them and the workqueue.  This is
+     possible from (3).
+
+They can be found here also:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=afs
+
+ending at the afs-fixes-20140523 tag.
+
+David
 ---
- drivers/mmc/host/mmci.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+David Howells (2):
+      AFS: Fix cache manager service handlers
+      AFS: Pass an afs_call* to call->async_workfn() instead of a work_struct*
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index a81f303..17e7f6a 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -53,6 +53,7 @@ static unsigned int fmax = 515633;
-  * @clkreg: default value for MCICLOCK register
-  * @clkreg_enable: enable value for MMCICLOCK register
-  * @clkreg_8bit_bus_enable: enable value for 8 bit bus
-+ * @clkreg_neg_edge_enable: enable value for inverted data/cmd output
-  * @datalength_bits: number of bits in the MMCIDATALENGTH register
-  * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
-  *	      is asserted (likewise for RX)
-@@ -76,6 +77,7 @@ struct variant_data {
- 	unsigned int		clkreg;
- 	unsigned int		clkreg_enable;
- 	unsigned int		clkreg_8bit_bus_enable;
-+	unsigned int		clkreg_neg_edge_enable;
- 	unsigned int		datalength_bits;
- 	unsigned int		fifosize;
- 	unsigned int		fifohalfsize;
-@@ -148,6 +150,7 @@ static struct variant_data variant_ux500 = {
- 	.clkreg			= MCI_CLK_ENABLE,
- 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
- 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
-+	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
- 	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
- 	.datalength_bits	= 24,
- 	.sdio			= true,
-@@ -165,6 +168,7 @@ static struct variant_data variant_ux500v2 = {
- 	.clkreg			= MCI_CLK_ENABLE,
- 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
- 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
-+	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
- 	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
- 	.datalength_bits	= 24,
- 	.sdio			= true,
-@@ -348,7 +352,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
- 		clk |= variant->clkreg_8bit_bus_enable;
- 
- 	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
--		clk |= MCI_ST_UX500_NEG_EDGE;
-+		clk |= variant->clkreg_neg_edge_enable;
- 
- 	mmci_write_clkreg(host, clk);
- }
--- 
-1.9.1
+Nathaniel Wesley Filardo (2):
+      AFS: Part of afs_end_call() is identical to code elsewhere, so split it
+      AFS: Fix kafs module unloading
+
+
+ fs/afs/cmservice.c |   19 +++++++++++
+ fs/afs/internal.h  |    2 +
+ fs/afs/rxrpc.c     |   86 ++++++++++++++++++++++++++--------------------------
+ 3 files changed, 63 insertions(+), 44 deletions(-)
 
