@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaEWOcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:32:39 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47080 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751113AbaEWOci (ORCPT
+	id S1752737AbaEWOhQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:37:16 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:46666 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaEWOhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:32:38 -0400
-Date: Fri, 23 May 2014 15:32:31 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: Runtime PM workqueue killing system performance with USB
-Message-ID: <20140523143230.GC21319@arm.com>
-References: <20140522173951.GD14641@arm.com>
- <Pine.LNX.4.44L0.1405221401350.890-100000@iolanthe.rowland.org>
+	Fri, 23 May 2014 10:37:14 -0400
+Message-ID: <537F5CEE.5000409@windriver.com>
+Date: Fri, 23 May 2014 10:36:30 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1405221401350.890-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stanislav Meduna <stano@meduna.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: BUG: sleeping function called from invalid context (do_force_sig_info)
+References: <537E83C0.9040406@meduna.org>
+In-Reply-To: <537E83C0.9040406@meduna.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 07:14:40PM +0100, Alan Stern wrote:
-> On Thu, 22 May 2014, Will Deacon wrote:
+On 14-05-22 07:09 PM, Stanislav Meduna wrote:
+> Hi,
 > 
-> > > Anyway, there are two possible ways of handling this.  One is to avoid 
-> > > changing the error code to -EBUSY when the device in question is a root 
-> > > hub.  Just let it go into a runtime-PM error state; it won't matter 
-> > > since the controller doesn't support runtime PM anyway.  You can test 
-> > > this by changing the "if (status != 0)" line in usb_runtime_suspend to
-> > > 
-> > > 	if (status != 0 && udev->parent)
-> > 
-> > I'd tried something like this already, but I prefer your patch below. Plus,
-> > this hack results in a failure being logged to dmesg on the initial suspend
-> > attempt.
-> > 
-> > > The other approach is to disable runtime PM for the root hub when the 
-> > > host controller driver doesn't have a bus_suspend or bus_resume method.
-> > > This seems like a cleaner approach; the patch below implements it.
-> > 
-> > Thanks for this! I can confirm that your patch below fixes the issue for me,
-> > so:
-> > 
-> >   Reported-by: Will Deacon <will.deacon@arm.com>
-> >   Tested-by: Will Deacon <will.deacon@arm.com>
+> this is on a i.MX28 running a 3.12.19-rt30
 > 
-> You know, I think it might be best to make both changes.  Even though 
-> runtime PM will be disabled by default, the user can always override 
-> this setting.  If that happens, the suspend should fail with the proper 
-> error code instead of going into a loop.
-> 
-> Do you mind if I add the change to usb_runtime_suspend() in the patch?
+> [27284.008123] BUG: sleeping function called from invalid context at /home/nxtdev/Kernels/linux-stable-rt/kernel/rtmutex.c:673
+> [27284.008143] in_atomic(): 0, irqs_disabled(): 128, pid: 1335, name: nxt
 
-That sounds sensible -- if runtime PM is being forced on, then errors are
-worth reporting.
+Would be worthwhile to enable irq on/off debugging so you get the
+output from print_irqtrace_events() here to see who last futzed with
+interrupts.  Probably a broken driver leaving interrupts off?
 
-Will
+> [27284.008170] CPU: 0 PID: 1335 Comm: nxt Not tainted 3.12.19-rt30+ #178
+> [27284.008255] [<c0014440>] (unwind_backtrace+0x0/0xf4) from [<c00124cc>] (show_stack+0x10/0x14)
+> [27284.008306] [<c00124cc>] (show_stack+0x10/0x14) from [<c028b6a8>] (rt_spin_lock+0x18/0x2c)
+> [27284.008348] [<c028b6a8>] (rt_spin_lock+0x18/0x2c) from [<c002a7ec>] (do_force_sig_info+0x20/0xd8)
+> [27284.008387] [<c002a7ec>] (do_force_sig_info+0x20/0xd8) from [<c0016720>] (__do_user_fault+0x88/0xc8)
+
+Dies because of non-raw siglock in do_force_sig_info:
+
+        spin_lock_irqsave(&t->sighand->siglock, flags);
+
+and we aren't going to convert that one to raw either.
+
+> [27284.008419] [<c0016720>] (__do_user_fault+0x88/0xc8) from [<c0016c2c>] (do_bad_area+0x64/0x70)
+> [27284.008452] [<c0016c2c>] (do_bad_area+0x64/0x70) from [<c0016ca4>] (do_translation_fault+0x6c/0xa8)
+> [27284.008483] [<c0016ca4>] (do_translation_fault+0x6c/0xa8) from [<c000867c>] (do_DataAbort+0x34/0x98)
+> [27284.008520] [<c000867c>] (do_DataAbort+0x34/0x98) from [<c0012ebc>] (__dabt_usr+0x3c/0x40)
+> [27284.008531] Exception stack(0xc1173fb0 to 0xc1173ff8)
+> [27284.008554] 3fa0:                                     b6634b48 d6634b44 d6634a94 07ffffff
+> [27284.008583] 3fc0: b6634c1c b6ef1160 b6ef1000 00000152 b6635460 b6ee6b34 00000000 b6634b4c
+> [27284.008605] 3fe0: 00000152 b6634a80 001f813c 00203888 60000010 ffffffff
+> 
+> There are some changes to the stock 3.12.19-rt30 (added drivers) where
+> I can not exclude that there is some bug lurking, and a bug in userspace
+> is even more probable; I am just forwarding it because of the sleeping
+> from invalid context thing.
+> 
+> After a reboot I am unfortunately not able to easily reproduce it. There
+> was no core dump (they are enabled) and the application did not exit
+> (there is no SEGV handler).
+
+It is calling user_fault and not kernel_fault, so if you create a broken
+program that intentionally tries to stomp on memory it doesn't own, can
+you then reproduce it?   You might not, if the culprit leaving IRQs off
+only does so sporadically -- in which case you'd want to keep re-launching
+the broken program in a tight loop while exercising the various drivers.
+
+Paul.
+--
+
+> 
+> Thanks
+> 
