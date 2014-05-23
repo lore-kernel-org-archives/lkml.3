@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaEWPRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:17:40 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:41904 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658AbaEWPRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:17:38 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de
-Cc: davem@davemloft.net, Paul.Clothier@imgtec.com, james.hogan@imgtec.com,
-        avagin@openvz.org, oleg@redhat.com, palves@redhat.com,
-        dhowells@redhat.com, davej@redhat.com, mikey@neuling.org,
-        benh@kernel.crashing.org
-Subject: [PATCH V3 1/3] elf: Add some new PowerPC specifc note sections
-Date: Fri, 23 May 2014 20:45:36 +0530
-Message-Id: <1400858138-3939-2-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052315-8878-0000-0000-00000C975B7B
+	id S1753361AbaEWPS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:18:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33728 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752038AbaEWPSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:18:54 -0400
+Date: Fri, 23 May 2014 17:18:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/9] mm: memcontrol: rewrite charge API
+Message-ID: <20140523151852.GG22135@dhcp22.suse.cz>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-9-git-send-email-hannes@cmpxchg.org>
+ <20140523145413.GF22135@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140523145413.GF22135@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds four new note sections for transactional memory
-and one note section for some miscellaneous registers. This addition
-of new elf note sections extends the existing elf ABI without affecting
-it in any manner.
+On Fri 23-05-14 16:54:13, Michal Hocko wrote:
+> On Wed 30-04-14 16:25:42, Johannes Weiner wrote:
+> > The memcg charge API charges pages before they are rmapped - i.e. have
+> > an actual "type" - and so every callsite needs its own set of charge
+> > and uncharge functions to know what type is being operated on.
+> > 
+> > Rewrite the charge API to provide a generic set of try_charge(),
+> > commit_charge() and cancel_charge() transaction operations, much like
+> > what's currently done for swap-in:
+> > 
+> >   mem_cgroup_try_charge() attempts to reserve a charge, reclaiming
+> >   pages from the memcg if necessary.
+> > 
+> >   mem_cgroup_commit_charge() commits the page to the charge once it
+> >   has a valid page->mapping and PageAnon() reliably tells the type.
+> > 
+> >   mem_cgroup_cancel_charge() aborts the transaction.
+> > 
+> > As pages need to be committed after rmap is established but before
+> > they are added to the LRU, page_add_new_anon_rmap() must stop doing
+> > LRU additions again.  Factor lru_cache_add_active_or_unevictable().
+> > 
+> > The order of functions in mm/memcontrol.c is entirely random, so this
+> > new charge interface is implemented at the end of the file, where all
+> > new or cleaned up, and documented code should go from now on.
+> 
+> I would prefer moving them after refactoring because the reviewing is
+> really harder this way. If such moving is needed at all.
+> 
+> Anyway this is definitely not a Friday material...
+> 
+> So only a first impression from a quick glance.
+> 
+> size is saying the code is slightly bigger:
+>    text    data     bss     dec     hex filename
+>  487977   84898   45984  618859   9716b mm/built-in.o.7
+>  488276   84898   45984  619158   97296 mm/built-in.o.8
+> 
+> No biggie though.
+> 
+> It is true it get's rid of ~80LOC in memcontrol.c but it adds some more
+> outside of memcg. Most of the charging paths didn't get any easier, they
+> already know the type and they have to make sure they even commit the
+> charge now.
+> 
+> But maybe it is just me feeling that now that we have
+> mem_cgroup_charge_{anon,file,swapin} the API doesn't look so insane
+> anymore and so I am not tempted to change it that much.
+> 
+> I will look at this with a Monday and fresh brain again.
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- include/uapi/linux/elf.h | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
-index ef6103b..4040124 100644
---- a/include/uapi/linux/elf.h
-+++ b/include/uapi/linux/elf.h
-@@ -379,6 +379,11 @@ typedef struct elf64_shdr {
- #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
- #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
- #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
-+#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
-+#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
-+#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
-+#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
-+#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
- #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
- #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
- #define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
+And now that I got to 9/9 it is obvious it helps a lot to clean up the
+uncharge path. But I am not in a mental state to dive into this today.
 -- 
-1.7.11.7
-
+Michal Hocko
+SUSE Labs
