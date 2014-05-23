@@ -1,47 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231AbaEWUrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 16:47:19 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:55421 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936AbaEWUrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 16:47:18 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Hans Verkuil <hverkuil@xs4all.nl>, Lubomir Rintel <lkundrak@v3.sk>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] [media] usbtv: fix leak at failure path in usbtv_probe()
-Date: Sat, 24 May 2014 00:47:07 +0400
-Message-Id: <1400878027-22954-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751295AbaEWUvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 16:51:17 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:33777 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaEWUvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 16:51:15 -0400
+Date: Fri, 23 May 2014 13:51:12 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Marcelo Tosatti <mtosatti@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations
+In-Reply-To: <20140523193706.GA22854@amt.cnet>
+Message-ID: <alpine.DEB.2.02.1405231334460.13205@chino.kir.corp.google.com>
+References: <20140523193706.GA22854@amt.cnet>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error handling code in usbtv_probe() misses usb_put_dev().
+On Fri, 23 May 2014, Marcelo Tosatti wrote:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> Zone specific allocations, such as GFP_DMA32, should not be restricted
+> to cpusets allowed node list: the zones which such allocations demand
+> might be contained in particular nodes outside the cpuset node list.
+> 
+> The alternative would be to not perform such allocations from
+> applications which are cpuset restricted, which is unrealistic.
+> 
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/media/usb/usbtv/usbtv-core.c | 2 ++
- 1 file changed, 2 insertions(+)
+Or ensure applications that allocate from lowmem are allowed to do so, but 
+I understand that might be hard to make sure always happens.
 
-diff --git a/drivers/media/usb/usbtv/usbtv-core.c b/drivers/media/usb/usbtv/usbtv-core.c
-index 2f87ddfa469f..473fab81b602 100644
---- a/drivers/media/usb/usbtv/usbtv-core.c
-+++ b/drivers/media/usb/usbtv/usbtv-core.c
-@@ -91,6 +91,8 @@ static int usbtv_probe(struct usb_interface *intf,
- 	return 0;
- 
- usbtv_video_fail:
-+	usb_set_intfdata(intf, NULL);
-+	usb_put_dev(usbtv->udev);
- 	kfree(usbtv);
- 
- 	return ret;
--- 
-1.8.3.2
+> Fixes KVM's alloc_page(gfp_mask=GFP_DMA32) with cpuset as explained.
+> 
+> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 5dba293..f228039 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2698,6 +2698,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>  	unsigned int cpuset_mems_cookie;
+>  	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+>  	struct mem_cgroup *memcg = NULL;
+> +	nodemask_t *cpuset_mems_allowed = &cpuset_current_mems_allowed;
+>  
+>  	gfp_mask &= gfp_allowed_mask;
+>  
+> @@ -2726,9 +2727,14 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>  retry_cpuset:
+>  	cpuset_mems_cookie = read_mems_allowed_begin();
+>  
+> +#ifdef CONFIG_NUMA
+> +	if (gfp_zone(gfp_mask) < policy_zone)
+> +		cpuset_mems_allowed = NULL;
+> +#endif
+> +
+>  	/* The preferred zone is used for statistics later */
+>  	first_zones_zonelist(zonelist, high_zoneidx,
+> -				nodemask ? : &cpuset_current_mems_allowed,
+> +				nodemask ? : cpuset_mems_allowed,
+>  				&preferred_zone);
+>  	if (!preferred_zone)
+>  		goto out;
+> 
 
+I think this is incomplete.  Correct me if I'm wrong on how this is 
+working: preferred_zone, today, is NULL because first_zones_zonelist() is 
+restricted to a cpuset.mems that does not include lowmem and your patch 
+fixes that.  But if the fastpath allocation with mandatory ALLOC_CPUSET 
+fails and we go to the slowpath, which may or may not have showed up in 
+your testing, there's still issues, particularly if __GFP_WAIT and lots of 
+allocators do GFP_KERNEL | __GFP_DMA32.  This requires ALLOC_CPUSET on all 
+allocations and you haven't updated __cpuset_node_allowed_softwall() with 
+this exception nor zlc_setup().
+
+After that's done, I think all of this is really convoluted and deserves a 
+comment to describe the ALLOC_CPUSET and __GFP_DMA32 behavior.
+
+Adding Li, the cpusets maintainer, to this as well.
