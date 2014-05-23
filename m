@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377AbaEWTBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 15:01:00 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54671 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaEWTA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 15:00:58 -0400
-Date: Fri, 23 May 2014 15:00:55 -0400 (EDT)
-Message-Id: <20140523.150055.2214666905697701415.davem@davemloft.net>
-To: acme@kernel.org
-Cc: mtk.manpages@gmail.com, linux-kernel@vger.kernel.org,
-        linux-man@vger.kernel.org, netdev@vger.kernel.org, neleai@seznam.cz,
-        caitlin.bestler@gmail.com, nhorman@tuxdriver.com,
-        eliedebrauwer@gmail.com, steve@chygwyn.com,
-        remi.denis-courmont@nokia.com, paul@paul-moore.com,
-        chris.friesen@windriver.com
-Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness
- [RESEND]
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140521210535.GA5414@kernel.org>
-References: <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com>
-	<20140512143451.GB13801@kernel.org>
-	<20140521210535.GA5414@kernel.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 23 May 2014 12:00:57 -0700 (PDT)
+	id S1751507AbaEWTIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 15:08:00 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.25]:28182 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751056AbaEWTH6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 15:07:58 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] Add hash value into RNDIS Per-packet info
+Thread-Topic: [PATCH net-next] Add hash value into RNDIS Per-packet info
+Thread-Index: AQHPdScxN2x9yztw/kacAt3uZPgG35tO+qSA//+K6dA=
+Date: Fri, 23 May 2014 18:52:29 +0000
+Message-ID: <c70268824a95436aab3e3e8c0bbf4201@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1400702139-29280-1-git-send-email-haiyangz@microsoft.com>
+ <20140523.145001.2140056621716323006.davem@davemloft.net>
+In-Reply-To: <20140523.145001.2140056621716323006.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(199002)(189002)(377454003)(164054003)(51704005)(13464003)(81542001)(31966008)(74502001)(74662001)(74706001)(50986002)(81342001)(51856002)(47736002)(54356002)(54316003)(49866002)(65816002)(63696004)(47976003)(59766002)(56816006)(56776002)(47446003)(53806002)(90146001)(23726002)(87936001)(2656002)(50466002)(4396001)(74876001)(76796001)(76786001)(85852003)(83072002)(97736001)(92566001)(6806004)(47776003)(79102001)(97336001)(20776003)(83322001)(87266001)(97186001)(64706001)(93516002)(19580395003)(98676001)(46406003)(97756001)(2009001)(77982001)(69226001)(19580405001)(44976005)(80022001)(66066001)(94946001)(94316002)(76482001)(33646001)(95416001)(99396002)(86612001)(93136001)(81816001)(95666003)(85306002)(74366001)(84676001)(21056001)(81686001)(68736004)(46102001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2SR01MB594;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Exchange-Antispam-Report-Test: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 0220D4B98D
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-Date: Wed, 21 May 2014 18:05:35 -0300
 
-> But after thinking a bit more, looks like we need to do that, please
-> take a look at the attached patch to see if it addresses the problem.
+
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Friday, May 23, 2014 2:50 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] Add hash value into RNDIS Per-packet info
 > 
-> Mostly it adds a new timeop to the per protocol recvmsg()
-> implementations, that, if not NULL, should be used instead of
-> SO_RCVTIMEO.
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Wed, 21 May 2014 12:55:39 -0700
 > 
-> since the underlying recvmsg implementations already check that timeout,
-> return what is remaining, that will then be used in subsequent recvmsg
-> calls, at the end we just convert it back to timespec format.
+> > It passes the hash value as the RNDIS Per-packet info to the Hyper-V
+> host,
+> > so that the send completion notices can be spread across multiple
+> channels.
+> > MS-TFS: 140273
+> >
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 > 
-> In most cases it is just passed to skb_recv_datagram, that will check
-> the pointer, use it and update if not NULL.
+> Applied, but please craft your Subject lines correctly in the future.
 > 
-> Should have no problems, but I only did a boot with a system with this
-> patch applied, no problems noticed on a normal desktop session, ssh,
-> etc.
+> You did not specify a subsystem prefix, which in this case should
+> have been something like "hyperv: "
+> 
+> Otherwise people scanning the commit log headers have no idea where
+> your changes might be taking place.
+> 
+> I fixed it up this time for you.
 
-This looks fine to me, but I have a small request:
+Thank you for fixing it! I will do this in the future.
 
-+	return noblock ? 0 : timeop ? *timeop : sk->sk_rcvtimeo;
-
-I keep forgetting which way these expressions associate, so if you could
-parenthesize the innermost ?: I'd appreciate it. :)
-
-Thanks!
+Thanks,
+- Haiyang
