@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaEWJZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:25:44 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52611 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631AbaEWJZl (ORCPT
+	id S1751897AbaEWJ2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:28:07 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:53458 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751640AbaEWJ2E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:25:41 -0400
-Message-ID: <1400837055.4921.4.camel@weser.hi.pengutronix.de>
-Subject: Re: [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 23 May 2014 11:24:15 +0200
-In-Reply-To: <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
-References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
-	 <1400493433.8467.24.camel@weser.hi.pengutronix.de>
-	 <5379D7A0.3050509@nvidia.com>
-	 <1400494582.8467.28.camel@weser.hi.pengutronix.de>
-	 <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 23 May 2014 05:28:04 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Jim Baxter'" <jim_baxter@mentor.com>, David Miller <davem@davemloft.net>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kamal@canonical.com" <kamal@canonical.com>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        "edumazet@google.com" <edumazet@google.com>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
+Subject: RE: skbuff truesize incorrect.
+Thread-Topic: skbuff truesize incorrect.
+Thread-Index: AQHPdmhaL2lnKeimqUeV55a8ET8tq5tN5Lyg
+Date: Fri, 23 May 2014 09:27:21 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724C54C@AcuExch.aculab.com>
+References: <537E4AFD.20304@mentor.com>
+	<20140522.152146.2116142050088142989.davem@davemloft.net>
+	<537E5C63.7080607@mentor.com>
+ <20140522.165833.414855217799383878.davem@davemloft.net>
+ <537F130F.6080901@mentor.com>
+In-Reply-To: <537F130F.6080901@mentor.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 23.05.2014, 16:10 +0900 schrieb Alexandre Courbot:
-> On Mon, May 19, 2014 at 7:16 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
-> > Am Montag, den 19.05.2014, 19:06 +0900 schrieb Alexandre Courbot:
-> >> On 05/19/2014 06:57 PM, Lucas Stach wrote:
-> >> > Am Montag, den 19.05.2014, 18:46 +0900 schrieb Alexandre Courbot:
-> >> >> This patch is not meant to be merged, but rather to try and understand
-> >> >> why this is needed and what a more suitable solution could be.
-> >> >>
-> >> >> Allowing BOs to be write-cached results in the following happening when
-> >> >> trying to run any program on Tegra/GK20A:
-> >> >>
-> >> >> Unhandled fault: external abort on non-linefetch (0x1008) at 0xf0036010
-> >> >> ...
-> >> >> (nouveau_bo_rd32) from [<c0357d00>] (nouveau_fence_update+0x5c/0x80)
-> >> >> (nouveau_fence_update) from [<c0357d40>] (nouveau_fence_done+0x1c/0x38)
-> >> >> (nouveau_fence_done) from [<c02c3d00>] (ttm_bo_wait+0xec/0x168)
-> >> >> (ttm_bo_wait) from [<c035e334>] (nouveau_gem_ioctl_cpu_prep+0x44/0x100)
-> >> >> (nouveau_gem_ioctl_cpu_prep) from [<c02aaa84>] (drm_ioctl+0x1d8/0x4f4)
-> >> >> (drm_ioctl) from [<c0355394>] (nouveau_drm_ioctl+0x54/0x80)
-> >> >> (nouveau_drm_ioctl) from [<c00ee7b0>] (do_vfs_ioctl+0x3dc/0x5a0)
-> >> >> (do_vfs_ioctl) from [<c00ee9a8>] (SyS_ioctl+0x34/0x5c)
-> >> >> (SyS_ioctl) from [<c000e6e0>] (ret_fast_syscall+0x0/0x30
-> >> >>
-> >> >> The offending nouveau_bo_rd32 is done over an IO-mapped BO, e.g. a BO
-> >> >> mapped through the BAR.
-> >> >>
-> >> > Um wait, this memory is behind an already mapped bar? I think ioremap on
-> >> > ARM defaults to uncached mappings, so if you want to access the memory
-> >> > behind this bar as WC you need to map the BAR as a whole as WC by using
-> >> > ioremap_wc.
-> >>
-> >> Tried mapping the BAR using ioremap_wc(), but to no avail. On the other
-> >> hand, could it be that VRAM BOs end up creating a mapping over an
-> >> already-mapped region? I seem to remember that ARM might not like it...
+From: Jim Baxter
+> On 22/05/14 21:58, David Miller wrote:
+> > From: Jim Baxter <jim_baxter@mentor.com>
+> > Date: Thu, 22 May 2014 21:21:55 +0100
 > >
-> > Multiple mapping are generally allowed, as long as they have the same
-> > caching state. It's conflicting mappings (uncached vs cached, or cached
-> > vs wc), that are documented to yield undefined results.
+> >> If there are multiple clones for an skb all pointing at the same data,
+> >> will that distort the memory used when they all have the same truesize?
+> >
+> > What is distorted about it?
+> >
+> > Each clone references exactly that much backing memory.
+> >
 > 
-> Sorry about the confusion. The BAR is *not* mapped to the kernel yet
-> (it is BAR1, there is no BAR3 on GK20A) and an ioremap_*() is
-> performed in ttm_bo_ioremap() to make the part of the BAR where the
-> buffer is mapped visible. It seems that doing an ioremap_wc() on the
-> BAR area on Tegra is what leads to these errors. ioremap() or
-> ioremap_nocache() (which are in effect the same on ARM) do not cause
-> this issue.
+> Thank you for you help, I think distorted was the wrong word.
 > 
-It would be cool if you could ask HW, or the blob developers, if this is
-a general issue. The external abort is clearly the GPUs AXI client
-responding with an error to the read request, though I'm not clear where
-a WC read differs from an uncached one.
+> 
+> I think I am confused what truesize is used for it looks like it is used
+> to deallocate memory, is this correct?
 
-> The best way to solve this issue would be to not use the BAR at all
-> since the memory behind these objects can be directly accessed by the
-> CPU. As such it would better be mapped using ttm_bo_kmap_ttm()
-> instead. But right now this is clearly not how nouveau_bo.c is written
-> and it does not look like this can easily be done. :/
+No, it is used for receive flow control.
+You need to count allocated memory (not data bytes) in order to
+actually stop the system running out of memory.
 
-Yeah, it sounds like we want this shortcut for stolen VRAM
-implementations.
+	David
 
-Regards,
-Lucas
 
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
