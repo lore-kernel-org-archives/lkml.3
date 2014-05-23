@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721AbaEWSuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:50:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44374 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203AbaEWSuv (ORCPT
+	id S1751787AbaEWSw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:52:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55402 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaEWSw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:50:51 -0400
-Date: Sat, 24 May 2014 01:53:35 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Luis Ortega <luiorpe1@gmail.com>
-Cc: pe1dnn@amsat.org, devel@driverdev.osuosl.org, josh@joshtriplett.org,
-        linux-kernel@vger.kernel.org, monamagarwal123@gmail.com,
-        paulmck@linux.vnet.ibm.com, archanakumari959@gmail.com
-Subject: Re: [PATCH] staging: wlags49_h2: fix sparse warning "should it be
- static"
-Message-ID: <20140523165335.GA6883@kroah.com>
-References: <1399480308-15869-1-git-send-email-luiorpe1@gmail.com>
+	Fri, 23 May 2014 14:52:26 -0400
+Message-ID: <537F98E8.6050203@codeaurora.org>
+Date: Fri, 23 May 2014 11:52:24 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399480308-15869-1-git-send-email-luiorpe1@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Gross <agross@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [Patch v2 3/4] soc: qcom: Add GSBI driver
+References: <1398357082-5102-1-git-send-email-agross@codeaurora.org> <1398357082-5102-4-git-send-email-agross@codeaurora.org>
+In-Reply-To: <1398357082-5102-4-git-send-email-agross@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 07, 2014 at 06:31:48PM +0200, Luis Ortega wrote:
-> Fixes the following warning:
-> drivers/staging/wlags49_h2/sta_h2.c:4471:10: warning: symbol 'fw_image' was not declared. Should it be static?
-> 
-> Signed-off-by: Luis Ortega <luiorpe1@gmail.com>
-> ---
->  drivers/staging/wlags49_h2/sta_h2.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/wlags49_h2/sta_h2.c b/drivers/staging/wlags49_h2/sta_h2.c
-> index 0ba8def..2838faa 100644
-> --- a/drivers/staging/wlags49_h2/sta_h2.c
-> +++ b/drivers/staging/wlags49_h2/sta_h2.c
-> @@ -4468,7 +4468,7 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
->  	{ 0000, 0000, 0000, 0000, { { 0000, 0000, 0000 } } }	/* endsentinel */
->  };
-> 
-> -memimage fw_image = {
-> +static memimage fw_image = {
->  	"FUPU7D37dhfwci\001C",			/* signature, <format number>, C/Bin type */
->  	(CFG_PROG_STRCT *) fw_image_code,
->  	0x000F368E,
+On 04/24/14 09:31, Andy Gross wrote:
+> +
+> +static const struct of_device_id gsbi_dt_match[] = {
+> +	{ .compatible = "qcom,gsbi-v1.0.0", },
+> +};
 
-ALWAYS test build your patches.  This patch breaks the build :(
+Eek. This isn't NULL terminated.
 
-greg k-h
+
+-----8<---
+
+From: Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH] soc: qcom: Terminate gsbi of match table
+
+Failure to terminate this match table can lead to boot failures
+depending on where the compiler places the match table.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/soc/qcom/qcom_gsbi.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/soc/qcom/qcom_gsbi.c b/drivers/soc/qcom/qcom_gsbi.c
+index 061dd0632dbd..ab7b441c9980 100644
+--- a/drivers/soc/qcom/qcom_gsbi.c
++++ b/drivers/soc/qcom/qcom_gsbi.c
+@@ -64,6 +64,7 @@ static int gsbi_probe(struct platform_device *pdev)
+ 
+ static const struct of_device_id gsbi_dt_match[] = {
+ 	{ .compatible = "qcom,gsbi-v1.0.0", },
++	{ }
+ };
+ 
+ MODULE_DEVICE_TABLE(of, gsbi_dt_match);
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
