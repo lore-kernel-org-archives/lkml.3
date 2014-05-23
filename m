@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaEWNr2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:47:28 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:44168 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaEWNrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:47:25 -0400
-Message-ID: <1400852843.5367.191.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: skbuff truesize incorrect.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jim Baxter <jim_baxter@mentor.com>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        "=?ISO-8859-1?Q?=27Bj=F8rn?= Mork'" <bjorn@mork.no>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "kamal@canonical.com" <kamal@canonical.com>,
-        "edumazet@google.com" <edumazet@google.com>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
-Date: Fri, 23 May 2014 06:47:23 -0700
-In-Reply-To: <537F2D53.5020408@mentor.com>
-References: <537E4AFD.20304@mentor.com>
-		<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
-		<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>
-	 <87r43k4yhe.fsf@nemi.mork.no>
-	 <063D6719AE5E284EB5DD2968C1650D6D1724C7A1@AcuExch.aculab.com>
-	 <537F2D53.5020408@mentor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752497AbaEWNvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:51:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33980 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795AbaEWNvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 09:51:42 -0400
+Message-ID: <537F523A.8060603@ti.com>
+Date: Fri, 23 May 2014 19:20:50 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/5] Documentation: dt-bindings: document the Armada 375
+ USB cluster binding
+References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com> <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com> <537F13B2.6070500@ti.com> <20140523132145.GA31314@lunn.ch>
+In-Reply-To: <20140523132145.GA31314@lunn.ch>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-23 at 12:13 +0100, Jim Baxter wrote:
+Hi,
 
-> What are the side effects of changing the truesize, if the original
-> uncloned skb has the full truesize then isn't the potential memory usage
-> still counted for the avoidance of OOM?
+On Friday 23 May 2014 06:51 PM, Andrew Lunn wrote:
+> On Fri, May 23, 2014 at 02:54:02PM +0530, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Friday 16 May 2014 09:52 PM, Gregory CLEMENT wrote:
+>>> Armada 375 comes with an USB2 host and device controller and an USB3
+>>> controller. The USB cluster control register allows to manage common
+>>> features of both USB controllers. This commit adds the Device Tree
+>>> binding documentation for this piece of hardware.
+>>
+>> Pls re-order so that the Documentation patch comes before the driver patch..
+>>>
+>>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>>> ---
+>>>  .../bindings/phy/armada-375-usb-phy-cluster.txt      | 20 ++++++++++++++++++++
+>>>  1 file changed, 20 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt b/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
+>>
+>> simpler file name? armada-phy?
+> 
+> Armada is a collection of families of SoCs. This driver is very
+> specific to one SoC, in one family of SoCs.
+> 
+> Do you want one .txt file per driver, or can we combine binding
+> documentations into one file? There should already be a mvebu-phy.txt,
+> which contains the sata phy usable on some of the Armada SoC families.
+> This binding could be appended to it.
 
-Nope. This can be disastrous.
+So far we've been creating Documentation file per manufacturer (ti-phy.txt,
+samsung-phy.txt..), so would prefer if you could combine binding documentation
+in a single file.
 
-A malicious remote peer can crash your host by sending specially cooked
-TCP messages.
-
-Send messages with one byte of payload, and out of order so that they
-cant be consumed by receiver, and cant be coalesced/collapsed.
-
-If you claim the true size is sizeof(sk_buff) + 512, TCP stack will
-accumulate these messages in out of order queue, and will not bother
-with them, unless you hit sk_rcvbuf limit.
-
-But in reality these messages uses sizeof(sk_buff) + 32768 bytes.
-
-Divide your physical memory by 32768 : How many such messages will fit
-in memory before the host crashes ?
-
-I've seen that kind of attacks in real cases.
-
-Even the fast clones sk_buff mismatch can be noticed. Luckily a 10%
-error has no severe impact.
-
-TCP stack uses fast clones, and current stack gives them a truesize of
-2048 + sizeof(sk_buff), while it really should be 2048 +
-2*sizeof(sk_buff)
-
-Luckily, GSO/TSO tends to reduce the error, as skbs overhead is lower.
-
-
+Thanks
+Kishon
