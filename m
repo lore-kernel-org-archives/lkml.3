@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaEWQjm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 12:39:42 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:53215 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399AbaEWQjk (ORCPT
+	id S1753468AbaEWQkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 12:40:20 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:48732 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598AbaEWQkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 12:39:40 -0400
+	Fri, 23 May 2014 12:40:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
-References: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
-	<1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
-Date: Fri, 23 May 2014 18:39:39 +0200
-Message-ID: <CABuKBe+B_Ga-w4aA4dApDTa26rCuhetRTJku27Madm+fHtDcLA@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: debug: qcom: add UART addresses to Kconfig help
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, sboyd@codeaurora.org,
-        rvaswani@codeaurora.org, davidb@codeaurora.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org
+In-Reply-To: <20140523070016.GG9198@axis.com>
+References: <1400796009-12716-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140523070016.GG9198@axis.com>
+Date: Fri, 23 May 2014 18:40:17 +0200
+Message-ID: <CAFo99ga_G=Bsvagi5PFCiq++6CaAqtWUo5PS6VxLUEsTvEMqdA@mail.gmail.com>
+Subject: Re: [PATCH] arch: cris: arch-v32: drivers: axisflashmap.c: Cleaning
+ up inconsistent NULL checks
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-23 17:12 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
-> Add information about the APQ8084 debug UART physical and virtual
-> addresses in the DEBUG_QCOM_UARTDM Kconfig help section.
-> Requires: https://lkml.org/lkml/2014/4/14/312
->
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> ---
->  arch/arm/Kconfig.debug |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 40ee328..e71723d 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -376,6 +376,7 @@ choice
->                   their output to the serial port on Qualcomm devices.
->
->                   ARCH      DEBUG_UART_PHYS   DEBUG_UART_BASE
-> +                 APQ8084   0xf995e000        0xfa75e000
->                   MSM8X60   0x19c40000        0xf0040000
->                   MSM8960   0x16440000        0xf0040000
->                   MSM8974   0xf991e000        0xfa71e000
+Hej Jesper!
 
-You don't have any uart defined in your dts. You should add them
-before any adding low level debug support.
-Otherwise there might be problems in booting a multi-platform kernel.
+But in several other place in the feature ensures that main_mtd is not NULL.
+(That's what cppcheck base their misjudgment on too)
 
-Regards,
-Matthias
+Then all these checks are unnecessary?
+You should know, looks like you've written most of the code in 2007 :)
 
+
+Best regards
+Rickard Strandqvist
+
+
+2014-05-23 9:00 GMT+02:00 Jesper Nilsson <jesper.nilsson@axis.com>:
+> On Fri, May 23, 2014 at 12:00:09AM +0200, Rickard Strandqvist wrote:
+>> Cleaning up inconsistent NULL checks.
+>> There is otherwise a risk of a possible null pointer dereference.
+>>
+>> Was largely found by using a static code analysis program called cppcheck.
+>
+> ... and is a false positive.
+>
+> We can't enter this if-block unless ptable_head is set,
+> which is only set if main_mtd is set.
+>
+> It might be useful to add it anyways, but there's a refactoring
+> needed for the axisflashmaps, so I'll keep it for then.
+>
+> /^JN - Jesper Nilsson
 > --
-> 1.7.9.5
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-
-
--- 
-motzblog.wordpress.com
+>                Jesper Nilsson -- jesper.nilsson@axis.com
