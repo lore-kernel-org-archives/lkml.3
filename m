@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaEWPTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:19:24 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54265 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaEWPTX (ORCPT
+	id S1752924AbaEWPUu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:20:50 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:54182 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683AbaEWPUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:19:23 -0400
-Message-ID: <537F66AF.30303@linux.vnet.ibm.com>
-Date: Fri, 23 May 2014 20:48:07 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 23 May 2014 11:20:48 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, tglx@linutronix.de,
-        mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, hch@infradead.org, mgorman@suse.de,
-        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
-        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com> <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com> <20140523132250.GA1768@localhost.localdomain> <537F5F0F.5050802@linux.vnet.ibm.com> <20140523151252.GE30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140523151252.GE30445@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052315-5816-0000-0000-00000E30E0AF
+In-Reply-To: <537F02CA.5070304@linaro.org>
+References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<537EF50B.2010101@linaro.org>
+	<CAPDyKFpTXrURM8OzNjO-RRfCFWGct4+_M4D8COdEurUhY46GWg@mail.gmail.com>
+	<537F02CA.5070304@linaro.org>
+Date: Fri, 23 May 2014 08:20:48 -0700
+Message-ID: <CAJAp7OgkYg12C42yMqL+CJQG3hN2KeNs7L-ZO4b9JMAb_ofYog@mail.gmail.com>
+Subject: Re: [PATCH v2 00/14] Add Qualcomm SD Card Controller support
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 08:42 PM, Peter Zijlstra wrote:
-> On Fri, May 23, 2014 at 08:15:35PM +0530, Srivatsa S. Bhat wrote:
->>>> +		 * During CPU offline, we don't want the other CPUs to send
->>>> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
->>>> +		 * disabled interrupts (because, then it will notice the IPIs
->>>> +		 * only after it has gone offline). We can prevent this by
->>>> +		 * making the other CPUs disable their interrupts first - that
->>>> +		 * way, they will run the stop-machine code with interrupts
->>>> +		 * disabled, and hence won't send IPIs after that point.
-> 
-> That's complete nonsense, you can send IPIs all you want with interrupts
-> disabled.
-> 
+On Fri, May 23, 2014 at 1:11 AM, Srinivas Kandagatla
+<srinivas.kandagatla@linaro.org> wrote:
+> On 23/05/14 08:50, Ulf Hansson wrote:
+[...]
+>> It seems like you had some CRC issues during read/write? Did you
+>> manage to resolve that issue?
+>
+>
+> Bjorn is using different SOC and board than the IFC6410 Am testing on, so
+> its completely different setup.
+> on IFC6410 we did lot of stress testing and no issues seen. so suspecting
+> the issues are very specific to that board or the eMMC Bjorn is using.
+>
+> We are suspecting that the CRC issues are due to the fact that there is no
+> code to manage regulators. My test setup uses dummy regulator, and the eMMC
+> and external SD cards seems to be Ok with default voltages.
+>
+> Am not sure if thats the same with Bjorn's board.
 
-True, but that's not what the comment says. It says "you can't send IPIs
-because you are running the *stop-machine* loop, because the stop-machine loop
-doesn't send IPIs itself! The only possibility of sending IPIs from within
-stop-machine is if that CPU can takes an interrupt and the *interrupt handler*
-sends the IPI (like what the block layer used to do) - and we precisely avoid
-that possibility by disabling interrupts. So no IPIs will be sent beyond
-this point.
+I started off by using the same setup as you; relying on the boot leaving
+everything in a working condition and using fixed-regulator; with that setup
+I saw the CRC issues.
+
+I then introduced my rpm and regulator driver and it didn't change anything
+related to the CRC error behaviour.
+
+I have verified that I have the right pinconf and the clocks seems to match
+what we have with working codeaurora based SW.
+One thing that I did notice is that we run our devices with
+MMC_CAP_UHS_DDR50, while Qualcomm doesn't, but I have not been
+able to introduce a change in behaviour by modifying the caps.
+
+I do see the same problem both on 8960 and on 8064; although on 8064
+it's much worse.
+
+
+I will do some more debugging to see if I can find any further differences
+in the two setups.
 
 Regards,
-Srivatsa S. Bhat
-
+Bjorn
