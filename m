@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188AbaEWVzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 17:55:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57500 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750995AbaEWVzs (ORCPT
+	id S1751313AbaEWV4B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 17:56:01 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:40549 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaEWVz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 17:55:48 -0400
-Date: Fri, 23 May 2014 23:55:44 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
-        arm@kernel.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: DT for 3.16 at91-dt3 #3
-Message-ID: <20140523215544.GI13642@piout.net>
-References: <1400775895-31183-1-git-send-email-nicolas.ferre@atmel.com>
- <201405232327.52312.arnd@arndb.de>
+	Fri, 23 May 2014 17:55:59 -0400
+Date: Fri, 23 May 2014 23:55:57 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com
+Subject: Re: [PATCH] Pass on hwpoison maintainership to Naoya Noriguchi
+Message-ID: <20140523215557.GS1873@two.firstfloor.org>
+References: <1400879739-12614-1-git-send-email-andi@firstfloor.org>
+ <1400881526-jqo101r5@n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201405232327.52312.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1400881526-jqo101r5@n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/05/2014 at 23:27:51 +0200, Arnd Bergmann wrote :
-> On Thursday 22 May 2014, Nicolas Ferre wrote:
-> > Another AT91 DT pull-request for 3.16. This one is the conversion of two more
-> > SoC to Common Clock Framework (aka CCF). I identified it as a "DT" pull-request
-> > but it modifies slightly a couple of files in mach-at91 (use of a configuration
-> > option).
+On Fri, May 23, 2014 at 05:45:30PM -0400, Naoya Horiguchi wrote:
+> On Fri, May 23, 2014 at 02:15:39PM -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > Noriguchi-san has done most of the work on hwpoison in the last years
+> > and he also does most of the reviewing. So I'm passing on the hwpoison
+> > maintainership to him.
 > 
-> Four done, four more to go? Nice progress!
+> Thank you, I'll do my best.
 > 
+> # Could please do s/Noriguchi/Horiguchi/g :)
+> # It will make someone's grep fail in the future.
 
-I'm on it ;) I actually have two more almost ready but I will submit the
-remaining four for 3.17. I don't think this is urgent enough to rush it
-and I'd like to test it enough before we start removing the old clock
-implementation and board files.
+Sorry about that.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+-Andi
