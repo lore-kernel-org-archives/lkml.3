@@ -1,125 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaEWLzK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 07:55:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55590 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751232AbaEWLzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 07:55:08 -0400
-Date: Fri, 23 May 2014 12:54:57 +0100
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: myungjoo.ham@samsung.com, cw00.choi@samsung.com
-Cc: sameo@linux.intel.com, broonie@linaro.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH V2] extcon: arizona: support inverted jack detect switch
-Message-ID: <20140523115446.GA20451@opensource.wolfsonmicro.com>
-References: <20140520115632.GA13900@opensource.wolfsonmicro.com>
+	id S1752460AbaEWL4b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 07:56:31 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54282 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663AbaEWL4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 07:56:30 -0400
+Date: Fri, 23 May 2014 13:56:22 +0200
+From: Robert Richter <rric@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after
+ Fam16h
+Message-ID: <20140523115622.GU27560@rric.localhost>
+References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140521233802.GA21575@pd.tnic>
+ <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
+ <20140522191746.GL4383@pd.tnic>
+ <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
+ <537E8ACF.6000103@amd.com>
+ <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140520115632.GA13900@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add config option for inverted jack detect switch that
-opens when jack is inserted.
+On 22.05.14 20:54:54, Bjorn Helgaas wrote:
+> I'm going to go out on a limb and guess that Windows does not enable
+> ECS, so it probably uses ECAM.  Therefore, I suspect Linux's parsing
+> of MCFG is broken in some way, and we probably *could* use ECAM in all
+> these cases I'm seeing.
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
----
- drivers/extcon/extcon-arizona.c   |   34 ++++++++++++++++++++++++++--------
- include/linux/mfd/arizona/pdata.h |    3 +++
- 2 files changed, 29 insertions(+), 8 deletions(-)
+Even if ECS is not enabled the system should be fine anyway, as ECS is
+only used to enable certain features. For family 10h this was
+originally the IBS EILVT (extended interrupt local vector table,
+needed for hw profiling) setup which need to be set by the OS which
+the BIOS didn't right. This should be fixed now and properly set by
+the BIOS on 15h+ systems.
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 98a14f6..4c73d25 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -39,6 +39,11 @@
- #define ARIZONA_ACCDET_MODE_HPL 1
- #define ARIZONA_ACCDET_MODE_HPR 2
- 
-+#define ARIZONA_MICD_CLAMP_MODE_JDL      0x4
-+#define ARIZONA_MICD_CLAMP_MODE_JDH      0x5
-+#define ARIZONA_MICD_CLAMP_MODE_JDL_GP5H 0x9
-+#define ARIZONA_MICD_CLAMP_MODE_JDH_GP5H 0xb
-+
- #define ARIZONA_HPDET_MAX 10000
- 
- #define HPDET_DEBOUNCE 500
-@@ -962,10 +967,16 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
- 
- 	if (arizona->pdata.jd_gpio5) {
- 		mask = ARIZONA_MICD_CLAMP_STS;
--		present = 0;
-+		if (arizona->pdata.jd_invert)
-+			present = ARIZONA_MICD_CLAMP_STS;
-+		else
-+			present = 0;
- 	} else {
- 		mask = ARIZONA_JD1_STS;
--		present = ARIZONA_JD1_STS;
-+		if (arizona->pdata.jd_invert)
-+			present = 0;
-+		else
-+			present = ARIZONA_JD1_STS;
- 	}
- 
- 	ret = regmap_read(arizona->regmap, ARIZONA_AOD_IRQ_RAW_STATUS, &val);
-@@ -1096,6 +1107,7 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 	struct arizona_pdata *pdata = &arizona->pdata;
- 	struct arizona_extcon_info *info;
- 	unsigned int val;
-+	unsigned int clamp_mode;
- 	int jack_irq_fall, jack_irq_rise;
- 	int ret, mode, i, j;
- 
-@@ -1302,16 +1314,22 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 			regmap_write(arizona->regmap, ARIZONA_GPIO5_CTRL,
- 				     val);
- 
--			regmap_update_bits(arizona->regmap,
--					   ARIZONA_MICD_CLAMP_CONTROL,
--					   ARIZONA_MICD_CLAMP_MODE_MASK, 0x9);
-+			if (arizona->pdata.jd_invert)
-+				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDH_GP5H;
-+			else
-+				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDL_GP5H;
- 		} else {
--			regmap_update_bits(arizona->regmap,
--					   ARIZONA_MICD_CLAMP_CONTROL,
--					   ARIZONA_MICD_CLAMP_MODE_MASK, 0x4);
-+			if (arizona->pdata.jd_invert)
-+				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDH;
-+			else
-+				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDL;
- 		}
- 
- 		regmap_update_bits(arizona->regmap,
-+				   ARIZONA_MICD_CLAMP_CONTROL,
-+				   ARIZONA_MICD_CLAMP_MODE_MASK, clamp_mode);
-+
-+		regmap_update_bits(arizona->regmap,
- 				   ARIZONA_JACK_DETECT_DEBOUNCE,
- 				   ARIZONA_MICD_CLAMP_DB,
- 				   ARIZONA_MICD_CLAMP_DB);
-diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
-index 12a5c13..4578c72 100644
---- a/include/linux/mfd/arizona/pdata.h
-+++ b/include/linux/mfd/arizona/pdata.h
-@@ -127,6 +127,9 @@ struct arizona_pdata {
- 	/** Internal pull on GPIO5 is disabled when used for jack detection */
- 	bool jd_gpio5_nopull;
- 
-+	/** set to true if jackdet contact opens on insert */
-+	bool jd_invert;
-+
- 	/** Use the headphone detect circuit to identify the accessory */
- 	bool hpdet_acc_id;
- 
--- 
-1.7.2.5
+I don't remember what was added to 16h where ECS was needed, I think
+there was one (Suravee?). Not sure if this is essential.
 
+So using MCFG should be fine, since if in the rare case when it is
+broken, the system should work properly anyway without it and only
+some special features, if any, do not work anymore (e.g. IBS should
+work fine).
+
+-Robert
