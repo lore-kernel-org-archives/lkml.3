@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaEWHEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 03:04:15 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:35424 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbaEWHEN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 03:04:13 -0400
+	id S1752913AbaEWHGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 03:06:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32928 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752115AbaEWHGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 03:06:01 -0400
+Date: Fri, 23 May 2014 09:05:34 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: perf: util: session.c:  Cleaning up inconsistent
+ NULL checks
+Message-ID: <20140523070534.GB1074@krava>
+References: <1400795916-12613-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-In-Reply-To: <1400774136-12396-2-git-send-email-abrestic@chromium.org>
-References: <1400774136-12396-1-git-send-email-abrestic@chromium.org>
-	<1400774136-12396-2-git-send-email-abrestic@chromium.org>
-Date: Fri, 23 May 2014 09:04:12 +0200
-Message-ID: <CAPDyKFqBcp7PZQ-04s02Jrqscna0UVex2DEbVPYghmRR8g9HnA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] mmc: tegra: fix reporting of base clock frequency
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Chris Ball <chris@printf.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400795916-12613-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 May 2014 17:55, Andrew Bresticker <abrestic@chromium.org> wrote:
-> Tegra SDHCI controllers, by default, report a base clock frequency
-> of 208Mhz in SDHCI_CAPABILTIES which may or may not be equal to the
-> actual base clock frequency.  This is because the clock rate is
-> configured by the clock controller, which is external to the SD/MMC
-> controller.  Since the SD/MMC controller has no knowledge of how this
-> clock is configured, it will simply report the maximum frequency.
-> While the reported value can be overridden by setting BASE_CLK_FREQ in
-> VENDOR_CLOCK_CTRL on Tegra30 and later SoCs, just set CAP_CLOCK_BASE_BROKEN
-> and supply sdhci_pltfm_clk_get_max_clock(), which simply does a
-> clk_get_rate(), as the get_max_clock() callback.
->
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> Acked-by: Stephen Warren <swarren@nvidia.com>
-
-Thanks Andrew!
-
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-
-Chris, can you pick this up?
-
-Kind regards
-Ulf Hansson
-
+On Thu, May 22, 2014 at 11:58:36PM +0200, Rickard Strandqvist wrote:
+> Cleaning up inconsistent NULL checks.
+> There is otherwise a risk of a possible null pointer dereference.
+> 
+> Was largely found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
-> Changes from v2:
->  - rebased on mmc-next
-> Changes from v1:
->  - fixed up commit message per Stephen's suggestions
-> ---
->  drivers/mmc/host/sdhci-tegra.c | 10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-> index 4375cd4..d93a063 100644
-> --- a/drivers/mmc/host/sdhci-tegra.c
-> +++ b/drivers/mmc/host/sdhci-tegra.c
-> @@ -154,13 +154,15 @@ static const struct sdhci_ops tegra_sdhci_ops = {
->         .set_bus_width = tegra_sdhci_set_bus_width,
->         .reset      = tegra_sdhci_reset,
->         .set_uhs_signaling = sdhci_set_uhs_signaling,
-> +       .get_max_clock = sdhci_pltfm_clk_get_max_clock,
->  };
->
->  static const struct sdhci_pltfm_data sdhci_tegra20_pdata = {
->         .quirks = SDHCI_QUIRK_BROKEN_TIMEOUT_VAL |
->                   SDHCI_QUIRK_SINGLE_POWER_WRITE |
->                   SDHCI_QUIRK_NO_HISPD_BIT |
-> -                 SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
-> +                 SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
-> +                 SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
->         .ops  = &tegra_sdhci_ops,
->  };
->
-> @@ -175,7 +177,8 @@ static const struct sdhci_pltfm_data sdhci_tegra30_pdata = {
->                   SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
->                   SDHCI_QUIRK_SINGLE_POWER_WRITE |
->                   SDHCI_QUIRK_NO_HISPD_BIT |
-> -                 SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
-> +                 SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
-> +                 SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
->         .ops  = &tegra_sdhci_ops,
->  };
->
-> @@ -191,7 +194,8 @@ static const struct sdhci_pltfm_data sdhci_tegra114_pdata = {
->                   SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
->                   SDHCI_QUIRK_SINGLE_POWER_WRITE |
->                   SDHCI_QUIRK_NO_HISPD_BIT |
-> -                 SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC,
-> +                 SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
-> +                 SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
->         .ops  = &tegra_sdhci_ops,
->  };
->
-> --
-> 1.9.1.423.g4596e3a
->
+>  tools/perf/util/session.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 55960f2..8defd80 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -1625,13 +1625,15 @@ out_delete_map:
+>  void perf_session__fprintf_info(struct perf_session *session, FILE *fp,
+>  				bool full)
+>  {
+> -	int fd = perf_data_file__fd(session->file);
+> +	int fd;
+>  	struct stat st;
+>  	int ret;
+>  
+>  	if (session == NULL || fp == NULL)
+>  		return;
+>  
+> +	fd = perf_data_file__fd(session->file);
+> +
+>  	ret = fstat(fd, &st);
+>  	if (ret == -1)
+>  		return;
+> -- 
+> 1.7.10.4
+> 
+hi,
+I merged same patch just a week ago or so ;-)
+
+perf session: Fix possible null pointer dereference in session.c
+commit c5765ece8a050836c6255e1276fc8e0e867078da
+Author: Masanari Iida <standby24x7@gmail.com>
+Date:   Thu May 15 02:13:38 2014 +0900
+
+
+thanks,
+jirka
