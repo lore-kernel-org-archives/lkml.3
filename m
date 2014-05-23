@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaEWMJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:09:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413AbaEWMJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:09:51 -0400
-Date: Fri, 23 May 2014 14:09:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Greg Thelen <gthelen@google.com>
+	id S1752206AbaEWMN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:13:26 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:40569 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaEWMNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 08:13:24 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
-Message-ID: <20140523120948.GA22135@dhcp22.suse.cz>
-References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
- <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
- <20140519140248.GD3017@dhcp22.suse.cz>
- <20140519155018.GF3017@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140519155018.GF3017@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>,
+        Vladimir Cernov <gg.kaspersky@gmail.com>, linux-mm@kvack.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH] mm/madvise: fix WILLNEED on SHM/ANON to actually do something
+Date: Fri, 23 May 2014 14:12:15 +0200
+Message-Id: <1400847135-22291-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 19-05-14 17:50:18, Michal Hocko wrote:
-> On Mon 19-05-14 16:02:48, Michal Hocko wrote:
-> > On Fri 16-05-14 15:00:16, Greg Thelen wrote:
-> [...]
-> > > -- First, demonstrate that just rmdir, without memory.force_empty,
-> > >    temporarily hides reparented child memory stats.
-> > > 
-> > > $ /test
-> > > p/memory.stat:rss 0
-> > > p/memory.stat:total_rss 69632
-> > > p/c/memory.stat:rss 69632
-> > > p/c/memory.stat:total_rss 69632
-> > > For a small time the p/c memory has not been reparented to p.
-> > > p/memory.stat:rss 0
-> > > p/memory.stat:total_rss 0
-> > 
-> > OK, this is a bug. Our iterators skip the children because css_tryget
-> > fails on it but css_offline still not done.
+Currently, madvise(MADV_WILLNEED) on shmem with swap enabled is a no-op.
+Problem is, we use find_get_page() to lookup shmem pages in the given
+range. However, what we're actually interested in is swapped-out pages.
+Therefore, our current code is a no-op:
+    page = find_get_page(mapping, index);
+    if (!radix_tree_exceptional_entry(page))
+        bail-out;
 
-Recent cgroup changes distinguish css_tryget and css_tryget_online
-(http://marc.info/?l=linux-kernel&m=140025648704805). So we will only
-need to use css_tryget rather than the _online variant in
-__mem_cgroup_iter_next. I guess this is what Johannes was talking about.
+find_get_page() never returns exceptional entries. Fix this by using
+find_get_entry(). This was probably meant to be used right from the
+beginning.
 
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+---
+ mm/madvise.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 539eeb9..a402f8f 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -195,7 +195,7 @@ static void force_shm_swapin_readahead(struct vm_area_struct *vma,
+ 	for (; start < end; start += PAGE_SIZE) {
+ 		index = ((start - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
+ 
+-		page = find_get_page(mapping, index);
++		page = find_get_entry(mapping, index);
+ 		if (!radix_tree_exceptional_entry(page)) {
+ 			if (page)
+ 				page_cache_release(page);
 -- 
-Michal Hocko
-SUSE Labs
+1.9.3
+
