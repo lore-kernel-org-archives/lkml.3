@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaEWJpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:45:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55184 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752536AbaEWJpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:45:09 -0400
-Message-ID: <537F18A2.4010709@suse.cz>
-Date: Fri, 23 May 2014 11:45:06 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.15.0-rc6: VM_BUG_ON_PAGE(PageTail(page), page)
-References: <20140522135828.GA24879@redhat.com> <537E12D9.6090709@suse.cz> <20140522154100.GA30273@redhat.com>
-In-Reply-To: <20140522154100.GA30273@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752415AbaEWJoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:44:21 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:53314 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330AbaEWJoM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 05:44:12 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@gmail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: [PATCH 09/13] overlayfs: add statfs support
+Date: Fri, 23 May 2014 11:43:39 +0200
+Message-Id: <1400838223-30844-10-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
+References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 05:41 PM, Dave Jones wrote:
-> On Thu, May 22, 2014 at 05:08:09PM +0200, Vlastimil Babka wrote:
->
->   > > RIP: 0010:[<ffffffffbb718d98>]  [<ffffffffbb718d98>] PageTransHuge.part.23+0xb/0xd
->   > > Call Trace:
->   > >   [<ffffffffbb1728a3>] isolate_migratepages_range+0x7a3/0x870
->   > >   [<ffffffffbb172d90>] compact_zone+0x370/0x560
->   > >   [<ffffffffbb173022>] compact_zone_order+0xa2/0x110
->   > >   [<ffffffffbb1733f1>] try_to_compact_pages+0x101/0x130
->   > > ...
->   > > Code: 75 1d 55 be 6c 00 00 00 48 c7 c7 8a 2f a2 bb 48 89 e5 e8 6c 49 95 ff 5d c6 05 74 16 65 00 01 c3 55 31 f6 48 89 e5 e8 28 bd a3 ff <0f> 0b 0f 1f 44 00 00 55 48 89 e5 41 57 45 31 ff 41 56 49 89 fe
->   > > RIP  [<ffffffffbb718d98>]
->   > >
->   > > That BUG is..
->   > >
->   > > 413 static inline int PageTransHuge(struct page *page)
->   > > 414 {
->   > > 415         VM_BUG_ON_PAGE(PageTail(page), page);
->   > > 416         return PageHead(page);
->   > > 417 }
->   >
->   > Any idea which of the two PageTransHuge() calls in
->   > isolate_migratepages_range() that is? Offset far in the function suggest
->   > it's where the lru lock is already held, but I'm not sure as decodecode
->   > of your dump and objdump of my own compile look widely different.
->
-> Yeah, the only thing the code: matches is the BUG() which is in another section.
+From: Andy Whitcroft <apw@canonical.com>
 
-Oh right, it's not a simple BUG_ON that would be inlined.
+Add support for statfs to the overlayfs filesystem.  As the upper layer
+is the target of all write operations assume that the space in that
+filesystem is the space in the overlayfs.  There will be some inaccuracy as
+overwriting a file will copy it up and consume space we were not expecting,
+but it is better than nothing.
 
-> (see end of file at http://paste.fedoraproject.org/104155/40077293/raw/)
->
-> Maybe you can make more sense of that disassembly than I can..
+Use the upper layer dentry and mount from the overlayfs root inode,
+passing the statfs call to that filesystem.
 
-Could you try adding -r to objdump, as now I have no idea where all 
-those calls go :/
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/overlayfs/super.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-> 	Dave
->
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index 7c6b216ad6ca..8b77f3f45579 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -16,16 +16,20 @@
+ #include <linux/parser.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
++#include <linux/statfs.h>
+ #include "overlayfs.h"
+ 
+ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+ MODULE_DESCRIPTION("Overlay filesystem");
+ MODULE_LICENSE("GPL");
+ 
++#define OVERLAYFS_SUPER_MAGIC 0x794c764f
++
+ struct ovl_fs {
+ 	struct vfsmount *upper_mnt;
+ 	struct vfsmount *lower_mnt;
+ 	struct dentry *workdir;
++	long lower_namelen;
+ };
+ 
+ struct ovl_entry {
+@@ -391,9 +395,36 @@ static int ovl_remount_fs(struct super_block *sb, int *flagsp, char *data)
+ 		return mnt_want_write(ufs->upper_mnt);
+ }
+ 
++/**
++ * ovl_statfs
++ * @sb: The overlayfs super block
++ * @buf: The struct kstatfs to fill in with stats
++ *
++ * Get the filesystem statistics.  As writes always target the upper layer
++ * filesystem pass the statfs to the same filesystem.
++ */
++static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
++{
++	struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
++	struct dentry *root_dentry = dentry->d_sb->s_root;
++	struct path path;
++	int err;
++
++	ovl_path_upper(root_dentry, &path);
++
++	err = vfs_statfs(&path, buf);
++	if (!err) {
++		buf->f_namelen = max(buf->f_namelen, ofs->lower_namelen);
++		buf->f_type = OVERLAYFS_SUPER_MAGIC;
++	}
++
++	return err;
++}
++
+ static const struct super_operations ovl_super_operations = {
+ 	.put_super	= ovl_put_super,
+ 	.remount_fs	= ovl_remount_fs,
++	.statfs		= ovl_statfs,
+ };
+ 
+ struct ovl_config {
+@@ -528,6 +559,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct ovl_entry *oe;
+ 	struct ovl_fs *ufs;
+ 	struct ovl_config config;
++	struct kstatfs statfs;
+ 	int err;
+ 
+ 	err = ovl_parse_opt((char *) data, &config);
+@@ -579,6 +611,13 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto out_put_workpath;
+ 	}
+ 
++	err = vfs_statfs(&lowerpath, &statfs);
++	if (err) {
++		pr_err("overlayfs: statfs failed on lowerpath\n");
++		goto out_put_lowerpath;
++	}
++	ufs->lower_namelen = statfs.f_namelen;
++
+ 	ufs->upper_mnt = clone_private_mount(&upperpath);
+ 	err = PTR_ERR(ufs->upper_mnt);
+ 	if (IS_ERR(ufs->upper_mnt)) {
+@@ -639,6 +678,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	root_dentry->d_fsdata = oe;
+ 	root_dentry->d_op = &ovl_dentry_operations;
+ 
++	sb->s_magic = OVERLAYFS_SUPER_MAGIC;
+ 	sb->s_op = &ovl_super_operations;
+ 	sb->s_root = root_dentry;
+ 	sb->s_fs_info = ufs;
+-- 
+1.8.1.4
 
