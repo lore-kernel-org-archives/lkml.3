@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaEWRRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:17:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15195 "EHLO mx1.redhat.com"
+	id S1753483AbaEWRSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:18:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447AbaEWRRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:17:07 -0400
-Message-ID: <537F8276.60902@redhat.com>
-Date: Fri, 23 May 2014 13:16:38 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751813AbaEWRSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 13:18:41 -0400
+Date: Fri, 23 May 2014 13:18:01 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, peterz@infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        eranian@google.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 6/7] perf: Add support to dynamically get cacheline size
+Message-ID: <20140523171801.GO50500@redhat.com>
+References: <1400526833-141779-1-git-send-email-dzickus@redhat.com>
+ <1400526833-141779-7-git-send-email-dzickus@redhat.com>
+ <20140523165405.GE1074@krava>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>, akpm@linux-foundation.org
-CC: mingo@kernel.org, peterz@infradead.org, mgorman@suse.de, aswin@hp.com,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] mm: use new helper functions around the i_mmap_mutex
-References: <1400816006-3083-1-git-send-email-davidlohr@hp.com> <1400816006-3083-3-git-send-email-davidlohr@hp.com>
-In-Reply-To: <1400816006-3083-3-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140523165405.GE1074@krava>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 11:33 PM, Davidlohr Bueso wrote:
-> Convert all open coded mutex_lock/unlock calls to the
-> i_mmap_[lock/unlock]_write() helpers.
+On Fri, May 23, 2014 at 06:54:06PM +0200, Jiri Olsa wrote:
+> On Mon, May 19, 2014 at 03:13:52PM -0400, Don Zickus wrote:
+> > Different arches may have different cacheline sizes.  Look it up and set
+> > a global variable for reference.
+> > 
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  tools/perf/util/cpumap.c | 31 +++++++++++++++++++++++++++++++
+> >  tools/perf/util/cpumap.h | 12 ++++++++++++
+> >  tools/perf/util/sort.c   |  3 +++
+> >  3 files changed, 46 insertions(+)
+> > 
+> > diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+> > index c4e55b7..d833238 100644
+> > --- a/tools/perf/util/cpumap.c
+> > +++ b/tools/perf/util/cpumap.c
+> > @@ -477,3 +477,34 @@ int cpu__setup_cpunode_map(void)
+> >  	closedir(dir1);
+> >  	return 0;
+> >  }
+> > +
+> > +int cpu__setup_cacheline_size(void)
+> > +{
+> > +	const char *mnt;
+> > +	char path[PATH_MAX];
+> > +	int n, ret, size;
+> > +	FILE *fp;
+> > +	
+> > +
+> > +	mnt = sysfs__mountpoint();
+> > +	if (!mnt)
+> > +		return -1;
+> > +
+> > +	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
+> > +	if (n == PATH_MAX) {
+> > +		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
+> > +		return -1;
+> > +	}
+> > +
+> > +	fp = fopen(path, "r");
+> > +	if (!fp)
+> > +		return -1;
+> > +	ret = fscanf(fp, "%d", &size);
+> > +	fclose(fp);
+> > +	if (ret != 1)
+> > +		return -1;
 > 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> you can use filename__read_int
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Doh.  I forgot about that.  I can respin this patch or the whole series
+for that.  Perhaps on Tuesday when we come back from our US Holiday.
 
-
--- 
-All rights reversed
+Cheers,
+Don
