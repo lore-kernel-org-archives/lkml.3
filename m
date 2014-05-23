@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaEWPpK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:45:10 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38914 "EHLO
+	id S1753256AbaEWPpQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:45:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38940 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaEWPpD (ORCPT
+	with ESMTP id S1752997AbaEWPpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:45:03 -0400
+	Fri, 23 May 2014 11:45:12 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
         <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
@@ -20,9 +20,9 @@ CC: <rdunlap@infradead.org>, <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
         <sergei.shtylyov@cogentembedded.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v7 2/7] clock: keystone-pllctrl: add bindings for keystone pll controller
-Date: Fri, 23 May 2014 18:43:27 +0300
-Message-ID: <1400859812-5761-3-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [Patch v7 6/7] ARM: dts: keystone: update reset node to work with reset driver
+Date: Fri, 23 May 2014 18:43:31 +0300
+Message-ID: <1400859812-5761-7-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -32,44 +32,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main pll controller used to drive theC66x CorePacs, the switch fabric,
-and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
-the NETCP modules) requires a PLL Controller to manage the various clock
-divisions, gating, and synchronization.
+The pll controller register set and device state control registers
+include sets of registers with different purposes, so it's logically
+to add syscon entry to be able to access them from appropriate places.
+
+So added pll controller and device state control syscon entries.
+
+The keystone driver requires the next additional properties:
+
+"ti,syscon-pll" - phandle/offset pair. The phandle to syscon used to
+		  access pll controller registers and the offset to use
+		  reset control registers.
+
+"ti,syscon-dev" - phandle/offset pair. The phandle to syscon used to
+		  access device state control registers and the offset
+		  in order to use mux block registers for all watchdogs.
+
+"ti,wdt-list"	- option to declare what watchdogs are used to reboot
+		  the SoC, so set "0" WDT as default.
 
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- .../bindings/clock/ti-keystone-pllctrl.txt           | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
+ arch/arm/boot/dts/keystone.dtsi | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
-new file mode 100644
-index 0000000..3e6a81e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
-@@ -0,0 +1,20 @@
-+* Device tree bindings for Texas Instruments keystone pll controller
+diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
+index d9f99e7..c1414cb 100644
+--- a/arch/arm/boot/dts/keystone.dtsi
++++ b/arch/arm/boot/dts/keystone.dtsi
+@@ -66,9 +66,21 @@
+ 		ranges = <0x0 0x0 0x0 0xc0000000>;
+ 		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+ 
++		pllctrl: pll-controller@02310000 {
++			compatible = "ti,keystone-pllctrl", "syscon";
++			reg = <0x02310000 0x200>;
++		};
 +
-+The main pll controller used to drive theC66x CorePacs, the switch fabric,
-+and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
-+the NETCP modules) requires a PLL Controller to manage the various clock
-+divisions, gating, and synchronization.
++		devctrl: device-state-control@02620000 {
++			compatible = "ti,keystone-devctrl", "syscon";
++			reg = <0x02620000 0x1000>;
++		};
 +
-+Required properties:
-+
-+- compatible:		"ti,keystone-pllctrl", "syscon"
-+
-+- reg:			contains offset/length value for pll controller
-+			registers space.
-+
-+Example:
-+
-+pllctrl: pll-controller@0x02310000 {
-+	compatible = "ti,keystone-pllctrl", "syscon";
-+	reg = <0x02310000 0x200>;
-+};
+ 		rstctrl: reset-controller {
+ 			compatible = "ti,keystone-reset";
+-			reg = <0x023100e8 4>;	/* pll reset control reg */
++			ti,syscon-pll = <&pllctrl 0xe4>;
++			ti,syscon-dev = <&devctrl 0x328>;
++			ti,wdt-list = <0>;
+ 		};
+ 
+ 		/include/ "keystone-clocks.dtsi"
 -- 
 1.8.3.2
 
