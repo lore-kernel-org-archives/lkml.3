@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282AbaEWXJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 19:09:25 -0400
-Received: from ukserver.24livehost.com ([88.208.203.18]:56493 "EHLO
+	id S1751203AbaEWXJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 19:09:24 -0400
+Received: from ukserver.24livehost.com ([88.208.203.18]:47010 "EHLO
 	ukserver.24livehost.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751010AbaEWXJX (ORCPT
+	by vger.kernel.org with ESMTP id S1750995AbaEWXJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 May 2014 19:09:23 -0400
-Message-ID: <47ae762495ad381c4ec9489ef2f88f7f.squirrel@aurigaitsolutions.com>
-Date: Sat, 24 May 2014 00:07:30 +0100
+X-Greylist: delayed 16504 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 May 2014 19:09:22 EDT
+Message-ID: <326b656f0d588eb84d32d30b7b752fb3.squirrel@aurigaitsolutions.com>
+Date: Sat, 24 May 2014 00:06:57 +0100
 Subject: 
 From: "christian organization" <shashi@aurigaitsolutions.com>
 Reply-To: marieloanlenders@gmail.com
