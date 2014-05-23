@@ -1,84 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaEWBf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 21:35:59 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:45908 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaEWBf5 convert rfc822-to-8bit (ORCPT
+	id S1751303AbaEWBnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 21:43:43 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:50294 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbaEWBnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 21:35:57 -0400
-Content-Type: text/plain; charset="utf-8"
+	Thu, 22 May 2014 21:43:42 -0400
+Message-ID: <537EA7C7.8040708@gmail.com>
+Date: Fri, 23 May 2014 09:43:35 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1400520171-6698-3-git-send-email-s.nawrocki@samsung.com>
-Cc: linux@arm.linux.org.uk, robh+dt@kernel.org, grant.likely@linaro.org,
-        mark.rutland@arm.com, galak@codeaurora.org, pawel.moll@arm.com,
-        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
-        m.szyprowski@samsung.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org,
-        "Sylwester Nawrocki" <s.nawrocki@samsung.com>
-References: <1400520171-6698-1-git-send-email-s.nawrocki@samsung.com>
- <1400520171-6698-3-git-send-email-s.nawrocki@samsung.com>
-Message-ID: <20140523013546.9521.55361@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH/RFC V6 2/2] clk: Add handling of clk parent and rate assigned
- from DT
-Date: Thu, 22 May 2014 18:35:46 -0700
+To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>,
+        David Miller <davem@davemloft.net>
+CC: gerrit@erg.abdn.ac.uk, gxt@mprc.pku.edu.cn, dccp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFJlOiBbUEFUQ0ggbGludXgtbmV4dF0gbmV0L2Q=?=
+ =?UTF-8?B?Y2NwL3RpbWVyLmM6IHVzZSAndTY0JyBpbnN0ZWFkIG9mICdzNjQnIHRvIGF2b2k=?=
+ =?UTF-8?B?ZCBjb21waWxlcidzIHdhcm5pbmc=?=
+References: <263613432.57393.1400803091663.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <263613432.57393.1400803091663.JavaMail.root@bj-mail03.pku.edu.cn>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sylwester Nawrocki (2014-05-19 10:22:51)
-> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> index 700e7aa..bee649b 100644
-> --- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> @@ -132,3 +132,35 @@ clock signal, and a UART.
->    ("pll" and "pll-switched").
->  * The UART has its baud clock connected the external oscillator and its
->    register clock connected to the PLL clock (the "pll-switched" signal)
-> +
-> +==Assigned clock parents and rates==
-> +
-> +Some platforms require static initial configuration of default parent clocks
-> +and clock frequecies. Such a configuration can be specified in a device node
+On 05/23/2014 07:58 AM, 管雪涛 wrote:
+> 
+> ----- David Miller <davem@davemloft.net> 写道：
+>> From: Chen Gang <gang.chen.5i5j@gmail.com>
+>> Date: Wed, 21 May 2014 08:19:34 +0800
+>>
+>>> 'dccp_timestamp_seed' is initialized once by ktime_get_real() in
+>>> dccp_timestamping_init(). It is always less than ktime_get_real()
+>>> in dccp_timestamp().
+>>>
+>>> Then, ktime_us_delta() in dccp_timestamp() will always return positive
+>>> number. So can use manual type cast to let compiler and do_div() know
+>>> about it to avoid warning.
+>>>
+>>> The related warning (with allmodconfig under unicore32):
+>>>
+>>>     CC [M]  net/dccp/timer.o
+>>>   net/dccp/timer.c: In function ‘dccp_timestamp’:
+>>>   net/dccp/timer.c:285: warning: comparison of distinct pointer types lacks a cast
+>>>
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>
+>> Applied to net-next, thanks.
+>>
 
-s/frequecies/frequencies/
+Thank you for your work.
 
-> +through clock-parents and clock-rates DT properties. The former should contain
-> +a list of parent clocks in form of phandle and clock specifier pairs, the
-> +latter the list of assigned clock frequency values (one cell each).
-> +To skip setting parent or rate of a clock its corresponding entry should be
-> +set to 0, or can be omitted if it is not followed by any non-zero entry.
-> +
-> +    uart@a000 {
-> +        compatible = "fsl,imx-uart";
-> +        reg = <0xa000 0x1000>;
-> +        ...
-> +        clocks = <&clkcon 0>, <&clkcon 3>;
-> +        clock-names = "baud", "mux";
-> +
-> +        clock-parents = <0>, <&pll 1>;
-> +        clock-rates = <460800>;
-> +    };
-> +
-> +In this example the pll is set as parent of "mux" clock and frequency of
-> +"baud" clock is specified as 460800 Hz.
-> +
-> +Configuring a clock's parent and rate through the device node that consumes
-> +the clock can be done only for clocks that have a single user. Specifying
-> +conflicting parent or rate configuration in multiple consumer nodes for
-> +a shared clock is forbidden.
-> +
-> +Configuration of common clocks, which affect multiple consumer devices can
-> +be similarly specified in the clock provider node.
+>> But that type check in include/asm-generic/div64.h is bogus, it should
+>> be checking sizeof(X) == 8 rather than the type thing, it just wants to
+>> make sure that the value is 64-bit regardless of it's signedness.
+>>
+>> The arch local implementations do not do this, and that's why very few
+>> other people notice this warning.
+> 
+> Arch-dependent codes implement it with unsigned long long type.
+> And, every warning should not be ignored.
+> 
 
-Is it worthwhile to show an example of this? I guess the outcome will
-depend on whether or not we support "assigned-clocks" property, which I
-just revisited in the V5 thread.
+Yeah, we have to let do_div() no touch (especially for 32-bit machine,
+which the highest bit is checked). The related code in
+"include/asm-generic/div64.h":
 
-Regards,
-Mike
+ 23 #if BITS_PER_LONG == 64
+ 24
+ 25 # define do_div(n,base) ({                                      \
+ 26         uint32_t __base = (base);                               \
+ 27         uint32_t __rem;                                         \
+ 28         __rem = ((uint64_t)(n)) % __base;                       \
+ 29         (n) = ((uint64_t)(n)) / __base;                         \
+ 30         __rem;                                                  \
+ 31  })
+ 32
+ 33 #elif BITS_PER_LONG == 32
+ 34
+ 35 extern uint32_t __div64_32(uint64_t *dividend, uint32_t divisor);
+ 36
+ 37 /* The unnecessary pointer compare is there
+ 38  * to check for type safety (n must be 64bit)
+ 39  */
+ 40 # define do_div(n,base) ({                              \
+ 41         uint32_t __base = (base);                       \
+ 42         uint32_t __rem;                                 \
+ 43         (void)(((typeof((n)) *)0) == ((uint64_t *)0));  \
+ 44         if (likely(((n) >> 32) == 0)) {                 \
+ 45                 __rem = (uint32_t)(n) % __base;         \
+ 46                 (n) = (uint32_t)(n) / __base;           \
+ 47         } else                                          \
+ 48                 __rem = __div64_32(&(n), __base);       \
+ 49         __rem;                                          \
+ 50  })
+
+
+And for division operation, architectures are signed/unsigned
+sensitive, e.g. div_u64() and div_s64(), they are different.
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
