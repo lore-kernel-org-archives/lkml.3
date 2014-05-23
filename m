@@ -1,56 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbaEWNjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:39:39 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:50737 "EHLO vps0.lunn.ch"
+	id S1752578AbaEWNjn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:39:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59642 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313AbaEWNjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:39:37 -0400
-Date: Fri, 23 May 2014 15:36:08 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/5] Documentation: dt-bindings: document the Armada 375
- USB cluster binding
-Message-ID: <20140523133608.GB31314@lunn.ch>
-References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com>
- <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com>
- <537F13B2.6070500@ti.com>
- <20140523132145.GA31314@lunn.ch>
+	id S1751313AbaEWNjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 09:39:40 -0400
+Date: Fri, 23 May 2014 15:39:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/9] mm: memcontrol: do not acquire page_cgroup lock for
+ kmem pages
+Message-ID: <20140523133938.GC22135@dhcp22.suse.cz>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-8-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140523132145.GA31314@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398889543-23671-8-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Do you want one .txt file per driver, or can we combine binding
-> documentations into one file? There should already be a mvebu-phy.txt,
-> which contains the sata phy usable on some of the Armada SoC families.
-> This binding could be appended to it.
+I am adding Vladimir to CC
 
-Ah. Humm, well! It seems the patch adding the mvebu-phy.txt fell
-through a crack when adding the driver.
+On Wed 30-04-14 16:25:41, Johannes Weiner wrote:
+> Kmem page charging and uncharging is serialized by means of exclusive
+> access to the page.  Do not take the page_cgroup lock and don't set
+> pc->flags atomically.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Kishon could you take
-http://www.spinics.net/lists/devicetree/msg17018.html into your tree?
-It should of been taken the same time you took the actual driver,
-http://www.spinics.net/lists/devicetree/msg17011.html into your tree.
+The patch is correct I just have some comments below.
+Anyway
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-I can resend that one missing patch if you want.
+> ---
+>  mm/memcontrol.c | 16 +++-------------
+>  1 file changed, 3 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c528ae9ac230..d3961fce1d54 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3535,10 +3535,8 @@ void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
+>  	}
+>  
 
-  Andrew
+	/*
+	 * given page is newly allocated and invisible to everybody but
+	 * the caller so there is no need to use page_cgroup lock nor
+	 * SetPageCgroupUsed
+	 */
+
+would be helpful?
+
+>  	pc = lookup_page_cgroup(page);
+> -	lock_page_cgroup(pc);
+>  	pc->mem_cgroup = memcg;
+> -	SetPageCgroupUsed(pc);
+> -	unlock_page_cgroup(pc);
+> +	pc->flags = PCG_USED;
+>  }
+>  
+>  void __memcg_kmem_uncharge_pages(struct page *page, int order)
+> @@ -3548,19 +3546,11 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
+>  
+>  
+>  	pc = lookup_page_cgroup(page);
+> -	/*
+> -	 * Fast unlocked return. Theoretically might have changed, have to
+> -	 * check again after locking.
+> -	 */
+
+This comment was there since the code has been merged. Maybe it was true
+at the time but after "mm: get rid of __GFP_KMEMCG" it is definitely out
+of date.
+
+	/*
+	 * the pages is going away and will be freed and nobody can see
+	 * it anymore so no need to take page_cgroup lock.
+	 */
+>  	if (!PageCgroupUsed(pc))
+>  		return;
+>  
+> -	lock_page_cgroup(pc);
+> -	if (PageCgroupUsed(pc)) {
+> -		memcg = pc->mem_cgroup;
+> -		ClearPageCgroupUsed(pc);
+> -	}
+> -	unlock_page_cgroup(pc);
+
+maybe add
+	WARN_ON_ONCE(pc->flags != PCG_USED);
+
+to check for an unexpected flags usage in the kmem path?
+
+> +	memcg = pc->mem_cgroup;
+> +	pc->flags = 0;
+>  
+>  	/*
+>  	 * We trust that only if there is a memcg associated with the page, it
+> -- 
+> 1.9.2
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
