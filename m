@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaEWWlB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 18:41:01 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:55053 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaEWWlA (ORCPT
+	id S1751417AbaEWWoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 18:44:34 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:64604 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbaEWWoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 18:41:00 -0400
+	Fri, 23 May 2014 18:44:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400846226.25914.16.camel@debian>
-References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
-	<537C040E.3040901@jp.fujitsu.com>
-	<1400637782.14703.32.camel@debian>
-	<537C12BC.6080408@jp.fujitsu.com>
-	<1400642398.14703.42.camel@debian>
-	<537C1F24.8000604@jp.fujitsu.com>
-	<3908561D78D1C84285E8C5FCA982C28F328115FD@ORSMSX114.amr.corp.intel.com>
-	<1400808739.19982.48.camel@debian>
-	<20140523091041.GA21332@pd.tnic>
-	<1400846226.25914.16.camel@debian>
-Date: Fri, 23 May 2014 15:40:58 -0700
-Message-ID: <CA+8MBbJ=zFPFJ=3e6qez_eJZ23AN+s5MF2DsvCDYXPpRvBxt+A@mail.gmail.com>
-Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
- to Per-CPU rather than only monarch CPU
-From: Tony Luck <tony.luck@gmail.com>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
+In-Reply-To: <537FB995.5070604@gmail.com>
+References: <1400841343-6016-1-git-send-email-t.dakhran@samsung.com>
+	<1400841343-6016-2-git-send-email-t.dakhran@samsung.com>
+	<537FB995.5070604@gmail.com>
+Date: Sat, 24 May 2014 02:44:30 +0400
+Message-ID: <CANhyOUd8Q2nzh_bF6LZNuv8keVUB3F45PocYrLP_B=D_Q3tWuQ@mail.gmail.com>
+Subject: Re: [PATCH v10 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
+From: Tarek Dakhran <t.dakhran@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Tarek Dakhran <t.dakhran@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 4:57 AM, Chen Yucong <slaoub@gmail.com> wrote:
-> If (mca_cfg.tolerant == 2 || mce_cfg.tolerant == 3), what can you do for
-> it?
+Hi Tomazs,
 
-Maybe we need to look again at the effects of "tolerant" - and maybe
-specify what happens at various levels,  There are some obvious
-silly bits of code (picking one that is my fault):
-        if (cfg->tolerant < 3) {
-                if (no_way_out)
-                        mce_panic("Fatal machine check on current
-CPU", &m, msg);
-                if (worst == MCE_AR_SEVERITY) {
-                        /* schedule action before return to userland */
-                        mce_save_info(m.addr, m.mcgstatus & MCG_STATUS_RIPV);
-                        set_thread_flag(TIF_MCE_NOTIFY);
-                } else if (kill_it) {
-                        force_sig(SIGBUS, current);
-                }
-        }
+On Sat, May 24, 2014 at 1:11 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Hi Tarek,
+>
+> With v2 of the series I mentioned in review of previous version [1],
+> this patch can be skipped.
+>
+> [1] http://www.spinics.net/lists/linux-samsung-soc/msg31258.html
+>
+> Best regards,
+> Tomasz
+>
+> On 23.05.2014 12:35, Tarek Dakhran wrote:
+[snip]
+>> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+>> index 739bdc8..971baf0 100644
+>> --- a/arch/arm/mach-exynos/firmware.c
+>> +++ b/arch/arm/mach-exynos/firmware.c
+>> @@ -50,7 +50,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+>>
+>>       boot_reg = sysram_ns_base_addr + 0x1c;
+>>
+>> -     if (!soc_is_exynos4212())
+>> +     if (!soc_is_exynos4212() && !soc_is_exynos5410())
+>>               boot_reg += 4*cpu;
+>>
+>>       __raw_writel(boot_addr, boot_reg);
+>>
 
-Why is the MCE_AR_SEVERITY recovery code not even attempted
-if tolerant is >=3?  That block of code dates back to before there were
-any recoverable cases ... so the insane option of just ignoring the error
-and hoping that the end result wasn't too bad made some sort of sense
-when compared against a machine crash and not getting any answer at
-all.
+I need to define SoC type to set correct bootreg in firmware,
+otherwise only one cpu can be booted.
+So, this stuff is needed.
 
-Or one that Andi pointed out years ago (and had a fix in a tree for):
-
-        if (order == 1) {
-                /* CHECKME: Can this race with a parallel hotplug? */
-                int cpus = num_online_cpus();
-
-                /*
-                 * Monarch: Wait for everyone to go through their scanning
-                 * loops.
-                 */
-                while (atomic_read(&mce_executing) <= cpus) {
-
-What if some cpus were offline when this machine check arrived?
-Our "offline" code doesn't do anything to the h/w to prevent those
-cpus from joining in the machine check fun. So we'll see more than
-num_online_cpus() processors arrive to process the machine check.
-Andi's fix was in the start of do_machine_check() and just had each
-cpu that showed up check whether it was listed as "online" by Linux.
-If not, it just cleared MCG_STATUS and returned.  I didn't apply it
-because I thought we needed to be a bit more robust (what if the offline
-cpu actually did have a problem? ... we should at least check that
-MCG_STATUS.RIPV=1 before rashly returning ... perhaps even more
-tests are needed if the cpu had never been online at all).
-
-So I'm happy that you are taking an interest in machine check code.
-I think there are places where it can be made a lot better. I don't
-think that moving where mces_seen gets cleared is one of those
-places.
-
--Tony
+Best regards,
+     Tarek
