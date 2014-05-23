@@ -1,190 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaEWMzh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:55:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13019 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045AbaEWMwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:52:30 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 1/4] AFS: Fix cache manager service handlers
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: dhowells@redhat.com, linux-afs@lists.infradead.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Date: Fri, 23 May 2014 13:52:07 +0100
-Message-ID: <20140523125207.25385.21747.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20140523125200.25385.8586.stgit@warthog.procyon.org.uk>
-References: <20140523125200.25385.8586.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752561AbaEWMvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:51:15 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:46077 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130AbaEWMvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 08:51:11 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v1] of/irq: do irq resolution in
+ platform_get_irq_byname()
+To: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>
+Cc: santosh.shilimkar@ti.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+In-Reply-To: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
+References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
+Date: Fri, 23 May 2014 17:03:33 +0900
+Message-Id: <20140523080333.66720C4176E@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the cache manager RPC service handlers.  The afs_send_empty_reply() and
-afs_send_simple_reply() functions:
+On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
+> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
+> moves resolving of the interrupt resources in platform_get_irq().
+> But this solution isn't complete because platform_get_irq_byname()
+> need to be modified the same way.
+> 
+> Hence, fix it by adding interrupt resolution code at the
+> platform_get_irq_byname() function too.
+> 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Rob Herring <robh@kernel.org>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> 
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
- (a) Kill the call and free up the buffers associated with it if they fail.
+Applied, Thanks.
 
- (b) Return with call intact if it they succeed.
+g.
 
-However, none of the callers actually check the result or clean up if
-successful - and may use the now non-existent data if it fails.
-
-This was detected by Dan Carpenter using a static checker:
-
-	The patch 08e0e7c82eea: "[AF_RXRPC]: Make the in-kernel AFS
-	filesystem use AF_RXRPC." from Apr 26, 2007, leads to the following
-	static checker warning:
-	"fs/afs/cmservice.c:155 SRXAFSCB_CallBack()
-		 warn: 'call' was already freed."
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/afs/cmservice.c |   19 +++++++++++++++++++
- fs/afs/rxrpc.c     |   43 +++++++++++++++++++++----------------------
- 2 files changed, 40 insertions(+), 22 deletions(-)
-
-diff --git a/fs/afs/cmservice.c b/fs/afs/cmservice.c
-index 1c8c6cc6de30..4b0eff6da674 100644
---- a/fs/afs/cmservice.c
-+++ b/fs/afs/cmservice.c
-@@ -130,6 +130,15 @@ static void afs_cm_destructor(struct afs_call *call)
- {
- 	_enter("");
- 
-+	/* Break the callbacks here so that we do it after the final ACK is
-+	 * received.  The step number here must match the final number in
-+	 * afs_deliver_cb_callback().
-+	 */
-+	if (call->unmarshall == 6) {
-+		ASSERT(call->server && call->count && call->request);
-+		afs_break_callbacks(call->server, call->count, call->request);
-+	}
-+
- 	afs_put_server(call->server);
- 	call->server = NULL;
- 	kfree(call->buffer);
-@@ -272,6 +281,16 @@ static int afs_deliver_cb_callback(struct afs_call *call, struct sk_buff *skb,
- 		_debug("trailer");
- 		if (skb->len != 0)
- 			return -EBADMSG;
-+
-+		/* Record that the message was unmarshalled successfully so
-+		 * that the call destructor can know do the callback breaking
-+		 * work, even if the final ACK isn't received.
-+		 *
-+		 * If the step number changes, then afs_cm_destructor() must be
-+		 * updated also.
-+		 */
-+		call->unmarshall++;
-+	case 6:
- 		break;
- 	}
- 
-diff --git a/fs/afs/rxrpc.c b/fs/afs/rxrpc.c
-index ef943df73b8c..9226a6674d7f 100644
---- a/fs/afs/rxrpc.c
-+++ b/fs/afs/rxrpc.c
-@@ -184,6 +184,19 @@ static void afs_free_call(struct afs_call *call)
- }
- 
- /*
-+ * End a call
-+ */
-+static void afs_end_call(struct afs_call *call)
-+{
-+	if (call->rxcall) {
-+		rxrpc_kernel_end_call(call->rxcall);
-+		call->rxcall = NULL;
-+	}
-+	call->type->destructor(call);
-+	afs_free_call(call);
-+}
-+
-+/*
-  * allocate a call with flat request and reply buffers
-  */
- struct afs_call *afs_alloc_flat_call(const struct afs_call_type *type,
-@@ -383,11 +396,8 @@ error_do_abort:
- 	rxrpc_kernel_abort_call(rxcall, RX_USER_ABORT);
- 	while ((skb = skb_dequeue(&call->rx_queue)))
- 		afs_free_skb(skb);
--	rxrpc_kernel_end_call(rxcall);
--	call->rxcall = NULL;
- error_kill_call:
--	call->type->destructor(call);
--	afs_free_call(call);
-+	afs_end_call(call);
- 	_leave(" = %d", ret);
- 	return ret;
- }
-@@ -509,12 +519,8 @@ static void afs_deliver_to_call(struct afs_call *call)
- 	if (call->state >= AFS_CALL_COMPLETE) {
- 		while ((skb = skb_dequeue(&call->rx_queue)))
- 			afs_free_skb(skb);
--		if (call->incoming) {
--			rxrpc_kernel_end_call(call->rxcall);
--			call->rxcall = NULL;
--			call->type->destructor(call);
--			afs_free_call(call);
--		}
-+		if (call->incoming)
-+			afs_end_call(call);
- 	}
- 
- 	_leave("");
-@@ -564,10 +570,7 @@ static int afs_wait_for_call_to_complete(struct afs_call *call)
- 	}
- 
- 	_debug("call complete");
--	rxrpc_kernel_end_call(call->rxcall);
--	call->rxcall = NULL;
--	call->type->destructor(call);
--	afs_free_call(call);
-+	afs_end_call(call);
- 	_leave(" = %d", ret);
- 	return ret;
- }
-@@ -790,10 +793,7 @@ void afs_send_empty_reply(struct afs_call *call)
- 		_debug("oom");
- 		rxrpc_kernel_abort_call(call->rxcall, RX_USER_ABORT);
- 	default:
--		rxrpc_kernel_end_call(call->rxcall);
--		call->rxcall = NULL;
--		call->type->destructor(call);
--		afs_free_call(call);
-+		afs_end_call(call);
- 		_leave(" [error]");
- 		return;
- 	}
-@@ -823,17 +823,16 @@ void afs_send_simple_reply(struct afs_call *call, const void *buf, size_t len)
- 	call->state = AFS_CALL_AWAIT_ACK;
- 	n = rxrpc_kernel_send_data(call->rxcall, &msg, len);
- 	if (n >= 0) {
-+		/* Success */
- 		_leave(" [replied]");
- 		return;
- 	}
-+
- 	if (n == -ENOMEM) {
- 		_debug("oom");
- 		rxrpc_kernel_abort_call(call->rxcall, RX_USER_ABORT);
- 	}
--	rxrpc_kernel_end_call(call->rxcall);
--	call->rxcall = NULL;
--	call->type->destructor(call);
--	afs_free_call(call);
-+	afs_end_call(call);
- 	_leave(" [error]");
- }
- 
+> ---
+> Changes in v1:
+> - use of_property_match_string() to get IRQ index by name
+> - minor comments fixed
+> 
+> RFC:
+>  https://lkml.org/lkml/2014/5/19/325
+> 
+>  drivers/base/platform.c |    7 +++++--
+>  drivers/of/irq.c        |   22 ++++++++++++++++++++++
+>  include/linux/of_irq.h  |    5 +++++
+>  3 files changed, 32 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 5b47210..9e9227e 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -131,9 +131,12 @@ EXPORT_SYMBOL_GPL(platform_get_resource_byname);
+>   */
+>  int platform_get_irq_byname(struct platform_device *dev, const char *name)
+>  {
+> -	struct resource *r = platform_get_resource_byname(dev, IORESOURCE_IRQ,
+> -							  name);
+> +	struct resource *r;
+> +
+> +	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
+> +		return of_irq_get_byname(dev->dev.of_node, name);
+>  
+> +	r = platform_get_resource_byname(dev, IORESOURCE_IRQ, name);
+>  	return r ? r->start : -ENXIO;
+>  }
+>  EXPORT_SYMBOL_GPL(platform_get_irq_byname);
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index 5aeb894..3e06a69 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -406,6 +406,28 @@ int of_irq_get(struct device_node *dev, int index)
+>  }
+>  
+>  /**
+> + * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq number
+> + * @dev: pointer to device tree node
+> + * @name: irq name
+> + *
+> + * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
+> + * is not yet created, or error code in case of any other failure.
+> + */
+> +int of_irq_get_byname(struct device_node *dev, const char *name)
+> +{
+> +	int index;
+> +
+> +	if (unlikely(!name))
+> +		return -EINVAL;
+> +
+> +	index = of_property_match_string(dev, "interrupt-names", name);
+> +	if (index < 0)
+> +		return index;
+> +
+> +	return of_irq_get(dev, index);
+> +}
+> +
+> +/**
+>   * of_irq_count - Count the number of IRQs a node uses
+>   * @dev: pointer to device tree node
+>   */
+> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+> index 6404253..bfec136 100644
+> --- a/include/linux/of_irq.h
+> +++ b/include/linux/of_irq.h
+> @@ -45,6 +45,7 @@ extern void of_irq_init(const struct of_device_id *matches);
+>  #ifdef CONFIG_OF_IRQ
+>  extern int of_irq_count(struct device_node *dev);
+>  extern int of_irq_get(struct device_node *dev, int index);
+> +extern int of_irq_get_byname(struct device_node *dev, const char *name);
+>  #else
+>  static inline int of_irq_count(struct device_node *dev)
+>  {
+> @@ -54,6 +55,10 @@ static inline int of_irq_get(struct device_node *dev, int index)
+>  {
+>  	return 0;
+>  }
+> +static inline int of_irq_get_byname(struct device_node *dev, const char *name)
+> +{
+> +	return 0;
+> +}
+>  #endif
+>  
+>  #if defined(CONFIG_OF)
+> -- 
+> 1.7.9.5
+> 
 
