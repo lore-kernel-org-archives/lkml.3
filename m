@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449AbaEWURX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 16:17:23 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:45564 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaEWURV (ORCPT
+	id S1751397AbaEWUS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 16:18:27 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55414 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaEWUSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 16:17:21 -0400
-Date: Fri, 23 May 2014 22:17:03 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] sbus: Introduce the use of the managed version of kzalloc
-Message-ID: <20140523201703.GA17295@ravnborg.org>
-References: <20140522203536.GA16457@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140522203536.GA16457@himangi-Dell>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 23 May 2014 16:18:25 -0400
+Date: Fri, 23 May 2014 16:18:23 -0400 (EDT)
+Message-Id: <20140523.161823.1006372695373018122.davem@davemloft.net>
+To: David.Laight@ACULAB.COM
+Cc: eric.dumazet@gmail.com, jim_baxter@mentor.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kamal@canonical.com, bhutchings@solarflare.com, edumazet@google.com,
+        mszeredi@suse.cz, fw@strlen.de
+Subject: Re: skbuff truesize incorrect.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>
+References: <537E4AFD.20304@mentor.com>
+	<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
+	<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 23 May 2014 13:18:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Himangi.
+From: David Laight <David.Laight@ACULAB.COM>
+Date: Fri, 23 May 2014 08:52:13 +0000
 
-On Fri, May 23, 2014 at 02:05:36AM +0530, Himangi Saraogi wrote:
-> This patch moves data allocated using kzalloc to managed data allocated
-> using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-> functions. The header file is added to make the devm function explicitly
-> available. Also, unnecessary assignment statements and labels are
-> removed.
+> The hardware will put multiple ethernet frames into a single USB bulk data
+> message. To handle this the driver generates a URB that is (hopefully) long
+> enough for the longest USB message (typically 32k is assumed to be enough).
+> The URB that usb_net generated have the data in a linear skb - which then
+> has a large 'truesize'.
 > 
-> ---
-> Not compile tested due to incompatible architecture.
-I can confirm that i builds.
+> Since USB bulk data are terminated by a short fragment there is actually
+> no need for the URB be long enough for the full message. Provided the
+> URB are multiples of the USB message size (1k for USB 3) the message
+> can be received into multiple URB - the driver just has to be willing
+> to merge URB buffers (as well as split them) when generating the ethernet
+> frames.
 
+I think we could take a less invasive approach.
 
-> 
-> To send to: "David S. Miller" <davem@davemloft.net>,sparclinux@vger.kernel.org,linux-kernel@vger.kernel.org
-> 
->  drivers/sbus/char/display7seg.c | 23 ++++++++---------------
->  1 file changed, 8 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
-> index 7c71e7b..367b64d 100644
-> --- a/drivers/sbus/char/display7seg.c
-> +++ b/drivers/sbus/char/display7seg.c
-> @@ -20,6 +20,7 @@
->  #include <asm/io.h>
->  
->  #include <asm/display7seg.h>
-> +#include <linux/device.h>
->  
->  #define D7S_MINOR	193
->  #define DRIVER_NAME	"d7s"
-> @@ -173,22 +174,21 @@ static struct miscdevice d7s_miscdev = {
->  static int d7s_probe(struct platform_device *op)
->  {
->  	struct device_node *opts;
-> -	int err = -EINVAL;
-> +	int err;
->  	struct d7s *p;
->  	u8 regs;
->  
->  	if (d7s_device)
-> -		goto out;
-> +		return -EINVAL;
->  
-> -	p = kzalloc(sizeof(*p), GFP_KERNEL);
-> -	err = -ENOMEM;
-> +	p = devm_kzalloc(&op->dev, sizeof(*p), GFP_KERNEL);
->  	if (!p)
-> -		goto out;
-> +		return -ENOMEM;
->  
->  	p->regs = of_ioremap(&op->resource[0], 0, sizeof(u8), "d7s");
->  	if (!p->regs) {
->  		printk(KERN_ERR PFX "Cannot map chip registers\n");
-> -		goto out_free;
-> +		return -ENOMEM;
+Use whatever order page is needed for that 32K chunk for the URB,
+but split up the compound page so that the individual pages can be
+accounted for separately.
 
-Can you please explain how it can be correct to return "-ENOMEM",
-when we fail to map the chip registers.
-Before your patch this resulted in "-EINVAL" - so this is a change in behaviour.
+Hook up the pages into the SKB frag array, and only account PAGE_SIZE
+into the SKB truesize for the individual pages actually used from
+the superpage.
 
+This will largely retain the URB allocation and processing scheme,
+yet at the same time dramatically decrease the truesize overrage
+factor.
 
->  	}
->  
->  	err = misc_register(&d7s_miscdev);
-> @@ -222,17 +222,11 @@ static int d7s_probe(struct platform_device *op)
->  
->  	dev_set_drvdata(&op->dev, p);
->  	d7s_device = p;
-> -	err = 0;
-> -
-> -out:
-> -	return err;
-> +	return 0;
->  
->  out_iounmap:
->  	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
-> -
-> -out_free:
-> -	kfree(p);
-> -	goto out;
-> +	return err;
->  }
-It is not am improvement IMO that you replace the nice goto
-based error handling with random return points in the code.
+> What the driver needs to do us allocate URB with 2k (or 4k) buffers and
+> only allocate the skb when processing the receive data.
+> Unfortunately this is a major rework of usb_net.c
 
-	Sam
+> Note that some of the usb ethernet drivers allocate large skb then
+> lie about the truesize.
+
+Which has to be fixed, as Eric explained.
