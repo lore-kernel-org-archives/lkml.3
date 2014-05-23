@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaEWKcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:32:54 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:48018 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078AbaEWKcv (ORCPT
+	id S1753334AbaEWKff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:35:35 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:53785 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140AbaEWKcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:51 -0400
+	Fri, 23 May 2014 06:32:54 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 59/71] ARM: sun6i: a31: Add support for the High Speed Timers
-Date: Fri, 23 May 2014 12:31:39 +0200
-Message-Id: <1400841111-6683-59-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 62/71] clocksource: Fix type confusion for clocksource_mmio_readX_Y
+Date: Fri, 23 May 2014 12:31:42 +0200
+Message-Id: <1400841111-6683-62-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -21,43 +21,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-The Allwinner A31 has support for four high speed timers. Apart for the
-number of timers (4 vs 2), it's basically the same logic than the high
-speed timers found in the sun5i chips.
+The types' definations are:
+   o  cycle_t       -> u64
+   o  readl_relaxed -> u32
+   o  readw_relaxed -> u16
 
-Now that we have a driver to support it, we can enable them in the
-device tree.
+So let clocksource_mmio_readX_Ys return a cast to cycle_t, though
+this maybe look reduntant sometimes, it make sense and they will be
+more readable and less confusion...
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+This patch clarifies the functions type and fix it.
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- arch/arm/boot/dts/sun6i-a31.dtsi |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/clocksource/mmio.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index d45efa7..8cee8a1 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -428,6 +428,17 @@
- 			status = "disabled";
- 		};
+diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+index c0e2512..19a6b3f 100644
+--- a/drivers/clocksource/mmio.c
++++ b/drivers/clocksource/mmio.c
+@@ -22,22 +22,22 @@ static inline struct clocksource_mmio *to_mmio_clksrc(struct clocksource *c)
  
-+		timer@01c60000 {
-+			compatible = "allwinner,sun6i-a31-hstimer", "allwinner,sun7i-a20-hstimer";
-+			reg = <0x01c60000 0x1000>;
-+			interrupts = <0 51 4>,
-+				     <0 52 4>,
-+				     <0 53 4>,
-+				     <0 54 4>;
-+			clocks = <&ahb1_gates 19>;
-+			resets = <&ahb1_rst 19>;
-+		};
-+
- 		spi0: spi@01c68000 {
- 			compatible = "allwinner,sun6i-a31-spi";
- 			reg = <0x01c68000 0x1000>;
+ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
+ {
+-	return readl_relaxed(to_mmio_clksrc(c)->reg);
++	return (cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
+ }
+ 
+ cycle_t clocksource_mmio_readl_down(struct clocksource *c)
+ {
+-	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
++	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
+ }
+ 
+ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+ {
+-	return readw_relaxed(to_mmio_clksrc(c)->reg);
++	return (cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
+ }
+ 
+ cycle_t clocksource_mmio_readw_down(struct clocksource *c)
+ {
+-	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
++	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
+ }
+ 
+ /**
 -- 
 1.7.9.5
 
