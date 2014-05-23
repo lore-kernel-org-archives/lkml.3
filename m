@@ -1,135 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaEWKty (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:49:54 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:45893 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaEWKcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:01 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: tglx@linutronix.de, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 20/71] clocksource: sh_cmt: Request IRQ for clock event device only
-Date: Fri, 23 May 2014 12:31:00 +0200
-Message-Id: <1400841111-6683-20-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
-References: <537F214C.8000700@linaro.org>
- <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+	id S1753868AbaEWKuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:50:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38680 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130AbaEWKuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 06:50:09 -0400
+Message-ID: <537F27D2.40301@ti.com>
+Date: Fri, 23 May 2014 13:49:54 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] video: fbdev: grvga.c:  Fix for possible null pointer
+ dereference
+References: <1400621759-7814-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1400621759-7814-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="KDO98ILTmGgpurB4dIgi2BWd350aPX4PK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+--KDO98ILTmGgpurB4dIgi2BWd350aPX4PK
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Clock sources don't need an IRQ, request the IRQ only for channels used
-as clock event devices.
+On 21/05/14 00:35, Rickard Strandqvist wrote:
+> There is otherwise a risk of a possible null pointer dereference.
+>=20
+> Was largely found by using a static code analysis program called cppche=
+ck.
+>=20
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital=
+=2Ese>
+> ---
+>  drivers/video/fbdev/grvga.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/fbdev/grvga.c b/drivers/video/fbdev/grvga.c
+> index c078701..2db5bb1 100644
+> --- a/drivers/video/fbdev/grvga.c
+> +++ b/drivers/video/fbdev/grvga.c
+> @@ -514,9 +514,10 @@ free_fb:
+>  static int grvga_remove(struct platform_device *device)
+>  {
+>  	struct fb_info *info =3D dev_get_drvdata(&device->dev);
+> -	struct grvga_par *par =3D info->par;
+> +	struct grvga_par *par;
+> =20
+>  	if (info) {
+> +		par =3D info->par;
+>  		unregister_framebuffer(info);
+>  		fb_dealloc_cmap(&info->cmap);
+> =20
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/clocksource/sh_cmt.c |   51 ++++++++++++++++++++++--------------------
- 1 file changed, 27 insertions(+), 24 deletions(-)
+Thanks, queued this and the next one (video: fbdev: s3fb.c:  Fix for
+possible null pointer dereference) for 3.16.
 
-diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 9f215e7..bc8d025 100644
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -785,10 +785,28 @@ static void sh_cmt_clock_event_resume(struct clock_event_device *ced)
- 	pm_genpd_syscore_poweron(&ch->cmt->pdev->dev);
- }
- 
--static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
--				       const char *name)
-+static int sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
-+				      const char *name)
- {
- 	struct clock_event_device *ced = &ch->ced;
-+	int irq;
-+	int ret;
-+
-+	irq = platform_get_irq(ch->cmt->pdev, ch->cmt->legacy ? 0 : ch->index);
-+	if (irq < 0) {
-+		dev_err(&ch->cmt->pdev->dev, "ch%u: failed to get irq\n",
-+			ch->index);
-+		return irq;
-+	}
-+
-+	ret = request_irq(irq, sh_cmt_interrupt,
-+			  IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING,
-+			  dev_name(&ch->cmt->pdev->dev), ch);
-+	if (ret) {
-+		dev_err(&ch->cmt->pdev->dev, "ch%u: failed to request irq %d\n",
-+			ch->index, irq);
-+		return ret;
-+	}
- 
- 	ced->name = name;
- 	ced->features = CLOCK_EVT_FEAT_PERIODIC;
-@@ -803,14 +821,20 @@ static void sh_cmt_register_clockevent(struct sh_cmt_channel *ch,
- 	dev_info(&ch->cmt->pdev->dev, "ch%u: used for clock events\n",
- 		 ch->index);
- 	clockevents_register_device(ced);
-+
-+	return 0;
- }
- 
- static int sh_cmt_register(struct sh_cmt_channel *ch, const char *name,
- 			   bool clockevent, bool clocksource)
- {
-+	int ret;
-+
- 	if (clockevent) {
- 		ch->cmt->has_clockevent = true;
--		sh_cmt_register_clockevent(ch, name);
-+		ret = sh_cmt_register_clockevent(ch, name);
-+		if (ret < 0)
-+			return ret;
- 	}
- 
- 	if (clocksource) {
-@@ -825,7 +849,6 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
- 				unsigned int hwidx, bool clockevent,
- 				bool clocksource, struct sh_cmt_device *cmt)
- {
--	int irq;
- 	int ret;
- 
- 	/* Skip unused channels. */
-@@ -869,17 +892,6 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
- 		}
- 	}
- 
--	if (cmt->legacy)
--		irq = platform_get_irq(cmt->pdev, 0);
--	else
--		irq = platform_get_irq(cmt->pdev, ch->index);
--
--	if (irq < 0) {
--		dev_err(&cmt->pdev->dev, "ch%u: failed to get irq\n",
--			ch->index);
--		return irq;
--	}
--
- 	if (cmt->info->width == (sizeof(ch->max_match_value) * 8))
- 		ch->max_match_value = ~0;
- 	else
-@@ -904,15 +916,6 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch, unsigned int index,
- 	}
- 	ch->cs_enabled = false;
- 
--	ret = request_irq(irq, sh_cmt_interrupt,
--			  IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING,
--			  dev_name(&cmt->pdev->dev), ch);
--	if (ret) {
--		dev_err(&cmt->pdev->dev, "ch%u: failed to request irq %d\n",
--			ch->index, irq);
--		return ret;
--	}
--
- 	return 0;
- }
- 
--- 
-1.7.9.5
+ Tomi
 
+
+
+
+--KDO98ILTmGgpurB4dIgi2BWd350aPX4PK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTfyfSAAoJEPo9qoy8lh71MbMP+wZ+61e+QEhGJyWC/YMnIfIj
+xUvIxB7QtDLaMMebfj1PY0v9A1rEc+WTOKodxBL/2lulsFMlje50lwHnDHAem7mY
+frmkEt3CK+r2F6Sf1ZG6q6cHhEEXMjMl1rmvp8U1FkgYmvqr7oM6OfZeSmHxSAz5
+W1ykKoYMJZFhyJZ7QBlenzZIpJT09iiSTWM0PU2a+ywzUpapb3aUXgPoX04MCHPQ
+bXIpm8BTaXdRXbhgbbZUmouhf90k/YHs4iQ/yFIBR68dYyJXNekmEHAE+3Dg50bC
+KjhnNJIT1Pf0kXn0NM/fawjJcFHKc2KWLYNJG/jDKJM+Lww7PuYBaFRQuc9iB5xN
+Bp8lQo7sHlJNgnNqw9jwhjTfAKSINEMzGdDTRUuU+UmwZf8NCH+kGuxXyZH7yqoa
+12/vHJK4TpkcQ86v9lJBcmaSLUXJiApbnLO3l0r2laDyl+jjuRbf/R39vjqBBuc8
++Ry17Oa9bZxm4ZwTBxpI7JtG8GMMJlQGKIdZntOtfJ01YIBAvjXtyWtG17MZWl9E
+rAnqeR7nsrcHbtTcdr8yDA1aLqQ8sFtN+UzwSbxI2uC7INKwR5Z8N/LDU/qYJ3Xh
+uJ+EJ+ouM1KFgDU7MO/hbDZsqD8sUqkDkBk/zgjv4ngNl0J/CFdd8PgvxYPa0KPv
+IDLLbOPLlcJnzKXhPsma
+=Vz5T
+-----END PGP SIGNATURE-----
+
+--KDO98ILTmGgpurB4dIgi2BWd350aPX4PK--
