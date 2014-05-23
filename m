@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450AbaEWNTT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:19:19 -0400
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:53024 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaEWNTQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:19:16 -0400
-Date: Fri, 23 May 2014 09:21:44 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
-        Sudeep Holla <sudeep.holla@arm.com>
-Subject: Re: [PATCH V3 1/8] cpufreq: cpufreq-cpu0: remove dependency on
- thermal
-Message-ID: <20140523132144.GA3138@developer>
-References: <cover.1400736536.git.viresh.kumar@linaro.org>
- <c73c825beda0207867bd29e40fece217cbf15925.1400736536.git.viresh.kumar@linaro.org>
- <20140522145209.GA5246@developer>
- <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
+	id S1752584AbaEWNUs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:20:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59300 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386AbaEWNUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 09:20:47 -0400
+Date: Fri, 23 May 2014 15:20:43 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/9] mm: memcontrol: remove ordering between
+ pc->mem_cgroup and PageCgroupUsed
+Message-ID: <20140523132043.GB22135@dhcp22.suse.cz>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-7-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1398889543-23671-7-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+On Wed 30-04-14 16:25:40, Johannes Weiner wrote:
+> There is a write barrier between setting pc->mem_cgroup and
+> PageCgroupUsed, which was added to allow LRU operations to lookup the
+> memcg LRU list of a page without acquiring the page_cgroup lock.  But
+> ever since 38c5d72f3ebe ("memcg: simplify LRU handling by new rule"),
+> pages are ensured to be off-LRU while charging, so nobody else is
+> changing LRU state while pc->mem_cgroup is being written.
 
-On Fri, May 23, 2014 at 10:03:27AM +0530, Viresh Kumar wrote:
-> On 22 May 2014 20:22, Eduardo Valentin <edubezval@gmail.com> wrote:
-> > However, on CPUs that needs thermal managment, it makes sense to have
-> > such dependency, from functional perspective. Mainly because scaling
-> > frequency and voltage up would be allowed only when thermal management
-> > is enabled.
+This is quite confusing. Why do we have the lrucare path then?
+The code is quite tricky so this deserves a more detailed explanation
+IMO.
+
+There are only 3 paths which check both the flag and mem_cgroup (
+without page_cgroup_lock) get_mctgt_type* and mem_cgroup_page_lruvec AFAICS.
+None of them have rmb so there was no guarantee about ordering anyway.
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Anyway, the change is welcome
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c | 9 ---------
+>  1 file changed, 9 deletions(-)
 > 
-> AFAIK, dependencies in KCONFIG are only for fixing compilation time issues.
-
-
-Actually, they also impose module loading sequencing. 
-
-> As some APIs wouldn't be available without enabling some config options..
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 34407d99262a..c528ae9ac230 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2823,14 +2823,6 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>  	}
+>  
+>  	pc->mem_cgroup = memcg;
+> -	/*
+> -	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+> -	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+> -	 * is accessed after testing USED bit. To make pc->mem_cgroup visible
+> -	 * before USED bit, we need memory barrier here.
+> -	 * See mem_cgroup_add_lru_list(), etc.
+> -	 */
+> -	smp_wmb();
+>  	SetPageCgroupUsed(pc);
+>  
+>  	if (lrucare) {
+> @@ -3609,7 +3601,6 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+>  	for (i = 1; i < HPAGE_PMD_NR; i++) {
+>  		pc = head_pc + i;
+>  		pc->mem_cgroup = memcg;
+> -		smp_wmb();/* see __commit_charge() */
+>  		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
+>  	}
+>  	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
+> -- 
+> 1.9.2
 > 
-> If drivers fail at runtime because some API returned error, fix it for your
-> platform instead and not bug KCONFIG for that.
 
-Agreed, but I don't think this is the point of this thread, as you
-already stated in your patch description.
-
-> 
-> Thought we might consider some runtime dependencies here as well. For
-> example regulators. There probably are dummy routine available for cases
-> where CONFIG_REGULATOR (or whatever) isn't enabled and driver would
-> still compile, but it is guaranteed to fail as we don't continue when we get
-> errors from regulator APIs..
-
-I agree. We need to have runtime dependency, and that is the major
-concern on my behalf. The problem of Kconfig dependency is that it
-imposes sequencing only on module loading, not at boot sequencing.
-
-Another way around is returning -EPROBE_DEFER when some API is not ready at device probing for instance.
-
-> 
-> Though I still feel that this driver should still support platforms without
-> regulators (atleast in software, they might always have them on board :))..
-> And so dependencies for regulators may also die out one day..
-> 
-> The dependencies here mean: "This driver would never ever work/compile
-> if the dependencies aren't met.."
+-- 
+Michal Hocko
+SUSE Labs
