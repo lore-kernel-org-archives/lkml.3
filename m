@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321AbaEWX0N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 19:26:13 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:38835 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaEWX0K (ORCPT
+	id S1751379AbaEWX2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 19:28:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49195 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaEWX2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 19:26:10 -0400
+	Fri, 23 May 2014 19:28:41 -0400
+Message-ID: <537FD9A7.3010100@codeaurora.org>
+Date: Fri, 23 May 2014 16:28:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <537F7C4B.4010005@linaro.org>
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<537EF50B.2010101@linaro.org>
-	<CAPDyKFpTXrURM8OzNjO-RRfCFWGct4+_M4D8COdEurUhY46GWg@mail.gmail.com>
-	<537F02CA.5070304@linaro.org>
-	<CAJAp7OgkYg12C42yMqL+CJQG3hN2KeNs7L-ZO4b9JMAb_ofYog@mail.gmail.com>
-	<537F7C4B.4010005@linaro.org>
-Date: Fri, 23 May 2014 16:26:09 -0700
-Message-ID: <CAJAp7Oj3z4_GWHXdBO5+7AVriYh0fxb0XT2UESW-DmpQ9gSGTQ@mail.gmail.com>
-Subject: Re: [PATCH v2 00/14] Add Qualcomm SD Card Controller support
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: srinivas.kandagatla@linaro.org
+CC: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org,
+        Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH v3 13/13] mmc: mmci: Add Qcom specific pio_read function.
+References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org> <1400849589-7626-1-git-send-email-srinivas.kandagatla@linaro.org>
+In-Reply-To: <1400849589-7626-1-git-send-email-srinivas.kandagatla@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 9:50 AM, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> Hi Bjorn,
+On 05/23/14 05:53, srinivas.kandagatla@linaro.org wrote:
+> @@ -1022,6 +1025,40 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
+>  	}
+>  }
+>  
+> +static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
+> +			unsigned int remain)
+> +{
+> +	u32 *ptr = (u32 *) buffer;
+> +	unsigned int count = 0;
+> +	unsigned int words, bytes;
+> +	unsigned int fsize = host->variant->fifosize;
+> +
+> +	words = remain >> 2;
+> +	bytes = remain % 4;
+> +	/* read full words followed by leftover bytes */
+> +	if (words) {
+> +		while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
+> +			*ptr = readl(host->base + MMCIFIFO + (count % fsize));
+
+This doesn't look endianness agnostic. Shouldn't we use ioread32_rep()
+to read this fifo?
+
+> +			ptr++;
+> +			count += 4;
+> +			words--;
+> +			if (!words)
+> +				break;
+> +		}
+> +	}
+> +
+> +	if (unlikely(bytes)) {
+> +		unsigned char buf[4];
+> +		if (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
+> +			*buf = readl(host->base + MMCIFIFO + (count % fsize));
+> +			memcpy(ptr, buf, bytes);
+> +			count += bytes;
+> +		}
+> +	}
+> +
+> +	return count;
+> +}
+> +
+>  static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
+>  {
+>  	void __iomem *base = host->base;
 >
-> Thanks for the update.
 
-Hi Srini,
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-After pulling in Ulfs next branch again and reapplying v3 my issues
-are now gone. Not sure what I screwed up when I merged v2, this seems
-to work just fine now. Sorry for the fuzz.
-
-I haven't done any extensive testing, but my CRC issues are definitely
-sorted out. I will go ahead and see if I can get external mmc working
-now as well.
-
-Regards,
-Bjorn
