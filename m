@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaEWJY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:24:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59709 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958AbaEWJY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:24:56 -0400
-Message-ID: <537F13B2.6070500@ti.com>
-Date: Fri, 23 May 2014 14:54:02 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752619AbaEWJZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:25:13 -0400
+Received: from bastet.se.axis.com ([195.60.68.11]:53130 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaEWJZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 05:25:10 -0400
+Date: Fri, 23 May 2014 11:25:01 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jesper Nilsson <jespern@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH 2/4] cris: Update comments for generic idle conversion
+Message-ID: <20140523092501.GI9198@axis.com>
+References: <1400835265-21956-1-git-send-email-geert+renesas@glider.be>
+ <1400835265-21956-3-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/5] Documentation: dt-bindings: document the Armada 375
- USB cluster binding
-References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com> <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400835265-21956-3-git-send-email-geert+renesas@glider.be>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Friday 16 May 2014 09:52 PM, Gregory CLEMENT wrote:
-> Armada 375 comes with an USB2 host and device controller and an USB3
-> controller. The USB cluster control register allows to manage common
-> features of both USB controllers. This commit adds the Device Tree
-> binding documentation for this piece of hardware.
-
-Pls re-order so that the Documentation patch comes before the driver patch..
+On Fri, May 23, 2014 at 10:54:23AM +0200, Geert Uytterhoeven wrote:
+> As of commit 8dc7c5ecd8d0f739728d844ee794c4fae169f9c2 ("cris: Use generic
+> idle loop"), cris no longer provides cpu_idle().
 > 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  .../bindings/phy/armada-375-usb-phy-cluster.txt      | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt b/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
+>   - On cris-v10, etrax_gpio_wake_up_check() is called from
+>     default_idle() instead of cpu_idle(),
+>   - On cris-v32, etrax_gpio_wake_up_check() is not called from
+>     default_idle(), so remove this (copy-and-paste?) part.
 
-simpler file name? armada-phy?
+Yes, the comment for ETRAX FS (mach-fs) is definitely copy-pasted.
 
-Thanks
-Kishon
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+
+Reviewed-by: Jesper Nilsson <jesper.nilsson@axis.com>
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
