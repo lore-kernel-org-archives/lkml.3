@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaEWPFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:05:31 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35065 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752103AbaEWPF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:05:26 -0400
-Date: Fri, 23 May 2014 17:05:18 +0200
-From: Robert Richter <rric@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after
- Fam16h
-Message-ID: <20140523150518.GW27560@rric.localhost>
-References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521233802.GA21575@pd.tnic>
- <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
- <20140522191746.GL4383@pd.tnic>
- <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
- <537E8ACF.6000103@amd.com>
- <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
- <20140523115622.GU27560@rric.localhost>
- <CAErSpo5t+u+AYS5m6wo+AG7uXEkseUcmK9d-FF+SwpkcEWnkqA@mail.gmail.com>
+	id S1752792AbaEWPHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:07:11 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:61072 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbaEWPHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:07:09 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock and need_sched() contention
+References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
+	<1400233673-11477-1-git-send-email-vbabka@suse.cz>
+	<CAGa+x87-NRyK6kUiXNL_bRNEGm+DR6M3HPSLYEoq4t6Nrtnd_g@mail.gmail.com>
+	<CAAQ0ZWQDVxAzZVm86ATXd1JGUVoLXj_Y5Ske7htxH_6a4GPKRg@mail.gmail.com>
+	<537F082F.50501@suse.cz>
+Date: Fri, 23 May 2014 08:07:06 -0700
+In-Reply-To: <537F082F.50501@suse.cz> (Vlastimil Babka's message of "Fri, 23
+	May 2014 10:34:55 +0200")
+Message-ID: <7hvbswfs9x.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5t+u+AYS5m6wo+AG7uXEkseUcmK9d-FF+SwpkcEWnkqA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.05.14 07:01:41, Bjorn Helgaas wrote:
-> [I guess I've been using the wrong term here.  I think "ECS" just
-> refers to the extended config space itself, and I should have been
-> saying "IO ECS" or "EnableCf8ExtCfg".]
-> 
-> My understanding was that if we don't enable IO ECS and we don't have
-> MCFG, we will not be able to access extended config space.  The system
-> can certainly boot without extended config space, but some drivers may
-> not work correctly, so it would be a regression from the user point of
-> view.
+Vlastimil Babka <vbabka@suse.cz> writes:
 
-No, I got you right. If we disable IO ECS there is no fallback if MCFG
-fails... and this may cause a regression then.
+> On 05/23/2014 04:48 AM, Shawn Guo wrote:
+>> On 23 May 2014 07:49, Kevin Hilman <khilman@linaro.org> wrote:
+>>> On Fri, May 16, 2014 at 2:47 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
+>>>> Compaction uses compact_checklock_irqsave() function to periodically check for
+>>>> lock contention and need_resched() to either abort async compaction, or to
+>>>> free the lock, schedule and retake the lock. When aborting, cc->contended is
+>>>> set to signal the contended state to the caller. Two problems have been
+>>>> identified in this mechanism.
+>>>
+>>> This patch (or later version) has hit next-20140522 (in the form
+>>> commit 645ceea9331bfd851bc21eea456dda27862a10f4) and according to my
+>>> bisect, appears to be the culprit of several boot failures on ARM
+>>> platforms.
+>> 
+>> On i.MX6 where CMA is enabled, the commit causes the drivers calling
+>> dma_alloc_coherent() fail to probe.  Tracing it a little bit, it seems
+>> dma_alloc_from_contiguous() always return page as NULL after this
+>> commit.
+>> 
+>> Shawn
+>> 
+>
+> Really sorry, guys :/
+>
+> -----8<-----
+> From: Vlastimil Babka <vbabka@suse.cz>
+> Date: Fri, 23 May 2014 10:18:56 +0200
+> Subject: mm-compaction-properly-signal-and-act-upon-lock-and-need_sched-contention-fix2
+>
+> Step 1: Change function name and comment between v1 and v2 so that the return
+>         value signals the opposite thing.
+> Step 2: Change the call sites to reflect the opposite return value.
+> Step 3: ???
+> Step 4: Make a complete fool of yourself.
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 
-I might be completely wrong here, but as I remember IO ECS only
-affects access to cpu devices (bus 0, slot 0x18-0x1f). Thus, esp. PCIe
-extended config space access works since a different host controller
-handles this. So only cpu devices would see a regression and thus cpu
-bringup code. I don't think ECS (either MCFG or IO ECS) is needed
-anymore for cpu bringup (this is true for IBS, but I don't know of
-other cpu features requiring ECS, though family 16h might introduced
-new ones).
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-IMHO device drivers are not affected and wont get broken.
+I verified that this fixes the boot failures I've seen on ARM (i.MX6 and
+Marvell Armada 370).
 
--Robert
+Thanks for the quick fix.
+
+Kevin
