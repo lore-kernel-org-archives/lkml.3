@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaEWJJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:09:36 -0400
-Received: from exprod7og115.obsmtp.com ([64.18.2.217]:42005 "EHLO
-	exprod7og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaEWJJc (ORCPT
+	id S1752957AbaEWJKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:10:03 -0400
+Received: from exprod7og111.obsmtp.com ([64.18.2.175]:51060 "EHLO
+	exprod7og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaEWJJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:09:32 -0400
+	Fri, 23 May 2014 05:09:29 -0400
 From: Anders Berg <anders.berg@avagotech.com>
 To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
         Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Anders Berg <anders.berg@lsi.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH v4 4/5] power: reset: Add Axxia system reset driver
-Date: Fri, 23 May 2014 11:08:38 +0200
-Message-Id: <3f6a31e2515d21dbef4ccf25ebbb090e242c9572.1400834521.git.anders.berg@avagotech.com>
+        Anders Berg <anders.berg@lsi.com>
+Subject: [PATCH v4 3/5] ARM: axxia: Adding defconfig for AXM55xx
+Date: Fri, 23 May 2014 11:08:37 +0200
+Message-Id: <09cf2dc86994807546e74b2462d9c0e4592d5c6e.1400834521.git.anders.berg@avagotech.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <cover.1400834521.git.anders.berg@avagotech.com>
 References: <cover.1400834521.git.anders.berg@avagotech.com>
@@ -29,171 +27,269 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anders Berg <anders.berg@lsi.com>
 
-Add Axxia (AXM55xx) SoC system reset driver. This driver handles only system
-reboot (and not power-off).
+Add a defconfig file for the LSI Axxia family of devices (CONFIG_ARCH_AXXIA).
 
 Signed-off-by: Anders Berg <anders.berg@lsi.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- .../bindings/power_supply/axxia-reset.txt          | 20 +++++
- drivers/power/reset/Kconfig                        |  8 ++
- drivers/power/reset/Makefile                       |  1 +
- drivers/power/reset/axxia-reset.c                  | 88 ++++++++++++++++++++++
- 4 files changed, 117 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/axxia-reset.txt
- create mode 100644 drivers/power/reset/axxia-reset.c
+ arch/arm/configs/axm55xx_defconfig | 248 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 248 insertions(+)
+ create mode 100644 arch/arm/configs/axm55xx_defconfig
 
-diff --git a/Documentation/devicetree/bindings/power_supply/axxia-reset.txt b/Documentation/devicetree/bindings/power_supply/axxia-reset.txt
+diff --git a/arch/arm/configs/axm55xx_defconfig b/arch/arm/configs/axm55xx_defconfig
 new file mode 100644
-index 0000000..47e720d
+index 0000000..d3260d7
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/axxia-reset.txt
-@@ -0,0 +1,20 @@
-+Axxia Restart Driver
-+
-+This driver can do reset of the Axxia SoC. It uses the registers in the syscon
-+block to initiate a chip reset.
-+
-+Required Properties:
-+  -compatible: "lsi,axm55xx-reset"
-+  -syscon: phandle to the syscon node.
-+
-+Example:
-+
-+	syscon: syscon@2010030000 {
-+		compatible = "lsi,axxia-syscon", "syscon";
-+		reg = <0x20 0x10030000 0 0x2000>;
-+	};
-+
-+	reset: reset@2010031000 {
-+		compatible = "lsi,axm55xx-reset";
-+		syscon = <&syscon>;
-+	};
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index fa0e4e0..49b46e6 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -12,6 +12,14 @@ config POWER_RESET_AS3722
- 	help
- 	  This driver supports turning off board via a ams AS3722 power-off.
- 
-+config POWER_RESET_AXXIA
-+	bool "LSI Axxia reset driver"
-+	depends on POWER_RESET && ARCH_AXXIA
-+	help
-+	  This driver supports restart for Axxia SoC.
-+
-+	  Say Y if you have an Axxia family SoC.
-+
- config POWER_RESET_GPIO
- 	bool "GPIO power-off driver"
- 	depends on OF_GPIO && POWER_RESET
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index a5b4a77..16c0516 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
-+obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
- obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
- obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
-diff --git a/drivers/power/reset/axxia-reset.c b/drivers/power/reset/axxia-reset.c
-new file mode 100644
-index 0000000..3b1f8d6
---- /dev/null
-+++ b/drivers/power/reset/axxia-reset.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Reset driver for Axxia devices
-+ *
-+ * Copyright (C) 2014 LSI
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/reboot.h>
-+#include <linux/regmap.h>
-+
-+#include <asm/system_misc.h>
-+
-+
-+#define SC_CRIT_WRITE_KEY	0x1000
-+#define SC_LATCH_ON_RESET	0x1004
-+#define SC_RESET_CONTROL	0x1008
-+#define   RSTCTL_RST_ZERO	(1<<3)
-+#define   RSTCTL_RST_FAB	(1<<2)
-+#define   RSTCTL_RST_CHIP	(1<<1)
-+#define   RSTCTL_RST_SYS	(1<<0)
-+#define SC_EFUSE_INT_STATUS	0x180c
-+#define   EFUSE_READ_DONE	(1<<31)
-+
-+static struct regmap *syscon;
-+
-+static void do_axxia_restart(enum reboot_mode reboot_mode, const char *cmd)
-+{
-+	/* Access Key (0xab) */
-+	regmap_write(syscon, SC_CRIT_WRITE_KEY, 0xab);
-+	/* Select internal boot from 0xffff0000 */
-+	regmap_write(syscon, SC_LATCH_ON_RESET, 0x00000040);
-+	/* Assert ResetReadDone (to avoid hanging in boot ROM) */
-+	regmap_write(syscon, SC_EFUSE_INT_STATUS, EFUSE_READ_DONE);
-+	/* Assert chip reset */
-+	regmap_update_bits(syscon, SC_RESET_CONTROL,
-+			   RSTCTL_RST_CHIP, RSTCTL_RST_CHIP);
-+}
-+
-+static int axxia_reset_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+
-+	syscon = syscon_regmap_lookup_by_phandle(dev->of_node, "syscon");
-+	if (IS_ERR(syscon)) {
-+		pr_err("%s: syscon lookup failed\n", dev->of_node->name);
-+		return PTR_ERR(syscon);
-+	}
-+
-+	arm_pm_restart = do_axxia_restart;
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id of_axxia_reset_match[] = {
-+	{ .compatible = "lsi,axm55xx-reset", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, of_axxia_reset_match);
-+
-+static struct platform_driver axxia_reset_driver = {
-+	.probe = axxia_reset_probe,
-+	.driver = {
-+		.name = "axxia-reset",
-+		.of_match_table = of_match_ptr(of_axxia_reset_match),
-+	},
-+};
-+
-+static int __init axxia_reset_init(void)
-+{
-+	return platform_driver_register(&axxia_reset_driver);
-+}
-+device_initcall(axxia_reset_init);
++++ b/arch/arm/configs/axm55xx_defconfig
+@@ -0,0 +1,248 @@
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_FHANDLE=y
++CONFIG_AUDIT=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_TASKSTATS=y
++CONFIG_TASK_DELAY_ACCT=y
++CONFIG_TASK_XACCT=y
++CONFIG_TASK_IO_ACCOUNTING=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=16
++CONFIG_NAMESPACES=y
++# CONFIG_UTS_NS is not set
++# CONFIG_IPC_NS is not set
++# CONFIG_PID_NS is not set
++# CONFIG_NET_NS is not set
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_EMBEDDED=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_PROFILING=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_IOSCHED_DEADLINE is not set
++CONFIG_ARCH_AXXIA=y
++CONFIG_GPIO_PCA953X=y
++CONFIG_ARM_LPAE=y
++CONFIG_ARM_THUMBEE=y
++CONFIG_ARM_ERRATA_430973=y
++CONFIG_ARM_ERRATA_643719=y
++CONFIG_ARM_ERRATA_720789=y
++CONFIG_ARM_ERRATA_754322=y
++CONFIG_ARM_ERRATA_754327=y
++CONFIG_ARM_ERRATA_764369=y
++CONFIG_ARM_ERRATA_775420=y
++CONFIG_ARM_ERRATA_798181=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_PCIE_AXXIA=y
++CONFIG_SMP=y
++CONFIG_NR_CPUS=16
++CONFIG_HOTPLUG_CPU=y
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++CONFIG_OABI_COMPAT=y
++CONFIG_HIGHMEM=y
++CONFIG_KSM=y
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_ARM_APPENDED_DTB=y
++CONFIG_ARM_ATAG_DTB_COMPAT=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_BINFMT_MISC=y
++# CONFIG_SUSPEND is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_XFRM_USER=y
++CONFIG_XFRM_SUB_POLICY=y
++CONFIG_XFRM_MIGRATE=y
++CONFIG_XFRM_STATISTICS=y
++CONFIG_NET_KEY=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_IP_PNP_BOOTP=y
++CONFIG_INET_AH=y
++CONFIG_INET_ESP=y
++CONFIG_INET_IPCOMP=y
++# CONFIG_INET_LRO is not set
++# CONFIG_IPV6 is not set
++CONFIG_NETWORK_PHY_TIMESTAMPING=y
++CONFIG_BRIDGE=y
++# CONFIG_WIRELESS is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_AFS_PARTS=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_CFI=y
++CONFIG_MTD_CFI_INTELEXT=y
++CONFIG_MTD_CFI_AMDSTD=y
++CONFIG_MTD_CFI_STAA=y
++CONFIG_MTD_PHYSMAP=y
++CONFIG_MTD_PHYSMAP_OF=y
++CONFIG_MTD_M25P80=y
++CONFIG_PROC_DEVICETREE=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_EEPROM_AT24=y
++CONFIG_EEPROM_AT25=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_SG=y
++CONFIG_ATA=y
++CONFIG_PATA_PLATFORM=y
++CONFIG_PATA_OF_PLATFORM=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_DM=y
++CONFIG_DM_UEVENT=y
++CONFIG_NETDEVICES=y
++CONFIG_TUN=y
++CONFIG_VETH=y
++CONFIG_VIRTIO_NET=y
++# CONFIG_NET_CADENCE is not set
++# CONFIG_NET_VENDOR_BROADCOM is not set
++# CONFIG_NET_VENDOR_CIRRUS is not set
++# CONFIG_NET_VENDOR_FARADAY is not set
++# CONFIG_NET_VENDOR_INTEL is not set
++# CONFIG_NET_VENDOR_MARVELL is not set
++# CONFIG_NET_VENDOR_MICREL is not set
++# CONFIG_NET_VENDOR_NATSEMI is not set
++# CONFIG_NET_VENDOR_SEEQ is not set
++# CONFIG_NET_VENDOR_SMSC is not set
++# CONFIG_NET_VENDOR_STMICRO is not set
++# CONFIG_NET_VENDOR_VIA is not set
++# CONFIG_NET_VENDOR_WIZNET is not set
++CONFIG_BROADCOM_PHY=y
++# CONFIG_WLAN is not set
++# CONFIG_MOUSE_PS2_ALPS is not set
++# CONFIG_MOUSE_PS2_LOGIPS2PP is not set
++# CONFIG_MOUSE_PS2_SYNAPTICS is not set
++# CONFIG_MOUSE_PS2_TRACKPOINT is not set
++# CONFIG_SERIO_SERPORT is not set
++CONFIG_SERIO_AMBAKMI=y
++CONFIG_LEGACY_PTY_COUNT=16
++CONFIG_SERIAL_AMBA_PL011=y
++CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
++CONFIG_VIRTIO_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_I2C=y
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_MUX=y
++CONFIG_I2C_AXXIA=y
++CONFIG_SPI=y
++CONFIG_SPI_PL022=y
++CONFIG_DP83640_PHY=y
++CONFIG_GPIOLIB=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_PL061=y
++CONFIG_POWER_SUPPLY=y
++CONFIG_POWER_RESET=y
++CONFIG_POWER_RESET_AXXIA=y
++CONFIG_SENSORS_ADT7475=y
++CONFIG_SENSORS_JC42=y
++CONFIG_SENSORS_LM75=y
++CONFIG_PMBUS=y
++CONFIG_SENSORS_LTC2978=y
++CONFIG_WATCHDOG=y
++CONFIG_ARM_SP805_WATCHDOG=y
++CONFIG_FB=y
++CONFIG_FB_ARMCLCD=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_LOGO=y
++# CONFIG_LOGO_LINUX_MONO is not set
++# CONFIG_LOGO_LINUX_VGA16 is not set
++CONFIG_HID_A4TECH=y
++CONFIG_HID_APPLE=y
++CONFIG_HID_BELKIN=y
++CONFIG_HID_CHERRY=y
++CONFIG_HID_CHICONY=y
++CONFIG_HID_CYPRESS=y
++CONFIG_HID_DRAGONRISE=y
++CONFIG_HID_EZKEY=y
++CONFIG_HID_KYE=y
++CONFIG_HID_GYRATION=y
++CONFIG_HID_TWINHAN=y
++CONFIG_HID_KENSINGTON=y
++CONFIG_HID_LOGITECH=y
++CONFIG_HID_MICROSOFT=y
++CONFIG_HID_MONTEREY=y
++CONFIG_HID_NTRIG=y
++CONFIG_HID_ORTEK=y
++CONFIG_HID_PANTHERLORD=y
++CONFIG_HID_PETALYNX=y
++CONFIG_HID_SAMSUNG=y
++CONFIG_HID_SUNPLUS=y
++CONFIG_HID_GREENASIA=y
++CONFIG_HID_SMARTJOYPLUS=y
++CONFIG_HID_TOPSEED=y
++CONFIG_HID_THRUSTMASTER=y
++CONFIG_HID_ZEROPLUS=y
++CONFIG_USB=y
++CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
++CONFIG_USB_EHCI_HCD=y
++# CONFIG_USB_EHCI_TT_NEWSCHED is not set
++CONFIG_USB_EHCI_HCD_AXXIA=y
++CONFIG_USB_STORAGE=y
++CONFIG_MMC=y
++CONFIG_MMC_ARMMMCI=y
++CONFIG_DMADEVICES=y
++CONFIG_PL330_DMA=y
++CONFIG_VIRT_DRIVERS=y
++CONFIG_VIRTIO_MMIO=y
++CONFIG_MAILBOX=y
++CONFIG_PL320_MBOX=y
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_EXT2_FS=y
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++CONFIG_EXT4_FS=y
++CONFIG_AUTOFS4_FS=y
++CONFIG_FUSE_FS=y
++CONFIG_CUSE=y
++CONFIG_FSCACHE=y
++CONFIG_FSCACHE_STATS=y
++CONFIG_FSCACHE_HISTOGRAM=y
++CONFIG_FSCACHE_DEBUG=y
++CONFIG_FSCACHE_OBJECT_LIST=y
++CONFIG_CACHEFILES=y
++CONFIG_CACHEFILES_HISTOGRAM=y
++CONFIG_ISO9660_FS=y
++CONFIG_UDF_FS=y
++CONFIG_MSDOS_FS=y
++CONFIG_VFAT_FS=y
++CONFIG_NTFS_FS=y
++CONFIG_TMPFS=y
++CONFIG_JFFS2_FS=y
++CONFIG_CRAMFS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V4=y
++CONFIG_ROOT_NFS=y
++CONFIG_NFS_FSCACHE=y
++CONFIG_SUNRPC_DEBUG=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_PRINTK_TIME=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_FS=y
++CONFIG_MAGIC_SYSRQ=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_RCU_CPU_STALL_TIMEOUT=60
++# CONFIG_FTRACE is not set
++CONFIG_DEBUG_USER=y
++CONFIG_CRYPTO_GCM=y
++CONFIG_CRYPTO_XCBC=y
++CONFIG_CRYPTO_SHA256=y
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
++CONFIG_VIRTUALIZATION=y
++CONFIG_KVM=y
 -- 
 1.8.3.2
 
