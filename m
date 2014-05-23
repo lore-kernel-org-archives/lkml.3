@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaEWPbg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:31:36 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:59422 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751387AbaEWPbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:31:21 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
-        Jim Baxter <jim_baxter@mentor.com>
-CC: =?utf-8?B?J0Jqw7hybiBNb3JrJw==?= <bjorn@mork.no>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "kamal@canonical.com" <kamal@canonical.com>,
-        "edumazet@google.com" <edumazet@google.com>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
-Subject: RE: skbuff truesize incorrect.
-Thread-Topic: skbuff truesize incorrect.
-Thread-Index: AQHPdmwmL2lnKeimqUeV55a8ET8tq5tN+mog///3/4CAACsHgIAAJ6iA
-Date: Fri, 23 May 2014 15:30:37 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724CACF@AcuExch.aculab.com>
-References: <537E4AFD.20304@mentor.com>
-		<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
-		<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>
-	 <87r43k4yhe.fsf@nemi.mork.no>
-	 <063D6719AE5E284EB5DD2968C1650D6D1724C7A1@AcuExch.aculab.com>
-	 <537F2D53.5020408@mentor.com>
- <1400852843.5367.191.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1400852843.5367.191.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1752887AbaEWPcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:32:20 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47235 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaEWPcT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:32:19 -0400
+Message-ID: <537F69B7.20002@linux.vnet.ibm.com>
+Date: Fri, 23 May 2014 21:01:03 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, fweisbec@gmail.com, hch@infradead.org,
+        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
+        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com> <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com> <20140523152145.GF30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140523152145.GF30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052315-5564-0000-0000-00000DDC83AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4NFVqAv004052
 
-From: Eric Dumazet
-...
-> TCP stack uses fast clones, and current stack gives them a truesize of
-> 2048 + sizeof(sk_buff), while it really should be 2048 +
-> 2*sizeof(sk_buff)
+On 05/23/2014 08:51 PM, Peter Zijlstra wrote:
+> On Fri, May 23, 2014 at 03:42:20PM +0530, Srivatsa S. Bhat wrote:
+>>        Re-enable interrupts                          Re-enable interrupts
+>>
+>>                                                      The pending IPI is noted
+>>                                                      immediately, but alas,
+>>                                                      the CPU is offline at
+>>                                                      this point.
+>>
 > 
-> Luckily, GSO/TSO tends to reduce the error, as skbs overhead is lower.
+> So wasn't clear_local_APIC() (and the arch function __cpu_disable() in
+> general) wipe all pending interrup state?
+> 
 
-Doesn't that affect the tx side - where the truesize doesn't matter as much?
+Apparently not. Atleast powerpc explicitly re-enables only the IPIs.. 
 
-	David
+A snippet from xics_migrate_irqs_away() in powerpc, which is called
+in the cpu-disable phase:
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+/* Interrupts are disabled. */
+void xics_migrate_irqs_away(void)
+{
+	[...]
+	/* Reject any interrupt that was queued to us... */
+	icp_ops->set_priority(0);
+
+	[...]
+	/* Allow IPIs again... */
+	icp_ops->set_priority(DEFAULT_PRIORITY);
+
+	for_each_irq_desc(virq, desc) {
+		[...]
+		/* We only need to migrate enabled IRQS */
+		if (!desc->action)
+			continue;
+
+		[...]
+
+		/* We need to get IPIs still. */
+		if (irq == XICS_IPI || irq == XICS_IRQ_SPURIOUS)
+			continue;
+		[...]
+
+}
+
+But that said, it should have cleared any pending IPIs and allowed
+only *new* IPIs (for whatever reason). Atleast the warning I hit
+indicates that that didn't happen, and the old IPI really was taken
+later.
+
+Ben, Paul, any thoughts on this?
+
+Regards,
+Srivatsa S. Bhat
+
