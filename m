@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaEWNCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:02:04 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:53091 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaEWNCC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:02:02 -0400
+	id S1752616AbaEWNDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:03:00 -0400
+Received: from mga14.intel.com ([192.55.52.115]:49687 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781AbaEWNC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 09:02:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,893,1392192000"; 
+   d="scan'208";a="536591322"
+Date: Fri, 23 May 2014 16:02:52 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mike Turquette <mturquette@linaro.org>, Jin Yao <yao.jin@linux.intel.com>,
+        Li Aubrey <aubrey.li@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 2/4] ACPI / LPSS: custom power domain for LPSS
+Message-ID: <20140523130252.GH18308@xps8300>
+References: <1400161226-24067-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1484699.LPqrzmlevB@vostro.rjw.lan>
+ <20140523123052.GA18308@xps8300>
+ <13101534.gKoyQa16hJ@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20140523115622.GU27560@rric.localhost>
-References: <20140521231615.26447.38060.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521231817.26447.55150.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140521233802.GA21575@pd.tnic> <CAErSpo4hcitey+jtZkgpbZsEswJJekStXONct9rrh0aQ_R0h8g@mail.gmail.com>
- <20140522191746.GL4383@pd.tnic> <CAErSpo7=0-xdnu4DQufu_6eS=6AYhnDRaQvzeiMEC5a=zKU0Jg@mail.gmail.com>
- <537E8ACF.6000103@amd.com> <CAErSpo6AMGPFELx+2qJXYaxaLRhk2F2J=wn4=gLgmvYGdLup7A@mail.gmail.com>
- <20140523115622.GU27560@rric.localhost>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 23 May 2014 07:01:41 -0600
-Message-ID: <CAErSpo5t+u+AYS5m6wo+AG7uXEkseUcmK9d-FF+SwpkcEWnkqA@mail.gmail.com>
-Subject: Re: [PATCH V5 3/4] x86/PCI: Stop enabling ECS for AMD CPUs after Fam16h
-To: Robert Richter <rric@kernel.org>
-Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <13101534.gKoyQa16hJ@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 5:56 AM, Robert Richter <rric@kernel.org> wrote:
-> On 22.05.14 20:54:54, Bjorn Helgaas wrote:
->> I'm going to go out on a limb and guess that Windows does not enable
->> ECS, so it probably uses ECAM.  Therefore, I suspect Linux's parsing
->> of MCFG is broken in some way, and we probably *could* use ECAM in all
->> these cases I'm seeing.
->
-> Even if ECS is not enabled the system should be fine anyway, as ECS is
-> only used to enable certain features. For family 10h this was
-> originally the IBS EILVT (extended interrupt local vector table,
-> needed for hw profiling) setup which need to be set by the OS which
-> the BIOS didn't right. This should be fixed now and properly set by
-> the BIOS on 15h+ systems.
->
-> I don't remember what was added to 16h where ECS was needed, I think
-> there was one (Suravee?). Not sure if this is essential.
->
-> So using MCFG should be fine, since if in the rare case when it is
-> broken, the system should work properly anyway without it and only
-> some special features, if any, do not work anymore (e.g. IBS should
-> work fine).
+On Fri, May 23, 2014 at 03:10:08PM +0200, Rafael J. Wysocki wrote:
+> On Friday, May 23, 2014 03:30:53 PM Heikki Krogerus wrote:
+> > On Thu, May 22, 2014 at 01:28:16AM +0200, Rafael J. Wysocki wrote:
+> > > On Wednesday, May 21, 2014 01:52:58 PM Heikki Krogerus wrote:
+> > > > On Wed, May 21, 2014 at 01:01:31PM +0200, Rafael J. Wysocki wrote:
+> > > > > On Wednesday, May 21, 2014 01:05:11 PM Heikki Krogerus wrote:
+> > > > > > On Tue, May 20, 2014 at 11:33:09PM +0200, Rafael J. Wysocki wrote:
+> > > > > > > First, is the 10 ms sleep really necessary?  I'd expect the AML to take care of
+> > > > > > > such delays (this is not a PCI device formally).
+> > > > > > 
+> > > > > > Unfortunately that is not the case. There is nothing in the AML for
+> > > > > > this. Mika, correct me if I'm wrong.
+> > > > > > 
+> > > > > > > And because this is not a PCI device formally, why is the comment talking about
+> > > > > > > the PCI spec?  Why is PCI relevant in any way here?
+> > > > > > 
+> > > > > > Under the hood the devices are still PCI devices, even if they
+> > > > > > formally aren't. Maybe I should point that out in the comment..
+> > > > > > 
+> > > > > > We put the sleep there because without it there was no guarantee if
+> > > > > > the device was properly resumed by the time the drivers resume hooks
+> > > > > > were called. The symptom in case of a failure was simply that the
+> > > > > > registers could not be written, which leads into timeouts at least in
+> > > > > > case of the I2C and UART and making them unusable until the next
+> > > > > > suspend followed by resume.
+> > > > > 
+> > > > > OK, so the msleep() is functionally necessary.  Instead of talking about the
+> > > > > PCI in the comment, which will make a casual reader think "What the heck?",
+> > > > > please say something like "the delay is necessary for the subsequent register
+> > > > > writes to succeed on <example system>".
+> > > > 
+> > > > OK.
+> > > 
+> > > So I have one more concern.  Namely, async suspend is not enabled for the LPSS
+> > > devices, so the delays will accumulate for them and that may become a big deal
+> > > at one point.
+> > > 
+> > > This may be addressed either (1) by enabling async suspend for them or, which would
+> > > be more complicated, by doing the msleep() once for the whole LPSS in .resume_early()
+> > > and restoring the register values in .resume() without delaying.
+> > > 
+> > > For (1) I have the following untested patch (on top of my bleeding-edge branch, but
+> > > it should apply to the mainline too if I haven't overlooked anything).  Can you
+> > > please try it on boxes with LPSS and see if it doesn't break suspend/resume on them?
+> > 
+> > Done, and there were no problems. I tested it with HSW, BYT and also BDW.
+> 
+> Great, thanks!
+> 
+> So I'll add a changelog and I'm going to push it along with your series.
+> 
+> Are you going to update the $subject patch, or send an update on top of
+> linux-next?
 
-[I guess I've been using the wrong term here.  I think "ECS" just
-refers to the extended config space itself, and I should have been
-saying "IO ECS" or "EnableCf8ExtCfg".]
+I'll send an update right away. On top of explaining the problem if
+left without the msleep(10), I still left the comment about the PCI
+spec plus a mention that all LPSS devices are actually PCI devices. I
+hope that's OK with you. It just felt like we need to point out that
+the 10ms is not pulled out of the hat.
 
-My understanding was that if we don't enable IO ECS and we don't have
-MCFG, we will not be able to access extended config space.  The system
-can certainly boot without extended config space, but some drivers may
-not work correctly, so it would be a regression from the user point of
-view.
 
-The case where MCFG is broken may be rare, but I still want to avoid
-the regression.  And my guess is that the MCFG is not really broken in
-these cases, because I suspect Windows is using it.  Our MCFG parsing
-code is a mess, and I suspect that we are claiming MCFG is broken when
-it really isn't.
-
-If I understand correctly, IO ECS is also limited to domain 0, so if
-we have multiple PCI host bridges, i.e., multiple PNP0A03/PNP0A08
-devices, and we want them in different domains, we'd have to use ECAM.
-
-Bjorn
+-- 
+heikki
