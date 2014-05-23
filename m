@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751257AbaEWUVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 16:21:52 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:45616 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaEWUVu (ORCPT
+	id S1751253AbaEWU0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 16:26:15 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:28641 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751011AbaEWU0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 16:21:50 -0400
-Date: Fri, 23 May 2014 22:21:37 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] sbus: Introduce the use of the managed version of kzalloc
-Message-ID: <20140523202136.GA17307@ravnborg.org>
-References: <20140522203536.GA16457@himangi-Dell>
- <20140523201703.GA17295@ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140523201703.GA17295@ravnborg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 23 May 2014 16:26:14 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhULAHOuf1NR87wH/2dsb2JhbABbgwerCAQBAQEBAQEFAYM7lwKBCBd0glMTPxiBAiQTiEUB2EeFVYh9hEcBA48+ijMBixeIEIM6Ow
+Date: Fri, 23 May 2014 22:26:11 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Petr Vandrovec <petr@vandrovec.name>
+Subject: [PATCH 1/1] fs/ncpfs/getopt.c: replace simple_strtoul by kstrtoul
+Message-Id: <20140523222611.862216f7570633a5bf0f0e89@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 10:17:03PM +0200, Sam Ravnborg wrote:
-> Hi Himangi.
-> 
-> On Fri, May 23, 2014 at 02:05:36AM +0530, Himangi Saraogi wrote:
-> > This patch moves data allocated using kzalloc to managed data allocated
-> > using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-> > functions. The header file is added to make the devm function explicitly
-> > available. Also, unnecessary assignment statements and labels are
-> > removed.
+Remove obsolete simple_strtoul in ncp_getopt
 
-Another note.
-This patch touches only the display7seg dirver, so please prefix
-your patch with "display7seg: bla bla"
+This is untested.
 
-	Sam
+Cc: Petr Vandrovec <petr@vandrovec.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ncpfs/getopt.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/fs/ncpfs/getopt.c b/fs/ncpfs/getopt.c
+index 03ffde1..344889c 100644
+--- a/fs/ncpfs/getopt.c
++++ b/fs/ncpfs/getopt.c
+@@ -53,15 +53,14 @@ int ncp_getopt(const char *caller, char **options, const struct ncp_option *opts
+ 				return -EINVAL;
+ 			}
+ 			if (opts->has_arg & OPT_INT) {
+-				char* v;
++				int rc = kstrtoul(val, 0, value);
+ 
+-				*value = simple_strtoul(val, &v, 0);
+-				if (!*v) {
+-					return opts->val;
++				if (rc) {
++					pr_info("%s: invalid numeric value in %s=%s\n",
++						caller, token, val);
++					return rc;
+ 				}
+-				pr_info("%s: invalid numeric value in %s=%s\n",
+-					caller, token, val);
+-				return -EDOM;
++				return opts->val;
+ 			}
+ 			if (opts->has_arg & OPT_STRING) {
+ 				return opts->val;
+-- 
+1.9.1
