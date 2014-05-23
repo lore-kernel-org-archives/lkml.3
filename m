@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaEWPyQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:54:16 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:45852 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730AbaEWPyL (ORCPT
+	id S1753470AbaEWP4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:56:07 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:54539 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730AbaEWPyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:54:11 -0400
+	Fri, 23 May 2014 11:54:17 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
@@ -14,9 +14,9 @@ Cc: preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com, efault@gmx.de,
         nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
         daniel.lezcano@linaro.org,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v2 03/11] sched: fix avg_load computation
-Date: Fri, 23 May 2014 17:52:57 +0200
-Message-Id: <1400860385-14555-4-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v2 06/11] sched: add per rq cpu_power_orig
+Date: Fri, 23 May 2014 17:53:00 +0200
+Message-Id: <1400860385-14555-7-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
 References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
@@ -24,38 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The computation of avg_load and avg_load_per_task should only takes into
-account the number of cfs tasks. The non cfs task are already taken into
-account by decreasing the cpu's capacity (cpu_power) and they will be tracked
-in the CPU's utilization (group_activity) of the next patches
+This new field cpu_power_orig reflects the available capacity of a CPUs unlike
+the cpu_power which reflects the current capacity that can be altered by
+frequency and rt tasks.
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/sched/fair.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/core.c  | 2 +-
+ kernel/sched/fair.c  | 1 +
+ kernel/sched/sched.h | 1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 240aa83..686c56f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6946,7 +6946,7 @@ void __init sched_init(void)
+ #ifdef CONFIG_SMP
+ 		rq->sd = NULL;
+ 		rq->rd = NULL;
+-		rq->cpu_power = SCHED_POWER_SCALE;
++		rq->cpu_power = rq->cpu_power_orig = SCHED_POWER_SCALE;
+ 		rq->post_schedule = 0;
+ 		rq->active_balance = 0;
+ 		rq->next_balance = jiffies;
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 30240ab..6a84114 100644
+index 6dc05f7..b3dc2b3 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4048,7 +4048,7 @@ static unsigned long power_of(int cpu)
- static unsigned long cpu_avg_load_per_task(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
--	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-+	unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
- 	unsigned long load_avg = rq->cfs.runnable_load_avg;
+@@ -5675,6 +5675,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
  
- 	if (nr_running)
-@@ -5868,7 +5868,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			load = source_load(i, load_idx);
+ 	power >>= SCHED_POWER_SHIFT;
  
- 		sgs->group_load += load;
--		sgs->sum_nr_running += rq->nr_running;
-+		sgs->sum_nr_running += rq->cfs.h_nr_running;
- #ifdef CONFIG_NUMA_BALANCING
- 		sgs->nr_numa_running += rq->nr_numa_running;
- 		sgs->nr_preferred_running += rq->nr_preferred_running;
++	cpu_rq(cpu)->cpu_power_orig = power;
+ 	sdg->sgp->power_orig = power;
+ 
+ 	if (sched_feat(ARCH_POWER))
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 600e229..4c74014 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -568,6 +568,7 @@ struct rq {
+ 	struct sched_domain *sd;
+ 
+ 	unsigned long cpu_power;
++	unsigned long cpu_power_orig;
+ 
+ 	unsigned char idle_balance;
+ 	/* For active balancing */
 -- 
 1.9.1
 
