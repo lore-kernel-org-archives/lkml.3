@@ -1,48 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaEWUQi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 16:16:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42498 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923AbaEWUQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 16:16:37 -0400
-Date: Fri, 23 May 2014 16:16:33 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: Re: slab_common: fix the check for duplicate slab names
-Message-ID: <20140523201632.GA16013@redhat.com>
-References: <alpine.LRH.2.02.1403041711300.29476@file01.intranet.prod.int.rdu2.redhat.com>
- <20140325170324.GC580@redhat.com>
- <alpine.DEB.2.10.1403251306260.26471@nuc>
+	id S1751449AbaEWURX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 16:17:23 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:45564 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaEWURV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 16:17:21 -0400
+Date: Fri, 23 May 2014 22:17:03 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] sbus: Introduce the use of the managed version of kzalloc
+Message-ID: <20140523201703.GA17295@ravnborg.org>
+References: <20140522203536.GA16457@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1403251306260.26471@nuc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140522203536.GA16457@himangi-Dell>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25 2014 at  2:07pm -0400,
-Christoph Lameter <cl@linux.com> wrote:
+Hi Himangi.
 
-> On Tue, 25 Mar 2014, Mike Snitzer wrote:
+On Fri, May 23, 2014 at 02:05:36AM +0530, Himangi Saraogi wrote:
+> This patch moves data allocated using kzalloc to managed data allocated
+> using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+> functions. The header file is added to make the devm function explicitly
+> available. Also, unnecessary assignment statements and labels are
+> removed.
 > 
-> > This patch still isn't upstream.  Who should be shepherding it to Linus?
+> ---
+> Not compile tested due to incompatible architecture.
+I can confirm that i builds.
+
+
 > 
-> Pekka usually does that.
+> To send to: "David S. Miller" <davem@davemloft.net>,sparclinux@vger.kernel.org,linux-kernel@vger.kernel.org
 > 
-> Acked-by: Christoph Lameter <cl@linux.com>
+>  drivers/sbus/char/display7seg.c | 23 ++++++++---------------
+>  1 file changed, 8 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
+> index 7c71e7b..367b64d 100644
+> --- a/drivers/sbus/char/display7seg.c
+> +++ b/drivers/sbus/char/display7seg.c
+> @@ -20,6 +20,7 @@
+>  #include <asm/io.h>
+>  
+>  #include <asm/display7seg.h>
+> +#include <linux/device.h>
+>  
+>  #define D7S_MINOR	193
+>  #define DRIVER_NAME	"d7s"
+> @@ -173,22 +174,21 @@ static struct miscdevice d7s_miscdev = {
+>  static int d7s_probe(struct platform_device *op)
+>  {
+>  	struct device_node *opts;
+> -	int err = -EINVAL;
+> +	int err;
+>  	struct d7s *p;
+>  	u8 regs;
+>  
+>  	if (d7s_device)
+> -		goto out;
+> +		return -EINVAL;
+>  
+> -	p = kzalloc(sizeof(*p), GFP_KERNEL);
+> -	err = -ENOMEM;
+> +	p = devm_kzalloc(&op->dev, sizeof(*p), GFP_KERNEL);
+>  	if (!p)
+> -		goto out;
+> +		return -ENOMEM;
+>  
+>  	p->regs = of_ioremap(&op->resource[0], 0, sizeof(u8), "d7s");
+>  	if (!p->regs) {
+>  		printk(KERN_ERR PFX "Cannot map chip registers\n");
+> -		goto out_free;
+> +		return -ENOMEM;
 
-This still hasn't gotten upstream.
+Can you please explain how it can be correct to return "-ENOMEM",
+when we fail to map the chip registers.
+Before your patch this resulted in "-EINVAL" - so this is a change in behaviour.
 
-Pekka, any chance you can pick it up?  Here it is in dm-devel's
-kernel.org patchwork: https://patchwork.kernel.org/patch/3768901/
 
-(Though it looks like it needs to be rebased due to the recent commit
-794b1248, should Mikulas rebase and re-send?)
+>  	}
+>  
+>  	err = misc_register(&d7s_miscdev);
+> @@ -222,17 +222,11 @@ static int d7s_probe(struct platform_device *op)
+>  
+>  	dev_set_drvdata(&op->dev, p);
+>  	d7s_device = p;
+> -	err = 0;
+> -
+> -out:
+> -	return err;
+> +	return 0;
+>  
+>  out_iounmap:
+>  	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
+> -
+> -out_free:
+> -	kfree(p);
+> -	goto out;
+> +	return err;
+>  }
+It is not am improvement IMO that you replace the nice goto
+based error handling with random return points in the code.
 
-Mike
+	Sam
