@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaEWVFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 17:05:34 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:59908 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaEWVFa (ORCPT
+	id S1751392AbaEWVHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 17:07:34 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37125 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbaEWVHc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 17:05:30 -0400
+	Fri, 23 May 2014 17:07:32 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20140523084914.GA30445@twins.programming.kicks-ass.net>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
-	<1400799936-26499-4-git-send-email-keescook@chromium.org>
-	<20140523084914.GA30445@twins.programming.kicks-ass.net>
-Date: Fri, 23 May 2014 14:05:29 -0700
-X-Google-Sender-Auth: j15vSg1ptt69Dz3_XslEx5T12CU
-Message-ID: <CAGXu5jK1jy3P733+dgGdSGjLV5eXNEjO9PvyHO4YwZGjjGU2zA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/6] seccomp: introduce writer locking
-From: Kees Cook <keescook@chromium.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        liguang <lig.fnst@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: Nishanth Menon <nm@ti.com>,
+        =?utf-8?q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
+        "Tony Lindgren" <tony@atomide.com>, "Tero Kristo" <t-kristo@ti.com>,
+        "Paul" <paul@pwsan.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1400237160-25125-1-git-send-email-nm@ti.com>
+Cc: "Nishanth Menon" <nm@ti.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+References: <1400237160-25125-1-git-send-email-nm@ti.com>
+Message-ID: <20140523210720.23136.65858@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 0/3] ARM: OMAP5+: Support Duty Cycle Correction(DCC)
+Date: Fri, 23 May 2014 14:07:20 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 1:49 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, May 22, 2014 at 04:05:33PM -0700, Kees Cook wrote:
->> Normally, task_struct.seccomp.filter is only ever read or modified by
->> the task that owns it (current). This property aids in fast access
->> during system call filtering as read access is lockless.
->>
->> Updating the pointer from another task, however, opens up race
->> conditions. To allow cross-task filter pointer updates, writes to the
->> seccomp fields are now protected by a spinlock.  Read access remains
->> lockless because pointer updates themselves are atomic.  However, writes
->> (or cloning) often entail additional checking (like maximum instruction
->> counts) which require locking to perform safely.
->>
->> In the case of cloning threads, the child is invisible to the system
->> until it enters the task list. To make sure a child can't be cloned
->> from a thread and left in a prior state, seccomp duplication is moved
->> under the tasklist_lock. Then parent and child are certain have the same
->> seccomp state when they exit the lock.
->>
->
-> So I'm a complete noob on the whole seccomp thing, so maybe this is a
-> silly question, but.. what about object lifetimes?
+Quoting Nishanth Menon (2014-05-16 03:45:57)
+> Hi,
+> 
+> This patch series has been carried over in vendor kernel for quiet
+> few years now.
+> 
+> Unfortunately, it was very recently re-discovered and upstream kernel
+> is noticed to be broken for OMAP5 1.5GHz - at least we are operating
+> DPLL at frequency higher than what it was intended to be when CPUFreq
+> is enabled. Thankfully, with nominal voltage(we dont use AVS yet in
+> upstream for the mentioned platforms) and margins in trimming, we
+> have so far not crashed - but I strongly suspect this might be some
+> boundary case survival.
 
-The get/put logic on seccomp filters eluded me when I first looked at
-it too. :) Basically, each branch point holds counts, which means a
-given filter will only get freed when all tasks using it have died.
+DCC also exists in OMAP4. In some cases customers used it, in other
+cases we just ran the PLL way out of spec and the mpu_clk would divide
+by 2.
 
-> Looking at put_seccomp_filter() it explicitly takes a tsk pointer,
-> suggesting one can call it on !current. And while it does a dec_and_test
-> on the object itself, run_filter() does nothing with refcounts, and
-> therefore can be touching dead memory.
+Is this broken for OMAP4 as well?
 
-That's technically true, but the only caller of put_seccomp_filter()
-is free_task(), for which "current" doesn't make sense. But when
-called, the task is no longer part of the task_list, so there's no
-dead memory touching. (Unless you see something I don't.)
+Regards,
+Mike
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+> 
+> Verified on the following impacted platforms using 3.15-rc4 based
+> vendor kernel.
+> 
+> Before:
+> OMAP5432: http://slexy.org/view/s20cs0qQFg
+> DRA72x: http://slexy.org/view/s2TXtSa6mH (refused to lock)
+> DRA75x: http://slexy.org/view/s20AW8MU5c
+> After:
+> OMAP5432: http://slexy.org/view/s21iAfWxpu
+> DRA72x: http://slexy.org/view/s2hwsvGLmC (locks properly)
+> DRA75x: http://slexy.org/view/s21ehw8WQn
+> 
+> Hopefully, we can get these into some kernel revision in some form.
+> 
+> NOTE: Support for 4470(which is the only other platform requiring
+> DCC) is not present in upstream kernel and there are no plans to
+> support that SoC, even if it is added at a later point, support can be
+> extended as needed.
+> 
+> Series based on v3.15-rc5 tag.
+> Also available on my tree:
+>         https://github.com/nmenon/linux-2.6-playground/
+>         branch:  push/clock/dcc 
+>         
+>         weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/clock/dcc
+> 
+> Verification:
+> 3.15-rc4 based kernel - DRA75x-evm, 72x-evm, OMAP5uevm
+> 3.15-rc5 - OMAP5uEVM(only one supporting 1.5GHz atm)
+> 
+> Andrii Tseglytskyi (1):
+>   ARM: OMAP5+: dpll: support Duty Cycle Correction(DCC)
+> 
+> Nishanth Menon (2):
+>   clk: dpll: support OMAP5 MPU DPLL that need special handling for
+>     higher frequencies
+>   ARM: dts: OMAP5/DRA7: use omap5-mpu-dpll-clock capable of dealing
+>     with higher frequencies
+> 
+>  .../devicetree/bindings/clock/ti/dpll.txt          |    1 +
+>  arch/arm/boot/dts/dra7xx-clocks.dtsi               |    2 +-
+>  arch/arm/boot/dts/omap54xx-clocks.dtsi             |    2 +-
+>  arch/arm/mach-omap2/dpll3xxx.c                     |    9 +++++++++
+>  drivers/clk/ti/dpll.c                              |   21 ++++++++++++++++++++
+>  include/linux/clk/ti.h                             |    4 ++++
+>  6 files changed, 37 insertions(+), 2 deletions(-)
+> 
+> Regards,
+> Nishanth Menon
+> -- 
+> 1.7.9.5
+> 
