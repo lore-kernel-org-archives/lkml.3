@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366AbaEWWsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 18:48:11 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:36646 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaEWWsJ (ORCPT
+	id S1751427AbaEWWsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 18:48:35 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:64284 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaEWWsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 18:48:09 -0400
-Message-ID: <537FD021.2020808@gmail.com>
-Date: Sat, 24 May 2014 00:48:01 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 23 May 2014 18:48:33 -0400
 MIME-Version: 1.0
-To: Tarek Dakhran <t.dakhran@gmail.com>
-CC: Tarek Dakhran <t.dakhran@samsung.com>,
+In-Reply-To: <CANhyOUd8Q2nzh_bF6LZNuv8keVUB3F45PocYrLP_B=D_Q3tWuQ@mail.gmail.com>
+References: <1400841343-6016-1-git-send-email-t.dakhran@samsung.com>
+	<1400841343-6016-2-git-send-email-t.dakhran@samsung.com>
+	<537FB995.5070604@gmail.com>
+	<CANhyOUd8Q2nzh_bF6LZNuv8keVUB3F45PocYrLP_B=D_Q3tWuQ@mail.gmail.com>
+Date: Sat, 24 May 2014 02:48:31 +0400
+Message-ID: <CANhyOUfp1AL6wJ1Q9kWj=v-n9e2CyxkQOPb8_50M5bY_JN2f9A@mail.gmail.com>
+Subject: Re: [PATCH v10 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
+From: Tarek Dakhran <t.dakhran@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Tarek Dakhran <t.dakhran@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -34,19 +39,19 @@ CC: Tarek Dakhran <t.dakhran@samsung.com>,
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH v10 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
-References: <1400841343-6016-1-git-send-email-t.dakhran@samsung.com>	<1400841343-6016-2-git-send-email-t.dakhran@samsung.com>	<537FB995.5070604@gmail.com> <CANhyOUd8Q2nzh_bF6LZNuv8keVUB3F45PocYrLP_B=D_Q3tWuQ@mail.gmail.com>
-In-Reply-To: <CANhyOUd8Q2nzh_bF6LZNuv8keVUB3F45PocYrLP_B=D_Q3tWuQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.05.2014 00:44, Tarek Dakhran wrote:
+Sorry, only now catch it!
+I agree, this patch is not needed anymore, except Kconfig option.
+config SOC_EXYNOS5410 is needed to build clock stuff.
+What is your opinion, Tomasz?
+
+On Sat, May 24, 2014 at 2:44 AM, Tarek Dakhran <t.dakhran@gmail.com> wrote:
 > Hi Tomazs,
-> 
+>
 > On Sat, May 24, 2014 at 1:11 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 >> Hi Tarek,
 >>
@@ -74,15 +79,10 @@ On 24.05.2014 00:44, Tarek Dakhran wrote:
 >>>
 >>>       __raw_writel(boot_addr, boot_reg);
 >>>
-> 
+>
 > I need to define SoC type to set correct bootreg in firmware,
 > otherwise only one cpu can be booted.
 > So, this stuff is needed.
-
-The patch I referred to in my previous reply changes this condition from
-!soc_is_exynos4212() to soc_is_exynos4412(), which makes the 4*cpu
-offset being added only in case of Exynos4412 (and so not being added
-for Exynos5410). What else is needed?
-
-Best regards,
-Tomasz
+>
+> Best regards,
+>      Tarek
