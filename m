@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638AbaEWKoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:44:07 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:59464 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935AbaEWKoC (ORCPT
+	id S1752806AbaEWKcT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:32:19 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:42655 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755AbaEWKcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:44:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400840721-11050-2-git-send-email-jh80.chung@samsung.com>
-References: <1400840721-11050-1-git-send-email-jh80.chung@samsung.com>
-	<1400840721-11050-2-git-send-email-jh80.chung@samsung.com>
-Date: Fri, 23 May 2014 16:14:01 +0530
-Message-ID: <CAHbNUh0pmG0vkOvM9fhcy_kPU1uDOUVCeTkgw1QQPG62c51CVQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mmc: host: add slot argument to mmc_of_parse
-From: Tushar Behera <tushar.behera@linaro.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 23 May 2014 06:32:14 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: tglx@linutronix.de, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 30/71] clocksource: sh_tmu: Replace hardcoded register values with macros
+Date: Fri, 23 May 2014 12:31:10 +0200
+Message-Id: <1400841111-6683-30-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+References: <537F214C.8000700@linaro.org>
+ <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 2014 15:55, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> From: Ludovic Desroches <ludovic.desroches@atmel.com>
->
-> Some hosts manage several slots. In these case information such as the
-> bus width, chi detect and others are into the slot node. So we have to
-> parse child node. If not NULL, slot node will be used instead of the
-> device node.
->
-> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-> ---
->  drivers/mmc/core/host.c  |   13 +++++++++----
->  include/linux/mmc/host.h |   10 +++++++++-
->  2 files changed, 18 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> index 95cceae..0f677b3 100644
-> --- a/drivers/mmc/core/host.c
-> +++ b/drivers/mmc/core/host.c
-> @@ -298,15 +298,17 @@ static inline void mmc_host_clk_sysfs_init(struct mmc_host *host)
->  #endif
->
->  /**
-> - *     mmc_of_parse() - parse host's device-tree node
-> + *     __mmc_of_parse() - parse host's device-tree node
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-IMO it would be better to rename this function, something like
-mmc_of_parse_slot().
+Define symbolic macros for all used registers bits.
 
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+---
+ drivers/clocksource/sh_tmu.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/clocksource/sh_tmu.c b/drivers/clocksource/sh_tmu.c
+index 55b7a37..63ed92d 100644
+--- a/drivers/clocksource/sh_tmu.c
++++ b/drivers/clocksource/sh_tmu.c
+@@ -69,6 +69,15 @@ static DEFINE_RAW_SPINLOCK(sh_tmu_lock);
+ #define TCNT 1 /* channel register */
+ #define TCR 2 /* channel register */
+ 
++#define TCR_UNF			(1 << 8)
++#define TCR_UNIE		(1 << 5)
++#define TCR_TPSC_CLK4		(0 << 0)
++#define TCR_TPSC_CLK16		(1 << 0)
++#define TCR_TPSC_CLK64		(2 << 0)
++#define TCR_TPSC_CLK256		(3 << 0)
++#define TCR_TPSC_CLK1024	(4 << 0)
++#define TCR_TPSC_MASK		(7 << 0)
++
+ static inline unsigned long sh_tmu_read(struct sh_tmu_channel *ch, int reg_nr)
+ {
+ 	unsigned long offs;
+@@ -140,7 +149,7 @@ static int __sh_tmu_enable(struct sh_tmu_channel *ch)
+ 
+ 	/* configure channel to parent clock / 4, irq off */
+ 	ch->rate = clk_get_rate(ch->tmu->clk) / 4;
+-	sh_tmu_write(ch, TCR, 0x0000);
++	sh_tmu_write(ch, TCR, TCR_TPSC_CLK4);
+ 
+ 	/* enable channel */
+ 	sh_tmu_start_stop_ch(ch, 1);
+@@ -165,7 +174,7 @@ static void __sh_tmu_disable(struct sh_tmu_channel *ch)
+ 	sh_tmu_start_stop_ch(ch, 0);
+ 
+ 	/* disable interrupts in TMU block */
+-	sh_tmu_write(ch, TCR, 0x0000);
++	sh_tmu_write(ch, TCR, TCR_TPSC_CLK4);
+ 
+ 	/* stop clock */
+ 	clk_disable(ch->tmu->clk);
+@@ -195,7 +204,7 @@ static void sh_tmu_set_next(struct sh_tmu_channel *ch, unsigned long delta,
+ 	sh_tmu_read(ch, TCR);
+ 
+ 	/* enable interrupt */
+-	sh_tmu_write(ch, TCR, 0x0020);
++	sh_tmu_write(ch, TCR, TCR_UNIE | TCR_TPSC_CLK4);
+ 
+ 	/* reload delta value in case of periodic timer */
+ 	if (periodic)
+@@ -215,9 +224,9 @@ static irqreturn_t sh_tmu_interrupt(int irq, void *dev_id)
+ 
+ 	/* disable or acknowledge interrupt */
+ 	if (ch->ced.mode == CLOCK_EVT_MODE_ONESHOT)
+-		sh_tmu_write(ch, TCR, 0x0000);
++		sh_tmu_write(ch, TCR, TCR_TPSC_CLK4);
+ 	else
+-		sh_tmu_write(ch, TCR, 0x0020);
++		sh_tmu_write(ch, TCR, TCR_UNIE | TCR_TPSC_CLK4);
+ 
+ 	/* notify clockevent layer */
+ 	ch->ced.event_handler(&ch->ced);
 -- 
-Tushar Behera
+1.7.9.5
+
