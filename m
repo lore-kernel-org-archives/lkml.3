@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaEWKbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:31:48 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:32875 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373AbaEWKbq (ORCPT
+	id S1752573AbaEWKb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:31:56 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:48712 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511AbaEWKbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:31:46 -0400
+	Fri, 23 May 2014 06:31:52 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 07/71] clocksource: sh_cmt: Add memory base to sh_cmt_channel structure
-Date: Fri, 23 May 2014 12:30:47 +0200
-Message-Id: <1400841111-6683-7-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 12/71] clocksource: sh_cmt: Replace hardcoded register values with macros
+Date: Fri, 23 May 2014 12:30:52 +0200
+Message-Id: <1400841111-6683-12-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -23,73 +23,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-The channel memory base is channel-specific, add it to the channel
-structure in preparation for support of multiple channels per device.
+Define symbolic macros for all used registers bits.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/clocksource/sh_cmt.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/clocksource/sh_cmt.c |   56 +++++++++++++++++++++++++++++++++---------
+ 1 file changed, 44 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index eb93b88..4fcb05d 100644
+index 879b8c2..ce00baa 100644
 --- a/drivers/clocksource/sh_cmt.c
 +++ b/drivers/clocksource/sh_cmt.c
-@@ -40,6 +40,8 @@ struct sh_cmt_device;
- struct sh_cmt_channel {
- 	struct sh_cmt_device *cmt;
+@@ -114,6 +114,34 @@ struct sh_cmt_device {
+ 	unsigned int num_channels;
+ };
  
-+	void __iomem *base;
++#define SH_CMT16_CMCSR_CMF		(1 << 7)
++#define SH_CMT16_CMCSR_CMIE		(1 << 6)
++#define SH_CMT16_CMCSR_CKS8		(0 << 0)
++#define SH_CMT16_CMCSR_CKS32		(1 << 0)
++#define SH_CMT16_CMCSR_CKS128		(2 << 0)
++#define SH_CMT16_CMCSR_CKS512		(3 << 0)
++#define SH_CMT16_CMCSR_CKS_MASK		(3 << 0)
 +
- 	unsigned long flags;
- 	unsigned long match_value;
- 	unsigned long next_match_value;
-@@ -130,12 +132,12 @@ static inline unsigned long sh_cmt_read_cmstr(struct sh_cmt_channel *ch)
- 
- static inline unsigned long sh_cmt_read_cmcsr(struct sh_cmt_channel *ch)
++#define SH_CMT32_CMCSR_CMF		(1 << 15)
++#define SH_CMT32_CMCSR_OVF		(1 << 14)
++#define SH_CMT32_CMCSR_WRFLG		(1 << 13)
++#define SH_CMT32_CMCSR_STTF		(1 << 12)
++#define SH_CMT32_CMCSR_STPF		(1 << 11)
++#define SH_CMT32_CMCSR_SSIE		(1 << 10)
++#define SH_CMT32_CMCSR_CMS		(1 << 9)
++#define SH_CMT32_CMCSR_CMM		(1 << 8)
++#define SH_CMT32_CMCSR_CMTOUT_IE	(1 << 7)
++#define SH_CMT32_CMCSR_CMR_NONE		(0 << 4)
++#define SH_CMT32_CMCSR_CMR_DMA		(1 << 4)
++#define SH_CMT32_CMCSR_CMR_IRQ		(2 << 4)
++#define SH_CMT32_CMCSR_CMR_MASK		(3 << 4)
++#define SH_CMT32_CMCSR_DBGIVD		(1 << 3)
++#define SH_CMT32_CMCSR_CKS_RCLK8	(4 << 0)
++#define SH_CMT32_CMCSR_CKS_RCLK32	(5 << 0)
++#define SH_CMT32_CMCSR_CKS_RCLK128	(6 << 0)
++#define SH_CMT32_CMCSR_CKS_RCLK1	(7 << 0)
++#define SH_CMT32_CMCSR_CKS_MASK		(7 << 0)
++
+ static unsigned long sh_cmt_read16(void __iomem *base, unsigned long offs)
  {
--	return ch->cmt->read_control(ch->cmt->mapbase_ch, CMCSR);
-+	return ch->cmt->read_control(ch->base, CMCSR);
- }
+ 	return ioread16(base + (offs << 1));
+@@ -140,8 +168,8 @@ static const struct sh_cmt_info sh_cmt_info[] = {
+ 	[SH_CMT_16BIT] = {
+ 		.model = SH_CMT_16BIT,
+ 		.width = 16,
+-		.overflow_bit = 0x80,
+-		.clear_bits = ~0x80,
++		.overflow_bit = SH_CMT16_CMCSR_CMF,
++		.clear_bits = ~SH_CMT16_CMCSR_CMF,
+ 		.read_control = sh_cmt_read16,
+ 		.write_control = sh_cmt_write16,
+ 		.read_count = sh_cmt_read16,
+@@ -150,8 +178,8 @@ static const struct sh_cmt_info sh_cmt_info[] = {
+ 	[SH_CMT_32BIT] = {
+ 		.model = SH_CMT_32BIT,
+ 		.width = 32,
+-		.overflow_bit = 0x8000,
+-		.clear_bits = ~0xc000,
++		.overflow_bit = SH_CMT32_CMCSR_CMF,
++		.clear_bits = ~(SH_CMT32_CMCSR_CMF | SH_CMT32_CMCSR_OVF),
+ 		.read_control = sh_cmt_read16,
+ 		.write_control = sh_cmt_write16,
+ 		.read_count = sh_cmt_read32,
+@@ -160,8 +188,8 @@ static const struct sh_cmt_info sh_cmt_info[] = {
+ 	[SH_CMT_32BIT_FAST] = {
+ 		.model = SH_CMT_32BIT_FAST,
+ 		.width = 32,
+-		.overflow_bit = 0x8000,
+-		.clear_bits = ~0xc000,
++		.overflow_bit = SH_CMT32_CMCSR_CMF,
++		.clear_bits = ~(SH_CMT32_CMCSR_CMF | SH_CMT32_CMCSR_OVF),
+ 		.read_control = sh_cmt_read16,
+ 		.write_control = sh_cmt_write16,
+ 		.read_count = sh_cmt_read32,
+@@ -170,8 +198,8 @@ static const struct sh_cmt_info sh_cmt_info[] = {
+ 	[SH_CMT_48BIT] = {
+ 		.model = SH_CMT_48BIT,
+ 		.width = 32,
+-		.overflow_bit = 0x8000,
+-		.clear_bits = ~0xc000,
++		.overflow_bit = SH_CMT32_CMCSR_CMF,
++		.clear_bits = ~(SH_CMT32_CMCSR_CMF | SH_CMT32_CMCSR_OVF),
+ 		.read_control = sh_cmt_read32,
+ 		.write_control = sh_cmt_write32,
+ 		.read_count = sh_cmt_read32,
+@@ -180,8 +208,8 @@ static const struct sh_cmt_info sh_cmt_info[] = {
+ 	[SH_CMT_48BIT_GEN2] = {
+ 		.model = SH_CMT_48BIT_GEN2,
+ 		.width = 32,
+-		.overflow_bit = 0x8000,
+-		.clear_bits = ~0xc000,
++		.overflow_bit = SH_CMT32_CMCSR_CMF,
++		.clear_bits = ~(SH_CMT32_CMCSR_CMF | SH_CMT32_CMCSR_OVF),
+ 		.read_control = sh_cmt_read32,
+ 		.write_control = sh_cmt_write32,
+ 		.read_count = sh_cmt_read32,
+@@ -295,10 +323,14 @@ static int sh_cmt_enable(struct sh_cmt_channel *ch, unsigned long *rate)
+ 	/* configure channel, periodic mode and maximum timeout */
+ 	if (ch->cmt->info->width == 16) {
+ 		*rate = clk_get_rate(ch->cmt->clk) / 512;
+-		sh_cmt_write_cmcsr(ch, 0x43);
++		sh_cmt_write_cmcsr(ch, SH_CMT16_CMCSR_CMIE |
++				   SH_CMT16_CMCSR_CKS512);
+ 	} else {
+ 		*rate = clk_get_rate(ch->cmt->clk) / 8;
+-		sh_cmt_write_cmcsr(ch, 0x01a4);
++		sh_cmt_write_cmcsr(ch, SH_CMT32_CMCSR_CMM |
++				   SH_CMT32_CMCSR_CMTOUT_IE |
++				   SH_CMT32_CMCSR_CMR_IRQ |
++				   SH_CMT32_CMCSR_CKS_RCLK8);
+ 	}
  
- static inline unsigned long sh_cmt_read_cmcnt(struct sh_cmt_channel *ch)
- {
--	return ch->cmt->read_count(ch->cmt->mapbase_ch, CMCNT);
-+	return ch->cmt->read_count(ch->base, CMCNT);
- }
- 
- static inline void sh_cmt_write_cmstr(struct sh_cmt_channel *ch,
-@@ -147,19 +149,19 @@ static inline void sh_cmt_write_cmstr(struct sh_cmt_channel *ch,
- static inline void sh_cmt_write_cmcsr(struct sh_cmt_channel *ch,
- 				      unsigned long value)
- {
--	ch->cmt->write_control(ch->cmt->mapbase_ch, CMCSR, value);
-+	ch->cmt->write_control(ch->base, CMCSR, value);
- }
- 
- static inline void sh_cmt_write_cmcnt(struct sh_cmt_channel *ch,
- 				      unsigned long value)
- {
--	ch->cmt->write_count(ch->cmt->mapbase_ch, CMCNT, value);
-+	ch->cmt->write_count(ch->base, CMCNT, value);
- }
- 
- static inline void sh_cmt_write_cmcor(struct sh_cmt_channel *ch,
- 				      unsigned long value)
- {
--	ch->cmt->write_count(ch->cmt->mapbase_ch, CMCOR, value);
-+	ch->cmt->write_count(ch->base, CMCOR, value);
- }
- 
- static unsigned long sh_cmt_get_counter(struct sh_cmt_channel *ch,
-@@ -702,6 +704,7 @@ static int sh_cmt_setup_channel(struct sh_cmt_channel *ch,
- 
- 	memset(ch, 0, sizeof(*ch));
- 	ch->cmt = cmt;
-+	ch->base = cmt->mapbase_ch;
- 
- 	irq = platform_get_irq(cmt->pdev, 0);
- 	if (irq < 0) {
+ 	sh_cmt_write_cmcor(ch, 0xffffffff);
 -- 
 1.7.9.5
 
