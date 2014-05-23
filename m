@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbaEWKfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:35:10 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:61506 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078AbaEWKcz (ORCPT
+	id S1753154AbaEWKcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:32:54 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:48018 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078AbaEWKcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:55 -0400
+	Fri, 23 May 2014 06:32:51 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 63/71] clocksource: Fix clocksource_mmio_readX_down
-Date: Fri, 23 May 2014 12:31:43 +0200
-Message-Id: <1400841111-6683-63-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 59/71] ARM: sun6i: a31: Add support for the High Speed Timers
+Date: Fri, 23 May 2014 12:31:39 +0200
+Message-Id: <1400841111-6683-59-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -21,46 +21,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiubo Li <Li.Xiubo@freescale.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-For some clocksource devices, for example, the registers are 32-bit, while
-the lower 16-bit is used for timer counting(And reading the upper 16-bit
-will return 0).
+The Allwinner A31 has support for four high speed timers. Apart for the
+number of timers (4 vs 2), it's basically the same logic than the high
+speed timers found in the sun5i chips.
 
-For example, when the counter value is 0x00001111, and then the
-~readl_relaxed(to_mmio_clksrc(c)->reg) will return the value of 0xFFFFEEEE,
-but it should be 0x0000EEEE.
+Now that we have a driver to support it, we can enable them in the
+device tree.
 
-So just using the c->mask to mask the unused bits.
-
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/mmio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/sun6i-a31.dtsi |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
-index 19a6b3f..1593ade 100644
---- a/drivers/clocksource/mmio.c
-+++ b/drivers/clocksource/mmio.c
-@@ -27,7 +27,7 @@ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index d45efa7..8cee8a1 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -428,6 +428,17 @@
+ 			status = "disabled";
+ 		};
  
- cycle_t clocksource_mmio_readl_down(struct clocksource *c)
- {
--	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
-+	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
- }
- 
- cycle_t clocksource_mmio_readw_up(struct clocksource *c)
-@@ -37,7 +37,7 @@ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
- 
- cycle_t clocksource_mmio_readw_down(struct clocksource *c)
- {
--	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
-+	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
- }
- 
- /**
++		timer@01c60000 {
++			compatible = "allwinner,sun6i-a31-hstimer", "allwinner,sun7i-a20-hstimer";
++			reg = <0x01c60000 0x1000>;
++			interrupts = <0 51 4>,
++				     <0 52 4>,
++				     <0 53 4>,
++				     <0 54 4>;
++			clocks = <&ahb1_gates 19>;
++			resets = <&ahb1_rst 19>;
++		};
++
+ 		spi0: spi@01c68000 {
+ 			compatible = "allwinner,sun6i-a31-spi";
+ 			reg = <0x01c68000 0x1000>;
 -- 
 1.7.9.5
 
