@@ -1,128 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaEWGoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 02:44:11 -0400
-Received: from ozlabs.org ([103.22.144.67]:43349 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752010AbaEWGoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 02:44:09 -0400
-Date: Fri, 23 May 2014 16:44:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Steve Capper <steve.capper@linaro.org>
-Subject: linux-next: manual merge of the tip tree with the arm64 tree
-Message-ID: <20140523164402.37eceb11@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752372AbaEWGsD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 02:48:03 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:59697 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957AbaEWGsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 02:48:01 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/o1L+NY9/KG=Pl4znMo5x2aA"; protocol="application/pgp-signature"
+In-Reply-To: <1400797012-32106-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1400797012-32106-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Fri, 23 May 2014 08:48:00 +0200
+Message-ID: <CAPDyKFoF77fhYVaLX=nSS1A+mi9BUWHszkKA-stcutcOKovMXw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-dove: use mmc_of_parse() and remove
+ card_tasklet CD handler
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Chris Ball <chris@printf.net>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/o1L+NY9/KG=Pl4znMo5x2aA
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 23 May 2014 00:16, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
+> Commit f8ec589b86f6
+>   "mmc: sdhci-dove: allow GPIOs to be used for card detection on Dove"
+> added a gpio based card detect interrupt handler that was hooked up
+> into card_tasket.
+>
+> Commit 3560db8e247a
+>   "mmc: sdhci: push card_tasklet into threaded irq handler"
+> now removed that very card_tasklet causing sdhci-dove to fail on build
+> with:
+> drivers/mmc/host/sdhci-dove.c: In function 'sdhci_dove_carddetect_irq':
+> drivers/mmc/host/sdhci-dove.c:42:24: error: 'struct sdhci_host' has no member named 'card_tasklet'
+>
+> To fix both the build error and get a working gpio card detection without
+> card_tasklet, replace sdhci_get_of_property() with more recent
+> mmc_of_parse(). It takes care of gpio-based card detect passed through DT
+> already and allows to remove the offending code sections dealing with
+> removed card_tasklet.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-Hi all,
+Thanks Sebastian!
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/arm64/mm/mmu.c between commit a501e32430d4 ("arm64: Clean up the
-default pgprot setting") and 206a2a73a62d ("arm64: mm: Create gigabyte
-kernel logical mappings where possible") from the arm64 tree and commit
-d7ecbddf4cae ("arm64: Add function to create identity mappings") from
-the tip tree.
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-I fixed it up (maybe - see below - this may not be complete) and can
-carry the fix as necessary (no action is required).
+Chris, can you pick this up?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm64/mm/mmu.c
-index 3a729de96f15,4a829a210bb6..000000000000
---- a/arch/arm64/mm/mmu.c
-+++ b/arch/arm64/mm/mmu.c
-@@@ -158,6 -192,17 +160,17 @@@ static void __init alloc_init_pmd(pud_
-  {
-  	pmd_t *pmd;
-  	unsigned long next;
-+ 	pmdval_t prot_sect;
-+ 	pgprot_t prot_pte;
-+=20
-+ 	if (map_io) {
-+ 		prot_sect =3D PMD_TYPE_SECT | PMD_SECT_AF |
-+ 			    PMD_ATTRINDX(MT_DEVICE_nGnRE);
-+ 		prot_pte =3D __pgprot(PROT_DEVICE_nGnRE);
-+ 	} else {
- -		prot_sect =3D prot_sect_kernel;
-++		prot_sect =3D PROT_SECT_NORMAL_EXEC;
-+ 		prot_pte =3D PAGE_KERNEL_EXEC;
-+ 	}
- =20
-  	/*
-  	 * Check for initial section mappings in the pgd/pud and remove them.
-@@@ -195,30 -242,7 +210,30 @@@ static void __init alloc_init_pud(pgd_
- =20
-  	do {
-  		next =3D pud_addr_end(addr, end);
- -		alloc_init_pmd(pud, addr, next, phys, map_io);
- +
- +		/*
- +		 * For 4K granule only, attempt to put down a 1GB block
- +		 */
- +		if ((PAGE_SHIFT =3D=3D 12) &&
- +		    ((addr | next | phys) & ~PUD_MASK) =3D=3D 0) {
- +			pud_t old_pud =3D *pud;
- +			set_pud(pud, __pud(phys | PROT_SECT_NORMAL_EXEC));
- +
- +			/*
- +			 * If we have an old value for a pud, it will
- +			 * be pointing to a pmd table that we no longer
- +			 * need (from swapper_pg_dir).
- +			 *
- +			 * Look up the old pmd table and free it.
- +			 */
- +			if (!pud_none(old_pud)) {
- +				phys_addr_t table =3D __pa(pmd_offset(&old_pud, 0));
- +				memblock_free(table, PAGE_SIZE);
- +				flush_tlb_all();
- +			}
- +		} else {
-- 			alloc_init_pmd(pud, addr, next, phys);
-++			alloc_init_pmd(pud, addr, next, phys, map_io);
- +		}
-  		phys +=3D next - addr;
-  	} while (pud++, addr =3D next, addr !=3D end);
-  }
-
---Sig_/o1L+NY9/KG=Pl4znMo5x2aA
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTfu43AAoJEMDTa8Ir7ZwVi3gP/A5Va4NWmxVYekFMSZoEHiGw
-yPRG7i4l3veCE+q31fkSsTG41fxcQH79S1gwHj44dfLtFlfpxqVaFGZZa8S2bxOY
-5UWNA9wTx4WG3dVCaSABPjFijPoDVr593pcW+xJNSnNp1QAKPpli/tV4hTxDE+jV
-AL8hVLKNEuQNH0iVOrm411zLxKIGrkUCX9fGmGl+On679QQCydDd6djzBAlOmDNI
-MvdlBrRpjBATUichzqgwF4yX/paN4P8z52PrWa1+WcHwRqGkDVxhKqIxGps37y3l
-oaeRkY+WxWdiP3YPgykd7hgQq13sq8UymJXjSya7GYuQZsQqIFiAnOfjuEXigS57
-qoEzNzXaFw1aZA+zxO84c5TxLr1r7uwmy6dLK3xJTqO6o9UUEq6dCf4RSmskIT+l
-87xjfc/qE56dwqHjK2D7v4FIKzYxlSlsAnLEZeMTFk8P034mlPHSJ66wl0xeFvPG
-MA2Wh821R77JebxLYULbAPBt8GePiutxvrXzQr1ezCYbDPki1zSate4gDMl2k8aj
-/EYv90uXQJgkpLcRFA1AUSnekHaZx7/6xRtzUctHHq9L2mCGm32Yxa+t09kKwQfo
-V1Yb0iueHl80l/UGEcABHFrZU7i7kxhPQ2EIcVic6T0TaSW5so9UDx8NGizSi/PD
-mpD5cLlt2YK8PairSV/M
-=p85v
------END PGP SIGNATURE-----
-
---Sig_/o1L+NY9/KG=Pl4znMo5x2aA--
+> ---
+> This patch is based on todays mmc-next and fixes a build error there.
+>
+> Cc: Chris Ball <chris@printf.net>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: linux-mmc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/mmc/host/sdhci-dove.c | 74 +++----------------------------------------
+>  1 file changed, 5 insertions(+), 69 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
+> index 0d315f4496c8..e6278ec007d7 100644
+> --- a/drivers/mmc/host/sdhci-dove.c
+> +++ b/drivers/mmc/host/sdhci-dove.c
+> @@ -21,28 +21,17 @@
+>
+>  #include <linux/clk.h>
+>  #include <linux/err.h>
+> -#include <linux/gpio.h>
+>  #include <linux/io.h>
+>  #include <linux/mmc/host.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+> -#include <linux/of_gpio.h>
+>
+>  #include "sdhci-pltfm.h"
+>
+>  struct sdhci_dove_priv {
+>         struct clk *clk;
+> -       int gpio_cd;
+>  };
+>
+> -static irqreturn_t sdhci_dove_carddetect_irq(int irq, void *data)
+> -{
+> -       struct sdhci_host *host = data;
+> -
+> -       tasklet_schedule(&host->card_tasklet);
+> -       return IRQ_HANDLED;
+> -}
+> -
+>  static u16 sdhci_dove_readw(struct sdhci_host *host, int reg)
+>  {
+>         u16 ret;
+> @@ -60,8 +49,6 @@ static u16 sdhci_dove_readw(struct sdhci_host *host, int reg)
+>
+>  static u32 sdhci_dove_readl(struct sdhci_host *host, int reg)
+>  {
+> -       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> -       struct sdhci_dove_priv *priv = pltfm_host->priv;
+>         u32 ret;
+>
+>         ret = readl(host->ioaddr + reg);
+> @@ -71,14 +58,6 @@ static u32 sdhci_dove_readl(struct sdhci_host *host, int reg)
+>                 /* Mask the support for 3.0V */
+>                 ret &= ~SDHCI_CAN_VDD_300;
+>                 break;
+> -       case SDHCI_PRESENT_STATE:
+> -               if (gpio_is_valid(priv->gpio_cd)) {
+> -                       if (gpio_get_value(priv->gpio_cd) == 0)
+> -                               ret |= SDHCI_CARD_PRESENT;
+> -                       else
+> -                               ret &= ~SDHCI_CARD_PRESENT;
+> -               }
+> -               break;
+>         }
+>         return ret;
+>  }
+> @@ -117,28 +96,9 @@ static int sdhci_dove_probe(struct platform_device *pdev)
+>
+>         priv->clk = devm_clk_get(&pdev->dev, NULL);
+>
+> -       if (pdev->dev.of_node) {
+> -               priv->gpio_cd = of_get_named_gpio(pdev->dev.of_node,
+> -                                                 "cd-gpios", 0);
+> -       } else {
+> -               priv->gpio_cd = -EINVAL;
+> -       }
+> -
+> -       if (gpio_is_valid(priv->gpio_cd)) {
+> -               ret = gpio_request(priv->gpio_cd, "sdhci-cd");
+> -               if (ret) {
+> -                       dev_err(&pdev->dev, "card detect gpio request failed: %d\n",
+> -                               ret);
+> -                       return ret;
+> -               }
+> -               gpio_direction_input(priv->gpio_cd);
+> -       }
+> -
+>         host = sdhci_pltfm_init(pdev, &sdhci_dove_pdata, 0);
+> -       if (IS_ERR(host)) {
+> -               ret = PTR_ERR(host);
+> -               goto err_sdhci_pltfm_init;
+> -       }
+> +       if (IS_ERR(host))
+> +               return PTR_ERR(host);
+>
+>         pltfm_host = sdhci_priv(host);
+>         pltfm_host->priv = priv;
+> @@ -146,39 +106,20 @@ static int sdhci_dove_probe(struct platform_device *pdev)
+>         if (!IS_ERR(priv->clk))
+>                 clk_prepare_enable(priv->clk);
+>
+> -       sdhci_get_of_property(pdev);
+> +       ret = mmc_of_parse(host->mmc);
+> +       if (ret)
+> +               goto err_sdhci_add;
+>
+>         ret = sdhci_add_host(host);
+>         if (ret)
+>                 goto err_sdhci_add;
+>
+> -       /*
+> -        * We must request the IRQ after sdhci_add_host(), as the tasklet only
+> -        * gets setup in sdhci_add_host() and we oops.
+> -        */
+> -       if (gpio_is_valid(priv->gpio_cd)) {
+> -               ret = request_irq(gpio_to_irq(priv->gpio_cd),
+> -                                 sdhci_dove_carddetect_irq,
+> -                                 IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+> -                                 mmc_hostname(host->mmc), host);
+> -               if (ret) {
+> -                       dev_err(&pdev->dev, "card detect irq request failed: %d\n",
+> -                               ret);
+> -                       goto err_request_irq;
+> -               }
+> -       }
+> -
+>         return 0;
+>
+> -err_request_irq:
+> -       sdhci_remove_host(host, 0);
+>  err_sdhci_add:
+>         if (!IS_ERR(priv->clk))
+>                 clk_disable_unprepare(priv->clk);
+>         sdhci_pltfm_free(pdev);
+> -err_sdhci_pltfm_init:
+> -       if (gpio_is_valid(priv->gpio_cd))
+> -               gpio_free(priv->gpio_cd);
+>         return ret;
+>  }
+>
+> @@ -190,11 +131,6 @@ static int sdhci_dove_remove(struct platform_device *pdev)
+>
+>         sdhci_pltfm_unregister(pdev);
+>
+> -       if (gpio_is_valid(priv->gpio_cd)) {
+> -               free_irq(gpio_to_irq(priv->gpio_cd), host);
+> -               gpio_free(priv->gpio_cd);
+> -       }
+> -
+>         if (!IS_ERR(priv->clk))
+>                 clk_disable_unprepare(priv->clk);
+>
+> --
+> 1.9.1
+>
