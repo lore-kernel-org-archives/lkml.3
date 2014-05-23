@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaEWPKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:10:50 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:62622 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbaEWPKo (ORCPT
+	id S1752937AbaEWPKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:10:51 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:50582 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889AbaEWPKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:10:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400857500.31526.52.camel@x220>
-References: <1400702036.30334.6.camel@x220>
-	<CAK9yfHz2kdfkf+o7fKMRu=nMXxbcHJ227bjpvA=WXt6ptH3QRA@mail.gmail.com>
-	<1400740894.21254.8.camel@x220>
-	<CAK9yfHzf-Z3AQ4+-sF7xqqUw4dN8aULkCNvLQnmusp_ZiOg+Rw@mail.gmail.com>
-	<1400857500.31526.52.camel@x220>
-Date: Fri, 23 May 2014 20:40:43 +0530
-Message-ID: <CAKohpom=YNUk=tHGs28LrZH4_JKd9pWxwqVuSbJ4wbVv=SkK1g@mail.gmail.com>
-Subject: Re: [PATCH v2] cpufreq: s5pv210: drop check for CONFIG_PM_VERBOSE
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 23 May 2014 11:10:43 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: [RESEND PATCH v5 3/5] ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
+Date: Fri, 23 May 2014 16:10:17 +0100
+Message-Id: <1400857819-7975-4-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1400857819-7975-1-git-send-email-daniel.thompson@linaro.org>
+References: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
+ <1400857819-7975-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 2014 20:35, Paul Bolle <pebolle@tiscali.nl> wrote:
-> A pr_err() was added in v3.1. It was guarded by a check for
-> CONFIG_PM_VERBOSE. The Kconfig symbol PM_VERBOSE was removed in v3.0. So
-> this pr_err() has never been used. Drop that check and clean up the
-> message a bit.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> v1 was called "cpufreq: s5pv210: remove unused call of pr_err()". v2
-> keeps the pr_err() and trims down its arguments, as Sachin requested.
->
-> Still untested.
->
->  drivers/cpufreq/s5pv210-cpufreq.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
-> index ab2c1a40d437..19a10b89fef7 100644
-> --- a/drivers/cpufreq/s5pv210-cpufreq.c
-> +++ b/drivers/cpufreq/s5pv210-cpufreq.c
-> @@ -175,10 +175,8 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
->         mutex_lock(&set_freq_lock);
->
->         if (no_cpufreq_access) {
-> -#ifdef CONFIG_PM_VERBOSE
-> -               pr_err("%s:%d denied access to %s as it is disabled"
-> -                               "temporarily\n", __FILE__, __LINE__, __func__);
-> -#endif
-> +               pr_err("Denied access to %s as it is disabled temporarily\n",
-> +                      __func__);
->                 ret = -EINVAL;
->                 goto exit;
->         }
+Only a small handful of platforms support DEBUG_LL_UART_NONE but it
+lurks in the menus of every single platform config ready to break the
+build. This is an especial problem for defconfigs since it is often
+selected by default.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+This patch limit this choice only to platforms capable of supporting it.
+
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/Kconfig.debug | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index eab8ecb..4c8d7db 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -842,7 +842,18 @@ choice
+ 
+ 	config DEBUG_LL_UART_NONE
+ 		bool "No low-level debugging UART"
+-		depends on !ARCH_MULTIPLATFORM
++		depends on ARCH_AT91 || \
++			ARCH_CLPS711X || \
++			ARCH_FOOTBRIDGE || \
++			ARCH_KS8695 || \
++			ARCH_NETX || \
++			ARCH_OMAP1 || \
++			ARCH_SA1100 || \
++			ARCH_S3C24XX || \
++			ARCH_S3C64XX || \
++			ARCH_S5P64X0 || \
++			ARCH_S5PC100 || \
++			ARCH_S5PV210
+ 		help
+ 		  Say Y here if your platform doesn't provide a UART option
+ 		  above. This relies on your platform choosing the right UART
+-- 
+1.9.0
+
