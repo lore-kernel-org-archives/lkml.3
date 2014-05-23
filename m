@@ -1,191 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387AbaEWSVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:21:09 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:35990 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaEWSQw convert rfc822-to-8bit (ORCPT
+	id S1751396AbaEWSYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:24:35 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:64444 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaEWSYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:16:52 -0400
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        peterz@infradead.org, mingo@kernel.org
-Cc: rjw@rjwysocki.net, vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        preeti@linux.vnet.ibm.com, dietmar.eggemann@arm.com
-Subject: [RFC PATCH 05/16] sched: Add sd energy procfs interface
-Date: Fri, 23 May 2014 19:16:32 +0100
-Message-Id: <1400869003-27769-6-git-send-email-morten.rasmussen@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
+	Fri, 23 May 2014 14:24:33 -0400
+Message-ID: <537F9267.7090304@cogentembedded.com>
+Date: Fri, 23 May 2014 22:24:39 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 23 May 2014 18:16:49.0651 (UTC) FILETIME=[2A371430:01CF76B3]
-X-MC-Unique: 114052319165000801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>
+CC: Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND] ARM: trusted_foundations: fix compile error on
+ non-SMP
+References: <1400804612-11876-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1400804612-11876-1-git-send-email-acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Hello.
 
-This patch makes the values of the sd energy data structure available via
-procfs.  The related files are placed as sub-directory named 'energy'
-inside the /proc/sys/kernel/sched_domain/cpuX/domainY/groupZ directory for
-those cpu/domain/group tuples which have sd energy information.
+On 05/23/2014 04:23 AM, Alexandre Courbot wrote:
 
-The following example depicts the contents of
-/proc/sys/kernel/sched_domain/cpu0/domain0/group[01] for a system which
-has sd energy information attached to domain level 0.
+> The setup_max_cpus variable is only defined if CONFIG_SMP is set. Add
+> a preprocessor condition to avoid the following compilation error if
+> CONFIG_SMP is not set:
 
-├── cpu0
-│   ├── domain0
-│   │   ├── busy_factor
-│   │   ├── busy_idx
-│   │   ├── cache_nice_tries
-│   │   ├── flags
-│   │   ├── forkexec_idx
-│   │   ├── group0
-│   │   │   └── energy
-│   │   │       ├── cap_states
-│   │   │       ├── idle_power
-│   │   │       ├── max_capacity
-│   │   │       ├── nr_cap_states
-│   │   │       └── wakeup_energy
-│   │   ├── group1
-│   │   │   └── energy
-│   │   │       ├── cap_states
-│   │   │       ├── idle_power
-│   │   │       ├── max_capacity
-│   │   │       ├── nr_cap_states
-│   │   │       └── wakeup_energy
-│   │   ├── idle_idx
-│   │   ├── imbalance_pct
-│   │   ├── max_interval
-│   │   ├── max_newidle_lb_cost
-│   │   ├── min_interval
-│   │   ├── name
-│   │   ├── newidle_idx
-│   │   └── wake_idx
-│   └── domain1
-│       ├── busy_factor
-│       ├── busy_idx
-│       ├── cache_nice_tries
-│       ├── flags
-│       ├── forkexec_idx
-│       ├── idle_idx
-│       ├── imbalance_pct
-│       ├── max_interval
-│       ├── max_newidle_lb_cost
-│       ├── min_interval
-│       ├── name
-│       ├── newidle_idx
-│       └── wake_idx
+>      arch/arm/include/asm/trusted_foundations.h: In function 'register_trusted_foundations':
+>      arch/arm/include/asm/trusted_foundations.h:57:2: error: 'setup_max_cpus' undeclared (first use in this function)
 
-The files 'idle_power', 'max_capacity', 'nr_cap_states' and 'wakeup_energy'
-contain a scalar value whereas 'cap_states' contains a vector of
-(compute capacity, power consumption @ this compute capacity) tuples.
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> ---
+> Hi Stephen,
 
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
----
- kernel/sched/core.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 71 insertions(+), 2 deletions(-)
+> This patch has been originally submitted through Russell's patch tracker,
+> where it has stayed untouched for ~3 weeks now. Considering that this
+> fixes a compilation error and should thus be made available quickly, and
+> that Tegra is the only user of Trusted Foundations, would you agree to take
+> it into your tree?
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 785b61d..096fa55 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4837,10 +4837,66 @@ set_table_entry(struct ctl_table *entry,
- 	}
- }
- 
-+#ifdef CONFIG_SCHED_ENERGY
-+static struct ctl_table *
-+sd_alloc_ctl_energy_table(struct sched_group_energy *sge)
-+{
-+	struct ctl_table *table = sd_alloc_ctl_entry(6);
-+
-+	if (table == NULL)
-+		return NULL;
-+
-+	set_table_entry(&table[0], "max_capacity", &sge->data.max_capacity,
-+			sizeof(long), 0644, proc_doulongvec_minmax, false);
-+	set_table_entry(&table[1], "idle_power", &sge->data.idle_power,
-+			sizeof(int), 0644, proc_dointvec_minmax, false);
-+	set_table_entry(&table[2], "wakeup_energy", &sge->data.wakeup_energy,
-+			sizeof(int), 0644, proc_dointvec_minmax, false);
-+	set_table_entry(&table[3], "nr_cap_states", &sge->data.nr_cap_states,
-+			sizeof(int), 0644, proc_dointvec_minmax, false);
-+	set_table_entry(&table[4], "cap_states", &sge->data.cap_states[0].cap,
-+			sge->data.nr_cap_states*2*sizeof(int), 0644,
-+			proc_dointvec_minmax, false);
-+
-+	return table;
-+}
-+
-+static struct ctl_table *
-+sd_alloc_ctl_group_table(struct sched_group *sg)
-+{
-+	struct ctl_table *table = sd_alloc_ctl_entry(2);
-+
-+	if (table == NULL)
-+		return NULL;
-+
-+	table->procname = kstrdup("energy", GFP_KERNEL);
-+	table->mode = 0555;
-+	table->child = sd_alloc_ctl_energy_table(sg->sge);
-+
-+	return table;
-+}
-+#endif
-+
- static struct ctl_table *
- sd_alloc_ctl_domain_table(struct sched_domain *sd)
- {
--	struct ctl_table *table = sd_alloc_ctl_entry(14);
-+	struct ctl_table *table;
-+	unsigned int nr_entries = 14;
-+
-+#ifdef CONFIG_SCHED_ENERGY
-+	int i = 0;
-+	struct sched_group *sg = sd->groups;
-+
-+	if (sg->sge) {
-+		int nr_sgs = 0;
-+
-+		do {} while (nr_sgs++, sg = sg->next, sg != sd->groups);
-+
-+		nr_entries += nr_sgs;
-+	}
-+#endif
-+
-+	table = sd_alloc_ctl_entry(nr_entries);
- 
- 	if (table == NULL)
- 		return NULL;
-@@ -4873,7 +4929,20 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
- 		sizeof(long), 0644, proc_doulongvec_minmax, false);
- 	set_table_entry(&table[12], "name", sd->name,
- 		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
--	/* &table[13] is terminator */
-+#ifdef CONFIG_SCHED_ENERGY
-+	sg = sd->groups;
-+	if (sg->sge) {
-+		char buf[32];
-+		struct ctl_table *entry = &table[13];
-+		do {
-+			snprintf(buf, 32, "group%d", i);
-+			entry->procname = kstrdup(buf, GFP_KERNEL);
-+			entry->mode = 0555;
-+			entry->child = sd_alloc_ctl_group_table(sg);
-+		} while (entry++, i++, sg = sg->next, sg != sd->groups);
-+	}
-+#endif
-+	/* &table[nr_entries-1] is terminator */
- 
- 	return table;
- }
--- 
-1.7.9.5
+>   arch/arm/include/asm/trusted_foundations.h | 2 ++
+>   1 file changed, 2 insertions(+)
 
+> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
+> index b5f7705..624e1d4 100644
+> --- a/arch/arm/include/asm/trusted_foundations.h
+> +++ b/arch/arm/include/asm/trusted_foundations.h
+> @@ -54,7 +54,9 @@ static inline void register_trusted_foundations(
+>   	 */
+>   	pr_err("No support for Trusted Foundations, continuing in degraded mode.\n");
+>   	pr_err("Secondary processors as well as CPU PM will be disabled.\n");
+> +#if IS_ENABLED(CONFIG_SMP)
+
+	if (IS_ENABLED(CONFIG_SMP))
+
+>   	setup_max_cpus = 0;
+> +#endif
+
+WBR, Sergei
 
