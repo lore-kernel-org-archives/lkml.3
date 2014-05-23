@@ -1,518 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaEWMpB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:45:01 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:44531 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaEWMov (ORCPT
+	id S1752191AbaEWMqO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:46:14 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62040 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752070AbaEWMqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:44:51 -0400
-X-Nat-Received: from [202.181.97.72]:55953 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1400849083.23308
-To: linux-security-module@vger.kernel.org
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] TaskTracker : Simplified thread information tracker.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201405232144.JFB30480.OVMOOSFtQJHLFF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 23 May 2014 21:44:43 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 23052014 #7986981, status: clean
+	Fri, 23 May 2014 08:46:12 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3][update] PM / sleep: Introduce command line argument for sleep state enumeration
+Date: Fri, 23 May 2014 15:03:12 +0200
+Message-ID: <1579932.qSkFQPvI6f@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2280756.TV3GPFuASb@vostro.rjw.lan>
+References: <1817539.9KW2IGGbDV@vostro.rjw.lan> <2280756.TV3GPFuASb@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yesterday I went to LinuxCon Japan 2014 and stopped at Red Hat's booth
-and Oracle's booth. I explained about this module ( using page 92 of
-http://I-love.SAKURA.ne.jp/tomoyo/LCJ2014-en.pdf ) and got positive
-responses from persons who have experienced troubleshooting jobs.
-I was convinced that I am not the only person who is bothered by lack of
-process history information in the logs. Therefore, I repost this module
-toward inclusion into mainline Linux kernel.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Changes from previous version ( http://lwn.net/Articles/575044/ ):
+On some systems the platform doesn't support neither
+PM_SUSPEND_MEM nor PM_SUSPEND_STANDBY, so PM_SUSPEND_FREEZE is the
+only available system sleep state.  However, some user space frameworks
+only use the "mem" and (sometimes) "standby" sleep state labels, so
+the users of those systems need to modify user space in order to be
+able to use system suspend at all and that is not always possible.
 
-  (1) Assign a value to "u32 *seclen" in addition to "char *secdata"
-      at security_task_getsecid() hook.
+For this reason, add a new kernel command line argument,
+relative_sleep_states, allowing the users of those systems to change
+the way in which the kernel assigns labels to system sleep states.
+Namely, for relative_sleep_states=1, the "mem", "standby" and "freeze"
+labels will enumerate the available system sleem states from the
+deepest to the shallowest, respectively, so that "mem" is always
+present in /sys/power/state and the other state strings may or may
+not be presend depending on what is supported by the platform.
 
-  (2) Make calculation of time stamp a bit faster.
+Update system sleep states documentation to reflect this change.
 
-Background:
-
-  When an unexpected system event (e.g. reboot) occurs, the administrator may
-  want to identify which application triggered the event. System call auditing
-  could be used for recording such event. However, the audit log may not be
-  able to provide sufficient information for identifying the application
-  because the audit log does not reflect how the program was executed.
-
-  I sometimes receive "which application triggered the event" questions on RHEL
-  systems. TOMOYO security module can track how the program was executed, but
-  TOMOYO is not yet available in Fedora/RHEL distributions.
-
-  Although subj= field is added to the audit log if SELinux is not disabled,
-  SELinux is too difficult to customize as fine grained as I expect in order to
-  reflect how the program was executed. Therefore, I'm currently using AKARI
-  and SystemTap for emulating TOMOYO-like tracing.
-
-  But AKARI and SystemTap do not help unless the kernel module is loaded before
-  the unexpected system event occurs. Generally, the administrator is failing
-  to record the first event, and has to wait for the same event to occur again
-  after loading the kernel module and/or configuring auditing. I came to think
-  that we want a built-in kernel routine which is automatically started upon
-  boot so that we don't fail to record the first event.
-
-What I did:
-
-  Assuming that multiple concurrent LSM support comes in the near future,
-  I wrote a trivial LSM module which emits TOMOYO-like information into the
-  audit logs.
-
-Usage:
-
-  Just register this LSM module. No configuration is needed. You will get
-  history of current thread in the form of comm name and time stamp pairs
-  in the subj= field of audit logs like examples shown in the patch
-  description.
-----------
->From ff68d3a4cd496bd263d2939848777fffc30cbc0b Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Fri, 23 May 2014 21:31:56 +0900
-Subject: [PATCH] TaskTracker : Simplified thread information tracker.
-
-Existing audit logs generated via system call auditing functionality include
-current thread's comm name. But it is not always sufficient for identifying
-which application has requested specific operations because comm name does not
-reflect history of current thread.
-
-This security module adds functionality for adding current thread's history
-information like TOMOYO security module does, expecting that this module can
-help us getting more information from system call auditing functionality.
-
-  type=USER_LOGIN msg=audit(1400879947.084:24): pid=4308 uid=0 auid=0 ses=2
-  subj="swapper/0(2014/05/23-21:17:30)=>init(2014/05/23-21:17:33)=>
-  switch_root(2014/05/23-21:17:34)=>init(2014/05/23-21:17:34)=>
-  sh(2014/05/23-21:17:56)=>mingetty(2014/05/23-21:17:56)=>
-  login(2014/05/23-21:19:05)" msg='op=login id=0 exe="/bin/login" hostname=?
-  addr=? terminal=tty1 res=success'
-
-  type=SYSCALL msg=audit(1400880014.444:26): arch=40000003 syscall=11
-  success=yes exit=0 a0=8140f78 a1=812b7d8 a2=812b248 a3=812b7d8 items=2
-  ppid=4323 pid=4355 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0
-  fsgid=0 tty=pts0 ses=1 comm="tail" exe="/usr/bin/tail"
-  subj="swapper/0(2014/05/23-21:17:30)=>init(2014/05/23-21:17:33)=>
-  switch_root(2014/05/23-21:17:34)=>init(2014/05/23-21:17:34)=>
-  sh(2014/05/23-21:17:37)=>rc(2014/05/23-21:17:37)=>
-  S55sshd(2014/05/23-21:17:53)=>sshd(2014/05/23-21:17:53)=>
-  sshd(2014/05/23-21:18:17)=>bash(2014/05/23-21:18:21)=>
-  tail(2014/05/23-21:20:14)" key=(null)
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- security/Kconfig                   |    6 +
- security/Makefile                  |    2 +
- security/tasktracker/Kconfig       |   35 +++++
- security/tasktracker/Makefile      |    1 +
- security/tasktracker/tasktracker.c |  282 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 326 insertions(+), 0 deletions(-)
- create mode 100644 security/tasktracker/Kconfig
- create mode 100644 security/tasktracker/Makefile
- create mode 100644 security/tasktracker/tasktracker.c
 
-diff --git a/security/Kconfig b/security/Kconfig
-index beb86b5..14e7d27 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -122,6 +122,7 @@ source security/smack/Kconfig
- source security/tomoyo/Kconfig
- source security/apparmor/Kconfig
- source security/yama/Kconfig
-+source security/tasktracker/Kconfig
+This update is needed after patch [2/3] has been updated.
+
+Thanks!
+
+---
+ Documentation/ABI/testing/sysfs-power |   29 +++++++----
+ Documentation/kernel-parameters.txt   |    7 ++
+ Documentation/power/states.txt        |   89 +++++++++++++++++++++-------------
+ kernel/power/main.c                   |   12 ++--
+ kernel/power/suspend.c                |   33 +++++++++++-
+ 5 files changed, 120 insertions(+), 50 deletions(-)
+
+Index: linux-pm/kernel/power/suspend.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend.c
++++ linux-pm/kernel/power/suspend.c
+@@ -86,19 +86,46 @@ static bool valid_state(suspend_state_t
+ 	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
+ }
  
- source security/integrity/Kconfig
- 
-@@ -132,6 +133,7 @@ choice
- 	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
- 	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
- 	default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
-+	default DEFAULT_SECURITY_TT if SECURITY_TT
- 	default DEFAULT_SECURITY_DAC
- 
- 	help
-@@ -153,6 +155,9 @@ choice
- 	config DEFAULT_SECURITY_YAMA
- 		bool "Yama" if SECURITY_YAMA=y
- 
-+	config DEFAULT_SECURITY_TT
-+		bool "TaskTracker" if SECURITY_TT=y
-+
- 	config DEFAULT_SECURITY_DAC
- 		bool "Unix Discretionary Access Controls"
- 
-@@ -165,6 +170,7 @@ config DEFAULT_SECURITY
- 	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
- 	default "apparmor" if DEFAULT_SECURITY_APPARMOR
- 	default "yama" if DEFAULT_SECURITY_YAMA
-+	default "tt" if DEFAULT_SECURITY_TT
- 	default "" if DEFAULT_SECURITY_DAC
- 
- endmenu
-diff --git a/security/Makefile b/security/Makefile
-index 05f1c93..28a90ed 100644
---- a/security/Makefile
-+++ b/security/Makefile
-@@ -8,6 +8,7 @@ subdir-$(CONFIG_SECURITY_SMACK)		+= smack
- subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
- subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
- subdir-$(CONFIG_SECURITY_YAMA)		+= yama
-+subdir-$(CONFIG_SECURITY_TT)		+= tasktracker
- 
- # always enable default capabilities
- obj-y					+= commoncap.o
-@@ -22,6 +23,7 @@ obj-$(CONFIG_AUDIT)			+= lsm_audit.o
- obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/
- obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
- obj-$(CONFIG_SECURITY_YAMA)		+= yama/
-+obj-$(CONFIG_SECURITY_TT)		+= tasktracker/
- obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
- 
- # Object integrity file lists
-diff --git a/security/tasktracker/Kconfig b/security/tasktracker/Kconfig
-new file mode 100644
-index 0000000..6de5354
---- /dev/null
-+++ b/security/tasktracker/Kconfig
-@@ -0,0 +1,35 @@
-+config SECURITY_TT
-+	bool "TaskTracker support"
-+	depends on SECURITY
-+	default n
-+	help
-+	  Existing audit logs generated via system call auditing functionality
-+	  include current thread's comm name. But it is not always sufficient
-+	  for identifying which application has requested specific operations
-+	  because comm name does not reflect history of current thread.
-+	  
-+	  This security module adds functionality for adding current thread's
-+	  history information like TOMOYO security module does, expecting that
-+	  this module can help us getting more information from system call
-+	  auditing functionality.
-+	  
-+	  If you are unsure how to answer this question, answer N.
-+	  
-+	  Usage:
-+	  
-+	  Just register this module. No configuration is needed.
-+	  
-+	  You will get history of current thread in the form of
-+	  comm name and time stamp pairs in the subj= field of audit logs
-+	  like an example shown below.
-+	  
-+	    type=SYSCALL msg=audit(1400880014.444:26): arch=40000003 syscall=11
-+	    success=yes exit=0 a0=8140f78 a1=812b7d8 a2=812b248 a3=812b7d8
-+	    items=2 ppid=4323 pid=4355 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0
-+	    egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="tail"
-+	    exe="/usr/bin/tail" subj="swapper/0(2014/05/23-21:17:30)=>
-+	    init(2014/05/23-21:17:33)=>switch_root(2014/05/23-21:17:34)=>
-+	    init(2014/05/23-21:17:34)=>sh(2014/05/23-21:17:37)=>
-+	    rc(2014/05/23-21:17:37)=>S55sshd(2014/05/23-21:17:53)=>
-+	    sshd(2014/05/23-21:17:53)=>sshd(2014/05/23-21:18:17)=>
-+	    bash(2014/05/23-21:18:21)=>tail(2014/05/23-21:20:14)" key=(null)
-diff --git a/security/tasktracker/Makefile b/security/tasktracker/Makefile
-new file mode 100644
-index 0000000..15d03ce
---- /dev/null
-+++ b/security/tasktracker/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_SECURITY_TT) := tasktracker.o
-diff --git a/security/tasktracker/tasktracker.c b/security/tasktracker/tasktracker.c
-new file mode 100644
-index 0000000..ec4eb0c
---- /dev/null
-+++ b/security/tasktracker/tasktracker.c
-@@ -0,0 +1,282 @@
 +/*
-+ * tasktracker.c - Simplified thread information tracker.
-+ *
-+ * Copyright (C) 2010-2014  Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
++ * If this is set, the "mem" label always corresponds to the deepest sleep state
++ * available, the "standby" label corresponds to the second deepest sleep state
++ * available (if any), and the "freeze" label corresponds to the remaining
++ * available sleep state (if there is one).
 + */
-+#include <linux/security.h>
-+#include <linux/binfmts.h>
++static bool relative_states;
 +
-+/* Wrapper structure for passing string buffer. */
-+struct tt_record {
-+	char history[1024];
-+};
-+
-+/* Structure for representing YYYY/MM/DD hh/mm/ss. */
-+struct tt_time {
-+	u16 year;
-+	u8 month;
-+	u8 day;
-+	u8 hour;
-+	u8 min;
-+	u8 sec;
-+};
-+
-+/**
-+ * tt_get_time - Get current time in YYYY/MM/DD hh/mm/ss format.
-+ *
-+ * @stamp: Pointer to "struct tt_time".
-+ *
-+ * Returns nothing.
-+ *
-+ * This function does not handle Y2038 problem.
-+ */
-+static void tt_get_time(struct tt_time *stamp)
++static int __init sleep_states_setup(char *str)
 +{
-+	struct timeval tv;
-+	static const u16 tt_eom[2][12] = {
-+		{ 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 },
-+		{ 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 }
-+	};
-+	u16 y = 1970;
-+	u8 m;
-+	bool r;
-+	time_t time;
-+	do_gettimeofday(&tv);
-+	time = tv.tv_sec;
-+	stamp->sec = time % 60;
-+	time /= 60;
-+	stamp->min = time % 60;
-+	time /= 60;
-+	stamp->hour = time % 24;
-+	time /= 24;
-+	if (time >= 16071) {
-+		/* Start from 2014/01/01 rather than 1970/01/01. */
-+		time -= 16071;
-+		y += 44;
++	relative_states = !strncmp(str, "1", 1);
++	if (relative_states) {
++		pm_states[PM_SUSPEND_MEM].state = PM_SUSPEND_FREEZE;
++		pm_states[PM_SUSPEND_FREEZE].state = 0;
 +	}
-+	while (1) {
-+		const unsigned short days = (y & 3) ? 365 : 366;
-+		if (time < days)
-+			break;
-+		time -= days;
-+		y++;
-+	}
-+	r = (y & 3) == 0;
-+	for (m = 0; m < 11 && time >= tt_eom[r][m]; m++)
-+		;
-+	if (m)
-+		time -= tt_eom[r][m - 1];
-+	stamp->year = y;
-+	stamp->month = ++m;
-+	stamp->day = ++time;
++	return 1;
 +}
 +
-+/**
-+ * tt_update_record - Update "struct tt_record" for given credential.
-+ *
-+ * @record: Pointer to "struct tt_record".
-+ *
-+ * Returns nothing.
-+ */
-+static void tt_update_record(struct tt_record *record)
-+{
-+	char *cp;
-+	int i;
-+	struct tt_time stamp;
-+	tt_get_time(&stamp);
-+	/*
-+	 * Lockless update because current thread's record is not concurrently
-+	 * accessible, for "struct cred"->security is not visible from other
-+	 * threads because this function is called upon only boot up and
-+	 * successful execve() operation.
-+	 */
-+	cp = record->history;
-+	i = strlen(cp);
-+	while (i >= sizeof(record->history) - (TASK_COMM_LEN * 4 + 30)) {
-+		/*
-+		 * Since this record is not for making security decision,
-+		 * I don't care by-chance matching "=>" in task's commname.
-+		 */
-+		char *cp2 = strstr(cp + 2, "=>");
-+		if (!cp2)
-+			return;
-+		memmove(cp + 1, cp2, strlen(cp2) + 1);
-+		i = strlen(cp);
-+	}
-+	if (!i)
-+		*cp++ = '"';
-+	else {
-+		cp += i - 1;
-+		*cp++ = '=';
-+		*cp++ = '>';
-+	}
-+	/*
-+	 * Lockless read because this is current thread and being unexpectedly
-+	 * modified by other thread is not a fatal problem.
-+	 */
-+	for (i = 0; i < TASK_COMM_LEN; i++) {
-+		const unsigned char c = current->comm[i];
-+		if (!c)
-+			break;
-+		else if (c == '"' || c == '\\' || c < 0x21 || c > 0x7e) {
-+			*cp++ = '\\';
-+			*cp++ = (c >> 6) + '0';
-+			*cp++ = ((c >> 3) & 7) + '0';
-+			*cp++ = (c & 7) + '0';
-+		} else
-+			*cp++ = c;
-+	}
-+	sprintf(cp, "(%04u/%02u/%02u-%02u:%02u:%02u)\"", stamp.year,
-+		stamp.month, stamp.day, stamp.hour, stamp.min, stamp.sec);
-+}
++__setup("relative_sleep_states=", sleep_states_setup);
 +
-+/**
-+ * tt_find_record - Find "struct tt_record" for given credential.
-+ *
-+ * @cred: Pointer to "struct cred".
-+ *
-+ * Returns pointer to "struct tt_record".
-+ */
-+static inline struct tt_record *tt_find_record(const struct cred *cred)
-+{
-+	return cred->security;
-+}
+ /**
+  * suspend_set_ops - Set the global suspend method table.
+  * @ops: Suspend operations to use.
+  */
+ void suspend_set_ops(const struct platform_suspend_ops *ops)
+ {
+-	suspend_state_t i;
++	suspend_state_t i, j = PM_SUSPEND_MAX - 1;
+ 
+ 	lock_system_sleep();
+ 
+ 	suspend_ops = ops;
+-	for (i = PM_SUSPEND_STANDBY; i <= PM_SUSPEND_MEM; i++)
+-		pm_states[i].state = valid_state(i) ? i : 0;
++	for (i = PM_SUSPEND_MEM; i >= PM_SUSPEND_STANDBY; i--)
++		if (valid_state(i))
++			pm_states[j--].state = i;
++		else if (!relative_states)
++			pm_states[j--].state = 0;
 +
-+/**
-+ * tt_cred_alloc_blank - Allocate memory for new credentials.
-+ *
-+ * @new: Pointer to "struct cred".
-+ * @gfp: Memory allocation flags.
-+ *
-+ * Returns 0 on success, negative value otherwise.
-+ */
-+static int tt_cred_alloc_blank(struct cred *new, gfp_t gfp)
-+{
-+	new->security = kzalloc(sizeof(struct tt_record), gfp);
-+	return new->security ? 0 : -ENOMEM;
-+}
++	pm_states[j--].state = PM_SUSPEND_FREEZE;
++	while (j >= PM_SUSPEND_MIN)
++		pm_states[j--].state = 0;
+ 
+ 	unlock_system_sleep();
+ }
+Index: linux-pm/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-pm.orig/Documentation/kernel-parameters.txt
++++ linux-pm/Documentation/kernel-parameters.txt
+@@ -2889,6 +2889,13 @@ bytes respectively. Such letter suffixes
+ 			[KNL, SMP] Set scheduler's default relax_domain_level.
+ 			See Documentation/cgroups/cpusets.txt.
+ 
++	relative_sleep_states=
++			[SUSPEND] Use sleep state labeling where the deepest
++			state available other than hibernation is always "mem".
++			Format: { "0" | "1" }
++			0 -- Traditional sleep state labels.
++			1 -- Relative sleep state labels.
 +
-+/**
-+ * tt_cred_prepare - Allocate memory for new credentials.
-+ *
-+ * @new: Pointer to "struct cred".
-+ * @old: Pointer to "struct cred".
-+ * @gfp: Memory allocation flags.
-+ *
-+ * Returns 0 on success, negative value otherwise.
-+ */
-+static int tt_cred_prepare(struct cred *new, const struct cred *old,
-+			   gfp_t gfp)
-+{
-+	if (tt_cred_alloc_blank(new, gfp))
-+		return -ENOMEM;
-+	strcpy(tt_find_record(new)->history, tt_find_record(old)->history);
-+	return 0;
-+}
+ 	reserve=	[KNL,BUGS] Force the kernel to ignore some iomem area
+ 
+ 	reservetop=	[X86-32]
+Index: linux-pm/kernel/power/main.c
+===================================================================
+--- linux-pm.orig/kernel/power/main.c
++++ linux-pm/kernel/power/main.c
+@@ -279,14 +279,14 @@ static inline void pm_print_times_init(v
+ struct kobject *power_kobj;
+ 
+ /**
+- *	state - control system power state.
++ * state - control system sleep states.
+  *
+- *	show() returns what states are supported, which is hard-coded to
+- *	'freeze' (Low-Power Idle), 'standby' (Power-On Suspend),
+- *	'mem' (Suspend-to-RAM), and 'disk' (Suspend-to-Disk).
++ * show() returns available sleep state labels, which may be "mem", "standby",
++ * "freeze" and "disk" (hibernation).  See Documentation/power/states.txt for a
++ * description of what they mean.
+  *
+- *	store() accepts one of those strings, translates it into the
+- *	proper enumerated value, and initiates a suspend transition.
++ * store() accepts one of those strings, translates it into the proper
++ * enumerated value, and initiates a suspend transition.
+  */
+ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 			  char *buf)
+Index: linux-pm/Documentation/ABI/testing/sysfs-power
+===================================================================
+--- linux-pm.orig/Documentation/ABI/testing/sysfs-power
++++ linux-pm/Documentation/ABI/testing/sysfs-power
+@@ -7,19 +7,30 @@ Description:
+ 		subsystem.
+ 
+ What:		/sys/power/state
+-Date:		August 2006
++Date:		May 2014
+ Contact:	Rafael J. Wysocki <rjw@rjwysocki.net>
+ Description:
+-		The /sys/power/state file controls the system power state.
+-		Reading from this file returns what states are supported,
+-		which is hard-coded to 'freeze' (Low-Power Idle), 'standby'
+-		(Power-On Suspend), 'mem' (Suspend-to-RAM), and 'disk'
+-		(Suspend-to-Disk).
++		The /sys/power/state file controls system sleep states.
++		Reading from this file returns the available sleep state
++		labels, which may be "mem", "standby", "freeze" and "disk"
++		(hibernation).  The meanings of the first three labels depend on
++		the relative_sleep_states command line argument as follows:
++		 1) relative_sleep_states = 1
++		    "mem", "standby", "freeze" represent non-hibernation sleep
++		    states from the deepest ("mem", always present) to the
++		    shallowest ("freeze").  "standby" and "freeze" may or may
++		    not be present depending on the capabilities of the
++		    platform.  "freeze" can only be present if "standby" is
++		    present.
++		 2) relative_sleep_states = 0 (default)
++		    "mem" - "suspend-to-RAM", present if supported.
++		    "standby" - "power-on suspend", present if supported.
++		    "freeze" - "suspend-to-idle", always present.
+ 
+ 		Writing to this file one of these strings causes the system to
+-		transition into that state. Please see the file
+-		Documentation/power/states.txt for a description of each of
+-		these states.
++		transition into the corresponding state, if available.  See
++		Documentation/power/states.txt for a description of what
++		"suspend-to-RAM", "power-on suspend" and "suspend-to-idle" mean.
+ 
+ What:		/sys/power/disk
+ Date:		September 2006
+Index: linux-pm/Documentation/power/states.txt
+===================================================================
+--- linux-pm.orig/Documentation/power/states.txt
++++ linux-pm/Documentation/power/states.txt
+@@ -1,62 +1,87 @@
++System Power Management Sleep States
+ 
+-System Power Management States
++(C) 2014 Intel Corp., Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+ 
++The kernel supports up to four system sleep states generically, although three
++of them depend on the platform support code to implement the low-level details
++for each state.
 +
-+/**
-+ * tt_cred_free - Release memory used by credentials.
-+ *
-+ * @cred: Pointer to "struct cred".
-+ *
-+ * Returns nothing.
-+ */
-+static void tt_cred_free(struct cred *cred)
-+{
-+	kfree(cred->security);
-+}
++The states are represented by strings that can be read or written to the
++/sys/power/state file.  Those strings may be "mem", "standby", "freeze" and
++"disk", where the last one always represents hibernation (Suspend-To-Disk) and
++the meaning of the remaining ones depends on the relative_sleep_states command
++line argument.
 +
-+/**
-+ * tt_cred_transfer - Transfer "struct tt_record" between credentials.
-+ *
-+ * @new: Pointer to "struct cred".
-+ * @old: Pointer to "struct cred".
-+ *
-+ * Returns nothing.
-+ */
-+static void tt_cred_transfer(struct cred *new, const struct cred *old)
-+{
-+	strcpy(tt_find_record(new)->history, tt_find_record(old)->history);
-+}
++For relative_sleep_states=1, the strings "mem", "standby" and "freeze" label the
++available non-hibernation sleep states from the deepest to the shallowest,
++respectively.  In that case, "mem" is always present in /sys/power/state,
++because there is at least one non-hibernation sleep state in every system.  If
++the given system supports two non-hibernation sleep states, "standby" is present
++in /sys/power/state in addition to "mem".  If the system supports three
++non-hibernation sleep states, "freeze" will be present in /sys/power/state in
++addition to "mem" and "standby".
+ 
+-The kernel supports four power management states generically, though
+-one is generic and the other three are dependent on platform support
+-code to implement the low-level details for each state.
+-This file describes each state, what they are
+-commonly called, what ACPI state they map to, and what string to write
+-to /sys/power/state to enter that state
++For relative_sleep_states=0, which is the default, the following descriptions
++apply.
+ 
+-state:		Freeze / Low-Power Idle
++state:		Suspend-To-Idle
+ ACPI state:	S0
+-String:		"freeze"
++Label:		"freeze"
+ 
+-This state is a generic, pure software, light-weight, low-power state.
+-It allows more energy to be saved relative to idle by freezing user
++This state is a generic, pure software, light-weight, system sleep state.
++It allows more energy to be saved relative to runtime idle by freezing user
+ space and putting all I/O devices into low-power states (possibly
+ lower-power than available at run time), such that the processors can
+ spend more time in their idle states.
+-This state can be used for platforms without Standby/Suspend-to-RAM
 +
-+/**
-+ * tt_bprm_committing_creds - A hook which is called when do_execve() succeeded.
-+ *
-+ * @bprm: Pointer to "struct linux_binprm".
-+ *
-+ * Returns nothing.
-+ */
-+static void tt_bprm_committing_creds(struct linux_binprm *bprm)
-+{
-+	tt_update_record(tt_find_record(bprm->cred));
-+}
++This state can be used for platforms without Power-On Suspend/Suspend-to-RAM
+ support, or it can be used in addition to Suspend-to-RAM (memory sleep)
+-to provide reduced resume latency.
++to provide reduced resume latency.  It is always supported.
+ 
+ 
+ State:		Standby / Power-On Suspend
+ ACPI State:	S1
+-String:		"standby"
++Label:		"standby"
+ 
+-This state offers minimal, though real, power savings, while providing
+-a very low-latency transition back to a working system. No operating
+-state is lost (the CPU retains power), so the system easily starts up
++This state, if supported, offers moderate, though real, power savings, while
++providing a relatively low-latency transition back to a working system.  No
++operating state is lost (the CPU retains power), so the system easily starts up
+ again where it left off. 
+ 
+-We try to put devices in a low-power state equivalent to D1, which
+-also offers low power savings, but low resume latency. Not all devices
+-support D1, and those that don't are left on. 
++In addition to freezing user space and putting all I/O devices into low-power
++states, which is done for Suspend-To-Idle too, nonboot CPUs are taken offline
++and all low-level system functions are suspended during transitions into this
++state.  For this reason, it should allow more energy to be saved relative to
++Suspend-To-Idle, but the resume latency will generally be greater than for that
++state.
+ 
+ 
+ State:		Suspend-to-RAM
+ ACPI State:	S3
+-String:		"mem"
++Label:		"mem"
+ 
+-This state offers significant power savings as everything in the
+-system is put into a low-power state, except for memory, which is
+-placed in self-refresh mode to retain its contents. 
+-
+-System and device state is saved and kept in memory. All devices are
+-suspended and put into D3. In many cases, all peripheral buses lose
+-power when entering STR, so devices must be able to handle the
+-transition back to the On state. 
++This state, if supported, offers significant power savings as everything in the
++system is put into a low-power state, except for memory, which should be placed
++into the self-refresh mode to retain its contents.  All of the steps carried out
++when entering Power-On Suspend are also carried out during transitions to STR.
++Additional operations may take place depending on the platform capabilities.  In
++particular, on ACPI systems the kernel passes control to the BIOS (platform
++firmware) as the last step during STR transitions and that usually results in
++powering down some more low-level components that aren't directly controlled by
++the kernel.
 +
-+/**
-+ * tt_task_getsecid - Check whether to audit or not.
-+ *
-+ * @p:     Pointer to "struct task_struct".
-+ * @secid: Pointer to flag.
-+ */
-+static void tt_task_getsecid(struct task_struct *p, u32 *secid)
-+{
-+	*secid = (p == current);
-+}
-+
-+/**
-+ * tt_secid_to_secctx - Allocate memory used for auditing.
-+ *
-+ * @secid:   Bool flag to allocate.
-+ * @secdata: Pointer to allocate memory.
-+ * @seclen:  Size of allocated memory.
-+ *
-+ * Returns 0 on success, -EINVAL otherwise.
-+ */
-+static int tt_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
-+{
-+	struct tt_record *record;
-+	/* Ignore unless current thread's record is requested. */
-+	if (secid != 1)
-+		return -EINVAL;
-+	/*
-+	 * We don't need to duplicate the string because current thread's
-+	 * record is updated upon only boot up and successful execve()
-+	 * operation, even if current thread's record is shared between
-+	 * multiple threads.
-+	 */
-+	record = tt_find_record(current->real_cred);
-+	*secdata = record->history;
-+	*seclen = strlen(record->history);
-+	return 0;
-+}
-+
-+/* List of hooks. */
-+static struct security_operations tasktracker_ops = {
-+	.name                  = "tt",
-+	.secid_to_secctx       = tt_secid_to_secctx,
-+	.task_getsecid         = tt_task_getsecid,
-+	.cred_prepare          = tt_cred_prepare,
-+	.cred_free             = tt_cred_free,
-+	.cred_alloc_blank      = tt_cred_alloc_blank,
-+	.cred_transfer         = tt_cred_transfer,
-+	.bprm_committing_creds = tt_bprm_committing_creds,
-+};
-+
-+/**
-+ * tt_init - Initialize this module.
-+ *
-+ * Returns 0 on success, panic otherwise.
-+ */
-+static int __init tt_init(void)
-+{
-+	struct cred *cred = (struct cred *) current_cred();
-+	if (!security_module_enable(&tasktracker_ops))
-+		return 0;
-+	if (tt_cred_alloc_blank(cred, GFP_ATOMIC) ||
-+	    register_security(&tasktracker_ops))
-+		panic("Failure registering TaskTracker");
-+	tt_update_record(tt_find_record(cred));
-+	pr_info("TaskTracker initialized\n");
-+	return 0;
-+}
-+
-+security_initcall(tt_init);
--- 
-1.7.1
++System and device state is saved and kept in memory.  All devices are suspended
++and put into low-power states.  In many cases, all peripheral buses lose power
++when entering STR, so devices must be able to handle the transition back to the
++"on" state.
+ 
+-For at least ACPI, STR requires some minimal boot-strapping code to
+-resume the system from STR. This may be true on other platforms. 
++For at least ACPI, STR requires some minimal boot-strapping code to resume the
++system from it.  This may be the case on other platforms too.
+ 
+ 
+ State:		Suspend-to-disk
+ ACPI State:	S4
+-String:		"disk"
++Label:		"disk"
+ 
+ This state offers the greatest power savings, and can be used even in
+ the absence of low-level platform support for power management. This
+
