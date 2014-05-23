@@ -1,381 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaEWRjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:39:16 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43526 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaEWRjN (ORCPT
+	id S1751567AbaEWRj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:39:59 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:65361 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaEWRj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:39:13 -0400
-Message-ID: <537F87CC.7090705@linaro.org>
-Date: Fri, 23 May 2014 19:39:24 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 23 May 2014 13:39:58 -0400
 MIME-Version: 1.0
-To: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 1/6] clocksource: Add support for the Mediatek SoCs
-References: <1400689583-21119-1-git-send-email-matthias.bgg@gmail.com> <1400689583-21119-2-git-send-email-matthias.bgg@gmail.com>
-In-Reply-To: <1400689583-21119-2-git-send-email-matthias.bgg@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
+References: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
+Date: Fri, 23 May 2014 19:39:57 +0200
+Message-ID: <CABprByZYXuNA2kODdhLVBAr7TA0VT+XzxksURQQwJntYtg9+iA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
+From: abdoulaye berthe <berthe.ab@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, mika.westerberg@linux.intel.com,
+        andriy.shevchenko@linux.intel.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        abdoulaye berthe <berthe.ab@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 06:26 PM, Matthias Brugger wrote:
-> This patch adds a clock source and clock event for the timer found
-> on the Mediatek SoCs.
+If this step is ok I will continue by updating the codes that use it.
+
+On Fri, May 23, 2014 at 7:12 PM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+> This avoids handling gpiochip remove error in device
+> remove handler.
 >
-> The Mediatek General Porpose Timer block provides five 32 bit timers and
-
-s/Porpose/Purpose
-
-> one 64 bit timer.
->
-> Two 32 bit timers are used:
-> TIMER1: clock events supporting periodic and oneshot events
-> TIMER2: clock source configured as a free running counter
->
-> The General Porpose Timer block can be run with two clocks. A 13 MHz system
-
-s/Porpose/Purpose
-
-> clock and the RTC clock running at 32 KHz. This implementation uses the system
-> clock.
-
-As it is a new driver, could you elaborate a bit the description of this 
-driver please ? Behavior, some oddities, etc ...
-
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
 > ---
->   drivers/clocksource/Kconfig     |   4 +
->   drivers/clocksource/Makefile    |   1 +
->   drivers/clocksource/mtk_timer.c | 263 ++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 268 insertions(+)
->   create mode 100644 drivers/clocksource/mtk_timer.c
+>  drivers/gpio/gpiolib.c      | 24 +++++++-----------------
+>  include/linux/gpio/driver.h |  2 +-
+>  2 files changed, 8 insertions(+), 18 deletions(-)
 >
-> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-> index 96918e1..1f73740 100644
-> --- a/drivers/clocksource/Kconfig
-> +++ b/drivers/clocksource/Kconfig
-> @@ -144,6 +144,10 @@ config VF_PIT_TIMER
->   config SYS_SUPPORTS_SH_CMT
->           bool
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index f48817d..4878980 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
+>   *
+>   * A gpio_chip with any GPIOs still requested may not be removed.
+>   */
+> -int gpiochip_remove(struct gpio_chip *chip)
+> +void gpiochip_remove(struct gpio_chip *chip)
+>  {
+>         unsigned long   flags;
+> -       int             status = 0;
+>         unsigned        id;
 >
-> +config MTK_TIMER
-> +	select CLKSRC_MMIO
-> +	bool
-> +
->   config SYS_SUPPORTS_SH_MTU2
->           bool
+>         acpi_gpiochip_remove(chip);
+> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
+>         of_gpiochip_remove(chip);
 >
-> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-> index 98cb6c5..619d302 100644
-> --- a/drivers/clocksource/Makefile
-> +++ b/drivers/clocksource/Makefile
-> @@ -33,6 +33,7 @@ obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
->   obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
->   obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
->   obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
-> +obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
+>         for (id = 0; id < chip->ngpio; id++) {
+> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+> -                       status = -EBUSY;
+> -                       break;
+> -               }
+> -       }
+> -       if (status == 0) {
+> -               for (id = 0; id < chip->ngpio; id++)
+> -                       chip->desc[id].chip = NULL;
+> -
+> -               list_del(&chip->list);
+> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+> +                       panic("gpiolib.c: gpiochip is still requested\n");
+>         }
+> +       for (id = 0; id < chip->ngpio; id++)
+> +               chip->desc[id].chip = NULL;
 >
->   obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
->   obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
-> diff --git a/drivers/clocksource/mtk_timer.c b/drivers/clocksource/mtk_timer.c
-> new file mode 100644
-> index 0000000..f86b5080
-> --- /dev/null
-> +++ b/drivers/clocksource/mtk_timer.c
-> @@ -0,0 +1,263 @@
-> +/*
-> + * Mediatek SoCs General-Purpose Timer handling.
-> + *
-> + * Copyright (C) 2014 Matthias Brugger
-> + *
-> + * Matthias Brugger <matthias.bgg@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/clockchips.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqreturn.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/slab.h>
-> +
-> +#define GPT_IRQ_EN_REG		0x00
-> +#define GPT_IRQ_ENABLE(val)	BIT(val-1)
-> +#define GPT_IRQ_ST_REG		0x04
-> +#define GPT_IRQ_ACK_REG		0x08
-> +#define GPT_IRQ_ACK(val)	BIT(val-1)
-> +
-> +#define TIMER_CTRL_REG(val)	(0x10 * val)
-> +#define TIMER_CTRL_OP(val)	(((val) & 0x3) << 4)
-> +#define TIMER_CTRL_OP_ONESHOT	(0)
-> +#define TIMER_CTRL_OP_REPEAT	(1)
-> +#define TIMER_CTRL_OP_KEEPGO	(2)
-> +#define TIMER_CTRL_OP_FREERUN	(3)
-> +#define TIMER_CTRL_CLEAR	(2)
-> +#define TIMER_CTRL_ENABLE	(1)
-> +#define TIMER_CTRL_DISABLE	(0)
-> +
-> +#define TIMER_CLK_REG(val)	(0x04 + (0x10 * val))
-> +#define TIMER_CLK_SRC(val)	(((val) & 0x1) << 4)
-> +#define TIMER_CLK_SRC_SYS13M	(0)
-> +#define TIMER_CLK_SRC_RTC32K	(1)
-> +#define TIMER_CLK_DIV1		(0x0)
-> +#define TIMER_CLK_DIV2		(0x1)
-> +#define TIMER_CLK_DIV3		(0x2)
-> +#define TIMER_CLK_DIV4		(0x3)
-> +#define TIMER_CLK_DIV5		(0x4)
-> +#define TIMER_CLK_DIV6		(0x5)
-> +#define TIMER_CLK_DIV7		(0x6)
-> +#define TIMER_CLK_DIV8		(0x7)
-> +#define TIMER_CLK_DIV9		(0x8)
-> +#define TIMER_CLK_DIV10		(0x9)
-> +#define TIMER_CLK_DIV11		(0xA)
-> +#define TIMER_CLK_DIV12		(0xB)
-> +#define TIMER_CLK_DIV13		(0xC)
-> +#define TIMER_CLK_DIV16		(0xD)
-> +#define TIMER_CLK_DIV32		(0xE)
-> +#define TIMER_CLK_DIV64		(0xF)
-> +
-> +#define TIMER_CNT_REG(val)	(0x08 + (0x10 * val))
-> +#define TIMER_CMP_REG(val)	(0x0C + (0x10 * val))
-
-Please remove unused macros.
-
-> +
-> +#define GPT_CLK_EVT	1
-> +#define GPT_CLK_SRC	2
-> +
-> +
-> +
-
-extra lines.
-
-> +struct mtk_clock_event_device {
-> +	void __iomem *gpt_base;
-> +	u32 ticks_per_jiffy;
-> +	struct clock_event_device dev;
-> +};
-> +
-> +static inline struct mtk_clock_event_device *to_mtk_clk(
-> +				struct clock_event_device *c)
-> +{
-> +	return container_of(c, struct mtk_clock_event_device, dev);
-> +}
-> +
-> +static void mtk_clkevt_time_stop(struct mtk_clock_event_device *evt, u8 timer)
-> +{
-> +	u32 val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
-> +	writel(val & ~TIMER_CTRL_ENABLE, evt->gpt_base +
-> +			TIMER_CTRL_REG(timer));
-> +}
-> +
-> +static void mtk_clkevt_time_setup(struct mtk_clock_event_device *evt,
-> +				unsigned long delay, u8 timer)
-> +{
-> +	writel(delay, evt->gpt_base + TIMER_CMP_REG(timer));
-> +}
-> +
-> +static void mtk_clkevt_time_start(struct mtk_clock_event_device *evt,
-> +		bool periodic, u8 timer)
-> +{
-> +	u32 val;
-> +
-> +	/* Acknowledge interrupt */
-> +	writel(GPT_IRQ_ACK(timer), evt->gpt_base + GPT_IRQ_ACK_REG);
-> +
-> +	val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
-> +
-> +	/* Clear 2 bit timer operation mode field */
-> +	val &= ~TIMER_CTRL_OP(0x3);
-> +
-> +	if (periodic)
-> +		val |= TIMER_CTRL_OP(TIMER_CTRL_OP_REPEAT);
-> +	else
-> +		val |= TIMER_CTRL_OP(TIMER_CTRL_OP_ONESHOT);
-> +
-> +	writel(val | TIMER_CTRL_ENABLE | TIMER_CTRL_CLEAR,
-> +	       evt->gpt_base + TIMER_CTRL_REG(timer));
-> +}
-> +
-> +static void mtk_clkevt_mode(enum clock_event_mode mode,
-> +				struct clock_event_device *clk)
-> +{
-> +	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
-> +
-> +	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
-> +
-> +	switch (mode) {
-> +	case CLOCK_EVT_MODE_PERIODIC:
-> +		mtk_clkevt_time_setup(evt, evt->ticks_per_jiffy, GPT_CLK_EVT);
-> +		mtk_clkevt_time_start(evt, true, GPT_CLK_EVT);
-> +		break;
-> +	case CLOCK_EVT_MODE_ONESHOT:
-> +		mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
-> +		break;
-> +	case CLOCK_EVT_MODE_UNUSED:
-> +	case CLOCK_EVT_MODE_SHUTDOWN:
-> +	default:
-> +		/* No more interrupts will occur as source is disabled */
-> +		break;
-> +	}
-> +}
-> +
-> +static int mtk_clkevt_next_event(unsigned long event,
-> +				   struct clock_event_device *clk)
-> +{
-> +	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
-> +
-> +	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
-> +	mtk_clkevt_time_setup(evt, event, GPT_CLK_EVT);
-> +	mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
-> +
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t mtk_timer_interrupt(int irq, void *dev_id)
-> +{
-> +	struct mtk_clock_event_device *evt = dev_id;
-> +
-> +	/* Acknowledge timer0 irq */
-> +	writel(GPT_IRQ_ACK(GPT_CLK_EVT), evt->gpt_base + GPT_IRQ_ACK_REG);
-> +	evt->dev.event_handler(&evt->dev);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static void mtk_timer_global_reset(struct mtk_clock_event_device *evt)
-> +{
-> +	/* Disable all interrupts */
-> +	writel(0x0, evt->gpt_base + GPT_IRQ_EN_REG);
-> +	/* Acknowledge all interrupts */
-> +	writel(0x3f, evt->gpt_base + GPT_IRQ_ACK_REG);
-> +}
-> +
-> +static void mtk_timer_reset(struct mtk_clock_event_device *evt, u8 timer)
-> +{
-> +	writel(TIMER_CTRL_CLEAR | TIMER_CTRL_DISABLE,
-> +		evt->gpt_base + TIMER_CTRL_REG(timer));
-> +	writel(0x0, evt->gpt_base + TIMER_CMP_REG(timer));
-> +}
-> +
-> +static void __init mtk_timer_init(struct device_node *node)
-> +{
-> +	struct mtk_clock_event_device *evt;
-> +	struct resource res;
-> +	unsigned long rate = 0;
-> +	struct clk *clk;
-> +	int ret;
-> +	u32 val;
-> +
-> +	evt = kzalloc(sizeof(*evt), GFP_KERNEL);
-> +	if (!evt)
-> +		panic("Can't allocate mtk clock event driver struct");
-> +
-> +	evt->dev.name = "mtk_tick";
-> +	evt->dev.rating = 300;
-> +	evt->dev.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-> +	evt->dev.set_mode = mtk_clkevt_mode;
-> +	evt->dev.set_next_event = mtk_clkevt_next_event;
-> +	evt->dev.cpumask = cpu_possible_mask;
-> +
-> +	if (of_address_to_resource(node, 0, &res))
-> +		panic("Failed to parse resource\n");
-> +
-> +	if (!request_mem_region(res.start, resource_size(&res), "mtk-timer"))
-> +		panic("Registers are a busy IO resource");
-> +
-> +	evt->gpt_base = ioremap(res.start, resource_size(&res));
-> +	if (!evt->gpt_base)
-> +		panic("Can't map registers");
-> +
-> +	evt->dev.irq = irq_of_parse_and_map(node, 0);
-> +	if (evt->dev.irq <= 0)
-> +		panic("Can't parse IRQ");
-> +
-> +	clk = of_clk_get(node, 0);
-> +	if (IS_ERR(clk))
-> +		panic("Can't get timer clock");
-> +
-> +	clk_prepare_enable(clk);
-> +	rate = clk_get_rate(clk);
-> +
-> +	mtk_timer_global_reset(evt);
-> +
-> +	/* Configure clock source */
-> +	mtk_timer_reset(evt, GPT_CLK_SRC);
-> +
-> +	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
-> +			evt->gpt_base + TIMER_CLK_REG(GPT_CLK_SRC));
-> +
-> +	writel(TIMER_CTRL_OP(TIMER_CTRL_OP_FREERUN) | TIMER_CTRL_ENABLE,
-> +			evt->gpt_base + TIMER_CTRL_REG(GPT_CLK_SRC));
-> +
-> +	clocksource_mmio_init(evt->gpt_base + TIMER_CNT_REG(GPT_CLK_SRC),
-> +			node->name, rate, 300, 32, clocksource_mmio_readl_up);
-> +
-> +	evt->ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
-> +
-> +	/* Configure clock event */
-> +	mtk_timer_reset(evt, GPT_CLK_EVT);
-> +
-> +	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
-> +			evt->gpt_base + TIMER_CLK_REG(GPT_CLK_EVT));
-> +	writel(0, evt->gpt_base + TIMER_CMP_REG(GPT_CLK_EVT));
-> +
-> +	writel(TIMER_CTRL_OP(TIMER_CTRL_OP_REPEAT) | TIMER_CTRL_ENABLE,
-> +			evt->gpt_base + TIMER_CTRL_REG(GPT_CLK_EVT));
-> +
-> +	ret = request_irq(evt->dev.irq, mtk_timer_interrupt,
-> +			IRQF_TIMER | IRQF_IRQPOLL, "mtk_timer", evt);
-> +	if (ret)
-> +		pr_warn("failed to setup irq %d\n", evt->dev.irq);
-> +
-> +	/* Enable timer0 interrupt */
-> +	val = readl(evt->gpt_base + GPT_IRQ_EN_REG);
-> +	writel(val | GPT_IRQ_ENABLE(GPT_CLK_EVT),
-> +			evt->gpt_base + GPT_IRQ_EN_REG);
-
-Could you encapsulate in well named functions the different 'writel' above ?
-
-> +	clockevents_config_and_register(&evt->dev, rate, 0x3,
-> +					0xffffffff);
-> +}
-> +CLOCKSOURCE_OF_DECLARE(mtk_mt6589, "mediatek,mtk6577-timer", mtk_timer_init);
-> +
+> +       list_del(&chip->list);
+>         spin_unlock_irqrestore(&gpio_lock, flags);
+> -
+> -       if (status == 0)
+> -               gpiochip_unexport(chip);
+> -
+> -       return status;
+> +       gpiochip_unexport(chip);
+>  }
+>  EXPORT_SYMBOL_GPL(gpiochip_remove);
 >
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+> index 1827b43..72ed256 100644
+> --- a/include/linux/gpio/driver.h
+> +++ b/include/linux/gpio/driver.h
+> @@ -138,7 +138,7 @@ extern const char *gpiochip_is_requested(struct gpio_chip *chip,
+>
+>  /* add/remove chips */
+>  extern int gpiochip_add(struct gpio_chip *chip);
+> -extern int __must_check gpiochip_remove(struct gpio_chip *chip);
+> +void gpiochip_remove(struct gpio_chip *chip);
+>  extern struct gpio_chip *gpiochip_find(void *data,
+>                               int (*match)(struct gpio_chip *chip, void *data));
+>
+> --
+> 1.8.3.2
+>
