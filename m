@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaEWPVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:21:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50960 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090AbaEWPVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:21:51 -0400
-Date: Fri, 23 May 2014 17:21:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, fweisbec@gmail.com, hch@infradead.org,
-        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-Message-ID: <20140523152145.GF30445@twins.programming.kicks-ass.net>
-References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com>
- <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com>
+	id S1752745AbaEWPZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:25:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39107 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417AbaEWPZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:25:16 -0400
+Message-ID: <537F6728.3090600@zytor.com>
+Date: Fri, 23 May 2014 08:20:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OpkDJjDTRXa+mPUW"
-Content-Disposition: inline
-In-Reply-To: <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v2 16/18] x86: io: implement dummy relaxed accessor macros
+ for writes
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com> <1400777250-17335-17-git-send-email-will.deacon@arm.com> <537E30AF.4070501@zytor.com> <20140523144604.GF21319@arm.com> <537F60E0.1060307@zytor.com> <20140523145758.GG21319@arm.com>
+In-Reply-To: <20140523145758.GG21319@arm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/23/2014 07:57 AM, Will Deacon wrote:
+> On Fri, May 23, 2014 at 03:53:20PM +0100, H. Peter Anvin wrote:
+>> On 05/23/2014 07:46 AM, Will Deacon wrote:
+>>>
+>>> I would like the relaxed accessors to be ordered with respect to each other...
+>>>
+>>> What do you think?
+>>>
+>>
+>> I think "I would like" isn't a very good motivation.  What are the
+>> semantics of these things supposed to be?  It seems more than a bit odd
+>> to require them to be ordered with respect to each other and everything
+>> else (which is what a memory clobber does) and then call them "relaxed".
+> 
+> I suggested some informal semantics in the cover letter:
+> 
+>   https://lkml.org/lkml/2014/4/17/269
+> 
+> Basically, if we define relaxed accesses not to be ordered against anything
+> apart from other accesses (relaxed or otherwise) to the same device, then
+> they become a tonne cheaper on arm/arm64/powerpc. Currently we have to
+> include expensive memory barriers in order to synchronise with accesses to
+> DMA buffers which is rarely needed.
+> 
+> For those requirements, I don't think we need the "memory" clobber for x86,
+> but would appreciate your views on this.
+> 
 
---OpkDJjDTRXa+mPUW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK... first of all you didn't send the cover letter to the union of all
+the people you sent patches to, but second, documenting semantics in the
+one piece of the patchset that wouldn't make it into git is just about
+the worst possible place to put it.
 
-On Fri, May 23, 2014 at 03:42:20PM +0530, Srivatsa S. Bhat wrote:
->        Re-enable interrupts                          Re-enable interrupts
->=20
->                                                      The pending IPI is n=
-oted
->                                                      immediately, but ala=
-s,
->                                                      the CPU is offline at
->                                                      this point.
->=20
+This documentation is absolutely critical if we expect people to be able
+to use these correctly, including when additional barriers may be required.
 
-So wasn't clear_local_APIC() (and the arch function __cpu_disable() in
-general) wipe all pending interrup state?
+As far as x86 is concerned, in gcc volatiles are ordered with respect to
+each other, so as you say I don't think we need a memory clobber here.
 
---OpkDJjDTRXa+mPUW
-Content-Type: application/pgp-signature
+	-hpa
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTf2eJAAoJEHZH4aRLwOS6ZGcQAIyXrTQFoZF+FNd0nTm2/tt7
-3clzweOOzV5zahsakWVlacDZKcAYrvc8WstMEjIgsWYZzJC9WdvqPVZeNknLRQ24
-uchv62gLyd4081/NtS7euEMk0Wk/l4hmKIjk615dEy2/3k/sxYOTxwGWTwUIRcUJ
-X/qCRSp/KypCagwnb2F2MGjJ6o401lP0RqMyZ7z97eTBjxg1hwO9slQiY3EWSls/
-Z4QonnzpqHKK4VWa3tLLLjpL+U1k8IrjtTeS5ipoy9kIOtQ59LxP3PMGlEMZtTJ8
-qcN4ttiON1YsP2TGUsrtUa2x5hRAGVUsJHPp8Yha5xx3X8ASIeu48mC8G5A+oyOC
-8TTE0o7oLjLccLEVaPIbFzBEvNtV2Jg6fr21KLArv7RmMRFFDgL41/3/up3btRTD
-PE88lV6AtTojnTHn/58Pe5i8J4MLNzMBNWdEeZdZbiMHRr3De45WkkAr6DbiRIW3
-K0w+DwCmAG4vFcQuTuh7CuOSeQLfKtuxoEorDiqL/VdbKd8RahVA5iBc7RYi+y3r
-zz3eZhiJChxywwD8xAvYlvHQfrlyMkuSrlgfQNDP6sjLBgvdb0AvKy6txcB10gf2
-YYfgItKVLKMrfUGIiFOWZ/oYsJ1AjpRU1LsrZszqDcZsxAiGJfXVxojsBX1AyDYS
-/ZD/jAC0PFkQImHDHOt6
-=+H+r
------END PGP SIGNATURE-----
-
---OpkDJjDTRXa+mPUW--
