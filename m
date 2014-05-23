@@ -1,129 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaEWP42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:56:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48981 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752532AbaEWP4Z (ORCPT
+	id S1753536AbaEWP4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:56:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35624 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532AbaEWP4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:56:25 -0400
-Date: Fri, 23 May 2014 16:55:44 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Catalin Marinas <Catalin.Marinas@arm.com>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        Larry Bassel <larry.bassel@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+	Fri, 23 May 2014 11:56:44 -0400
+Date: Fri, 23 May 2014 17:56:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 2/2] arm64: enable context tracking
-Message-ID: <20140523155544.GA24994@leverpostej>
-References: <1400786855-32656-1-git-send-email-larry.bassel@linaro.org>
- <1400786855-32656-3-git-send-email-larry.bassel@linaro.org>
- <537E5E1F.3050605@codeaurora.org>
- <7hd2f5icat.fsf@paris.lan>
- <20140523145107.GO9252@arm.com>
+        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v2 16/18] x86: io: implement dummy relaxed accessor
+ macros for writes
+Message-ID: <20140523155626.GI30445@twins.programming.kicks-ass.net>
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+ <1400777250-17335-17-git-send-email-will.deacon@arm.com>
+ <537E30AF.4070501@zytor.com>
+ <20140523144604.GF21319@arm.com>
+ <537F60E0.1060307@zytor.com>
+ <20140523145758.GG21319@arm.com>
+ <537F6728.3090600@zytor.com>
+ <20140523153409.GI21319@arm.com>
+ <537F6C85.107@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SIhMtSQSYpXpqifs"
 Content-Disposition: inline
-In-Reply-To: <20140523145107.GO9252@arm.com>
-Thread-Topic: [PATCH v4 2/2] arm64: enable context tracking
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <537F6C85.107@zytor.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 03:51:07PM +0100, Catalin Marinas wrote:
-> On Fri, May 23, 2014 at 01:11:38AM +0100, Kevin Hilman wrote:
-> > Christopher Covington <cov@codeaurora.org> writes:
-> > > On 05/22/2014 03:27 PM, Larry Bassel wrote:
-> > >> Make calls to ct_user_enter when the kernel is exited
-> > >> and ct_user_exit when the kernel is entered (in el0_da,
-> > >> el0_ia, el0_svc, el0_irq and all of the "error" paths).
-> > >> 
-> > >> These macros expand to function calls which will only work
-> > >> properly if el0_sync and related code has been rearranged
-> > >> (in a previous patch of this series).
-> > >> 
-> > >> The calls to ct_user_exit are made after hw debugging has been
-> > >> enabled (enable_dbg_and_irq).
-> > >> 
-> > >> The call to ct_user_enter is made at the beginning of the
-> > >> kernel_exit macro.
-> > >> 
-> > >> This patch is based on earlier work by Kevin Hilman.
-> > >> Save/restore optimizations were also done by Kevin.
-> > >
-> > >> --- a/arch/arm64/kernel/entry.S
-> > >> +++ b/arch/arm64/kernel/entry.S
-> > >> @@ -30,6 +30,44 @@
-> > >>  #include <asm/unistd32.h>
-> > >>  
-> > >>  /*
-> > >> + * Context tracking subsystem.  Used to instrument transitions
-> > >> + * between user and kernel mode.
-> > >> + */
-> > >> +	.macro ct_user_exit, restore = 0
-> > >> +#ifdef CONFIG_CONTEXT_TRACKING
-> > >> +	bl	context_tracking_user_exit
-> > >> +	.if \restore == 1
-> > >> +	/*
-> > >> +	 * Save/restore needed during syscalls.  Restore syscall arguments from
-> > >> +	 * the values already saved on stack during kernel_entry.
-> > >> +	 */
-> > >> +	ldp	x0, x1, [sp]
-> > >> +	ldp	x2, x3, [sp, #S_X2]
-> > >> +	ldp	x4, x5, [sp, #S_X4]
-> > >> +	ldp	x6, x7, [sp, #S_X6]
-> > >> +	.endif
-> > >> +#endif
-> > >> +	.endm
-> > >> +
-> > >> +	.macro ct_user_enter, save = 0
-> > >> +#ifdef CONFIG_CONTEXT_TRACKING
-> > >> +	.if \save == 1
-> > >> +	/*
-> > >> +	 * Save/restore only needed on syscall fastpath, which uses
-> > >> +	 * x0-x2.
-> > >> +	 */
-> > >> +	push    x2, x3
-> > >
-> > > Why is x3 saved?
-> > 
-> > I'll respond here since I worked with Larry on the context save/restore
-> > part.
-> > 
-> > [insert rather embarassing disclamer of ignorance of arm64 assembly]
-> > 
-> > Based on my reading of the code, I figured only x0-x2 needed to be
-> > saved.  However, based on some experiments with intentionally clobbering
-> > the registers[1] (as suggested by Mark Rutland) in order to make sure
-> > we're saving/restoring the right things, I discovered x3 was needed too
-> > (I missed updating the comment to mention x0-x3.)
-> > 
-> > Maybe Will/Catalin/Mark R. can shed some light here?
-> 
-> I haven't checked all the code paths but at least for pushing onto the
-> stack we must keep it 16-bytes aligned (architecture requirement).
 
-Sure -- if modifying the stack we need to push/pop pairs of registers to
-keep it aligned. It might be better to use xzr as the dummy value in
-that case to make it clear that the value doesn't really matter.
+--SIhMtSQSYpXpqifs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That said, ct_user_enter is only called in kernel_exit before we restore
-the values off the stack, and the only register I can spot that we need
-to preserve is x0 for the syscall return value. I can't see x1 or x2
-being used any more specially than the rest of the remaining registers.
-Am I missing something, or would it be sufficient to do the following?
+On Fri, May 23, 2014 at 08:43:01AM -0700, H. Peter Anvin wrote:
+> On 05/23/2014 08:34 AM, Will Deacon wrote:
+> >=20
+> > There is also a documentation patch [1] in this series but, again, I di=
+dn't
+> > CC everybody on it. Sorry, but the level of interest this sort of stuff
+> > generates amongst kernel developers is close to zero so I only included
+> > people I thought cared on CC for the entire series. I'm stuck between a=
+ rock
+> > and a hard place trying to CC interested people whilst at the same time
+> > trying to avoid spamming all the arch maintainers.
+> >=20
+>=20
+> If you are sending me a patch, please include me on the cover letter for
+> the patch series.  You don't have to send me the entire patch series
+> (although for something like a Documentation patch which affects x86 I
+> would consider including the union list as well.)
+>=20
+> I think regardless of level of interest, the definition of
+> cross-architectural operations is exactly the arch maintainers job, so
+> it isn't really out of place to "spam" us...
 
-push	x0, xzr
-bl	context_tacking_user_enter
-pop	x0, xzr
+So the one issue I had with that, is that if one tries to send an email
+to all arch maintainers + linux-arch + linux-kernel, the header gets too
+big and vger chokes and davem slaps you.
 
-Cheers,
-Mark.
+So while its possibly desirable to do big unions with 0/xx and the like,
+its practically infeasible.
+
+--SIhMtSQSYpXpqifs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTf2+qAAoJEHZH4aRLwOS61y8P/R31PO3PdXkwzC+dChd1vVwF
+7vC9OX2ibOAj9GdYUPwfU6mromo9192lBMT7cfKLtd+Bvf59AFnkA2udQBJ3wvZe
+Y11fJ7WkXqzukgO+FfDFVzPbmj1poKn/ZGt6snm8PJIkqOhL9kwPz0ZnuVaunpC4
+UiF7vWKrkyDCCnFvPrMS6Y+/GiN79tJFrhlbGian5s9QmacDE4RsnCEDyniWjt7k
+dDY6Y49pxW6OPRUzuuqrE+mQZucPpA4CENYvSMk2akJADbvlhlHDKv6GkhkwSUwD
+l5NSeCPRkHvK9PLsMysbCWdEWl7Fr3M3quxGIJeioUFYlxzM3TglGv4A1WFxY2dj
+FjDqoV7fcVCZ1nVogIQ/Cr/wjIV3eu1AmKHGsFwqVh0ErvdZeSmE2FQp6kvRjXGJ
+oGioGkPkGtFHK6SbWrkvAKzrmAAkkq5vI6vS/6u154D8ywV31O54kD2GpuIkfWfj
+4yTJL+v0W75jPoOQXcqFJmknE7gJkVuqnZp/+xk0caWNeuzgJnCjtpu+Z6TYynON
+yIURM5UVhzOfJUg/UtFfykgBOEfnUc6Tn2bvXtgesrgeidJc0VOjM4vVreF7Y23D
+ZyLCB6SFXxPeZ4bbl40l8Foi4mqp3cNRgDxjGA0ssz2mUPzcRP+qU99nWwgYVtc4
+OH1DzyZCHqrCkDnhb85O
+=hxID
+-----END PGP SIGNATURE-----
+
+--SIhMtSQSYpXpqifs--
