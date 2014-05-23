@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaEWKJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:09:44 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49094 "EHLO
+	id S1753040AbaEWKJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:09:41 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49032 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999AbaEWKEf (ORCPT
+	with ESMTP id S1751966AbaEWKEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 May 2014 06:04:35 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 11/26] perf ui/gtk: Add support to accumulated hist stat
-Date: Fri, 23 May 2014 19:04:08 +0900
-Message-Id: <1400839463-21933-12-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 03/26] perf hists: Check if accumulated when adding a hist entry
+Date: Fri, 23 May 2014 19:04:00 +0900
+Message-Id: <1400839463-21933-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
@@ -28,7 +28,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print accumulated stat of a hist entry if requested.
+To support callchain accumulation, @entry should be recognized if it's
+accumulated or not when add_hist_entry() called.  The period of an
+accumulated entry should be added to ->stat_acc but not ->stat. Add
+@sample_self arg for that.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
@@ -36,49 +39,206 @@ Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/gtk/hists.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ tools/perf/builtin-annotate.c |  3 ++-
+ tools/perf/builtin-diff.c     |  2 +-
+ tools/perf/builtin-top.c      |  2 +-
+ tools/perf/tests/hists_link.c |  4 ++--
+ tools/perf/util/hist.c        | 29 ++++++++++++++++++-----------
+ tools/perf/util/hist.h        |  3 ++-
+ 6 files changed, 26 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 9d90683914d4..7e5da4af98d8 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -47,11 +47,26 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 			  __percent_color_snprintf, true);			\
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index d30d2c2e2a7a..9590ec4ad484 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -65,7 +65,8 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return 0;
+ 	}
+ 
+-	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0);
++	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0,
++				true);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 8bff543acaab..9a5a035cb426 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -315,7 +315,7 @@ static int hists__add_entry(struct hists *hists,
+ 			    u64 weight, u64 transaction)
+ {
+ 	if (__hists__add_entry(hists, al, NULL, NULL, NULL, period, weight,
+-			       transaction) != NULL)
++			       transaction, true) != NULL)
+ 		return 0;
+ 	return -ENOMEM;
+ }
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 5b389ce4cd15..e7a0f8bc2fa7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -247,7 +247,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	pthread_mutex_lock(&evsel->hists.lock);
+ 	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
+ 				sample->period, sample->weight,
+-				sample->transaction);
++				sample->transaction, true);
+ 	pthread_mutex_unlock(&evsel->hists.lock);
+ 	if (he == NULL)
+ 		return NULL;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 5ffa2c3eb77d..ca6693b37cd7 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -88,7 +88,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 				goto out;
+ 
+ 			he = __hists__add_entry(&evsel->hists, &al, NULL,
+-						NULL, NULL, 1, 1, 0);
++						NULL, NULL, 1, 1, 0, true);
+ 			if (he == NULL)
+ 				goto out;
+ 
+@@ -112,7 +112,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 				goto out;
+ 
+ 			he = __hists__add_entry(&evsel->hists, &al, NULL,
+-						NULL, NULL, 1, 1, 0);
++						NULL, NULL, 1, 1, 0, true);
+ 			if (he == NULL)
+ 				goto out;
+ 
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index f231255116b0..8a79cc7f7ffb 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -279,7 +279,8 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+  * histogram, sorted on item, collects periods
+  */
+ 
+-static struct hist_entry *hist_entry__new(struct hist_entry *template)
++static struct hist_entry *hist_entry__new(struct hist_entry *template,
++					  bool sample_self)
+ {
+ 	size_t callchain_size = 0;
+ 	struct hist_entry *he;
+@@ -299,6 +300,8 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 				return NULL;
+ 			}
+ 			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
++			if (!sample_self)
++				memset(&he->stat, 0, sizeof(he->stat));
+ 		}
+ 
+ 		if (he->ms.map)
+@@ -351,7 +354,8 @@ static u8 symbol__parent_filter(const struct symbol *parent)
+ 
+ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 					 struct hist_entry *entry,
+-					 struct addr_location *al)
++					 struct addr_location *al,
++					 bool sample_self)
+ {
+ 	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+@@ -375,7 +379,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 		cmp = hist_entry__cmp(he, entry);
+ 
+ 		if (!cmp) {
+-			he_stat__add_period(&he->stat, period, weight);
++			if (sample_self)
++				he_stat__add_period(&he->stat, period, weight);
+ 			if (symbol_conf.cumulate_callchain)
+ 				he_stat__add_period(he->stat_acc, period, weight);
+ 
+@@ -405,14 +410,15 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	he = hist_entry__new(entry);
++	he = hist_entry__new(entry, sample_self);
+ 	if (!he)
+ 		return NULL;
+ 
+ 	rb_link_node(&he->rb_node_in, parent, p);
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+-	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
++	if (sample_self)
++		he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
+ 	if (symbol_conf.cumulate_callchain)
+ 		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
+ 	return he;
+@@ -423,7 +429,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 				      struct symbol *sym_parent,
+ 				      struct branch_info *bi,
+ 				      struct mem_info *mi,
+-				      u64 period, u64 weight, u64 transaction)
++				      u64 period, u64 weight, u64 transaction,
++				      bool sample_self)
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
+@@ -448,7 +455,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 		.transaction = transaction,
+ 	};
+ 
+-	return add_hist_entry(hists, &entry, al);
++	return add_hist_entry(hists, &entry, al, sample_self);
  }
  
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+				       struct perf_hpp *hpp,			\
-+				       struct hist_entry *he)			\
-+{										\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+			      __percent_color_snprintf, true);			\
-+}
-+
- __HPP_COLOR_PERCENT_FN(overhead, period)
- __HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
- __HPP_COLOR_PERCENT_FN(overhead_us, period_us)
- __HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
- __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
-+__HPP_COLOR_ACC_PERCENT_FN(overhead_acc, period)
+ static int
+@@ -501,7 +508,7 @@ iter_add_single_mem_entry(struct hist_entry_iter *iter, struct addr_location *al
+ 	 * and the he_stat__add_period() function.
+ 	 */
+ 	he = __hists__add_entry(&iter->evsel->hists, al, iter->parent, NULL, mi,
+-				cost, cost, 0);
++				cost, cost, 0, true);
+ 	if (!he)
+ 		return -ENOMEM;
  
- #undef __HPP_COLOR_PERCENT_FN
+@@ -610,7 +617,7 @@ iter_add_next_branch_entry(struct hist_entry_iter *iter, struct addr_location *a
+ 	 * and not events sampled. Thus we use a pseudo period of 1.
+ 	 */
+ 	he = __hists__add_entry(&evsel->hists, al, iter->parent, &bi[i], NULL,
+-				1, 1, 0);
++				1, 1, 0, true);
+ 	if (he == NULL)
+ 		return -ENOMEM;
  
-@@ -68,6 +83,8 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_guest_sys;
- 	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
- 				perf_gtk__hpp_color_overhead_guest_us;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_ACC].color =
-+				perf_gtk__hpp_color_overhead_acc;
- }
+@@ -659,7 +666,7 @@ iter_add_single_normal_entry(struct hist_entry_iter *iter, struct addr_location
  
- static void callchain_list__sym_name(struct callchain_list *cl,
+ 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
+ 				sample->period, sample->weight,
+-				sample->transaction);
++				sample->transaction, true);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+@@ -1158,7 +1165,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	he = hist_entry__new(pair);
++	he = hist_entry__new(pair, true);
+ 	if (he) {
+ 		memset(&he->stat, 0, sizeof(he->stat));
+ 		he->hists = hists;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 05fc6e7497c6..e655e87a829e 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -130,7 +130,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 				      struct symbol *parent,
+ 				      struct branch_info *bi,
+ 				      struct mem_info *mi, u64 period,
+-				      u64 weight, u64 transaction);
++				      u64 weight, u64 transaction,
++				      bool sample_self);
+ int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
+ 			 struct perf_evsel *evsel, struct perf_sample *sample,
+ 			 int max_stack_depth);
 -- 
 1.9.2
 
