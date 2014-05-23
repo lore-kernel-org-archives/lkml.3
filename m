@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaEWGWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 02:22:13 -0400
-Received: from imta21.fe.bosch.de ([139.15.243.226]:61580 "EHLO
-	imta21.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207AbaEWGWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 02:22:11 -0400
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 May 2014 02:22:11 EDT
-Message-ID: <537EE65C.5010700@de.bosch.com>
-Date: Fri, 23 May 2014 08:10:36 +0200
-From: Dirk Behme <dirk.behme@de.bosch.com>
-Organization: Robert Bosch Car Multimedia GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752209AbaEWG2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 02:28:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:53094 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902AbaEWG2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 02:28:53 -0400
+Date: Fri, 23 May 2014 16:28:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: linux-next: manual merge of the tip tree with the arm64 tree
+Message-ID: <20140523162844.05e6ac65@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Huang Shijie <b32955@freescale.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH 2/2] serial: imx: disable the receiver ready interrupt
- for imx_stop_rx
-References: <1400819575-20435-1-git-send-email-b32955@freescale.com> <1400819575-20435-2-git-send-email-b32955@freescale.com>
-In-Reply-To: <1400819575-20435-2-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.34.217.133]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/qoZaKI.ox=EhOqq1DryYSkL"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.05.2014 06:32, Huang Shijie wrote:
-> This patch disables the receiver ready interrupt for imx_stop_rx.
-> It reduces the interrupt numbers when the uart is going to close
-> or suspend.
->
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
-> ---
->   drivers/tty/serial/imx.c |    4 ++++
->   1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-> index ed6cdf7..6026101 100644
-> --- a/drivers/tty/serial/imx.c
-> +++ b/drivers/tty/serial/imx.c
-> @@ -440,6 +440,10 @@ static void imx_stop_rx(struct uart_port *port)
->
->   	temp = readl(sport->port.membase + UCR2);
->   	writel(temp & ~UCR2_RXEN, sport->port.membase + UCR2);
-> +
-> +	/* disable the `Receiver Ready Interrrupt` */
-> +	temp = readl(sport->port.membase + UCR1);
-> +	writel(temp & ~UCR1_RRDYEN, sport->port.membase + UCR1);
->   }
+--Sig_/qoZaKI.ox=EhOqq1DryYSkL
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-While this is about the RX irq, I've a slightly off-topic general 
-question regarding the usage of the *TX* irq in TX DMA mode:
+Hi all,
 
-It seems to me that the TX irq is kept enabled while the TX DMA is 
-running/enabled? Looking e.g. into the amba-pl011.c there it seems there 
-the logic is:
+Today's linux-next merge of the tip tree got a conflict in
+arch/arm64/include/asm/thread_info.h between commit 449f81a4da4d
+("arm64: make a single hook to syscall_trace() for all syscall
+features") from the arm64 tree and commit 842514849a61 ("arm64: Remove
+TIF_POLLING_NRFLAG") from the tip tree.
 
-- Set up/start the TX DMA
-- Disable the TX irq while the TX DMA is running (only waiting for the 
-TX DMA callback, then)
-- Re-enable the TX irq in the TX DMA callback
-- Let the TX irq fire, then. And if there are still data, set up the TX 
-DMA again.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-This sounds quite more logical than the implementation in imx.c.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Or is my understanding completely wrong, here?
+diff --cc arch/arm64/include/asm/thread_info.h
+index 9c086c63f911,7b8e3a2a00fb..000000000000
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@@ -103,12 -99,7 +102,11 @@@ static inline struct thread_info *curre
+  #define TIF_SIGPENDING		0
+  #define TIF_NEED_RESCHED	1
+  #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
+ +#define TIF_FOREIGN_FPSTATE	3	/* CPU's FP state is not current's */
+  #define TIF_SYSCALL_TRACE	8
+ +#define TIF_SYSCALL_AUDIT	9
+ +#define TIF_SYSCALL_TRACEPOINT	10
+ +#define TIF_SECCOMP		11
+- #define TIF_POLLING_NRFLAG	16
+  #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+  #define TIF_FREEZE		19
+  #define TIF_RESTORE_SIGMASK	20
 
-Thanks
+--Sig_/qoZaKI.ox=EhOqq1DryYSkL
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Dirk
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJTfuqhAAoJEMDTa8Ir7ZwV9BkP/0EV8EuvWkiC/PVB8K6a7bHJ
+vlJVVNIJkwD8jLdhjhwTr3S5Dt2NwaBZNt1I5zC4y+ADqOp/RLPlnmK6pKDUUmx+
+BcCPcXOtNcsY4Kr00slmYbJyIa56Qq2ZqF1WUvKzQb+plwfsEVbQGrlxPa8q3BiK
+DQ1a5evq+ToX7xnj1GHdz9FBl8MHomdaYZKUIMJLfJbhY7NfH5WNomcXoWma4mtz
+xVX7Tqxid0ozLXrq8h0dOt0Q+m8jyXtnY8FqWpLoQX5k+8IHPx5kDtsyWfITAPEZ
+U6nRP7k19TzLviVbkzQy9raeNP4emdVQFSKVs9Zr8AjsUqqyzYWgr0VmPxyUL9v6
+1d7LzyG4mxwCVvDm8XIN+0BpmW+Z77+HMy0j06hi+9y/GbHp096SWjwrZms6fl9q
+LeM7INPsMNfptszxfO2yr1NViGz4TE5MvmFwDRmZiwNOZ7nTUNvGx2nTNzny9CmR
+nW4GwwUj6Tgfzdaho09C8YpilaLteO0dAaT35/3ZVbWc7hOXnlg95sLpfKqoz5dk
+6WjZYGqLuwFnA4Gin8zQ5qZX7cFJcs90MHmDnlzLEcc1Wnh9QbVd6SIAYBrwUH6z
+oGqk8MukiqCktghDVc4GEPOReJUvC6GtCyUeh7g5GucDI45+SXdjvmCyV9koQAvG
+mrvADaRLG9/FVFpfjcfq
+=uaWo
+-----END PGP SIGNATURE-----
+
+--Sig_/qoZaKI.ox=EhOqq1DryYSkL--
