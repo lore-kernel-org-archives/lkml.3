@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaEWJKS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:10:18 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:38465 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964AbaEWJKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:10:13 -0400
-Message-ID: <537F1070.5010303@linaro.org>
-Date: Fri, 23 May 2014 10:10:08 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
+	id S1753044AbaEWJKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:10:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60283 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753010AbaEWJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 05:10:47 -0400
+Date: Fri, 23 May 2014 11:10:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Chen Yucong <slaoub@gmail.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v2 11/14] mmc: mmci: Add support to data commands via
- variant structure.
-References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>	<1400146660-30261-1-git-send-email-srinivas.kandagatla@linaro.org> <CACRpkdYZOpqyGJT4_Kf-TetiQoQrJwWbSrqUxDuRszutEM0HWw@mail.gmail.com>
-In-Reply-To: <CACRpkdYZOpqyGJT4_Kf-TetiQoQrJwWbSrqUxDuRszutEM0HWw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH v2] x86/mce: Distirbute the clear operation of mces_seen
+ to Per-CPU rather than only monarch CPU
+Message-ID: <20140523091041.GA21332@pd.tnic>
+References: <1400551885-13828-1-git-send-email-slaoub@gmail.com>
+ <537C040E.3040901@jp.fujitsu.com>
+ <1400637782.14703.32.camel@debian>
+ <537C12BC.6080408@jp.fujitsu.com>
+ <1400642398.14703.42.camel@debian>
+ <537C1F24.8000604@jp.fujitsu.com>
+ <3908561D78D1C84285E8C5FCA982C28F328115FD@ORSMSX114.amr.corp.intel.com>
+ <1400808739.19982.48.camel@debian>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1400808739.19982.48.camel@debian>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Linus W.
+On Fri, May 23, 2014 at 09:32:19AM +0800, Chen Yucong wrote:
+> ...if we reach a timeout, there is very little
+> chance for recovering. Thought. the probability for this situation to
+> happen is very slight, it's not impossible. Indeed, it's hard to know
+> the precise causes for timeout.
 
-On 23/05/14 10:09, Linus Walleij wrote:
-> On Thu, May 15, 2014 at 11:37 AM,  <srinivas.kandagatla@linaro.org> wrote:
->
->> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>
->> On some SOCs like Qcom there are explicit bits in the command register
->> to specify if its a data transfer command or not. So this patch adds
->> support to such bits in variant data, giving more flexibility to the
->> driver.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Yours,
-> Linus Walleij
->
+Ok, enough talking, let's close that hole and get on with our lives:
+
+---
+From: Borislav Petkov <bp@suse.de>
+Date: Fri, 23 May 2014 11:06:35 +0200
+Subject: [PATCH] mce: Panic when a core has reached a timeout
+
+There is very little and maybe practically nothing we can do to recover
+from a system where at least one core has reached a timeout during the
+whole monarch cores gathering. So panic when that happens.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index bfde4871848f..529ccc488f5a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -704,8 +704,7 @@ static int mce_timed_out(u64 *t)
+ 	if (!mca_cfg.monarch_timeout)
+ 		goto out;
+ 	if ((s64)*t < SPINUNIT) {
+-		/* CHECKME: Make panic default for 1 too? */
+-		if (mca_cfg.tolerant < 1)
++		if (mca_cfg.tolerant <= 1)
+ 			mce_panic("Timeout synchronizing machine check over CPUs",
+ 				  NULL, NULL);
+ 		cpu_missing = 1;
+-- 
+1.9.0
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
