@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561AbaEWKmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:42:51 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:52355 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468AbaEWKmt (ORCPT
+	id S1753527AbaEWKmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:42:37 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:57320 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaEWKc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:42:49 -0400
+	Fri, 23 May 2014 06:32:26 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/2] clocksource: tcb_clksrc: Make tc_mode interrupt safe
-Date: Fri, 23 May 2014 12:43:00 +0200
-Message-Id: <1400841780-7119-2-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 40/71] clocksource: sh_mtu2: Split channel setup to separate function
+Date: Fri, 23 May 2014 12:31:20 +0200
+Message-Id: <1400841111-6683-40-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400841780-7119-1-git-send-email-daniel.lezcano@linaro.org>
-References: <537F2589.5050807@linaro.org>
- <1400841780-7119-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+References: <537F214C.8000700@linaro.org>
+ <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Jander <david@protonic.nl>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-tc_mode() can be called from interrupt context and thus must not call
-clk_*prepare*() functions.
+Move the channel setup code from sh_mtu2_setup to a new
+sh_mtu2_setup_channel function and call it from sh_mtu2_setup.
 
-Signed-off-by: David Jander <david@protonic.nl>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Tested-by: Wolfram Sang <wsa@sang-engineering.com>
 ---
- drivers/clocksource/tcb_clksrc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/clocksource/sh_mtu2.c |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 00fdd11..a8d7ea1 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
- 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
- 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
--		clk_disable_unprepare(tcd->clk);
-+		clk_disable(tcd->clk);
+diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
+index 256621c..8fd7059 100644
+--- a/drivers/clocksource/sh_mtu2.c
++++ b/drivers/clocksource/sh_mtu2.c
+@@ -273,6 +273,24 @@ static int sh_mtu2_register(struct sh_mtu2_channel *ch, char *name,
+ 	return 0;
+ }
+ 
++static int sh_mtu2_setup_channel(struct sh_mtu2_channel *ch,
++				 struct sh_mtu2_device *mtu)
++{
++	struct sh_timer_config *cfg = mtu->pdev->dev.platform_data;
++
++	memset(ch, 0, sizeof(*ch));
++	ch->mtu = mtu;
++
++	ch->irq = platform_get_irq(mtu->pdev, 0);
++	if (ch->irq < 0) {
++		dev_err(&mtu->pdev->dev, "failed to get irq\n");
++		return ch->irq;
++	}
++
++	return sh_mtu2_register(ch, (char *)dev_name(&mtu->pdev->dev),
++				cfg->clockevent_rating);
++}
++
+ static int sh_mtu2_setup(struct sh_mtu2_device *mtu,
+ 			 struct platform_device *pdev)
+ {
+@@ -297,12 +315,6 @@ static int sh_mtu2_setup(struct sh_mtu2_device *mtu,
+ 		goto err0;
  	}
  
- 	switch (m) {
-@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	 * of oneshot, we get lower overhead and improved accuracy.
- 	 */
- 	case CLOCK_EVT_MODE_PERIODIC:
--		clk_prepare_enable(tcd->clk);
-+		clk_enable(tcd->clk);
+-	mtu->channel.irq = platform_get_irq(mtu->pdev, 0);
+-	if (mtu->channel.irq < 0) {
+-		dev_err(&mtu->pdev->dev, "failed to get irq\n");
+-		goto err0;
+-	}
+-
+ 	/* map memory, let mapbase point to our channel */
+ 	mtu->mapbase = ioremap_nocache(res->start, resource_size(res));
+ 	if (mtu->mapbase == NULL) {
+@@ -322,10 +334,7 @@ static int sh_mtu2_setup(struct sh_mtu2_device *mtu,
+ 	if (ret < 0)
+ 		goto err2;
  
- 		/* slow clock, count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
-@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 		break;
+-	mtu->channel.mtu = mtu;
+-
+-	ret = sh_mtu2_register(&mtu->channel, (char *)dev_name(&mtu->pdev->dev),
+-			       cfg->clockevent_rating);
++	ret = sh_mtu2_setup_channel(&mtu->channel, mtu);
+ 	if (ret < 0)
+ 		goto err3;
  
- 	case CLOCK_EVT_MODE_ONESHOT:
--		clk_prepare_enable(tcd->clk);
-+		clk_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
-@@ -194,7 +194,7 @@ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
- 	ret = clk_prepare_enable(t2_clk);
- 	if (ret)
- 		return ret;
--	clk_disable_unprepare(t2_clk);
-+	clk_disable(t2_clk);
- 
- 	clkevt.regs = tc->regs;
- 	clkevt.clk = t2_clk;
 -- 
 1.7.9.5
 
