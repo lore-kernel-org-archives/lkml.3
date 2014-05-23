@@ -1,240 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaEWMgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:36:22 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423AbaEWMgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:36:21 -0400
-Message-ID: <537F40C0.7030403@nod.at>
-Date: Fri, 23 May 2014 14:36:16 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752045AbaEWMjJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:39:09 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:60413 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaEWMjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 08:39:07 -0400
+Date: Fri, 23 May 2014 13:39:00 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, sameo@linux.intel.com,
+        broonie@linaro.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] extcon: arizona: support inverted jack detect switch
+Message-ID: <20140523123900.GY19747@lee--X1>
+References: <20140520115632.GA13900@opensource.wolfsonmicro.com>
+ <20140523115446.GA20451@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        trond.myklebust@primarydata.com, NeilBrown <neilb@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, David Gstir <david@sigma-star.at>
-Subject: Re: NFS issue while copying huge file
-References: <CAFLxGvw_7=AuBqxNhAHpQAXq2aTqc8Afa6Z62=YCsFXcJx0Hug@mail.gmail.com> <CAFLxGvxm43MaOqv1JQ8vxkn4s50uHZ8Js6A-Ec+O_sjvFszehQ@mail.gmail.com> <20140523115655.GA14074@fieldses.org>
-In-Reply-To: <20140523115655.GA14074@fieldses.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140523115446.GA20451@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.05.2014 13:56, schrieb J. Bruce Fields:
-> It's not a known issue, and finding out where the problem was introduced
-> could indeed by helpful.
+> Add config option for inverted jack detect switch that
+> opens when jack is inserted.
 > 
-> I'm not sure how to interpret the statistics from the oom killer.  I'll
-> dig around.
+> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+
+I already Acked this.  Don't forget to carry that forward to mitigate
+adding unnecessary delay to acceptance.
+
+> ---
+>  drivers/extcon/extcon-arizona.c   |   34 ++++++++++++++++++++++++++--------
+>  include/linux/mfd/arizona/pdata.h |    3 +++
+>  2 files changed, 29 insertions(+), 8 deletions(-)
 > 
-> Knowing where the nfsd threads are spinning might also be interesting.
-> "perf top" might give a quick idea?  Or maybe just "for p in $(pidof
-> nfsd); do echo $p; cat /proc/$p/stack; done"
-> 
-> --b.
-> 
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index 98a14f6..4c73d25 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -39,6 +39,11 @@
+>  #define ARIZONA_ACCDET_MODE_HPL 1
+>  #define ARIZONA_ACCDET_MODE_HPR 2
+>  
+> +#define ARIZONA_MICD_CLAMP_MODE_JDL      0x4
+> +#define ARIZONA_MICD_CLAMP_MODE_JDH      0x5
+> +#define ARIZONA_MICD_CLAMP_MODE_JDL_GP5H 0x9
+> +#define ARIZONA_MICD_CLAMP_MODE_JDH_GP5H 0xb
+> +
+>  #define ARIZONA_HPDET_MAX 10000
+>  
+>  #define HPDET_DEBOUNCE 500
+> @@ -962,10 +967,16 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
+>  
+>  	if (arizona->pdata.jd_gpio5) {
+>  		mask = ARIZONA_MICD_CLAMP_STS;
+> -		present = 0;
+> +		if (arizona->pdata.jd_invert)
+> +			present = ARIZONA_MICD_CLAMP_STS;
+> +		else
+> +			present = 0;
+>  	} else {
+>  		mask = ARIZONA_JD1_STS;
+> -		present = ARIZONA_JD1_STS;
+> +		if (arizona->pdata.jd_invert)
+> +			present = 0;
+> +		else
+> +			present = ARIZONA_JD1_STS;
+>  	}
+>  
+>  	ret = regmap_read(arizona->regmap, ARIZONA_AOD_IRQ_RAW_STATUS, &val);
+> @@ -1096,6 +1107,7 @@ static int arizona_extcon_probe(struct platform_device *pdev)
+>  	struct arizona_pdata *pdata = &arizona->pdata;
+>  	struct arizona_extcon_info *info;
+>  	unsigned int val;
+> +	unsigned int clamp_mode;
+>  	int jack_irq_fall, jack_irq_rise;
+>  	int ret, mode, i, j;
+>  
+> @@ -1302,16 +1314,22 @@ static int arizona_extcon_probe(struct platform_device *pdev)
+>  			regmap_write(arizona->regmap, ARIZONA_GPIO5_CTRL,
+>  				     val);
+>  
+> -			regmap_update_bits(arizona->regmap,
+> -					   ARIZONA_MICD_CLAMP_CONTROL,
+> -					   ARIZONA_MICD_CLAMP_MODE_MASK, 0x9);
+> +			if (arizona->pdata.jd_invert)
+> +				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDH_GP5H;
+> +			else
+> +				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDL_GP5H;
+>  		} else {
+> -			regmap_update_bits(arizona->regmap,
+> -					   ARIZONA_MICD_CLAMP_CONTROL,
+> -					   ARIZONA_MICD_CLAMP_MODE_MASK, 0x4);
+> +			if (arizona->pdata.jd_invert)
+> +				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDH;
+> +			else
+> +				clamp_mode = ARIZONA_MICD_CLAMP_MODE_JDL;
+>  		}
+>  
+>  		regmap_update_bits(arizona->regmap,
+> +				   ARIZONA_MICD_CLAMP_CONTROL,
+> +				   ARIZONA_MICD_CLAMP_MODE_MASK, clamp_mode);
+> +
+> +		regmap_update_bits(arizona->regmap,
+>  				   ARIZONA_JACK_DETECT_DEBOUNCE,
+>  				   ARIZONA_MICD_CLAMP_DB,
+>  				   ARIZONA_MICD_CLAMP_DB);
+> diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
+> index 12a5c13..4578c72 100644
+> --- a/include/linux/mfd/arizona/pdata.h
+> +++ b/include/linux/mfd/arizona/pdata.h
+> @@ -127,6 +127,9 @@ struct arizona_pdata {
+>  	/** Internal pull on GPIO5 is disabled when used for jack detection */
+>  	bool jd_gpio5_nopull;
+>  
+> +	/** set to true if jackdet contact opens on insert */
+> +	bool jd_invert;
+> +
+>  	/** Use the headphone detect circuit to identify the accessory */
+>  	bool hpdet_acc_id;
+>  
 
-Just booted 3.12.x on my client and sent a huge file to the NFS server (2.6.32-431.17.1.el6.x86_64)
-After a few minutes the load reached 8 on the NFS server and I saw more and more nfsd's in top.
-After some more time the nfsd's decreased but came again later.
-I see this pattern until the NFS clients aborts with -EIO.
-
-I can try to upgrade the kernel on my NFS server.
-But as this is out main backup server in production I'd like to avoid it first.
-
-Here the output of perf top and /proc/<pid>/stack on the server while many nfd's consumed 100%
-CPU for a while.
-
-perf top:
- 19.81%  [kernel]             [k] _spin_lock
- 12.55%  [kernel]             [k] mem_cgroup_lru_del_list
- 10.73%  [kernel]             [k] shrink_page_list.clone.3
-  7.90%  [kernel]             [k] isolate_lru_pages.clone.0
-  7.28%  [kernel]             [k] __isolate_lru_page
-  6.99%  [kernel]             [k] shrink_inactive_list
-  3.82%  [kernel]             [k] page_waitqueue
-  3.29%  [kernel]             [k] unlock_page
-  2.84%  [kernel]             [k] mem_cgroup_lru_add_list
-  2.51%  [kernel]             [k] __list_add
-  2.36%  [kernel]             [k] page_evictable
-  2.33%  [kernel]             [k] __wake_up_bit
-  2.31%  [kernel]             [k] mem_cgroup_lru_del
-  2.00%  [kernel]             [k] release_pages
-  1.85%  [kernel]             [k] __mod_zone_page_state
-  1.51%  [kernel]             [k] list_del
-  1.40%  [kernel]             [k] lookup_page_cgroup
-  1.25%  [kernel]             [k] _spin_lock_irq
-  0.76%  [kernel]             [k] page_referenced
-  0.46%  [xor]                [k] xor_sse_4
-  0.36%  [kernel]             [k] _cond_resched
-
-[root@gimli ~]# for p in $(pidof nfsd); do echo $p; cat /proc/$p/stack; done
-1438
-[<ffffffffa02a5568>] xfs_file_buffered_aio_write+0x58/0x1b0 [xfs]
-[<ffffffffa02a57bf>] xfs_file_aio_write+0xff/0x190 [xfs]
-[<ffffffff811887fb>] do_sync_readv_writev+0xfb/0x140
-[<ffffffff81189786>] do_readv_writev+0xd6/0x1f0
-[<ffffffff811898e6>] vfs_writev+0x46/0x60
-[<ffffffffa04f8085>] nfsd_vfs_write+0x105/0x430 [nfsd]
-[<ffffffffa04fa0d9>] nfsd_write+0x99/0x100 [nfsd]
-[<ffffffffa0505b20>] nfsd4_write+0x100/0x130 [nfsd]
-[<ffffffffa0506458>] nfsd4_proc_compound+0x3d8/0x490 [nfsd]
-[<ffffffffa04f3425>] nfsd_dispatch+0xe5/0x230 [nfsd]
-[<ffffffffa047a844>] svc_process_common+0x344/0x640 [sunrpc]
-[<ffffffffa047ae80>] svc_process+0x110/0x160 [sunrpc]
-[<ffffffffa04f3b52>] nfsd+0xc2/0x160 [nfsd]
-[<ffffffff8109ab56>] kthread+0x96/0xa0
-[<ffffffff8100c20a>] child_rip+0xa/0x20
-[<ffffffffffffffff>] 0xffffffffffffffff
-1437
-[<ffffffffa02a5568>] xfs_file_buffered_aio_write+0x58/0x1b0 [xfs]
-[<ffffffffa02a57bf>] xfs_file_aio_write+0xff/0x190 [xfs]
-[<ffffffff811887fb>] do_sync_readv_writev+0xfb/0x140
-[<ffffffff81189786>] do_readv_writev+0xd6/0x1f0
-[<ffffffff811898e6>] vfs_writev+0x46/0x60
-[<ffffffffa04f8085>] nfsd_vfs_write+0x105/0x430 [nfsd]
-[<ffffffffa04fa0d9>] nfsd_write+0x99/0x100 [nfsd]
-[<ffffffffa0505b20>] nfsd4_write+0x100/0x130 [nfsd]
-[<ffffffffa0506458>] nfsd4_proc_compound+0x3d8/0x490 [nfsd]
-[<ffffffffa04f3425>] nfsd_dispatch+0xe5/0x230 [nfsd]
-[<ffffffffa047a844>] svc_process_common+0x344/0x640 [sunrpc]
-[<ffffffffa047ae80>] svc_process+0x110/0x160 [sunrpc]
-[<ffffffffa04f3b52>] nfsd+0xc2/0x160 [nfsd]
-[<ffffffff8109ab56>] kthread+0x96/0xa0
-[<ffffffff8100c20a>] child_rip+0xa/0x20
-[<ffffffffffffffff>] 0xffffffffffffffff
-1436
-[<ffffffffa02a5568>] xfs_file_buffered_aio_write+0x58/0x1b0 [xfs]
-[<ffffffffa02a57bf>] xfs_file_aio_write+0xff/0x190 [xfs]
-[<ffffffff811887fb>] do_sync_readv_writev+0xfb/0x140
-[<ffffffff81189786>] do_readv_writev+0xd6/0x1f0
-[<ffffffff811898e6>] vfs_writev+0x46/0x60
-[<ffffffffa04f8085>] nfsd_vfs_write+0x105/0x430 [nfsd]
-[<ffffffffa04fa0d9>] nfsd_write+0x99/0x100 [nfsd]
-[<ffffffffa0505b20>] nfsd4_write+0x100/0x130 [nfsd]
-[<ffffffffa0506458>] nfsd4_proc_compound+0x3d8/0x490 [nfsd]
-[<ffffffffa04f3425>] nfsd_dispatch+0xe5/0x230 [nfsd]
-[<ffffffffa047a844>] svc_process_common+0x344/0x640 [sunrpc]
-[<ffffffffa047ae80>] svc_process+0x110/0x160 [sunrpc]
-[<ffffffffa04f3b52>] nfsd+0xc2/0x160 [nfsd]
-[<ffffffff8109ab56>] kthread+0x96/0xa0
-[<ffffffff8100c20a>] child_rip+0xa/0x20
-[<ffffffffffffffff>] 0xffffffffffffffff
-1435
-[<ffffffffa02a5568>] xfs_file_buffered_aio_write+0x58/0x1b0 [xfs]
-[<ffffffffa02a57bf>] xfs_file_aio_write+0xff/0x190 [xfs]
-[<ffffffff811887fb>] do_sync_readv_writev+0xfb/0x140
-[<ffffffff81189786>] do_readv_writev+0xd6/0x1f0
-[<ffffffff811898e6>] vfs_writev+0x46/0x60
-[<ffffffffa04f8085>] nfsd_vfs_write+0x105/0x430 [nfsd]
-[<ffffffffa04fa0d9>] nfsd_write+0x99/0x100 [nfsd]
-[<ffffffffa0505b20>] nfsd4_write+0x100/0x130 [nfsd]
-[<ffffffffa0506458>] nfsd4_proc_compound+0x3d8/0x490 [nfsd]
-[<ffffffffa04f3425>] nfsd_dispatch+0xe5/0x230 [nfsd]
-[<ffffffffa047a844>] svc_process_common+0x344/0x640 [sunrpc]
-[<ffffffffa047ae80>] svc_process+0x110/0x160 [sunrpc]
-[<ffffffffa04f3b52>] nfsd+0xc2/0x160 [nfsd]
-[<ffffffff8109ab56>] kthread+0x96/0xa0
-[<ffffffff8100c20a>] child_rip+0xa/0x20
-[<ffffffffffffffff>] 0xffffffffffffffff
-1434
-[<ffffffffa02a5568>] xfs_file_buffered_aio_write+0x58/0x1b0 [xfs]
-[<ffffffffa02a57bf>] xfs_file_aio_write+0xff/0x190 [xfs]
-[<ffffffff811887fb>] do_sync_readv_writev+0xfb/0x140
-[<ffffffff81189786>] do_readv_writev+0xd6/0x1f0
-[<ffffffff811898e6>] vfs_writev+0x46/0x60
-[<ffffffffa04f8085>] nfsd_vfs_write+0x105/0x430 [nfsd]
-[<ffffffffa04fa0d9>] nfsd_write+0x99/0x100 [nfsd]
-[<ffffffffa0505b20>] nfsd4_write+0x100/0x130 [nfsd]
-[<ffffffffa0506458>] nfsd4_proc_compound+0x3d8/0x490 [nfsd]
-[<ffffffffa04f3425>] nfsd_dispatch+0xe5/0x230 [nfsd]
-[<ffffffffa047a844>] svc_process_common+0x344/0x640 [sunrpc]
-[<ffffffffa047ae80>] svc_process+0x110/0x160 [sunrpc]
-[<ffffffffa04f3b52>] nfsd+0xc2/0x160 [nfsd]
-[<ffffffff8109ab56>] kthread+0x96/0xa0
-[<ffffffff8100c20a>] child_rip+0xa/0x20
-[<ffffffffffffffff>] 0xffffffffffffffff
-1433
-[<ffffffffffffffff>] 0xffffffffffffffff
-1432
-[<ffffffffa02a5568>] xfs_file_buffered_aio_write+0x58/0x1b0 [xfs]
-[<ffffffffa02a57bf>] xfs_file_aio_write+0xff/0x190 [xfs]
-[<ffffffff811887fb>] do_sync_readv_writev+0xfb/0x140
-[<ffffffff81189786>] do_readv_writev+0xd6/0x1f0
-[<ffffffff811898e6>] vfs_writev+0x46/0x60
-[<ffffffffa04f8085>] nfsd_vfs_write+0x105/0x430 [nfsd]
-[<ffffffffa04fa0d9>] nfsd_write+0x99/0x100 [nfsd]
-[<ffffffffa0505b20>] nfsd4_write+0x100/0x130 [nfsd]
-[<ffffffffa0506458>] nfsd4_proc_compound+0x3d8/0x490 [nfsd]
-[<ffffffffa04f3425>] nfsd_dispatch+0xe5/0x230 [nfsd]
-[<ffffffffa047a844>] svc_process_common+0x344/0x640 [sunrpc]
-[<ffffffffa047ae80>] svc_process+0x110/0x160 [sunrpc]
-[<ffffffffa04f3b52>] nfsd+0xc2/0x160 [nfsd]
-[<ffffffff8109ab56>] kthread+0x96/0xa0
-[<ffffffff8100c20a>] child_rip+0xa/0x20
-[<ffffffffffffffff>] 0xffffffffffffffff
-1431
-[<ffffffffa02a5568>] xfs_file_buffered_aio_write+0x58/0x1b0 [xfs]
-[<ffffffffa02a57bf>] xfs_file_aio_write+0xff/0x190 [xfs]
-[<ffffffff811887fb>] do_sync_readv_writev+0xfb/0x140
-[<ffffffff81189786>] do_readv_writev+0xd6/0x1f0
-[<ffffffff811898e6>] vfs_writev+0x46/0x60
-[<ffffffffa04f8085>] nfsd_vfs_write+0x105/0x430 [nfsd]
-[<ffffffffa04fa0d9>] nfsd_write+0x99/0x100 [nfsd]
-[<ffffffffa0505b20>] nfsd4_write+0x100/0x130 [nfsd]
-[<ffffffffa0506458>] nfsd4_proc_compound+0x3d8/0x490 [nfsd]
-[<ffffffffa04f3425>] nfsd_dispatch+0xe5/0x230 [nfsd]
-[<ffffffffa047a844>] svc_process_common+0x344/0x640 [sunrpc]
-[<ffffffffa047ae80>] svc_process+0x110/0x160 [sunrpc]
-[<ffffffffa04f3b52>] nfsd+0xc2/0x160 [nfsd]
-[<ffffffff8109ab56>] kthread+0x96/0xa0
-[<ffffffff8100c20a>] child_rip+0xa/0x20
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-To me this looks like a lock contention.
-This time also the hung task detector triggered on my client:
-
-INFO: task cat:2289 blocked for more than 120 seconds.
-      Tainted: GF            3.12.17 #3
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-cat             D ffffffff81613440     0  2289   2266 0x00000080
- ffff880851c09978 0000000000000082 ffff880851c09fd8 0000000000012d40
- ffff880851c08010 0000000000012d40 0000000000012d40 0000000000012d40
- ffff880851c09fd8 0000000000012d40 ffff880851d5f500 ffff88087c610080
-Call Trace:
- [<ffffffffa05c9d20>] ? nfs_wait_on_request+0x40/0x40 [nfs]
- [<ffffffff81561cb9>] schedule+0x29/0x70
- [<ffffffff81561d8c>] io_schedule+0x8c/0xd0
- [<ffffffffa05c9d2e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8155fa12>] __wait_on_bit+0x62/0x90
- [<ffffffffa05c9d20>] ? nfs_wait_on_request+0x40/0x40 [nfs]
- [<ffffffff8155fab8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff810709d0>] ? wake_atomic_t_function+0x40/0x40
- [<ffffffffa05c9d16>] nfs_wait_on_request+0x36/0x40 [nfs]
- [<ffffffffa05ceff3>] nfs_try_to_update_request+0x93/0x140 [nfs]
- [<ffffffffa05cf0f3>] nfs_setup_write_request+0x53/0x1a0 [nfs]
- [<ffffffffa05c2c90>] ? nfs_evict_inode+0x40/0x40 [nfs]
- [<ffffffffa05cf26f>] nfs_writepage_setup+0x2f/0x1f0 [nfs]
- [<ffffffff811210eb>] ? find_lock_page+0x3b/0x80
- [<ffffffffa05cf499>] nfs_updatepage+0x69/0x250 [nfs]
- [<ffffffffa05c10a1>] nfs_write_end+0x161/0x320 [nfs]
- [<ffffffff8111faea>] generic_perform_write+0x12a/0x200
- [<ffffffff8111fc23>] generic_file_buffered_write+0x63/0xa0
- [<ffffffff8112252f>] __generic_file_aio_write+0x1bf/0x3b0
- [<ffffffff81181d93>] ? __sb_end_write+0x33/0x70
- [<ffffffff81122784>] generic_file_aio_write+0x64/0xb0
- [<ffffffffa05c05a1>] nfs_file_write+0xc1/0x1d0 [nfs]
- [<ffffffff8117f2df>] do_sync_write+0x5f/0xa0
- [<ffffffff8117f6c8>] vfs_write+0xc8/0x170
- [<ffffffff8119c0a1>] ? fget_light+0x21/0xc0
- [<ffffffff8117fcdf>] SyS_write+0x5f/0xb0
- [<ffffffff8156be92>] system_call_fastpath+0x16/0x1b
-nfs: server 10.42.0.1 not responding, timed out
-
-Thanks,
-//richard
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
