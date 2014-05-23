@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaEWVZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 17:25:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57315 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751039AbaEWVZQ (ORCPT
+	id S1751297AbaEWV2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 17:28:20 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50579 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750995AbaEWV2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 17:25:16 -0400
-Message-ID: <537FBCB1.5010207@free-electrons.com>
-Date: Fri, 23 May 2014 23:25:05 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 23 May 2014 17:28:18 -0400
+X-Sasl-enc: KHk6c6Pz49DzMFQ7Trc1Us3pKOTgAO7b7a+bj/Sd51fW 1400880497
+Message-ID: <537FBD6F.1070009@iki.fi>
+Date: Sat, 24 May 2014 00:28:15 +0300
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Andrew Lunn <andrew@lunn.ch>, Kishon Vijay Abraham I <kishon@ti.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Mathias Nyman <mathias.nyman@intel.com>, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 2/5] Documentation: dt-bindings: document the Armada 375
- USB cluster binding
-References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com> <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com> <537F13B2.6070500@ti.com> <20140523132145.GA31314@lunn.ch> <20140523133608.GB31314@lunn.ch> <537F52B0.5030204@ti.com> <20140523135943.GC31314@lunn.ch>
-In-Reply-To: <20140523135943.GC31314@lunn.ch>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Snitzer <snitzer@redhat.com>, Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: slab_common: fix the check for duplicate slab names
+References: <alpine.LRH.2.02.1403041711300.29476@file01.intranet.prod.int.rdu2.redhat.com> <20140325170324.GC580@redhat.com> <alpine.DEB.2.10.1403251306260.26471@nuc> <20140523201632.GA16013@redhat.com>
+In-Reply-To: <20140523201632.GA16013@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/05/2014 15:59, Andrew Lunn wrote:
-> On Fri, May 23, 2014 at 07:22:48PM +0530, Kishon Vijay Abraham I wrote:
->> hI,
+On 05/23/2014 11:16 PM, Mike Snitzer wrote:
+> On Tue, Mar 25 2014 at  2:07pm -0400,
+> Christoph Lameter <cl@linux.com> wrote:
+>
+>> On Tue, 25 Mar 2014, Mike Snitzer wrote:
 >>
->> On Friday 23 May 2014 07:06 PM, Andrew Lunn wrote:
->>>> Do you want one .txt file per driver, or can we combine binding
->>>> documentations into one file? There should already be a mvebu-phy.txt,
->>>> which contains the sata phy usable on some of the Armada SoC families.
->>>> This binding could be appended to it.
->>>
->>> Ah. Humm, well! It seems the patch adding the mvebu-phy.txt fell
->>> through a crack when adding the driver.
->>>
->>> Kishon could you take
->>> http://www.spinics.net/lists/devicetree/msg17018.html into your tree?
->>> It should of been taken the same time you took the actual driver,
->>> http://www.spinics.net/lists/devicetree/msg17011.html into your tree.
->>>
->>> I can resend that one missing patch if you want.
+>>> This patch still isn't upstream.  Who should be shepherding it to Linus?
+>> Pekka usually does that.
 >>
->> yes please. But it's already too late to go in the next merge window.
-> 
-> Gregory, could you pick it up and append your 375 binding to it? We
-> can avoid merge conflicts that way.
+>> Acked-by: Christoph Lameter <cl@linux.com>
+> This still hasn't gotten upstream.
+>
+> Pekka, any chance you can pick it up?  Here it is in dm-devel's
+> kernel.org patchwork: https://patchwork.kernel.org/patch/3768901/
+>
+> (Though it looks like it needs to be rebased due to the recent commit
+> 794b1248, should Mikulas rebase and re-send?)
 
-yes sure, I will do it
+I applied it and fixed the conflict by hand.
 
-> 
-> Thanks
-> 	Andrew
-> 
+Please double-check commit 694617474e33b8603fc76e090ed7d09376514b1a in 
+my tree:
 
+https://git.kernel.org/cgit/linux/kernel/git/penberg/linux.git/
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+- Pekka
