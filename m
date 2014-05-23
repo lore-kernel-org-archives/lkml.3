@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaEWKkD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:40:03 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:37850 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992AbaEWKkA (ORCPT
+	id S1753158AbaEWKkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:40:45 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:42931 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978AbaEWKcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:40:00 -0400
-Message-ID: <537F2589.5050807@linaro.org>
-Date: Fri, 23 May 2014 12:40:09 +0200
+	Fri, 23 May 2014 06:32:39 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Jander <david@protonic.nl>, Zhiwu Song <Zhiwu.Song@csr.com>
-Subject: [GIT PULL] clockevents: fixes for 3.15
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: tglx@linutronix.de, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 51/71] clocksource: sh_mtu2: Remove FSF mail address from GPL notice
+Date: Fri, 23 May 2014 12:31:31 +0200
+Message-Id: <1400841111-6683-51-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+References: <537F214C.8000700@linaro.org>
+ <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Hi Thomas, Ingo,
+Do not include the paragraph about writing to the Free Software
+Foundation's mailing address from the sample GPL notice. The FSF has
+changed addresses in the past, and may do so again. Linux already
+includes a copy of the GPL.
 
-this pull request contains a couple of fixes:
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Tested-by: Wolfram Sang <wsa@sang-engineering.com>
+---
+ drivers/clocksource/sh_mtu2.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-  * David Jander fixed the calls to clk_disable/clk_enable in the 
-tc_mode function as this could be called in an interrupt context
-
-  * Zhiwu Song forces the irq affinity on the marco timer as the 
-initialization can happen before the cpu to affine is up
-
-Thanks
-   -- Daniel
-
-
-The following changes since commit 84ea7fe37908254c3bd90910921f6e1045c1747a:
-
-   hrtimer: Set expiry time before switch_hrtimer_base() (2014-05-12 
-10:47:39 +0200)
-
-are available in the git repository at:
-
-   git://git.linaro.org/people/daniel.lezcano/linux.git 
-clockevents/3.15-fixes
-
-for you to fetch changes up to acbf6d21ac81195071b97ebb114b0b37bd9fcc86:
-
-   clocksource: tcb_clksrc: Make tc_mode interrupt safe (2014-05-22 
-18:54:58 +0200)
-
-----------------------------------------------------------------
-David Jander (1):
-       clocksource: tcb_clksrc: Make tc_mode interrupt safe
-
-Zhiwu Song (1):
-       clocksource: marco: Fix the affinity set for local timer of CPU1
-
-  drivers/clocksource/tcb_clksrc.c  |    8 ++++----
-  drivers/clocksource/timer-marco.c |    2 +-
-  2 files changed, 5 insertions(+), 5 deletions(-)
-
-
+diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
+index 3a37857..510bd32 100644
+--- a/drivers/clocksource/sh_mtu2.c
++++ b/drivers/clocksource/sh_mtu2.c
+@@ -11,10 +11,6 @@
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
+ #include <linux/init.h>
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.7.9.5
 
