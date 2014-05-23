@@ -1,113 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaEWSQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:16:53 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:35911 "EHLO
+	id S1752272AbaEWSUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:20:04 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36062 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaEWSQu (ORCPT
+	with ESMTP id S1751359AbaEWSQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:16:50 -0400
+	Fri, 23 May 2014 14:16:52 -0400
 From: Morten Rasmussen <morten.rasmussen@arm.com>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         peterz@infradead.org, mingo@kernel.org
 Cc: rjw@rjwysocki.net, vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
         preeti@linux.vnet.ibm.com, dietmar.eggemann@arm.com
-Subject: [RFC PATCH 01/16] sched: Documentation for scheduler energy cost model
-Date: Fri, 23 May 2014 19:16:28 +0100
-Message-Id: <1400869003-27769-2-git-send-email-morten.rasmussen@arm.com>
+Subject: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and provide it to scheduler
+Date: Fri, 23 May 2014 19:16:33 +0100
+Message-Id: <1400869003-27769-7-git-send-email-morten.rasmussen@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
 References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 23 May 2014 18:16:46.0979 (UTC) FILETIME=[289F5D30:01CF76B3]
-X-MC-Unique: 114052319164802801
+X-OriginalArrivalTime: 23 May 2014 18:16:50.0323 (UTC) FILETIME=[2A9D9E30:01CF76B3]
+X-MC-Unique: 114052319165101401
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4NIK4g7005203
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s4NIKEc7005207
 
-This documentation patch provide a brief overview of the experimental
-scheduler energy costing model and associated data structures.
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 
-Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+!!! This patch is only here to be able to test provisioning of sched
+energy related data from an arch topology shim layer to the scheduler.
+Since there is no code today which deals with extracting sched energy
+related data from the dtb or acpi, and process it in the topology shim
+layer, the struct sched_energy and the related struct capacity_state
+arrays are hard-coded here !!!
+
+This patch defines the struct sched_energy and the related struct
+capacity_state array for the cluster (relates to sg's in DIE sd level)
+and for the core (relates to sg's in MC sd level) for a Cortex A7 as
+well as for a Cortex A15. It further provides related implementations of
+the sched_domain_energy_f functions (cpu_cluster_energy() and
+cpu_core_energy()).
+
+To be able to propagate this information from the topology shim layer to
+the scheduler, the elements of the arm_topology[] table have been
+provisioned with the appropriate sched_domain_energy_f functions.
+
+Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 ---
- Documentation/scheduler/sched-energy.txt |   66 ++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
- create mode 100644 Documentation/scheduler/sched-energy.txt
+ arch/arm/kernel/topology.c |  109 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 109 insertions(+)
 
-diff --git a/Documentation/scheduler/sched-energy.txt b/Documentation/scheduler/sched-energy.txt
-new file mode 100644
-index 0000000..c6896c0
---- /dev/null
-+++ b/Documentation/scheduler/sched-energy.txt
-@@ -0,0 +1,66 @@
-+Energy cost model for energy-aware scheduling (EXPERIMENTAL)
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index 71e1fec..4050348 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -275,6 +275,107 @@ void store_cpu_topology(unsigned int cpuid)
+ 		cpu_topology[cpuid].socket_id, mpidr);
+ }
+ 
++#ifdef CONFIG_SCHED_ENERGY
++/*
++ * ARM TC2 specific energy cost model data. There are no unit requirements for
++ * the data. Data can be normalized to any reference point, but the
++ * normalization must be consistent. That is, one bogo-joule/watt must be the
++ * same quantity for all data, but we don't care what it is.
++ */
++static struct capacity_state cap_states_cluster_a7[] = {
++	/* Cluster only power */
++	 { .cap =  358, .power = 2967, }, /*  350 MHz */
++	 { .cap =  410, .power = 2792, }, /*  400 MHz */
++	 { .cap =  512, .power = 2810, }, /*  500 MHz */
++	 { .cap =  614, .power = 2815, }, /*  600 MHz */
++	 { .cap =  717, .power = 2919, }, /*  700 MHz */
++	 { .cap =  819, .power = 2847, }, /*  800 MHz */
++	 { .cap =  922, .power = 3917, }, /*  900 MHz */
++	 { .cap = 1024, .power = 4905, }, /* 1000 MHz */
++	};
 +
-+Introduction
-+=============
-+The basic energy model uses platform energy data stored in sched_energy data
-+structures attached to the sched_groups in the sched_domain hierarchy. The
-+energy cost model offers two function that can be used to guide scheduling
-+decisions:
++static struct capacity_state cap_states_cluster_a15[] = {
++	/* Cluster only power */
++	 { .cap =  840, .power =  7920, }, /*  500 MHz */
++	 { .cap = 1008, .power =  8165, }, /*  600 MHz */
++	 { .cap = 1176, .power =  8172, }, /*  700 MHz */
++	 { .cap = 1343, .power =  8195, }, /*  800 MHz */
++	 { .cap = 1511, .power =  8265, }, /*  900 MHz */
++	 { .cap = 1679, .power =  8446, }, /* 1000 MHz */
++	 { .cap = 1847, .power = 11426, }, /* 1100 MHz */
++	 { .cap = 2015, .power = 15200, }, /* 1200 MHz */
++	};
 +
-+1.	energy_diff_util(cpu, util, wakeups) 
-+2.	energy_diff_task(cpu, task)
++static struct sched_energy energy_cluster_a7 = {
++	  .max_capacity   = 1024,
++	  .idle_power     =   10, /* Cluster power-down */
++	  .wakeup_energy  =    6, /* << 10 */
++	  .nr_cap_states  = ARRAY_SIZE(cap_states_cluster_a7),
++	  .cap_states     = cap_states_cluster_a7,
++};
 +
-+Both return the energy cost delta caused by adding/removing utilization or a
-+task to/from a specific cpu.
++static struct sched_energy energy_cluster_a15 = {
++	  .max_capacity   = 2015,
++	  .idle_power     =   25, /* Cluster power-down */
++	  .wakeup_energy  =  210, /* << 10 */
++	  .nr_cap_states  = ARRAY_SIZE(cap_states_cluster_a15),
++	  .cap_states     = cap_states_cluster_a15,
++};
 +
-+CONFIG_SCHED_ENERGY needs to be defined in Kconfig to enable the energy cost
-+model and associated data structures.
++static struct capacity_state cap_states_core_a7[] = {
++	/* Power per cpu */
++	 { .cap =  358, .power =  187, }, /*  350 MHz */
++	 { .cap =  410, .power =  275, }, /*  400 MHz */
++	 { .cap =  512, .power =  334, }, /*  500 MHz */
++	 { .cap =  614, .power =  407, }, /*  600 MHz */
++	 { .cap =  717, .power =  447, }, /*  700 MHz */
++	 { .cap =  819, .power =  549, }, /*  800 MHz */
++	 { .cap =  922, .power =  761, }, /*  900 MHz */
++	 { .cap = 1024, .power = 1024, }, /* 1000 MHz */
++	};
 +
-+The basic algorithm
-+====================
-+The basic idea is to determine the energy cost at each level in sched_domain
-+hierarchy based on utilization:
++static struct capacity_state cap_states_core_a15[] = {
++	/* Power per cpu */
++	 { .cap =  840, .power = 2021, }, /*  500 MHz */
++	 { .cap = 1008, .power = 2312, }, /*  600 MHz */
++	 { .cap = 1176, .power = 2756, }, /*  700 MHz */
++	 { .cap = 1343, .power = 3125, }, /*  800 MHz */
++	 { .cap = 1511, .power = 3524, }, /*  900 MHz */
++	 { .cap = 1679, .power = 3846, }, /* 1000 MHz */
++	 { .cap = 1847, .power = 5177, }, /* 1100 MHz */
++	 { .cap = 2015, .power = 6997, }, /* 1200 MHz */
++	};
 +
-+	for_each_domain(cpu, sd) {
-+		sg = sched_group_of(cpu)
-+		energy_before = curr_util(sg) * busy_power(sg)
-+                	        + 1-curr_util(sg) * idle_power(sg)
-+		energy_after = new_util(sg) * busy_power(sg)
-+                	        + 1-new_util(sg) * idle_power(sg)
-+                        	+ new_util(sg) * task_wakeups
-+							* wakeup_energy(sg)
-+		energy_diff += energy_before - energy_after
-+	}
++static struct sched_energy energy_core_a7 = {
++	  .max_capacity   = 1024,
++	  .idle_power     =    0, /* No power gating */
++	  .wakeup_energy  =    0, /* << 10 */
++	  .nr_cap_states  = ARRAY_SIZE(cap_states_core_a7),
++	  .cap_states     = cap_states_core_a7,
++};
 +
-+	return energy_diff
++static struct sched_energy energy_core_a15 = {
++	  .max_capacity   = 2015,
++	  .idle_power     =    0, /* No power gating */
++	  .wakeup_energy  =    5, /* << 10 */
++	  .nr_cap_states  = ARRAY_SIZE(cap_states_core_a15),
++	  .cap_states     = cap_states_core_a15,
++};
 +
-+Platform energy data
-+=====================
-+struct sched_energy has the following members:
++/* sd energy functions */
++static inline const struct sched_energy *cpu_cluster_energy(int cpu)
++{
++	return cpu_topology[cpu].socket_id ? &energy_cluster_a7 :
++			&energy_cluster_a15;
++}
 +
-+cap_states:
-+	List of struct capacity_state representing the supported capacity states 
-+	(P-states). struct capacity_state has two members: cap and power, which 
-+	represents the compute capacity and the busy power of the state. The 
-+	list must ordered by capacity low->high.
++static inline const struct sched_energy *cpu_core_energy(int cpu)
++{
++	return cpu_topology[cpu].socket_id ? &energy_core_a7 :
++			&energy_core_a15;
++}
++#endif /* CONFIG_SCHED_ENERGY */
 +
-+nr_cap_states:
-+	Number of capacity states in cap_states.
-+
-+max_capacity:
-+	The highest capacity supported by any of the capacity states in 
-+	cap_states.
-+
-+idle_power:
-+	Idle power consumption. Will be extended to support multiple C-states 
-+	later.
-+
-+wakeup_energy:
-+	Energy cost of wakeup/power-down cycle for the sched_group which this is 
-+	attached to. Will be extended to support different costs for different 
-+	C-states later.
-+
-+There are no unit requirements for the energy cost data. Data can be normalized 
-+with any reference, however, the normalization must be consistent across all 
-+energy cost data. That is, one bogo-joule/watt must be same quantity for data, 
-+but we don't care what it is.
+ static inline const int cpu_corepower_flags(void)
+ {
+ 	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
+@@ -282,10 +383,18 @@ static inline const int cpu_corepower_flags(void)
+ 
+ static struct sched_domain_topology_level arm_topology[] = {
+ #ifdef CONFIG_SCHED_MC
++#ifdef CONFIG_SCHED_ENERGY
++	{ cpu_coregroup_mask, cpu_corepower_flags, cpu_core_energy, SD_INIT_NAME(MC) },
++#else
+ 	{ cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
+ 	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
+ #endif
++#endif
++#ifdef CONFIG_SCHED_ENERGY
++	{ cpu_cpu_mask, 0, cpu_cluster_energy, SD_INIT_NAME(DIE) },
++#else
+ 	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
++#endif
+ 	{ NULL, },
+ };
+ 
 -- 
 1.7.9.5
 
