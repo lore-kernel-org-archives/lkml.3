@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaEWPnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:43:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39309 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822AbaEWPnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:43:49 -0400
-Message-ID: <537F6C85.107@zytor.com>
-Date: Fri, 23 May 2014 08:43:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752825AbaEWPoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:44:06 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:48807 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbaEWPoF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:44:05 -0400
+Message-ID: <537F6CC1.2000503@hp.com>
+Date: Fri, 23 May 2014 08:44:01 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v2 16/18] x86: io: implement dummy relaxed accessor macros
- for writes
-References: <1400777250-17335-1-git-send-email-will.deacon@arm.com> <1400777250-17335-17-git-send-email-will.deacon@arm.com> <537E30AF.4070501@zytor.com> <20140523144604.GF21319@arm.com> <537F60E0.1060307@zytor.com> <20140523145758.GG21319@arm.com> <537F6728.3090600@zytor.com> <20140523153409.GI21319@arm.com>
-In-Reply-To: <20140523153409.GI21319@arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
+        Jim Baxter <jim_baxter@mentor.com>
+CC: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, kamal@canonical.com, edumazet@google.com,
+        mszeredi@suse.cz, fw@strlen.de
+Subject: Re: skbuff truesize incorrect.
+References: <537E4AFD.20304@mentor.com> <1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com> <1400792601.5367.176.camel@edumazet-glaptop2.roam.corp.google.com> <20140522.171033.1040508444998374401.davem@davemloft.net> <87ppj5vupf.fsf@nemi.mork.no> <537F0DCA.6030901@mentor.com> <87vbsw4z5x.fsf@nemi.mork.no>
+In-Reply-To: <87vbsw4z5x.fsf@nemi.mork.no>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 08:34 AM, Will Deacon wrote:
-> 
-> There is also a documentation patch [1] in this series but, again, I didn't
-> CC everybody on it. Sorry, but the level of interest this sort of stuff
-> generates amongst kernel developers is close to zero so I only included
-> people I thought cared on CC for the entire series. I'm stuck between a rock
-> and a hard place trying to CC interested people whilst at the same time
-> trying to avoid spamming all the arch maintainers.
-> 
+On 05/23/2014 02:33 AM, Bjørn Mork wrote:
+> Jim Baxter <jim_baxter@mentor.com> writes:
+>
+>>> I'll create and test a patch for the cdc_ncm host driver unless someone
+>>> else wants to do that. I haven't really played with the gadget driver
+>>> before, so I'd prefer if someone knowing it (Jim maybe?) could take care
+>>> of it.  If not, then I can always make an attempt using dummy_hcd to
+>>> test it.
+>> I can create a patch for the host driver, I will issue the gadget patch
+>> first to resolve any issues, the fix would be similar.
+>
+> Well, I couldn't help myself.  I just had to test it.  The attached
+> patch works for me, briefly tested with an Ericsson H5321gw NCM device.
+> I have no ideas about the performance impact as that modem is limited to
+> 21 Mbps HSDPA.
 
-If you are sending me a patch, please include me on the cover letter for
-the patch series.  You don't have to send me the entire patch series
-(although for something like a Documentation patch which affects x86 I
-would consider including the union list as well.)
+If you are measuring performance with the likes of netperf, you should 
+be able to get an idea of the performance effect from the change in 
+service demand (CPU consumed per unit of work) even if the maximum 
+throughput remains capped.
 
-I think regardless of level of interest, the definition of
-cross-architectural operations is exactly the arch maintainers job, so
-it isn't really out of place to "spam" us...
+You can run a netperf TCP_STREAM test along the lines of:
 
-	-hpa
+netperf -H <otherguy> -c -C -t TCP_STREAM
+
+and also
+
+netperf -H <otherguy> -c -C -t TCP_RR
+
+For extra added credit you can consider either multiple runs and 
+post-processing, or adding a -i 30,3 to the command line to tell netperf 
+to run at least three iterations, no more than thirty and it will try to 
+achieve a 99% confidence that the reported means for throughput, local 
+and remote CPU utilization are within +/- 2.5% of the actual mean.  You 
+can narrow or widen that with a -I 99,<width>.  A width of 5% is what 
+gives the +/- 2.5% (and/or demonstrates my lack of accurate statistics 
+knowledge :) )
+
+happy benchmarking,
+
+rick jones
 
