@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaEWPS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:18:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33728 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752038AbaEWPSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:18:54 -0400
-Date: Fri, 23 May 2014 17:18:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 8/9] mm: memcontrol: rewrite charge API
-Message-ID: <20140523151852.GG22135@dhcp22.suse.cz>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
- <1398889543-23671-9-git-send-email-hannes@cmpxchg.org>
- <20140523145413.GF22135@dhcp22.suse.cz>
+	id S1753382AbaEWPTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:19:24 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54265 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaEWPTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 11:19:23 -0400
+Message-ID: <537F66AF.30303@linux.vnet.ibm.com>
+Date: Fri, 23 May 2014 20:48:07 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140523145413.GF22135@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, tglx@linutronix.de,
+        mingo@kernel.org, tj@kernel.org, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, hch@infradead.org, mgorman@suse.de,
+        riel@redhat.com, bp@suse.de, rostedt@goodmis.org, mgalbraith@suse.de,
+        ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
+ leads to "IPI-to-offline-CPU"
+References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com> <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com> <20140523132250.GA1768@localhost.localdomain> <537F5F0F.5050802@linux.vnet.ibm.com> <20140523151252.GE30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140523151252.GE30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052315-5816-0000-0000-00000E30E0AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-05-14 16:54:13, Michal Hocko wrote:
-> On Wed 30-04-14 16:25:42, Johannes Weiner wrote:
-> > The memcg charge API charges pages before they are rmapped - i.e. have
-> > an actual "type" - and so every callsite needs its own set of charge
-> > and uncharge functions to know what type is being operated on.
-> > 
-> > Rewrite the charge API to provide a generic set of try_charge(),
-> > commit_charge() and cancel_charge() transaction operations, much like
-> > what's currently done for swap-in:
-> > 
-> >   mem_cgroup_try_charge() attempts to reserve a charge, reclaiming
-> >   pages from the memcg if necessary.
-> > 
-> >   mem_cgroup_commit_charge() commits the page to the charge once it
-> >   has a valid page->mapping and PageAnon() reliably tells the type.
-> > 
-> >   mem_cgroup_cancel_charge() aborts the transaction.
-> > 
-> > As pages need to be committed after rmap is established but before
-> > they are added to the LRU, page_add_new_anon_rmap() must stop doing
-> > LRU additions again.  Factor lru_cache_add_active_or_unevictable().
-> > 
-> > The order of functions in mm/memcontrol.c is entirely random, so this
-> > new charge interface is implemented at the end of the file, where all
-> > new or cleaned up, and documented code should go from now on.
+On 05/23/2014 08:42 PM, Peter Zijlstra wrote:
+> On Fri, May 23, 2014 at 08:15:35PM +0530, Srivatsa S. Bhat wrote:
+>>>> +		 * During CPU offline, we don't want the other CPUs to send
+>>>> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
+>>>> +		 * disabled interrupts (because, then it will notice the IPIs
+>>>> +		 * only after it has gone offline). We can prevent this by
+>>>> +		 * making the other CPUs disable their interrupts first - that
+>>>> +		 * way, they will run the stop-machine code with interrupts
+>>>> +		 * disabled, and hence won't send IPIs after that point.
 > 
-> I would prefer moving them after refactoring because the reviewing is
-> really harder this way. If such moving is needed at all.
+> That's complete nonsense, you can send IPIs all you want with interrupts
+> disabled.
 > 
-> Anyway this is definitely not a Friday material...
-> 
-> So only a first impression from a quick glance.
-> 
-> size is saying the code is slightly bigger:
->    text    data     bss     dec     hex filename
->  487977   84898   45984  618859   9716b mm/built-in.o.7
->  488276   84898   45984  619158   97296 mm/built-in.o.8
-> 
-> No biggie though.
-> 
-> It is true it get's rid of ~80LOC in memcontrol.c but it adds some more
-> outside of memcg. Most of the charging paths didn't get any easier, they
-> already know the type and they have to make sure they even commit the
-> charge now.
-> 
-> But maybe it is just me feeling that now that we have
-> mem_cgroup_charge_{anon,file,swapin} the API doesn't look so insane
-> anymore and so I am not tempted to change it that much.
-> 
-> I will look at this with a Monday and fresh brain again.
 
-And now that I got to 9/9 it is obvious it helps a lot to clean up the
-uncharge path. But I am not in a mental state to dive into this today.
--- 
-Michal Hocko
-SUSE Labs
+True, but that's not what the comment says. It says "you can't send IPIs
+because you are running the *stop-machine* loop, because the stop-machine loop
+doesn't send IPIs itself! The only possibility of sending IPIs from within
+stop-machine is if that CPU can takes an interrupt and the *interrupt handler*
+sends the IPI (like what the block layer used to do) - and we precisely avoid
+that possibility by disabling interrupts. So no IPIs will be sent beyond
+this point.
+
+Regards,
+Srivatsa S. Bhat
+
