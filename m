@@ -1,107 +1,441 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaEWByn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 21:54:43 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:57394 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751454AbaEWByl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 21:54:41 -0400
-Message-ID: <537EAA46.8010409@marvell.com>
-Date: Fri, 23 May 2014 09:54:14 +0800
-From: FanWu <fwu@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
-        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
-        Fangsuo Wu <fswu@marvell.com>
-Subject: Re: [PATCH v2] pinctrl: add params in disable_setting for different
- usage
-References: <1400728210-17863-1-git-send-email-fwu@marvell.com> <537E848C.5010204@wwwdotorg.org>
-In-Reply-To: <537E848C.5010204@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-22_07:2014-05-22,2014-05-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1405230026
+	id S1751616AbaEWCAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 22:00:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:34470 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957AbaEWCAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 May 2014 22:00:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,890,1392192000"; 
+   d="scan'208";a="435840939"
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+To: linus.walleij@linaro.org, gnurou@gmail.com,
+        mika.westerberg@linux.intel.com, mathias.nyman@linux.intel.com
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com,
+        lejun.zhu@linux.intel.com
+Subject: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+Date: Fri, 23 May 2014 10:00:23 +0800
+Message-Id: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 07:13 AM, Stephen Warren wrote:
-> On 05/21/2014 09:10 PM, fwu@marvell.com wrote:
->> From: Fan Wu <fwu@marvell.com>
->>
->> What the patch did:
->> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
->>    calling pinctrl_select_state
->> 2.Remove the HW disable operation in in pinmux_disable_setting function.
->>
-> ...
->> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
->> index c0fe609..c97491a 100644
->> --- a/drivers/pinctrl/core.c
->> +++ b/drivers/pinctrl/core.c
->> @@ -993,25 +993,13 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
->>   		 * may not be identical to the set of groups with a mux setting
->>   		 * in the new state. While this might be unusual, it's entirely
->>   		 * possible for the "user"-supplied mapping table to be written
->> -		 * that way. For each group that was configured in the old state
->> -		 * but not in the new state, this code puts that group into a
->> -		 * safe/disabled state.
->> +		 * that way. This code is used for each group that was
->> +		 * configured in the old state but not in the new state
->
->
-> Looking at the code, it's run for every group in the state, not "each
-> group that was configured in the old state but not in the new state"
->
->> @@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
->>   				 pins[i], desc->name, gname);
->>   		}
->>   	}
->> -
->> -	if (ops->disable)
->> -		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
->>   }
->
-> Should that op be removed from the header file and all drivers too?
->
+Devices based on Intel SoC products such as Baytrail have a Power
+Management IC. In the PMIC there are subsystems for voltage regulation,
+A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
+Crystal Cove.
 
-Dear Stephen,
+This patch adds support for the GPIO function in Crystal Cove.
 
-For you question 1:
-The disable_pinmux_setting is for the all of the setting in old state. 
-This is what we really need to do, ahead of enable setting in new state.
-In the first patch I filed, which still includes the HW ops in 
-disable_pinmux_setting, to disable each setting in old state and then to 
-enable the setting in new state will introduce HW glitch.
-But in the current solution, the glitch will not be there, because there 
-is no HW ops in disable_pinmux_setting.
-And please notice the patch is mainly used to avoid the duplicated 
-enable operation for the same pin.
+v2:
+- Use IRQ chip helper to provide irqdomain.
+- Implement .remove and can now build as a module.
+- Various fix for unreadable or ugly code pieces.
+v3:
+- More fix in irq_handler and probe.
+v4:
+- Minor fix of one return statement.
 
-For your question 2:
-the pinctrl-single driver is still using ops->disable, if I remove the 
-"disable" in ops, there will be build error in the vendor's code base 
-who is using pinctrl-single driver.
+Signed-off-by: Yang, Bin <bin.yang@intel.com>
+Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/gpio/Kconfig            |  13 ++
+ drivers/gpio/Makefile           |   1 +
+ drivers/gpio/gpio-crystalcove.c | 345 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 359 insertions(+)
+ create mode 100644 drivers/gpio/gpio-crystalcove.c
 
-Just as I said in the last mail,
-the next plan for this topic:
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index a86c49a..fed08d9d 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -440,6 +440,19 @@ config GPIO_ARIZONA
+ 	help
+ 	  Support for GPIOs on Wolfson Arizona class devices.
+ 
++config GPIO_CRYSTAL_COVE
++	tristate "GPIO support for Crystal Cove PMIC"
++	depends on INTEL_SOC_PMIC
++	select GPIOLIB_IRQCHIP
++	help
++	  Support for GPIO pins on Crystal Cove PMIC.
++
++	  Say Yes if you have a Intel SoC based tablet with Crystal Cove PMIC
++	  inside.
++
++	  This driver can also be built as a module. If so, the module will be
++	  called gpio-crystalcove.
++
+ config GPIO_LP3943
+ 	tristate "TI/National Semiconductor LP3943 GPIO expander"
+ 	depends on MFD_LP3943
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 6309aff..e6cd935 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_GPIO_BCM_KONA)	+= gpio-bcm-kona.o
+ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
+ obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
+ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
++obj-$(CONFIG_GPIO_CRYSTAL_COVE)	+= gpio-crystalcove.o
+ obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
+ obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
+ obj-$(CONFIG_GPIO_DAVINCI)	+= gpio-davinci.o
+diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
+new file mode 100644
+index 0000000..76b6d57
+--- /dev/null
++++ b/drivers/gpio/gpio-crystalcove.c
+@@ -0,0 +1,345 @@
++/*
++ * gpio-crystalcove.c - Intel Crystal Cove GPIO Driver
++ *
++ * Copyright (C) 2012, 2014 Intel Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Author: Yang, Bin <bin.yang@intel.com>
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/seq_file.h>
++#include <linux/sched.h>
++#include <linux/mfd/intel_soc_pmic.h>
++#include <linux/gpio.h>
++#include <linux/bitops.h>
++
++#define NUM_GPIO		16
++
++#define UPDATE_TYPE		BIT(0)
++#define UPDATE_MASK		BIT(1)
++
++#define GPIO0IRQ		0x0b
++#define GPIO1IRQ		0x0c
++#define MGPIO0IRQS0		0x19
++#define MGPIO1IRQS0		0x1a
++#define MGPIO0IRQSX		0x1b
++#define MGPIO1IRQSX		0x1c
++#define GPIO0P0CTLO		0x2b
++#define GPIO0P0CTLI		0x33
++#define GPIO1P0CTLO		0x3b
++#define GPIO1P0CTLI		0x43
++
++#define CTLI_INTCNT_NE		(1 << 1)
++#define CTLI_INTCNT_PE		(2 << 1)
++#define CTLI_INTCNT_BE		(3 << 1)
++
++#define CTLO_DIR_OUT		(1 << 5)
++
++#define CTLO_DRV_CMOS		(0 << 4)
++#define CTLO_DRV_OD		(1 << 4)
++
++#define CTLO_DRV_REN		(1 << 3)
++
++#define CTLO_RVAL_2KDW		(0)
++#define CTLO_RVAL_2KUP		(1 << 1)
++#define CTLO_RVAL_50KDW		(2 << 1)
++#define CTLO_RVAL_50KUP		(3 << 1)
++
++#define CTLO_INPUT_DEF	(CTLO_DRV_CMOS | CTLO_DRV_REN | CTLO_RVAL_2KUP)
++#define CTLO_OUTPUT_DEF	(CTLO_DIR_OUT | CTLO_INPUT_DEF)
++
++#define GPIO_TO_CTL(gpio, dir)		\
++	((gpio < 8 ? GPIO0P0CTL ## dir : GPIO1P0CTL ## dir) + (gpio % 8))
++
++/**
++ * struct crystalcove_gpio - Crystal Cove GPIO controller
++ * @buslock: for bus lock/sync and unlock.
++ * @chip: the abstract gpio_chip structure.
++ * @update: pending IRQ setting update, to be written to the chip upon unlock.
++ * @trigger_type: the trigger type of the IRQ.
++ * @set_irq_mask: true if the IRQ mask needs to be set, false to clear.
++ */
++struct crystalcove_gpio {
++	struct mutex		buslock; /* irq_bus_lock */
++	struct gpio_chip	chip;
++	int			update;
++	int			trigger_type;
++	bool			set_irq_mask;
++};
++
++static void crystalcove_update_irq_mask(int gpio, bool mask)
++{
++	u8 mirqs0 = gpio < 8 ? MGPIO0IRQS0 : MGPIO1IRQS0;
++	int offset = gpio % 8;
++
++	if (mask)
++		intel_soc_pmic_setb(mirqs0, BIT(offset));
++	else
++		intel_soc_pmic_clearb(mirqs0, BIT(offset));
++}
++
++static void crystalcove_update_irq_type(int gpio, int type)
++{
++	u8 ctli = GPIO_TO_CTL(gpio, I);
++
++	type &= IRQ_TYPE_EDGE_BOTH;
++	intel_soc_pmic_clearb(ctli, CTLI_INTCNT_BE);
++
++	if (type == IRQ_TYPE_EDGE_BOTH)
++		intel_soc_pmic_setb(ctli, CTLI_INTCNT_BE);
++	else if (type == IRQ_TYPE_EDGE_RISING)
++		intel_soc_pmic_setb(ctli, CTLI_INTCNT_PE);
++	else if (type & IRQ_TYPE_EDGE_FALLING)
++		intel_soc_pmic_setb(ctli, CTLI_INTCNT_NE);
++}
++
++static int crystalcove_gpio_direction_input(struct gpio_chip *chip,
++					    unsigned gpio)
++{
++	u8 ctlo = GPIO_TO_CTL(gpio, O);
++
++	intel_soc_pmic_writeb(ctlo, CTLO_INPUT_DEF);
++	return 0;
++}
++
++static int crystalcove_gpio_direction_output(struct gpio_chip *chip,
++					     unsigned gpio, int value)
++{
++	u8 ctlo = GPIO_TO_CTL(gpio, O);
++
++	intel_soc_pmic_writeb(ctlo, CTLO_OUTPUT_DEF | value);
++	return 0;
++}
++
++static int crystalcove_gpio_get(struct gpio_chip *chip, unsigned gpio)
++{
++	u8 ctli = GPIO_TO_CTL(gpio, I);
++
++	return intel_soc_pmic_readb(ctli) & 0x1;
++}
++
++static void crystalcove_gpio_set(struct gpio_chip *chip,
++				 unsigned gpio, int value)
++{
++	u8 ctlo = GPIO_TO_CTL(gpio, O);
++
++	if (value)
++		intel_soc_pmic_setb(ctlo, 1);
++	else
++		intel_soc_pmic_clearb(ctlo, 1);
++}
++
++static int crystalcove_irq_type(struct irq_data *data, unsigned type)
++{
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(data);
++	struct crystalcove_gpio *cg =
++		container_of(gc, struct crystalcove_gpio, chip);
++
++	cg->trigger_type = type;
++	cg->update |= UPDATE_TYPE;
++
++	return 0;
++}
++
++static void crystalcove_bus_lock(struct irq_data *data)
++{
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(data);
++	struct crystalcove_gpio *cg =
++		container_of(gc, struct crystalcove_gpio, chip);
++
++	mutex_lock(&cg->buslock);
++}
++
++static void crystalcove_bus_sync_unlock(struct irq_data *data)
++{
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(data);
++	struct crystalcove_gpio *cg =
++		container_of(gc, struct crystalcove_gpio, chip);
++	int gpio = data->hwirq;
++
++	if (cg->update & UPDATE_TYPE)
++		crystalcove_update_irq_type(gpio, cg->trigger_type);
++	if (cg->update & UPDATE_MASK)
++		crystalcove_update_irq_mask(gpio, cg->set_irq_mask);
++	cg->update = 0;
++
++	mutex_unlock(&cg->buslock);
++}
++
++static void crystalcove_irq_unmask(struct irq_data *data)
++{
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(data);
++	struct crystalcove_gpio *cg =
++		container_of(gc, struct crystalcove_gpio, chip);
++
++	cg->set_irq_mask = false;
++	cg->update |= UPDATE_MASK;
++}
++
++static void crystalcove_irq_mask(struct irq_data *data)
++{
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(data);
++	struct crystalcove_gpio *cg =
++		container_of(gc, struct crystalcove_gpio, chip);
++
++	cg->set_irq_mask = true;
++	cg->update |= UPDATE_MASK;
++}
++
++static struct irq_chip crystalcove_irqchip = {
++	.name			= "PMIC-GPIO",
++	.irq_mask		= crystalcove_irq_mask,
++	.irq_unmask		= crystalcove_irq_unmask,
++	.irq_set_type		= crystalcove_irq_type,
++	.irq_bus_lock		= crystalcove_bus_lock,
++	.irq_bus_sync_unlock	= crystalcove_bus_sync_unlock,
++};
++
++static irqreturn_t crystalcove_gpio_irq_handler(int irq, void *data)
++{
++	struct crystalcove_gpio *cg = data;
++	int pending;
++	int gpio;
++	unsigned int virq;
++
++	pending = intel_soc_pmic_readb(GPIO0IRQ);
++	pending |= intel_soc_pmic_readb(GPIO1IRQ) << 8;
++	intel_soc_pmic_writeb(GPIO0IRQ, pending & 0xff);
++	intel_soc_pmic_writeb(GPIO1IRQ, (pending >> 8) & 0xff);
++
++	for (gpio = 0; gpio < cg->chip.ngpio; gpio++) {
++		if (pending & BIT(gpio)) {
++			virq = irq_find_mapping(cg->chip.irqdomain, gpio);
++			if (virq)
++				generic_handle_irq(virq);
++		}
++	}
++
++	return IRQ_HANDLED;
++}
++
++static void crystalcove_gpio_dbg_show(struct seq_file *s,
++				      struct gpio_chip *chip)
++{
++	struct crystalcove_gpio *cg =
++		container_of(chip, struct crystalcove_gpio, chip);
++	int gpio, offset;
++	u8 ctlo, ctli, mirqs0, mirqsx, irq;
++
++	for (gpio = 0; gpio < cg->chip.ngpio; gpio++) {
++		ctlo = intel_soc_pmic_readb(GPIO_TO_CTL(gpio, O));
++		ctli = intel_soc_pmic_readb(GPIO_TO_CTL(gpio, I));
++		mirqs0 = intel_soc_pmic_readb(
++			gpio < 8 ? MGPIO0IRQS0 : MGPIO1IRQS0);
++		mirqsx = intel_soc_pmic_readb(
++			gpio < 8 ? MGPIO0IRQSX : MGPIO1IRQSX);
++		irq = intel_soc_pmic_readb(
++			gpio < 8 ? GPIO0IRQ : GPIO1IRQ);
++
++		offset = gpio % 8;
++		seq_printf(s, " gpio-%-2d %s %s %s %s ctlo=%2x,%s %s %s\n",
++			   gpio, ctlo & CTLO_DIR_OUT ? "out" : "in ",
++			   ctli & 0x1 ? "hi" : "lo",
++			   ctli & CTLI_INTCNT_NE ? "fall" : "    ",
++			   ctli & CTLI_INTCNT_PE ? "rise" : "    ",
++			   ctlo,
++			   mirqs0 & BIT(offset) ? "s0 mask  " : "s0 unmask",
++			   mirqsx & BIT(offset) ? "sx mask  " : "sx unmask",
++			   irq & BIT(offset) ? "pending" : "       ");
++	}
++}
++
++static int crystalcove_gpio_probe(struct platform_device *pdev)
++{
++	int irq = platform_get_irq(pdev, 0);
++	struct crystalcove_gpio *cg;
++	int retval;
++	struct device *dev = pdev->dev.parent;
++
++	cg = devm_kzalloc(&pdev->dev, sizeof(*cg), GFP_KERNEL);
++	if (!cg)
++		return -ENOMEM;
++
++	mutex_init(&cg->buslock);
++	cg->chip.label = KBUILD_MODNAME;
++	cg->chip.direction_input = crystalcove_gpio_direction_input;
++	cg->chip.direction_output = crystalcove_gpio_direction_output;
++	cg->chip.get = crystalcove_gpio_get;
++	cg->chip.set = crystalcove_gpio_set;
++	cg->chip.base = -1;
++	cg->chip.ngpio = NUM_GPIO;
++	cg->chip.can_sleep = true;
++	cg->chip.dev = dev;
++	cg->chip.dbg_show = crystalcove_gpio_dbg_show;
++
++	gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
++			     handle_simple_irq, IRQ_TYPE_NONE);
++
++	retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
++				      IRQF_ONESHOT, KBUILD_MODNAME, cg);
++
++	if (retval) {
++		dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
++		goto out;
++	}
++
++	retval = gpiochip_add(&cg->chip);
++	if (retval) {
++		dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
++		goto out_free_irq;
++	}
++
++	platform_set_drvdata(pdev, cg);
++
++	return 0;
++
++out_free_irq:
++	free_irq(irq, cg);
++out:
++	return retval;
++}
++
++static int crystalcove_gpio_remove(struct platform_device *pdev)
++{
++	struct crystalcove_gpio *cg = platform_get_drvdata(pdev);
++	int irq = platform_get_irq(pdev, 0);
++	int err;
++
++	err = gpiochip_remove(&cg->chip);
++
++	if (irq >= 0)
++		free_irq(irq, cg);
++
++	return err;
++}
++
++static struct platform_driver crystalcove_gpio_driver = {
++	.probe = crystalcove_gpio_probe,
++	.remove = crystalcove_gpio_remove,
++	.driver = {
++		.name = "crystal_cove_gpio",
++		.owner = THIS_MODULE,
++	},
++};
++
++module_platform_driver(crystalcove_gpio_driver);
++
++MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
++MODULE_DESCRIPTION("Intel Crystal Cove GPIO Driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.8.3.2
 
-1. To remove the disable ops registration when defining the
-"include/linux/pinctrl/pinmux.h" in inctrl-single driver.
-Meanwhile, the related things, like "pinctrl-single,function-off"
-property and corresponding flag in "pcs_device", will be also removed.
-
-2. To remove the disable ops in "pinmux_ops" in the file of 
-include/linux/pinctrl/pinmux.h
-
-Are you OK for this ?
