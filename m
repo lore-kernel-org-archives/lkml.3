@@ -1,99 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282AbaEWSIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:08:41 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:31428 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaEWSIk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:08:40 -0400
-X-IronPort-AV: E=Sophos;i="4.98,895,1392163200"; 
-   d="scan'208";a="134445809"
-Message-ID: <537F8EA4.2050506@citrix.com>
-Date: Fri, 23 May 2014 20:08:36 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751422AbaEWSLS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:11:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:65246 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010AbaEWSLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 14:11:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,895,1392192000"; 
+   d="scan'208";a="436164258"
+Date: Fri, 23 May 2014 11:11:13 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: [PATCH 2/9] perf, tools: Add --branch-history option to report v3
+Message-ID: <20140523181113.GC29957@tassilo.jf.intel.com>
+References: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
+ <1400259938-3436-3-git-send-email-andi@firstfloor.org>
+ <87bnuujhsl.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH] xen-blkfront: check feature-persitent on resume
-References: <1400769607-17278-1-git-send-email-roger.pau@citrix.com> <20140523175105.GA8995@phenom.dumpdata.com>
-In-Reply-To: <20140523175105.GA8995@phenom.dumpdata.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bnuujhsl.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/05/14 19:51, Konrad Rzeszutek Wilk wrote:
-> On Thu, May 22, 2014 at 04:40:07PM +0200, Roger Pau Monne wrote:
->> We are missing a check to see if the backend supports persistent
->> grants on resume, meaning we will always run with the value fetched
->> from the firsts host on which we run on.
->>
->> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Cc: David Vrabel <david.vrabel@citrix.com>
->> ---
->>  drivers/block/xen-blkfront.c |   23 ++++++++++++++++-------
->>  1 files changed, 16 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
->> index efe1b47..00ae36b 100644
->> --- a/drivers/block/xen-blkfront.c
->> +++ b/drivers/block/xen-blkfront.c
->> @@ -1430,6 +1430,20 @@ static void split_bio_end(struct bio *bio, int error)
->>  	bio_put(bio);
->>  }
->>  
->> +static void blkfront_setup_persistent(struct blkfront_info *info)
->> +{
->> +	unsigned int persistent;
->> +	int err;
->> +
->> +	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
->> +			    "feature-persistent", "%u", &persistent,
->> +			    NULL);
->> +	if (err)
->> +		info->feature_persistent = 0;
->> +	else
->> +		info->feature_persistent = persistent;
->> +}
->> +
->>  static int blkif_recover(struct blkfront_info *info)
->>  {
->>  	int i;
->> @@ -1456,6 +1470,7 @@ static int blkif_recover(struct blkfront_info *info)
->>  	info->shadow_free = info->ring.req_prod_pvt;
->>  	info->shadow[BLK_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
->>  
->> +	blkfront_setup_persistent(info);
->>  	rc = blkfront_setup_indirect(info);
->>  	if (rc) {
->>  		kfree(copy);
->> @@ -1851,13 +1866,7 @@ static void blkfront_connect(struct blkfront_info *info)
->>  	if (!err && discard)
->>  		blkfront_setup_discard(info);
->>  
->> -	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
->> -			    "feature-persistent", "%u", &persistent,
->> -			    NULL);
->> -	if (err)
->> -		info->feature_persistent = 0;
->> -	else
->> -		info->feature_persistent = persistent;
->> +	blkfront_setup_persistent(info);
+> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> > index 1a2d7fc..e6d8ed0 100644
+> > --- a/tools/perf/builtin-report.c
+> > +++ b/tools/perf/builtin-report.c
+> > @@ -315,8 +315,9 @@ static int report__setup_sample_type(struct report *rep)
+> >  			return -EINVAL;
+> >  		}
+> >  		if (symbol_conf.use_callchain) {
+> > -			ui__error("Selected -g but no callchain data. Did "
+> > -				    "you call 'perf record' without -g?\n");
+> > +			ui__error("Selected -g or --branch-history but no "
+> > +				  "callchain data. Did\n"
 > 
-> Should we also flush the ones that are on the info->grants list if
-> we turning it off?
+> An unwanted newline in the message.
 
-This path is only taken on the first connection, further calls to
-blkfront_connect from resume code don't get here, because they take the
-BLKIF_STATE_SUSPENDED path and just call blkif_recover and return. And
-on disconnection blkfront_connect doesn't even get called.
+It was intentional to make it fit onto a 80 column terminal
+> 
+> 
+> > +				  "you call 'perf record' without -g?\n");
+> >  			return -1;
+> >  		}
+> >  	} else if (!rep->dont_use_callchains &&
+> > @@ -631,6 +632,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+> >  }
+> >  
+> >  static int
+> > +parse_branch_call_mode(const struct option *opt __maybe_unused,
+> > +		  const char *str __maybe_unused, int unset)
+> > +{
+> > +	int *branch_mode = opt->value;
+> > +
+> > +	*branch_mode = !unset;
+> > +	return 0;
+> > +}
+> > +
+> > +static int
+> >  parse_percent_limit(const struct option *opt, const char *str,
+> >  		    int unset __maybe_unused)
+> >  {
+> > @@ -645,7 +656,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+> >  	struct perf_session *session;
+> >  	struct stat st;
+> >  	bool has_br_stack = false;
+> > -	int branch_mode = -1;
+> > +	int branch_mode = -1, branch_call_mode = -1;
+> >  	int ret = -1;
+> >  	char callchain_default_opt[] = "fractal,0.5,callee";
+> >  	const char * const report_usage[] = {
+> > @@ -754,7 +765,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+> >  	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+> >  		    "Show event group information together"),
+> >  	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
+> > -		    "use branch records for histogram filling", parse_branch_mode),
+> > +		    "use branch records for per branch histogram filling",
+> > +		    parse_branch_mode),
+> > +	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
+> > +		    "add last branch records to call history",
+> > +		    parse_branch_call_mode),
+> 
+> Looks like it can be a boolean option, or at least can share
+> parse_branch_mode() callback.
 
-Roger.
+No it can't. It's a tristate.
+> 
+> 
+> >  	OPT_STRING(0, "objdump", &objdump_path, "path",
+> >  		   "objdump binary to use for disassembly and annotations"),
+> >  	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+> > @@ -804,8 +819,16 @@ repeat:
+> >  	has_br_stack = perf_header__has_feat(&session->header,
+> >  					     HEADER_BRANCH_STACK);
+> >  
+> > -	if (branch_mode == -1 && has_br_stack)
+> > +	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1)
+> >  		sort__mode = SORT_MODE__BRANCH;
+> > +	if (branch_call_mode != -1) {
+> 
+> s/-1/1/ ?
 
+-1 means not specified by the user.
+
+
+-Andi
