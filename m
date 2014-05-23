@@ -1,109 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaEWOvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:51:16 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21877 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752638AbaEWOvP (ORCPT
+	id S1752915AbaEWOwd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:52:33 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:38836 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616AbaEWOwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:51:15 -0400
-Date: Fri, 23 May 2014 15:51:07 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Larry Bassel <larry.bassel@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH v4 2/2] arm64: enable context tracking
-Message-ID: <20140523145107.GO9252@arm.com>
-References: <1400786855-32656-1-git-send-email-larry.bassel@linaro.org>
- <1400786855-32656-3-git-send-email-larry.bassel@linaro.org>
- <537E5E1F.3050605@codeaurora.org>
- <7hd2f5icat.fsf@paris.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7hd2f5icat.fsf@paris.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 May 2014 10:52:31 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: yang.z.zhang@intel.com, mtosatti@redhat.com, stable@vger.kernel.org
+Subject: [PATCH] KVM: lapic: sync highest ISR to hardware apic on EOI
+Date: Fri, 23 May 2014 16:51:53 +0200
+Message-Id: <1400856713-18628-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 01:11:38AM +0100, Kevin Hilman wrote:
-> Christopher Covington <cov@codeaurora.org> writes:
-> > On 05/22/2014 03:27 PM, Larry Bassel wrote:
-> >> Make calls to ct_user_enter when the kernel is exited
-> >> and ct_user_exit when the kernel is entered (in el0_da,
-> >> el0_ia, el0_svc, el0_irq and all of the "error" paths).
-> >> 
-> >> These macros expand to function calls which will only work
-> >> properly if el0_sync and related code has been rearranged
-> >> (in a previous patch of this series).
-> >> 
-> >> The calls to ct_user_exit are made after hw debugging has been
-> >> enabled (enable_dbg_and_irq).
-> >> 
-> >> The call to ct_user_enter is made at the beginning of the
-> >> kernel_exit macro.
-> >> 
-> >> This patch is based on earlier work by Kevin Hilman.
-> >> Save/restore optimizations were also done by Kevin.
-> >
-> >> --- a/arch/arm64/kernel/entry.S
-> >> +++ b/arch/arm64/kernel/entry.S
-> >> @@ -30,6 +30,44 @@
-> >>  #include <asm/unistd32.h>
-> >>  
-> >>  /*
-> >> + * Context tracking subsystem.  Used to instrument transitions
-> >> + * between user and kernel mode.
-> >> + */
-> >> +	.macro ct_user_exit, restore = 0
-> >> +#ifdef CONFIG_CONTEXT_TRACKING
-> >> +	bl	context_tracking_user_exit
-> >> +	.if \restore == 1
-> >> +	/*
-> >> +	 * Save/restore needed during syscalls.  Restore syscall arguments from
-> >> +	 * the values already saved on stack during kernel_entry.
-> >> +	 */
-> >> +	ldp	x0, x1, [sp]
-> >> +	ldp	x2, x3, [sp, #S_X2]
-> >> +	ldp	x4, x5, [sp, #S_X4]
-> >> +	ldp	x6, x7, [sp, #S_X6]
-> >> +	.endif
-> >> +#endif
-> >> +	.endm
-> >> +
-> >> +	.macro ct_user_enter, save = 0
-> >> +#ifdef CONFIG_CONTEXT_TRACKING
-> >> +	.if \save == 1
-> >> +	/*
-> >> +	 * Save/restore only needed on syscall fastpath, which uses
-> >> +	 * x0-x2.
-> >> +	 */
-> >> +	push    x2, x3
-> >
-> > Why is x3 saved?
-> 
-> I'll respond here since I worked with Larry on the context save/restore
-> part.
-> 
-> [insert rather embarassing disclamer of ignorance of arm64 assembly]
-> 
-> Based on my reading of the code, I figured only x0-x2 needed to be
-> saved.  However, based on some experiments with intentionally clobbering
-> the registers[1] (as suggested by Mark Rutland) in order to make sure
-> we're saving/restoring the right things, I discovered x3 was needed too
-> (I missed updating the comment to mention x0-x3.)
-> 
-> Maybe Will/Catalin/Mark R. can shed some light here?
+When Hyper-V enlightenments are in effect, Windows prefers to issue an
+Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
+The Hyper-V MSR write is not handled by the processor, and besides
+being slower, this also causes bugs with APIC virtualization.  The
+reason is that on EOI the processor will modify the highest in-service
+interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
+the SDM.
 
-I haven't checked all the code paths but at least for pushing onto the
-stack we must keep it 16-bytes aligned (architecture requirement).
+We need to do the same, and be careful not to muck with the isr_count
+and highest_isr_cache fields that are unused when virtual interrupt
+delivery is enabled.
 
+Cc: stable@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/lapic.c |   62 ++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 43 insertions(+), 19 deletions(-)
+
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 9736529..0069118 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -360,6 +360,8 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+ 
+ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+ {
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+ 		++apic->isr_count;
+ 	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+@@ -371,12 +373,48 @@ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+ 	apic->highest_isr_cache = vec;
+ }
+ 
++static inline int apic_find_highest_isr(struct kvm_lapic *apic)
++{
++	int result;
++
++	/*
++	 * Note that isr_count is always 1, and highest_isr_cache
++	 * is always -1, with APIC virtualization enabled.
++	 */
++	if (!apic->isr_count)
++		return -1;
++	if (likely(apic->highest_isr_cache != -1))
++		return apic->highest_isr_cache;
++
++	result = find_highest_vector(apic->regs + APIC_ISR);
++	ASSERT(result == -1 || result >= 16);
++
++	return result;
++}
++
+ static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+ {
+-	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++	struct kvm_vcpu *vcpu;
++	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++		return;
++
++	vcpu = apic->vcpu;
++
++	/*
++	 * We do get here for APIC virtualization enabled if the guest
++	 * uses the Hyper-V APIC enlightenment.  In this case we may need
++	 * to trigger a new interrupt delivery by writing the SVI field;
++	 * on the other hand isr_count and highest_isr_cache are unused
++	 * and must be left alone.
++	 */
++	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
++		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
++					       apic_find_highest_isr(apic));
++	else {
+ 		--apic->isr_count;
+-	BUG_ON(apic->isr_count < 0);
+-	apic->highest_isr_cache = -1;
++		BUG_ON(apic->isr_count < 0);
++		apic->highest_isr_cache = -1;
++	}
+ }
+ 
+ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
+@@ -456,22 +494,6 @@ static void pv_eoi_clr_pending(struct kvm_vcpu *vcpu)
+ 	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
+ }
+ 
+-static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+-{
+-	int result;
+-
+-	/* Note that isr_count is always 1 with vid enabled */
+-	if (!apic->isr_count)
+-		return -1;
+-	if (likely(apic->highest_isr_cache != -1))
+-		return apic->highest_isr_cache;
+-
+-	result = find_highest_vector(apic->regs + APIC_ISR);
+-	ASSERT(result == -1 || result >= 16);
+-
+-	return result;
+-}
+-
+ void kvm_apic_update_tmr(struct kvm_vcpu *vcpu, u32 *tmr)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+@@ -1605,6 +1627,8 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+ 	int vector = kvm_apic_has_interrupt(vcpu);
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 
++	/* Note that we never get here with APIC virtualization enabled.  */
++
+ 	if (vector == -1)
+ 		return -1;
+ 
 -- 
-Catalin
+1.7.1
+
