@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaEWJO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:14:26 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:56175 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaEWJOY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:14:24 -0400
+	id S1752177AbaEWJQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:16:45 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:56588 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038AbaEWJQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 05:16:43 -0400
+Date: Fri, 23 May 2014 12:16:31 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.15.0-rc6: VM_BUG_ON_PAGE(PageTail(page), page)
+Message-ID: <20140523091631.GA4400@node.dhcp.inet.fi>
+References: <20140522135828.GA24879@redhat.com>
+ <537ECCDB.8080009@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <1400146676-30343-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400146676-30343-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Fri, 23 May 2014 11:14:23 +0200
-Message-ID: <CACRpkdYdvNeVh7tafCsZMtPrG5Q=iZs3tRJ5-fHoe1-kp-25Fg@mail.gmail.com>
-Subject: Re: [PATCH v2 13/14] mmc: mmci: add qcom specific clk control
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <537ECCDB.8080009@oracle.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:37 AM,  <srinivas.kandagatla@linaro.org> wrote:
+On Fri, May 23, 2014 at 12:21:47AM -0400, Sasha Levin wrote:
+> On 05/22/2014 09:58 AM, Dave Jones wrote:
+> > Not sure if Sasha has already reported this on -next (It's getting hard
+> > to keep track of all the VM bugs he's been finding), but I hit this overnight
+> > on .15-rc6.  First time I've seen this one.
+> 
+> Unfortunately I had to disable transhuge/hugetlb in my testing .config since
+> the open issues in -next get hit pretty often, and were unfixed for a while
+> now.
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> On Qcom SD card controller, cclk is mclk and mclk should be directly
-> controlled by the driver.
-> This patch adds support to control mclk directly in the driver, and also
-> adds explicit_mclk_control and cclk_is_mclk flags in variant structure giving
-> more flexibility to the driver.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-(...)
-> +       bool                    qcom_cclk_is_mclk;
+What THP-related is not fixed by now? collapse hung? what else?
 
-I have no idea why you prefix that with "qcom" since it's an
-abstract concept.
-
-But it's a very minor issue, so:
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+-- 
+ Kirill A. Shutemov
