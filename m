@@ -1,271 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaEWKzE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:55:04 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:54587 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaEWKbl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:31:41 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: tglx@linutronix.de, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 03/71] clocksource: sh_cmt: Rename struct sh_cmt_priv to sh_cmt_device
-Date: Fri, 23 May 2014 12:30:43 +0200
-Message-Id: <1400841111-6683-3-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
-References: <537F214C.8000700@linaro.org>
- <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
+	id S932070AbaEWKzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:55:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44243 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753930AbaEWKyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 06:54:44 -0400
+Date: Fri, 23 May 2014 12:54:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.jf.intel.com>,
+        Aiden Park <aiden.park@intel.com>
+Subject: Re: [RFC] Unnecessary work and noise from mce code in suspend/resume
+ path
+Message-ID: <20140523105439.GD21332@pd.tnic>
+References: <5373bdc83257044f09@agluck-desk.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5373bdc83257044f09@agluck-desk.sc.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+On Wed, May 14, 2014 at 12:02:32PM -0700, Luck, Tony wrote:
+> When we suspend a laptop we offline all but one processor. But
+> the mce code registers on a notify chain so it can clean up
+> some sysfs entries. Part of that code calls device_unregister()
+> which will fire kobject_uevent() which might wake up some user
+> code that is watching for such things.
 
-Channel data is private as well, rename priv to device to make the
-distrinction between the core device and the channels clearer.
+The issue being?
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/clocksource/sh_cmt.c |  116 +++++++++++++++++++++---------------------
- 1 file changed, 58 insertions(+), 58 deletions(-)
+It is not clear from the text what actually is the problem.
 
-diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 351b3ca..604199a 100644
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -35,10 +35,10 @@
- #include <linux/pm_domain.h>
- #include <linux/pm_runtime.h>
- 
--struct sh_cmt_priv;
-+struct sh_cmt_device;
- 
- struct sh_cmt_channel {
--	struct sh_cmt_priv *cmt;
-+	struct sh_cmt_device *cmt;
- 
- 	unsigned long flags;
- 	unsigned long match_value;
-@@ -52,7 +52,7 @@ struct sh_cmt_channel {
- 	bool cs_enabled;
- };
- 
--struct sh_cmt_priv {
-+struct sh_cmt_device {
- 	struct platform_device *pdev;
- 
- 	void __iomem *mapbase;
-@@ -693,132 +693,132 @@ static int sh_cmt_register(struct sh_cmt_channel *ch, char *name,
- 	return 0;
- }
- 
--static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
-+static int sh_cmt_setup(struct sh_cmt_device *cmt, struct platform_device *pdev)
- {
- 	struct sh_timer_config *cfg = pdev->dev.platform_data;
--	struct sh_cmt_channel *ch = &p->channel;
-+	struct sh_cmt_channel *ch = &cmt->channel;
- 	struct resource *res, *res2;
- 	int irq, ret;
- 	ret = -ENXIO;
- 
--	memset(p, 0, sizeof(*p));
--	p->pdev = pdev;
-+	memset(cmt, 0, sizeof(*cmt));
-+	cmt->pdev = pdev;
- 
- 	if (!cfg) {
--		dev_err(&p->pdev->dev, "missing platform data\n");
-+		dev_err(&cmt->pdev->dev, "missing platform data\n");
- 		goto err0;
- 	}
- 
--	res = platform_get_resource(p->pdev, IORESOURCE_MEM, 0);
-+	res = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
--		dev_err(&p->pdev->dev, "failed to get I/O memory\n");
-+		dev_err(&cmt->pdev->dev, "failed to get I/O memory\n");
- 		goto err0;
- 	}
- 
- 	/* optional resource for the shared timer start/stop register */
--	res2 = platform_get_resource(p->pdev, IORESOURCE_MEM, 1);
-+	res2 = platform_get_resource(cmt->pdev, IORESOURCE_MEM, 1);
- 
--	irq = platform_get_irq(p->pdev, 0);
-+	irq = platform_get_irq(cmt->pdev, 0);
- 	if (irq < 0) {
--		dev_err(&p->pdev->dev, "failed to get irq\n");
-+		dev_err(&cmt->pdev->dev, "failed to get irq\n");
- 		goto err0;
- 	}
- 
- 	/* map memory, let mapbase point to our channel */
--	p->mapbase = ioremap_nocache(res->start, resource_size(res));
--	if (p->mapbase == NULL) {
--		dev_err(&p->pdev->dev, "failed to remap I/O memory\n");
-+	cmt->mapbase = ioremap_nocache(res->start, resource_size(res));
-+	if (cmt->mapbase == NULL) {
-+		dev_err(&cmt->pdev->dev, "failed to remap I/O memory\n");
- 		goto err0;
- 	}
- 
- 	/* map second resource for CMSTR */
--	p->mapbase_str = ioremap_nocache(res2 ? res2->start :
--					 res->start - cfg->channel_offset,
--					 res2 ? resource_size(res2) : 2);
--	if (p->mapbase_str == NULL) {
--		dev_err(&p->pdev->dev, "failed to remap I/O second memory\n");
-+	cmt->mapbase_str = ioremap_nocache(res2 ? res2->start :
-+					   res->start - cfg->channel_offset,
-+					   res2 ? resource_size(res2) : 2);
-+	if (cmt->mapbase_str == NULL) {
-+		dev_err(&cmt->pdev->dev, "failed to remap I/O second memory\n");
- 		goto err1;
- 	}
- 
- 	/* get hold of clock */
--	p->clk = clk_get(&p->pdev->dev, "cmt_fck");
--	if (IS_ERR(p->clk)) {
--		dev_err(&p->pdev->dev, "cannot get clock\n");
--		ret = PTR_ERR(p->clk);
-+	cmt->clk = clk_get(&cmt->pdev->dev, "cmt_fck");
-+	if (IS_ERR(cmt->clk)) {
-+		dev_err(&cmt->pdev->dev, "cannot get clock\n");
-+		ret = PTR_ERR(cmt->clk);
- 		goto err2;
- 	}
- 
--	ret = clk_prepare(p->clk);
-+	ret = clk_prepare(cmt->clk);
- 	if (ret < 0)
- 		goto err3;
- 
- 	if (res2 && (resource_size(res2) == 4)) {
- 		/* assume both CMSTR and CMCSR to be 32-bit */
--		p->read_control = sh_cmt_read32;
--		p->write_control = sh_cmt_write32;
-+		cmt->read_control = sh_cmt_read32;
-+		cmt->write_control = sh_cmt_write32;
- 	} else {
--		p->read_control = sh_cmt_read16;
--		p->write_control = sh_cmt_write16;
-+		cmt->read_control = sh_cmt_read16;
-+		cmt->write_control = sh_cmt_write16;
- 	}
- 
- 	if (resource_size(res) == 6) {
--		p->width = 16;
--		p->read_count = sh_cmt_read16;
--		p->write_count = sh_cmt_write16;
--		p->overflow_bit = 0x80;
--		p->clear_bits = ~0x80;
-+		cmt->width = 16;
-+		cmt->read_count = sh_cmt_read16;
-+		cmt->write_count = sh_cmt_write16;
-+		cmt->overflow_bit = 0x80;
-+		cmt->clear_bits = ~0x80;
- 	} else {
--		p->width = 32;
--		p->read_count = sh_cmt_read32;
--		p->write_count = sh_cmt_write32;
--		p->overflow_bit = 0x8000;
--		p->clear_bits = ~0xc000;
-+		cmt->width = 32;
-+		cmt->read_count = sh_cmt_read32;
-+		cmt->write_count = sh_cmt_write32;
-+		cmt->overflow_bit = 0x8000;
-+		cmt->clear_bits = ~0xc000;
- 	}
- 
--	if (p->width == (sizeof(ch->max_match_value) * 8))
-+	if (cmt->width == (sizeof(ch->max_match_value) * 8))
- 		ch->max_match_value = ~0;
- 	else
--		ch->max_match_value = (1 << p->width) - 1;
-+		ch->max_match_value = (1 << cmt->width) - 1;
- 
--	ch->cmt = p;
-+	ch->cmt = cmt;
- 	ch->match_value = ch->max_match_value;
- 	raw_spin_lock_init(&ch->lock);
- 
--	ret = sh_cmt_register(ch, (char *)dev_name(&p->pdev->dev),
-+	ret = sh_cmt_register(ch, (char *)dev_name(&cmt->pdev->dev),
- 			      cfg->clockevent_rating,
- 			      cfg->clocksource_rating);
- 	if (ret) {
--		dev_err(&p->pdev->dev, "registration failed\n");
-+		dev_err(&cmt->pdev->dev, "registration failed\n");
- 		goto err4;
- 	}
- 	ch->cs_enabled = false;
- 
- 	ret = request_irq(irq, sh_cmt_interrupt,
- 			  IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING,
--			  dev_name(&p->pdev->dev), ch);
-+			  dev_name(&cmt->pdev->dev), ch);
- 	if (ret) {
--		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
-+		dev_err(&cmt->pdev->dev, "failed to request irq %d\n", irq);
- 		goto err4;
- 	}
- 
--	platform_set_drvdata(pdev, p);
-+	platform_set_drvdata(pdev, cmt);
- 
- 	return 0;
- err4:
--	clk_unprepare(p->clk);
-+	clk_unprepare(cmt->clk);
- err3:
--	clk_put(p->clk);
-+	clk_put(cmt->clk);
- err2:
--	iounmap(p->mapbase_str);
-+	iounmap(cmt->mapbase_str);
- err1:
--	iounmap(p->mapbase);
-+	iounmap(cmt->mapbase);
- err0:
- 	return ret;
- }
- 
- static int sh_cmt_probe(struct platform_device *pdev)
- {
--	struct sh_cmt_priv *p = platform_get_drvdata(pdev);
-+	struct sh_cmt_device *cmt = platform_get_drvdata(pdev);
- 	struct sh_timer_config *cfg = pdev->dev.platform_data;
- 	int ret;
- 
-@@ -827,20 +827,20 @@ static int sh_cmt_probe(struct platform_device *pdev)
- 		pm_runtime_enable(&pdev->dev);
- 	}
- 
--	if (p) {
-+	if (cmt) {
- 		dev_info(&pdev->dev, "kept as earlytimer\n");
- 		goto out;
- 	}
- 
--	p = kmalloc(sizeof(*p), GFP_KERNEL);
--	if (p == NULL) {
-+	cmt = kmalloc(sizeof(*cmt), GFP_KERNEL);
-+	if (cmt == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate driver data\n");
- 		return -ENOMEM;
- 	}
- 
--	ret = sh_cmt_setup(p, pdev);
-+	ret = sh_cmt_setup(cmt, pdev);
- 	if (ret) {
--		kfree(p);
-+		kfree(cmt);
- 		pm_runtime_idle(&pdev->dev);
- 		return ret;
- 	}
+> Patch below from Aiden Park works around the issue by avoiding 
+> the device_unregister()/device_register() by just keeping track
+> of the original device registrations.
+> 
+> 1) Is there a better way to avoid the kobject_uevent()?
+> 2) What user code actually uses all these sysfs files?
+>    Some test code in mcelog(8) uses:
+>         /sys/devices/system/machinecheck/machinecheck0/trigger
+>    Some code in mce-test package adjusts
+>         /sys/devices/system/machinecheck/machinecheck0/tolerant
+>    But neither of these make use of all the per-cpu instances
+>    created/destroyed on every suspend/resume (or logical processor
+>    offline).  Should we just move these out of per-cpu directories
+>    and scrap this whole block of code?
+
+Oh, I'd love to.
+
+Especially "trigger" - it wants to be in debugfs anyway. The "tolerant"
+deal we probably need to discuss a bit more. Exposing MCE tolerance
+levels even to root is not such a good idea and this tolerant thing is
+primarily used in testing, AFAICT, so that the box doesn't actually
+panic when you inject errors and so on...
+
+> 3) checkpatch isn't happy about use of NR_CPUS I suspect the
+>    usage here warrants for_each_possible_cpu()
+
+Right.
+
+> -Tony Luck
+> ---
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> old mode 100644
+> new mode 100755
+
+Something decided to make mce.c an executable script :-)
+
+> index 68317c80de7f..e49302f24ce5
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -113,6 +113,8 @@ static DEFINE_PER_CPU(struct work_struct, mce_work);
+>  
+>  static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
+>  
+> +static struct device *mce_devices[NR_CPUS];
+> +
+>  /*
+>   * CPU/chipset specific EDAC code can register a notifier call here to print
+>   * MCE errors in a human-readable form.
+> @@ -2060,7 +2062,18 @@ static int mce_syscore_suspend(void)
+>  
+>  static void mce_syscore_shutdown(void)
+>  {
+> +	int i = 0;
+> +	struct device *dev;
+> +
+>  	mce_disable_error_reporting();
+> +
+> +	for (i = 0; i < NR_CPUS; i++) {
+
+WARNING: usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc
+#64: FILE: arch/x86/kernel/cpu/mcheck/mce.c:2070:
++       for (i = 0; i < NR_CPUS; i++) {
+
+
+> +		dev = mce_devices[i];
+> +		if (dev) {
+> +			device_unregister(dev);
+> +			mce_devices[i] = NULL;
+> +		}
+> +	}
+>  }
+>  
+>  /*
+> @@ -2272,23 +2285,27 @@ static void mce_device_release(struct device *dev)
+>  static int mce_device_create(unsigned int cpu)
+>  {
+>  	struct device *dev;
+> -	int err;
+> +	int err = 0;
+>  	int i, j;
+>  
+>  	if (!mce_available(&boot_cpu_data))
+>  		return -EIO;
+>  
+> -	dev = kzalloc(sizeof *dev, GFP_KERNEL);
+> -	if (!dev)
+> -		return -ENOMEM;
+> -	dev->id  = cpu;
+> -	dev->bus = &mce_subsys;
+> -	dev->release = &mce_device_release;
+> +	dev = mce_devices[cpu];
+> +	if (!dev) {
+> +		dev = kzalloc(sizeof *dev, GFP_KERNEL);
+
+Please run through checkpatch:
+
+WARNING: sizeof *dev should be sizeof(*dev)
+#93: FILE: arch/x86/kernel/cpu/mcheck/mce.c:2296:
++               dev = kzalloc(sizeof *dev, GFP_KERNEL);
+
+> +		if (!dev)
+> +			return -ENOMEM;
+> +		dev->id  = cpu;
+> +		dev->bus = &mce_subsys;
+> +		dev->release = &mce_device_release;
+>  
+> -	err = device_register(dev);
+> -	if (err) {
+> -		put_device(dev);
+> -		return err;
+> +		err = device_register(dev);
+> +		if (err) {
+> +			put_device(dev);
+> +			return err;
+> +		}
+> +		mce_devices[cpu] = dev;
+
+Ok, in any case, AFAIU it is a mechanism to cache those mce_devices and
+not generate them every time we come from suspend.
+
+And we have those mce_device per cpu vars which we use too. So this one
+adds another array of mce_devices.
+
+Dumb question: would it be possible to save us all that init/teardown
+everytime and simply toggle their visibility in sysfs instead? I mean,
+maybe play with device_create_file/device_remove_file only and hand it
+down those struct device *dev things we have cached per-cpu.
+
+This will definitely save us the kobject_uevent() calls.
+
+But it could be that I'm missing something obvious...
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
