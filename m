@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaEWHOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 03:14:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64044 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331AbaEWHOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 03:14:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,892,1392192000"; 
-   d="scan'208";a="536463264"
-Message-ID: <537EF534.5060908@linux.intel.com>
-Date: Fri, 23 May 2014 10:13:56 +0300
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	id S1753150AbaEWHOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 03:14:12 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:61034 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331AbaEWHOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 03:14:08 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Wenkai Du <wenkai.du@intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Christian Engelmayer <cengelma@gmx.at>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: Intel: avoid format string leak to thread name
-References: <20140522184355.GA8301@www.outflux.net>
-In-Reply-To: <20140522184355.GA8301@www.outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <537A7450.5030904@wwwdotorg.org>
+References: <1400491450-19223-1-git-send-email-acourbot@nvidia.com>
+ <1400491450-19223-3-git-send-email-acourbot@nvidia.com> <537A7450.5030904@wwwdotorg.org>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 23 May 2014 16:13:47 +0900
+Message-ID: <CAAVeFuK_DbvukzvnNrDLOLPAYThEoy-TMgU65COa1xUHyChFUQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] ARM: tegra: of: add GK20A device tree binding
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 09:43 PM, Kees Cook wrote:
-> This makes sure a format string can never get processed into the worker
-> thread name from the device name.
+On Tue, May 20, 2014 at 6:14 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/19/2014 03:24 AM, Alexandre Courbot wrote:
+>> Add the device tree binding documentation for the GK20A GPU used in
+>> Tegra K1 SoCs.
 >
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->   sound/soc/intel/sst-baytrail-ipc.c |    2 +-
->   sound/soc/intel/sst-haswell-ipc.c  |    2 +-
->   2 files changed, 2 insertions(+), 2 deletions(-)
+> A few minor nits, but otherwise,
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 >
-> diff --git a/sound/soc/intel/sst-baytrail-ipc.c b/sound/soc/intel/sst-baytrail-ipc.c
-> index 0d31dbbf4806..1b25bf168beb 100644
-> --- a/sound/soc/intel/sst-baytrail-ipc.c
-> +++ b/sound/soc/intel/sst-baytrail-ipc.c
-> @@ -809,7 +809,7 @@ int sst_byt_dsp_init(struct device *dev, struct sst_pdata *pdata)
->   	/* start the IPC message thread */
->   	init_kthread_worker(&byt->kworker);
->   	byt->tx_thread = kthread_run(kthread_worker_fn,
-> -				     &byt->kworker,
-> +				     &byt->kworker, "%s",
->   				     dev_name(byt->dev));
->   	if (IS_ERR(byt->tx_thread)) {
->   		err = PTR_ERR(byt->tx_thread);
-> diff --git a/sound/soc/intel/sst-haswell-ipc.c b/sound/soc/intel/sst-haswell-ipc.c
-> index e7996b39a484..a8fd60c67341 100644
-> --- a/sound/soc/intel/sst-haswell-ipc.c
-> +++ b/sound/soc/intel/sst-haswell-ipc.c
-> @@ -1735,7 +1735,7 @@ int sst_hsw_dsp_init(struct device *dev, struct sst_pdata *pdata)
->   	/* start the IPC message thread */
->   	init_kthread_worker(&hsw->kworker);
->   	hsw->tx_thread = kthread_run(kthread_worker_fn,
-> -					   &hsw->kworker,
-> +					   &hsw->kworker, "%s",
->   					   dev_name(hsw->dev));
->   	if (IS_ERR(hsw->tx_thread)) {
->   		ret = PTR_ERR(hsw->tx_thread);
-This is not very fatal as name comes from sound/soc/intel/sst-acpi.c so 
-only developer can hit this but to be on safe side:
+>> diff --git a/Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt b/Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt
+>
+>> +Required properties:
+>> +- compatible: "nvidia,<chip>-<gpu>"
+>> +  Currently recognized values:
+>> +  - nvidia,tegra124-gk20a
+>> +- reg: Physical base address and length of the controller's registers.
+>> +  Must contain two entries:
+>> +  - first entry for bar0
+>> +  - second entry for bar1
+>> +- interrupts: The interrupt outputs from the controller.
+>
+> To be consistent with the clocks and resets properties, it'd be nice to
+> reword that as:
+>
+> interrupts: Must contain an entry for each entry in interrupt-names.
+>
+>> +- interrupt-names: Must include the following entries:
+>
+> ... and add the following here:
+>
+> See ../interrupt-controller/interrupts.txt
+>
+>> +/ {
+>
+> No need to wrap a root node around this in the example.
+>
+>> +     gpu@0,57000000 {
+> ...
+>> +     };
+>> +
+>
+> Extra blank line here.
+>
+>> +};
+>
 
-Acked-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+All fixed and acked-by added to the commit log.
+
+Thanks,
+Alex.
