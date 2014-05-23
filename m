@@ -1,158 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaEWOnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:43:17 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:10588 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaEWOnP (ORCPT
+	id S1752713AbaEWOoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:44:06 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:62138 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511AbaEWOoD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:43:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 23 May 2014 07:36:55 -0700
-Message-ID: <537F5DED.8050702@nvidia.com>
-Date: Fri, 23 May 2014 23:40:45 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 23 May 2014 10:44:03 -0400
 MIME-Version: 1.0
-To: Lucas Stach <l.stach@pengutronix.de>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
-References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>		 <1400493433.8467.24.camel@weser.hi.pengutronix.de>		 <5379D7A0.3050509@nvidia.com>		 <1400494582.8467.28.camel@weser.hi.pengutronix.de>		 <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>	 <1400837055.4921.4.camel@weser.hi.pengutronix.de>	 <537F1853.7050800@nvidia.com> <1400839186.4921.17.camel@weser.hi.pengutronix.de>
-In-Reply-To: <1400839186.4921.17.camel@weser.hi.pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <537F486D.9060900@elopez.com.ar>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
+ <1400831485-28576-8-git-send-email-wens@csie.org> <537F486D.9060900@elopez.com.ar>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Fri, 23 May 2014 22:43:42 +0800
+X-Google-Sender-Auth: i-9yEAvi2B6ZcjjC2cAX9lKoYzc
+Message-ID: <CAGb2v64+UBUZeqsy02K2x+HCh=YAAVz_wLaPVRhdD=F5zT+Ccw@mail.gmail.com>
+Subject: Re: [PATCH 07/22] clk: sunxi: Fix PLL6 calculation on sun6i
+To: =?UTF-8?Q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 06:59 PM, Lucas Stach wrote:
-> Am Freitag, den 23.05.2014, 18:43 +0900 schrieb Alexandre Courbot:
->> On 05/23/2014 06:24 PM, Lucas Stach wrote:
->>> Am Freitag, den 23.05.2014, 16:10 +0900 schrieb Alexandre Courbot:
->>>> On Mon, May 19, 2014 at 7:16 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
->>>>> Am Montag, den 19.05.2014, 19:06 +0900 schrieb Alexandre Courbot:
->>>>>> On 05/19/2014 06:57 PM, Lucas Stach wrote:
->>>>>>> Am Montag, den 19.05.2014, 18:46 +0900 schrieb Alexandre Courbot:
->>>>>>>> This patch is not meant to be merged, but rather to try and understand
->>>>>>>> why this is needed and what a more suitable solution could be.
->>>>>>>>
->>>>>>>> Allowing BOs to be write-cached results in the following happening when
->>>>>>>> trying to run any program on Tegra/GK20A:
->>>>>>>>
->>>>>>>> Unhandled fault: external abort on non-linefetch (0x1008) at 0xf0036010
->>>>>>>> ...
->>>>>>>> (nouveau_bo_rd32) from [<c0357d00>] (nouveau_fence_update+0x5c/0x80)
->>>>>>>> (nouveau_fence_update) from [<c0357d40>] (nouveau_fence_done+0x1c/0x38)
->>>>>>>> (nouveau_fence_done) from [<c02c3d00>] (ttm_bo_wait+0xec/0x168)
->>>>>>>> (ttm_bo_wait) from [<c035e334>] (nouveau_gem_ioctl_cpu_prep+0x44/0x100)
->>>>>>>> (nouveau_gem_ioctl_cpu_prep) from [<c02aaa84>] (drm_ioctl+0x1d8/0x4f4)
->>>>>>>> (drm_ioctl) from [<c0355394>] (nouveau_drm_ioctl+0x54/0x80)
->>>>>>>> (nouveau_drm_ioctl) from [<c00ee7b0>] (do_vfs_ioctl+0x3dc/0x5a0)
->>>>>>>> (do_vfs_ioctl) from [<c00ee9a8>] (SyS_ioctl+0x34/0x5c)
->>>>>>>> (SyS_ioctl) from [<c000e6e0>] (ret_fast_syscall+0x0/0x30
->>>>>>>>
->>>>>>>> The offending nouveau_bo_rd32 is done over an IO-mapped BO, e.g. a BO
->>>>>>>> mapped through the BAR.
->>>>>>>>
->>>>>>> Um wait, this memory is behind an already mapped bar? I think ioremap on
->>>>>>> ARM defaults to uncached mappings, so if you want to access the memory
->>>>>>> behind this bar as WC you need to map the BAR as a whole as WC by using
->>>>>>> ioremap_wc.
->>>>>>
->>>>>> Tried mapping the BAR using ioremap_wc(), but to no avail. On the other
->>>>>> hand, could it be that VRAM BOs end up creating a mapping over an
->>>>>> already-mapped region? I seem to remember that ARM might not like it...
->>>>>
->>>>> Multiple mapping are generally allowed, as long as they have the same
->>>>> caching state. It's conflicting mappings (uncached vs cached, or cached
->>>>> vs wc), that are documented to yield undefined results.
->>>>
->>>> Sorry about the confusion. The BAR is *not* mapped to the kernel yet
->>>> (it is BAR1, there is no BAR3 on GK20A) and an ioremap_*() is
->>>> performed in ttm_bo_ioremap() to make the part of the BAR where the
->>>> buffer is mapped visible. It seems that doing an ioremap_wc() on the
->>>> BAR area on Tegra is what leads to these errors. ioremap() or
->>>> ioremap_nocache() (which are in effect the same on ARM) do not cause
->>>> this issue.
->>>>
->>> It would be cool if you could ask HW, or the blob developers, if this is
->>> a general issue. The external abort is clearly the GPUs AXI client
->>> responding with an error to the read request, though I'm not clear where
->>> a WC read differs from an uncached one.
->>
->> Will check that.
+Hi,
 
-So after checking with more knowledgeable people, it turns out this is 
-the expected behavior on ARM and BAR regions should be mapped uncached 
-on GK20A. All the more reasons to avoid using the BAR at all.
-
->>
->>>
->>>> The best way to solve this issue would be to not use the BAR at all
->>>> since the memory behind these objects can be directly accessed by the
->>>> CPU. As such it would better be mapped using ttm_bo_kmap_ttm()
->>>> instead. But right now this is clearly not how nouveau_bo.c is written
->>>> and it does not look like this can easily be done. :/
->>>
->>> Yeah, it sounds like we want this shortcut for stolen VRAM
->>> implementations.
->>
->> Actually, isn't it the case that we do not want to use TTM at all for
->> stolen VRAM (UMA) devices?
->>
->> I am trying to wrap my head around this since a while already, and could
->> not think of a way to use the current TTM-based nouveau_bo optimally for
->> GK20A. Because we cannot do without the idea of VRAM and GART, we will
->> always have to "move" objects from one location to another, or deal with
->> constraints that do not make sense for UMA devices (like in the current
->> case, accessing VRAM objects through the BAR).
->>
->> I am currently contemplating the idea of writing an alternative non-TTM
->> implementation of nouveau_bo for UMA devices, that would (hopefully) be
->> much simpler and would spare us a lot of stunts.
->>
->> On the other hand, this sounds like a considerable work and I would like
->> to make sure that my lack of understanding of TTM is not driving me to
->> the wrong solution. Thoughts?
->>
-> You may want to make yourself aware of all the quirks required for
-> sharing memory between the GPU and CPU on an ARM host. I think there are
-> far more involved than what you see now and writing an replacement for
-> TTM will not be an easy task.
+On Fri, May 23, 2014 at 9:09 PM, Emilio López <emilio@elopez.com.ar> wrote:
+> Hi,
 >
-> Doing away with the concept of two memory areas will not get you to a
-> single unified address space. You would have to deal with things like
-> not being able to change the caching state of pages in the systems
-> lowmem yourself. You will still have to deal with remapping pages that
-> aren't currently visible to the CPU (ok this is not an issue on Jetson
-> right now as it only has 2GB of RAM), because it's in systems highmem,
-> or even in a different LPAE area.
+> El 23/05/14 04:51, Chen-Yu Tsai escribió:
 >
-> You really want to be sure you are aware of all the consequences of
-> this, before considering this task.
+>> The N factor for PLL6 counts from 1 to 32, as specified in the A23
+>> manual, and shown in Allwinner's original code.
+>
+>
+> Are you sure about this? The A23 manual I'm looking at has a 5-bit field (so
+> 0-31) on 12:8, and the examples count from 0 (eg Factor=0 N=1 ... Factor=31
+> N=32).
 
-Yep, that's why I am seeking advice here. My first hope is that with a 
-few tweaks we will be able to keep using TTM and the current nouveau_bo 
-implementation. But unless I missed something this is not going to be easy.
+>From the A23 manual:
 
-We can also use something like the patch I originally sent to make it 
-work, although not with good performance, on GK20A. Not very graceful, 
-but it will allow applications to run.
+Factor = 0, N = 1
+Factor = 1, N = 2
+Factor = 2, N = 3
+ and so on
 
-In the long run though, we will want to achieve better performance, and 
-it seems like a BO implementation targeted at UMA devices would also be 
-beneficial to quite a few desktop GPUs. So as tricky as it may be I'm 
-interested in gathering thoughts and why not giving it a first try with 
-GK20A, even if it imposes some limitations like having buffers in lowmem 
-in a first time (we can probably live with this one for a short while, 
-and 64 bits will also be coming to the rescue :))
 
-Thanks,
-Alex.
+>From the A20 manual:
+
+Factor = 0, N = 0
+Factor = 1, N = 1
+Factor = 2, N = 2
+
+The "N factor" I referred to in my commit message is the N used in the
+calculation,
+not what is stored in the bit field.
+
+Hope this makes it clear. :)
+
+Cheers
+ChenYu
