@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444AbaEWIem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:34:42 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:39563 "EHLO
-	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaEWI1d (ORCPT
+	id S1752464AbaEWIez (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:34:55 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:47345 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370AbaEWIel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:27:33 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: [PATCH 18/22] ARM: sunxi: Introduce Allwinner A23 support
-Date: Fri, 23 May 2014 15:51:21 +0800
-Message-Id: <1400831485-28576-19-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1400831485-28576-1-git-send-email-wens@csie.org>
-References: <1400831485-28576-1-git-send-email-wens@csie.org>
+	Fri, 23 May 2014 04:34:41 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: devicetree@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH trivial] of: dma: Grammar s/requests/request/, s/used required/required/
+Date: Fri, 23 May 2014 10:34:35 +0200
+Message-Id: <1400834075-21278-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A23 is a dual-core Cortex-A7-based SoC. It re-uses most of
-the IPs found in previous SoCs, notably the A31.
-
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- arch/arm/mach-sunxi/Kconfig |  8 ++++++++
- arch/arm/mach-sunxi/sunxi.c | 12 ++++++++++++
- 2 files changed, 20 insertions(+)
+ Documentation/devicetree/bindings/dma/dma.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 0fbd4f1..6434e3b 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -35,4 +35,12 @@ config MACH_SUN7I
- 	select HAVE_ARM_ARCH_TIMER
- 	select SUN5I_HSTIMER
+diff --git a/Documentation/devicetree/bindings/dma/dma.txt b/Documentation/devicetree/bindings/dma/dma.txt
+index 8f504e6bae14..82104271e754 100644
+--- a/Documentation/devicetree/bindings/dma/dma.txt
++++ b/Documentation/devicetree/bindings/dma/dma.txt
+@@ -14,7 +14,7 @@ Required property:
  
-+config MACH_SUN8I
-+	bool "Allwinner A23 (sun8i) SoCs support"
-+	default ARCH_SUNXI
-+	select ARCH_HAS_RESET_CONTROLLER
-+	select ARM_GIC
-+	select MFD_SUN6I_PRCM
-+	select RESET_CONTROLLER
-+
- endif
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index df906e3..a43b295 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -159,3 +159,15 @@ DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
- 	.dt_compat	= sun7i_board_dt_compat,
- 	.restart	= sun4i_restart,
- MACHINE_END
-+
-+static const char * const sun8i_board_dt_compat[] = {
-+	"allwinner,sun8i-a23",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(SUN8I_DT, "Allwinner sun8i (A23) Family")
-+	.init_machine	= sunxi_dt_init,
-+	.init_time	= sun6i_timer_init,
-+	.dt_compat	= sun8i_board_dt_compat,
-+	.restart	= sun6i_restart,
-+MACHINE_END
+ Optional properties:
+ - dma-channels: 	Number of DMA channels supported by the controller.
+-- dma-requests: 	Number of DMA requests signals supported by the
++- dma-requests: 	Number of DMA request signals supported by the
+ 			controller.
+ 
+ Example:
+@@ -44,7 +44,7 @@ Required property:
+ 			  #dma-cells property in the node referenced by phandle
+ 			  containing DMA controller specific information. This
+ 			  typically contains a DMA request line number or a
+-			  channel number, but can contain any data that is used
++			  channel number, but can contain any data that is
+ 			  required for configuring a channel.
+ - dma-names: 		Contains one identifier string for each DMA specifier in
+ 			the dmas property. The specific strings that can be used
 -- 
-2.0.0.rc2
+1.9.1
 
