@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaEWLNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 07:13:36 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:47318 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaEWLNf (ORCPT
+	id S1752240AbaEWLPE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 07:15:04 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40027 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaEWLPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 07:13:35 -0400
-Message-ID: <537F2D53.5020408@mentor.com>
-Date: Fri, 23 May 2014 12:13:23 +0100
-From: Jim Baxter <jim_baxter@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 23 May 2014 07:15:01 -0400
+Date: Fri, 23 May 2014 12:14:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: Linux-ALSA <alsa-devel@alsa-project.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Jaroslav Kysela <perex@perex.cz>,
+        Doug Anderson <dianders@chromium.org>,
+        "jerry.wong" <jerry.wong@maximintegrated.com>
+Message-ID: <20140523111446.GA12304@sirena.org.uk>
+References: <1400750228-13750-1-git-send-email-tushar.behera@linaro.org>
+ <1400750228-13750-2-git-send-email-tushar.behera@linaro.org>
+ <20140522103039.GD12304@sirena.org.uk>
+ <CAHbNUh2QHv8n7Y19qfO7BagX5AWe0i17MjDvr7yOpHf6YNGW4A@mail.gmail.com>
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>,
-        =?UTF-8?B?J0Jqw7hybiBNb3JrJw==?= <bjorn@mork.no>
-CC: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "kamal@canonical.com" <kamal@canonical.com>,
-        "edumazet@google.com" <edumazet@google.com>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
-Subject: Re: skbuff truesize incorrect.
-References: <537E4AFD.20304@mentor.com>	<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>	<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com> <87r43k4yhe.fsf@nemi.mork.no> <063D6719AE5E284EB5DD2968C1650D6D1724C7A1@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1724C7A1@AcuExch.aculab.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [137.202.0.76]
-X-OriginalArrivalTime: 23 May 2014 11:13:25.0378 (UTC) FILETIME=[0416A620:01CF7678]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cC4h1+cE06VMYj7i"
+Content-Disposition: inline
+In-Reply-To: <CAHbNUh2QHv8n7Y19qfO7BagX5AWe0i17MjDvr7yOpHf6YNGW4A@mail.gmail.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: max98090: Add master clock handling
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/05/14 11:45, David Laight wrote:
-> From: Bjørn Mork [mailto:bjorn@mork.no]
->> David Laight <David.Laight@ACULAB.COM> writes:
-> ...
->>> Note that some of the usb ethernet drivers allocate large skb then
->>> lie about the truesize.
->>
->> Hmm, which drivers are these?
-> 
-> $ grep truesize linux/drivers/net/usb/*
-> 
-> asix_88179_178a, smsc95xx, sr9700.
-> 
-> 	David
-> 
 
+--cC4h1+cE06VMYj7i
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-What are the side effects of changing the truesize, if the original
-uncloned skb has the full truesize then isn't the potential memory usage
-still counted for the avoidance of OOM?
+On Fri, May 23, 2014 at 11:05:17AM +0530, Tushar Behera wrote:
 
-I suppose if the uncloned skb is deleted you would then have a problem
-so a chain of URB's would be the safest solution.
+> I tested with moving clk_enable/clk_disable calls to set_bias_level():
+> SND_SOC_BIAS_PREPARE. That works well for me. Does it look okay?
 
-Jim
+> +               if (!IS_ERR(max98090->mclk)) {
+> +                       if (codec->dapm.bias_level == SND_SOC_BIAS_ON)
+> +                               clk_disable(max98090->mclk);
+> +                       else
+> +                               clk_enable(max98090->mclk);
+> +               }
+>                 break;
+
+Should be clk_prepare_enable() and similarly for the disable and you
+should check the error codes but yes, that looks good.
+
+--cC4h1+cE06VMYj7i
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTfy2jAAoJELSic+t+oim9EScQAId4ylu5WnC4PFlibbNP+1Rd
+ZG6HtzrZWrVP+N1rW4Pw9tKF+k9OTsZat8fQz+VETYLzSeagnlZQo/eAQ+LdFLyk
+pnfHioHHj25wY3wBbFkFQESwTBWUJw7sEo0V3jXK+H9rzt8RiXis2x6O2pCYxVJZ
+fQXgvpcAQK+DAF0lHo8q2c0Aw9MUpfRq/bjve72SD/sVq1MGeNvzsIXv0o+Cwjap
+7HXdEEawe9/CQD4WbAJjtf26OgCFFkjYueiJM0iUSW4BKJi8TuWOK1keCM+DWM3N
+IR9X/awtayzllf5OLqOXsa+41u3VaJ37zcgAFT3dvxkOpj1hJg13hIJZL8US4Um+
+/ibHBWM8nqUaoXozFfdOS+995kpSzlk/uv83YtKy/i6TLoDN1/hp8XjjjQ2Zrir3
+RCacF8L4qGwchLc4UH4BeMfrUtDxuNaDEr2QPIEwS3zMfzA8pcYwjKDBowhpgnpo
+RMTb1wsR7zzWjWKSXj60Brm2jQg82w77maELKjjOn3cOAHebSF3ITBIKY7X9ZLoQ
+ArjX+mEZ85zC1BPH4FkcdB4kYWxCCMf9pehSRV20Rv1SUVIY0toERbm4wi92STtr
+aa7RUV9pPBODrgv4m4HW2m8MsarOb3t4chiW2L4DaRfJmg5/3lJtDgesbCEAJC7b
+zNq4cEVXfy5MSgJG5UA4
+=a8pE
+-----END PGP SIGNATURE-----
+
+--cC4h1+cE06VMYj7i--
