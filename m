@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065AbaEWPpB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:45:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38898 "EHLO
+	id S1753198AbaEWPpK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:45:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38914 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981AbaEWPo5 (ORCPT
+	with ESMTP id S1752997AbaEWPpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:44:57 -0400
+	Fri, 23 May 2014 11:45:03 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <lee.jones@linaro.org>,
         <santosh.shilimkar@ti.com>, <arnd@arndb.de>, <robh+dt@kernel.org>,
@@ -20,9 +20,9 @@ CC: <rdunlap@infradead.org>, <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <m-karicheri2@ti.com>,
         <sergei.shtylyov@cogentembedded.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [Patch v7 3/7] mfd: ti-keystone-devctrl: add bindings for device state control
-Date: Fri, 23 May 2014 18:43:28 +0300
-Message-ID: <1400859812-5761-4-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [Patch v7 2/7] clock: keystone-pllctrl: add bindings for keystone pll controller
+Date: Fri, 23 May 2014 18:43:27 +0300
+Message-ID: <1400859812-5761-3-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -32,41 +32,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Keystone II devices have a set of registers that are used to control
-the status of its peripherals. This node is intended to allow access to
-this functionality.
+The main pll controller used to drive theC66x CorePacs, the switch fabric,
+and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
+the NETCP modules) requires a PLL Controller to manage the various clock
+divisions, gating, and synchronization.
 
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- .../devicetree/bindings/mfd/ti-keystone-devctrl.txt   | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+ .../bindings/clock/ti-keystone-pllctrl.txt           | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
 
-diff --git a/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
+diff --git a/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
 new file mode 100644
-index 0000000..20963c7
+index 0000000..3e6a81e
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/ti-keystone-devctrl.txt
-@@ -0,0 +1,19 @@
-+* Device tree bindings for Texas Instruments keystone device state control
++++ b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
+@@ -0,0 +1,20 @@
++* Device tree bindings for Texas Instruments keystone pll controller
 +
-+The Keystone II devices have a set of registers that are used to control
-+the status of its peripherals. This node is intended to allow access to
-+this functionality.
++The main pll controller used to drive theC66x CorePacs, the switch fabric,
++and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
++the NETCP modules) requires a PLL Controller to manage the various clock
++divisions, gating, and synchronization.
 +
 +Required properties:
 +
-+- compatible:		"ti,keystone-devctrl", "syscon"
++- compatible:		"ti,keystone-pllctrl", "syscon"
 +
-+- reg:			contains offset/length value for device state control
++- reg:			contains offset/length value for pll controller
 +			registers space.
 +
 +Example:
 +
-+devctrl: device-state-control@0x02620000 {
-+	compatible = "ti,keystone-devctrl", "syscon";
-+	reg = <0x02620000 0x1000>;
++pllctrl: pll-controller@0x02310000 {
++	compatible = "ti,keystone-pllctrl", "syscon";
++	reg = <0x02310000 0x200>;
 +};
 -- 
 1.8.3.2
