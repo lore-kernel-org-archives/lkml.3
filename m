@@ -1,106 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaEWVHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 17:07:34 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:37125 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaEWVHc convert rfc822-to-8bit (ORCPT
+	id S1751412AbaEWVKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 17:10:18 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:58850 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaEWVKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 17:07:32 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 23 May 2014 17:10:15 -0400
+Date: Sat, 24 May 2014 05:10:07 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        aquini@redhat.com, jeremy.wayne.powell@gmail.com, clemens@ladisch.de,
+        pwalten@au1.ibm.com, joe@perches.com
+Subject: Re: [PATCH v7 1/6] SP800-90A Deterministic Random Bit Generator
+Message-ID: <20140523211007.GA20955@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Nishanth Menon <nm@ti.com>,
-        =?utf-8?q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
-        "Tony Lindgren" <tony@atomide.com>, "Tero Kristo" <t-kristo@ti.com>,
-        "Paul" <paul@pwsan.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1400237160-25125-1-git-send-email-nm@ti.com>
-Cc: "Nishanth Menon" <nm@ti.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-References: <1400237160-25125-1-git-send-email-nm@ti.com>
-Message-ID: <20140523210720.23136.65858@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 0/3] ARM: OMAP5+: Support Duty Cycle Correction(DCC)
-Date: Fri, 23 May 2014 14:07:20 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4917794.FPSphFc8Fa@myon.chronox.de>
+Organization: Core
+X-Newsgroups: apana.lists.os.linux.cryptoapi,apana.lists.os.linux.kernel
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Nishanth Menon (2014-05-16 03:45:57)
-> Hi,
-> 
-> This patch series has been carried over in vendor kernel for quiet
-> few years now.
-> 
-> Unfortunately, it was very recently re-discovered and upstream kernel
-> is noticed to be broken for OMAP5 1.5GHz - at least we are operating
-> DPLL at frequency higher than what it was intended to be when CPUFreq
-> is enabled. Thankfully, with nominal voltage(we dont use AVS yet in
-> upstream for the mentioned platforms) and margins in trimming, we
-> have so far not crashed - but I strongly suspect this might be some
-> boundary case survival.
+Stephan Mueller <smueller@chronox.de> wrote:
+>
+> +       memset(&drbg_algs[i], 0, sizeof(struct crypto_alg));
+> +       if (pr) {
+> +               memcpy(drbg_algs[i].cra_name, "drbg(pr(", 8);
+> +               memcpy(drbg_algs[i].cra_driver_name, "drbg_pr_", 8);
+> +               pos = 8;
 
-DCC also exists in OMAP4. In some cases customers used it, in other
-cases we just ran the PLL way out of spec and the mpu_clk would divide
-by 2.
+You shouldn't use the brackets here since this not a real template.
+Just use one name for both cra_name and cra_driver_name.
 
-Is this broken for OMAP4 as well?
-
-Regards,
-Mike
-
-> 
-> Verified on the following impacted platforms using 3.15-rc4 based
-> vendor kernel.
-> 
-> Before:
-> OMAP5432: http://slexy.org/view/s20cs0qQFg
-> DRA72x: http://slexy.org/view/s2TXtSa6mH (refused to lock)
-> DRA75x: http://slexy.org/view/s20AW8MU5c
-> After:
-> OMAP5432: http://slexy.org/view/s21iAfWxpu
-> DRA72x: http://slexy.org/view/s2hwsvGLmC (locks properly)
-> DRA75x: http://slexy.org/view/s21ehw8WQn
-> 
-> Hopefully, we can get these into some kernel revision in some form.
-> 
-> NOTE: Support for 4470(which is the only other platform requiring
-> DCC) is not present in upstream kernel and there are no plans to
-> support that SoC, even if it is added at a later point, support can be
-> extended as needed.
-> 
-> Series based on v3.15-rc5 tag.
-> Also available on my tree:
->         https://github.com/nmenon/linux-2.6-playground/
->         branch:  push/clock/dcc 
->         
->         weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/clock/dcc
-> 
-> Verification:
-> 3.15-rc4 based kernel - DRA75x-evm, 72x-evm, OMAP5uevm
-> 3.15-rc5 - OMAP5uEVM(only one supporting 1.5GHz atm)
-> 
-> Andrii Tseglytskyi (1):
->   ARM: OMAP5+: dpll: support Duty Cycle Correction(DCC)
-> 
-> Nishanth Menon (2):
->   clk: dpll: support OMAP5 MPU DPLL that need special handling for
->     higher frequencies
->   ARM: dts: OMAP5/DRA7: use omap5-mpu-dpll-clock capable of dealing
->     with higher frequencies
-> 
->  .../devicetree/bindings/clock/ti/dpll.txt          |    1 +
->  arch/arm/boot/dts/dra7xx-clocks.dtsi               |    2 +-
->  arch/arm/boot/dts/omap54xx-clocks.dtsi             |    2 +-
->  arch/arm/mach-omap2/dpll3xxx.c                     |    9 +++++++++
->  drivers/clk/ti/dpll.c                              |   21 ++++++++++++++++++++
->  include/linux/clk/ti.h                             |    4 ++++
->  6 files changed, 37 insertions(+), 2 deletions(-)
-> 
-> Regards,
-> Nishanth Menon
-> -- 
-> 1.7.9.5
-> 
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
