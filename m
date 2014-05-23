@@ -1,35 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaEWNqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:46:31 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527AbaEWNqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:46:30 -0400
-Message-ID: <537F5133.8020700@nod.at>
-Date: Fri, 23 May 2014 15:46:27 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        trond.myklebust@primarydata.com, NeilBrown <neilb@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, David Gstir <david@sigma-star.at>
-Subject: Re: NFS issue while copying huge file
-References: <CAFLxGvw_7=AuBqxNhAHpQAXq2aTqc8Afa6Z62=YCsFXcJx0Hug@mail.gmail.com> <CAFLxGvxm43MaOqv1JQ8vxkn4s50uHZ8Js6A-Ec+O_sjvFszehQ@mail.gmail.com> <20140523115655.GA14074@fieldses.org> <537F40C0.7030403@nod.at> <20140523133907.GJ25423@fieldses.org>
-In-Reply-To: <20140523133907.GJ25423@fieldses.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752428AbaEWNr2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:47:28 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:44168 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178AbaEWNrZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 09:47:25 -0400
+Message-ID: <1400852843.5367.191.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: skbuff truesize incorrect.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jim Baxter <jim_baxter@mentor.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        "=?ISO-8859-1?Q?=27Bj=F8rn?= Mork'" <bjorn@mork.no>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "kamal@canonical.com" <kamal@canonical.com>,
+        "edumazet@google.com" <edumazet@google.com>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
+Date: Fri, 23 May 2014 06:47:23 -0700
+In-Reply-To: <537F2D53.5020408@mentor.com>
+References: <537E4AFD.20304@mentor.com>
+		<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
+		<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>
+	 <87r43k4yhe.fsf@nemi.mork.no>
+	 <063D6719AE5E284EB5DD2968C1650D6D1724C7A1@AcuExch.aculab.com>
+	 <537F2D53.5020408@mentor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.05.2014 15:39, schrieb J. Bruce Fields:
-> And like the lock contention may be in xfs....  So ideally you'd get
-> someone who knows the CentOS/RHEL6 xfs code to look at it first.
+On Fri, 2014-05-23 at 12:13 +0100, Jim Baxter wrote:
 
-I saw this coming. ;)
+> What are the side effects of changing the truesize, if the original
+> uncloned skb has the full truesize then isn't the potential memory usage
+> still counted for the avoidance of OOM?
 
-Thanks,
-//richard
+Nope. This can be disastrous.
+
+A malicious remote peer can crash your host by sending specially cooked
+TCP messages.
+
+Send messages with one byte of payload, and out of order so that they
+cant be consumed by receiver, and cant be coalesced/collapsed.
+
+If you claim the true size is sizeof(sk_buff) + 512, TCP stack will
+accumulate these messages in out of order queue, and will not bother
+with them, unless you hit sk_rcvbuf limit.
+
+But in reality these messages uses sizeof(sk_buff) + 32768 bytes.
+
+Divide your physical memory by 32768 : How many such messages will fit
+in memory before the host crashes ?
+
+I've seen that kind of attacks in real cases.
+
+Even the fast clones sk_buff mismatch can be noticed. Luckily a 10%
+error has no severe impact.
+
+TCP stack uses fast clones, and current stack gives them a truesize of
+2048 + sizeof(sk_buff), while it really should be 2048 +
+2*sizeof(sk_buff)
+
+Luckily, GSO/TSO tends to reduce the error, as skbs overhead is lower.
+
+
