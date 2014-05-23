@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaEWKJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:09:34 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49109 "EHLO
+	id S1752477AbaEWKJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:09:32 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49029 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038AbaEWKEf (ORCPT
+	with ESMTP id S1751993AbaEWKEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 May 2014 06:04:35 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -18,259 +18,300 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 12/26] perf tools: Apply percent-limit to cumulative percentage
-Date: Fri, 23 May 2014 19:04:09 +0900
-Message-Id: <1400839463-21933-13-git-send-email-namhyung@kernel.org>
+Subject: [PATCHSET 00/26] perf tools: Add support to accumulate hist periods (v10)
+Date: Fri, 23 May 2014 19:03:57 +0900
+Message-Id: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
-References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If -g cumulative option is given, it needs to show entries which don't
-have self overhead.  So apply percent-limit to accumulated overhead
-percentage in this case.
+Hello,
 
-Tested-by: Arun Sharma <asharma@fb.com>
-Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+This is a new attempt to implement cumulative hist period report.
+This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
+rewrote it from scratch.
+
+This patchset basically adds period in a sample to every node in the
+callchain.  A hist_entry now has an additional fields to keep the
+cumulative period if --children option is given on perf report.
+
+I changed the option as a separate --children and added a new
+"Children" column (and renamed the default "Overhead" column into
+"Self").  The output will be sorted by children (cumulative) overhead
+for now.  It also adds 'overhead_children' field to -F/--fields option
+to be selected by user and it'll show you "N/A" if the cumulation is
+not supported (due to missing callchain).
+
+I added Tested-by from Rodrigo Campos since this version is basically
+rebase of previous series + bugfix.  But it still needs to be tested
+more intensively IMHO.  Also note that, this will change default
+behavior of perf report/top if callchain is recorded, so might confuse
+old users.  Let's see how many of them come to shout. :)  I think we
+need to merge Jiri's TUI column header patch at least.
+
+
+ * changes in v10:
+  - fix callchain display bug in stdio, gtk
+  - add a testcase
+  - add Tested-by from Rodrigo
+
+ * changes in v9:
+  - support output field option
+  - add Acked-by tags from Jiri
+
+ * changes in v8:
+  - not depends on --percentage patchkit
+  - fix callchain resolving bug (Jiri)
+  - convert to sample__resolve_{mem,bstack}
+  - eliminate 'event' field from hist_entry_iter
+
+ * changes in v7:
+  - add Tested-by tags from Arun
+  - rebase onto current acme/perf/core
+
+ * changes in v6:
+  - separate struct hist_iter_ops (Jiri)
+  - check iter->he before calling ->add_entry_cb (Jiri)
+  - fix locking issue on perf top (Jiri)
+
+ * changes in v5:
+  - support both of --children and --call-graph (Arun)
+  - refactor hist_entry_iter to share with perf top (Jiri)
+  - various cleanups and fixes (Jiri)
+  - add ack's from Jiri
+
+ * changes in v4:
+  - change to --children option (Ingo)
+  - rebased on new annotation change (Arnaldo)
+  - support perf top also
+  - enable --children option by default (Ingo)
+
+ * changes in v3:
+  - change to --cumulate option
+  - fix a couple of bugs (Jiri, Rodrigo)
+  - rename some help functions (Arnaldo)
+  - cache previous hist entries rathen than just symbol and dso
+  - add some preparatory cleanups
+  - add report.cumulate config option
+
+
+Let me show you an example:
+
+  $ cat abc.c
+  #define barrier() asm volatile("" ::: "memory")
+
+  void a(void)
+  {
+  	int i;
+  	for (i = 0; i < 1000000; i++)
+  		barrier();
+  }
+  void b(void)
+  {
+  	a();
+  }
+  void c(void)
+  {
+  	b();
+  }
+  int main(void)
+  {
+  	c();
+  	return 0;
+  }
+
+With this simple program I ran perf record and report:
+
+  $ perf record -g -e cycles:u ./abc
+
+
+Case 1.
+
+  $ perf report --stdio --no-call-graph --no-children
+
+  # Overhead  Command      Shared Object          Symbol
+  # ........  .......  .................  ..............
+  #
+      91.50%      abc  abc                [.] a         
+       8.18%      abc  ld-2.17.so         [.] strlen    
+       0.31%      abc  [kernel.kallsyms]  [k] page_fault
+       0.01%      abc  ld-2.17.so         [.] _start    
+
+
+Case 2. (current default behavior)
+
+  $ perf report --stdio --call-graph --no-children
+
+  # Overhead  Command      Shared Object          Symbol
+  # ........  .......  .................  ..............
+  #
+      91.50%      abc  abc                [.] a         
+                  |
+                  --- a
+                      b
+                      c
+                      main
+                      __libc_start_main
+
+       8.18%      abc  ld-2.17.so         [.] strlen    
+                  |
+                  --- strlen
+                      _dl_sysdep_start
+
+       0.31%      abc  [kernel.kallsyms]  [k] page_fault
+                  |
+                  --- page_fault
+                      _start
+
+       0.01%      abc  ld-2.17.so         [.] _start    
+                  |
+                  --- _start
+
+
+Case 3.
+
+  $ perf report --no-call-graph --children --stdio
+
+  #     Self  Children  Command      Shared Object                 Symbol
+  # ........  ........  .......  .................  .....................
+  #
+       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
+       0.00%    91.50%      abc  abc                [.] main             
+       0.00%    91.50%      abc  abc                [.] c                
+       0.00%    91.50%      abc  abc                [.] b                
+      91.50%    91.50%      abc  abc                [.] a                
+       0.00%     8.18%      abc  ld-2.17.so         [.] _dl_sysdep_start 
+       8.18%     8.18%      abc  ld-2.17.so         [.] strlen           
+       0.01%     0.33%      abc  ld-2.17.so         [.] _start           
+       0.31%     0.31%      abc  [kernel.kallsyms]  [k] page_fault       
+
+As you can see __libc_start_main -> main -> c -> b -> a callchain show
+up in the output.
+
+Finally, it looks like below with both option enabled:
+
+Case 4. (default behavior?)
+
+  $ perf report --call-graph --children --stdio
+
+  #     Self  Children  Command      Shared Object                 Symbol
+  # ........  ........  .......  .................  .....................
+  #
+       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
+                  |
+                  --- __libc_start_main
+
+       0.00%    91.50%      abc  abc                [.] main             
+                  |
+                  --- main
+                      __libc_start_main
+
+       0.00%    91.50%      abc  abc                [.] c                
+                  |
+                  --- c
+                      main
+                      __libc_start_main
+
+       0.00%    91.50%      abc  abc                [.] b                
+                  |
+                  --- b
+                      c
+                      main
+                      __libc_start_main
+
+      91.50%    91.50%      abc  abc                [.] a                
+                  |
+                  --- a
+                      b
+                      c
+                      main
+                      __libc_start_main
+  ...
+
+
+Currently the perf enables both of --call-graph and --children when it
+finds callchains in the samples.  While this is useful for TUI or GTK,
+I'm not sure for stdio as it'd consume so much lines.
+
+It does not handle all kind of cases like event annotation yet, but I
+really want to release it and get reviews.
+
+You can also get this series on 'perf/cumulate-v10' branch in my tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks.
+Namhyung
+
+
+Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 40 +++++++++++-----------------------------
- tools/perf/ui/gtk/hists.c      |  6 ++----
- tools/perf/ui/stdio/hist.c     |  4 ++--
- tools/perf/util/hist.h         |  1 +
- tools/perf/util/sort.h         | 17 ++++++++++++++++-
- 5 files changed, 32 insertions(+), 36 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 1de7428a9771..efb160ac304d 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -37,7 +37,6 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- static void hist_browser__update_nr_entries(struct hist_browser *hb);
- 
- static struct rb_node *hists__filter_entries(struct rb_node *nd,
--					     struct hists *hists,
- 					     float min_pcnt);
- 
- static bool hist_browser__has_filter(struct hist_browser *hb)
-@@ -319,7 +318,7 @@ __hist_browser__set_folding(struct hist_browser *browser, bool unfold)
- 	struct hists *hists = browser->hists;
- 
- 	for (nd = rb_first(&hists->entries);
--	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
-+	     (nd = hists__filter_entries(nd, browser->min_pcnt)) != NULL;
- 	     nd = rb_next(nd)) {
- 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
- 		hist_entry__set_folding(he, unfold);
-@@ -807,15 +806,12 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
- 
- 	for (nd = browser->top; nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		u64 total = hists__total_period(h->hists);
--		float percent = 0.0;
-+		float percent;
- 
- 		if (h->filtered)
- 			continue;
- 
--		if (total)
--			percent = h->stat.period * 100.0 / total;
--
-+		percent = hist_entry__get_percent_limit(h);
- 		if (percent < hb->min_pcnt)
- 			continue;
- 
-@@ -828,16 +824,11 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
- }
- 
- static struct rb_node *hists__filter_entries(struct rb_node *nd,
--					     struct hists *hists,
- 					     float min_pcnt)
- {
- 	while (nd != NULL) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		u64 total = hists__total_period(hists);
--		float percent = 0.0;
--
--		if (total)
--			percent = h->stat.period * 100.0 / total;
-+		float percent = hist_entry__get_percent_limit(h);
- 
- 		if (!h->filtered && percent >= min_pcnt)
- 			return nd;
-@@ -849,16 +840,11 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
- }
- 
- static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
--						  struct hists *hists,
- 						  float min_pcnt)
- {
- 	while (nd != NULL) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		u64 total = hists__total_period(hists);
--		float percent = 0.0;
--
--		if (total)
--			percent = h->stat.period * 100.0 / total;
-+		float percent = hist_entry__get_percent_limit(h);
- 
- 		if (!h->filtered && percent >= min_pcnt)
- 			return nd;
-@@ -887,14 +873,14 @@ static void ui_browser__hists_seek(struct ui_browser *browser,
- 	switch (whence) {
- 	case SEEK_SET:
- 		nd = hists__filter_entries(rb_first(browser->entries),
--					   hb->hists, hb->min_pcnt);
-+					   hb->min_pcnt);
- 		break;
- 	case SEEK_CUR:
- 		nd = browser->top;
- 		goto do_offset;
- 	case SEEK_END:
- 		nd = hists__filter_prev_entries(rb_last(browser->entries),
--						hb->hists, hb->min_pcnt);
-+						hb->min_pcnt);
- 		first = false;
- 		break;
- 	default:
-@@ -937,8 +923,7 @@ do_offset:
- 					break;
- 				}
- 			}
--			nd = hists__filter_entries(rb_next(nd), hb->hists,
--						   hb->min_pcnt);
-+			nd = hists__filter_entries(rb_next(nd), hb->min_pcnt);
- 			if (nd == NULL)
- 				break;
- 			--offset;
-@@ -971,7 +956,7 @@ do_offset:
- 				}
- 			}
- 
--			nd = hists__filter_prev_entries(rb_prev(nd), hb->hists,
-+			nd = hists__filter_prev_entries(rb_prev(nd),
- 							hb->min_pcnt);
- 			if (nd == NULL)
- 				break;
-@@ -1150,7 +1135,6 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
- {
- 	struct rb_node *nd = hists__filter_entries(rb_first(browser->b.entries),
--						   browser->hists,
- 						   browser->min_pcnt);
- 	int printed = 0;
- 
-@@ -1158,8 +1142,7 @@ static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 
- 		printed += hist_browser__fprintf_entry(browser, h, fp);
--		nd = hists__filter_entries(rb_next(nd), browser->hists,
--					   browser->min_pcnt);
-+		nd = hists__filter_entries(rb_next(nd), browser->min_pcnt);
- 	}
- 
- 	return printed;
-@@ -1396,8 +1379,7 @@ static void hist_browser__update_nr_entries(struct hist_browser *hb)
- 		return;
- 	}
- 
--	while ((nd = hists__filter_entries(nd, hb->hists,
--					   hb->min_pcnt)) != NULL) {
-+	while ((nd = hists__filter_entries(nd, hb->min_pcnt)) != NULL) {
- 		nr_entries++;
- 		nd = rb_next(nd);
- 	}
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 7e5da4af98d8..03d6812d25dd 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -226,14 +226,12 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 		GtkTreeIter iter;
- 		u64 total = hists__total_period(h->hists);
--		float percent = 0.0;
-+		float percent;
- 
- 		if (h->filtered)
- 			continue;
- 
--		if (total)
--			percent = h->stat.period * 100.0 / total;
--
-+		percent = hist_entry__get_percent_limit(h);
- 		if (percent < min_pcnt)
- 			continue;
- 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 9f57991025a9..475d2f5c7e16 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -461,12 +461,12 @@ print_entries:
- 
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		float percent = h->stat.period * 100.0 /
--					hists->stats.total_period;
-+		float percent;
- 
- 		if (h->filtered)
- 			continue;
- 
-+		percent = hist_entry__get_percent_limit(h);
- 		if (percent < min_pcnt)
- 			continue;
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index ce37f3f8edd9..ad955fbd194f 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -144,6 +144,7 @@ int hist_entry__sort_snprintf(struct hist_entry *he, char *bf, size_t size,
- 			      struct hists *hists);
- void hist_entry__free(struct hist_entry *);
- 
-+
- void hists__output_resort(struct hists *hists);
- void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
- 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index c9ffa031becd..426b873e16ff 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -20,7 +20,7 @@
- 
- #include "parse-options.h"
- #include "parse-events.h"
--
-+#include "hist.h"
- #include "thread.h"
- 
- extern regex_t parent_regex;
-@@ -131,6 +131,21 @@ static inline void hist_entry__add_pair(struct hist_entry *pair,
- 	list_add_tail(&pair->pairs.node, &he->pairs.head);
- }
- 
-+static inline float hist_entry__get_percent_limit(struct hist_entry *he)
-+{
-+	u64 period = he->stat.period;
-+	u64 total_period = hists__total_period(he->hists);
-+
-+	if (unlikely(total_period == 0))
-+		return 0;
-+
-+	if (symbol_conf.cumulate_callchain)
-+		period = he->stat_acc->period;
-+
-+	return period * 100.0 / total_period;
-+}
-+
-+
- enum sort_mode {
- 	SORT_MODE__NORMAL,
- 	SORT_MODE__BRANCH,
+[1] https://lkml.org/lkml/2012/3/31/6
+[2] https://lkml.org/lkml/2014/3/10/48
+[3] https://lkml.org/lkml/2014/3/19/689
+
+
+Namhyung Kim (26):
+  perf tools: Introduce struct hist_entry_iter
+  perf hists: Add support for accumulated stat of hist entry
+  perf hists: Check if accumulated when adding a hist entry
+  perf hists: Accumulate hist entry stat based on the callchain
+  perf tools: Update cpumode for each cumulative entry
+  perf report: Cache cumulative callchains
+  perf callchain: Add callchain_cursor_snapshot()
+  perf tools: Save callchain info for each cumulative entry
+  perf ui/hist: Add support to accumulated hist stat
+  perf ui/browser: Add support to accumulated hist stat
+  perf ui/gtk: Add support to accumulated hist stat
+  perf tools: Apply percent-limit to cumulative percentage
+  perf tools: Add more hpp helper functions
+  perf report: Add --children option
+  perf report: Add report.children config option
+  perf tools: Do not auto-remove Children column if --fields given
+  perf tools: Add callback function to hist_entry_iter
+  perf top: Convert to hist_entry_iter
+  perf top: Add --children option
+  perf top: Add top.children config option
+  perf tools: Enable --children option by default
+  perf ui/stdio: Fix invalid percentage value of cumulated hist entries
+  perf ui/gtk: Fix callchain display
+  perf tools: Reset output/sort order to default
+  perf tests: Define and use symbolic names for fake symbols
+  perf tests: Add a test case for cumulating callchains
+
+ tools/perf/Documentation/perf-report.txt |   7 +-
+ tools/perf/Documentation/perf-top.txt    |   8 +-
+ tools/perf/Makefile.perf                 |   1 +
+ tools/perf/builtin-annotate.c            |   3 +-
+ tools/perf/builtin-diff.c                |   2 +-
+ tools/perf/builtin-report.c              | 186 ++------
+ tools/perf/builtin-top.c                 |  95 ++--
+ tools/perf/tests/builtin-test.c          |   4 +
+ tools/perf/tests/hists_common.c          |  52 ++-
+ tools/perf/tests/hists_common.h          |  32 +-
+ tools/perf/tests/hists_cumulate.c        | 726 +++++++++++++++++++++++++++++++
+ tools/perf/tests/hists_filter.c          |  59 ++-
+ tools/perf/tests/hists_link.c            |  36 +-
+ tools/perf/tests/hists_output.c          |  31 +-
+ tools/perf/tests/tests.h                 |   1 +
+ tools/perf/ui/browsers/hists.c           |  66 +--
+ tools/perf/ui/gtk/hists.c                |  33 +-
+ tools/perf/ui/hist.c                     | 119 +++++
+ tools/perf/ui/stdio/hist.c               |   8 +-
+ tools/perf/util/callchain.c              |  45 +-
+ tools/perf/util/callchain.h              |  11 +
+ tools/perf/util/hist.c                   | 490 ++++++++++++++++++++-
+ tools/perf/util/hist.h                   |  49 ++-
+ tools/perf/util/sort.c                   |   4 +
+ tools/perf/util/sort.h                   |  18 +-
+ tools/perf/util/symbol.c                 |  11 +-
+ tools/perf/util/symbol.h                 |   1 +
+ 27 files changed, 1782 insertions(+), 316 deletions(-)
+ create mode 100644 tools/perf/tests/hists_cumulate.c
+
 -- 
 1.9.2
 
