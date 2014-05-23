@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaEWRMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:12:42 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:45426 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328AbaEWRMj (ORCPT
+	id S1753568AbaEWRMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:12:49 -0400
+Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:2405 "EHLO
+	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230AbaEWRMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:12:39 -0400
-From: abdoulaye berthe <berthe.ab@gmail.com>
-To: linus.walleij@linaro.org, gnurou@gmail.com,
-        mika.westerberg@linux.intel.com, andriy.shevchenko@linux.intel.com,
-        sfr@canb.auug.org.au, berthe.ab@gmail.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
-Date: Fri, 23 May 2014 19:12:24 +0200
-Message-Id: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 23 May 2014 13:12:47 -0400
+Message-ID: <537F8152.5050705@xs4all.nl>
+Date: Fri, 23 May 2014 19:11:46 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+MIME-Version: 1.0
+To: Chaitanya Hazarey <c@24.io>, Dan Carpenter <dan.carpenter@oracle.com>
+CC: Luca Risolia <luca.risolia@studio.unibo.it>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH] Staging: Media: sn9c102: Fixed a pointer declaration
+ coding style issue
+References: <CADadk9FjRgvBqO4FMpz8UrBAh8pV8t4SZnKPVBwyjHzBUw+0=Q@mail.gmail.com>	<20140523071005.GR15585@mwanda> <CADadk9HqHKNxTOEqmEVGDTq2gqxLB3=R25GHjNR+BV+apH8izA@mail.gmail.com>
+In-Reply-To: <CADadk9HqHKNxTOEqmEVGDTq2gqxLB3=R25GHjNR+BV+apH8izA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids handling gpiochip remove error in device
-remove handler.
+On 05/23/2014 06:59 PM, Chaitanya Hazarey wrote:
+> Hey Dan,
+> 
+> Sorry my bad, will resubmit the patch in a proper manner with the
+> required corrections.
+> 
 
-Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
----
- drivers/gpio/gpiolib.c      | 24 +++++++-----------------
- include/linux/gpio/driver.h |  2 +-
- 2 files changed, 8 insertions(+), 18 deletions(-)
+Don't bother. This patch: http://comments.gmane.org/gmane.linux.drivers.driver-project.devel/48570
+has just been merged and that has the same fixes as your patch.
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index f48817d..4878980 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
-  *
-  * A gpio_chip with any GPIOs still requested may not be removed.
-  */
--int gpiochip_remove(struct gpio_chip *chip)
-+void gpiochip_remove(struct gpio_chip *chip)
- {
- 	unsigned long	flags;
--	int		status = 0;
- 	unsigned	id;
- 
- 	acpi_gpiochip_remove(chip);
-@@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
- 	of_gpiochip_remove(chip);
- 
- 	for (id = 0; id < chip->ngpio; id++) {
--		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
--			status = -EBUSY;
--			break;
--		}
--	}
--	if (status == 0) {
--		for (id = 0; id < chip->ngpio; id++)
--			chip->desc[id].chip = NULL;
--
--		list_del(&chip->list);
-+		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
-+			panic("gpiolib.c: gpiochip is still requested\n");
- 	}
-+	for (id = 0; id < chip->ngpio; id++)
-+		chip->desc[id].chip = NULL;
- 
-+	list_del(&chip->list);
- 	spin_unlock_irqrestore(&gpio_lock, flags);
--
--	if (status == 0)
--		gpiochip_unexport(chip);
--
--	return status;
-+	gpiochip_unexport(chip);
- }
- EXPORT_SYMBOL_GPL(gpiochip_remove);
- 
-diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
-index 1827b43..72ed256 100644
---- a/include/linux/gpio/driver.h
-+++ b/include/linux/gpio/driver.h
-@@ -138,7 +138,7 @@ extern const char *gpiochip_is_requested(struct gpio_chip *chip,
- 
- /* add/remove chips */
- extern int gpiochip_add(struct gpio_chip *chip);
--extern int __must_check gpiochip_remove(struct gpio_chip *chip);
-+void gpiochip_remove(struct gpio_chip *chip);
- extern struct gpio_chip *gpiochip_find(void *data,
- 			      int (*match)(struct gpio_chip *chip, void *data));
- 
--- 
-1.8.3.2
+But thanks anyway :-)
+
+Regards,
+
+	Hans
+
+> Thanks for looking into this.
+> 
+> Thanks,
+> 
+> Chaitanya
+> 
+> On Fri, May 23, 2014 at 12:10 AM, Dan Carpenter
+> <dan.carpenter@oracle.com> wrote:
+>> On Thu, May 22, 2014 at 04:11:38PM -0700, Chaitanya wrote:
+>>> Fixed the ERROR thrown off by checkpatch.pl.
+>>>
+>>
+>> Put the error message here, or say what it was.
+>>
+>>> Signed-off-by: Chaitanya Hazarey <c@24.io>
+>>
+>> Could you change your email client so it has your last in the From:
+>> header?
+>>
+>> This patch doesn't apply.  Read this:
+>> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/Documentation/email-clients.txt
+>>
+>> regards,
+>> dan carpenter
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
