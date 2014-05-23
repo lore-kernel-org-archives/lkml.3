@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaEWE1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 00:27:45 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:41972 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944AbaEWE0T (ORCPT
+	id S1751776AbaEWEd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 00:33:29 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:54454 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaEWEd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 00:26:19 -0400
-From: David Matlack <matlackdavid@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, liodot@gmail.com,
-        charrer@alacritech.com, David Matlack <matlackdavid@gmail.com>
-Subject: [PATCH] staging: slicoss: remove unused members of struct adapter
-Date: Thu, 22 May 2014 21:25:42 -0700
-Message-Id: <1400819147-14236-3-git-send-email-matlackdavid@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400819147-14236-1-git-send-email-matlackdavid@gmail.com>
-References: <1400819147-14236-1-git-send-email-matlackdavid@gmail.com>
+	Fri, 23 May 2014 00:33:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140522145209.GA5246@developer>
+References: <cover.1400736536.git.viresh.kumar@linaro.org>
+	<c73c825beda0207867bd29e40fece217cbf15925.1400736536.git.viresh.kumar@linaro.org>
+	<20140522145209.GA5246@developer>
+Date: Fri, 23 May 2014 10:03:27 +0530
+Message-ID: <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
+Subject: Re: [PATCH V3 1/8] cpufreq: cpufreq-cpu0: remove dependency on thermal
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        Sudeep Holla <sudeep.holla@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes two fields from the private "struct adapter".
+On 22 May 2014 20:22, Eduardo Valentin <edubezval@gmail.com> wrote:
+> However, on CPUs that needs thermal managment, it makes sense to have
+> such dependency, from functional perspective. Mainly because scaling
+> frequency and voltage up would be allowed only when thermal management
+> is enabled.
 
-memorybase      duplicate of slic_regs
+AFAIK, dependencies in KCONFIG are only for fixing compilation time issues.
+As some APIs wouldn't be available without enabling some config options..
 
-memorylength    written once and never read. This field is trivially
-                computed with pci_resource_len if it's ever needed in
-                the future.
+If drivers fail at runtime because some API returned error, fix it for your
+platform instead and not bug KCONFIG for that.
 
-This patch has no noticable effect.
+Thought we might consider some runtime dependencies here as well. For
+example regulators. There probably are dummy routine available for cases
+where CONFIG_REGULATOR (or whatever) isn't enabled and driver would
+still compile, but it is guaranteed to fail as we don't continue when we get
+errors from regulator APIs..
 
-Signed-off-by: David Matlack <matlackdavid@gmail.com>
----
-This patch was originally sent here https://lkml.org/lkml/2014/5/6/9 with
-my google.com email address. But due to Google's recent change in DMARC
-policies, that patchset was silently dropped for at least some users
-(including my personal gmail account). So I'm sending it out now with
-my gmail.com account. Let me know if this is an issue. Thanks.
+Though I still feel that this driver should still support platforms without
+regulators (atleast in software, they might always have them on board :))..
+And so dependencies for regulators may also die out one day..
 
- drivers/staging/slicoss/slic.h    | 2 --
- drivers/staging/slicoss/slicoss.c | 4 +---
- 2 files changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/drivers/staging/slicoss/slic.h b/drivers/staging/slicoss/slic.h
-index 702902c..379c4f7 100644
---- a/drivers/staging/slicoss/slic.h
-+++ b/drivers/staging/slicoss/slic.h
-@@ -420,8 +420,6 @@ struct adapter {
- 	ushort              devid;
- 	ushort              subsysid;
- 	u32             irq;
--	void __iomem *memorybase;
--	u32             memorylength;
- 	u32             drambase;
- 	u32             dramlength;
- 	uint                queues_initialized;
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index 452aa02..b0b8544 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -3422,7 +3422,6 @@ static void slic_init_adapter(struct net_device *netdev,
- 	adapter->busnumber = pcidev->bus->number;
- 	adapter->slotnumber = ((pcidev->devfn >> 3) & 0x1F);
- 	adapter->functionnumber = (pcidev->devfn & 0x7);
--	adapter->memorylength = pci_resource_len(pcidev, 0);
- 	adapter->slic_regs = (__iomem struct slic_regs *)memaddr;
- 	adapter->irq = pcidev->irq;
- /*	adapter->netdev = netdev;*/
-@@ -3431,7 +3430,6 @@ static void slic_init_adapter(struct net_device *netdev,
- 	adapter->chipid = chip_idx;
- 	adapter->port = 0;	/*adapter->functionnumber;*/
- 	adapter->cardindex = adapter->port;
--	adapter->memorybase = memaddr;
- 	spin_lock_init(&adapter->upr_lock.lock);
- 	spin_lock_init(&adapter->bit64reglock.lock);
- 	spin_lock_init(&adapter->adapter_lock.lock);
-@@ -3683,7 +3681,7 @@ static int slic_entry_probe(struct pci_dev *pcidev,
- 
- 	slic_adapter_set_hwaddr(adapter);
- 
--	netdev->base_addr = (unsigned long)adapter->memorybase;
-+	netdev->base_addr = (unsigned long) memmapped_ioaddr;
- 	netdev->irq = adapter->irq;
- 	netdev->netdev_ops = &slic_netdev_ops;
- 
--- 
-1.9.2
-
+The dependencies here mean: "This driver would never ever work/compile
+if the dependencies aren't met.."
