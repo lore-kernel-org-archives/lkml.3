@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661AbaEWROp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:14:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53988 "EHLO arroyo.ext.ti.com"
+	id S1753707AbaEWRPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:15:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3941 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051AbaEWROo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:14:44 -0400
-Message-ID: <537F81D8.2080005@ti.com>
-Date: Fri, 23 May 2014 13:14:00 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1753683AbaEWRPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 13:15:06 -0400
+Date: Fri, 23 May 2014 19:14:26 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, peterz@infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        eranian@google.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 7/7] perf: Add dcacheline sort
+Message-ID: <20140523171426.GG1074@krava>
+References: <1400526833-141779-1-git-send-email-dzickus@redhat.com>
+ <1400526833-141779-8-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v1 3/5] phy: pci serdes phy driver for keystone
-References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <1400169692-9677-4-git-send-email-m-karicheri2@ti.com> <9550746.D1ri3H0uvi@wuerfel>
-In-Reply-To: <9550746.D1ri3H0uvi@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400526833-141779-8-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/2014 12:14 PM, Arnd Bergmann wrote:
-> On Thursday 15 May 2014 12:01:30 Murali Karicheri wrote:
->> +static struct serdes_config ks_100mhz_pcie_5gbps_serdes[] = {
->> +       {0x0000, 0x00000800, 0x0000ff00},
->> +       {0x0060, 0x00041c5c, 0x00ffffff},
->> +       {0x0064, 0x0343c700, 0xffffff00},
->> +       {0x006c, 0x00000012, 0x000000ff},
->> +       {0x0068, 0x00070000, 0x00ff0000},
->> +       {0x0078, 0x0000c000, 0x0000ff00},
-> It looks like the PHY is generic, but the configuration above is
-> PCI specific. If this is true, you should have #phy-cells=<1>
-> and document the possible modes, adding a lookup table here to
-> pick the configuration based on the argument. It's fine to just
-> implement pcie-5ghz initially, but the binding should list all
-> the modes that the PHY can support.
+On Mon, May 19, 2014 at 03:13:53PM -0400, Don Zickus wrote:
+> In perf's 'mem-mode', one can get access to a whole bunch of details specific to a
+> particular sample instruction.  A bunch of those details relate to the data
+> address.
+> 
+> One interesting thing you can do with data addresses is to convert them into a unique
+> cacheline they belong too.  Organizing these data cachelines into similar groups and sorting
+> them can reveal cache contention.
+> 
+> This patch creates an alogorithm based on various sample details that can help group
+> entries together into data cachelines and allows 'perf report' to sort on it.
+> 
+> The algorithm relies on having proper mmap2 support in the kernel to help determine
+> if the memory map the data address belongs to is private to a pid or globally shared.
+> 
+> The alogortithm is as follows:
+> 
+> o group cpumodes together
+> o group entries with discovered maps together
+> o sort on major, minor, inode and inode generation numbers
+> o if userspace anon, then sort on pid
+> o sort on cachelines based on data addresses
+> 
+> The 'dcacheline' sort option in 'perf report' only works in 'mem-mode'.
+> 
+> Sample output:
+> 
+>  #
+>  # Samples: 206  of event 'cpu/mem-loads/pp'
+>  # Total weight : 2534
+>  # Sort order   : dcacheline,pid
+>  #
+>  # Overhead       Samples                                                          Data Cacheline       Command:  Pid
+>  # ........  ............  ......................................................................  ..................
+>  #
+>     13.22%             1  [k] 0xffff88042f08ebc0                                                       swapper:    0
+>      9.27%             1  [k] 0xffff88082e8cea80                                                       swapper:    0
+>      3.59%             2  [k] 0xffffffff819ba180                                                       swapper:    0
+>      0.32%             1  [k] arch_trigger_all_cpu_backtrace_handler_na.23901+0xffffffffffffffe0       swapper:    0
+>      0.32%             1  [k] timekeeper_seq+0xfffffffffffffff8                                        swapper:    0
+> 
+> Note:  Added a '+1' to symlen size in hists__calc_col_len to prevent the next column
+> from prematurely tabbing over and mis-aligning.  Not sure what the problem is.
 
-The PCIE name needs to be dropped and as you correctly guessed, this SERDES
-is generic.
->
-> Also, please list the exact name of the phy if you can find it
-> out. You mention that you don't know the register descriptions,
-> but you should at least be able to let us know what phy this
-> is, in case some other SoC reuses the same thing.
-Unfortunately there is a NDA restriction that prevents us from using the
-actual Phy name and keystone phy is the name what we can usel at the 
-moment. I am checking
-this with our IP team and if original name can  be used, I will update 
-the driver to reflect the same.
->> +static int ks_phy_init(struct phy *phy)
->> +{
->> +       struct serdes_config *p;
->> +       struct phy_keystone *ks_phy = phy_get_drvdata(phy);
->> +
->> +       int i;
->> +
->> +       for (i = 0, p = &ks_100mhz_pcie_5gbps_serdes[0];
->> +               i < ARRAY_SIZE(ks_100mhz_pcie_5gbps_serdes);
->> +               i++, p++) {
->> +               reg_rmw((ks_phy->base + p->reg), p->val, p->mask);
->> +               reg_dump((ks_phy->base + p->reg), p->mask);
->> +       }
->> +       udelay(2000);
-> This should probably be msleep(2);
-Fine.
+I think thats the extra '+' sign ;-) so +1 seems ok
 
-Murali
->
-> 	Arnd
-
+jirka
