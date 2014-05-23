@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303AbaEWScc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 14:32:32 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:51839 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaEWSca convert rfc822-to-8bit (ORCPT
+	id S1751473AbaEWSdZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 14:33:25 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61946 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaEWSdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 14:32:30 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 23 May 2014 14:33:24 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <537F9467.4020407@roeck-us.net>
+Date: Fri, 23 May 2014 11:33:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, lee.jones@linaro.org, santosh.shilimkar@ti.com,
-        arnd@arndb.de, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, grant.likely@linaro.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1400859812-5761-3-git-send-email-ivan.khoronzhuk@ti.com>
-Cc: rdunlap@infradead.org, linux@arm.linux.org.uk, grygorii.strashko@ti.com,
-        olof@lixom.net, w-kwok2@ti.com, sboyd@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        m-karicheri2@ti.com, sergei.shtylyov@cogentembedded.com,
-        "Ivan Khoronzhuk" <ivan.khoronzhuk@ti.com>
-References: <1400859812-5761-1-git-send-email-ivan.khoronzhuk@ti.com>
- <1400859812-5761-3-git-send-email-ivan.khoronzhuk@ti.com>
-Message-ID: <20140523183218.23136.51518@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [Patch v7 2/7] clock: keystone-pllctrl: add bindings for keystone pll
- controller
-Date: Fri, 23 May 2014 11:32:18 -0700
+To: Flavio Leitner <fbl@redhat.com>
+CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] i8k: increase fan limit to 3
+References: <1400725168-21358-1-git-send-email-fbl@redhat.com> <20140522151048.GB1001@roeck-us.net> <20140522155458.GI12759@t520.home> <20140522180023.GB14814@roeck-us.net> <20140523170904.GA2498@t520.home>
+In-Reply-To: <20140523170904.GA2498@t520.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Ivan Khoronzhuk (2014-05-23 08:43:27)
-> The main pll controller used to drive theC66x CorePacs, the switch fabric,
-> and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
-> the NETCP modules) requires a PLL Controller to manage the various clock
-> divisions, gating, and synchronization.
-> 
-> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+On 05/23/2014 10:09 AM, Flavio Leitner wrote:
+> On Thu, May 22, 2014 at 11:00:23AM -0700, Guenter Roeck wrote:
+>> On Thu, May 22, 2014 at 12:54:58PM -0300, Flavio Leitner wrote:
+>>> On Thu, May 22, 2014 at 08:10:48AM -0700, Guenter Roeck wrote:
+>>>> On Wed, May 21, 2014 at 11:19:28PM -0300, Flavio Leitner wrote:
+>>>>> From: Flavio Leitner <fbl@sysclose.org>
+>>> I volunteer to test on precision 490n and on latitude D520.
+>>>
+>> Can you send me dmi information for those systems ?
+>> The output of "grep . /sys/class/dmi/id/*" should do.
+>
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+> /sys/class/dmi/id/chassis_vendor:Dell Inc.
+> /sys/class/dmi/id/product_name:Latitude D520
 
-Regards,
-Mike
+What is the maximum speed value for the D520 ?
 
-> ---
->  .../bindings/clock/ti-keystone-pllctrl.txt           | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
-> new file mode 100644
-> index 0000000..3e6a81e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/ti-keystone-pllctrl.txt
-> @@ -0,0 +1,20 @@
-> +* Device tree bindings for Texas Instruments keystone pll controller
-> +
-> +The main pll controller used to drive theC66x CorePacs, the switch fabric,
-> +and a majority of the peripheral clocks (all but the ARM CorePacs, DDR3 and
-> +the NETCP modules) requires a PLL Controller to manage the various clock
-> +divisions, gating, and synchronization.
-> +
-> +Required properties:
-> +
-> +- compatible:          "ti,keystone-pllctrl", "syscon"
-> +
-> +- reg:                 contains offset/length value for pll controller
-> +                       registers space.
-> +
-> +Example:
-> +
-> +pllctrl: pll-controller@0x02310000 {
-> +       compatible = "ti,keystone-pllctrl", "syscon";
-> +       reg = <0x02310000 0x200>;
-> +};
-> -- 
-> 1.8.3.2
-> 
+Thanks,
+Guenter
+
+
