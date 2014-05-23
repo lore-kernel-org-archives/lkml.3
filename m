@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750978AbaEWBHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 May 2014 21:07:33 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57980 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaEWBHc (ORCPT
+	id S1751236AbaEWBJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 May 2014 21:09:13 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:63066 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaEWBJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 May 2014 21:07:32 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <537E9F47.5020809@roeck-us.net>
-Date: Thu, 22 May 2014 18:07:19 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 22 May 2014 21:09:11 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, Helge Deller <deller@gmx.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>
-Subject: Re: Linux 3.15-rc6
-References: <CA+55aFzwqPh+WUAxi2CY8D6k+LkDbUb__G98qVFrE-DHNMSPUw@mail.gmail.com>	<20140522172032.GA20975@roeck-us.net> <CA+55aFw_kOE1Y4qkLW4rWfB_NaYYDwFeU=t5swsJCTMq-3J6nA@mail.gmail.com>
-In-Reply-To: <CA+55aFw_kOE1Y4qkLW4rWfB_NaYYDwFeU=t5swsJCTMq-3J6nA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1400806281-32716-1-git-send-email-mitchelh@codeaurora.org>
+References: <1400806281-32716-1-git-send-email-mitchelh@codeaurora.org>
+Date: Thu, 22 May 2014 18:09:11 -0700
+X-Google-Sender-Auth: tatrLI87oHg7YJDJhEBpOby-Cro
+Message-ID: <CAMbhsRQpR-Q=kgr92ezauBj200_2cfnsXHkk+3oPD51ZKD=4RQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: ion: WARN when the handle kmap_cnt is going to
+ wrap around
+From: Colin Cross <ccross@android.com>
+To: Mitchel Humpherys <mitchelh@codeaurora.org>
+Cc: Linux-MM <linux-mm@kvack.org>, John Stultz <john.stultz@linaro.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 05:43 PM, Linus Torvalds wrote:
-> Miklos,
+On Thu, May 22, 2014 at 5:51 PM, Mitchel Humpherys
+<mitchelh@codeaurora.org> wrote:
+> There are certain client bugs (double unmap, for example) that can cause
+> the handle->kmap_cnt (an unsigned int) to wrap around from zero. This
+> causes problems when the handle is destroyed because we have:
 >
-> this is from your commit 18e480aa07f78 ("parisc: add renameat2
-> syscall") which was acked by Helge Deller:
+>         while (handle->kmap_cnt)
+>                 ion_handle_kmap_put(handle);
 >
-> On Thu, May 22, 2014 at 10:20 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>
->> Unfortunately it appears that the parisc changes cause build failures
->> with parisc 64 bit builds.
->>
->> Building parisc:a500_defconfig ... failed
->> Building parisc:generic-64bit_defconfig ... failed
->>
->> Error log:
->> arch/parisc/kernel/built-in.o: In function `sys_call_table':
->> (.rodata+0xad0): undefined reference to `compat_sys_renameat2'
->> make: *** [vmlinux] Error 1
+> which takes a long time to complete when kmap_cnt starts at ~0 and can
+> result in a watchdog timeout.
 >
-> only s390 seems to need a compat wrapper, and s390 is kind of odd in
-> many respects, so I suspect renameat2 should just use ENTRY_SAME() on
-> parisc, but without any way to *test* it I won't apply the patch.
+> WARN and bail when kmap_cnt is about to wrap around from zero.
 >
-> Guenter, I assume that changing the
+> Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+> ---
+>  drivers/staging/android/ion/ion.c | 4 ++++
+>  1 file changed, 4 insertions(+)
 >
->          ENTRY_COMP(renameat2)
+> diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+> index 3d5bf14722..f55f61a4cc 100644
+> --- a/drivers/staging/android/ion/ion.c
+> +++ b/drivers/staging/android/ion/ion.c
+> @@ -626,6 +626,10 @@ static void ion_handle_kmap_put(struct ion_handle *handle)
+>  {
+>         struct ion_buffer *buffer = handle->buffer;
 >
-> line in arch/parisc/kernel/syscall_table.S to use ENTRY_SAME() at
-> least fixes the compile error?
+> +       if (!handle->kmap_cnt) {
+> +               WARN(1, "%s: Double unmap detected! bailing...\n", __func__);
+> +               return;
+> +       }
+>         handle->kmap_cnt--;
+>         if (!handle->kmap_cnt)
+>                 ion_buffer_kmap_put(buffer);
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
 >
+> To unsubscribe from this group and stop receiving emails from it, send an email to kernel-team+unsubscribe@android.com.
 
-Yes, it fixes the build error for parisc64, and parisc (32 bit) still builds.
-
-Guenter
-
+Acked-by: Colin Cross <ccross@android.com>
