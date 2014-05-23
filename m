@@ -1,183 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaEWNW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 09:22:59 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:61144 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842AbaEWNW5 (ORCPT
+	id S1752646AbaEWNYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 09:24:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53927 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750981AbaEWNYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 09:22:57 -0400
-Date: Fri, 23 May 2014 15:22:53 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, hch@infradead.org,
-        mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/3] CPU hotplug, stop-machine: Plug race-window that
- leads to "IPI-to-offline-CPU"
-Message-ID: <20140523132250.GA1768@localhost.localdomain>
-References: <20140523101134.17924.31463.stgit@srivatsabhat.in.ibm.com>
- <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com>
+	Fri, 23 May 2014 09:24:39 -0400
+Message-ID: <537F4C0C.1080901@free-electrons.com>
+Date: Fri, 23 May 2014 15:24:28 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140523101216.17924.62447.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/5] Documentation: dt-bindings: document the Armada 375
+ USB cluster binding
+References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com> <1400257376-13251-2-git-send-email-gregory.clement@free-electrons.com> <537F13B2.6070500@ti.com>
+In-Reply-To: <537F13B2.6070500@ti.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 03:42:20PM +0530, Srivatsa S. Bhat wrote:
-> During CPU offline, stop-machine is used to take control over all the online
-> CPUs (via the per-cpu stopper thread) and then run take_cpu_down() on the CPU
-> that is to be taken offline.
-> 
-> But stop-machine itself has several stages: _PREPARE, _DISABLE_IRQ, _RUN etc.
-> The important thing to note here is that the _DISABLE_IRQ stage comes much
-> later after starting stop-machine, and hence there is a large window where
-> other CPUs can send IPIs to the CPU going offline. As a result, we can
-> encounter a scenario as depicted below, which causes IPIs to be sent to the
-> CPU going offline, and that CPU notices them *after* it has gone offline,
-> triggering the "IPI-to-offline-CPU" warning from the smp-call-function code.
-> 
-> 
->               CPU 1                                         CPU 2
->           (Online CPU)                               (CPU going offline)
-> 
->        Enter _PREPARE stage                          Enter _PREPARE stage
-> 
->                                                      Enter _DISABLE_IRQ stage
-> 
-> 
->                                                    =
->        Got a device interrupt,                     | Didn't notice the IPI
->        and the interrupt handler                   | since interrupts were
->        called smp_call_function()                  | disabled on this CPU.
->        and sent an IPI to CPU 2.                   |
->                                                    =
-> 
-> 
->        Enter _DISABLE_IRQ stage
-> 
-> 
->        Enter _RUN stage                              Enter _RUN stage
-> 
->                                   =
->        Busy loop with interrupts  |                  Invoke take_cpu_down()
->        disabled.                  |                  and take CPU 2 offline
->                                   =
-> 
-> 
->        Enter _EXIT stage                             Enter _EXIT stage
-> 
->        Re-enable interrupts                          Re-enable interrupts
-> 
->                                                      The pending IPI is noted
->                                                      immediately, but alas,
->                                                      the CPU is offline at
->                                                      this point.
-> 
-> 
-> 
-> So, as we can observe from this scenario, the IPI was sent when CPU 2 was
-> still online, and hence it was perfectly legal. But unfortunately it was
-> noted only after CPU 2 went offline, resulting in the warning from the
-> IPI handling code. In other words, the fault was not at the sender, but
-> at the receiver side - and if we look closely, the real bug is in the
-> stop-machine sequence itself.
-> 
-> The problem here is that the CPU going offline disabled its local interrupts
-> (by entering _DISABLE_IRQ phase) *before* the other CPUs. And that's the
-> reason why it was not able to respond to the IPI before going offline.
-> 
-> A simple solution to this problem is to ensure that the CPU going offline
-> disables its interrupts only *after* the other CPUs do the same thing.
-> To achieve this, split the _DISABLE_IRQ state into 2 parts:
-> 
-> 1st part: MULTI_STOP_DISABLE_IRQ_INACTIVE, where only the non-active CPUs
-> (i.e., the "other" CPUs) disable their interrupts.
-> 
-> 2nd part: MULTI_STOP_DISABLE_IRQ_ACTIVE, where the active CPU (i.e., the
-> CPU going offline) disables its interrupts.
-> 
-> With this in place, the CPU going offline will always be the last one to
-> disable interrupts. After this step, no further IPIs can be sent to the
-> outgoing CPU, since all the other CPUs would be executing the stop-machine
-> code with interrupts disabled. And by the time stop-machine ends, the CPU
-> would have gone offline and disappeared from the cpu_online_mask, and hence
-> future invocations of smp_call_function() and friends will automatically
-> prune that CPU out. Thus, we can guarantee that no CPU will end up
-> *inadvertently* sending IPIs to an offline CPU.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  kernel/stop_machine.c |   39 ++++++++++++++++++++++++++++++++++-----
->  1 file changed, 34 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-> index 01fbae5..288f7fe 100644
-> --- a/kernel/stop_machine.c
-> +++ b/kernel/stop_machine.c
-> @@ -130,8 +130,10 @@ enum multi_stop_state {
->  	MULTI_STOP_NONE,
->  	/* Awaiting everyone to be scheduled. */
->  	MULTI_STOP_PREPARE,
-> -	/* Disable interrupts. */
-> -	MULTI_STOP_DISABLE_IRQ,
-> +	/* Disable interrupts on CPUs not in ->active_cpus mask. */
-> +	MULTI_STOP_DISABLE_IRQ_INACTIVE,
-> +	/* Disable interrupts on CPUs in ->active_cpus mask. */
-> +	MULTI_STOP_DISABLE_IRQ_ACTIVE,
->  	/* Run the function */
->  	MULTI_STOP_RUN,
->  	/* Exit */
-> @@ -189,12 +191,39 @@ static int multi_cpu_stop(void *data)
->  	do {
->  		/* Chill out and ensure we re-read multi_stop_state. */
->  		cpu_relax();
-> +
-> +		/*
-> +		 * We use 2 separate stages to disable interrupts, namely
-> +		 * _INACTIVE and _ACTIVE, to ensure that the inactive CPUs
-> +		 * disable their interrupts first, followed by the active CPUs.
-> +		 *
-> +		 * This is done to avoid a race in the CPU offline path, which
-> +		 * can lead to receiving IPIs on the outgoing CPU *after* it
-> +		 * has gone offline.
-> +		 *
-> +		 * During CPU offline, we don't want the other CPUs to send
-> +		 * IPIs to the active_cpu (the outgoing CPU) *after* it has
-> +		 * disabled interrupts (because, then it will notice the IPIs
-> +		 * only after it has gone offline). We can prevent this by
-> +		 * making the other CPUs disable their interrupts first - that
-> +		 * way, they will run the stop-machine code with interrupts
-> +		 * disabled, and hence won't send IPIs after that point.
-> +		 */
-> +
->  		if (msdata->state != curstate) {
->  			curstate = msdata->state;
->  			switch (curstate) {
-> -			case MULTI_STOP_DISABLE_IRQ:
-> -				local_irq_disable();
-> -				hard_irq_disable();
-> +			case MULTI_STOP_DISABLE_IRQ_INACTIVE:
-> +				if (!is_active) {
-> +					local_irq_disable();
-> +					hard_irq_disable();
-> +				}
-> +				break;
-> +			case MULTI_STOP_DISABLE_IRQ_ACTIVE:
-> +				if (is_active) {
-> +					local_irq_disable();
-> +					hard_irq_disable();
-> +				}
+Hi Kishon,
 
-Do we actually need that now that we are flushing the ipi queue on CPU dying?
-
->  				break;
->  			case MULTI_STOP_RUN:
->  				if (is_active)
+On 23/05/2014 11:24, Kishon Vijay Abraham I wrote:
+> Hi,
 > 
+> On Friday 16 May 2014 09:52 PM, Gregory CLEMENT wrote:
+>> Armada 375 comes with an USB2 host and device controller and an USB3
+>> controller. The USB cluster control register allows to manage common
+>> features of both USB controllers. This commit adds the Device Tree
+>> binding documentation for this piece of hardware.
+> 
+> Pls re-order so that the Documentation patch comes before the driver patch..
+
+OK I will do it
+
+>>
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> ---
+>>  .../bindings/phy/armada-375-usb-phy-cluster.txt      | 20 ++++++++++++++++++++
+>>  1 file changed, 20 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt b/Documentation/devicetree/bindings/phy/armada-375-usb-phy-cluster.txt
+> 
+> simpler file name? armada-phy?
+
+I can remove the "cluster" part but not the 375, there are many SoCs
+from Marvell called Armada, and some of then have nearly nothing in
+common, so I prefer keep this name. If your intent is to have a file
+with all the PHY binding related to an SoC family, then we should call it
+mvebu-phy.
+
+
+Thanks for your review,
+
+Gregory
+
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
