@@ -1,225 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402AbaEWGiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 02:38:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56884 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904AbaEWGiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 02:38:15 -0400
-Message-ID: <537EECC7.2030605@ti.com>
-Date: Fri, 23 May 2014 09:37:59 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752462AbaEWGmx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 02:42:53 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:1071 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751904AbaEWGmw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 02:42:52 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aj5TAJTsflN5LL1sPGdsb2JhbABZgwdSgnGnUQIBBpo9AYEHFwMBAQEBODWCJQEBBAEnExwjBQsIAxgJJQ8FJQMHGhOIOQcO1zsWhT+INEkHhEAEmXGBPpNigVIrgTI
+Date: Fri, 23 May 2014 16:42:47 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andres Freund <andres@anarazel.de>
+Cc: linux-kernel@vger.kernel.org, lsf@lists.linux-foundation.org,
+        linux-mm@kvack.org, rhaas@anarazel.de, linux-fsdevel@vger.kernel.org,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [Lsf] Postgresql performance problems with IO latency,
+ especially during fsync()
+Message-ID: <20140523064247.GN8554@dastard>
+References: <20140326191113.GF9066@alap3.anarazel.de>
+ <20140409092009.GA27519@dastard>
+ <20140428234756.GM15995@dastard>
+ <20140428235714.GA16070@awork2.anarazel.de>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Rob Herring <robherring2@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, <sw0312.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v5 2/2] clk: Add handling of clk parent and rate assigned
- from DT
-References: <1397042790-10636-1-git-send-email-s.nawrocki@samsung.com> <1397042790-10636-3-git-send-email-s.nawrocki@samsung.com> <CAL_JsqKDJ_yFxFYnrTtmzMPoxO2rmypiujybwbhUh35y1LS-Mw@mail.gmail.com> <5347DF4D.5000005@samsung.com> <20140523013406.9521.82891@quantum>
-In-Reply-To: <20140523013406.9521.82891@quantum>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140428235714.GA16070@awork2.anarazel.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 04:34 AM, Mike Turquette wrote:
-> Quoting Sylwester Nawrocki (2014-04-11 05:25:49)
->>>> +==Assigned clock parents and rates==
->>>> +
->>>> +Some platforms require static initial configuration of parts of the clocks
->>>> +controller. Such a configuration can be specified in a clock consumer node
->>>> +through clock-parents and clock-rates DT properties. The former should
->>>> +contain a list of parent clocks in form of phandle and clock specifier pairs,
->>>> +the latter the list of assigned clock frequency values (one cell each).
->>>> +To skip setting parent or rate of a clock its corresponding entry should be
->>>> +set to 0, or can be omitted if it is not followed by any non-zero entry.
->>>> +
->>>> +    uart@a000 {
->>>> +        compatible = "fsl,imx-uart";
->>>> +        reg = <0xa000 0x1000>;
->>>> +        ...
->>>> +        clocks = <&clkcon 0>, <&clkcon 3>;
->>>> +        clock-names = "baud", "mux";
->>>> +
->>>> +        clock-parents = <0>, <&pll 1>;
->>>> +        clock-rates = <460800>;
->>>
->>> Is this the input frequency or serial baud rate? Looks like a baud
->>> rate, but the clock framework needs input (to the uart) frequency. I
->>> would say this should be clock-frequency and specify the max baud rate
->>> as is being done with i2c bindings. The uart driver should know how to
->>> convert between input clock freq and baud rate.
->>
->> This UART example is not quite representative for the issues I have been
->> trying to address with this patch set. There is a need to set (an initial)
->> input clock frequency. E.g. in case of multimedia devices there may be
->> a need to set clock parent and frequency of an input clock to multiple IP
->> blocks, so they are clocked synchronously and data is carried properly
->> across a whole processing chain. Thus there may not be even clock output
->> in an IP block, but still input clock needs to be set. IIUC there is
->> similar issue with audio, where it is difficult to calculate the clock
->> frequencies/determine parent clocks in individual drivers algorithmically.
->>
->>>> +    };
->>>> +
->>>> +In this example the pll is set as parent of "mux" clock and frequency
->>>> of "baud"
->>>> +clock is specified as 460800 Hz.
->>>
->>> I don't really like clock-parents. The parent information is part of
->>> the clock source, not the consumer.
->>
->> I'm not sure we must always consider the parent information as property
->> of a clock source. If for example we expose a structure like below as
->> single clock object, supporting clock gating, parent and frequency
->> setting the parent setting is still accessible from within a device
->> driver.
->
-> The design of the ccf implementation certainly allows one to hide
-> individually addressable/configurable clock nodes within a single struct
-> clk. But should we? I have always maintained that a clock driver should
-> enumerate clocks in the same way that the data sheet or technical
-> reference manual states. I did make a recent exception[1], but that is
-> going to be rolled back after the coordinated clock rate changes land in
-> mainline.
->
->> And clock parent selection may depend on a system configuration
->> not immediately obvious from within a single device driver perspective.
->>
->>                           MUX
->>                         ,-------.     DIVIDER      GATE
->> common clk source 1 -->|--.    |   ,--------.   ,--------.
->>                         |   \   |   |        |   |        |
->> common clk source 2 -->|-   '--|-->|        |-->|        |--> consumer
->>         ...             |       |   |        |   |        |
->> common clk source N -->|-      |   '--------'   '--------'
->>                         '-------'
->>
->>> We've somewhat decided against having every single clock defined in DT
->>> and rather only describe a clock controller with leaf clocks to
->>> devices. That is not a hard rule, but for complex clock trees that is
->>> the norm. Doing something like this will require all levels of the
->>> clock tree to be described. You may have multiple layers of parents
->>> that have to be configured correctly. How are you configuring the rest
->>> of the tree?
->>
->> I believe even clock controllers where clocks are represented as flat
->> array often describe the clock tree entirely by parenthood, the tree
->> structure is just not obvious from the DT binding.
->> In addition, there seems to be appearing more and more clock controller
->> DT bindings describing their clocks individually.
->
-> I've been discouraging these per-clock node bindings in favor of the
-> per-controller node style.
->
->>
->>>> +Configuring a clock's parent and rate through the device node that uses
->>>> +the clock can be done only for clocks that have a single user. Specifying
->>>> +conflicting parent or rate configuration in multiple consumer nodes for
->>>> +a shared clock is forbidden.
->>>> +
->>>> +Configuration of common clocks, which affect multiple consumer devices
->>>> +can be specified in a dedicated 'assigned-clocks' subnode of a clock
->>>> +provider node, e.g.:
->>>
->>> This seems like a work-around due to having clock-parents in the
->>> consumer node. If (I'm not convinced we should) we have a binding for
->>> parent config, it needs to be a single binding that works for both
->>> cases.
->>
->> When this issue was first raised during an ARM kernel summit it was
->> proposed to add 'assigned' prefix to DT properties for such bindings.
->>
->
-> Yes, I like the "assigned-" prefix.
->
->> How about separate properties for the default clock configuration,
->> e.g. assigned-clocks/assigned-clock-parents/assigned-clock-rates ?
->> So a clock provider would look like:
->>
->>      clkcon {
->>          ...
->>          #clock-cells = <1>;
->>
->>          assigned-clocks = <&clkcon 16>, <&clkcon 17>;
->>          assigned-clock-parents = <0>, <&clkcon 1>;
->>          assigned-clock-rates = <200000>;
->>      };
->>
->> And a consumer device node:
->>
->>      uart@a000 {
->>          compatible = "fsl,imx-uart";
->>          reg = <0xa000 0x1000>;
->>          ...
->>          clocks = <&clkcon 0>;
->>          clock-names = "baud";
->>
->>          assigned-clocks = <&clkcon 3>, <&clkcon 0>;
->>          assigned-clock-parents = <&pll 1>;
->>          assigned-clock-rates = <0>, <460800>;
->> };
->
-> It looks like this idea was dropped for v6. Can we revisit it? Take a
-> look at Tero's example implementation for OMAP using this binding:
->
-> http://www.spinics.net/lists/linux-omap/msg104705.html
->
-> There is a bogus "default-clocks" node made solely for storing this info
-> within the OMAP PRCM clock provider node. This is basically faking a
-> clock consumer. I think with the proposed solution above Tero could have
-> avoided that node entirely and done the following:
->
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index 649b5cd..e3ff1a7 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -145,6 +145,11 @@
->   			cm2_clocks: clocks {
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> +
-> +				assigned-clocks = <&abe_dpll_refclk_mux_ck>,
-> +					<&dpll_usb_ck>, <&dpll_abe_ck>;
-> +				assigned-clock-parents = <&sys_32k_ck>;
-> +				assigned-clock-rates = <0>, <960000000>, <98304000>;
->   			};
->
->   			cm2_clockdomains: clockdomains {
->
->
-> Tero, what do you think?
+On Tue, Apr 29, 2014 at 01:57:14AM +0200, Andres Freund wrote:
+> Hi Dave,
+> 
+> On 2014-04-29 09:47:56 +1000, Dave Chinner wrote:
+> > ping?
+> 
+> I'd replied at http://marc.info/?l=linux-mm&m=139730910307321&w=2
 
-Yeah, if we can avoid having a dummy node someplace, it is always 
-better. Only issue might be the initialization order, this was the 
-reason I created the dummy node if I recall right. But I guess we can 
-just scan the clock provider nodes second time at a later phase of boot 
-(or just store the default info for later use.)
+I missed it, sorry.
 
--Tero
+I've had a bit more time to look at this behaviour now and tweaked
+it as you suggested, but I simply can't get XFS to misbehave in the
+manner you demonstrated. However, I can reproduce major read latency
+changes and writeback flush storms with ext4.  I originally only
+tested on XFS. I'm using the no-op IO scheduler everywhere, too.
 
->
-> Regards,
-> Mike
->
-> [1] http://www.spinics.net/lists/cpufreq/msg10071.html
->
+I ran the tweaked version I have for a couple of hours on XFS, and
+only saw a handful abnormal writeback events where the write IOPS
+spiked above the normal periodic peaks and was sufficient to cause
+any noticable increase in read latency. Even then the maximums were
+in the 40ms range, nothing much higher.
 
+ext4, OTOH, generated a much, much higher periodic write IO load and
+it's regularly causing read IO latencies in the hundreds of
+milliseconds. Every so often this occurred on ext4 (5s sample rate)
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+vdc               0.00     3.00 3142.20  219.20    34.11    19.10    32.42     1.11    0.33    0.33    0.31   0.27  91.92
+vdc               0.00     0.80 3311.60  216.20    35.86    18.90    31.79     1.17    0.33    0.33    0.39   0.26  92.56
+vdc               0.00     0.80 2919.80 2750.60    31.67    48.36    28.90    20.05    3.50    0.36    6.83   0.16  92.96
+vdc               0.00     0.80  435.00 15689.80     4.96   198.10    25.79   113.21    7.03    2.32    7.16   0.06  99.20
+vdc               0.00     0.80 2683.80  216.20    29.72    18.98    34.39     1.13    0.39    0.39    0.40   0.32  91.92
+vdc               0.00     0.80 2853.00  218.20    31.29    19.06    33.57     1.14    0.37    0.37    0.36   0.30  92.56
+
+Which is, i think, signs of what you'd been trying to demonstrate -
+a major dip in read performance when writeback is flushing.
+
+In comparison, this is from XFS:
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+vdc               0.00     0.00 2416.40  335.00    21.02     7.85    21.49     0.78    0.28    0.30    0.19   0.24  65.28
+vdc               0.00     0.00 2575.80  336.00    22.68     7.88    21.49     0.81    0.28    0.29    0.16   0.23  66.32
+vdc               0.00     0.00 1740.20 4645.20    15.60    58.22    23.68    21.21    3.32    0.41    4.41   0.11  68.56
+vdc               0.00     0.00 2082.80  329.00    18.28     7.71    22.07     0.81    0.34    0.35    0.26   0.28  67.44
+vdc               0.00     0.00 2347.80  333.20    19.53     7.80    20.88     0.83    0.31    0.32    0.25   0.25  67.52
+
+You can see how much less load XFS putting on the storage - it's
+only 65-70% utilised compared to the 90-100% load that ext4 is
+generating.
+
+What is interesting here is the difference in IO patterns. ext4 is
+doing much larger IOs than XFS - it's average IO size is 16k, while
+XFS's is a bit over 8k. So while the read and background write IOPS
+rates are similar, ext4 is moving a lot more data to/from disk in
+larger chunks.
+
+This seems also to translate to much larger writeback IO peaks in
+ext4.  I have no idea what this means in terms of actual application
+throughput, but it looks very much to me like the nasty read
+latencies are much more pronounced on ext4 because of the higher
+read bandwidths and write IOPS being seen.
+
+The screen shot of the recorded behaviour is attached - the left
+hand side is the tail end (~30min) of the 2 hour long XFS run, and
+the first half an hour of ext4 running. The difference in IO
+behaviour is quite obvious....
+
+What is interesting is that CPU usage is not very much different
+between the two filesystems, but IOWait is much, much higher for
+ext4. That indicates that ext4 is definitely loading the storage
+more, and so much more likely to have IO load related
+latencies..
+
+So, seeing the differences in behvaiour just by changing
+filesystems, I just ran the workload on btrfs. Ouch - it was
+even worse than ext4 in terms of read latencies - they were highly
+unpredictable, and massively variable even within a read group:
+
+....
+read[11331]: avg: 0.3 msec; max: 7.0 msec
+read[11340]: avg: 0.3 msec; max: 7.1 msec
+read[11334]: avg: 0.3 msec; max: 7.0 msec
+read[11329]: avg: 0.3 msec; max: 7.0 msec
+read[11328]: avg: 0.3 msec; max: 7.0 msec
+read[11332]: avg: 0.6 msec; max: 4481.2 msec
+read[11342]: avg: 0.6 msec; max: 4480.6 msec
+read[11332]: avg: 0.0 msec; max: 0.7 msec
+read[11342]: avg: 0.0 msec; max: 1.6 msec
+wal[11326]: avg: 0.0 msec; max: 0.1 msec
+.....
+
+It was also not uncommon to see major commit latencies:
+
+read[11335]: avg: 0.2 msec; max: 8.3 msec
+read[11341]: avg: 0.2 msec; max: 8.5 msec
+wal[11326]: avg: 0.0 msec; max: 0.1 msec
+commit[11326]: avg: 0.7 msec; max: 5302.3 msec
+wal[11326]: avg: 0.0 msec; max: 0.1 msec
+wal[11326]: avg: 0.0 msec; max: 0.1 msec
+wal[11326]: avg: 0.0 msec; max: 0.1 msec
+commit[11326]: avg: 0.0 msec; max: 6.1 msec
+read[11337]: avg: 0.2 msec; max: 6.2 msec
+
+So, what it appears to me right now is that filesystem choice alone
+has a major impact on writeback behaviour and read latencies. Each
+of these filesystems implements writeback aggregation differently
+(ext4 completely replaces the generic writeback path, XFS optimises
+below ->writepage, and btrfs has super magic COW powers).
+
+That means it isn't clear that there's any generic infrastructure
+problem here, and it certainly isn't clear that each filesystem has
+the same problem or the issues can be solved by a generic mechanism.
+I think you probably need to engage the ext4 developers drectly to
+understand what ext4 is doing in detail, or work out how to prod XFS
+into displaying that extremely bad read latency behaviour....
+
+> As an additional note:
+> 
+> > On Wed, Apr 09, 2014 at 07:20:09PM +1000, Dave Chinner wrote:
+> > > I'm not sure how you were generating the behaviour you reported, but
+> > > the test program as it stands does not appear to be causing any
+> > > problems at all on the sort of storage I'd expect large databases to
+> > > be hosted on....
+> 
+> A really really large number of database aren't stored on big enterprise
+> rigs...
+
+I'm not using a big enterprise rig. I've reproduced these results on
+a low end Dell server with the internal H710 SAS RAID and a pair of
+consumer SSDs in RAID0, as well as via a 4 year old Perc/6e SAS RAID
+HBA with 12 2T nearline SAS drives in RAID0.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
