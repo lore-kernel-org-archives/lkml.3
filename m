@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaEWMJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 08:09:23 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:60758 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaEWMJV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 08:09:21 -0400
-Date: Fri, 23 May 2014 08:09:16 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Devicetree List <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: Tim Kryger <tim.kryger@linaro.org>, Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 4/4] ARM: dts: bcm590xx: add support for GPLDO and
- VBUS regulators
-Message-ID: <20140523120916.GY32082@beef>
-References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
- <1398295293-11033-5-git-send-email-mporter@linaro.org>
+	id S1752080AbaEWMJw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 08:09:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58087 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413AbaEWMJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 08:09:51 -0400
+Date: Fri, 23 May 2014 14:09:48 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: deprecate memory.force_empty knob
+Message-ID: <20140523120948.GA22135@dhcp22.suse.cz>
+References: <1399994956-3907-1-git-send-email-mhocko@suse.cz>
+ <xr9338g9o03z.fsf@gthelen.mtv.corp.google.com>
+ <20140519140248.GD3017@dhcp22.suse.cz>
+ <20140519155018.GF3017@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398295293-11033-5-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140519155018.GF3017@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 07:21:33PM -0400, Matt Porter wrote:
-> Adds additional nodes to support GPLDO1-6 and VBUS regulators which
-> are now supported in the bcm590xx regulator driver.
+On Mon 19-05-14 17:50:18, Michal Hocko wrote:
+> On Mon 19-05-14 16:02:48, Michal Hocko wrote:
+> > On Fri 16-05-14 15:00:16, Greg Thelen wrote:
+> [...]
+> > > -- First, demonstrate that just rmdir, without memory.force_empty,
+> > >    temporarily hides reparented child memory stats.
+> > > 
+> > > $ /test
+> > > p/memory.stat:rss 0
+> > > p/memory.stat:total_rss 69632
+> > > p/c/memory.stat:rss 69632
+> > > p/c/memory.stat:total_rss 69632
+> > > For a small time the p/c memory has not been reparented to p.
+> > > p/memory.stat:rss 0
+> > > p/memory.stat:total_rss 0
+> > 
+> > OK, this is a bug. Our iterators skip the children because css_tryget
+> > fails on it but css_offline still not done.
 
-Applied to mach-bcm for-3.16/dt
+Recent cgroup changes distinguish css_tryget and css_tryget_online
+(http://marc.info/?l=linux-kernel&m=140025648704805). So we will only
+need to use css_tryget rather than the _online variant in
+__mem_cgroup_iter_next. I guess this is what Johannes was talking about.
 
->  arch/arm/boot/dts/bcm59056.dtsi | 21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/bcm59056.dtsi b/arch/arm/boot/dts/bcm59056.dtsi
-> index dfadaaa..066adfb 100644
-> --- a/arch/arm/boot/dts/bcm59056.dtsi
-> +++ b/arch/arm/boot/dts/bcm59056.dtsi
-> @@ -70,5 +70,26 @@
->  
->  		vsr_reg: vsr {
->  		};
-> +
-> +		gpldo1_reg: gpldo1 {
-> +		};
-> +
-> +		gpldo2_reg: gpldo2 {
-> +		};
-> +
-> +		gpldo3_reg: gpldo3 {
-> +		};
-> +
-> +		gpldo4_reg: gpldo4 {
-> +		};
-> +
-> +		gpldo5_reg: gpldo5 {
-> +		};
-> +
-> +		gpldo6_reg: gpldo6 {
-> +		};
-> +
-> +		vbus_reg: vbus {
-> +		};
->  	};
->  };
-> -- 
-> 1.8.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Michal Hocko
+SUSE Labs
