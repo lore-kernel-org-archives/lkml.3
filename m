@@ -1,100 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaEWQsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 12:48:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47378 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605AbaEWQsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 12:48:30 -0400
-Date: Fri, 23 May 2014 18:48:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
-        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 4/7] acpi, apei, ghes: Factor out NMI error notification
- context.
-Message-ID: <20140523164824.GG21332@pd.tnic>
-References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org>
- <1397056476-9183-5-git-send-email-tomasz.nowicki@linaro.org>
- <20140513194125.GD8760@pd.tnic>
- <537F39D7.6090309@linaro.org>
+	id S1753522AbaEWQsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 12:48:45 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:64748 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605AbaEWQsn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 12:48:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <537F39D7.6090309@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140523033438.GC16945@gchen.bj.intel.com>
+References: <cover.1400607328.git.tony.luck@intel.com>
+	<eb791998a8ada97b204dddf2719a359149e9ae31.1400607328.git.tony.luck@intel.com>
+	<20140523033438.GC16945@gchen.bj.intel.com>
+Date: Fri, 23 May 2014 09:48:42 -0700
+Message-ID: <CA+8MBb+Una+Z5Q-Pn0OoMYaaSx9sPJ3fdriMRMgN=CE1Jdp7Cg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] memory-failure: Send right signal code to correct thread
+From: Tony Luck <tony.luck@gmail.com>
+To: Tony Luck <tony.luck@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>, iskra@mcs.anl.gov
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 02:06:47PM +0200, Tomasz Nowicki wrote:
-> I had that thoughts too. Looking at simple MCE calls, yes, it does
-> make sense to create corresponding arch-specific version and provide
-> logic as needed. I think that NMI is much more complicated....
+Added Kamil (hope I got the right one - the spinics.net archive obfuscates
+the e-mail addresses).
 
-How about this ontop of your patches. It builds here but it is not
-trivial for me to try it on !X86. Maybe you can test it quicker than me
-finding some other arch box first... :)
+>> -     if ((flags & MF_ACTION_REQUIRED) && t == current) {
+>> +     if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
+>>               si.si_code = BUS_MCEERR_AR;
+>> -             ret = force_sig_info(SIGBUS, &si, t);
+>> +             ret = force_sig_info(SIGBUS, &si, current);
+>>       } else {
+>>               /*
+>>                * Don't use force here, it's convenient if the signal
+>> --
+>> 1.8.4.1
+> Very interesting. I remembered there was a thread about AO error. Here is
+> the link: http://www.spinics.net/lists/linux-mm/msg66653.html.
+> According to this link, I have two concerns:
+>
+> 1) how to handle the similar scenario like it in this link. I mean once
+> the main thread doesn't handle AR error but a thread does this, if SIGBUS
+> can't be handled at once.
+> 2) why that patch isn't merged. From that thread, Naoya should mean
+> "acknowledge" :-).
 
-Thanks.
+That's an interesting thread ... and looks like it helps out in a case
+where there are only AO signals.
 
----
-Index: b/arch/x86/include/asm/nmi.h
-===================================================================
---- a/arch/x86/include/asm/nmi.h	2014-05-23 17:17:08.192266007 +0200
-+++ b/arch/x86/include/asm/nmi.h	2014-05-23 18:45:06.636178772 +0200
-@@ -57,7 +57,7 @@ struct nmiaction {
- 
- int __register_nmi_handler(unsigned int, struct nmiaction *);
- 
--void unregister_nmi_handler(unsigned int, const char *);
-+void unregister_nmi_handler(unsigned int type, const char *name);
- 
- void stop_nmi(void);
- void restart_nmi(void);
-Index: b/drivers/acpi/apei/ghes.c
-===================================================================
---- a/drivers/acpi/apei/ghes.c	2014-05-23 17:17:27.680265685 +0200
-+++ b/drivers/acpi/apei/ghes.c	2014-05-23 17:46:32.968236841 +0200
-@@ -47,15 +47,13 @@
- #include <linux/genalloc.h>
- #include <linux/pci.h>
- #include <linux/aer.h>
-+#include <linux/nmi.h>
- 
- #include <acpi/ghes.h>
- #ifdef CONFIG_X86_MCE
- #include <asm/mce.h>
- #endif
- #include <asm/tlbflush.h>
--#ifdef CONFIG_ACPI_APEI_NMI
--#include <asm/nmi.h>
--#endif
- 
- #include "apei-internal.h"
- 
-Index: b/include/linux/nmi.h
-===================================================================
---- a/include/linux/nmi.h	2014-05-23 17:42:55.928240428 +0200
-+++ b/include/linux/nmi.h	2014-05-23 18:44:41.244179192 +0200
-@@ -53,4 +53,11 @@ extern int proc_dowatchdog(struct ctl_ta
- 			   void __user *, size_t *, loff_t *);
- #endif
- 
-+#ifdef CONFIG_ACPI_APEI_NMI
-+#include <asm/nmi.h>
-+#else
-+#define register_nmi_handler(t, fn, fg, n, init...) do { } while(0)
-+void unregister_nmi_handler(unsigned int type, const char *name) {}
-+#endif /* CONFIG_ACPI_APEI_NMI */
-+
- #endif
+But the "AR" case complicates things. Kamil points out at the start
+of the thread:
+> Also, do I understand it correctly that "action required" faults *must* be
+> handled by the thread that triggered the error?  I guess it makes sense for
+> it to be that way, even if it circumvents the "dedicated handling thread"
+> idea...
+this is absolutely true ... in the BUS_MCEERR_AR case the current
+thread is executing an instruction that is attempting to consume poison
+data ... and we cannot let that instruction retire, so we have to signal that
+thread - if it can fix the problem by mapping a new page to the location
+that was lost, and refilling it with the right data - the handler can return
+to resume - otherwise it can longjmp() somewhere or exit.
 
--- 
-Regards/Gruss,
-    Boris.
+This means that the idea of having a multi-threaded application where
+just one thread has a SIGBUS handler and we gently steer the
+BUS_MCEERR_AO signals to that thread to be handled is flawed.
+Every thread needs to have a SIGBUS handler - so that we can handle
+the "AR" case. [Digression: what does happen to a process with a thread
+with no SIGBUS handler if we in fact send it a SIGBUS? Does just that
+thread die (default action for SIGBUS)? Or does the whole process get
+killed?  If just one thread is terminated ... then perhaps someone could
+write a recovery aware application that worked like this - though it sounds
+like that would be working blindfold with one hand tied behind your back.
+How would the remaining threads know why their buddy just died? The
+siginfo_t describing the problem isn't available]
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+If we want steerable AO signals to a dedicated thread - we'd have to
+use different signals for AO & AR. So every thread can have an AR
+handler, but just one have the AO handler.  Or something more exotic
+with prctl to designate the preferred target for AO signals?
+
+Or just live with the fact that every thread needs a handler for AR ...
+and have the application internally pass AO activity from the
+thread that originally got the SIGBUS to some worker thread.
+
+-Tony
