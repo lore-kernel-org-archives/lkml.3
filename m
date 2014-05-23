@@ -1,130 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaEWJbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:31:44 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:41731 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379AbaEWJbl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:31:41 -0400
+	id S1751734AbaEWJeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:34:07 -0400
+Received: from canardo.mork.no ([148.122.252.1]:55199 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178AbaEWJeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 05:34:04 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Jim Baxter <jim_baxter@mentor.com>
+Cc: David Miller <davem@davemloft.net>, <eric.dumazet@gmail.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <kamal@canonical.com>, <edumazet@google.com>,
+        <mszeredi@suse.cz>, <fw@strlen.de>
+Subject: Re: skbuff truesize incorrect.
+Organization: m
+References: <537E4AFD.20304@mentor.com>
+	<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
+	<1400792601.5367.176.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140522.171033.1040508444998374401.davem@davemloft.net>
+	<87ppj5vupf.fsf@nemi.mork.no> <537F0DCA.6030901@mentor.com>
+Date: Fri, 23 May 2014 11:33:46 +0200
+In-Reply-To: <537F0DCA.6030901@mentor.com> (Jim Baxter's message of "Fri, 23
+	May 2014 09:58:50 +0100")
+Message-ID: <87vbsw4z5x.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1400146684-30384-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400146684-30384-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Fri, 23 May 2014 11:31:40 +0200
-Message-ID: <CACRpkdbQ_uNoZpW9w7Yf==wt44wun4e+P7WzMp_t0tuCVeUX_g@mail.gmail.com>
-Subject: Re: [PATCH v2 14/14] mmc: mmci: Add Qcom specific pio_read function.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:38 AM,  <srinivas.kandagatla@linaro.org> wrote:
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> MCIFIFOCNT register behaviour on Qcom chips is very different than the other
-> pl180 integrations. MCIFIFOCNT register contains the number of
-> words that are still waiting to be transferred through the FIFO. It keeps
-> decrementing once the host CPU reads the MCIFIFO. With the existing logic and
-> the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
-> register will always return transfer size before reading the FIFO.
->
-> Also the data sheet states that "This register is only useful for debug
-> purposes and should not be used for normal operation since it does not reflect
-> data which may or may not be in the pipeline".
->
-> This patch implements qcom_pio_read function so as existing mmci_pio_read is
-> not suitable for Qcom SOCs. qcom_pio_read function is only selected
-> based on qcom_fifo flag in variant data structure.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-(...)
+Jim Baxter <jim_baxter@mentor.com> writes:
 
-> +static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
-> +                        unsigned int remain)
-> +{
-> +       uint32_t        *ptr = (uint32_t *) buffer;
+>> I'll create and test a patch for the cdc_ncm host driver unless someone
+>> else wants to do that. I haven't really played with the gadget driver
+>> before, so I'd prefer if someone knowing it (Jim maybe?) could take care
+>> of it.  If not, then I can always make an attempt using dummy_hcd to
+>> test it.
+> I can create a patch for the host driver, I will issue the gadget patch
+> first to resolve any issues, the fix would be similar.
 
-Just use u32 like the rest of the driver does.
+Well, I couldn't help myself.  I just had to test it.  The attached
+patch works for me, briefly tested with an Ericsson H5321gw NCM device.
+I have no ideas about the performance impact as that modem is limited to
+21 Mbps HSDPA.
 
-> +       int             fifo_size = variant->fifosize;
-> +
-> +       if (remain % 4)
-> +               remain = ((remain >> 2) + 1) << 2;
 
-Insert a comment here so we know what is happening.
-It seems you are rounding up to the nearest divisible
-by four reads. It looks complicated. Does this accomplish
-the same thing?
+Bj=C3=B8rn
 
-if (remain % 4) {
-    remain &= ~0x03;
-    remain += 4;
-}
 
-> +       while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-> +               *ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
-> +               ptr++;
-> +               count += sizeof(uint32_t);
-> +
-> +               remain -=  sizeof(uint32_t);
+--=-=-=
+Content-Type: text/x-diff; charset=utf-8
+Content-Disposition: inline;
+ filename=0001-net-cdc_ncm-reduce-skb-truesize-in-rx-path.patch
+Content-Transfer-Encoding: quoted-printable
 
-I already commented that this looks weird. It is a well known fact
-that a u32 is 4 bytes.
+>From 4c7431cd046a6972e153e23249ad490a3692f9a3 Mon Sep 17 00:00:00 2001
+From: =3D?UTF-8?q?Bj=3DC3=3DB8rn=3D20Mork?=3D <bjorn@mork.no>
+Date: Fri, 23 May 2014 09:40:51 +0200
+Subject: [RFC] net: cdc_ncm: reduce skb truesize in rx path
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
 
-count += 4;
-remain -= 4;
+Cloning the big skbs we use for USB buffering chokes up TCP and
+SCTP because the socket memory limits are hitting earlier than
+they should. It is better to unconditionally copy the unwrapped
+packets to freshly allocated skbs.
 
-works just fine!
+Reported-by: Jim Baxter <jim_baxter@mentor.com>
+Signed-off-by: Bj=C3=B8rn Mork <bjorn@mork.no>
+---
+ drivers/net/usb/cdc_ncm.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-> +               if (remain == 0)
-> +                       break;
-> +       }
-> +       return count;
-> +}
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index 93c9ca9924eb..2bbbd65591c7 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -1289,12 +1289,11 @@ next_ndp:
+ 			break;
+=20
+ 		} else {
+-			skb =3D skb_clone(skb_in, GFP_ATOMIC);
++			/* create a fresh copy to reduce truesize */
++			skb =3D netdev_alloc_skb_ip_align(dev->net,  len);
+ 			if (!skb)
+ 				goto error;
+-			skb->len =3D len;
+-			skb->data =3D ((u8 *)skb_in->data) + offset;
+-			skb_set_tail_pointer(skb, len);
++			memcpy(skb_put(skb, len), skb_in->data + offset, len);
+ 			usbnet_skb_return(dev, skb);
+ 			payload +=3D len;	/* count payload bytes in this NTB */
+ 		}
+--=20
+2.0.0.rc4
 
-And another variant is to count the *number or words*
-to read from the FIFO rather than the number of bytes! I would do it
-like this:
 
-static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
-                        unsigned int remain)
-{
-       u32 *ptr = (u32*) buffer;
-       unsigned int count = 0;
-       unsigned int words;
-       unsigned int fifo_size = host->variant->fifosize;
-
-       words = DIV_ROUND_UP(remain, 4);
-       while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-               *ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
-               ptr++;
-               count += 4;
-               remain--;
-               if (!remain)
-                       break;
-       }
-       return count;
-}
-
-I guess you will run into additional problems when you come to doing
-SDIO. This function can return *more* bytes than asked for, as it rounds
-up. It won't happen with MMC/SD transfers since these are always
-divisible by 8, but it *will* happen on SDIO!
-
-If you look carefully at the comments in mmci_pio_read() you will
-see how this is handled. Are you sure this function cannot be
-augmented to handle the qcom variant as well so you don't get this
-problem further down the road?
-
-Yours,
-Linus Walleij
+--=-=-=--
