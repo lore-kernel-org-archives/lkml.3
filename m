@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaEWXl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 19:41:58 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:59807 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304AbaEWXlv (ORCPT
+	id S1751203AbaEWX5G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 19:57:06 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38955 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872AbaEWX5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 19:41:51 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linaro-kernel@lists.linaro.org, Nicolas Pitre <nico@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org (open list:KERNEL BUILD + fi...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] scripts/dtc: pad DTBs to facilitate later modification
-Date: Fri, 23 May 2014 16:41:47 -0700
-Message-Id: <1400888507-11637-1-git-send-email-khilman@linaro.org>
-X-Mailer: git-send-email 1.9.2
+	Fri, 23 May 2014 19:57:04 -0400
+Message-ID: <537FE04D.7080106@linaro.org>
+Date: Fri, 23 May 2014 16:57:01 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Fabian Frederick <fabf@skynet.be>,
+        George Spelvin <linux@horizon.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [GIT PULL] Timekeeping items for 3.16
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default, add some padding to the DT blobs to facilitate later
-patching.
+Hey Thomas, Ingo,
+  Just wanted to send in my 3.16 queue so it can get some time in -next.
+Nothing particularly exciting, just a few cleanups.
 
-An example need for DTB patching is the need to modifiy the command
-line on platforms where ATAGS are not (or cannot) be used to pass the
-commandline.  For example, we do not support a big-endian kernel
-reading ATAGS from a little-endian u-boot, so the only way to pass a
-command line in the DT.
+Let me know if you have any objections or comments.
 
-Also, without ATAG support (or if u-boot was built without
-CONFIG_INITRD_TAG) the only way to pass an initrd is by adding an
-initrd= option to command line (in the DT).
+thanks
+-john
 
-Therefore, to facilitate adding to the DT command line directly in the
-DTB, add some padding.
 
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
-I kinda pulled 64 bytes out of the air here since it's enough to add
-some common things to the commandline like debug, earlyprink
-initrd=<addr>,<size>, etc., but I'm certainlly not opposed to more
-padding.
 
- scripts/Makefile.lib | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The following changes since commit 4d0fa8a0f01272d4de33704f20303dcecdb55df1:
 
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 6a5b0decb797..d7a57c2620f3 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -264,7 +264,7 @@ $(obj)/%.dtb.S: $(obj)/%.dtb
- 
- quiet_cmd_dtc = DTC     $@
- cmd_dtc = $(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $< ; \
--	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 \
-+	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 -p 64 \
- 		-i $(dir $<) $(DTC_FLAGS) \
- 		-d $(depfile).dtc.tmp $(dtc-tmp) ; \
- 	cat $(depfile).pre.tmp $(depfile).dtc.tmp > $(depfile)
--- 
-1.9.2
+  Merge tag 'gpio-v3.15-2' of
+git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio
+(2014-04-22 09:28:02 -0700)
+
+are available in the git repository at:
+
+
+  git://git.linaro.org/people/john.stultz/linux.git fortglx/3.16/time
+
+for you to fetch changes up to ea54bca3aab3468daf1c37d15047ee66bca8760d:
+
+  ntp: Make is_error_status() use its argument (2014-05-12 11:01:08 -0700)
+
+----------------------------------------------------------------
+Fabian Frederick (1):
+      ntp: Convert simple_strtol to kstrtol
+
+George Spelvin (1):
+      ntp: Make is_error_status() use its argument
+
+Stephen Boyd (1):
+      sched_clock: Remove deprecated setup_sched_clock() API
+
+ include/linux/sched_clock.h |  1 -
+ kernel/time/ntp.c           | 17 ++++++++++-------
+ kernel/time/sched_clock.c   | 13 -------------
+ 3 files changed, 10 insertions(+), 21 deletions(-)
 
