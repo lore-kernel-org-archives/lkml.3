@@ -1,129 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbaEWOTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 10:19:41 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:45397 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaEWOTj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 10:19:39 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7fac6d000006cfe-29-537f58f989dd
-Content-transfer-encoding: 8BIT
-Message-id: <1400854775.7331.6.camel@AMDC1943>
-Subject: Re: [RFT PATCH] regulator: s2mpa01: Use correct register for buck[36]
- ramp delay
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Sangbeom Kim <sbkim73@samsung.com>
-Date: Fri, 23 May 2014 16:19:35 +0200
-In-reply-to: <1399461043.22811.3.camel@AMDC1943>
-References: <1399456358-12168-1-git-send-email-k.kozlowski@samsung.com>
- <1399461043.22811.3.camel@AMDC1943>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOLMWRmVeSWpSXmKPExsVy+t/xa7o/I+qDDc5/ZLOY+vAJm8W3Kx1M
-	Fpd3zWGzOPmnl9Hi4oovTBYLNj5idGDz2DnrLrvHplWdbB53ru1h8+jbsorR4/MmuQDWKC6b
-	lNSczLLUIn27BK6Mt9Mmshf8Fqto+vGAuYHxpWAXIyeHhICJxNvZE5kgbDGJC/fWs4HYQgJL
-	GSX+zbUAsXkFBCV+TL7H0sXIwcEsIC9x5FI2SJhZQF1i0rxFzF2MXEDlnxkl3s+ZywJRrydx
-	b/k8RhBbWCBa4v7P2cwgNpuAscTm5UvA5osIaEm87F7OBNLMLLCMUeLYh2dgzSwCqhKbVx1j
-	BbE5BQwkOtseQx2UK3Hi9lxmiEOVJebtP8Y0gVFgFpL7ZiHcNwvJfQsYmVcxiqaWJhcUJ6Xn
-	GuoVJ+YWl+al6yXn525ihAT2lx2Mi49ZHWIU4GBU4uHdUVoXLMSaWFZcmXuIUYKDWUmEt9iv
-	PliINyWxsiq1KD++qDQntfgQIxMHp1QDo80Fhfb7KoFGFpvfeXLmeIROcv91j+dsjQVLnecs
-	Rh27z10r5/hL/P+WyHwpSuX9JJsO3utc37Q2Xi0N/XPEbGvu291XWBa0ZXzcmHZMuzl5VvFd
-	oSUqCbMtcjeGV67Oku6ezhHlEGPu2NKo/HfOBj0hAz7D96be8m6Xq/4yVJzYt3bnE/NXSizF
-	GYmGWsxFxYkAQLaAuUoCAAA=
+	id S1752825AbaEWOUU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 10:20:20 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:60265 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204AbaEWOUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 10:20:17 -0400
+Message-ID: <537F5927.1050403@mm-sol.com>
+Date: Fri, 23 May 2014 17:20:23 +0300
+From: Georgi Djakov <gdjakov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: mturquette@linaro.org, linux@arm.linux.org.uk, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1 3/5] clk: gcc: Add APQ8084 Global Clock Controller
+ support
+References: <1400775885-10296-1-git-send-email-gdjakov@mm-sol.com> <1400775885-10296-4-git-send-email-gdjakov@mm-sol.com> <537E3263.7090706@codeaurora.org>
+In-Reply-To: <537E3263.7090706@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
+On 05/22/2014 08:22 PM, Stephen Boyd wrote:
+> On 05/22/14 09:24, Georgi Djakov wrote:
+>> diff --git a/drivers/clk/qcom/gcc-msm8974.c b/drivers/clk/qcom/gcc-msm8974.c
+>> index 58cb2f5..c2a8d77 100644
+>> --- a/drivers/clk/qcom/gcc-msm8974.c
+>> +++ b/drivers/clk/qcom/gcc-msm8974.c
+>> @@ -204,6 +204,12 @@ static const struct freq_tbl ftbl_gcc_blsp1_2_qup1_6_i2c_apps_clk[] = {
+>>   	{ }
+>>   };
+>>
+>> +static const struct freq_tbl ftbl_gcc_blsp1_2_qup1_6_i2c_apps_clk_apq8084[] = {
+>> +	F(19200000, P_XO, 1, 0, 0),
+>> +	F(50000000, P_GPLL0, 12, 0, 0),
+>> +	{ }
+>> +};
+>> +
+>
+> Just merge this with the other blsp1_2_qup table.
+>
+>>   static struct clk_rcg2 blsp1_qup1_i2c_apps_clk_src = {
+>>   	.cmd_rcgr = 0x0660,
+>>   	.hid_width = 5,
+>> @@ -768,6 +774,27 @@ static struct clk_rcg2 ce2_clk_src = {
+>>   	},
+>>   };
+>>
+>> +static const struct freq_tbl ftbl_gcc_ce3_clk_apq8084[] = {
+>> +	F(50000000, P_GPLL0, 12, 0, 0),
+>> +	F(85710000, P_GPLL0, 7, 0, 0),
+>> +	F(100000000, P_GPLL0, 6, 0, 0),
+>> +	F(171430000, P_GPLL0, 3.5, 0, 0),
+>> +	{ }
+>> +};
+>> +
+>
+> Ditto.
+>
+>> +static struct clk_rcg2 ce3_clk_src_apq8084 = {
+>
+> Please drop all the _apq8084 stuff. I imagine if we support other chips
+> in this same driver this won't make any sense.
+>
+>> +	.cmd_rcgr = 0x1d10,
+>> +	.hid_width = 5,
+>> +	.parent_map = gcc_xo_gpll0_map,
+>> +	.freq_tbl = ftbl_gcc_ce3_clk_apq8084,
+>> +	.clkr.hw.init = &(struct clk_init_data){
+>> +		.name = "ce3_clk_src",
+>> +		.parent_names = gcc_xo_gpll0,
+>> +		.num_parents = 2,
+>> +		.ops = &clk_rcg2_ops,
+>> +	},
+>> +};
+>> +
+>>   static const struct freq_tbl ftbl_gcc_gp_clk[] = {
+>>   	F(4800000, P_XO, 4, 0, 0),
+>>   	F(6000000, P_GPLL0, 10, 1, 10),
+>> @@ -780,6 +807,12 @@ static const struct freq_tbl ftbl_gcc_gp_clk[] = {
+>>   	{ }
+>>   };
+>>
+>> +static const struct freq_tbl ftbl_gcc_gp_clk_apq8084[] = {
+>> +	F(19200000, P_XO, 1, 0, 0),
+>> +	F(100000000, P_GPLL0, 6, 0, 0),
+>> +	F(200000000, P_GPLL0, 3, 0, 0),
+>> +	{ }
+>> +};
+>
+> Merge with other GP table?
+>
+>>
+>>   static struct clk_rcg2 gp1_clk_src = {
+>>   	.cmd_rcgr = 0x1904,
+>> @@ -966,6 +999,11 @@ static const struct freq_tbl ftbl_gcc_usb_hs_system_clk[] = {
+>>   	{ }
+>>   };
+>>
+>> +static const struct freq_tbl ftbl_gcc_usb_hs_system_clk_apq8084[] = {
+>> +	F(75000000, P_GPLL0, 8, 0, 0),
+>> +	{ }
+>> +};
+>> +
+>
+> ditto.
+>
+>>   static struct clk_rcg2 usb_hs_system_clk_src = {
+>>   	.cmd_rcgr = 0x0490,
+>>   	.hid_width = 5,
+>> @@ -1029,6 +1067,11 @@ static const struct freq_tbl ftbl_gcc_usb_hsic_system_clk[] = {
+>>   	{ }
+>>   };
+>>
+>> +static const struct freq_tbl ftbl_gcc_usb_hsic_system_clk_apq8084[] = {
+>> +	F(75000000, P_GPLL0, 8, 0, 0),
+>> +	{ }
+>> +};
+>> +
+>
+> ditto.
+>
 
-The s2mpa01 regulator driver uses wrong registers for ramp delay (buck1
-and buck3 in RAMP1, buck6 in RAMP2) but I am not sure which layout is
-proper (it seems that that buck1 should be in RAMP2 register).
+Thanks for all the comments, Stephen. I will make the appropriate changes.
 
-Could you check in S2MPA01 datasheet the registers for ramp delay for
-buck1, buck3 and buck6?
-
-I have prepared patches for merging s2mpa01 and s2mps11 but this one
-issue is holding them.
-
-Best regards,
-Krzysztof
-
-
-On śro, 2014-05-07 at 13:10 +0200, Krzysztof Kozlowski wrote:
-> Hi Sachin,
-> 
-> 
-> I'm looking at SM-N7505 JB Open source code and it seems that I was
-> wrong - the ramp delay for buck1 is set in wrong register, not buck3.
-> 
-> I don't have the datasheet for S2MPA01 so could you confirm the
-> registers for ramp delay of buck1, buck3 and buck6?
-> 
-> 
-> Best regards,
-> Krzysztof
-> 
-> 
-> On śro, 2014-05-07 at 11:52 +0200, Krzysztof Kozlowski wrote:
-> > Buck1 and buck6 share the field (offset 4) in ramp delay register
-> > (S2MPA01_REG_RAMP1). The buck3 uses its own field in S2MPA01_REG_RAMP2
-> > register, also at offset 4.
-> > 
-> > The driver interchanged the registers for ramp delay of buck3 and buck6.
-> > This lead to updating ramp delay for wrong buck (buck3 instead of buck6
-> > and vice versa).
-> > 
-> > Cc: <stable@vger.kernel.org>
-> > Fixes: f18792714608 ("regulator: Add support for S2MPA01 regulator")
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/regulator/s2mpa01.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-> > index f19a30f0fb42..67a5ab335dae 100644
-> > --- a/drivers/regulator/s2mpa01.c
-> > +++ b/drivers/regulator/s2mpa01.c
-> > @@ -137,17 +137,16 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-> >  		enable_shift = S2MPA01_BUCK3_RAMP_EN_SHIFT;
-> >  		if (!ramp_delay) {
-> >  			ramp_enable = 0;
-> >  			break;
-> >  		}
-> >  
-> >  		s2mpa01->ramp_delay3 = ramp_delay;
-> >  		ramp_shift = S2MPA01_BUCK3_RAMP_SHIFT;
-> > -		ramp_reg = S2MPA01_REG_RAMP1;
-> >  		break;
-> >  	case S2MPA01_BUCK4:
-> >  		enable_shift = S2MPA01_BUCK4_RAMP_EN_SHIFT;
-> >  		if (!ramp_delay) {
-> >  			ramp_enable = 0;
-> >  			break;
-> >  		}
-> >  
-> > @@ -165,16 +164,17 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-> >  		break;
-> >  	case S2MPA01_BUCK6:
-> >  		if (ramp_delay > s2mpa01->ramp_delay16)
-> >  			s2mpa01->ramp_delay16 = ramp_delay;
-> >  		else
-> >  			ramp_delay = s2mpa01->ramp_delay16;
-> >  
-> >  		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
-> > +		ramp_reg = S2MPA01_REG_RAMP1;
-> >  		break;
-> >  	case S2MPA01_BUCK7:
-> >  		s2mpa01->ramp_delay7 = ramp_delay;
-> >  		ramp_shift = S2MPA01_BUCK7_RAMP_SHIFT;
-> >  		break;
-> >  	case S2MPA01_BUCK8:
-> >  	case S2MPA01_BUCK9:
-> >  	case S2MPA01_BUCK10:
+BR,
+Georgi
 
