@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaEWIMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:12:03 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:39858 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaEWIL6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:11:58 -0400
-Message-ID: <537F02CA.5070304@linaro.org>
-Date: Fri, 23 May 2014 09:11:54 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751200AbaEWIOP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:14:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48277 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823AbaEWIOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 04:14:12 -0400
+Date: Fri, 23 May 2014 10:13:57 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv2 00/14] perf tools: Speedup DWARF unwind
+Message-ID: <20140523081357.GC1074@krava>
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn@kryo.se>
-Subject: Re: [PATCH v2 00/14] Add Qualcomm SD Card Controller support
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>	<1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>	<537EF50B.2010101@linaro.org> <CAPDyKFpTXrURM8OzNjO-RRfCFWGct4+_M4D8COdEurUhY46GWg@mail.gmail.com>
-In-Reply-To: <CAPDyKFpTXrURM8OzNjO-RRfCFWGct4+_M4D8COdEurUhY46GWg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ping ;-)
 
+thanks,
+jirka
 
-On 23/05/14 08:50, Ulf Hansson wrote:
-> On 23 May 2014 09:13, Srinivas Kandagatla
-> <srinivas.kandagatla@linaro.org> wrote:
->> Hi Ulf,
->> I like to get this patches for v3.16,  any chance of considering these
->> patches to v3.16 ?
->
-> I promise to have them properly reviewed early next week, sorry for
-> taking so long. Let's see where this leads us.
->
-Thankyou.
-
-> It seems like you had some CRC issues during read/write? Did you
-> manage to resolve that issue?
-
-Bjorn is using different SOC and board than the IFC6410 Am testing on, 
-so its completely different setup.
-on IFC6410 we did lot of stress testing and no issues seen. so 
-suspecting the issues are very specific to that board or the eMMC Bjorn 
-is using.
-
-We are suspecting that the CRC issues are due to the fact that there is 
-no code to manage regulators. My test setup uses dummy regulator, and 
-the eMMC and external SD cards seems to be Ok with default voltages.
-
-Am not sure if thats the same with Bjorn's board.
-
-Thanks,
-srini
->
-> Kind regards
-> Ulf Hansson
->
->
+On Thu, May 15, 2014 at 07:23:21PM +0200, Jiri Olsa wrote:
+> hi,
+> trying to speedup DWARF unwind report code by factoring
+> related code:
+>   - caching sample's registers access
+>   - keep dso data file descriptor open for the
+>     life of the dso object
+>   - replace dso cache code by mapping dso data file
+>     directly for the life of the dso object
+> 
+> The speedup is mainly for libunwind unwind. The libdw will benefit
+> mainly from cached registers access, because it handles dso data
+> accesses by itself.. and anyway it's still faster ;-).
+> 
+> v2 changes:
+>   - adding limit for open dso objects with sort of LRU
+>     mechanism to pick up and close dso objects if we
+>     are over the limit
+>   - file mmaping changes are omitted, because I couldn't prove
+>     the improvement exactly, will resubmit later
+>   - added dso close logic in case of no memory
+>   - added tests
+> 
+> On 10GB perf data file with dwarf unwind data I've got
+> around 30% speed up.
+> 
+> Also reachable in here:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>   perf/core_unwind_speedup
+> 
+> thanks,
+> jirka
+> 
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+> Jiri Olsa (14):
+>       perf tools: Cache register accesses for unwind processing
+>       perf tools: Separate dso data related variables
+>       perf tools: Add data_fd into dso object
+>       perf tools: Add global list of opened dso objects
+>       perf tools: Add global count of opened dso objects
+>       perf tools: Cache dso data file descriptor
+>       perf tools: Add file size check and factor dso__data_read_offset
+>       perf tools: Allow to close dso fd in case of open failure
+>       perf tools: Add dso__data_* interface descriptons
+>       perf tests: Spawn child for each test
+>       perf tests: Allow reuse of test_file function
+>       perf tests: Add test interface for dso data fd limit
+>       perf tests: Add test for caching dso file descriptors
+>       perf tests: Add test for closing dso objects on EMFILE error
+> 
+>  tools/perf/tests/builtin-test.c    |  42 ++++++++++++++-
+>  tools/perf/tests/dso-data.c        | 256 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>  tools/perf/tests/tests.h           |   2 +
+>  tools/perf/util/dso.c              | 274 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
+>  tools/perf/util/dso.h              |  56 +++++++++++++++++++-
+>  tools/perf/util/event.h            |   5 ++
+>  tools/perf/util/perf_regs.c        |  10 +++-
+>  tools/perf/util/perf_regs.h        |   4 +-
+>  tools/perf/util/unwind-libunwind.c |   4 +-
+>  9 files changed, 617 insertions(+), 36 deletions(-)
