@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaEWIOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 04:14:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48277 "EHLO mx1.redhat.com"
+	id S1751443AbaEWIRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 04:17:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56094 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823AbaEWIOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 04:14:12 -0400
-Date: Fri, 23 May 2014 10:13:57 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv2 00/14] perf tools: Speedup DWARF unwind
-Message-ID: <20140523081357.GC1074@krava>
-References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+	id S1751146AbaEWIRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 04:17:14 -0400
+Message-ID: <537F03C8.3070101@ti.com>
+Date: Fri, 23 May 2014 11:16:08 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>
+CC: Brian Norris <computersforpeace@gmail.com>, "Gupta, Pekon" <pekon@ti.com>,
+        Robert Nelson <robertcnelson@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, <dwmw2@infradead.org>,
+        <nsekhar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [RFC PATCH 00/16] OMAP: GPMC: Restructure OMAP GPMC driver (NAND)
+ : DT binding change proposal
+References: <1400671264-10702-1-git-send-email-rogerq@ti.com> <20140521160818.GA1150@arch.cereza> <537DB17A.6060608@ti.com> <CABxcv=nbgGhVN+XYO8s=mYOpoLU9-kWuEqc+FLMaSbWS7BJNyQ@mail.gmail.com> <20140522144600.GA1785@arch.cereza>
+In-Reply-To: <20140522144600.GA1785@arch.cereza>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping ;-)
+Ezequiel & Javier,
 
-thanks,
-jirka
+On 05/22/2014 05:46 PM, Ezequiel Garcia wrote:
+> On 22 May 01:51 PM, Javier Martinez Canillas wrote:
+>> On Thu, May 22, 2014 at 10:12 AM, Roger Quadros <rogerq@ti.com> wrote:
+>>>> On 21 May 02:20 PM, Roger Quadros wrote:
+>>>>>
+>>>>> For DT boot:
+>>>>> - The GPMC controller node should have a chip select (CS) node for each used
+>>>>>   chip select. The CS node must have a child device node for each device
+>>>>>   attached to that chip select. Properties for that child are GPMC agnostic.
+>>>>>
+>>>>>   i.e.
+>>>>>      gpmc {
+>>>>>              cs0 {
+>>>>>                      nand0 {
+>>>>>                      }
+>>>>>              };
+>>>>>
+>>>>>              cs1 {
+>>>>>                      nor0 {
+>>>>>                      }
+>>>>>              }
+>>>>>              ...
+>>>>>      };
+>>>>>
+>>>>
+>>>> While I agree that the GPMC driver is a bit messy, I'm not sure it's possible
+>>>> to go through such a complete devicetree binding re-design (breaking backwards
+>>>> compatibility) now that the binding is already in production.
+>>>
+>>> Why not? especially if the existing bindings are poorly dones. Is anyone using these
+>>> bindings burning the DT into ROM and can't change it when they update the kernel?
+>>>
+>>
+>> While I do agree that your DT bindings are much better than the
+>> current ones, there is a policy that DT bindings are an external API
+>> and once are released with a kernel are set in stone and can't be
+>> changed.
+>>
+> 
+> Exactly. The DT binding is considered an ABI. Thus, invariant across kernel
+> versions. Users can't be coherced into a DTB update after a kernel update.
+> 
+> That said, I don't really care if you break compatilibity in this case.
+> Rather, I'm suggesting that you make sure this change is going to be accepted
+> upstream, before doing any more work. The DT maintainers are reluctant to do
+> so.
 
-On Thu, May 15, 2014 at 07:23:21PM +0200, Jiri Olsa wrote:
-> hi,
-> trying to speedup DWARF unwind report code by factoring
-> related code:
->   - caching sample's registers access
->   - keep dso data file descriptor open for the
->     life of the dso object
->   - replace dso cache code by mapping dso data file
->     directly for the life of the dso object
+Appreciate your concern.
+
+Would be really nice if you can review patches 1-12. They have nothing to do with DT changes.
+Thanks.
+
+cheers,
+-roger
+
 > 
-> The speedup is mainly for libunwind unwind. The libdw will benefit
-> mainly from cached registers access, because it handles dso data
-> accesses by itself.. and anyway it's still faster ;-).
+> On the other side, I guess you will also break bisectability while breaking
+> backward compatibility. Doesn't sound very nice.
 > 
-> v2 changes:
->   - adding limit for open dso objects with sort of LRU
->     mechanism to pick up and close dso objects if we
->     are over the limit
->   - file mmaping changes are omitted, because I couldn't prove
->     the improvement exactly, will resubmit later
->   - added dso close logic in case of no memory
->   - added tests
-> 
-> On 10GB perf data file with dwarf unwind data I've got
-> around 30% speed up.
-> 
-> Also reachable in here:
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->   perf/core_unwind_speedup
-> 
-> thanks,
-> jirka
-> 
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> ---
-> Jiri Olsa (14):
->       perf tools: Cache register accesses for unwind processing
->       perf tools: Separate dso data related variables
->       perf tools: Add data_fd into dso object
->       perf tools: Add global list of opened dso objects
->       perf tools: Add global count of opened dso objects
->       perf tools: Cache dso data file descriptor
->       perf tools: Add file size check and factor dso__data_read_offset
->       perf tools: Allow to close dso fd in case of open failure
->       perf tools: Add dso__data_* interface descriptons
->       perf tests: Spawn child for each test
->       perf tests: Allow reuse of test_file function
->       perf tests: Add test interface for dso data fd limit
->       perf tests: Add test for caching dso file descriptors
->       perf tests: Add test for closing dso objects on EMFILE error
-> 
->  tools/perf/tests/builtin-test.c    |  42 ++++++++++++++-
->  tools/perf/tests/dso-data.c        | 256 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  tools/perf/tests/tests.h           |   2 +
->  tools/perf/util/dso.c              | 274 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
->  tools/perf/util/dso.h              |  56 +++++++++++++++++++-
->  tools/perf/util/event.h            |   5 ++
->  tools/perf/util/perf_regs.c        |  10 +++-
->  tools/perf/util/perf_regs.h        |   4 +-
->  tools/perf/util/unwind-libunwind.c |   4 +-
->  9 files changed, 617 insertions(+), 36 deletions(-)
+
