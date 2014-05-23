@@ -1,162 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaEWK7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:59:45 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:10027 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaEWK7n (ORCPT
+	id S1752880AbaEWLA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 07:00:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54726 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237AbaEWLA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:59:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 23 May 2014 03:54:46 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] clk: flatten clk tree in debugfs
-Date: Fri, 23 May 2014 13:59:32 +0300
-Message-ID: <1400842772-4862-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Fri, 23 May 2014 07:00:56 -0400
+Message-ID: <537F2A15.9060901@ti.com>
+Date: Fri, 23 May 2014 16:29:33 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lee Jones <lee.jones@linaro.org>
+CC: Keerthy <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
+        <robh+dt@kernel.org>, <mark.rutland@arm.com>, <sameo@linux.intel.com>,
+        <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <broonie@linaro.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] mfd: tps65917: Add driver for the TPS65917 PMIC
+References: <1400731239-3180-1-git-send-email-j-keerthy@ti.com> <1400731239-3180-4-git-send-email-j-keerthy@ti.com> <20140522083707.GM6679@lee--X1> <537DD836.3040501@ti.com> <20140522114808.GU6679@lee--X1> <537EBEE4.9050309@ti.com> <20140523100634.GP19747@lee--X1>
+In-Reply-To: <20140523100634.GP19747@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch flattens the clk tree in CCF debugfs. Instead of representing the
-clocks and their hierarchy as a directory structure under
-/sys/kernel/debug/clk, each clock gets a single directory directly under
-/sys/kernel/debug/clk.
+On Friday 23 May 2014 03:36 PM, Lee Jones wrote:
+>>>>>> The TPS65917 chip is a power management IC for Portable Navigation Systems
+>>>>>> and Tablet Computing devices. It contains the following components:
+>>>>>>
+>>>>>>   - Regulators.
+>>>>>>   - Over Temperature warning and Shut down.
+>>>>>>
+>>>>>> This patch adds support for tps65917 mfd device. At this time only
+>>>>>> the regulator functionality is made available.
+>>>>>>
+>>>>>> Signed-off-by: Keerthy <j-keerthy@ti.com>
+>>>>>> ---
+>>>>>> v3 Changes:
+>>>>>>
+>>>>>>   * Header file formating
+>>>>>>   * Changed the cache_type to REGCACHE_RBTREE
+>>>>>>   * removed unnecessary code
+>>>>>>   * Corrected documentation style
+>>>>>>   * Added pm_power_off function
+>>>>>>
+>>>>>>   v2 Changes:
+>>>>>>
+>>>>>>   * Added volatile register check as some of the registers
+>>>>>>     in the set are volatile.
+>>>>>> drivers/mfd/Kconfig          |   12 +
+>>>>>>   drivers/mfd/Makefile         |    1 +
+>>>>>>   drivers/mfd/tps65917.c       |  594 +++++++++++++++++
+>>>>>>   include/linux/mfd/tps65917.h | 1485 ++++++++++++++++++++++++++++++++++++++++++
+>>>>>>   4 files changed, 2092 insertions(+)
+>>>>>>   create mode 100644 drivers/mfd/tps65917.c
+>>>>>>   create mode 100644 include/linux/mfd/tps65917.h
+> [...]
+>
+>>>>>> +		ret = regmap_read(tps65917->regmap[slave], addr, &reg);
+>>>>>> +		if (ret)
+>>>>>> +			goto err_irq;
+>>>>>> +	}i
+>>>>> What does the read do?  You're not doing anything with the value.
+>>>> This pad1 and pad2 stuff is not needed. I will remove this.
+>>> Then why is it in here?
+>>>
+>>> Did you copy this code from somewhere, if so, where?
+>>>
+>>> Okay, I just answered my own question.  There is so much common code
+>>> in between this and palmas, there is no way I'm going to accept this
+>>> driver.  Please merge it in with the palmas driver!
+>>>
+>> The chip is more like a subset of palmas with lot of register offset changes
+>> and register bit field changes. Adding this would make it clumsy.
+>> There could
+>> be lot of checks. That is why i chose to write a new driver.
+>>
+>> Palmas driver already supports palmas variants and tps659038. Merging
+>> this would mean more and more checks :-/.
+> Then find an elegant way of representing the variants.  I'm not
+> prepared to carry that much duplicated code in MFD.  It's already
+> overladened and in need of an overhaul.  This will exacerbate the
+> matter.
+>
 
-While this may seem strange, here's way I think this is the right thing to do:
+Okay. I am working on that.
 
-1) a directory structure cannot be 'snapshotted' atomically, therefore it's
-   not in general possible to get a consistent view of the clocktree, because
-   clocks can be reparented at any time. This was solved by adding clk_dump
-   and clk_summary, which do guarantee an atomic snapshot of the tree.
-   Therefore I think the directory structure doesn't add any value.
-
-2) When writing userspace programs which use the files in the clock
-   directories (eg. for testing purposes), it's impossible to know for sure
-   where a certain clock will be, because it might have been reparented by the
-   time you figured out the path from clk_dump. This makes writing such
-   programs more difficult than it should be.
-
-So because the directory structure doesn't give any information we don't
-already provide by other means and it makes certain usecases more difficult
-than the should be, I think we should move to a flat directory containing
-one subdir per clock.
-
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/clk.c |   54 +++-------------------------------------------------
- 1 files changed, 4 insertions(+), 50 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index dff0373..53c6b4f 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -306,7 +306,7 @@ static int clk_debug_create_subtree(struct clk *clk, struct dentry *pdentry)
- 		goto out;
- 
- 	hlist_for_each_entry(child, &clk->children, child_node)
--		clk_debug_create_subtree(child, clk->dentry);
-+		clk_debug_create_subtree(child, pdentry);
- 
- 	ret = 0;
- out:
-@@ -326,29 +326,20 @@ out:
-  */
- static int clk_debug_register(struct clk *clk)
- {
--	struct clk *parent;
- 	struct dentry *pdentry;
- 	int ret = 0;
- 
- 	if (!inited)
- 		goto out;
- 
--	parent = clk->parent;
--
- 	/*
- 	 * Check to see if a clk is a root clk.  Also check that it is
- 	 * safe to add this clk to debugfs
- 	 */
--	if (!parent)
--		if (clk->flags & CLK_IS_ROOT)
--			pdentry = rootdir;
--		else
--			pdentry = orphandir;
-+	if (clk->flags & CLK_IS_ROOT)
-+		pdentry = rootdir;
- 	else
--		if (parent->dentry)
--			pdentry = parent->dentry;
--		else
--			goto out;
-+		pdentry = orphandir;
- 
- 	ret = clk_debug_create_subtree(clk, pdentry);
- 
-@@ -372,39 +363,6 @@ static void clk_debug_unregister(struct clk *clk)
- }
- 
- /**
-- * clk_debug_reparent - reparent clk node in the debugfs clk tree
-- * @clk: the clk being reparented
-- * @new_parent: the new clk parent, may be NULL
-- *
-- * Rename clk entry in the debugfs clk tree if debugfs has been
-- * initialized.  Otherwise it bails out early since the debugfs clk tree
-- * will be created lazily by clk_debug_init as part of a late_initcall.
-- *
-- * Caller must hold prepare_lock.
-- */
--static void clk_debug_reparent(struct clk *clk, struct clk *new_parent)
--{
--	struct dentry *d;
--	struct dentry *new_parent_d;
--
--	if (!inited)
--		return;
--
--	if (new_parent)
--		new_parent_d = new_parent->dentry;
--	else
--		new_parent_d = orphandir;
--
--	d = debugfs_rename(clk->dentry->d_parent, clk->dentry,
--			new_parent_d, clk->name);
--	if (d)
--		clk->dentry = d;
--	else
--		pr_debug("%s: failed to rename debugfs entry for %s\n",
--				__func__, clk->name);
--}
--
--/**
-  * clk_debug_init - lazily create the debugfs clk tree visualization
-  *
-  * clks are often initialized very early during boot before memory can
-@@ -1277,9 +1235,6 @@ static void __clk_set_parent_after(struct clk *clk, struct clk *parent,
- 		clk_disable(old_parent);
- 		__clk_unprepare(old_parent);
- 	}
--
--	/* update debugfs with new clk tree topology */
--	clk_debug_reparent(clk, parent);
- }
- 
- static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
-@@ -1685,7 +1640,6 @@ out:
- void __clk_reparent(struct clk *clk, struct clk *new_parent)
- {
- 	clk_reparent(clk, new_parent);
--	clk_debug_reparent(clk, new_parent);
- 	__clk_recalc_accuracies(clk);
- 	__clk_recalc_rates(clk, POST_RATE_CHANGE);
- }
--- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+Regards,
+Keerthy
