@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaEWKel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:34:41 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:51967 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753182AbaEWKc7 (ORCPT
+	id S1753320AbaEWKfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:35:10 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:61506 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078AbaEWKcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:59 -0400
+	Fri, 23 May 2014 06:32:55 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 66/71] clocksource: sh_cmt: Remove unnecessary OOM messages
-Date: Fri, 23 May 2014 12:31:46 +0200
-Message-Id: <1400841111-6683-66-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 63/71] clocksource: Fix clocksource_mmio_readX_down
+Date: Fri, 23 May 2014 12:31:43 +0200
+Message-Id: <1400841111-6683-63-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -21,35 +21,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jingoo Han <jg1.han@samsung.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-The site-specific OOM messages are unnecessary, because they
-duplicate the MM subsystem generic OOM message.
+For some clocksource devices, for example, the registers are 32-bit, while
+the lower 16-bit is used for timer counting(And reading the upper 16-bit
+will return 0).
 
-[dlezcano] : refreshed against latest modifications: kmalloc -> kzalloc
+For example, when the counter value is 0x00001111, and then the
+~readl_relaxed(to_mmio_clksrc(c)->reg) will return the value of 0xFFFFEEEE,
+but it should be 0x0000EEEE.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+So just using the c->mask to mask the unused bits.
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/sh_cmt.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/clocksource/mmio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index bc8d025..dfa7803 100644
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -1106,10 +1106,8 @@ static int sh_cmt_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+index 19a6b3f..1593ade 100644
+--- a/drivers/clocksource/mmio.c
++++ b/drivers/clocksource/mmio.c
+@@ -27,7 +27,7 @@ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
  
- 	cmt = kzalloc(sizeof(*cmt), GFP_KERNEL);
--	if (cmt == NULL) {
--		dev_err(&pdev->dev, "failed to allocate driver data\n");
-+	if (cmt == NULL)
- 		return -ENOMEM;
--	}
+ cycle_t clocksource_mmio_readl_down(struct clocksource *c)
+ {
+-	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
++	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
+ }
  
- 	ret = sh_cmt_setup(cmt, pdev);
- 	if (ret) {
+ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+@@ -37,7 +37,7 @@ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+ 
+ cycle_t clocksource_mmio_readw_down(struct clocksource *c)
+ {
+-	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
++	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
+ }
+ 
+ /**
 -- 
 1.7.9.5
 
