@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaEWT6q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 15:58:46 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:32832 "EHLO
+	id S1751236AbaEWUBi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 16:01:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33612 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaEWT5Z (ORCPT
+	with ESMTP id S1750923AbaEWUBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 15:57:25 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "David S . Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH v2 1/4] devicetree: bindings: Properly document micrel ks8851 SPI chips
-Date: Fri, 23 May 2014 12:57:17 -0700
-Message-Id: <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
-References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 23 May 2014 16:01:37 -0400
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: linux-mm@kvack.org, Colin Cross <ccross@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Android Kernel Team <kernel-team@android.com>,
+        linux-kernel@vger.kernel.org,
+        Mitchel Humpherys <mitchelh@codeaurora.org>
+Subject: [RESEND PATCH] staging: ion: WARN when the handle kmap_cnt is going to wrap around
+Date: Fri, 23 May 2014 13:01:22 -0700
+Message-Id: <1400875282-17892-1-git-send-email-mitchelh@codeaurora.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ks8851 SPI ethernet wasn't documented, but we documented the
-optional regulator supply for it under the mll based ethernet
-chip. Furthermore, that compatible string needed another 'l'. Fix
-all of this and document the optional vdd-io and reset-gpios
-properties.
+There are certain client bugs (double unmap, for example) that can cause
+the handle->kmap_cnt (an unsigned int) to wrap around from zero. This
+causes problems when the handle is destroyed because we have:
 
-Cc: Nishanth Menon <nm@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: <devicetree@vger.kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+        while (handle->kmap_cnt)
+                ion_handle_kmap_put(handle);
+
+which takes a long time to complete when kmap_cnt starts at ~0 and can
+result in a watchdog timeout.
+
+WARN and bail when kmap_cnt is about to wrap around from zero.
+
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+Acked-by: Colin Cross <ccross@android.com>
 ---
- Documentation/devicetree/bindings/net/micrel-ks8851.txt | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+Resending since I missed a few folks on the original. Also retaining
+Colin's Acked-by.
+---
+ drivers/staging/android/ion/ion.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/net/micrel-ks8851.txt b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
-index d54d0cc79487..bbdf9a7359a2 100644
---- a/Documentation/devicetree/bindings/net/micrel-ks8851.txt
-+++ b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
-@@ -1,9 +1,18 @@
--Micrel KS8851 Ethernet mac
-+Micrel KS8851 Ethernet mac (MLL)
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 3d5bf14722..f55f61a4cc 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -626,6 +626,10 @@ static void ion_handle_kmap_put(struct ion_handle *handle)
+ {
+ 	struct ion_buffer *buffer = handle->buffer;
  
- Required properties:
--- compatible = "micrel,ks8851-ml" of parallel interface
-+- compatible = "micrel,ks8851-mll" of parallel interface
- - reg : 2 physical address and size of registers for data and command
- - interrupts : interrupt connection
- 
-+Micrel KS8851 Ethernet mac (SPI)
-+
-+Required properties:
-+- compatible = "micrel,ks8851" or the deprecated "ks8851"
-+- reg : chip select number
-+- interrupts : interrupt connection
-+
- Optional properties:
--- vdd-supply:	supply for Ethernet mac
-+- vdd-supply: analog 3.3V supply for Ethernet mac
-+- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
-+- reset-gpios: reset_n input pin
++	if (!handle->kmap_cnt) {
++		WARN(1, "%s: Double unmap detected! bailing...\n", __func__);
++		return;
++	}
+ 	handle->kmap_cnt--;
+ 	if (!handle->kmap_cnt)
+ 		ion_buffer_kmap_put(buffer);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
