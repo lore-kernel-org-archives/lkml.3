@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaEWQhv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 12:37:51 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:44358 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155AbaEWQhr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 12:37:47 -0400
+	id S1753336AbaEWQiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 12:38:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39987 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753155AbaEWQiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 12:38:21 -0400
+Message-ID: <537F78EA.3070508@zytor.com>
+Date: Fri, 23 May 2014 09:35:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <537E09D6.7050604@itdev.co.uk>
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
-	<1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>
-	<20130718171744.GC32381@polaris.bitmath.org>
-	<20130916022533.GA6468@core.coreip.homeip.net>
-	<537E09D6.7050604@itdev.co.uk>
-Date: Fri, 23 May 2014 12:37:46 -0400
-X-Google-Sender-Auth: MtChheEJOKihIT-ixamnzHYyspA
-Message-ID: <CAPDwgkP5KjP6PcZBeYTMPuewO4exyUFfCX8rhzmgDO65ti=3Mg@mail.gmail.com>
-Subject: Re: [PATCH 20/51] Input: atmel_mxt_ts - Set default irqflags when
- there is no pdata
-From: Yufeng Shen <miletus@chromium.org>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Benson Leung <bleung@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>,
-        linux-input <linux-input@vger.kernel.org>,
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Will Deacon <will.deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>
+        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v2 16/18] x86: io: implement dummy relaxed accessor macros
+ for writes
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>	<1400777250-17335-17-git-send-email-will.deacon@arm.com>	<537E30AF.4070501@zytor.com>	<20140523144604.GF21319@arm.com>	<537F60E0.1060307@zytor.com>	<20140523145758.GG21319@arm.com>	<537F6728.3090600@zytor.com>	<20140523153409.GI21319@arm.com>	<537F6C85.107@zytor.com>	<20140523155626.GI30445@twins.programming.kicks-ass.net> <CAMuHMdW2rVvcORs6tbChxKVoVUnq0j8cfJa+GY6XH_=Tfr+Xcw@mail.gmail.com>
+In-Reply-To: <CAMuHMdW2rVvcORs6tbChxKVoVUnq0j8cfJa+GY6XH_=Tfr+Xcw@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 10:29 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
->
-> Dmitry Torokhov wrote:
-> > On Thu, Jul 18, 2013 at 07:17:44PM +0200, rydberg@euromail.se wrote:
-> >>> From: Yufeng Shen <miletus@chromium.org>
-> >>> This is the preparation for supporting the code path when there is
-> >>> platform data provided and still boot the device into a sane state
-> >>> with backup NVRAM config.
-> >>>
-> >>> Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
-> >>> provided.
-> >
-> > I think if there is no platform data we should use 0 as IRQ falgs and
-> > assume that IRQ line is properly configured by the board code or via
-> > device tree.
->
-> Beson/Yufeng - do you still have a requirement to probe without platform
-> data or device tree? I'm just merging in some changes to add device tree
-> support, and it would simplify things a bit if I can drop this patch.
+On 05/23/2014 09:31 AM, Geert Uytterhoeven wrote:
+> On Fri, May 23, 2014 at 5:56 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> So the one issue I had with that, is that if one tries to send an email
+>> to all arch maintainers + linux-arch + linux-kernel, the header gets too
+>> big and vger chokes and davem slaps you.
+> 
+> The arch maintainers are (supposed to be) on linux-arch.
+> 
+
+That doesn't mean we read it in real time like something that comes into
+our main inbox.  The messed-up context is annoying.
+
+	-hpa
 
 
-It has been working for quite a while for boards/devices that don't
-provide platform
-data. If we drop the default IRQ flags, sure we can add code for each
-board to configure
-the IRQ separately, but that's just adding extra work. Is there strong
-reason why we
-should not do the default setting in the driver if it is not already
-configured in platform
-data ?
