@@ -1,49 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444AbaEWFy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 01:54:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51818 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801AbaEWFy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 01:54:57 -0400
-Message-ID: <537EE2AF.4070307@suse.cz>
-Date: Fri, 23 May 2014 07:54:55 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752055AbaEWF7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 01:59:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41116 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaEWF7G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 01:59:06 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>
+CC: <gnurou@gmail.com>, <linus.walleij@linaro.org>,
+        <kuninori.morimoto.gx@renesas.com>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH 1/2] gpio: pcf857x: Avoid calling irq_domain_cleanup twice
+Date: Fri, 23 May 2014 11:27:26 +0530
+Message-ID: <1400824647-2525-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.15.0-rc6: VM_BUG_ON_PAGE(PageTail(page), page)
-References: <20140522135828.GA24879@redhat.com> <537ECCDB.8080009@oracle.com>
-In-Reply-To: <537ECCDB.8080009@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.5.2014 6:21, Sasha Levin wrote:
-> On 05/22/2014 09:58 AM, Dave Jones wrote:
->> Not sure if Sasha has already reported this on -next (It's getting hard
->> to keep track of all the VM bugs he's been finding), but I hit this overnight
->> on .15-rc6.  First time I've seen this one.
-> Unfortunately I had to disable transhuge/hugetlb in my testing .config since
-> the open issues in -next get hit pretty often, and were unfixed for a while
-> now.
+Currently irq_domain_cleanup is called twice if irq_domain_init fails.
+This causes the following crash.
 
-Meh, I lost track. We should really consider something like bugzilla for 
-this, IMHO.
+Unable to handle kernel paging request at virtual address 00100104
+pgd = c0004000
+[00100104] *pgd=00000000
+Internal error: Oops: 805 [#1] SMP ARM
+Modules linked in:
+CPU: 0 PID: 6 Comm: kworker/u4:0 Not tainted 3.12.15-01889-gedd10a8-dirty #4
+Workqueue: deferwq deferred_probe_work_func
+task: ed0ee800 ti: ed116000 task.ti: ed116000
+PC is at irq_domain_remove+0x3c/0x8c
+LR is at 0x0
+pc : [<c0089734>]    lr : [<00000000>]    psr: a0000013
+sp : ed117b50  ip : 00100100  fp : ed117b64
+r10: ed5d1a04  r9 : 00000008  r8 : 00000000
+r7 : ffffffea  r6 : ed5d1a20  r5 : ed5d1a00  r4 : ed5e7540
+r3 : 00200200  r2 : 00100100  r1 : c08aa180  r0 : 00200200
+Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c53c7d  Table: 8000406a  DAC: 00000017
+Process kworker/u4:0 (pid: 6, stack limit = 0xed116248)
+Stack: (0xed117b50 to 0xed118000)
+7b40:                                     0000016b ed5d5f10 ed117b74 ed117b68
+7b60: c02c8910 c0089704 ed117bb4 ed117b78 c02c8e14 c02c8900 ed5d1a04 ed5d4e80
+...
+<snip>
+...
+fe0: 00000000 00000000 00000000 00000000 00000013 00000000 384a13ea 1590210a
+Backtrace:
+[<c00896f8>] (irq_domain_remove+0x0/0x8c) from [<c02c8910>] (pcf857x_irq_domain_cleanup+0x1c/0x20)
+ r4:ed5d5f10 r3:0000016b
+[<c02c88f4>] (pcf857x_irq_domain_cleanup+0x0/0x20) from [<c02c8e14>] (pcf857x_probe+0x2a8/0x364)
+[<c02c8b6c>] (pcf857x_probe+0x0/0x364) from [<c04787ac>] (i2c_device_probe+0x80/0xc0)
+[<c047872c>] (i2c_device_probe+0x0/0xc0) from [<c036c33c>] (driver_probe_device+0x104/0x240)
+ r6:00000000 r5:ed5d1a20 r4:c08c709c r3:c047872c
+[<c036c238>] (driver_probe_device+0x0/0x240) from [<c036c558>] (__device_attach+0x48/0x4c)
+ r7:ed4fc480 r6:c036c510 r5:ed5d1a20 r4:c0866bb8
+[<c036c510>] (__device_attach+0x0/0x4c) from [<c036a6d8>] (bus_for_each_drv+0x4c/0x94)
+ r5:ed5d1a20 r4:00000000
+[<c036a68c>] (bus_for_each_drv+0x0/0x94) from [<c036c1f4>] (device_attach+0x78/0x90)
+ r6:c087fe50 r5:ed5d1a54 r4:ed5d1a20
+[<c036c17c>] (device_attach+0x0/0x90) from [<c036b76c>] (bus_probe_device+0x8c/0xb4)
+ r6:c087fe50 r5:ed5d1a20 r4:ed5d1a20 r3:ed17e1c0
+[<c036b6e0>] (bus_probe_device+0x0/0xb4) from [<c0369888>] (device_add+0x34c/0x624)
+ r6:ed5d1a28 r5:00000000 r4:ed5d1a20 r3:fffffffe
+[<c036953c>] (device_add+0x0/0x624) from [<c0369b7c>] (device_register+0x1c/0x20)
+...
+<snip>
+...
+[<c0060844>] (process_one_work+0x0/0x37c) from [<c0061040>] (worker_thread+0x13c/0x3c4)
+[<c0060f04>] (worker_thread+0x0/0x3c4) from [<c00670ec>] (kthread+0xac/0xb8)
+[<c0067040>] (kthread+0x0/0xb8) from [<c00148b8>] (ret_from_fork+0x14/0x3c)
+ r7:00000000 r6:00000000 r5:c0067040 r4:ed105d20
+Code: e59fc04c e591e000 e59f0048 e154000e (e5823004)
+---[ end trace 59dd1e90032c4217 ]---
 
-> Keeping them enabled just made it impossible to test anything else.
->
->
-> Thanks,
-> Sasha
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/gpio/gpio-pcf857x.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+index 8273582..5acffed 100644
+--- a/drivers/gpio/gpio-pcf857x.c
++++ b/drivers/gpio/gpio-pcf857x.c
+@@ -319,7 +319,7 @@ static int pcf857x_probe(struct i2c_client *client,
+ 		status = pcf857x_irq_domain_init(gpio, client);
+ 		if (status < 0) {
+ 			dev_err(&client->dev, "irq_domain init failed\n");
+-			goto fail;
++			goto fail_irq_domain;
+ 		}
+ 	}
+ 
+@@ -414,12 +414,13 @@ static int pcf857x_probe(struct i2c_client *client,
+ 	return 0;
+ 
+ fail:
+-	dev_dbg(&client->dev, "probe error %d for '%s'\n",
+-			status, client->name);
+-
+ 	if (client->irq)
+ 		pcf857x_irq_domain_cleanup(gpio);
+ 
++fail_irq_domain:
++	dev_dbg(&client->dev, "probe error %d for '%s'\n",
++		status, client->name);
++
+ 	return status;
+ }
+ 
+-- 
+1.8.3.1
 
