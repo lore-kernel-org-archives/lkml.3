@@ -1,71 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaEWPoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 11:44:06 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:48807 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbaEWPoF (ORCPT
+	id S1752880AbaEWPo3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 11:44:29 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:42722 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474AbaEWPo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 11:44:05 -0400
-Message-ID: <537F6CC1.2000503@hp.com>
-Date: Fri, 23 May 2014 08:44:01 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        Jim Baxter <jim_baxter@mentor.com>
-CC: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kamal@canonical.com, edumazet@google.com,
-        mszeredi@suse.cz, fw@strlen.de
-Subject: Re: skbuff truesize incorrect.
-References: <537E4AFD.20304@mentor.com> <1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com> <1400792601.5367.176.camel@edumazet-glaptop2.roam.corp.google.com> <20140522.171033.1040508444998374401.davem@davemloft.net> <87ppj5vupf.fsf@nemi.mork.no> <537F0DCA.6030901@mentor.com> <87vbsw4z5x.fsf@nemi.mork.no>
-In-Reply-To: <87vbsw4z5x.fsf@nemi.mork.no>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 23 May 2014 11:44:27 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] regulator: Constify the pointer to alias name array
+Date: Fri, 23 May 2014 16:44:10 +0100
+Message-Id: <1400859850-24505-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 02:33 AM, Bjørn Mork wrote:
-> Jim Baxter <jim_baxter@mentor.com> writes:
->
->>> I'll create and test a patch for the cdc_ncm host driver unless someone
->>> else wants to do that. I haven't really played with the gadget driver
->>> before, so I'd prefer if someone knowing it (Jim maybe?) could take care
->>> of it.  If not, then I can always make an attempt using dummy_hcd to
->>> test it.
->> I can create a patch for the host driver, I will issue the gadget patch
->> first to resolve any issues, the fix would be similar.
->
-> Well, I couldn't help myself.  I just had to test it.  The attached
-> patch works for me, briefly tested with an Ericsson H5321gw NCM device.
-> I have no ideas about the performance impact as that modem is limited to
-> 21 Mbps HSDPA.
+Toughen-up checks for read-only regulator names.
 
-If you are measuring performance with the likes of netperf, you should 
-be able to get an idea of the performance effect from the change in 
-service demand (CPU consumed per unit of work) even if the maximum 
-throughput remains capped.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/regulator/core.c           |  7 ++++---
+ drivers/regulator/devres.c         |  6 +++---
+ include/linux/mfd/core.h           |  2 +-
+ include/linux/regulator/consumer.h | 36 ++++++++++++++++++++----------------
+ 4 files changed, 28 insertions(+), 23 deletions(-)
 
-You can run a netperf TCP_STREAM test along the lines of:
-
-netperf -H <otherguy> -c -C -t TCP_STREAM
-
-and also
-
-netperf -H <otherguy> -c -C -t TCP_RR
-
-For extra added credit you can consider either multiple runs and 
-post-processing, or adding a -i 30,3 to the command line to tell netperf 
-to run at least three iterations, no more than thirty and it will try to 
-achieve a 99% confidence that the reported means for throughput, local 
-and remote CPU utilization are within +/- 2.5% of the actual mean.  You 
-can narrow or widen that with a -I 99,<width>.  A width of 5% is what 
-gives the +/- 2.5% (and/or demonstrates my lack of accurate statistics 
-knowledge :) )
-
-happy benchmarking,
-
-rick jones
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 9a09f3c..ba28d29 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1597,9 +1597,10 @@ EXPORT_SYMBOL_GPL(regulator_unregister_supply_alias);
+  * registered any aliases that were registered will be removed
+  * before returning to the caller.
+  */
+-int regulator_bulk_register_supply_alias(struct device *dev, const char **id,
++int regulator_bulk_register_supply_alias(struct device *dev,
++					 const char *const *id,
+ 					 struct device *alias_dev,
+-					 const char **alias_id,
++					 const char *const *alias_id,
+ 					 int num_id)
+ {
+ 	int i;
+@@ -1637,7 +1638,7 @@ EXPORT_SYMBOL_GPL(regulator_bulk_register_supply_alias);
+  * aliases in one operation.
+  */
+ void regulator_bulk_unregister_supply_alias(struct device *dev,
+-					    const char **id,
++					    const char *const *id,
+ 					    int num_id)
+ {
+ 	int i;
+diff --git a/drivers/regulator/devres.c b/drivers/regulator/devres.c
+index f44818b..8f785bc 100644
+--- a/drivers/regulator/devres.c
++++ b/drivers/regulator/devres.c
+@@ -360,9 +360,9 @@ EXPORT_SYMBOL_GPL(devm_regulator_unregister_supply_alias);
+  * will be removed before returning to the caller.
+  */
+ int devm_regulator_bulk_register_supply_alias(struct device *dev,
+-					      const char **id,
++					      const char *const *id,
+ 					      struct device *alias_dev,
+-					      const char **alias_id,
++					      const char *const *alias_id,
+ 					      int num_id)
+ {
+ 	int i;
+@@ -404,7 +404,7 @@ EXPORT_SYMBOL_GPL(devm_regulator_bulk_register_supply_alias);
+  * will ensure that the resource is freed.
+  */
+ void devm_regulator_bulk_unregister_supply_alias(struct device *dev,
+-						 const char **id,
++						 const char *const *id,
+ 						 int num_id)
+ {
+ 	int i;
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index bdba8c6..f543de9 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -63,7 +63,7 @@ struct mfd_cell {
+ 	/* A list of regulator supplies that should be mapped to the MFD
+ 	 * device rather than the child device when requested
+ 	 */
+-	const char		**parent_supplies;
++	const char * const	*parent_supplies;
+ 	int			num_parent_supplies;
+ };
+ 
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index 1a4a8c1..ccd3d77 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -151,11 +151,13 @@ int regulator_register_supply_alias(struct device *dev, const char *id,
+ 				    const char *alias_id);
+ void regulator_unregister_supply_alias(struct device *dev, const char *id);
+ 
+-int regulator_bulk_register_supply_alias(struct device *dev, const char **id,
++int regulator_bulk_register_supply_alias(struct device *dev,
++					 const char *const *id,
+ 					 struct device *alias_dev,
+-					 const char **alias_id, int num_id);
++					 const char *const *alias_id,
++					 int num_id);
+ void regulator_bulk_unregister_supply_alias(struct device *dev,
+-					    const char **id, int num_id);
++					    const char * const *id, int num_id);
+ 
+ int devm_regulator_register_supply_alias(struct device *dev, const char *id,
+ 					 struct device *alias_dev,
+@@ -164,12 +166,12 @@ void devm_regulator_unregister_supply_alias(struct device *dev,
+ 					    const char *id);
+ 
+ int devm_regulator_bulk_register_supply_alias(struct device *dev,
+-					      const char **id,
++					      const char *const *id,
+ 					      struct device *alias_dev,
+-					      const char **alias_id,
++					      const char *const *alias_id,
+ 					      int num_id);
+ void devm_regulator_bulk_unregister_supply_alias(struct device *dev,
+-						 const char **id,
++						 const char *const *id,
+ 						 int num_id);
+ 
+ /* regulator output control and status */
+@@ -290,17 +292,17 @@ static inline void regulator_unregister_supply_alias(struct device *dev,
+ }
+ 
+ static inline int regulator_bulk_register_supply_alias(struct device *dev,
+-						       const char **id,
+-						       struct device *alias_dev,
+-						       const char **alias_id,
+-						       int num_id)
++						const char *const *id,
++						struct device *alias_dev,
++						const char * const *alias_id,
++						int num_id)
+ {
+ 	return 0;
+ }
+ 
+ static inline void regulator_bulk_unregister_supply_alias(struct device *dev,
+-							  const char **id,
+-							  int num_id)
++						const char * const *id,
++						int num_id)
+ {
+ }
+ 
+@@ -317,15 +319,17 @@ static inline void devm_regulator_unregister_supply_alias(struct device *dev,
+ {
+ }
+ 
+-static inline int devm_regulator_bulk_register_supply_alias(
+-		struct device *dev, const char **id, struct device *alias_dev,
+-		const char **alias_id, int num_id)
++static inline int devm_regulator_bulk_register_supply_alias(struct device *dev,
++						const char *const *id,
++						struct device *alias_dev,
++						const char *const *alias_id,
++						int num_id)
+ {
+ 	return 0;
+ }
+ 
+ static inline void devm_regulator_bulk_unregister_supply_alias(
+-		struct device *dev, const char **id, int num_id)
++	struct device *dev, const char *const *id, int num_id)
+ {
+ }
+ 
+-- 
+1.8.3.2
 
