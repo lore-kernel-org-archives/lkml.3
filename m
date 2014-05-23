@@ -1,206 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaEWQQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 12:16:28 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48153 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962AbaEWQQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 12:16:26 -0400
-Date: Fri, 23 May 2014 18:16:19 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Ertman, DavidX M" <davidx.m.ertman@intel.com>
-Cc: "Fujinaka, Todd" <todd.fujinaka@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>
-Subject: e1000e 0000:00:19.0 eth0: Detected Hardware Unit Hang:
-Message-ID: <20140523161619.GF21332@pd.tnic>
-References: <20140410115941.GI29093@pd.tnic>
- <9B4A1B1917080E46B64F07F2989DADD65297BCAC@ORSMSX102.amr.corp.intel.com>
- <2B0E3F215D1AB84DA946C8BEE234CCC9370D484B@ORSMSX101.amr.corp.intel.com>
- <20140410163339.GL29093@pd.tnic>
+	id S1753336AbaEWQRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 12:17:06 -0400
+Received: from mail-by2lp0240.outbound.protection.outlook.com ([207.46.163.240]:45824
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752162AbaEWQRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 May 2014 12:17:03 -0400
+Date: Fri, 23 May 2014 09:14:39 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, <linux-pm@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Michal Simek <michal.simek@xilinx.com>, <cpufreq@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
+References: <20140521073457.GD31687@pengutronix.de>
+ <e9090453-ce40-4662-a3ea-fbdaffdb2aa4@BN1AFFO11FD046.protection.gbl>
+ <20140521182308.GN31687@pengutronix.de> <20140521203300.9521.67546@quantum>
+ <ac335a38-b0f4-4d95-b111-56c05e1a6234@BN1BFFO11FD045.protection.gbl>
+ <20140522182040.GB20155@pengutronix.de>
+ <6612b069-1228-488f-81f7-ea8839f6c468@BN1BFFO11FD029.protection.gbl>
+ <20140522210328.9521.34889@quantum>
+ <a86642cb-855f-455f-b07c-a52bc6aa426f@BN1BFFO11FD050.protection.gbl>
+ <20140523013732.9521.70820@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20140410163339.GL29093@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140523013732.9521.70820@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <00f65d1c-a375-40e7-b30a-cd8cb3ca87fc@BN1BFFO11FD020.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(51704005)(189002)(199002)(377424004)(479174003)(164054003)(53416003)(50466002)(87936001)(85182001)(33646001)(74316001)(81542001)(102836001)(92566001)(21056001)(77982001)(79102001)(46102001)(83072002)(92726001)(47776003)(86362001)(85202002)(74662001)(76482001)(31966008)(74502001)(85852003)(99396002)(4396001)(54356999)(76176999)(50986999)(31696002)(19580395003)(20776003)(70736001)(80022001)(64706001)(81342001)(83506001)(83322001)(23676002)(15975445006)(44976005)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB048;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Forefront-PRVS: 0220D4B98D
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Thu, 2014-05-22 at 06:37PM -0700, Mike Turquette wrote:
+> Quoting Sören Brinkmann (2014-05-22 16:44:53)
+> > On Thu, 2014-05-22 at 02:03PM -0700, Mike Turquette wrote:
+> > > Quoting Sören Brinkmann (2014-05-22 13:32:09)
+> > > > On Thu, 2014-05-22 at 08:20PM +0200, Uwe Kleine-König wrote:
+> > > > > Hello Sören,
+> > > > > 
+> > > > > On Thu, May 22, 2014 at 11:03:00AM -0700, Sören Brinkmann wrote:
+> > > > > > On Wed, 2014-05-21 at 01:33PM -0700, Mike Turquette wrote:
+> > > > > > > Quoting Uwe Kleine-König (2014-05-21 11:23:08)
+> > > > > > > > Hello Sören,
+> > > > > > > > 
+> > > > > > > > On Wed, May 21, 2014 at 08:58:10AM -0700, Sören Brinkmann wrote:
+> > > > > > > > > On Wed, 2014-05-21 at 09:34AM +0200, Uwe Kleine-König wrote:
+> > > > > > > > > > On Tue, May 20, 2014 at 02:48:20PM -0700, Sören Brinkmann wrote:
+> > > > > > > > > > > On Tue, 2014-05-20 at 10:48AM -0700, Stephen Boyd wrote:
+> > > > > > > > > > > > On 05/20/14 09:01, Sören Brinkmann wrote:
+> > > > > > > > > > > > >
+> > > > > > > > > > > > >>>>> +{
+> > > > > > > > > > > > >>>>> + unsigned long lower, upper, cur, lower_last, upper_last;
+> > > > > > > > > > > > >>>>> +
+> > > > > > > > > > > > >>>>> + lower = clk_round_rate(clk, rate);
+> > > > > > > > > > > > >>>>> + if (lower >= rate)
+> > > > > > > > > > > > >>>>> +         return lower;
+> > > > > > > > > > > > >>>> Is the >-case worth a warning?
+> > > > > > > > > > > > >>> No, it's correct behavior. If you request a rate that is way lower than what the
+> > > > > > > > > > > > >>> clock can generate, returning something larger is perfectly valid, IMHO.
+> > > > > > > > > > > > >>> Which reveals one problem in this whole discussion. The API does not
+> > > > > > > > > > > > >>> require clk_round_rate() to round down. It is actually an implementation
+> > > > > > > > > > > > >>> choice that had been made for clk-divider.
+> > > > > > > > > > > > >> I'm sure it's more than an implementation choice for clk-divider. But I
+> > > > > > > > > > > > >> don't find any respective documentation (but I didn't try hard).
+> > > > > > > > > > > > > A similar discussion - without final conclusion:
+> > > > > > > > > > > > > https://lkml.org/lkml/2010/7/14/260
+> > > > > > > > > > > > >
+> > > > > > > > > > > > >
+> > > > > > > > > > > > 
+> > > > > > > > > > > > Please call this new API something like clk_find_nearest_rate() or
+> > > > > > > > > > > > something. clk_round_rate() is supposed to return the rate that will be
+> > > > > > > > > > > > set if you call clk_set_rate() with the same arguments. It's up to the
+> > > > > > > > > > > > implementation to decide if that means rounding the rate up or down or
+> > > > > > > > > > > > to the nearest value.
+> > > > > > > > > > > 
+> > > > > > > > > > > Sounds good to me. Are there any cases of clocks that round up? I think
+> > > > > > > > > > > that case would not be handled correctly. But I also don't see a use
+> > > > > > > > > > > case for such an implementation.
+> > > > > > > > > > I don't really care which semantic (i.e. round up, round down or round
+> > > > > > > > > > closest) is picked, but I'd vote that all should pick up the same. I
+> > > > > > > > > > think the least surprising definition is to choose rounding down and add
+> > > > > > > > > > the function that is under discussion here to get a nearest match.
+> > > > > > > > > > 
+> > > > > > > > > > So I suggest:
+> > > > > > > > > > 
+> > > > > > > > > >     - if round_rate is given a rate that is smaller than the
+> > > > > > > > > >       smallest available rate, return 0
+> > > > > > > > > >     - add WARN_ONCE to round_rate and set_rate if they return with a
+> > > > > > > > > >       rate bigger than requested
+> > > > > > > > > 
+> > > > > > > > > Why do you think 0 is always valid? I think for a clock that can
+> > > > > > > > > generate 40, 70, 120, clk_round_rate(20) should return 40.
+> > > > > > > > I didn't say it's a valid value. It just makes the it possible to check
+> > > > > > > > for clk_round_rate(clk, rate) <= rate.
+> > > > > > > > 
+> > > > > > > > I grepped a bit around and found da850_round_armrate which implements a
+> > > > > > > > round_rate callback returning the best match.
+> > > > > > > > omap1_clk_round_rate_ckctl_arm can return a value < 0.
+> > > > > > > > s3c2412_roundrate_usbsrc can return values that are bigger than
+> > > > > > > > requested. (I wonder if that is a bug though.)
+> > > > > > > > 
+> > > > > > > > > >     - change the return values to unsigned long
+> > > > > > > > > 
+> > > > > > > > > Yep, I agree, this should happen.
+> > > > > > > > And we're using 0 as error value? e.g. for the case where
+> > > > > > > > omap1_clk_round_rate_ckctl_arm returns -EIO now?
+> > > > > > > 
+> > > > > > > No. clk_round_rate returns long for a reason, which is that we can
+> > > > > > > provide an error code to the caller. From include/linux/clk.h:
+> > > > > > > 
+> > > > > > > /**
+> > > > > > >  * clk_round_rate - adjust a rate to the exact rate a clock can provide
+> > > > > > >  * @clk: clock source
+> > > > > > >  * @rate: desired clock rate in Hz
+> > > > > > >  *
+> > > > > > >  * Returns rounded clock rate in Hz, or negative errno.
+> > > > > > >  */
+> > > > > > > 
+> > > > > > > This has the unfortunate side effect that the max value we can return
+> > > > > > > safely is 2147483647 (~2GHz). So another issue here is converting clock
+> > > > > > > rates to 64-bit values.
+> > > > > > 
+> > > > > > So, let's assume
+> > > > > >  - a clock does either of these
+> > > > > >    - round down
+> > > > > >    - round nearest
+> > > > > >    - round up (is there any such case? I don't see a use-case for this)
+> > > > > >  - or return an error
+> > > > > > 
+> > > > > > I think my latest try handles such cases, with the limitation of
+> > > > > > for a clock that rounds up, the up-rounded value is found instead of the
+> > > > > > nearest.
+> > > > > > 
+> > > > > > 
+> > > > > > static long clk_find_nearest_rate(struct clk *clk, unsigned long rate)
+> > > > > > {
+> > > > > >     long ret;
+> > > > > >     unsigned long lower, upper;
+> > > > > > 
+> > > > > >     clk_prepare_lock();
+> > > > > > 
+> > > > > >     lower = __clk_round_rate(clk, rate);
+> > > > > this is CCF specific while I don't see a need for it. (But yes, a
+> > > > > lock-less clk_find_nearest_rate is of course racy.)
+> > > > Do we have to support non-CCF implementations? Isn't switching to the
+> > > > CCF encouraged?
+> > > 
+> > > No we don't. If you check out the ifdeffery in include/linux/clk.h
+> > > you'll see more function declarations for CONFIG_COMMON_CLK then for
+> > > !CONFIG_COMMON_CLK, so we're not breaking any ground here.
+> > > 
+> > > > 
+> > > > > 
+> > > > > >     if (lower >= rate || (long)lower < 0) {
+> > > > > If you made lower and upper a signed long, you could drop the casting
+> > > > > here. BTW, why does __clk_round_rate return an unsigned long??
+> > > > > There seem to be several more type mismatches in that area.
+> > > > > Maybe we should add a waring if rate is > LONG_MAX?
+> > > > > 
+> > > > > (And ISTR that the C standard doesn't specify what the result of
+> > > > > (long)lower is given that lower is of type unsigned long and holding a
+> > > > > value > LONG_MAX.)
+> > > > Looks like you're right. This probably needs some polishing to get types
+> > > > sorted out.
+> > > > Mike/Russel: As Uwe pointed out, shouldn't __clk_round_rate return a
+> > > > long as well?
+> > 
+> > Sorry, Russell, of course.
+> > 
+> > > 
+> > > Yeah. The strange thing is that .round_rate and .determine_rate both
+> > > return long. I think I was asleep at the wheel on this one.
+> > > 
+> > > I count about a dozen call sites that need to be fixed up for this
+> > > change to happen. As we approach 3.15-rc6 I'm a bit nervous about
+> > > introducing this change. How do you feel about dropping this change in
+> > > first thing after 3.16-rc1 and layering in your new clk_find_*_rate
+> > > stuff on top of it?
+> > > 
+> > > I'll take a stab at fixing up __clk_round_rate early next week.
+> > 
+> > Yeah, at some point this 'fix cpufreq stats'-series grew a little out of
+> > control. Targeting the 3.16 cycle sounds reasonable. Then we could probably
+> > also look at moving from (unsigned) long to some 64-bit type as well ;)
+> 
+> Agreed on the 64-bit thing.
 
-again a hardware hang, this time on my workstation with 3.15-rc6:
+Viresh: Could you imagine something similar for cpufreq? You suggested
+migrating to Hz resolution. I guess that would ideally mean to follow
+the CCF to a 64-bit type for frequencies and increasing the resolution.
+I have a messy patch migrating cpufreq and OPP to Hz and unsigned long
+that works on Zynq. But cpufreq has so many users that it would become
+quite an undertaking.
+And we'd need some new/amended OPP DT binding.
 
-It happened during a suspend-to-disk attempt doing:
+	Thanks,
+	Sören
 
-echo 3 > /proc/sys/vm/drop_caches
-echo "shutdown" > /sys/power/disk
-echo "disk" > /sys/power/state
-
-The box came right back up and dmesg said:
-
-[  294.132711] hib.sh (2254): drop_caches: 3
-[  294.559897] PM: Syncing filesystems ... done.
-[  294.582962] Freezing user space processes ... (elapsed 0.015 seconds) done.
-[  294.606714] PM: Preallocating image memory... done (allocated 147807 pages)
-[  294.906232] PM: Allocated 591228 kbytes in 0.29 seconds (2038.71 MB/s)
-[  294.912795] Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
-[  294.923896] serial 00:09: disabled
-[  294.924048] i8042 kbd 00:08: System wakeup enabled by ACPI
-[  294.924476] nouveau  [     DRM] suspending display...
-[  294.924694] nouveau  [     DRM] unpinning framebuffer(s)...
-[  294.925098] nouveau  [     DRM] evicting buffers...
-[  295.070410] nouveau  [     DRM] waiting for kernel channels to go idle...
-[  295.070694] nouveau  [     DRM] suspending client object trees...
-[  295.071235] nouveau  [     DRM] suspending kernel object tree...
-[  296.435639] PM: freeze of devices complete after 1513.693 msecs
-[  296.437013] PM: late freeze of devices complete after 1.134 msecs
-[  296.439230] PM: noirq freeze of devices complete after 1.975 msecs
-[  296.439480] Disabling non-boot CPUs ...
-[  296.442481] kvm: disabling virtualization on CPU1
-[  296.443273] smpboot: CPU 1 is now offline
-[  296.446958] kvm: disabling virtualization on CPU2
-[  296.447512] smpboot: CPU 2 is now offline
-[  296.449853] kvm: disabling virtualization on CPU3
-[  296.450388] smpboot: CPU 3 is now offline
-[  296.452738] kvm: disabling virtualization on CPU4
-[  296.453269] smpboot: CPU 4 is now offline
-[  296.455420] kvm: disabling virtualization on CPU5
-[  296.455613] smpboot: CPU 5 is now offline
-[  296.457781] kvm: disabling virtualization on CPU6
-[  296.457973] smpboot: CPU 6 is now offline
-[  296.460264] kvm: disabling virtualization on CPU7
-[  296.460460] smpboot: CPU 7 is now offline
-[  296.461718] PM: Creating hibernation image:
-[  296.652835] PM: Need to copy 150757 pages
-[  297.096476] PM: Hibernation image created (150757 pages copied)
-[  296.463242] microcode: CPU0 sig=0x206d7, pf=0x1, revision=0x710
-[  296.463581] Enabling non-boot CPUs ...
-[  296.463998] x86: Booting SMP configuration:
-[  296.464161] smpboot: Booting Node 0 Processor 1 APIC 0x2
-[  296.475592] kvm: enabling virtualization on CPU1
-[  296.478860] microcode: CPU1 sig=0x206d7, pf=0x1, revision=0x710
-[  296.479103] CPU1 is up
-[  296.479251] smpboot: Booting Node 0 Processor 2 APIC 0x4
-[  296.490562] kvm: enabling virtualization on CPU2
-[  296.493462] microcode: CPU2 sig=0x206d7, pf=0x1, revision=0x710
-[  296.493702] CPU2 is up
-[  296.493842] smpboot: Booting Node 0 Processor 3 APIC 0x6
-[  296.505131] kvm: enabling virtualization on CPU3
-[  296.508150] microcode: CPU3 sig=0x206d7, pf=0x1, revision=0x710
-[  296.508392] CPU3 is up
-[  296.508532] smpboot: Booting Node 0 Processor 4 APIC 0x1
-[  296.519835] kvm: enabling virtualization on CPU4
-[  296.522742] microcode: CPU4 sig=0x206d7, pf=0x1, revision=0x710
-[  296.522986] CPU4 is up
-[  296.523126] smpboot: Booting Node 0 Processor 5 APIC 0x3
-[  296.534432] kvm: enabling virtualization on CPU5
-[  296.537336] microcode: CPU5 sig=0x206d7, pf=0x1, revision=0x710
-[  296.537628] CPU5 is up
-[  296.537766] smpboot: Booting Node 0 Processor 6 APIC 0x5
-[  296.549081] kvm: enabling virtualization on CPU6
-[  296.552051] microcode: CPU6 sig=0x206d7, pf=0x1, revision=0x710
-[  296.552296] CPU6 is up
-[  296.552439] smpboot: Booting Node 0 Processor 7 APIC 0x7
-[  296.563736] kvm: enabling virtualization on CPU7
-[  296.566810] microcode: CPU7 sig=0x206d7, pf=0x1, revision=0x710
-[  296.567053] CPU7 is up
-[  296.575584] PM: noirq thaw of devices complete after 1.113 msecs
-[  296.577011] PM: early thaw of devices complete after 1.117 msecs
-[  296.577598] e1000e 0000:00:19.0: irq 73 for MSI/MSI-X
-[  296.577614] nouveau  [     DRM] re-enabling device...
-[  296.577624] nouveau  [     DRM] resuming kernel object tree...
-[  296.577633] nouveau  [   VBIOS][0000:03:00.0] running init tables
-[  296.578310] i8042 kbd 00:08: System wakeup disabled by ACPI
-[  296.579194] serial 00:09: activated
-[  296.588124] snd_hda_intel 0000:00:1b.0: irq 75 for MSI/MSI-X
-[  296.588765] megasas: Waiting for FW to come to ready state
-[  296.602572] megasas: FW now in Ready state
-[  296.602652] megaraid_sas 0000:04:00.0: irq 84 for MSI/MSI-X
-[  296.645901] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
-[  296.653425] e1000e 0000:00:19.0 eth0: 10/100 speed: disabling TSO
-[  296.882443] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-[  296.894256] ata1.00: configured for UDMA/100
-[  296.899303] nouveau  [    VOLT][0000:03:00.0] GPU voltage: 900000uv
-[  296.905646] nouveau  [  PTHERM][0000:03:00.0] fan management: automatic
-[  296.912342] nouveau  [     CLK][0000:03:00.0] --: core 405 MHz shader 810 MHz memory 405 MHz
-[  296.921316] nouveau  [     DRM] resuming client object trees...
-[  296.927510] nouveau  [     DRM] resuming display...
-[  296.977712] PM: thaw of devices complete after 400.618 msecs
-[  296.984852] PM: Cannot find swap device, try swapon -a.
-[  296.990310] PM: Cannot get swap writer
-[  297.075181] Restarting tasks ... done.
-[  309.022159] e1000e 0000:00:19.0 eth0: Detected Hardware Unit Hang:
-[  309.022159]   TDH                  <0>
-[  309.022159]   TDT                  <6>
-[  309.022159]   next_to_use          <6>
-[  309.022159]   next_to_clean        <0>
-[  309.022159] buffer_info[next_to_clean]:
-[  309.022159]   time_stamp           <ffffefc5>
-[  309.022159]   next_to_watch        <1>
-[  309.022159]   jiffies              <100001e11>
-[  309.022159]   next_to_watch.status <0>
-[  309.022159] MAC Status             <43>
-[  309.022159] PHY Status             <796d>
-[  309.022159] PHY 1000BASE-T Status  <0>
-[  309.022159] PHY Extended Status    <3000>
-[  309.022159] PCI Status             <10>
-[  311.021049] e1000e 0000:00:19.0 eth0: Detected Hardware Unit Hang:
-[  311.021049]   TDH                  <0>
-[  311.021049]   TDT                  <6>
-[  311.021049]   next_to_use          <6>
-[  311.021049]   next_to_clean        <0>
-[  311.021049] buffer_info[next_to_clean]:
-[  311.021049]   time_stamp           <ffffefc5>
-[  311.021049]   next_to_watch        <1>
-[  311.021049]   jiffies              <1000025e1>
-[  311.021049]   next_to_watch.status <0>
-[  311.021049] MAC Status             <43>
-[  311.021049] PHY Status             <796d>
-[  311.021049] PHY 1000BASE-T Status  <0>
-[  311.021049] PHY Extended Status    <3000>
-[  311.021049] PCI Status             <10>
-[  312.043582] ------------[ cut here ]------------
-[  312.048470] WARNING: CPU: 1 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x276/0x280()
-[  312.056968] NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
-[  312.057025] Modules linked in: ext2 vfat fat fuse loop dm_crypt dm_mod x86_pkg_temp_thermal coretemp kvm_intel kvm crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw snd_hda_codec_realtek snd_hda_codec_hdmi gf128mul ablk_helper usbhid snd_hda_codec_generic cryptd snd_hda_intel snd_hda_controller snd_hda_codec iTCO_wdt xhci_hcd sb_edac ehci_pci microcode edac_core iTCO_vendor_support pcspkr ehci_hcd evdev dcdbas button snd_hwdep snd_pcm usbcore acpi_cpufreq snd_timer processor snd i2c_i801 lpc_ich mfd_core usb_common soundcore
-[  312.057029] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.15.0-rc6+ #1
-[  312.057030] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
-[  312.057035]  0000000000000009 ffff88043e223d68 ffffffff8170edda ffff88043e223db0
-[  312.057039]  ffff88043e223da0 ffffffff81065b7d 0000000000000000 ffff8804365b4000
-[  312.057042]  ffff8804364ed480 0000000000000001 0000000000000001 ffff88043e223e00
-[  312.057043] Call Trace:
-[  312.057052]  <IRQ>  [<ffffffff8170edda>] dump_stack+0x4e/0x7a
-[  312.057057]  [<ffffffff81065b7d>] warn_slowpath_common+0x7d/0xa0
-[  312.057061]  [<ffffffff81065bec>] warn_slowpath_fmt+0x4c/0x50
-[  312.057064]  [<ffffffff816403e6>] dev_watchdog+0x276/0x280
-[  312.057068]  [<ffffffff81640170>] ? dev_graft_qdisc+0x80/0x80
-[  312.057072]  [<ffffffff81072c6a>] call_timer_fn+0x7a/0x1a0
-[  312.057075]  [<ffffffff81072bf5>] ? call_timer_fn+0x5/0x1a0
-[  312.057079]  [<ffffffff81640170>] ? dev_graft_qdisc+0x80/0x80
-[  312.057082]  [<ffffffff810730e4>] run_timer_softirq+0x264/0x310
-[  312.057087]  [<ffffffff8106b549>] __do_softirq+0x139/0x3a0
-[  312.057091]  [<ffffffff8106bb65>] irq_exit+0x115/0x120
-[  312.057097]  [<ffffffff817232c5>] smp_apic_timer_interrupt+0x45/0x60
-[  312.057101]  [<ffffffff81721c72>] apic_timer_interrupt+0x72/0x80
-[  312.057108]  <EOI>  [<ffffffff815d3474>] ? cpuidle_enter_state+0x54/0xd0
-[  312.057112]  [<ffffffff815d3470>] ? cpuidle_enter_state+0x50/0xd0
-[  312.057116]  [<ffffffff815d3527>] cpuidle_enter+0x17/0x20
-[  312.057120]  [<ffffffff810b0d65>] cpu_startup_entry+0x335/0x4c0
-[  312.057126]  [<ffffffff8104402b>] start_secondary+0x1fb/0x270
-[  312.057129] ---[ end trace 3aa454781533e361 ]---
-[  312.057296] e1000e 0000:00:19.0 eth0: Reset adapter unexpectedly
-[  313.826071] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
-[  313.833622] e1000e 0000:00:19.0 eth0: 10/100 speed: disabling TSO
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
