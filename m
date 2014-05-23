@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567AbaEWRj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 13:39:59 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:65361 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaEWRj6 (ORCPT
+	id S1751670AbaEWRkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 13:40:04 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:50238 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaEWRkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 13:39:58 -0400
+	Fri, 23 May 2014 13:40:01 -0400
+Date: Fri, 23 May 2014 13:39:57 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140523173957.GA31780@htj.dyndns.org>
+References: <20140414193214.GC16835@htj.dyndns.org>
+ <20140415135359.GA13033@redhat.com>
+ <20140415140650.GI1863@htj.dyndns.org>
+ <20140415141826.GB17018@redhat.com>
+ <20140423170141.GJ4781@htj.dyndns.org>
+ <20140423171720.GF24651@redhat.com>
+ <20140423185231.GA4163@mtj.dyndns.org>
+ <20140423185835.GD22755@redhat.com>
+ <20140423190043.GB4163@mtj.dyndns.org>
+ <20140423192108.GF22755@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
-References: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
-Date: Fri, 23 May 2014 19:39:57 +0200
-Message-ID: <CABprByZYXuNA2kODdhLVBAr7TA0VT+XzxksURQQwJntYtg9+iA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
-From: abdoulaye berthe <berthe.ab@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, mika.westerberg@linux.intel.com,
-        andriy.shevchenko@linux.intel.com,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        abdoulaye berthe <berthe.ab@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423192108.GF22755@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If this step is ok I will continue by updating the codes that use it.
+Hello, Vivek.
 
-On Fri, May 23, 2014 at 7:12 PM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
-> This avoids handling gpiochip remove error in device
-> remove handler.
->
-> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
-> ---
->  drivers/gpio/gpiolib.c      | 24 +++++++-----------------
->  include/linux/gpio/driver.h |  2 +-
->  2 files changed, 8 insertions(+), 18 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index f48817d..4878980 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
->   *
->   * A gpio_chip with any GPIOs still requested may not be removed.
->   */
-> -int gpiochip_remove(struct gpio_chip *chip)
-> +void gpiochip_remove(struct gpio_chip *chip)
->  {
->         unsigned long   flags;
-> -       int             status = 0;
->         unsigned        id;
->
->         acpi_gpiochip_remove(chip);
-> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
->         of_gpiochip_remove(chip);
->
->         for (id = 0; id < chip->ngpio; id++) {
-> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
-> -                       status = -EBUSY;
-> -                       break;
-> -               }
-> -       }
-> -       if (status == 0) {
-> -               for (id = 0; id < chip->ngpio; id++)
-> -                       chip->desc[id].chip = NULL;
-> -
-> -               list_del(&chip->list);
-> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
-> +                       panic("gpiolib.c: gpiochip is still requested\n");
->         }
-> +       for (id = 0; id < chip->ngpio; id++)
-> +               chip->desc[id].chip = NULL;
->
-> +       list_del(&chip->list);
->         spin_unlock_irqrestore(&gpio_lock, flags);
-> -
-> -       if (status == 0)
-> -               gpiochip_unexport(chip);
-> -
-> -       return status;
-> +       gpiochip_unexport(chip);
->  }
->  EXPORT_SYMBOL_GPL(gpiochip_remove);
->
-> diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
-> index 1827b43..72ed256 100644
-> --- a/include/linux/gpio/driver.h
-> +++ b/include/linux/gpio/driver.h
-> @@ -138,7 +138,7 @@ extern const char *gpiochip_is_requested(struct gpio_chip *chip,
->
->  /* add/remove chips */
->  extern int gpiochip_add(struct gpio_chip *chip);
-> -extern int __must_check gpiochip_remove(struct gpio_chip *chip);
-> +void gpiochip_remove(struct gpio_chip *chip);
->  extern struct gpio_chip *gpiochip_find(void *data,
->                               int (*match)(struct gpio_chip *chip, void *data));
->
-> --
-> 1.8.3.2
->
+On Wed, Apr 23, 2014 at 03:21:09PM -0400, Vivek Goyal wrote:
+> What about sync/async differentiation? Throttling layer seems to flag a request sync
+> only if bio->bi_rw flag has REQ_SYNC set. While CFQ seems to consider
+> request sync if bio is either read or bio->bi_rw has REQ_SYNC flag set.
+
+Working on this again, AFAICS, both treat REQ_SYNC the same way as far
+as stats are concerned.  If SYNC is set, it's sync; otherwise, it's
+accounted as async whether read or write.
+
+Thanks.
+
+-- 
+tejun
