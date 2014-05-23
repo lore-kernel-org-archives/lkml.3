@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaEWQGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 12:06:52 -0400
-Received: from popelka.ms.mff.cuni.cz ([195.113.20.131]:57009 "EHLO
-	popelka.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaEWQGu (ORCPT
+	id S1752508AbaEWQMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 12:12:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49338 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751186AbaEWQMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 12:06:50 -0400
-X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 May 2014 12:06:50 EDT
-Date: Fri, 23 May 2014 17:57:47 +0200
-From: =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: libc-alpha@sourceware.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Rich Felker <dalias@libc.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        Stefan Metzmacher <metze@samba.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Boaz Harrosh <bharrosh@panasas.com>, "Alfred M. Szmidt" <ams@gnu.org>
-Subject: Re: [v4, resend] fcntl-linux.h: add new definitions and manual
- updates for open file description locks
-Message-ID: <20140523155747.GA14101@domone.podge>
-References: <1399124004-5535-1-git-send-email-jlayton@poochiereds.net>
+	Fri, 23 May 2014 12:12:53 -0400
+Date: Fri, 23 May 2014 17:12:19 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        Larry Bassel <larry.bassel@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/2] arm64: enable context tracking
+Message-ID: <20140523161219.GK21319@arm.com>
+References: <1400786855-32656-1-git-send-email-larry.bassel@linaro.org>
+ <1400786855-32656-3-git-send-email-larry.bassel@linaro.org>
+ <537E5E1F.3050605@codeaurora.org>
+ <7hd2f5icat.fsf@paris.lan>
+ <20140523145107.GO9252@arm.com>
+ <20140523155544.GA24994@leverpostej>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399124004-5535-1-git-send-email-jlayton@poochiereds.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140523155544.GA24994@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 03, 2014 at 09:33:24AM -0400, Jeff Layton wrote:
-> Open file description locks have been merged into the Linux kernel for
-> v3.15.  Add the appropriate command-value definitions and an update to
-> the manual that describes their usage.
+On Fri, May 23, 2014 at 04:55:44PM +0100, Mark Rutland wrote:
+> On Fri, May 23, 2014 at 03:51:07PM +0100, Catalin Marinas wrote:
+> > On Fri, May 23, 2014 at 01:11:38AM +0100, Kevin Hilman wrote:
+> > I haven't checked all the code paths but at least for pushing onto the
+> > stack we must keep it 16-bytes aligned (architecture requirement).
 > 
-> ChangeLog:
+> Sure -- if modifying the stack we need to push/pop pairs of registers to
+> keep it aligned. It might be better to use xzr as the dummy value in
+> that case to make it clear that the value doesn't really matter.
 > 
-> 2014-04-24  Jeff Layton  <jlayton@poochiereds.net>
+> That said, ct_user_enter is only called in kernel_exit before we restore
+> the values off the stack, and the only register I can spot that we need
+> to preserve is x0 for the syscall return value. I can't see x1 or x2
+> being used any more specially than the rest of the remaining registers.
+> Am I missing something, or would it be sufficient to do the following?
 > 
-> 	[BZ#16839]
-> 	* manual/llio.texi: add section about open file description locks
-> 
-> 	* sysdeps/unix/sysv/linux/bits/fcntl-linux.h:
-> 	  (F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW): New macros.
->
- manual/examples/ofdlocks.c entry is missing.
- 
-Otherwise ok for me, Carlos, Michael do you have additional comments?
+> push	x0, xzr
+> bl	context_tacking_user_enter
+> pop	x0, xzr
+
+... and if that works, then why are we using the stack instead of a
+callee-saved register?
+
+Will
