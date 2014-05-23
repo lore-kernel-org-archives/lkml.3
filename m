@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaEWJMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 05:12:34 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60020 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113AbaEWJMa (ORCPT
+	id S1753126AbaEWJMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 05:12:49 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:37471 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868AbaEWJMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 05:12:30 -0400
+	Fri, 23 May 2014 05:12:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400146669-30302-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400146447-29803-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400146669-30302-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Fri, 23 May 2014 11:12:29 +0200
-Message-ID: <CACRpkdZtHPZpmFA+JfgMn83+SgZZX4CS+MhAcf_sk2cQKqW1Pw@mail.gmail.com>
-Subject: Re: [PATCH v2 12/14] mmc: mmci: add support for fbclk to latch data
- and cmd.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <CA+55aFzk3Xw8VsYMmiGvXxzrkh7zenFUrpyobaK_q+17PSh=ww@mail.gmail.com>
+References: <CA+55aFzwqPh+WUAxi2CY8D6k+LkDbUb__G98qVFrE-DHNMSPUw@mail.gmail.com>
+	<20140522172032.GA20975@roeck-us.net>
+	<CA+55aFw_kOE1Y4qkLW4rWfB_NaYYDwFeU=t5swsJCTMq-3J6nA@mail.gmail.com>
+	<537E9F47.5020809@roeck-us.net>
+	<CA+55aFzk3Xw8VsYMmiGvXxzrkh7zenFUrpyobaK_q+17PSh=ww@mail.gmail.com>
+Date: Fri, 23 May 2014 11:12:44 +0200
+Message-ID: <CAJfpeguNGFDw_7C1JgZv3Wjgd0ku9QhEkUy_+gprOS58sBXaSQ@mail.gmail.com>
+Subject: Re: Linux 3.15-rc6
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Helge Deller <deller@gmx.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:37 AM,  <srinivas.kandagatla@linaro.org> wrote:
-
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+On Fri, May 23, 2014 at 3:27 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, May 22, 2014 at 6:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 05/22/2014 05:43 PM, Linus Torvalds wrote:
+>>>
+>>>
+>>> only s390 seems to need a compat wrapper, and s390 is kind of odd in
+>>> many respects, so I suspect renameat2 should just use ENTRY_SAME() on
+>>> parisc, but without any way to *test* it I won't apply the patch.
+>>>
+>>> Guenter, I assume that changing the
+>>>
+>>>          ENTRY_COMP(renameat2)
+>>>
+>>> line in arch/parisc/kernel/syscall_table.S to use ENTRY_SAME() at
+>>> least fixes the compile error?
+>>
+>> Yes, it fixes the build error for parisc64, and parisc (32 bit) still
+>> builds.
 >
-> This patch adds support to fbclk that is used to latch data and
-> cmd on some controllers like SD Card controller in Qcom SOC.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> Ok. I'd like to get some kind of confirmation that it is expected to
+> work too. Miklos/Helge?
 
-(...)
+Oops, yes, it should be ENTRY_SAME().
 
-Isn't this overkill?
-
-@@ -189,6 +192,7 @@ static struct variant_data variant_qcom = {
-         .clkreg                 = MCI_CLK_ENABLE,
--        .clkreg_enable          = MCI_QCOM_CLK_FLOWENA,
-+       .clkreg_enable          = MCI_QCOM_CLK_FLOWENA |
-MCI_QCOM_CLK_FEEDBACK_CLK,
-         .clkreg_8bit_bus_enable = MCI_QCOM_CLK_WIDEBUS_8,
-
-Isn't this achieveing exactly the same thing without the extra fields?
-You unconditionally do it at every enable anyway, don't you?
-
-Yours,
-Linus Walleij
+Thanks,
+Miklos
