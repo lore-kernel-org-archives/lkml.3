@@ -1,38 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203AbaEWXJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 19:09:24 -0400
-Received: from ukserver.24livehost.com ([88.208.203.18]:47010 "EHLO
-	ukserver.24livehost.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750995AbaEWXJX (ORCPT
+	id S1751246AbaEWXTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 19:19:03 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:54248 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaEWXTA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 19:09:23 -0400
-X-Greylist: delayed 16504 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 May 2014 19:09:22 EDT
-Message-ID: <326b656f0d588eb84d32d30b7b752fb3.squirrel@aurigaitsolutions.com>
-Date: Sat, 24 May 2014 00:06:57 +0100
-Subject: 
-From: "christian organization" <shashi@aurigaitsolutions.com>
-Reply-To: marieloanlenders@gmail.com
-User-Agent: SquirrelMail/1.5.2 [SVN]
+	Fri, 23 May 2014 19:19:00 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - ukserver.24livehost.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - aurigaitsolutions.com
-X-Get-Message-Sender-Via: ukserver.24livehost.com: authenticated_id: shashi@aurigaitsolutions.com
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 8BIT
+To: Alex Elder <elder@linaro.org>, mporter@linaro.org, bcm@fixthebug.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1400592297-22171-1-git-send-email-elder@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1400592297-22171-1-git-send-email-elder@linaro.org>
+Message-ID: <20140523231849.23136.70991@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: bcm/kona: implement determine_rate()
+Date: Fri, 23 May 2014 16:18:49 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Alex Elder (2014-05-20 06:24:57)
+> Implement the clk->determine_rate method for Broadcom Kona peripheral
+> clocks.  This allows a peripheral clock to be re-parented in order to
+> satisfy a rate change request.  This takes the place of the previous
+> kona_peri_clk_round_rate() functionality, though that function remains
+> because it is used by the new one.
+> 
+> The parent clock that allows the peripheral clock to produce a rate
+> closest to the one requested is the one selected, though the current
+> parent is used by default.
+> 
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> ---
+> This patch is based on Mike Turquette's current "clk-next" branch.
+>     6ed8eb5 Merge tag 'clk-hisi-for-v3.16' of https://git.kern...
+> 
+> It is available here:
+>     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+>     Branch review/bcm-determine-rate
+> 
+>  drivers/clk/bcm/clk-kona.c | 53 +++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 52 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
+> index d603c4e..1a4eccc 100644
+> --- a/drivers/clk/bcm/clk-kona.c
+> +++ b/drivers/clk/bcm/clk-kona.c
+> @@ -1031,6 +1031,57 @@ static long kona_peri_clk_round_rate(struct clk_hw *hw, unsigned long rate,
+>                                 rate ? rate : 1, *parent_rate, NULL);
+>  }
+>  
+> +static long kona_peri_clk_determine_rate(struct clk_hw *hw, unsigned long rate,
+> +               unsigned long *best_parent_rate, struct clk **best_parent)
+> +{
+> +       struct kona_clk *bcm_clk = to_kona_clk(hw);
+> +       struct clk *clk = hw->clk;
+> +       struct clk *current_parent;
+> +       unsigned long parent_rate;
+> +       unsigned long best_delta;
+> +       unsigned long best_rate;
+> +       u32 parent_count;
+> +       u32 which;
+> +
+> +       /*
+> +        * If there is no other parent to choose, use the current one.
+> +        * Note:  We don't honor (or use) CLK_SET_RATE_NO_REPARENT.
+> +        */
 
-Good day,
+A WARN_ONCE is appropriate upon detection of CLK_SET_RATE_NO_REPARENT.
+It will certainly help someone that is debugging why that flag has no
+effect.
 
-We are Christian organization, we offer loan to those who are in need,
-contact us via email, marieloanlenders@gmail.com
+Otherwise the patch looks good to me.
 
+Regards,
+Mike
 
-
+> +       parent_count = (u32)bcm_clk->init_data.num_parents;
+> +       if (parent_count < 2)
+> +               return kona_peri_clk_round_rate(hw, rate, best_parent_rate);
+> +
+> +       /* Unless we can do better, stick with current parent */
+> +       current_parent = clk_get_parent(clk);
+> +       parent_rate = __clk_get_rate(current_parent);
+> +       best_rate = kona_peri_clk_round_rate(hw, rate, &parent_rate);
+> +       best_delta = abs(best_rate - rate);
+> +
+> +       /* Check whether any other parent clock can produce a better result */
+> +       for (which = 0; which < parent_count; which++) {
+> +               struct clk *parent = clk_get_parent_by_index(clk, which);
+> +               unsigned long delta;
+> +               unsigned long other_rate;
+> +
+> +               BUG_ON(!parent);
+> +               if (parent == current_parent)
+> +                       continue;
+> +
+> +               /* We don't support CLK_SET_RATE_PARENT */
+> +               parent_rate = __clk_get_rate(parent);
+> +               other_rate = kona_peri_clk_round_rate(hw, rate, &parent_rate);
+> +               delta = abs(other_rate - rate);
+> +               if (delta < best_delta) {
+> +                       best_delta = delta;
+> +                       best_rate = other_rate;
+> +                       *best_parent = parent;
+> +                       *best_parent_rate = parent_rate;
+> +               }
+> +       }
+> +
+> +       return best_rate;
+> +}
+> +
+>  static int kona_peri_clk_set_parent(struct clk_hw *hw, u8 index)
+>  {
+>         struct kona_clk *bcm_clk = to_kona_clk(hw);
+> @@ -1135,7 +1186,7 @@ struct clk_ops kona_peri_clk_ops = {
+>         .disable = kona_peri_clk_disable,
+>         .is_enabled = kona_peri_clk_is_enabled,
+>         .recalc_rate = kona_peri_clk_recalc_rate,
+> -       .round_rate = kona_peri_clk_round_rate,
+> +       .determine_rate = kona_peri_clk_determine_rate,
+>         .set_parent = kona_peri_clk_set_parent,
+>         .get_parent = kona_peri_clk_get_parent,
+>         .set_rate = kona_peri_clk_set_rate,
+> -- 
+> 1.9.1
+> 
