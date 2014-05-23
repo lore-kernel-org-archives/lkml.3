@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaEWKGd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:06:33 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49284 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101AbaEWKEg (ORCPT
+	id S1751895AbaEWKJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:09:06 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:34358 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275AbaEWKJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:04:36 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 21/26] perf tools: Enable --children option by default
-Date: Fri, 23 May 2014 19:04:18 +0900
-Message-Id: <1400839463-21933-22-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
-References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+	Fri, 23 May 2014 06:09:02 -0400
+Date: Fri, 23 May 2014 11:08:57 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH RESEND v2 0/4] mfd: Intel SoC Power Management IC
+Message-ID: <20140523100857.GQ19747@lee--X1>
+References: <1400805629-10322-1-git-send-email-lejun.zhu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1400805629-10322-1-git-send-email-lejun.zhu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now perf top and perf report will show children column by default if
-it has callchain information.
+> Devices based on Intel SoC products such as Baytrail have a Power
+> Management IC. In the PMIC there are subsystems for voltage regulation,
+> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
+> Crystal Cove.
+> 
+> This series contains common code for these PMICs, and device specific
+> support for Crystal Cove.
+> 
+> v2:
+> - Use regmap instead of creating our own I2C read/write callbacks.
+> - Add one missing EXPORT_SYMBOL.
+> - Remove some duplicate code and put them into pmic_regmap_load_from_hw.
+> 
+> Zhu, Lejun (4):
+>   mfd: intel_soc_pmic: Core driver
+>   mfd: intel_soc_pmic: I2C interface
+>   mfd: intel_soc_pmic: Crystal Cove support
+>   mfd: intel_soc_pmic: Build files
+> 
+>  drivers/mfd/Kconfig                |  11 +
+>  drivers/mfd/Makefile               |   3 +
+>  drivers/mfd/intel_soc_pmic_core.c  | 521 +++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/intel_soc_pmic_core.h  |  83 ++++++
+>  drivers/mfd/intel_soc_pmic_crc.c   | 165 ++++++++++++
+>  drivers/mfd/intel_soc_pmic_i2c.c   | 148 +++++++++++
+>  include/linux/mfd/intel_soc_pmic.h |  29 +++
+>  7 files changed, 960 insertions(+)
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.c
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.h
+>  create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
+>  create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
+>  create mode 100644 include/linux/mfd/intel_soc_pmic.h
 
-Requested-by: Ingo Molnar <mingo@kernel.org>
-Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Tested-by: Arun Sharma <asharma@fb.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/symbol.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+Why are you re-sending this?
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 95e249779931..7b9096f29cdb 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -29,11 +29,12 @@ int vmlinux_path__nr_entries;
- char **vmlinux_path;
- 
- struct symbol_conf symbol_conf = {
--	.use_modules	  = true,
--	.try_vmlinux_path = true,
--	.annotate_src	  = true,
--	.demangle	  = true,
--	.symfs            = "",
-+	.use_modules		= true,
-+	.try_vmlinux_path	= true,
-+	.annotate_src		= true,
-+	.demangle		= true,
-+	.cumulate_callchain	= true,
-+	.symfs			= "",
- };
- 
- static enum dso_binary_type binary_type_symtab[] = {
 -- 
-1.9.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
