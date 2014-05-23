@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaEWKmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 06:42:37 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:57320 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaEWKc0 (ORCPT
+	id S1753618AbaEWKn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 06:43:56 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63605 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaEWKcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 06:32:26 -0400
+	Fri, 23 May 2014 06:32:22 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 40/71] clocksource: sh_mtu2: Split channel setup to separate function
-Date: Fri, 23 May 2014 12:31:20 +0200
-Message-Id: <1400841111-6683-40-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 37/71] clocksource: sh_mtu2: Turn sh_mtu2_priv fields into local variables
+Date: Fri, 23 May 2014 12:31:17 +0200
+Message-Id: <1400841111-6683-37-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1400841111-6683-1-git-send-email-daniel.lezcano@linaro.org>
 References: <537F214C.8000700@linaro.org>
@@ -23,69 +23,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Move the channel setup code from sh_mtu2_setup to a new
-sh_mtu2_setup_channel function and call it from sh_mtu2_setup.
+The rate and periodic fields are used in a single function only, as
+local variables. Remove them from the structure.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 Tested-by: Wolfram Sang <wsa@sang-engineering.com>
 ---
- drivers/clocksource/sh_mtu2.c |   29 +++++++++++++++++++----------
- 1 file changed, 19 insertions(+), 10 deletions(-)
+ drivers/clocksource/sh_mtu2.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-index 256621c..8fd7059 100644
+index 77992e0..6668455 100644
 --- a/drivers/clocksource/sh_mtu2.c
 +++ b/drivers/clocksource/sh_mtu2.c
-@@ -273,6 +273,24 @@ static int sh_mtu2_register(struct sh_mtu2_channel *ch, char *name,
- 	return 0;
- }
+@@ -39,8 +39,6 @@ struct sh_mtu2_priv {
+ 	struct clk *clk;
+ 	int irq;
+ 	struct platform_device *pdev;
+-	unsigned long rate;
+-	unsigned long periodic;
+ 	struct clock_event_device ced;
+ };
  
-+static int sh_mtu2_setup_channel(struct sh_mtu2_channel *ch,
-+				 struct sh_mtu2_device *mtu)
-+{
-+	struct sh_timer_config *cfg = mtu->pdev->dev.platform_data;
-+
-+	memset(ch, 0, sizeof(*ch));
-+	ch->mtu = mtu;
-+
-+	ch->irq = platform_get_irq(mtu->pdev, 0);
-+	if (ch->irq < 0) {
-+		dev_err(&mtu->pdev->dev, "failed to get irq\n");
-+		return ch->irq;
-+	}
-+
-+	return sh_mtu2_register(ch, (char *)dev_name(&mtu->pdev->dev),
-+				cfg->clockevent_rating);
-+}
-+
- static int sh_mtu2_setup(struct sh_mtu2_device *mtu,
- 			 struct platform_device *pdev)
+@@ -122,6 +120,8 @@ static void sh_mtu2_start_stop_ch(struct sh_mtu2_priv *p, int start)
+ 
+ static int sh_mtu2_enable(struct sh_mtu2_priv *p)
  {
-@@ -297,12 +315,6 @@ static int sh_mtu2_setup(struct sh_mtu2_device *mtu,
- 		goto err0;
- 	}
++	unsigned long periodic;
++	unsigned long rate;
+ 	int ret;
  
--	mtu->channel.irq = platform_get_irq(mtu->pdev, 0);
--	if (mtu->channel.irq < 0) {
--		dev_err(&mtu->pdev->dev, "failed to get irq\n");
--		goto err0;
--	}
--
- 	/* map memory, let mapbase point to our channel */
- 	mtu->mapbase = ioremap_nocache(res->start, resource_size(res));
- 	if (mtu->mapbase == NULL) {
-@@ -322,10 +334,7 @@ static int sh_mtu2_setup(struct sh_mtu2_device *mtu,
- 	if (ret < 0)
- 		goto err2;
+ 	pm_runtime_get_sync(&p->pdev->dev);
+@@ -137,13 +137,13 @@ static int sh_mtu2_enable(struct sh_mtu2_priv *p)
+ 	/* make sure channel is disabled */
+ 	sh_mtu2_start_stop_ch(p, 0);
  
--	mtu->channel.mtu = mtu;
--
--	ret = sh_mtu2_register(&mtu->channel, (char *)dev_name(&mtu->pdev->dev),
--			       cfg->clockevent_rating);
-+	ret = sh_mtu2_setup_channel(&mtu->channel, mtu);
- 	if (ret < 0)
- 		goto err3;
+-	p->rate = clk_get_rate(p->clk) / 64;
+-	p->periodic = (p->rate + HZ/2) / HZ;
++	rate = clk_get_rate(p->clk) / 64;
++	periodic = (rate + HZ/2) / HZ;
  
+ 	/* "Periodic Counter Operation" */
+ 	sh_mtu2_write(p, TCR, 0x23); /* TGRA clear, divide clock by 64 */
+ 	sh_mtu2_write(p, TIOR, 0);
+-	sh_mtu2_write(p, TGR, p->periodic);
++	sh_mtu2_write(p, TGR, periodic);
+ 	sh_mtu2_write(p, TCNT, 0);
+ 	sh_mtu2_write(p, TMDR, 0);
+ 	sh_mtu2_write(p, TIER, 0x01);
 -- 
 1.7.9.5
 
