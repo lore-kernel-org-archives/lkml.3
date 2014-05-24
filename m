@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaEXM74 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:59:56 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38390 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaEXM7y (ORCPT
+	id S1751362AbaEXNGV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 09:06:21 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:2206 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750845AbaEXNGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:59:54 -0400
-Date: Sat, 24 May 2014 14:59:47 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Eduardo Valentin <edubezval@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        Sudeep Holla <sudeep.holla@arm.com>
-Subject: Re: [PATCH V3 1/8] cpufreq: cpufreq-cpu0: remove dependency on
- thermal
-Message-ID: <20140524125946.GA31533@Nokia-N900>
-References: <cover.1400736536.git.viresh.kumar@linaro.org>
- <c73c825beda0207867bd29e40fece217cbf15925.1400736536.git.viresh.kumar@linaro.org>
- <20140522145209.GA5246@developer>
- <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 24 May 2014 09:06:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIJANGYgFNbtALU/2dsb2JhbABagwerGAUBgzyUToEEF3SCUy8jgRo3iEYB128XhVWIJlcdhCoEjz+KNIsXiBCDOjuBMQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/4] lib/debugobjects.c: convert printk to pr_foo()
+Date: Sat, 24 May 2014 15:06:08 +0200
+Message-Id: <1400936768-24897-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-05-23 10:03:27, Viresh Kumar wrote:
-> On 22 May 2014 20:22, Eduardo Valentin <edubezval@gmail.com> wrote:
-> > However, on CPUs that needs thermal managment, it makes sense to have
-> > such dependency, from functional perspective. Mainly because scaling
-> > frequency and voltage up would be allowed only when thermal management
-> > is enabled.
-> 
-> AFAIK, dependencies in KCONFIG are only for fixing compilation time issues.
+Convert all except KERN_DEBUG
 
-I do not think that's correct.
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ lib/debugobjects.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index e0731c3..ea4c737 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -218,7 +218,7 @@ static void debug_objects_oom(void)
+ 	unsigned long flags;
+ 	int i;
+ 
+-	printk(KERN_WARNING "ODEBUG: Out of memory. ODEBUG disabled\n");
++	pr_warn("ODEBUG: Out of memory. ODEBUG disabled\n");
+ 
+ 	for (i = 0; i < ODEBUG_HASH_SIZE; i++, db++) {
+ 		raw_spin_lock_irqsave(&db->lock, flags);
+@@ -292,11 +292,9 @@ static void debug_object_is_on_stack(void *addr, int onstack)
+ 
+ 	limit++;
+ 	if (is_on_stack)
+-		printk(KERN_WARNING
+-		       "ODEBUG: object is on stack, but not annotated\n");
++		pr_warn("ODEBUG: object is on stack, but not annotated\n");
+ 	else
+-		printk(KERN_WARNING
+-		       "ODEBUG: object is not on stack, but annotated\n");
++		pr_warn("ODEBUG: object is not on stack, but annotated\n");
+ 	WARN_ON(1);
+ }
+ 
+@@ -985,7 +983,7 @@ static void __init debug_objects_selftest(void)
+ 	if (check_results(&obj, ODEBUG_STATE_NONE, ++fixups, ++warnings))
+ 		goto out;
+ #endif
+-	printk(KERN_INFO "ODEBUG: selftest passed\n");
++	pr_info("ODEBUG: selftest passed\n");
+ 
+ out:
+ 	debug_objects_fixups = oldfixups;
+@@ -1090,7 +1088,7 @@ void __init debug_objects_mem_init(void)
+ 		debug_objects_enabled = 0;
+ 		if (obj_cache)
+ 			kmem_cache_destroy(obj_cache);
+-		printk(KERN_WARNING "ODEBUG: out of memory.\n");
++		pr_warn("ODEBUG: out of memory.\n");
+ 	} else
+ 		debug_objects_selftest();
+ }
+-- 
+1.8.4.5
+
