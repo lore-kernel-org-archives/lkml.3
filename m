@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419AbaEXSGs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 14:06:48 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37721 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207AbaEXSGr (ORCPT
+	id S1751271AbaEXSKy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 14:10:54 -0400
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:56982 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaEXSKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 14:06:47 -0400
-Date: Sat, 24 May 2014 14:06:45 -0400 (EDT)
-Message-Id: <20140524.140645.430202997634061971.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2014-05-23
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140523150733.GC13311@tuxdriver.com>
-References: <20140523150733.GC13311@tuxdriver.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 24 May 2014 11:06:46 -0700 (PDT)
+	Sat, 24 May 2014 14:10:53 -0400
+Date: Sat, 24 May 2014 15:10:15 -0300
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH v2 1/2] of: Ensure unique names without sacrificing
+ determinism
+Message-ID: <20140524181014.GA4011@arch.cereza>
+References: <1400801769-4506-1-git-send-email-grant.likely@linaro.org>
+ <1400801769-4506-2-git-send-email-grant.likely@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400801769-4506-2-git-send-email-grant.likely@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Fri, 23 May 2014 11:07:34 -0400
+On 23 May 08:36 AM, Grant Likely wrote:
+> The way the driver core is implemented, every device using the same bus
+> type is required to have a unique name because a symlink to each device
+> is created in the appropriate /sys/bus/*/devices directory, and two
+> identical names causes a collision.
+> 
+> The current code handles the requirement by using an globally
+> incremented counter that is appended to the device name. It works, but
+> it means any change to device registration will change the assigned
+> numbers. Instead, if we build up the name by using information from the
+> parent nodes, then it can be guaranteed to be unique without adding a
+> random number to the end of it.
+> 
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
 
-> I have two more fixes intended for the 3.15 stream...
-> 
-> For the iwlwifi one, Emmanuel says:
-> 
-> "A race has been discovered in the beacon filtering code. Since the
-> fix is too big for 3.15, I disable here the feature."
-> 
-> For the bluetooth one, Gustavo says:
-> 
-> "This pull request contains a very important fix for 3.15. Here we fix the
-> permissions of a debugfs file that would otherwise allow unauthorized users
-> to write content to it."
-> 
-> Please let me know if there are problems!
+Tested-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 
-Pulled, thanks a lot John.
-
+-- 
+Ezequiel Garcia, VanguardiaSur
+www.vanguardiasur.com.ar
