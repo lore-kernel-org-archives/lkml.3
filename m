@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388AbaEXMl4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:41:56 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:7610 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750845AbaEXMlz (ORCPT
+	id S1751382AbaEXMu3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 08:50:29 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41140 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751AbaEXMu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:41:55 -0400
-Message-ID: <5380938E.5010408@itdev.co.uk>
-Date: Sat, 24 May 2014 13:41:50 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sat, 24 May 2014 08:50:27 -0400
+Date: Sat, 24 May 2014 13:48:58 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140524124858.GR22111@sirena.org.uk>
+References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
+ <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: Yufeng Shen <miletus@chromium.org>
-CC: Benson Leung <bleung@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH 20/51] Input: atmel_mxt_ts - Set default irqflags when
- there is no pdata
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>	<1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>	<20130718171744.GC32381@polaris.bitmath.org>	<20130916022533.GA6468@core.coreip.homeip.net>	<537E09D6.7050604@itdev.co.uk> <CAPDwgkP5KjP6PcZBeYTMPuewO4exyUFfCX8rhzmgDO65ti=3Mg@mail.gmail.com>
-In-Reply-To: <CAPDwgkP5KjP6PcZBeYTMPuewO4exyUFfCX8rhzmgDO65ti=3Mg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0fu5tullpC+tJp0Y"
+Content-Disposition: inline
+In-Reply-To: <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.116.200.249
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
+ ks8851 SPI chips
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yufeng Shen wrote:
-> On Thu, May 22, 2014 at 10:29 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
->> Dmitry Torokhov wrote:
->>>>> Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
->>>>> provided.
->>>
->>> I think if there is no platform data we should use 0 as IRQ falgs and
->>> assume that IRQ line is properly configured by the board code or via
->>> device tree.
->>
->> Benson/Yufeng - do you still have a requirement to probe without platform
->> data or device tree? I'm just merging in some changes to add device tree
->> support, and it would simplify things a bit if I can drop this patch.
-> 
-> It has been working for quite a while for boards/devices that don't 
-> provide platform data. If we drop the default IRQ flags, sure we can add
-> code for each board to configure the IRQ separately, but that's just
-> adding extra work. Is there strong reason why we should not do the
-> default setting in the driver if it is not already configured in
-> platform data?
 
-OK, I will keep it in my tree for the moment, since you are using it.
+--0fu5tullpC+tJp0Y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The reason I checked is that in general, I would like to be conservative
-about what is pushed upstream, because it will need maintaining for a long
-time.
+On Fri, May 23, 2014 at 12:57:17PM -0700, Stephen Boyd wrote:
 
-The other reason is that in fact Atmel recommend IRQF_TRIGGER_LOW for these
-chips, not IRQF_TRIGGER_FALLING, so there is a bit of an inconsistency here.
+>  Optional properties:
+> -- vdd-supply:	supply for Ethernet mac
+> +- vdd-supply: analog 3.3V supply for Ethernet mac
+> +- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
+
+So, according to the datasheet I managed to find this device has a
+supply VDD_IO (so normally written vdd-io-supply here), some other
+supplies which are tied to VDD_IO (so can probably be omitted) and a
+supply VDD_A3.3 none of which are optional.  There is an internal
+regulator which can be used to drop a higher voltage VDD_IO down for
+some of the supplies tied to it but that's essentially a noop from
+software as far as I can tell.  None of these supplies are obviously
+optional, though I've not read the datasheet in detail so I may have
+missed something here.
+
+That said it looks like this is intended to be a supply for an external
+PHY rather than the device itself, but even so my original question
+about it being able to operate without power still applies.  Looking at
+the code it's certainly not doing any of the handling of a missing
+supply that I would associate with using _optional().
+
+--0fu5tullpC+tJp0Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTgJU3AAoJELSic+t+oim9+tAP/ifbdcUD5cDbQ44onjRvB2p3
+tk9sxYsW87abDW64X9KhzqTm6pUEG9ZBUC8qKN9T9l11RVU9I5PxzV9iEqovIJUV
+nnU9OwnoMjIie5Juwkg3d1gCIGBCB5lCEmPoUWUgop4zZFAxl49e1mCZPUgCofGQ
+qXA6FDoIVX06mWmVOYEZ1tfcTjcp0oZdaSl1sUlc27GJNMV0KCHulA+9PwakxpnS
+aYGVYL6CfO9HLQbkaBn+KvDMO0epfVg0GQVnRYiQ8Fh7ksYIcnz/OqVoKnbWTaMT
+gpcad3H4CmQk/sAUzBU7DPs2fgCWbTyERk864KtPt59rmFTlb9zq5JPxDy0Q+Gqi
+4IUlWDGzZb1ZKrH3nZIR/7bwe5QPZU3hs8JEblkmGNqfpPysP6a+GYF7xhxuUq6y
+IDlqkvEzvmYdiwAPe5UPo2hJ5Ie/UkKIE2MBiHoc09zXm63yj/wIFUb6JDf4In2X
+/QlQYMga49lceFtsuFoIoG/BYYz1CjUjwBFczwVo0aHMJRjNWRhhAB9UD8oR6D9k
+F67KhxClqMKl/MEf/pXVz5O+/CdMeE+m/0mhmHsRPmuIseswXPhD3G62BBG5DYID
+Ew2FjouY0JWsYq3tqKc0Oafn/pmkaDVueBi3VrWFLMOqtFLAuKWetC6Z5e1q7tbl
+t6egA/9IHlhl6LUQT1aq
+=TPgS
+-----END PGP SIGNATURE-----
+
+--0fu5tullpC+tJp0Y--
