@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176AbaEXGTI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 02:19:08 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:6283 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750736AbaEXGTG (ORCPT
+	id S1751207AbaEXG07 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 02:26:59 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55935 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750736AbaEXG06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 02:19:06 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiALAJk5gFNXQ3g//2dsb2JhbABagwerDAQBAQEBAQEFAYM8lE6BAhd0gmYcIxiBAiQTiEYB2CGFVYh9hEcBA48/ijMBixeIEIM6Ow
-Date: Sat, 24 May 2014 08:18:55 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] lib/bug.c: convert printk to pr_foo()
-Message-Id: <20140524081855.54cb27d56214c3ba3827ce7a@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+	Sat, 24 May 2014 02:26:58 -0400
+Message-ID: <1400912816.31526.73.camel@x220>
+Subject: [PATCH] pcmcia: m32r: remove check for CONFIG_M32RPCC_SLOT2
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Hirokazu Takata <takata@linux-m32r.org>
+Cc: linux-pcmcia@lists.infradead.org, linux-m32r@ml.linux-m32r.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 24 May 2014 08:26:56 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 May 2014 06:26:56.0867 (UTC) FILETIME=[2959C330:01CF7719]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--Coalesce formats
--"WARNING:" prefix unchanged to keep bug format.
--printk(KERN_DEFAULT not converted.
+This driver contains a check for CONFIG_M32RPCC_SLOT2 ever since it was
+added in v2.6.10 it. But there's no matching Kconfig symbol. Remove
+that check. But leave the second call of add_pcc_socket() if-zeroed out.
+The code clearly is written to be able handle two sockets. It's just not
+clear if it is always safe to do that. Add a comment to clarify this
+decision.
 
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- lib/bug.c | 18 +++++++-----------
- 1 file changed, 7 insertions(+), 11 deletions(-)
+Untested.
 
-diff --git a/lib/bug.c b/lib/bug.c
-index 1686034..2e9f9bc 100644
---- a/lib/bug.c
-+++ b/lib/bug.c
-@@ -153,15 +153,13 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
+Pet peeve: the code has module support, but M32R_PCC is bool!
+
+ drivers/pcmcia/m32r_pcc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pcmcia/m32r_pcc.c b/drivers/pcmcia/m32r_pcc.c
+index 296514155cd5..a86ada82b61c 100644
+--- a/drivers/pcmcia/m32r_pcc.c
++++ b/drivers/pcmcia/m32r_pcc.c
+@@ -695,7 +695,7 @@ static int __init init_m32r_pcc(void)
  
- 	if (warning) {
- 		/* this is a WARN_ON rather than BUG/BUG_ON */
--		printk(KERN_WARNING "------------[ cut here ]------------\n");
-+		pr_warn("------------[ cut here ]------------\n");
+ 	add_pcc_socket(M32R_PCC0_BASE, PCC0_IRQ, M32R_PCC0_MAPBASE, 0x1000);
  
- 		if (file)
--			printk(KERN_WARNING "WARNING: at %s:%u\n",
--			       file, line);
-+			pr_warn("WARNING: at %s:%u\n", file, line);
- 		else
--			printk(KERN_WARNING "WARNING: at %p "
--			       "[verbose debug info unavailable]\n",
--			       (void *)bugaddr);
-+			pr_warn("WARNING: at %p [verbose debug info unavailable]\n",
-+				(void *)bugaddr);
+-#ifdef CONFIG_M32RPCC_SLOT2
++#if 0 /* XXX In what cases is it OK to do this? */
+ 	add_pcc_socket(M32R_PCC1_BASE, PCC1_IRQ, M32R_PCC1_MAPBASE, 0x2000);
+ #endif
  
- 		print_modules();
- 		show_regs(regs);
-@@ -174,12 +172,10 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
- 	printk(KERN_DEFAULT "------------[ cut here ]------------\n");
- 
- 	if (file)
--		printk(KERN_CRIT "kernel BUG at %s:%u!\n",
--		       file, line);
-+		pr_crit("kernel BUG at %s:%u!\n", file, line);
- 	else
--		printk(KERN_CRIT "Kernel BUG at %p "
--		       "[verbose debug info unavailable]\n",
--		       (void *)bugaddr);
-+		pr_crit("Kernel BUG at %p [verbose debug info unavailable]\n",
-+			(void *)bugaddr);
- 
- 	return BUG_TRAP_TYPE_BUG;
- }
 -- 
-1.9.1
+1.9.0
+
