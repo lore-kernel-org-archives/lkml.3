@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751258AbaEXMeP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:34:15 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750751AbaEXMeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:34:14 -0400
-Message-ID: <538091C2.6040802@nod.at>
-Date: Sat, 24 May 2014 14:34:10 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751331AbaEXMke (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 08:40:34 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:56398 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaEXMkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 May 2014 08:40:32 -0400
 MIME-Version: 1.0
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Jos Huisken <jos.huisken@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: inotify, new idea?
-References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com> <20140417212834.GC17769@csclub.uwaterloo.ca> <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com> <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com> <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com> <5354DA0B.2060204@nod.at> <53804FC0.1010207@gmail.com>
-In-Reply-To: <53804FC0.1010207@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <7638065.14871400820762911.JavaMail.weblogic@epml08>
+References: <7638065.14871400820762911.JavaMail.weblogic@epml08>
+Date: Sat, 24 May 2014 21:40:31 +0900
+X-Google-Sender-Auth: 1SHlLlp9bVIf53phrdnHMQmbfKM
+Message-ID: <CAJ0PZbS_Xcu=OJuiy=xs7k_A1=ajp34KEdi4KGC3e-y8t3EUGw@mail.gmail.com>
+Subject: Re: [PATCH] PM / devfreq: remove checks for CONFIG_EXYNOS_ASV
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Paul Bolle <pebolle@tiscali.nl>,
+        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.05.2014 09:52, schrieb Michael Kerrisk (man-pages):
-> On 04/21/2014 10:42 AM, Richard Weinberger wrote:
->> Am 21.04.2014 09:24, schrieb Michael Kerrisk:
->>>> Does recursive monitoring even work with inotify?
->>>> Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
->>>> mkdir() raced against the thread which installes the new watches.
->>>
->>> As I understand it, you have to program to deal with the races (rescan
->>> directories after adding watches). I recently did a lot of work
->>> updating the inotify(7) man page to discuss all the issues that I know
->>> of, and their remedies. If I missed anything, I'd appreciate a note on
->>> it, so that it can be added. See
->>> http://man7.org/linux/man-pages/man7/inotify.7.html#NOTES
+On Fri, May 23, 2014 at 1:52 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+> On Thu, May 22, 2014 at 5:37 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> Checks for CONFIG_EXYNOS_ASV were added in v3.3. But the related Kconfig
+>> symbol has never been added to the tree. Remove these checks, as they
+>> always evaluate to false.
 >>
->> I'm aware of the rescan hack, but in my case it does not help
->> because my program must not miss any event.
->> Currently I'm using a fuse overlay filesystem to log everything.
->> Not perfect but works... :-)
-> 
-> Richard,
-> 
-> A late follow up question. How does your application deal with the
-> event overflow problem (i.e., when you get a large number of events 
-> much faster than your application can deal with them?
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>
+> Thanks for pointing this out.
+>
+> ASV was supposed to be merged, but it appears it failed or never attempted.
+>
+> I will merge with the next batch (this week).
+>
+>
+> Cheers,
+> MyungJoo.
 
-The downside of the FUSE approach is that you have to intercept
-every filesystem function.
-This can be a performance issue.
-But due to this design the overflow problem cannot happen as the
-FUSE filesystem blocks until the event has been proceed.
+Uh.. ASV itself affects the power efficiency; thus, I'd like to keep
+it alive, but not as the current form.
 
-Thanks,
-//richard
+For 3.16, I'll correct the name following your report. (not going for
+3.15RCx anyway)
+
+
+Then, I'll let it merged into struct busfreq_data for later RCx.
+
+
+Cheers,
+MyungJoo.
+
+>
+>> ---
+>> 0) Untested.
+>>
+>> 1) I do not really care much for this patch. Two years is not very long
+>> for dead code to remain in the tree. There is, however, a trivial issue
+>> that makes this patch stand out from the other patches in my current
+>> sweep of the tree for Kconfig related problems.
+>>
+>> See, here the use of an unknown Kconfig macro hides an obvious typo: it
+>> should either be "exynos_result_of_asv" or "exynos4_result_of_asv", but
+>> not both. Ie, this almost certainly wouldn't have compiled even if the
+>> Kconfig symbol EXYNOS_ASV would have been part of the tree.
+>>
+>> 2) So this makes me wonder whether there are any guidelines for using
+>> Kconfig macros before the related Kconfig symbols are merged?
+>>
+>>  drivers/devfreq/Kconfig              |  3 +--
+>>  drivers/devfreq/exynos/exynos4_bus.c | 13 -------------
+>>  2 files changed, 1 insertion(+), 15 deletions(-)
+
+
+
+-- 
+MyungJoo Ham, Ph.D.
+System S/W Lab, S/W Center, Samsung Electronics
