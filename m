@@ -1,110 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402AbaEXAiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 20:38:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45077 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaEXAiU (ORCPT
+	id S1751461AbaEXAlN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 20:41:13 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:60260 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaEXAlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 20:38:20 -0400
-Message-ID: <537FE9F3.40508@oracle.com>
-Date: Fri, 23 May 2014 20:38:11 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: NULL ptr deref in remove_migration_pte
-References: <534E9ACA.2090008@oracle.com> <5367B365.1070709@oracle.com>
-In-Reply-To: <5367B365.1070709@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 23 May 2014 20:41:10 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list), jason@lakedaemon.net
+Subject: [PATCH v3 1/2] irqchip: add Broadcom Set Top Box Level-2 interrupt controller
+Date: Fri, 23 May 2014 17:40:53 -0700
+Message-Id: <1400892054-24457-2-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1400892054-24457-1-git-send-email-f.fainelli@gmail.com>
+References: <1400892054-24457-1-git-send-email-f.fainelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+This patch adds support for the Level-2 interrupt controller hardware
+found in Broadcom Set Top Box System-on-a-Chip devices. This interrupt
+controller is implemented using the generic IRQ chip driver with
+separate enable and disable registers.
 
-On 05/05/2014 11:51 AM, Sasha Levin wrote:
-> Did anyone have a chance to look at it? I still see it in -next.
-> 
-> 
-> Thanks,
-> Sasha
-> 
-> On 04/16/2014 10:59 AM, Sasha Levin wrote:
->> Hi all,
->>
->> While fuzzing with trinity inside a KVM tools guest running latest -next
->> kernel I've stumbled on the following:
->>
->> [ 2552.313602] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
->> [ 2552.315878] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
->> [ 2552.315878] PGD 465836067 PUD 465837067 PMD 0
->> [ 2552.315878] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->> [ 2552.315878] Dumping ftrace buffer:
->> [ 2552.315878]    (ftrace buffer empty)
->> [ 2552.315878] Modules linked in:
->> [ 2552.315878] CPU: 6 PID: 16173 Comm: trinity-c364 Tainted: G        W     3.15.0-rc1-next-20140415-sasha-00020-gaa90d09 #398
->> [ 2552.315878] task: ffff88046548b000 ti: ffff88044e532000 task.ti: ffff88044e532000
->> [ 2552.320286] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
->> [ 2552.320286] RSP: 0018:ffff88044e5339c8  EFLAGS: 00010002
->> [ 2552.320286] RAX: 0000000000000082 RBX: ffff88046548b000 RCX: 0000000000000000
->> [ 2552.320286] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
->> [ 2552.320286] RBP: ffff88044e533ab8 R08: 0000000000000001 R09: 0000000000000000
->> [ 2552.320286] R10: ffff88046548b000 R11: 0000000000000001 R12: 0000000000000000
->> [ 2552.320286] R13: 0000000000000018 R14: 0000000000000000 R15: 0000000000000000
->> [ 2552.320286] FS:  00007fd286a9a700(0000) GS:ffff88018b000000(0000) knlGS:0000000000000000
->> [ 2552.320286] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [ 2552.320286] CR2: 0000000000000018 CR3: 0000000442c17000 CR4: 00000000000006a0
->> [ 2552.320286] DR0: 0000000000695000 DR1: 0000000000000000 DR2: 0000000000000000
->> [ 2552.320286] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
->> [ 2552.320286] Stack:
->> [ 2552.320286]  ffff88044e5339e8 ffffffff9f56e761 0000000000000000 ffff880315c13000
->> [ 2552.320286]  ffff88044e533a38 ffffffff9c193f0d ffffffff9c193e34 ffff8804654e8000
->> [ 2552.320286]  ffff8804654e8000 0000000000000001 ffff88046548b000 0000000000000007
->> [ 2552.320286] Call Trace:
->> [ 2552.320286] ? _raw_spin_unlock_irq (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:169 kernel/locking/spinlock.c:199)
->> [ 2552.320286] ? finish_task_switch (include/linux/tick.h:206 kernel/sched/core.c:2163)
->> [ 2552.320286] ? finish_task_switch (arch/x86/include/asm/current.h:14 kernel/sched/sched.h:993 kernel/sched/core.c:2145)
->> [ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
->> [ 2552.320286] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
->> [ 2552.320286] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
->> [ 2552.320286] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
->> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
->> [ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
->> [ 2552.320286] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
->> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
->> [ 2552.320286] remove_migration_pte (mm/migrate.c:137)
->> [ 2552.320286] rmap_walk (mm/rmap.c:1628 mm/rmap.c:1699)
->> [ 2552.320286] remove_migration_ptes (mm/migrate.c:224)
->> [ 2552.320286] ? new_page_node (mm/migrate.c:107)
->> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:195)
->> [ 2552.320286] migrate_pages (mm/migrate.c:922 mm/migrate.c:960 mm/migrate.c:1126)
->> [ 2552.320286] ? perf_trace_mm_numa_migrate_ratelimit (mm/migrate.c:1574)
->> [ 2552.320286] migrate_misplaced_page (mm/migrate.c:1733)
->> [ 2552.320286] __handle_mm_fault (mm/memory.c:3762 mm/memory.c:3812 mm/memory.c:3925)
->> [ 2552.320286] ? __const_udelay (arch/x86/lib/delay.c:126)
->> [ 2552.320286] ? __rcu_read_unlock (kernel/rcu/update.c:97)
->> [ 2552.320286] handle_mm_fault (mm/memory.c:3948)
->> [ 2552.320286] __get_user_pages (mm/memory.c:1851)
->> [ 2552.320286] ? preempt_count_sub (kernel/sched/core.c:2527)
->> [ 2552.320286] __mlock_vma_pages_range (mm/mlock.c:255)
->> [ 2552.320286] __mm_populate (mm/mlock.c:711)
->> [ 2552.320286] SyS_mlockall (include/linux/mm.h:1799 mm/mlock.c:817 mm/mlock.c:791)
->> [ 2552.320286] tracesys (arch/x86/kernel/entry_64.S:749)
->> [ 2552.320286] Code: 85 2d 1e 00 00 48 c7 c1 d7 68 6c a0 48 c7 c2 47 11 6c a0 31 c0 be fa 0b 00 00 48 c7 c7 91 68 6c a0 e8 1c 6d f9 ff e9 07 1e 00 00 <49> 81 7d 00 80 31 76 a2 b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
->> [ 2552.320286] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
->> [ 2552.320286]  RSP <ffff88044e5339c8>
->> [ 2552.320286] CR2: 0000000000000018
->>
->>
->> Thanks,
->> Sasha
->>
-> 
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+Changes in v3:
+- use irq_desc_get_chip as suggested by Thomas
+
+Changes in v2:
+- fixed error path if we could not remap registers
+
+ drivers/irqchip/Kconfig          |   6 ++
+ drivers/irqchip/Makefile         |   1 +
+ drivers/irqchip/irq-brcmstb-l2.c | 202 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 209 insertions(+)
+ create mode 100644 drivers/irqchip/irq-brcmstb-l2.c
+
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index d770f7406631..bbb746e35500 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -30,6 +30,12 @@ config ARM_VIC_NR
+ 	  The maximum number of VICs available in the system, for
+ 	  power management.
+ 
++config BRCMSTB_L2_IRQ
++	bool
++	depends on ARM
++	select GENERIC_IRQ_CHIP
++	select IRQ_DOMAIN
++
+ config DW_APB_ICTL
+ 	bool
+ 	select IRQ_DOMAIN
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index f180f8d5fb7b..62a13e5ef98f 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -29,3 +29,4 @@ obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
+ obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
+ obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
+ obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
++obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
+diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
+new file mode 100644
+index 000000000000..8ee2a36d5840
+--- /dev/null
++++ b/drivers/irqchip/irq-brcmstb-l2.c
+@@ -0,0 +1,202 @@
++/*
++ * Generic Broadcom Set Top Box Level 2 Interrupt controller driver
++ *
++ * Copyright (C) 2014 Broadcom Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ */
++
++#define pr_fmt(fmt)	KBUILD_MODNAME	": " fmt
++
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
++#include <linux/of_platform.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/io.h>
++#include <linux/irqdomain.h>
++#include <linux/irqchip.h>
++#include <linux/irqchip/chained_irq.h>
++
++#include <asm/mach/irq.h>
++
++#include "irqchip.h"
++
++/* Register offsets in the L2 interrupt controller */
++#define CPU_STATUS	0x00
++#define CPU_SET		0x04
++#define CPU_CLEAR	0x08
++#define CPU_MASK_STATUS	0x0c
++#define CPU_MASK_SET	0x10
++#define CPU_MASK_CLEAR	0x14
++
++/* L2 intc private data structure */
++struct brcmstb_l2_intc_data {
++	int parent_irq;
++	void __iomem *base;
++	struct irq_domain *domain;
++	bool can_wake;
++	u32 saved_mask; /* for suspend/resume */
++};
++
++static void brcmstb_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
++{
++	struct brcmstb_l2_intc_data *b = irq_desc_get_handler_data(desc);
++	struct irq_chip *chip = irq_desc_get_chip(desc);
++	u32 status;
++
++	chained_irq_enter(chip, desc);
++
++	status = __raw_readl(b->base + CPU_STATUS) &
++		~(__raw_readl(b->base + CPU_MASK_STATUS));
++
++	if (status == 0) {
++		do_bad_IRQ(irq, desc);
++		goto out;
++	}
++
++	do {
++		irq = ffs(status) - 1;
++		/* ack at our level */
++		__raw_writel(1 << irq, b->base + CPU_CLEAR);
++		status &= ~(1 << irq);
++		generic_handle_irq(irq_find_mapping(b->domain, irq));
++	} while (status);
++out:
++	chained_irq_exit(chip, desc);
++}
++
++static void brcmstb_l2_intc_suspend(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct brcmstb_l2_intc_data *b = gc->private;
++
++	irq_gc_lock(gc);
++	/* Save the current mask */
++	b->saved_mask = __raw_readl(b->base + CPU_MASK_STATUS);
++
++	if (b->can_wake) {
++		/* Program the wakeup mask */
++		__raw_writel(~gc->wake_active, b->base + CPU_MASK_SET);
++		__raw_writel(gc->wake_active, b->base + CPU_MASK_CLEAR);
++	}
++	irq_gc_unlock(gc);
++}
++
++static void brcmstb_l2_intc_resume(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct brcmstb_l2_intc_data *b = gc->private;
++
++	irq_gc_lock(gc);
++	/* Clear unmasked non-wakeup interrupts */
++	__raw_writel(~b->saved_mask & ~gc->wake_active, b->base + CPU_CLEAR);
++
++	/* Restore the saved mask */
++	__raw_writel(b->saved_mask, b->base + CPU_MASK_SET);
++	__raw_writel(~b->saved_mask, b->base + CPU_MASK_CLEAR);
++	irq_gc_unlock(gc);
++}
++
++int __init brcmstb_l2_intc_of_init(struct device_node *np,
++					struct device_node *parent)
++{
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++	struct brcmstb_l2_intc_data *data;
++	struct irq_chip_generic *gc;
++	struct irq_chip_type *ct;
++	int ret;
++
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	data->base = of_iomap(np, 0);
++	if (!data->base) {
++		pr_err("failed to remap intc L2 registers\n");
++		ret = -ENOMEM;
++		goto out_free;
++	}
++
++	/* Disable all interrupts by default */
++	__raw_writel(0xffffffff, data->base + CPU_MASK_SET);
++	__raw_writel(0xffffffff, data->base + CPU_CLEAR);
++
++	data->parent_irq = irq_of_parse_and_map(np, 0);
++	if (data->parent_irq < 0) {
++		pr_err("failed to find parent interrupt\n");
++		ret = data->parent_irq;
++		goto out_unmap;
++	}
++
++	data->domain = irq_domain_add_linear(np, 32,
++				&irq_generic_chip_ops, NULL);
++	if (!data->domain) {
++		ret = -ENOMEM;
++		goto out_unmap;
++	}
++
++	/* Allocate a single Generic IRQ chip for this node */
++	ret = irq_alloc_domain_generic_chips(data->domain, 32, 1,
++				np->full_name, handle_level_irq, clr, 0, 0);
++	if (ret) {
++		pr_err("failed to allocate generic irq chip\n");
++		goto out_free_domain;
++	}
++
++	/* Set the IRQ chaining logic */
++	irq_set_handler_data(data->parent_irq, data);
++	irq_set_chained_handler(data->parent_irq, brcmstb_l2_intc_irq_handle);
++
++	gc = irq_get_domain_generic_chip(data->domain, 0);
++	gc->reg_base = data->base;
++	gc->private = data;
++	ct = gc->chip_types;
++
++	ct->chip.irq_ack = irq_gc_ack_set_bit;
++	ct->regs.ack = CPU_CLEAR;
++
++	ct->chip.irq_mask = irq_gc_mask_disable_reg;
++	ct->regs.disable = CPU_MASK_SET;
++
++	ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
++	ct->regs.enable = CPU_MASK_CLEAR;
++
++	ct->chip.irq_suspend = brcmstb_l2_intc_suspend;
++	ct->chip.irq_resume = brcmstb_l2_intc_resume;
++
++	if (of_property_read_bool(np, "brcm,irq-can-wake")) {
++		data->can_wake = true;
++		/* This IRQ chip can wake the system, set all child interrupts
++		 * in wake_enabled mask
++		 */
++		gc->wake_enabled = 0xffffffff;
++		ct->chip.irq_set_wake = irq_gc_set_wake;
++	}
++
++	pr_info("registered L2 intc (mem: 0x%p, parent irq: %d)\n",
++			data->base, data->parent_irq);
++
++	return 0;
++
++out_free_domain:
++	irq_domain_remove(data->domain);
++out_unmap:
++	iounmap(data->base);
++out_free:
++	kfree(data);
++	return ret;
++}
++IRQCHIP_DECLARE(brcmstb_l2_intc, "brcm,l2-intc", brcmstb_l2_intc_of_init);
+-- 
+1.9.1
 
