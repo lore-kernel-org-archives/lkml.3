@@ -1,150 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303AbaEXH5F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 03:57:05 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:40791 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750757AbaEXH5D (ORCPT
+	id S1751260AbaEXICx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 04:02:53 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:35198 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaEXICs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 03:57:03 -0400
-X-IronPort-AV: E=Sophos;i="4.98,900,1392159600"; 
-   d="scan'208";a="75818475"
-Date: Sat, 24 May 2014 09:57:00 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH] coccinelle: Check for missing NULL terminators in
- of_device_id tables
-In-Reply-To: <1400888504-31309-1-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.DEB.2.02.1405240956220.2012@localhost6.localdomain6>
-References: <1400888504-31309-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 24 May 2014 04:02:48 -0400
+Date: Sat, 24 May 2014 12:02:39 +0400
+From: Azat Khuzhin <a3at.mail@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@gmail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 07/13] vfs: add RENAME_WHITEOUT
+Message-ID: <20140524080239.GA26948@azat>
+References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
+ <1400838223-30844-8-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400838223-30844-8-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 May 2014, Stephen Boyd wrote:
-
-> Failure to terminate an of_device_id table can lead to confusing
-> failures depending on where the compiler places the array. Add a
-> check to make sure these tables are terminated. Thanks to Mitchel
-> Humpherys for coming up with the initial pattern.
+On Fri, May 23, 2014 at 11:43:37AM +0200, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
-> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-> Cc: Nicolas Palix <nicolas.palix@imag.fr>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> This adds a new RENAME_WHITEOUT flag.  This flag makes rename() create a
+> whiteout of source.  The whiteout creation is atomic relative to the
+> rename.
+> 
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 > ---
->  scripts/coccinelle/misc/of_table.cocci | 81 ++++++++++++++++++++++++++++++++++
->  1 file changed, 81 insertions(+)
->  create mode 100644 scripts/coccinelle/misc/of_table.cocci
+>  fs/ext4/namei.c         | 99 ++++++++++++++++++++++++++++++++++++++++---------
+>  fs/namei.c              |  8 +++-
+>  include/linux/fs.h      |  7 ++++
+>  include/uapi/linux/fs.h |  1 +
+>  4 files changed, 95 insertions(+), 20 deletions(-)
 > 
-> diff --git a/scripts/coccinelle/misc/of_table.cocci b/scripts/coccinelle/misc/of_table.cocci
-> new file mode 100644
-> index 000000000000..da8bfa69fa3e
-> --- /dev/null
-> +++ b/scripts/coccinelle/misc/of_table.cocci
-> @@ -0,0 +1,81 @@
-> +/// Make sure of_device_id tables are NULL terminated
-> +//
-> +// Keywords: of_table
-> +// Confidence: Medium
-> +// Options: --include-headers
+> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+> index 1cb84f78909e..f782831b19dc 100644
+> --- a/fs/ext4/namei.c
+> +++ b/fs/ext4/namei.c
+> @@ -3148,6 +3148,39 @@ static void ext4_update_dir_count(handle_t *handle, struct ext4_renament *ent)
+>  	}
+>  }
+>  
+> +static struct inode *ext4_whiteout_for_rename(struct ext4_renament *ent,
+> +					      int credits, handle_t **h)
+> +{
+> +	struct inode *wh;
+> +	handle_t *handle;
+> +	int retries = 0;
 > +
-> +virtual patch
-> +virtual context
-> +virtual org
-> +virtual report
+> +	/*
+> +	 * for inode block, sb block, group summaries,
+> +	 * and inode bitmap
+> +	 */
+> +	credits += (EXT4_MAXQUOTAS_TRANS_BLOCKS(ent->dir->i_sb) +
+> +		    EXT4_XATTR_TRANS_BLOCKS + 4);
+> +retry:
+> +	wh = ext4_new_inode_start_handle(ent->dir, S_IFCHR | WHITEOUT_MODE,
+> +					 &ent->dentry->d_name, 0, NULL,
+> +					 EXT4_HT_DIR, credits);
 > +
-> +@bad_of_table exists@
-> +identifier var, arr;
-> +expression E;
-> +@@
-> +... struct of_device_id arr[] = {
-> +	...,
-> +	{
-> +	...,
-> +	.var = E,
-> +	...
+> +	handle = ext4_journal_current_handle();
+> +	if (IS_ERR(wh)) {
+> +		if (handle)
+> +			ext4_journal_stop(handle);
+> +		if (PTR_ERR(wh) == -ENOSPC &&
+> +		    ext4_should_retry_alloc(ent->dir->i_sb, &retries))
+> +			goto retry;
+> +	} else {
+> +		*h = handle;
+> +		init_special_inode(wh, wh->i_mode, WHITEOUT_DEV);
+> +		wh->i_op = &ext4_special_inode_operations;
 > +	}
-> +};
-
-You shouldn't need any of the ...s in these rules.
-
-julia
-
-> +@depends on bad_of_table && context@
-> +identifier var, arr;
-> +expression E;
-> +@@
-> + ... struct of_device_id arr[] = {
-> +	...,
-> +	{
-> +	...,
-> +*	.var = E,
-> +	...
+> +	return wh;
+> +}
+> +
+>  /*
+>   * Anybody can rename anything with this: the permission checks are left to the
+>   * higher-level routines.
+> @@ -3156,8 +3189,9 @@ static void ext4_update_dir_count(handle_t *handle, struct ext4_renament *ent)
+>   * while new_{dentry,inode) refers to the destination dentry/inode
+>   * This comes from rename(const char *oldpath, const char *newpath)
+>   */
+> -static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+> -		       struct inode *new_dir, struct dentry *new_dentry)
+> +static int ext4_simple_rename(struct inode *old_dir, struct dentry *old_dentry,
+> +			      struct inode *new_dir, struct dentry *new_dentry,
+> +			      unsigned int flags)
+>  {
+>  	handle_t *handle = NULL;
+>  	struct ext4_renament old = {
+> @@ -3171,6 +3205,9 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  		.inode = new_dentry->d_inode,
+>  	};
+>  	int retval;
+> +	struct inode *whiteout = NULL;
+> +	int credits;
+> +	u8 old_file_type;
+>  
+>  	dquot_initialize(old.dir);
+>  	dquot_initialize(new.dir);
+> @@ -3202,11 +3239,17 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  	if (new.inode && !test_opt(new.dir->i_sb, NO_AUTO_DA_ALLOC))
+>  		ext4_alloc_da_blocks(old.inode);
+>  
+> -	handle = ext4_journal_start(old.dir, EXT4_HT_DIR,
+> -		(2 * EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
+> -		 EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2));
+> -	if (IS_ERR(handle))
+> -		return PTR_ERR(handle);
+> +	credits = (2 * EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
+> +		   EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2);
+> +	if (!(flags & RENAME_WHITEOUT)) {
+> +		handle = ext4_journal_start(old.dir, EXT4_HT_DIR, credits);
+> +		if (IS_ERR(handle))
+> +			return PTR_ERR(handle);
+> +	} else {
+> +		whiteout = ext4_whiteout_for_rename(&old, credits, &handle);
+> +		if (IS_ERR(whiteout))
+> +			return PTR_ERR(whiteout);
 > +	}
-> +};
-> +
-> +@depends on bad_of_table && patch@
-> +identifier var, arr;
-> +expression E;
-> +@@
-> +... struct of_device_id arr[] = {
-> +	...,
-> +	{
-> +	...,
-> +	.var = E,
-> +	...
-> +-	}
-> ++	},
-> ++	{ }
-> +};
-> +
-> +@r depends on bad_of_table exists@
-> +position p1;
-> +identifier var, arr;
-> +expression E;
-> +@@
-> +... struct of_device_id arr[] = {
-> +	...,
-> +	{
-> +	...,
-> +	.var = E,
-> +	...
+>  
+>  	if (IS_DIRSYNC(old.dir) || IS_DIRSYNC(new.dir))
+>  		ext4_handle_sync(handle);
+> @@ -3225,13 +3268,21 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  		if (retval)
+>  			goto end_rename;
+>  	}
+> +	old_file_type = old.de->file_type;
+> +	if (whiteout) {
+> +		retval = ext4_setent(handle, &old, whiteout->i_ino,
+> +				     EXT4_FT_CHRDEV);
+> +		if (retval)
+> +			goto end_rename;
+> +		ext4_mark_inode_dirty(handle, whiteout);
 > +	}
-> +	@p1
-> +};
+>  	if (!new.bh) {
+>  		retval = ext4_add_entry(handle, new.dentry, old.inode);
+>  		if (retval)
+>  			goto end_rename;
+>  	} else {
+>  		retval = ext4_setent(handle, &new,
+> -				     old.inode->i_ino, old.de->file_type);
+> +				     old.inode->i_ino, old_file_type);
+>  		if (retval)
+>  			goto end_rename;
+>  	}
+> @@ -3243,10 +3294,12 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  	old.inode->i_ctime = ext4_current_time(old.inode);
+>  	ext4_mark_inode_dirty(handle, old.inode);
+>  
+> -	/*
+> -	 * ok, that's it
+> -	 */
+> -	ext4_rename_delete(handle, &old);
+> +	if (!whiteout) {
+> +		/*
+> +		 * ok, that's it
+> +		 */
+> +		ext4_rename_delete(handle, &old);
+> +	}
+>  
+>  	if (new.inode) {
+>  		ext4_dec_count(handle, new.inode);
+> @@ -3282,6 +3335,12 @@ end_rename:
+>  	brelse(old.dir_bh);
+>  	brelse(old.bh);
+>  	brelse(new.bh);
+> +	if (whiteout) {
+> +		if (retval)
+> +			drop_nlink(whiteout);
+> +		unlock_new_inode(whiteout);
+> +		iput(whiteout);
+> +	}
+>  	if (handle)
+>  		ext4_journal_stop(handle);
+>  	return retval;
+> @@ -3403,22 +3462,26 @@ end_rename:
+>  	return retval;
+>  }
+>  
+> +static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+> +		       struct inode *new_dir, struct dentry *new_dentry)
+> +{
+> +	return ext4_simple_rename(old_dir, old_dentry, new_dir, new_dentry, 0);
+> +}
 > +
-> +@script:python depends on org@
-> +p1 << r.p1;
-> +arr << r.arr;
-> +@@
+>  static int ext4_rename2(struct inode *old_dir, struct dentry *old_dentry,
+>  			struct inode *new_dir, struct dentry *new_dentry,
+>  			unsigned int flags)
+>  {
+> -	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE))
+> +	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE | RENAME_WHITEOUT))
+>  		return -EINVAL;
+>  
+>  	if (flags & RENAME_EXCHANGE) {
+>  		return ext4_cross_rename(old_dir, old_dentry,
+>  					 new_dir, new_dentry);
+>  	}
+> -	/*
+> -	 * Existence checking was done by the VFS, otherwise "RENAME_NOREPLACE"
+> -	 * is equivalent to regular rename.
+> -	 */
+> -	return ext4_rename(old_dir, old_dentry, new_dir, new_dentry);
 > +
-> +cocci.print_main(arr,p1)
+> +	return ext4_simple_rename(old_dir, old_dentry,
+> +				  new_dir, new_dentry, flags);
+>  }
+>  
+>  /*
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 413d7c138e95..adaa73d91173 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -4186,12 +4186,16 @@ SYSCALL_DEFINE5(renameat2, int, olddfd, const char __user *, oldname,
+>  	bool should_retry = false;
+>  	int error;
+>  
+> -	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE))
+> +	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE | RENAME_WHITEOUT))
+>  		return -EINVAL;
+>  
+> -	if ((flags & RENAME_NOREPLACE) && (flags & RENAME_EXCHANGE))
+> +	if ((flags & (RENAME_NOREPLACE | RENAME_WHITEOUT)) &&
+> +	    (flags & RENAME_EXCHANGE))
+>  		return -EINVAL;
+>  
+> +	if ((flags & RENAME_WHITEOUT) && !capable(CAP_MKNOD))
+> +		return -EPERM;
 > +
-> +@script:python depends on report@
-> +p1 << r.p1;
-> +arr << r.arr;
-> +@@
+>  retry:
+>  	from = user_path_parent(olddfd, oldname, &oldnd, lookup_flags);
+>  	if (IS_ERR(from)) {
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 88ec7a2878bc..48d3bd908b5d 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -228,6 +228,13 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+>  #define WHITEOUT_DEV 0
+>  
+>  /*
+> + * Whiteout is represented by a char device.  The following constants define the
+> + * mode and device number to use.
+> + */
+> +#define WHITEOUT_MODE 0
+> +#define WHITEOUT_DEV 0
+
+Quick note:
+I suppose that there is no need in duplicating of WHITEOUT_{MODE,DEV}
+
+Thanks.
+
 > +
-> +msg = "%s is not NULL terminated at line %s" % (arr, p1[0].line)
-> +coccilib.report.print_report(p1[0],msg)
+> +/*
+>   * This is the Inode Attributes structure, used for notify_change().  It
+>   * uses the above definitions as flags, to know which values have changed.
+>   * Also, in this manner, a Filesystem can look at only the values it cares
+> diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+> index ca1a11bb4443..3735fa0a6784 100644
+> --- a/include/uapi/linux/fs.h
+> +++ b/include/uapi/linux/fs.h
+> @@ -37,6 +37,7 @@
+>  
+>  #define RENAME_NOREPLACE	(1 << 0)	/* Don't overwrite target */
+>  #define RENAME_EXCHANGE		(1 << 1)	/* Exchange source and dest */
+> +#define RENAME_WHITEOUT		(1 << 2)	/* Whiteout source */
+>  
+>  struct fstrim_range {
+>  	__u64 start;
 > -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> 1.8.1.4
 > 
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Respectfully
+Azat Khuzhin
