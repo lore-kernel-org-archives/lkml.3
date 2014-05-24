@@ -1,167 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaEXMTF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:19:05 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54498 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaEXMTD (ORCPT
+	id S1751398AbaEXMVs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 08:21:48 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41116 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154AbaEXMVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:19:03 -0400
-Date: Sat, 24 May 2014 17:48:50 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] input: tc3589x-keypad: Allocate resources using managed
- interfaces
-Message-ID: <20140524121850.GA6535@himangi-Dell>
+	Sat, 24 May 2014 08:21:46 -0400
+Date: Sat, 24 May 2014 13:20:34 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140524122034.GQ22111@sirena.org.uk>
+References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
+ <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3ruYQ6qMoy8hLjT"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.116.200.249
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
+ ks8851 SPI chips
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves most data allocated in the probe function from
-unmanaged interfaces to managed interfaces. The kfrees and error
-handling code is done away with. Also, the unnecesary labels are
-removed. The include for linux/device.h is added to make sure the 
-devm_*() routine declarations are unambiguously available.
 
-The following Coccinelle semantic patch was used for making a part of
-the change:
+--u3ruYQ6qMoy8hLjT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
+On Fri, May 23, 2014 at 12:57:17PM -0700, Stephen Boyd wrote:
 
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
+>  Optional properties:
+> -- vdd-supply:	supply for Ethernet mac
+> +- vdd-supply: analog 3.3V supply for Ethernet mac
+> +- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
+> +- reset-gpios: reset_n input pin
 
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
+Are we *positive* that power is optional?  I do note that there aren't
+any mandatory supplies for the device which seems very strange...
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
- drivers/input/keyboard/tc3589x-keypad.c | 35 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 24 deletions(-)
+--u3ruYQ6qMoy8hLjT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/input/keyboard/tc3589x-keypad.c b/drivers/input/keyboard/tc3589x-keypad.c
-index ad7abae..c412abe 100644
---- a/drivers/input/keyboard/tc3589x-keypad.c
-+++ b/drivers/input/keyboard/tc3589x-keypad.c
-@@ -17,6 +17,7 @@
- #include <linux/i2c.h>
- #include <linux/slab.h>
- #include <linux/mfd/tc3589x.h>
-+#include <linux/device.h>
- 
- /* Maximum supported keypad matrix row/columns size */
- #define TC3589x_MAX_KPROW               8
-@@ -376,12 +377,12 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
- 	if (irq < 0)
- 		return irq;
- 
--	keypad = kzalloc(sizeof(struct tc_keypad), GFP_KERNEL);
--	input = input_allocate_device();
-+	keypad = devm_kzalloc(&pdev->dev, sizeof(struct tc_keypad),
-+			      GFP_KERNEL);
-+	input = devm_input_allocate_device(&pdev->dev);
- 	if (!keypad || !input) {
- 		dev_err(&pdev->dev, "failed to allocate keypad memory\n");
--		error = -ENOMEM;
--		goto err_free_mem;
-+		return -ENOMEM;
- 	}
- 
- 	keypad->board = plat;
-@@ -400,7 +401,7 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
- 					   NULL, input);
- 	if (error) {
- 		dev_err(&pdev->dev, "Failed to build keymap\n");
--		goto err_free_mem;
-+		return error;
- 	}
- 
- 	keypad->keymap = input->keycode;
-@@ -411,20 +412,20 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
- 
- 	input_set_drvdata(input, keypad);
- 
--	error = request_threaded_irq(irq, NULL,
--			tc3589x_keypad_irq, plat->irqtype,
--			"tc3589x-keypad", keypad);
-+	error = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+					  tc3589x_keypad_irq, plat->irqtype,
-+					  "tc3589x-keypad", keypad);
- 	if (error < 0) {
- 		dev_err(&pdev->dev,
- 				"Could not allocate irq %d,error %d\n",
- 				irq, error);
--		goto err_free_mem;
-+		return error;
- 	}
- 
- 	error = input_register_device(input);
- 	if (error) {
- 		dev_err(&pdev->dev, "Could not register input device\n");
--		goto err_free_irq;
-+		return error;
- 	}
- 
- 	/* let platform decide if keypad is a wakeup source or not */
-@@ -434,29 +435,15 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, keypad);
- 
- 	return 0;
--
--err_free_irq:
--	free_irq(irq, keypad);
--err_free_mem:
--	input_free_device(input);
--	kfree(keypad);
--	return error;
- }
- 
- static int tc3589x_keypad_remove(struct platform_device *pdev)
- {
- 	struct tc_keypad *keypad = platform_get_drvdata(pdev);
--	int irq = platform_get_irq(pdev, 0);
- 
- 	if (!keypad->keypad_stopped)
- 		tc3589x_keypad_disable(keypad);
- 
--	free_irq(irq, keypad);
--
--	input_unregister_device(keypad->input);
--
--	kfree(keypad);
--
- 	return 0;
- }
- 
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTgI6KAAoJELSic+t+oim9jkMP/0apfcgASMOjnBDo9tRCv9WT
+rKSTuqYvTTluzj3kNcdU4aJFg1Pb7hUnJHf5rRcpqvea54Nkg6uLHGI12Vratgxy
+pgc2Im+ohA6ld+e7uHXRYP/UOTYxFQ/qOtT4rGjqaWx4RHLp1eXvkR84uYBWD6hE
+7fjm0T2CultBNdbMFCTSXJve9oQufTkojTKrBNF/rVArDjXo+4PomjA9O3ccGGhs
+OcZ28+j4kZLvdkVlOtCzvHrfLIgfa7po6Xa9pg0pVmM1mvraLMGcY50toDAFNHTI
+65WkLrHwyfJ21tBupVSd+n7GF0iNQ0tZ623URygBkQpc8dq9wHFQKKD3Wwoy4HL5
+n2ogGavSyl9WBmVhOhkvgdRnE0VHW+yUi3Omj7qTONaQQxJ9ZyPw/fm8/XJVTcJh
+3T2CyzLXMESaljwe0wen4+jrKPSCkymJ0ib0EDBRXUsvATXEEicjg8ynY/BDOuzE
+TY8l+UG2/ojwgCR0IwVUFwgRavA7RqfsL0E8d0P7PILCunX9NAMuqkTaXRKRKoDV
+1CmcdpAHJEguQle3e5nF2JUS9Svptc1kZfB/RjMqVmJgkmrDDY/64qqyV7Y2/khN
+AS3QZERBnfJHe1gcrviMMeFgK1hVZ0i6BSluidmLlsDf5Imd6NUxY+IamUM1Lynq
+bbKnaOlxjDsG3Njafi8f
+=EOOE
+-----END PGP SIGNATURE-----
+
+--u3ruYQ6qMoy8hLjT--
