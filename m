@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212AbaEXJm5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 05:42:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750751AbaEXJmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 05:42:55 -0400
-Date: Sat, 24 May 2014 17:42:47 +0800
-From: Baoquan He <bhe@redhat.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-acpi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dyoung@redhat.com
-Subject: Re: [Patch v3 1/2] introduce variable acpi_lapic into ia64
-Message-ID: <20140524094247.GA1873@dhcp-17-102.nay.redhat.com>
-References: <1399265306-8553-1-git-send-email-bhe@redhat.com>
- <18692765.A1lGfe6rx4@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <18692765.A1lGfe6rx4@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751245AbaEXKN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 06:13:57 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:49198 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751105AbaEXKN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 May 2014 06:13:56 -0400
+Message-ID: <1400926433.31526.89.camel@x220>
+Subject: [PATCH] acornscsi: remove linked command support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 24 May 2014 12:13:53 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 May 2014 10:13:53.0796 (UTC) FILETIME=[DDAC3C40:01CF7738]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/14 at 12:57am, Rafael J. Wysocki wrote:
-> On Monday, May 05, 2014 12:48:25 PM Baoquan He wrote:
-> > This variable was defined and assigned in x86, is used to indicate
-> > whether LAPIC exists in MADT. Now introduce it into ia64 to help
-> > make correct judgment when get information for acpi processor later.
-> > 
-> > Signed-off-by: Baoquan He <bhe@redhat.com>
-> 
-> This and [2/2] queued up for 3.16, thanks!
+The acornscsi driver was added in v2.1.88. It has always #undef-ed
+CONFIG_SCSI_ACORNSCSI_LINK near the top of acornscsi.c. And, just to be
+sure, it has also always triggered a preprocessor error if
+CONFIG_SCSI_ACORNSCSI_LINK was still defined. But, as far as I can see,
+it has never even been possible to set SCSI_ACORNSCSI_LINK through
+kconfig, or its predecessors, in the first place.
 
-Thanks, Rafael!
+Let's remove the code involved.
 
-> 
-> > ---
-> >  arch/ia64/include/asm/acpi.h | 1 +
-> >  arch/ia64/kernel/acpi.c      | 3 +++
-> >  2 files changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
-> > index d651102..b478219 100644
-> > --- a/arch/ia64/include/asm/acpi.h
-> > +++ b/arch/ia64/include/asm/acpi.h
-> > @@ -85,6 +85,7 @@ ia64_acpi_release_global_lock (unsigned int *lock)
-> >  	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
-> >  
-> >  #ifdef	CONFIG_ACPI
-> > +extern int acpi_lapic;
-> >  #define acpi_disabled 0	/* ACPI always enabled on IA64 */
-> >  #define acpi_noirq 0	/* ACPI always enabled on IA64 */
-> >  #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
-> > diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
-> > index 0d407b3..615ef81 100644
-> > --- a/arch/ia64/kernel/acpi.c
-> > +++ b/arch/ia64/kernel/acpi.c
-> > @@ -56,6 +56,7 @@
-> >  
-> >  #define PREFIX			"ACPI: "
-> >  
-> > +int acpi_lapic;
-> >  unsigned int acpi_cpei_override;
-> >  unsigned int acpi_cpei_phys_cpuid;
-> >  
-> > @@ -676,6 +677,8 @@ int __init early_acpi_boot_init(void)
-> >  	if (ret < 1)
-> >  		printk(KERN_ERR PREFIX
-> >  		       "Error parsing MADT - no LAPIC entries\n");
-> > +	else
-> > +		acpi_lapic = 1;
-> >  
-> >  #ifdef CONFIG_SMP
-> >  	if (available_cpus == 0) {
-> > 
-> 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
+
+Also interesting: SCSI_ACORNSCSI_TAGGED_QUEUE can be set through
+kconfig, but its macro will be #undef-ed at the top of acornscsi.c. I
+suppose that #undef could be dropped.
+
+And finally: CONFIG_ACORNSCSI_CONSTANTS has to be set manually. But if
+we'd just drop the CONFIG_ prefix acornscsi.c would become a pet peeve
+free zone.
+
+ drivers/scsi/arm/acornscsi.c | 53 --------------------------------------------
+ 1 file changed, 53 deletions(-)
+
+diff --git a/drivers/scsi/arm/acornscsi.c b/drivers/scsi/arm/acornscsi.c
+index 059ff477a398..2e797a367608 100644
+--- a/drivers/scsi/arm/acornscsi.c
++++ b/drivers/scsi/arm/acornscsi.c
+@@ -62,13 +62,6 @@
+  */
+ #undef CONFIG_SCSI_ACORNSCSI_TAGGED_QUEUE
+ /*
+- * SCSI-II Linked command support.
+- *
+- * The higher level code doesn't support linked commands yet, and so the option
+- * is undef'd here.
+- */
+-#undef CONFIG_SCSI_ACORNSCSI_LINK
+-/*
+  * SCSI-II Synchronous transfer support.
+  *
+  * Tried and tested...
+@@ -160,10 +153,6 @@
+ #error "Yippee!  ABORT TAG is now defined!  Remove this error!"
+ #endif
+ 
+-#ifdef CONFIG_SCSI_ACORNSCSI_LINK
+-#error SCSI2 LINKed commands not supported (yet)!
+-#endif
+-
+ #ifdef USE_DMAC
+ /*
+  * DMAC setup parameters
+@@ -1668,42 +1657,6 @@ void acornscsi_message(AS_Host *host)
+ 	}
+ 	break;
+ 
+-#ifdef CONFIG_SCSI_ACORNSCSI_LINK
+-    case LINKED_CMD_COMPLETE:
+-    case LINKED_FLG_CMD_COMPLETE:
+-	/*
+-	 * We don't support linked commands yet
+-	 */
+-	if (0) {
+-#if (DEBUG & DEBUG_LINK)
+-	    printk("scsi%d.%c: lun %d tag %d linked command complete\n",
+-		    host->host->host_no, acornscsi_target(host), host->SCpnt->tag);
+-#endif
+-	    /*
+-	     * A linked command should only terminate with one of these messages
+-	     * if there are more linked commands available.
+-	     */
+-	    if (!host->SCpnt->next_link) {
+-		printk(KERN_WARNING "scsi%d.%c: lun %d tag %d linked command complete, but no next_link\n",
+-			instance->host_no, acornscsi_target(host), host->SCpnt->tag);
+-		acornscsi_sbic_issuecmd(host, CMND_ASSERTATN);
+-		msgqueue_addmsg(&host->scsi.msgs, 1, ABORT);
+-	    } else {
+-		struct scsi_cmnd *SCpnt = host->SCpnt;
+-
+-		acornscsi_dma_cleanup(host);
+-
+-		host->SCpnt = host->SCpnt->next_link;
+-		host->SCpnt->tag = SCpnt->tag;
+-		SCpnt->result = DID_OK | host->scsi.SCp.Message << 8 | host->Scsi.SCp.Status;
+-		SCpnt->done(SCpnt);
+-
+-		/* initialise host->SCpnt->SCp */
+-	    }
+-	    break;
+-	}
+-#endif
+-
+     default: /* reject message */
+ 	printk(KERN_ERR "scsi%d.%c: unrecognised message %02X, rejecting\n",
+ 		host->host->host_no, acornscsi_target(host),
+@@ -2825,9 +2778,6 @@ char *acornscsi_info(struct Scsi_Host *host)
+ #ifdef CONFIG_SCSI_ACORNSCSI_TAGGED_QUEUE
+     " TAG"
+ #endif
+-#ifdef CONFIG_SCSI_ACORNSCSI_LINK
+-    " LINK"
+-#endif
+ #if (DEBUG & DEBUG_NO_WRITE)
+     " NOWRITE (" __stringify(NO_WRITE) ")"
+ #endif
+@@ -2851,9 +2801,6 @@ static int acornscsi_show_info(struct seq_file *m, struct Scsi_Host *instance)
+ #ifdef CONFIG_SCSI_ACORNSCSI_TAGGED_QUEUE
+     " TAG"
+ #endif
+-#ifdef CONFIG_SCSI_ACORNSCSI_LINK
+-    " LINK"
+-#endif
+ #if (DEBUG & DEBUG_NO_WRITE)
+     " NOWRITE (" __stringify(NO_WRITE) ")"
+ #endif
+-- 
+1.9.0
+
