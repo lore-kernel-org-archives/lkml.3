@@ -1,157 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379AbaEXKfU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 06:35:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45569 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228AbaEXKfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 06:35:19 -0400
-Message-ID: <538075E0.4080001@suse.de>
-Date: Sat, 24 May 2014 12:35:12 +0200
-From: Hannes Reinecke <hare@suse.de>
+	id S1751391AbaEXKhY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 06:37:24 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:32915 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaEXKhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 May 2014 06:37:23 -0400
+Message-ID: <538076CA.6050809@kernel.org>
+Date: Sat, 24 May 2014 11:39:06 +0100
+From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acornscsi: remove linked command support
-References: <1400926433.31526.89.camel@x220>
-In-Reply-To: <1400926433.31526.89.camel@x220>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Reyad Attiyat <reyad.attiyat@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: HID Sensor support for True/Magnetic North usage attributes
+References: <CA+BWVUShz2_Xd8EBWE+igjYk6Bc+K=LbjCr6EH7hNhvVodka6A@mail.gmail.com> <53764EDE.8090008@linux.intel.com>
+In-Reply-To: <53764EDE.8090008@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2014 12:13 PM, Paul Bolle wrote:
-> The acornscsi driver was added in v2.1.88. It has always #undef-ed
-> CONFIG_SCSI_ACORNSCSI_LINK near the top of acornscsi.c. And, just to be
-> sure, it has also always triggered a preprocessor error if
-> CONFIG_SCSI_ACORNSCSI_LINK was still defined. But, as far as I can see,
-> it has never even been possible to set SCSI_ACORNSCSI_LINK through
-> kconfig, or its predecessors, in the first place.
+On 16/05/14 18:46, Srinivas Pandruvada wrote:
+> On 05/13/2014 07:14 PM, Reyad Attiyat wrote:
+>> Dear IIO/HID maintainers,
+>>
+>> I have a device, Surface Pro, that has the hid-sensor-hub and many
+>> sensors attached. With the help of Srinivas I was able to get them all
+>> working except for the magnometer. It uses the hid-magn-3d driver as
+>> it should but it does not contain an axis (X, Y, Z) usage attributes.
+>> Instead it only has a True North usage attribute. I see two solutions
+>> to this problem and was inquiring which one would work best?
+>>
+>> 1) Modify the hid-magn-3d driver to handle True North attribute. I
+>> realize there might not be many devices that have this so not sure if
+>> appropriate. I think this could be done; by passing a variable amount
+>> of IIO Channels when setting up the hid-magn-3d driver, depending on
+>> how many axis and/or if it find True/Magnetic North usage attribute.
+> I prefer this approach. The spec doesn't say whether magnetic flux for x,y or z are mandatory.
+> Ultimately they are used to calculate the true north. So if the hub is trying to expose true north,
+> we should add this attribute.
 >
-> Let's remove the code involved.
+> "Heading True North SV – Indicates compass true north heading is not compensated.
+>                      Default unit of measure is degrees; can be overridden using
+>                     explicit Unit and/or Unit Exponent."
 >
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested.
->
-> Also interesting: SCSI_ACORNSCSI_TAGGED_QUEUE can be set through
-> kconfig, but its macro will be #undef-ed at the top of acornscsi.c. I
-> suppose that #undef could be dropped.
->
-> And finally: CONFIG_ACORNSCSI_CONSTANTS has to be set manually. But if
-> we'd just drop the CONFIG_ prefix acornscsi.c would become a pet peeve
-> free zone.
->
->   drivers/scsi/arm/acornscsi.c | 53 --------------------------------------------
->   1 file changed, 53 deletions(-)
->
-> diff --git a/drivers/scsi/arm/acornscsi.c b/drivers/scsi/arm/acornscsi.c
-> index 059ff477a398..2e797a367608 100644
-> --- a/drivers/scsi/arm/acornscsi.c
-> +++ b/drivers/scsi/arm/acornscsi.c
-> @@ -62,13 +62,6 @@
->    */
->   #undef CONFIG_SCSI_ACORNSCSI_TAGGED_QUEUE
->   /*
-> - * SCSI-II Linked command support.
-> - *
-> - * The higher level code doesn't support linked commands yet, and so the option
-> - * is undef'd here.
-> - */
-> -#undef CONFIG_SCSI_ACORNSCSI_LINK
-> -/*
->    * SCSI-II Synchronous transfer support.
->    *
->    * Tried and tested...
-> @@ -160,10 +153,6 @@
->   #error "Yippee!  ABORT TAG is now defined!  Remove this error!"
->   #endif
->
-> -#ifdef CONFIG_SCSI_ACORNSCSI_LINK
-> -#error SCSI2 LINKed commands not supported (yet)!
-> -#endif
-> -
->   #ifdef USE_DMAC
->   /*
->    * DMAC setup parameters
-> @@ -1668,42 +1657,6 @@ void acornscsi_message(AS_Host *host)
->   	}
->   	break;
->
-> -#ifdef CONFIG_SCSI_ACORNSCSI_LINK
-> -    case LINKED_CMD_COMPLETE:
-> -    case LINKED_FLG_CMD_COMPLETE:
-> -	/*
-> -	 * We don't support linked commands yet
-> -	 */
-> -	if (0) {
-> -#if (DEBUG & DEBUG_LINK)
-> -	    printk("scsi%d.%c: lun %d tag %d linked command complete\n",
-> -		    host->host->host_no, acornscsi_target(host), host->SCpnt->tag);
-> -#endif
-> -	    /*
-> -	     * A linked command should only terminate with one of these messages
-> -	     * if there are more linked commands available.
-> -	     */
-> -	    if (!host->SCpnt->next_link) {
-> -		printk(KERN_WARNING "scsi%d.%c: lun %d tag %d linked command complete, but no next_link\n",
-> -			instance->host_no, acornscsi_target(host), host->SCpnt->tag);
-> -		acornscsi_sbic_issuecmd(host, CMND_ASSERTATN);
-> -		msgqueue_addmsg(&host->scsi.msgs, 1, ABORT);
-> -	    } else {
-> -		struct scsi_cmnd *SCpnt = host->SCpnt;
-> -
-> -		acornscsi_dma_cleanup(host);
-> -
-> -		host->SCpnt = host->SCpnt->next_link;
-> -		host->SCpnt->tag = SCpnt->tag;
-> -		SCpnt->result = DID_OK | host->scsi.SCp.Message << 8 | host->Scsi.SCp.Status;
-> -		SCpnt->done(SCpnt);
-> -
-> -		/* initialise host->SCpnt->SCp */
-> -	    }
-> -	    break;
-> -	}
-> -#endif
-> -
->       default: /* reject message */
->   	printk(KERN_ERR "scsi%d.%c: unrecognised message %02X, rejecting\n",
->   		host->host->host_no, acornscsi_target(host),
-> @@ -2825,9 +2778,6 @@ char *acornscsi_info(struct Scsi_Host *host)
->   #ifdef CONFIG_SCSI_ACORNSCSI_TAGGED_QUEUE
->       " TAG"
->   #endif
-> -#ifdef CONFIG_SCSI_ACORNSCSI_LINK
-> -    " LINK"
-> -#endif
->   #if (DEBUG & DEBUG_NO_WRITE)
->       " NOWRITE (" __stringify(NO_WRITE) ")"
->   #endif
-> @@ -2851,9 +2801,6 @@ static int acornscsi_show_info(struct seq_file *m, struct Scsi_Host *instance)
->   #ifdef CONFIG_SCSI_ACORNSCSI_TAGGED_QUEUE
->       " TAG"
->   #endif
-> -#ifdef CONFIG_SCSI_ACORNSCSI_LINK
-> -    " LINK"
-> -#endif
->   #if (DEBUG & DEBUG_NO_WRITE)
->       " NOWRITE (" __stringify(NO_WRITE) ")"
->   #endif
->
-I'm all for it. Removing never-really-implemented feature on obsolete 
-hardware is always a good idea.
+Agreed. Don't worry too much about the driver naming.  Plenty of convention
+says that it has no real meaning other than labelling one part supported by
+the driver.
 
-Acked-by: Hannes Reinecke <hare@suse.de>
+> Thanks,
+> Srinivas
+>> 2) Create a whole new driver that handles True/Magnetic North. This
+>> would not work on my device as it is set to Compass 3D Usage
+>> Attribute. This could be resolved by adding another quirk for the
+>> Surface to ensure it used the new driver.
+No to this one as we'll end up with lots of similar cases and far too many
+similar drivers.
+>>
+>> For both options I think we'd need a new IIO_MOD_NORTH for the
+>> iio_chan_spec, as the current ones don't really apply. I like the
+>> first solution as it could allow for handling of devices with only one
+>> or two axis present. I do realize if the hid-mangn-3d driver was
+>> changed it's name would not make sense anymore and the pattern I'm
+>> notcing is a driver for each HID Usage.
+If you are introducing a north attribute, allow for both true and magnetic
+norths (only introduce the one you are using).
 
-Cheers,
+IIO_MOD_NORTH_TRUE
+IIO_MOD_NORTH_MAGNETIC perhaps?
+I see the spec also mentions compensated variants of these...   If you do
+include these I think
+IIO_MOD_NORTH_TRUE_TILT_COMPENSATED or similar would be needed to make it
+clear what was going on.
+>>
+>> Here's a link to the hid report description with some labels for my device:
+>> Bug 73321 Comment 7
+>> https://bugzilla.kernel.org/show_bug.cgi?id=73321#c7
+>>
+>> I'd be willing to work on this. Just wanted to know what would work best
+>>
+Cool. I'd suggest perhaps doing the documentation first for the new ABI elements
+then we can hammer that out in parallel with work on the driver.
+(it's usually the harder part!)
+>> Thank You,
+>> Reyad Attiyat
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
