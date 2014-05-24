@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751154AbaEXGrJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 02:47:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58590 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750736AbaEXGrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 02:47:07 -0400
-Date: Sat, 24 May 2014 08:46:58 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/5] phy: add support for USB cluster on the Armada 375
- SoC
-Message-ID: <20140524084658.30e307fb@free-electrons.com>
-In-Reply-To: <537FC2BE.1040501@free-electrons.com>
-References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com>
-	<537F12F5.2030102@ti.com>
-	<537FC2BE.1040501@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	id S1751291AbaEXGsI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 02:48:08 -0400
+Received: from mail.sysmocom.de ([144.76.43.93]:14413 "EHLO mail.sysmocom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaEXGsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 May 2014 02:48:06 -0400
+X-Greylist: delayed 497 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 May 2014 02:48:06 EDT
+Date: Sat, 24 May 2014 08:39:45 +0200
+From: Holger Hans Peter Freyther <holger@freyther.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Takashi Iwai <tiwai@suse.de>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Holger Hans Peter Freyther <holger@moiji-mobile.com>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: Re: [PATCH 02/10] xhci: 'noxhci_port_switch' kernel parameter
+Message-ID: <20140524063945.GA14727@xiaoyu.lan>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+ <1399566363-25837-3-git-send-email-mathias.nyman@linux.intel.com>
+ <20140520010137.GA8146@kroah.com>
+ <537B24B8.9050303@linux.intel.com>
+ <s5ha9acbwwo.wl%tiwai@suse.de>
+ <CAPcyv4gg164u8Dz0RtV4KjXkDyCMvuC92j6VopqTbA1Shp_3QA@mail.gmail.com>
+ <20140520203432.GB30178@kroah.com>
+ <CAPcyv4i4jTMMbZWWdb79bJ2f5OUaSin4BN_ukWmVcv7JCiup3g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPcyv4i4jTMMbZWWdb79bJ2f5OUaSin4BN_ukWmVcv7JCiup3g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gregory, Kishon,
+On Tue, May 20, 2014 at 03:40:16PM -0700, Dan Williams wrote:
 
-On Fri, 23 May 2014 23:50:54 +0200, Gregory CLEMENT wrote:
+Dear Dan,
 
-> >> +MODULE_DESCRIPTION("Armada 375 USB cluster driver");
-> >> +MODULE_AUTHOR("Gregory CLEMENT <gregory.clement@free-electrons.com>");
-> >> +MODULE_LICENSE("GPL");
-> > 
-> > GPL v2?
-> 
-> See the header, I chose "GNU General Public License version 2 or later."
-> so "GPL" match it.
+> Sorry, I don't think it is fair to users to force them to re-compile
+> their kernel to get their device to work.  Granted, I'm new to USB
+> development, but the rate of reports of endpoint devices that mess up
+> and require quirks in the hcd-driver or usb-core seems un-ending to
 
-And also, the vast majority of kernel drivers use
-MODULE_LICENSE("GPL") :
+thank you very much for this statement. xhci-hcd is unusable for
+many people. On my laptop I can't scan more than one document, the
+laptop sometimes immediately wakes up after suspend and after almost
+two years all of these issues remain.
 
-$ git grep 'MODULE_LICENSE("GPL")' | wc -l
-5615
-$ git grep 'MODULE_LICENSE("GPLv2")' | wc -l
-5
-$ git grep 'MODULE_LICENSE("GPL v2")' | wc -l
-932
+I am running kernels with a hacked up pci-quirks.c for months and
+scanning documents work, suspend/resume is working, no issues with
+USB serials. My job is not related to Linux kernel development so
+I would love to go back to a distribution kernel. Please make this
+possible. In the end "xhci" appears to be a "supported" driver?
 
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+cheers
+	holger
