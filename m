@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331AbaEXMke (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:40:34 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:56398 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaEXMkc (ORCPT
+	id S1751388AbaEXMl4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 08:41:56 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:7610 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750845AbaEXMlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:40:32 -0400
+	Sat, 24 May 2014 08:41:55 -0400
+Message-ID: <5380938E.5010408@itdev.co.uk>
+Date: Sat, 24 May 2014 13:41:50 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <7638065.14871400820762911.JavaMail.weblogic@epml08>
-References: <7638065.14871400820762911.JavaMail.weblogic@epml08>
-Date: Sat, 24 May 2014 21:40:31 +0900
-X-Google-Sender-Auth: 1SHlLlp9bVIf53phrdnHMQmbfKM
-Message-ID: <CAJ0PZbS_Xcu=OJuiy=xs7k_A1=ajp34KEdi4KGC3e-y8t3EUGw@mail.gmail.com>
-Subject: Re: [PATCH] PM / devfreq: remove checks for CONFIG_EXYNOS_ASV
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Paul Bolle <pebolle@tiscali.nl>,
-        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Yufeng Shen <miletus@chromium.org>
+CC: Benson Leung <bleung@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH 20/51] Input: atmel_mxt_ts - Set default irqflags when
+ there is no pdata
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>	<1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>	<20130718171744.GC32381@polaris.bitmath.org>	<20130916022533.GA6468@core.coreip.homeip.net>	<537E09D6.7050604@itdev.co.uk> <CAPDwgkP5KjP6PcZBeYTMPuewO4exyUFfCX8rhzmgDO65ti=3Mg@mail.gmail.com>
+In-Reply-To: <CAPDwgkP5KjP6PcZBeYTMPuewO4exyUFfCX8rhzmgDO65ti=3Mg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 1:52 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> On Thu, May 22, 2014 at 5:37 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
->> Checks for CONFIG_EXYNOS_ASV were added in v3.3. But the related Kconfig
->> symbol has never been added to the tree. Remove these checks, as they
->> always evaluate to false.
+Yufeng Shen wrote:
+> On Thu, May 22, 2014 at 10:29 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
+>> Dmitry Torokhov wrote:
+>>>>> Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
+>>>>> provided.
+>>>
+>>> I think if there is no platform data we should use 0 as IRQ falgs and
+>>> assume that IRQ line is properly configured by the board code or via
+>>> device tree.
 >>
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->
-> Thanks for pointing this out.
->
-> ASV was supposed to be merged, but it appears it failed or never attempted.
->
-> I will merge with the next batch (this week).
->
->
-> Cheers,
-> MyungJoo.
+>> Benson/Yufeng - do you still have a requirement to probe without platform
+>> data or device tree? I'm just merging in some changes to add device tree
+>> support, and it would simplify things a bit if I can drop this patch.
+> 
+> It has been working for quite a while for boards/devices that don't 
+> provide platform data. If we drop the default IRQ flags, sure we can add
+> code for each board to configure the IRQ separately, but that's just
+> adding extra work. Is there strong reason why we should not do the
+> default setting in the driver if it is not already configured in
+> platform data?
 
-Uh.. ASV itself affects the power efficiency; thus, I'd like to keep
-it alive, but not as the current form.
+OK, I will keep it in my tree for the moment, since you are using it.
 
-For 3.16, I'll correct the name following your report. (not going for
-3.15RCx anyway)
+The reason I checked is that in general, I would like to be conservative
+about what is pushed upstream, because it will need maintaining for a long
+time.
 
-
-Then, I'll let it merged into struct busfreq_data for later RCx.
-
-
-Cheers,
-MyungJoo.
-
->
->> ---
->> 0) Untested.
->>
->> 1) I do not really care much for this patch. Two years is not very long
->> for dead code to remain in the tree. There is, however, a trivial issue
->> that makes this patch stand out from the other patches in my current
->> sweep of the tree for Kconfig related problems.
->>
->> See, here the use of an unknown Kconfig macro hides an obvious typo: it
->> should either be "exynos_result_of_asv" or "exynos4_result_of_asv", but
->> not both. Ie, this almost certainly wouldn't have compiled even if the
->> Kconfig symbol EXYNOS_ASV would have been part of the tree.
->>
->> 2) So this makes me wonder whether there are any guidelines for using
->> Kconfig macros before the related Kconfig symbols are merged?
->>
->>  drivers/devfreq/Kconfig              |  3 +--
->>  drivers/devfreq/exynos/exynos4_bus.c | 13 -------------
->>  2 files changed, 1 insertion(+), 15 deletions(-)
-
-
-
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
+The other reason is that in fact Atmel recommend IRQF_TRIGGER_LOW for these
+chips, not IRQF_TRIGGER_FALLING, so there is a bit of an inconsistency here.
