@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188AbaEXBdz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 21:33:55 -0400
-Received: from mx5-phx2.redhat.com ([209.132.183.37]:45432 "EHLO
-	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872AbaEXBdy (ORCPT
+	id S1751203AbaEXCSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 22:18:25 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:55989 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050AbaEXCSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 21:33:54 -0400
-Date: Fri, 23 May 2014 21:33:48 -0400 (EDT)
-From: Jon Maxwell <jmaxwell@redhat.com>
-To: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-Cc: Jon Maxwell <jmaxwell37@gmail.com>, stephen@networkplumber.org,
-        davem@davemloft.net, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jpirko@redhat.com
-Message-ID: <1655748249.12329071.1400895228522.JavaMail.zimbra@redhat.com>
-In-Reply-To: <537F0951.5010904@lab.ntt.co.jp>
-References: <1399967708-7283-1-git-send-email-jmaxwell@redhat.com> <5372BA1E.8000402@lab.ntt.co.jp> <2052318198.6465872.1400101664337.JavaMail.zimbra@redhat.com> <1679971005.11740655.1400821172875.JavaMail.zimbra@redhat.com> <537F0951.5010904@lab.ntt.co.jp>
-Subject: Re: [PATCH net] bridge: notify user space of fdb port change
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: bridge: notify user space of fdb port change
-Thread-Index: GbUPia1lJ48ff+Vg5fPqOxtGCNZV1Q==
+	Fri, 23 May 2014 22:18:23 -0400
+From: Chen Yucong <slaoub@gmail.com>
+To: tony.luck@intel.com
+Cc: bp@alien8.de, linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
+        Chen Yucong <slaoub@gmail.com>
+Subject: [PATCH] x86/mce: Fix incorrect comment in do_machine_check()
+Date: Sat, 24 May 2014 10:16:41 +0800
+Message-Id: <1400897801-27370-1-git-send-email-slaoub@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In do_machine_check function, we can find the following code segment:
 
-> I have no more comments except for style problems (bracket position,
-> indentation, type mismatch).
-> thank you for rewriting :)
+*       ...
+*        /* mce_clear_state will clear *final, save locally for use later */
+*        m = *final;
+*
+*        if (!no_way_out)
+*                mce_clear_state(toclear);
+*       ...
 
-np, yes this is a draft but I will make sure complies with checkpatch.pl
-before submitting it.
+But the reality is that mce_clear_state function will not clear *final. It is just
+used to clear bank MSRs or the relative field of injectm used by MCE-Injection.
+Meanwhile, mce_reign executed by monarch CPU will clear *final, therefore we need
+to save it locally for use later.
 
-Regards
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Jon
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68317c8..83159c1 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1137,7 +1137,9 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		}
+ 	}
+ 
+-	/* mce_clear_state will clear *final, save locally for use later */
++	/* mce_reign executed by monarch CPU will clear *final(mces_seen),
++	 * save locally for use later
++	 */
+ 	m = *final;
+ 
+ 	if (!no_way_out)
+-- 
+1.7.10.4
 
-> 
-> Thanks,
-> Toshiaki Makita
-> 
-> > 
-> > $ diff -Naur br_fdb.c br_fdb.c.patch
-> > --- br_fdb.c        2014-05-17 12:43:23.346319609 +1000
-> > +++ br_fdb.c.patch        2014-05-17 16:54:46.280235728 +1000
-> > @@ -487,6 +487,7 @@
-> >  {
-> >          struct hlist_head *head = &br->hash[br_mac_hash(addr, vid)];
-> >          struct net_bridge_fdb_entry *fdb;
-> > +        bool fdb_modified = 0;
-> >  
-> >          /* some users want to always flood. */
-> >          if (hold_time(br) == 0)
-> > @@ -507,10 +508,16 @@
-> >                                          source->dev->name);
-> >                  } else {
-> >                          /* fastpath: update of existing entry */
-> > -                        fdb->dst = source;
-> > +                        if (unlikely(source != fdb->dst))
-> > +                                {
-> > +                                fdb->dst = source;
-> > +                                fdb_modified = 1;
-> > +                                }
-> >                          fdb->updated = jiffies;
-> >                          if (unlikely(added_by_user))
-> >                                  fdb->added_by_user = 1;
-> > +                        if (unlikely(fdb_modified))
-> > +                                fdb_notify(br, fdb, RTM_NEWNEIGH);
-> >                  }
-> >          } else {
-> >                  spin_lock(&br->hash_lock);
-> > 
-> > 
-> 
