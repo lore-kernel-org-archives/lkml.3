@@ -1,152 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362AbaEXODQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 10:03:16 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55533 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751170AbaEXODO (ORCPT
+	id S1751392AbaEXOGM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 10:06:12 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:49467 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaEXOGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 10:03:14 -0400
-Message-ID: <1400940192.22523.59.camel@x220>
-Subject: [PATCH] qla2xxx: remove stub qlt_check_srr_debug()
-From: Paul Bolle <pebolle@tiscali.nl>
-To: qla2xxx-upstream@qlogic.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 24 May 2014 16:03:12 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 May 2014 14:03:12.0300 (UTC) FILETIME=[E66156C0:01CF7758]
-X-RcptDomain: vger.kernel.org
+	Sat, 24 May 2014 10:06:10 -0400
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+Date: Sat, 24 May 2014 23:06:09 +0900
+X-Google-Sender-Auth: 2S_Zb34mAjvMU0ETvALEBCLbm0k
+Message-ID: <CAJ0PZbSpcT3A+z0axkkPZD06bX1SNcKszJuYMDWHrUDiApooGA@mail.gmail.com>
+Subject: [GIT PULL] devfreq update for Linux 3.16
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: rafael.j.wysocki@intel.com
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-qlt_check_srr_debug() was added in v3.5. It is a stub function unless
-CONFIG_QLA_TGT_DEBUG_SRR is defined. But CONFIG_QLA_TGT_DEBUG_SRR will
-never be defined, because the Kconfig symbol QLA_TGT_DEBUG_SRR was never
-added to the tree.
+Dear Rafael,
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested.
+Here goes the pull request of devfreq for 3.16
 
-Or was it intended for this to set it by hand? In that case: please drop
-the CONFIG_ prefix, and, perhaps add a comment about its purpose.
 
- drivers/scsi/qla2xxx/qla_target.c | 90 ---------------------------------------
- 1 file changed, 90 deletions(-)
+Cheers,
+MyungJoo
 
-diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-index 0cb73074c199..9729411faf45 100644
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1747,95 +1747,6 @@ static inline int qlt_need_explicit_conf(struct qla_hw_data *ha,
- 		    cmd->conf_compl_supported;
- }
- 
--#ifdef CONFIG_QLA_TGT_DEBUG_SRR
--/*
-- *  Original taken from the XFS code
-- */
--static unsigned long qlt_srr_random(void)
--{
--	static int Inited;
--	static unsigned long RandomValue;
--	static DEFINE_SPINLOCK(lock);
--	/* cycles pseudo-randomly through all values between 1 and 2^31 - 2 */
--	register long rv;
--	register long lo;
--	register long hi;
--	unsigned long flags;
--
--	spin_lock_irqsave(&lock, flags);
--	if (!Inited) {
--		RandomValue = jiffies;
--		Inited = 1;
--	}
--	rv = RandomValue;
--	hi = rv / 127773;
--	lo = rv % 127773;
--	rv = 16807 * lo - 2836 * hi;
--	if (rv <= 0)
--		rv += 2147483647;
--	RandomValue = rv;
--	spin_unlock_irqrestore(&lock, flags);
--	return rv;
--}
--
--static void qlt_check_srr_debug(struct qla_tgt_cmd *cmd, int *xmit_type)
--{
--#if 0 /* This is not a real status packets lost, so it won't lead to SRR */
--	if ((*xmit_type & QLA_TGT_XMIT_STATUS) && (qlt_srr_random() % 200)
--	    == 50) {
--		*xmit_type &= ~QLA_TGT_XMIT_STATUS;
--		ql_dbg(ql_dbg_tgt_mgt, cmd->vha, 0xf015,
--		    "Dropping cmd %p (tag %d) status", cmd, cmd->tag);
--	}
--#endif
--	/*
--	 * It's currently not possible to simulate SRRs for FCP_WRITE without
--	 * a physical link layer failure, so don't even try here..
--	 */
--	if (cmd->dma_data_direction != DMA_FROM_DEVICE)
--		return;
--
--	if (qlt_has_data(cmd) && (cmd->sg_cnt > 1) &&
--	    ((qlt_srr_random() % 100) == 20)) {
--		int i, leave = 0;
--		unsigned int tot_len = 0;
--
--		while (leave == 0)
--			leave = qlt_srr_random() % cmd->sg_cnt;
--
--		for (i = 0; i < leave; i++)
--			tot_len += cmd->sg[i].length;
--
--		ql_dbg(ql_dbg_tgt_mgt, cmd->vha, 0xf016,
--		    "Cutting cmd %p (tag %d) buffer"
--		    " tail to len %d, sg_cnt %d (cmd->bufflen %d,"
--		    " cmd->sg_cnt %d)", cmd, cmd->tag, tot_len, leave,
--		    cmd->bufflen, cmd->sg_cnt);
--
--		cmd->bufflen = tot_len;
--		cmd->sg_cnt = leave;
--	}
--
--	if (qlt_has_data(cmd) && ((qlt_srr_random() % 100) == 70)) {
--		unsigned int offset = qlt_srr_random() % cmd->bufflen;
--
--		ql_dbg(ql_dbg_tgt_mgt, cmd->vha, 0xf017,
--		    "Cutting cmd %p (tag %d) buffer head "
--		    "to offset %d (cmd->bufflen %d)", cmd, cmd->tag, offset,
--		    cmd->bufflen);
--		if (offset == 0)
--			*xmit_type &= ~QLA_TGT_XMIT_DATA;
--		else if (qlt_set_data_offset(cmd, offset)) {
--			ql_dbg(ql_dbg_tgt_mgt, cmd->vha, 0xf018,
--			    "qlt_set_data_offset() failed (tag %d)", cmd->tag);
--		}
--	}
--}
--#else
--static inline void qlt_check_srr_debug(struct qla_tgt_cmd *cmd, int *xmit_type)
--{}
--#endif
--
- static void qlt_24xx_init_ctio_to_isp(struct ctio7_to_24xx *ctio,
- 	struct qla_tgt_prm *prm)
- {
-@@ -1918,7 +1829,6 @@ int qlt_xmit_response(struct qla_tgt_cmd *cmd, int xmit_type,
- 	int res;
- 
- 	memset(&prm, 0, sizeof(prm));
--	qlt_check_srr_debug(cmd, &xmit_type);
- 
- 	ql_dbg(ql_dbg_tgt, cmd->vha, 0xe018,
- 	    "is_send_status=%d, cmd->bufflen=%d, cmd->sg_cnt=%d, "
--- 
-1.9.0
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
+The following changes since commit 4b660a7f5c8099d88d1a43d8ae138965112592c7:
+
+  Linux 3.15-rc6 (2014-05-22 06:42:02 +0900)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git tags/for-3.16
+
+for you to fetch changes up to cb7063f453e543b97285a10343cfc02983d792ad:
+
+  PM / devfreq: remove checks for CONFIG_EXYNOS_ASV (2014-05-24 22:33:51 +0900)
+
+- ----------------------------------------------------------------
+Pull Request for Rafael.
+
+Merge target is Linux 3.16
+
+- - Clean up with modern macro in the core and drivers.
+- - Fix incorrect error returns
+- - Remove dead CONFIG check.
+- - Fix resource leak in a driver.
+
+- ----------------------------------------------------------------
+Bartlomiej Zolnierkiewicz (3):
+      PM / devfreq: exynos4: introduce struct busfreq_ppmu_data
+      PM / devfreq: exynos5: introduce struct busfreq_ppmu_data
+      PM / devfreq: exynos: make more PPMU code common
+
+Chanwoo Choi (11):
+      PM / devfreq: exynos4: Fix bug of resource leak and code clean on probe()
+      PM / devfreq: exynos4: Use SIMPLE_DEV_PM_OPS macro
+      PM / devfreq: exynos4: Add CONFIG_PM_OPP dependency to fix probe fail
+      PM / devfreq: exynos5: Use SIMPLE_DEV_PM_OPS macro
+      PM / devfreq: exynos5: Add CONFIG_PM_OPP dependency to fix probe fail
+      PM / devfreq: exynos4: use common PPMU code
+      PM / devfreq: Fix devfreq_remove_device() to improve the sequence ...
+      PM / devfreq: Add resource-managed function for devfreq device
+      PM / devfreq: Add devm_devfreq_{register,unregister}_opp_notfierfunction
+      PM / devfreq: exynos4: Use devm_devfreq_* function using device ...
+      PM / devfreq: exynos5: Use devm_devfreq_* function using device ...
+
+Paul Bolle (1):
+      PM / devfreq: remove checks for CONFIG_EXYNOS_ASV
+
+ drivers/devfreq/Kconfig              |   5 +-
+ drivers/devfreq/devfreq.c            | 125 ++++++++++++++++++--
+ drivers/devfreq/exynos/Makefile      |   2 +-
+ drivers/devfreq/exynos/exynos4_bus.c | 219 ++++++++++-------------------------
+ drivers/devfreq/exynos/exynos5_bus.c | 130 ++++++---------------
+ drivers/devfreq/exynos/exynos_ppmu.c |  60 ++++++++++
+ drivers/devfreq/exynos/exynos_ppmu.h |   8 ++
+ include/linux/devfreq.h              |  35 +++++-
+ 8 files changed, 317 insertions(+), 267 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTgKWPAAoJEDv/jgS9xknFYlMP/0zIsdDGxtJA3NdxJGT/dA+d
+z7sDIBSOCQCBQv8CSMCY6HgtejgbtpRX8coKaSYGjLP9sL43hHCRkJesQdYNo5vE
+xuU0Zo80ERBZvXj9pXC76ojmvBMRmynYPnbMC7ZgzGEFA2kSf/SoEAwSu6y+5uiF
+b5igBp22QNd73V5c+Vjr6pzDfSXDyGDv5Km8jDFPvx3YLNChY471VtK+KMikGwGp
+FplzfNSCThMPertAxKuWRlZMS8v0YVyO9TN4KHNQuwdGotiQcYweeAFL+G183ZaC
+8m+komdIP2oct0h19j8298cGPQSH/NpCXTwXSFMhn/QEU6W3WtaTF3crURjhTxja
+EZiSOClumMnZPJt6di10vV6TOS0e4pWgfP2ZX9sNRBYLf5Vs/P46kB3mzAM1LSeV
+D/93dkv5mAoZPTt/eruB/4jOeQDewAtOf/o3/vOjXUu4QwQ7JARGUEZ8RKJktVHs
+R5q7nrEFOckyoSME131ePODy5EUgYv2kFGmaLqwulZaUN7ooslBZiaph7Fc0f1VB
+2TEQKLtbkPIYiDqTHF8MAkIjwzhuul02NpEN7UccHfc4RIkoyhNnOrhwsi2ktAJw
+ID7x2ofVKvevHp2qiLWlAHAryEJ+aTYNpiDRByZiUWFrt8LlLIZuCkdxWYGWcyOY
+dkeARTmbHnqfdYAeuTNn
+=ZUxh
+-----END PGP SIGNATURE-----
