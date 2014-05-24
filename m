@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaEXMu3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:50:29 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41140 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaEXMu1 (ORCPT
+	id S1751327AbaEXM74 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 08:59:56 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38390 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaEXM7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:50:27 -0400
-Date: Sat, 24 May 2014 13:48:58 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140524124858.GR22111@sirena.org.uk>
-References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
- <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
+	Sat, 24 May 2014 08:59:54 -0400
+Date: Sat, 24 May 2014 14:59:47 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Eduardo Valentin <edubezval@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        Sudeep Holla <sudeep.holla@arm.com>
+Subject: Re: [PATCH V3 1/8] cpufreq: cpufreq-cpu0: remove dependency on
+ thermal
+Message-ID: <20140524125946.GA31533@Nokia-N900>
+References: <cover.1400736536.git.viresh.kumar@linaro.org>
+ <c73c825beda0207867bd29e40fece217cbf15925.1400736536.git.viresh.kumar@linaro.org>
+ <20140522145209.GA5246@developer>
+ <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0fu5tullpC+tJp0Y"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.116.200.249
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
- ks8851 SPI chips
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri 2014-05-23 10:03:27, Viresh Kumar wrote:
+> On 22 May 2014 20:22, Eduardo Valentin <edubezval@gmail.com> wrote:
+> > However, on CPUs that needs thermal managment, it makes sense to have
+> > such dependency, from functional perspective. Mainly because scaling
+> > frequency and voltage up would be allowed only when thermal management
+> > is enabled.
+> 
+> AFAIK, dependencies in KCONFIG are only for fixing compilation time issues.
 
---0fu5tullpC+tJp0Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Fri, May 23, 2014 at 12:57:17PM -0700, Stephen Boyd wrote:
-
->  Optional properties:
-> -- vdd-supply:	supply for Ethernet mac
-> +- vdd-supply: analog 3.3V supply for Ethernet mac
-> +- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
-
-So, according to the datasheet I managed to find this device has a
-supply VDD_IO (so normally written vdd-io-supply here), some other
-supplies which are tied to VDD_IO (so can probably be omitted) and a
-supply VDD_A3.3 none of which are optional.  There is an internal
-regulator which can be used to drop a higher voltage VDD_IO down for
-some of the supplies tied to it but that's essentially a noop from
-software as far as I can tell.  None of these supplies are obviously
-optional, though I've not read the datasheet in detail so I may have
-missed something here.
-
-That said it looks like this is intended to be a supply for an external
-PHY rather than the device itself, but even so my original question
-about it being able to operate without power still applies.  Looking at
-the code it's certainly not doing any of the handling of a missing
-supply that I would associate with using _optional().
-
---0fu5tullpC+tJp0Y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTgJU3AAoJELSic+t+oim9+tAP/ifbdcUD5cDbQ44onjRvB2p3
-tk9sxYsW87abDW64X9KhzqTm6pUEG9ZBUC8qKN9T9l11RVU9I5PxzV9iEqovIJUV
-nnU9OwnoMjIie5Juwkg3d1gCIGBCB5lCEmPoUWUgop4zZFAxl49e1mCZPUgCofGQ
-qXA6FDoIVX06mWmVOYEZ1tfcTjcp0oZdaSl1sUlc27GJNMV0KCHulA+9PwakxpnS
-aYGVYL6CfO9HLQbkaBn+KvDMO0epfVg0GQVnRYiQ8Fh7ksYIcnz/OqVoKnbWTaMT
-gpcad3H4CmQk/sAUzBU7DPs2fgCWbTyERk864KtPt59rmFTlb9zq5JPxDy0Q+Gqi
-4IUlWDGzZb1ZKrH3nZIR/7bwe5QPZU3hs8JEblkmGNqfpPysP6a+GYF7xhxuUq6y
-IDlqkvEzvmYdiwAPe5UPo2hJ5Ie/UkKIE2MBiHoc09zXm63yj/wIFUb6JDf4In2X
-/QlQYMga49lceFtsuFoIoG/BYYz1CjUjwBFczwVo0aHMJRjNWRhhAB9UD8oR6D9k
-F67KhxClqMKl/MEf/pXVz5O+/CdMeE+m/0mhmHsRPmuIseswXPhD3G62BBG5DYID
-Ew2FjouY0JWsYq3tqKc0Oafn/pmkaDVueBi3VrWFLMOqtFLAuKWetC6Z5e1q7tbl
-t6egA/9IHlhl6LUQT1aq
-=TPgS
------END PGP SIGNATURE-----
-
---0fu5tullpC+tJp0Y--
+I do not think that's correct.
