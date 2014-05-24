@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114AbaEXGft (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 02:35:49 -0400
-Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:46176 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750736AbaEXGfs (ORCPT
+	id S1751154AbaEXGrJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 02:47:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58590 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750736AbaEXGrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 02:35:48 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3871:3873:3874:4321:4362:5007:6119:6691:7652:10004:10400:10848:11026:11658:11914:12296:12517:12519:12740:13069:13071:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cast61_323ab8b69cc56
-X-Filterd-Recvd-Size: 1647
-Message-ID: <1400913343.10357.9.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] lib/bug.c: convert printk to pr_foo()
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        akpm <akpm@linux-foundation.org>
-Date: Fri, 23 May 2014 23:35:43 -0700
-In-Reply-To: <20140524081855.54cb27d56214c3ba3827ce7a@skynet.be>
-References: <20140524081855.54cb27d56214c3ba3827ce7a@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Sat, 24 May 2014 02:47:07 -0400
+Date: Sat, 24 May 2014 08:46:58 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/5] phy: add support for USB cluster on the Armada 375
+ SoC
+Message-ID: <20140524084658.30e307fb@free-electrons.com>
+In-Reply-To: <537FC2BE.1040501@free-electrons.com>
+References: <1400257376-13251-1-git-send-email-gregory.clement@free-electrons.com>
+	<537F12F5.2030102@ti.com>
+	<537FC2BE.1040501@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-24 at 08:18 +0200, Fabian Frederick wrote:
-> -Coalesce formats
-> -"WARNING:" prefix unchanged to keep bug format.
-> -printk(KERN_DEFAULT not converted.
+Gregory, Kishon,
 
-Hello Fabian.
+On Fri, 23 May 2014 23:50:54 +0200, Gregory CLEMENT wrote:
 
-For these conversions where there is a specific
-desire to _NOT_ have a prefix, can you please add
-a new #define to the file?
+> >> +MODULE_DESCRIPTION("Armada 375 USB cluster driver");
+> >> +MODULE_AUTHOR("Gregory CLEMENT <gregory.clement@free-electrons.com>");
+> >> +MODULE_LICENSE("GPL");
+> > 
+> > GPL v2?
+> 
+> See the header, I chose "GNU General Public License version 2 or later."
+> so "GPL" match it.
 
-#define pr_fmt(fmt) fmt
+And also, the vast majority of kernel drivers use
+MODULE_LICENSE("GPL") :
 
-so that if ever the default in printk.h is changed,
-these will not be prefixed.
+$ git grep 'MODULE_LICENSE("GPL")' | wc -l
+5615
+$ git grep 'MODULE_LICENSE("GPLv2")' | wc -l
+5
+$ git grep 'MODULE_LICENSE("GPL v2")' | wc -l
+932
 
-> diff --git a/lib/bug.c b/lib/bug.c
-[]
-> @@ -153,15 +153,13 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
->  
->  	if (warning) {
->  		/* this is a WARN_ON rather than BUG/BUG_ON */
-> -		printk(KERN_WARNING "------------[ cut here ]------------\n");
-> +		pr_warn("------------[ cut here ]------------\n");
+Best regards,
 
-Thanks, Joe
-
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
