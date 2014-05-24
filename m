@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576AbaEXMYw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 08:24:52 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:52096 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaEXMYs (ORCPT
+	id S1751621AbaEXMY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 08:24:56 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:45716 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586AbaEXMYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 08:24:48 -0400
-Message-ID: <53803890.2000000@gmail.com>
-Date: Sat, 24 May 2014 08:13:36 +0200
+	Sat, 24 May 2014 08:24:53 -0400
+Message-ID: <53804FC0.1010207@gmail.com>
+Date: Sat, 24 May 2014 09:52:32 +0200
 From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Elie De Brauwer <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <steve@chygwyn.com>,
-        =?UTF-8?B?UsOpbWkgRGVuaXMtQ291cm1v?= =?UTF-8?B?bnQ=?= 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Chris Friesen <chris.friesen@windriver.com>
-Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
-References: <536101C9.9090601@gmail.com> <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com> <20140512143451.GB13801@kernel.org> <20140521210535.GA5414@kernel.org> <537E0961.8040005@gmail.com>
-In-Reply-To: <537E0961.8040005@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+CC: mtk.manpages@gmail.com, Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Jos Huisken <jos.huisken@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: inotify, new idea?
+References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com> <20140417212834.GC17769@csclub.uwaterloo.ca> <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com> <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com> <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com> <5354DA0B.2060204@nod.at>
+In-Reply-To: <5354DA0B.2060204@nod.at>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
+On 04/21/2014 10:42 AM, Richard Weinberger wrote:
+> Am 21.04.2014 09:24, schrieb Michael Kerrisk:
+>>> Does recursive monitoring even work with inotify?
+>>> Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
+>>> mkdir() raced against the thread which installes the new watches.
+>>
+>> As I understand it, you have to program to deal with the races (rescan
+>> directories after adding watches). I recently did a lot of work
+>> updating the inotify(7) man page to discuss all the issues that I know
+>> of, and their remedies. If I missed anything, I'd appreciate a note on
+>> it, so that it can be added. See
+>> http://man7.org/linux/man-pages/man7/inotify.7.html#NOTES
+> 
+> I'm aware of the rescan hack, but in my case it does not help
+> because my program must not miss any event.
+> Currently I'm using a fuse overlay filesystem to log everything.
+> Not perfect but works... :-)
 
-On 05/22/2014 04:27 PM, Michael Kerrisk (man-pages) wrote:
-> Hi Arnaldo,
-> 
-> On 05/21/2014 11:05 PM, Arnaldo Carvalho de Melo wrote:
->> Em Mon, May 12, 2014 at 11:34:51AM -0300, Arnaldo Carvalho de Melo escreveu:
->>> Em Mon, May 12, 2014 at 12:15:25PM +0200, Michael Kerrisk (man-pages) escreveu:
->>>> Hi Arnaldo,
->>  
->>>> Ping!
->>
->>> I acknowledge the problem, the timeout has to be passed to the
->>> underlying ->recvmsg() implementations that should return the time spent
->>> waiting for each packet, so that we can accrue that at recvmmsg level.
->>  
->>> We can do either passing an extra timeout parameter to the recvmsg
->>> implementations or using some struct sock member to specify that
->>> timeout.
->>  
->>> The first approach is intrusive, touches tons of files, so I'll try
->>> making it all mostly transparent by hooking into sock_rcvtimeo()
->>> somehow.
->>
->> But after thinking a bit more, looks like we need to do that, please
->> take a look at the attached patch to see if it addresses the problem.
->>
->> Mostly it adds a new timeop to the per protocol recvmsg()
->> implementations, that, if not NULL, should be used instead of
->> SO_RCVTIMEO.
->>
->> since the underlying recvmsg implementations already check that timeout,
->> return what is remaining, that will then be used in subsequent recvmsg
->> calls, at the end we just convert it back to timespec format.
->>
->> In most cases it is just passed to skb_recv_datagram, that will check
->> the pointer, use it and update if not NULL.
->>
->> Should have no problems, but I only did a boot with a system with this
->> patch applied, no problems noticed on a normal desktop session, ssh,
->> etc.
-> 
-> Thanks! I applied this patch against 3.15-rc6.
-> 
-> recvmmsg() now (mostly) does what I expect: 
-> * it waits until either the timeout expires or vlen messages 
->   have been received
-> * If no message is received before timeout, it returns -1/EAGAIN.
-> * If vlen messages are received before the timeout expires, then
->   the remaining time is returned in timeout.
-> 
-> One question: in the event that the call is interrupted by a signal 
-> handler, it fails (as expected) with EINTR, but the 'timeout' value is 
-> not updated with the remaining time on the timer. Would it be desirable 
-> to emulate the behavior of select() (and other syscalls) in this 
-> respect, and instead return the remaining time if interrupted by 
-> a signal?
-> 
-> Cheers,
-> 
-> Michael
-> 
+Richard,
+
+A late follow up question. How does your application deal with the
+event overflow problem (i.e., when you get a large number of events 
+much faster than your application can deal with them?
+
+Cheers,
+
+Michael
 
 
 -- 
