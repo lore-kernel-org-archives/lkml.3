@@ -1,63 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359AbaEXOnM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 10:43:12 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:37020 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaEXOnL (ORCPT
+	id S1751282AbaEXPKJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 11:10:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59568 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751168AbaEXPKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 10:43:11 -0400
-Date: Sat, 24 May 2014 16:42:42 +0200
-From: Johan Hovold <jhovold@gmail.com>
+	Sat, 24 May 2014 11:10:07 -0400
+Date: Sat, 24 May 2014 17:09:41 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Xiao Jin <jin.xiao@intel.com>, david.a.cohen@linux.intel.com,
-        yanmin.zhang@intel.com, Johan Hovold <jhovold@gmail.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH] USB: cdc-acm: fix broken runtime suspend
-Message-ID: <20140524144242.GC10266@localhost>
-References: <20140411093715.GA17522@localhost>
- <1397505492-10018-1-git-send-email-jhovold@gmail.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, stern@rowland.harvard.edu,
+        kishon@ti.com, hdegoede@redhat.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH RESEND v4 0/8] Add Allwinner A31 USB support
+Message-ID: <20140524150941.GG10768@lukather>
+References: <20140514160520.GA4679@kroah.com>
+ <20140523183339.GC10768@lukather>
+ <20140523221940.GB18106@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E69HUUNAyIJqGpVn"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397505492-10018-1-git-send-email-jhovold@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140523221940.GB18106@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 09:58:12PM +0200, Johan Hovold wrote:
-> The current ACM runtime-suspend implementation is broken in several
-> ways:
-> 
-> Firstly, it buffers only the first write request being made while
-> suspended -- any further writes are silently dropped.
-> 
-> Secondly, writes being dropped also leak write urbs, which are never
-> reclaimed (until the device is unbound).
-> 
-> Thirdly, even the single buffered write is not cleared at shutdown
-> (which may happen before the device is resumed), something which can
-> lead to another urb leak as well as a PM usage-counter leak.
-> 
-> Fix this by implementing a delayed-write queue using urb anchors and
-> making sure to discard the queue properly at shutdown.
-> 
-> Reported-by: Xiao Jin <jin.xiao@intel.com>
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-Greg, 
+--E69HUUNAyIJqGpVn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I understand yoǘ're on your way home from Japan and are getting ready to
-work through the 3.16 patch queue.
+On Sat, May 24, 2014 at 07:19:40AM +0900, Greg Kroah-Hartman wrote:
+> On Fri, May 23, 2014 at 08:33:39PM +0200, Maxime Ripard wrote:
+> > Hi Greg,
+> >=20
+> > On Wed, May 14, 2014 at 06:05:20PM +0200, Greg Kroah-Hartman wrote:
+> > > On Wed, May 14, 2014 at 02:34:19PM +0200, Maxime Ripard wrote:
+> > > > On Tue, May 13, 2014 at 05:44:14PM +0200, Maxime Ripard wrote:
+> > > > > Hi everyone,
+> > > > >=20
+> > > > > This patchset adds support for the USB controllers found in the
+> > > > > Allwinner A31.
+> > > > >=20
+> > > > > While the design is similar to the earlier Allwinner SoCs that are
+> > > > > already supported, a few details here and there change, like the =
+fact
+> > > > > that the PHYs now have one clock per phy, while it used to be onl=
+y one
+> > > > > for all the PHYs.
+> > > > >=20
+> > > > > Resent adding Alan Stern's Acked-by and puting Greg KH in the
+> > > > > recipients this time...
+> > > >=20
+> > > > Applied patches 2, 7 and 8.
+> > >=20
+> > > Feel free to apply patches 5 and 6 to your tree, as your branch needs
+> > > these, with my:
+> > >=20
+> > > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > >=20
+> > > Or, if you want me to take them, just let me know and I will.
+> >=20
+> > It looks like it's still not in your tree (or at least, I haven't
+> > received the usual mail notifications).
+> >=20
+> > Is this expected?
+>=20
+> Given that I haven't applied any USB patches in a week or so, yes, it is
+> expected...
+>=20
+> Give me a week or so to catch up, I've been on the road for a month
+> now, and am finally home.
 
-Could you please discard this one for now? I've found a couple of more
-PM related problems and I'll submit a slight update of this one as part
-of a larger series of fixes instead.
+Ok, thanks, I was just trying to make sure they weren't
+lost/forgotten.
 
-Thanks,
-Johan
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--E69HUUNAyIJqGpVn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTgLY1AAoJEBx+YmzsjxAgLt4P/0xxEAuDKE5UStyFpJN1UiHw
+SM2cpqhQUDRZ03IX2OhrrGWlMuesEGxYOp2mCN7SrnuAoIqZo7XD7Tr5vNx3J0SB
+CADMFcMmqf5cG5ES2fFSQC/lgppzvaBk3IdnQBvniqdmKa+gWcC/55tI3/QTkVXb
+tPrQ5wRCrtZc0cqmK3zAlAKba32lUkLmWa+31NrXCRzFFOyIZr9XoYuNq74fk0Gc
+HbHXphqxa5+WeihoOV971RTUnVjX/EZOwmJXvMzZPQFkA/Zrcvw0y2ZoAoSSJ4tp
+JZ/571Wg9heGR4FB7F6N6xJ0PPpTSKeZ2kFodp6pEtvO82NU+7d8/PLhMwl4iSId
+N8zO5A00xsw4v16V0q2tRSg4OYhcV3jFB0Skfyqjbp1YF53PrVVUfi417B90JSlU
+m+Wc+RjP6GzRXiOFJ6ZqFjgTA0ExMb9RAqHg9XJhtL/dgsxl0wstZoN+dClMPma/
+IgNQ4TqzsQpa2YjnRpa6S9+cCp7OpiN3bFHyb3+AmwiozLBfinCY3m/JNK8Um7v+
+9TCjqwO9jX6tFXOgHAeFM+gEiy+CKxfhhJAmMGL7swoPbvRvbUzpsGJynvbqrwqL
+/YKdYEsLsDEbdOfNWT+nM3WlzECUXC549Il7Bsi+mxZzMw7VrtTdsUaXiXLGDD7X
+ju3JHa/qO1CeftxEjFcN
+=Hqzc
+-----END PGP SIGNATURE-----
+
+--E69HUUNAyIJqGpVn--
