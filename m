@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265AbaEXHXz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 03:23:55 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:56554 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbaEXHXy (ORCPT
+	id S1751170AbaEXHaz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 03:30:55 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:12947 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750792AbaEXHay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 03:23:54 -0400
-Message-ID: <53804907.7010004@gmail.com>
-Date: Sat, 24 May 2014 09:23:51 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, Mark Brown <broonie@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: pxa: pxa-ssp: Terminate of match table
-References: <1400890613-5704-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1400890613-5704-1-git-send-email-sboyd@codeaurora.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	Sat, 24 May 2014 03:30:54 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiALAD5KgFNXQ3g//2dsb2JhbABagwerDAQBAQEBAQEFAYM8lE6BAxd0gmYcIxiBAiQTiEYB2B+FVYh9hEcBA48/ijMBixeIEIM6Ow
+Date: Sat, 24 May 2014 09:30:51 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Joe <joe@perches.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: [PATCH V2] lib/bug.c: convert printk to pr_foo()
+Message-Id: <20140524093051.37b63f94f2959280a4224267@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2014 02:16 AM, Stephen Boyd wrote:
-> Failure to terminate this match table can lead to boot failures
-> depending on where the compiler places the match table.
-> 
-> Cc: Daniel Mack <zonque@gmail.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+-Coalesce formats
+-"WARNING:" prefix unchanged to keep bug format.
+-printk(KERN_DEFAULT not converted.
+-define pr_fmt without prefix to avoid any default prefix update
+(suggested by Joe Perches).
 
-Acked-by: Daniel Mack <zonque@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V2: define pr_fmt without prefix
 
+ lib/bug.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-> ---
->  sound/soc/pxa/pxa-ssp.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/sound/soc/pxa/pxa-ssp.c b/sound/soc/pxa/pxa-ssp.c
-> index a3119a00d8fa..dd35e7be1d8b 100644
-> --- a/sound/soc/pxa/pxa-ssp.c
-> +++ b/sound/soc/pxa/pxa-ssp.c
-> @@ -810,6 +810,7 @@ static const struct snd_soc_component_driver pxa_ssp_component = {
->  #ifdef CONFIG_OF
->  static const struct of_device_id pxa_ssp_of_ids[] = {
->  	{ .compatible = "mrvl,pxa-ssp-dai" },
-> +	{}
->  };
->  #endif
->  
-> 
+diff --git a/lib/bug.c b/lib/bug.c
+index 1686034..d1d7c78 100644
+--- a/lib/bug.c
++++ b/lib/bug.c
+@@ -37,6 +37,9 @@
+ 
+     Jeremy Fitzhardinge <jeremy@goop.org> 2006
+  */
++
++#define pr_fmt(fmt) fmt
++
+ #include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+@@ -153,15 +156,13 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
+ 
+ 	if (warning) {
+ 		/* this is a WARN_ON rather than BUG/BUG_ON */
+-		printk(KERN_WARNING "------------[ cut here ]------------\n");
++		pr_warn("------------[ cut here ]------------\n");
+ 
+ 		if (file)
+-			printk(KERN_WARNING "WARNING: at %s:%u\n",
+-			       file, line);
++			pr_warn("WARNING: at %s:%u\n", file, line);
+ 		else
+-			printk(KERN_WARNING "WARNING: at %p "
+-			       "[verbose debug info unavailable]\n",
+-			       (void *)bugaddr);
++			pr_warn("WARNING: at %p [verbose debug info unavailable]\n",
++				(void *)bugaddr);
+ 
+ 		print_modules();
+ 		show_regs(regs);
+@@ -174,12 +175,10 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
+ 	printk(KERN_DEFAULT "------------[ cut here ]------------\n");
+ 
+ 	if (file)
+-		printk(KERN_CRIT "kernel BUG at %s:%u!\n",
+-		       file, line);
++		pr_crit("kernel BUG at %s:%u!\n", file, line);
+ 	else
+-		printk(KERN_CRIT "Kernel BUG at %p "
+-		       "[verbose debug info unavailable]\n",
+-		       (void *)bugaddr);
++		pr_crit("Kernel BUG at %p [verbose debug info unavailable]\n",
++			(void *)bugaddr);
+ 
+ 	return BUG_TRAP_TYPE_BUG;
+ }
+-- 
+1.9.1
 
