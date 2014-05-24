@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaEXA5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 May 2014 20:57:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54079 "EHLO
+	id S1751435AbaEXA6B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 May 2014 20:58:01 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54156 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaEXA5i (ORCPT
+	with ESMTP id S1751017AbaEXA57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 May 2014 20:57:38 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH] spi: Set cs-gpios to output direction
-Date: Fri, 23 May 2014 17:57:34 -0700
-Message-Id: <1400893054-16126-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	Fri, 23 May 2014 20:57:59 -0400
+Message-ID: <537FEE96.8000704@codeaurora.org>
+Date: Fri, 23 May 2014 17:57:58 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, lmark@codeaurora.org
+Subject: Re: [RFC PATCH 2/3] CMA: aggressively allocate the pages on cma reserved
+ memory when not used
+References: <1399509144-8898-1-git-send-email-iamjoonsoo.kim@lge.com> <1399509144-8898-3-git-send-email-iamjoonsoo.kim@lge.com> <5370FF1D.10707@codeaurora.org>
+In-Reply-To: <5370FF1D.10707@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some gpios used for cs-gpios may not be configured for output by
-default. In these cases gpio_set_value() won't have any effect
-and so the chip select line won't toggle. Request the cs-gpios
-and set them to output direction once we know if the chip select
-is default high or default low.
+On 5/12/2014 10:04 AM, Laura Abbott wrote:
+> 
+> I'm going to see about running this through tests internally for comparison.
+> Hopefully I'll get useful results in a day or so.
+> 
+> Thanks,
+> Laura
+> 
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Richard Genoud <richard.genoud@gmail.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+We ran some tests internally and found that for our purposes these patches made
+the benchmarks worse vs. the existing implementation of using CMA first for some
+pages. These are mostly androidisms but androidisms that we care about for
+having a device be useful.
 
-I wonder if we should request the gpios when the master controller
-probes or when a spi device is added? We only know what the default
-value should be when the spi device is added. On the other hand,
-we should probably fail probe if the gpio controller isn't ready when
-the spi master controller probes.
+The foreground memory headroom on the device was on average about 40 MB smaller
+ when using these patches vs our existing implementation of something like
+solution #1. By foreground memory headroom we simply mean the amount of memory
+that the foreground application can allocate before it is killed by the Android
+ Low Memory killer.
 
-Also, is it better to convert this over to the gpiod interfaces?
+We also found that when running a sequence of app launches these patches had
+more high priority app kills by the LMK and more alloc stalls. The test did a
+total of 500 hundred app launches (using 9 separate applications) The CMA
+memory in our system is rarely used by its client and is therefore available
+to the system most of the time.
 
- drivers/spi/spi.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Test device
+- 4 CPUs
+- Android 4.4.2
+- 512MB of RAM
+- 68 MB of CMA
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 074f55f5d5ec..00f6365b3f87 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -431,8 +431,10 @@ int spi_add_device(struct spi_device *spi)
- 		goto done;
- 	}
- 
--	if (master->cs_gpios)
-+	if (master->cs_gpios) {
- 		spi->cs_gpio = master->cs_gpios[spi->chip_select];
-+		gpio_direction_output(spi->cs_gpio, !(spi->mode & SPI_CS_HIGH));
-+	}
- 
- 	/* Drivers may modify this initial i/o setup, but will
- 	 * normally rely on the device being setup.  Devices
-@@ -1512,8 +1514,11 @@ static int of_spi_register_master(struct spi_master *master)
- 	for (i = 0; i < master->num_chipselect; i++)
- 		cs[i] = -ENOENT;
- 
--	for (i = 0; i < nb; i++)
-+	for (i = 0; i < nb; i++) {
- 		cs[i] = of_get_named_gpio(np, "cs-gpios", i);
-+		devm_gpio_request(&master->dev, cs[i], "spi-cs");
-+	}
-+
- 
- 	return 0;
- }
+
+Results:
+
+Existing solution:
+Foreground headroom: 200MB
+Number of higher priority LMK kills (oom_score_adj < 529): 332
+Number of alloc stalls: 607
+
+
+Test patches:
+Foreground headroom: 160MB
+Number of higher priority LMK kills (oom_score_adj < 529):
+459 Number of alloc stalls: 29538
+
+We believe that the issues seen with these patches are the result of the LMK
+being more aggressive. The LMK will be more aggressive because it will ignore
+free CMA pages for unmovable allocations, and since most calls to the LMK are
+made by kswapd (which uses GFP_KERNEL) the LMK will mostly ignore free CMA
+pages. Because the LMK thresholds are higher than the zone watermarks, there
+will often be a lot of free CMA pages in the system when the LMK is called,
+which the LMK will usually ignore.
+
+Thanks,
+Laura
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
-
