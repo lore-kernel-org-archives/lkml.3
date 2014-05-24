@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751331AbaEXNdi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 09:33:38 -0400
-Received: from gw.srobarka.sk ([193.87.168.10]:57064 "EHLO gw.srobarka.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748AbaEXNdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 09:33:36 -0400
-X-Greylist: delayed 690 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 May 2014 09:33:36 EDT
-Message-ID: <f43269777431a846ea7e1e198f72ef95.squirrel@ssl.srobarka.sk>
-Date: Sat, 24 May 2014 13:03:49 +0200
-Subject: =?utf-8?B?VsOhxb5lbmllIEUtbWFpbCB1xb7DrXZhdGXEvmE7?=
-From: =?utf-8?B?IiBXZWJtYWlsIGFrdHVhbGl6w6FjaWEgMjAxNCI=?= 
-	<info@miskacsarda.hu>
-User-Agent: SquirrelMail/1.4.22-4.el6
+	id S1751258AbaEXNum (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 09:50:42 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:35741 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaEXNul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 May 2014 09:50:41 -0400
+Subject: [PATCH RFC] proc/pid/mem: implement SEEK_DATA and SEEK_HOLE
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Sat, 24 May 2014 17:50:35 +0400
+Message-ID: <20140524135035.32281.93663.stgit@zurg>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Váženie E-mail užívateľa;
+lseek(fd, addr, SEEK_DATA) adjust file offset to the start address of next VMA,
+or to addr if this address is allocated.
 
-Prekročili ste limit 23432 ukladanie na Váš e-mailovej schránky stanovenej
-vaše
-WEB SERVICE / správcu, a budete mať problémy pri odosielaní
-a prijímať e-maily, kým sa znova potvrdí svoju e-mailovú adresu. Potrebné
-postupy sú
-boli predložené nižšie vášho názoru, overte kliknutím na
-nižšie odkaz a vyplňte informácie na overenie vašej e-mailovú adresu.
+lseek(fd, addr, SEEK_HOLE) adjust file offset to the end address of VMA which
+addr belongs to, or to addr itself if there is hole.
 
-Prosím, kliknite tu
-http://updattwsd.jigsy.com/
+This way SEEK_HOLE reports a virtual zero-length hole between each contiguous
+VMAs. This hack seems completely legit and allows to simplify implementation
+(there is no function for finding next hole in VMAs' tree, walking along
+ ->vm_next might be expensive) This also gives more information about layout.
 
-Ak chcete zvýšiť svoju e-mailovú kvótu Vášho e-mailu.
-Varovanie!
-Ak tak neurobíte, bude mať k obmedzenému prístupu k poštovej schránke.
-zlyhanie aktualizovať svoj ​​účet do troch dní od tejto aktualizácii
-oznámenia, váš účet bude natrvalo uzavretá.
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
 
-S pozdravom,
-Administrator System ®
+---
+
+I have no practical use for this, just found this interesting.
+---
+ fs/proc/base.c |   31 +++++++++++++++++++++++++++++--
+ 1 file changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 2d696b0..aba4b47 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -769,13 +769,40 @@ static ssize_t mem_write(struct file *file, const char __user *buf,
+ 
+ loff_t mem_lseek(struct file *file, loff_t offset, int orig)
+ {
++	struct mm_struct *mm = file->private_data;
++	struct vm_area_struct *vma;
++
+ 	switch (orig) {
+-	case 0:
++	case SEEK_SET:
+ 		file->f_pos = offset;
+ 		break;
+-	case 1:
++	case SEEK_CUR:
+ 		file->f_pos += offset;
+ 		break;
++	case SEEK_DATA:
++	case SEEK_HOLE:
++		if (!mm || !atomic_inc_not_zero(&mm->mm_users))
++			return -ENXIO;
++		down_read(&mm->mmap_sem);
++		vma = find_vma(mm, offset);
++		if (vma) {
++			if (orig == SEEK_DATA) {
++				if (offset >= vma->vm_start)
++					file->f_pos = offset;
++				else
++					file->f_pos = vma->vm_start;
++			} else {
++				if (offset < vma->vm_start)
++					file->f_pos = offset;
++				else
++					file->f_pos = vma->vm_end;
++			}
++		}
++		up_read(&mm->mmap_sem);
++		mmput(mm);
++		if (!vma)
++			return -ENXIO;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+
