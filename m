@@ -1,86 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaEYTvF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 15:51:05 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:51040 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaEYTvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 15:51:02 -0400
-Date: Sun, 25 May 2014 22:50:53 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: kernel BUG at fs/jbd2/journal.c:1951!
-Message-ID: <alpine.SOC.1.00.1405252240110.16480@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1751419AbaEYUBY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 16:01:24 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:64069 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaEYUBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 16:01:22 -0400
+Message-ID: <53824C0D.1070204@colorfullife.com>
+Date: Sun, 25 May 2014 22:01:17 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Marian Marinov <mm@1h.com>, Davidlohr Bueso <davidlohr@hp.com>
+CC: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] IPC initialize shmmax and shmall from the current value
+ not the default
+References: <5365723D.7030303@1h.com> <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net> <536621D4.60002@colorfullife.com> <5367EDB6.3010408@1h.com> <537DF520.2050904@1h.com>
+In-Reply-To: <537DF520.2050904@1h.com>
+Content-Type: multipart/mixed;
+ boundary="------------040400010102080704000705"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tried yesterdays git v3.15-rc6-190-g1ee1cea on Sun Fire T2000 (32-thread 
-sparc64) and got reproducibly stuck on boot with ext journal replay like 
-below. Booting Debian 3.14.2-1 replayed the log and mounted FS fine. 
-After that, my test kernel works fine too. SO I can not reproduce it any 
-more but it seems like I hit a bug.
+This is a multi-part message in MIME format.
+--------------040400010102080704000705
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-[   62.064329] EXT4-fs (sda1): INFO: recovery required on readonly filesystem
-[   62.064395] EXT4-fs (sda1): write access will be enabled during recovery
-[   62.077043] EXT4-fs (sda1): orphan cleanup on readonly fs
-[   62.156585] EXT4-fs (sda1): 14 orphan inodes deleted
-[   62.156645] EXT4-fs (sda1): recovery complete
-[   62.156702] kernel BUG at fs/jbd2/journal.c:1951!
-[   62.156752]               \|/ ____ \|/
-[   62.156752]               "@'/ .. \`@"
-[   62.156752]               /_| \__/ |_\
-[   62.156752]                  \__U_/
-[   62.156893] swapper/0(1): Kernel bad sw trap 5 [#1]
-[   62.156943] CPU: 8 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc6+ #6
-[   62.157004] task: ffffff8008677640 ti: ffffff800870c000 task.ti: ffffff800870c000
-[   62.157079] TSTATE: 0000004480001605 TPC: 00000000005f3c00 TNPC: 00000000005f3c04 Y: 00000000    Not tainted
-[   62.157180] TPC: <jbd2_journal_flush+0x11c/0x190>
-[   62.157225] g0: 00000000009528c8 g1: 0000000000000000 g2: 0000000000a17f88 g3: 0000000000a17f80
-[   62.157301] g4: ffffff8008677640 g5: ffffff83f6a4a000 g6: ffffff800870c000 g7: ffffff8008633fa0
-[   62.157375] o0: 0000000000000025 o1: 0000000000961ed8 o2: 000000000000079f o3: ffffff83f3aab888
-[   62.157451] o4: ffffff83ffb72000 o5: 0000000000961ed8 sp: ffffff800870ed11 ret_pc: 00000000005f3bf8
-[   62.157530] RPC: <jbd2_journal_flush+0x114/0x190>
-[   62.157575] l0: 0000000000000000 l1: 000000000000000e l2: 0000000010018001 l3: 000000000088e438
-[   62.157650] l4: 00000000009528c8 l5: 000000000000ff00 l6: 0000000000ff0000 l7: 000000000095ee30
-[   62.157726] i0: ffffff83f3aab800 i1: ffffff83f3aab824 i2: ffffff83f3aabb98 i3: ffffff83f3aab8e8
-[   62.157801] i4: ffffff83f3aab824 i5: ffffff83f3aab8e8 i6: ffffff800870edc1 i7: 00000000005bd640
-[   62.157887] I7: <ext4_mark_recovery_complete.isra.232+0x4c/0xb0>
-[   62.157942] Call Trace:
-[   62.157990]  [00000000005bd640] ext4_mark_recovery_complete.isra.232+0x4c/0xb0
-[   62.158068]  [00000000005c3860] ext4_fill_super+0x303c/0x33e8
-[   62.158132]  [0000000000538fc4] mount_bdev+0x124/0x18c
-[   62.158192]  [0000000000539a4c] mount_fs+0x60/0x17c
-[   62.158246]  [000000000055087c] vfs_kern_mount+0x48/0xe4
-[   62.158309]  [0000000000552e24] do_mount+0x808/0x974
-[   62.158370]  [00000000005531b0] SyS_mount+0x6c/0xa4
-[   62.158427]  [0000000000a74cb8] mount_block_root+0x108/0x2ac
-[   62.158490]  [0000000000a75180] prepare_namespace+0x180/0x1bc
-[   62.158552]  [0000000000a74a80] kernel_init_freeable+0x208/0x218
-[   62.158619]  [0000000000864724] kernel_init+0x4/0xf4
-[   62.158684]  [0000000000406084] ret_from_fork+0x1c/0x2c
-[   62.158738]  [0000000000000000]           (null)
-[   62.158780] Disabling lock debugging due to kernel taint
-[   62.158847] Caller[00000000005bd640]: ext4_mark_recovery_complete.isra.232+0x4c/0xb0
-[   62.158926] Caller[00000000005c3860]: ext4_fill_super+0x303c/0x33e8
-[   62.158990] Caller[0000000000538fc4]: mount_bdev+0x124/0x18c
-[   62.159051] Caller[0000000000539a4c]: mount_fs+0x60/0x17c
-[   62.159143] Caller[000000000055087c]: vfs_kern_mount+0x48/0xe4
-[   62.159215] Caller[0000000000552e24]: do_mount+0x808/0x974
-[   62.159279] Caller[00000000005531b0]: SyS_mount+0x6c/0xa4
-[   62.159345] Caller[0000000000a74cb8]: mount_block_root+0x108/0x2ac
-[   62.159411] Caller[0000000000a75180]: prepare_namespace+0x180/0x1bc
-[   62.159475] Caller[0000000000a74a80]: kernel_init_freeable+0x208/0x218
-[   62.159540] Caller[0000000000864724]: kernel_init+0x4/0xf4
-[   62.159604] Caller[0000000000406084]: ret_from_fork+0x1c/0x2c
-[   62.159660] Caller[0000000000000000]:           (null)
-[   62.166652] Instruction DUMP: 901222d8  7ff8d20a  01000000 <91d02005> 11002587  921027a1  0af07ffb  901222d8  c45e2310
-[   62.207443] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+Hi Marian,
 
+On 05/22/2014 03:01 PM, Marian Marinov wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 05/05/2014 10:59 PM, Marian Marinov wrote:
+>>
+>> In my tests it worked exactly as expected. Here is an example:
+>>
+>> [root@sp2 ~]# sysctl -a|grep shmmax kernel.shmmax = 68719476736 [root@sp2 ~]# lxc-attach -n cent_plain
+>> [root@localhost ~]# sysctl -a|grep shmmax kernel.shmmax = 68719476736 [root@localhost ~]# halt [root@sp2 ~]# sysctl
+>> -a|grep shmmax kernel.shmmax = 68719476736 [root@sp2 ~]# sysctl kernel.shmmax=34359738368 kernel.shmmax =
+>> 34359738368 [root@sp2 ~]# lxc-start -n cent_plain -d [root@sp2 ~]# lxc-attach -n cent_plain [root@localhost ~]#
+>> sysctl -a|grep shmmax kernel.shmmax = 34359738368 [root@localhost ~]#
+>>
+>> So it seams to work as expected :)
+>>
+>> It works because wen you setup a new shmmax limit it is actually the limit in the init_ipc_ns. So when we are
+>> creating a new ipc_ns its ok to copy the values from init_ipc_ns.
+>>
+>> -Marian
+>>
+> Ping?
+>
+> So will there be any more comments on that?
+>
+>
+Attached is an untested idea:
+- each new namespace copies from it's parent, i.e. nested namespaces 
+should work.
+- msg, sem and shm updated
 
+--
+     Manfred
+
+--------------040400010102080704000705
+Content-Type: text/x-patch;
+ name="0001-ipc-namespace-copy-settings-from-parent-namespace.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ipc-namespace-copy-settings-from-parent-namespace.patch"
+
+>From ed73ce838fc3f55e34041591a72b3135ccaa460b Mon Sep 17 00:00:00 2001
+From: Manfred Spraul <manfred@colorfullife.com>
+Date: Sun, 25 May 2014 21:04:42 +0200
+Subject: [PATCH] ipc namespace: copy settings from parent namespace
+
+Right now, each IPC namespace starts with the kernel boot standard
+settings.
+This patch changes that:
+Now each new namespace starts with the settings from the parent
+namespace.
+
+The patch updates msg, sem and shm.
+
+Marian: Would that patch help you?
+
+It's just a proposal - not yet tested.
+
+Open issues:
+- auto_msgmni is not yet taken from parent.
+
+--
+	Manfred
+---
+ ipc/msg.c       | 13 +++++++++----
+ ipc/namespace.c |  6 +++---
+ ipc/sem.c       | 19 +++++++++++++------
+ ipc/shm.c       | 19 +++++++++++++------
+ ipc/util.h      | 12 ++++++------
+ 5 files changed, 44 insertions(+), 25 deletions(-)
+
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 6498531..6c72d43 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -107,10 +107,15 @@ void recompute_msgmni(struct ipc_namespace *ns)
+ 	ns->msg_ctlmni = allowed;
+ }
+ 
+-void msg_init_ns(struct ipc_namespace *ns)
++void msg_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns)
+ {
+-	ns->msg_ctlmax = MSGMAX;
+-	ns->msg_ctlmnb = MSGMNB;
++	if (old_ns != NULL) {
++		ns->msg_ctlmax = old_ns->msg_ctlmax;
++		ns->msg_ctlmnb = old_ns->msg_ctlmnb;
++	} else {
++		ns->msg_ctlmax = MSGMAX;
++		ns->msg_ctlmnb = MSGMNB;
++	}
+ 
+ 	recompute_msgmni(ns);
+ 
+@@ -129,7 +134,7 @@ void msg_exit_ns(struct ipc_namespace *ns)
+ 
+ void __init msg_init(void)
+ {
+-	msg_init_ns(&init_ipc_ns);
++	msg_init_ns(&init_ipc_ns, NULL);
+ 
+ 	printk(KERN_INFO "msgmni has been set to %d\n",
+ 		init_ipc_ns.msg_ctlmni);
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index 59451c1..57b65fa 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -41,9 +41,9 @@ static struct ipc_namespace *create_ipc_ns(struct user_namespace *user_ns,
+ 	}
+ 	atomic_inc(&nr_ipc_ns);
+ 
+-	sem_init_ns(ns);
+-	msg_init_ns(ns);
+-	shm_init_ns(ns);
++	sem_init_ns(ns, old_ns);
++	msg_init_ns(ns, old_ns);
++	shm_init_ns(ns, old_ns);
+ 
+ 	/*
+ 	 * msgmni has already been computed for the new ipc ns.
+diff --git a/ipc/sem.c b/ipc/sem.c
+index bee5554..0e232e6 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -170,12 +170,19 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it);
+ #define sc_semopm	sem_ctls[2]
+ #define sc_semmni	sem_ctls[3]
+ 
+-void sem_init_ns(struct ipc_namespace *ns)
++void sem_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns)
+ {
+-	ns->sc_semmsl = SEMMSL;
+-	ns->sc_semmns = SEMMNS;
+-	ns->sc_semopm = SEMOPM;
+-	ns->sc_semmni = SEMMNI;
++	if (old_ns != NULL) {
++		ns->sc_semmsl = old_ns->sc_semmsl;
++		ns->sc_semmns = old_ns->sc_semmns;
++		ns->sc_semopm = old_ns->sc_semopm;
++		ns->sc_semmni = old_ns->sc_semmni;
++	} else {
++		ns->sc_semmsl = SEMMSL;
++		ns->sc_semmns = SEMMNS;
++		ns->sc_semopm = SEMOPM;
++		ns->sc_semmni = SEMMNI;
++	}
+ 	ns->used_sems = 0;
+ 	ipc_init_ids(&ns->ids[IPC_SEM_IDS]);
+ }
+@@ -190,7 +197,7 @@ void sem_exit_ns(struct ipc_namespace *ns)
+ 
+ void __init sem_init(void)
+ {
+-	sem_init_ns(&init_ipc_ns);
++	sem_init_ns(&init_ipc_ns, NULL);
+ 	ipc_init_proc_interface("sysvipc/sem",
+ 				"       key      semid perms      nsems   uid   gid  cuid  cgid      otime      ctime\n",
+ 				IPC_SEM_IDS, sysvipc_sem_proc_show);
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 7645961..5c54b25 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -72,12 +72,19 @@ static void shm_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp);
+ static int sysvipc_shm_proc_show(struct seq_file *s, void *it);
+ #endif
+ 
+-void shm_init_ns(struct ipc_namespace *ns)
++void shm_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns)
+ {
+-	ns->shm_ctlmax = SHMMAX;
+-	ns->shm_ctlall = SHMALL;
+-	ns->shm_ctlmni = SHMMNI;
+-	ns->shm_rmid_forced = 0;
++	if (old_ns != NULL) {
++		ns->shm_ctlmax = old_ns->shm_ctlmax;
++		ns->shm_ctlall = old_ns->shm_ctlall;
++		ns->shm_ctlmni = old_ns->shm_ctlmni;
++		ns->shm_rmid_forced = old_ns->shm_rmid_forced;
++	} else {
++		ns->shm_ctlmax = SHMMAX;
++		ns->shm_ctlall = SHMALL;
++		ns->shm_ctlmni = SHMMNI;
++		ns->shm_rmid_forced = 0;
++	}
+ 	ns->shm_tot = 0;
+ 	ipc_init_ids(&shm_ids(ns));
+ }
+@@ -110,7 +117,7 @@ void shm_exit_ns(struct ipc_namespace *ns)
+ 
+ static int __init ipc_ns_init(void)
+ {
+-	shm_init_ns(&init_ipc_ns);
++	shm_init_ns(&init_ipc_ns, NULL);
+ 	return 0;
+ }
+ 
+diff --git a/ipc/util.h b/ipc/util.h
+index 9c47d6f..bb62b44 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -30,17 +30,17 @@ static inline void mq_put_mnt(struct ipc_namespace *ns) { }
+ #endif
+ 
+ #ifdef CONFIG_SYSVIPC
+-void sem_init_ns(struct ipc_namespace *ns);
+-void msg_init_ns(struct ipc_namespace *ns);
+-void shm_init_ns(struct ipc_namespace *ns);
++void sem_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns);
++void msg_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns);
++void shm_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns);
+ 
+ void sem_exit_ns(struct ipc_namespace *ns);
+ void msg_exit_ns(struct ipc_namespace *ns);
+ void shm_exit_ns(struct ipc_namespace *ns);
+ #else
+-static inline void sem_init_ns(struct ipc_namespace *ns) { }
+-static inline void msg_init_ns(struct ipc_namespace *ns) { }
+-static inline void shm_init_ns(struct ipc_namespace *ns) { }
++static inline void sem_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns) { }
++static inline void msg_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns) { }
++static inline void shm_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns) { }
+ 
+ static inline void sem_exit_ns(struct ipc_namespace *ns) { }
+ static inline void msg_exit_ns(struct ipc_namespace *ns) { }
 -- 
-Meelis Roos (mroos@linux.ee)
+1.9.0
+
+
+
+--------------040400010102080704000705--
