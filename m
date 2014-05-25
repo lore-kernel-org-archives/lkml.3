@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498AbaEYW6n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 18:58:43 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:48967 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbaEYW6m (ORCPT
+	id S1751450AbaEYXGG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 19:06:06 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:36802 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaEYXGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 18:58:42 -0400
+	Sun, 25 May 2014 19:06:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALeycy_8q9jcbwCGp6qpcN8TyH7Ve2WUxCbo+kcd_bHYzXDqOA@mail.gmail.com>
-References: <CALeycy_8q9jcbwCGp6qpcN8TyH7Ve2WUxCbo+kcd_bHYzXDqOA@mail.gmail.com>
-Date: Sun, 25 May 2014 17:58:40 -0500
-Message-ID: <CALeycy-hH7=S5tLo1TWQTqGpwsjjx6_c3yaJZs0Vywyv-fZQaQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] KVM: x86: get CPL from SS.DPL
+In-Reply-To: <CALeycy9yGFXcwusztKokfybGUcK+eyCfmSD34+1eG+b88d7J6w@mail.gmail.com>
+References: <CALeycy9yGFXcwusztKokfybGUcK+eyCfmSD34+1eG+b88d7J6w@mail.gmail.com>
+Date: Sun, 25 May 2014 18:06:02 -0500
+Message-ID: <CALeycy8ebxK0_nKFSvLimGHunSMHMcC0sN88u-HHUpAaupGkJA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] KVM: x86: drop set_rflags callback
 From: Wei Huang <huangwei.virt@gmail.com>
-To: kvm@vger.kernel.org
-Cc: pbonzini@redhat.com, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        gleb@kernel.org, avi.kivity@gmail.com
+To: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com, gleb@kernel.org, avi.kivity@gmail.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Another day, another CPL patch...
->
-> It turns out that the simple approach of getting CPL from SS.DPL
-> broke x86/taskswitch2.flat.  To fix that, already "imagine" that the
-> CPL is CS.RPL, or 3 for VM86 tasks, while loading segment descriptors
-> during task switches.  This removes the hack where task switches call
-> kvm_set_rflags to override the VM flag (patch 2).
+> Not needed anymore now that the CPL is computed directly
+> by the task switch code.
+Given the current form, looks OK to me.
 
-My understanding about this problem is that during task switch, the
-CPL might be inconsistent with SS.DPL. This breaks the assumption
-of previous patch (i.e. patch 4). To fix this problem, we have to rely
-on CS.RPL to figure out CPL.
-
-If so , my question: is there other special cases similar to task switch
-which can break patch 4?
-
+Reviewed-by: Wei Huang <huangwei.virt@gmail.com>
 >
-> While at it, add a new privilege test during task switches that is
-> missing.
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_emulate.h | 1 -
+>  arch/x86/kvm/x86.c                 | 6 ------
+>  2 files changed, 7 deletions(-)
 >
-> Patch 4 is the same as before.
+> diff --git a/arch/x86/include/asm/kvm_emulate.h
+> b/arch/x86/include/asm/kvm_emulate.h
+> index 24ec1216596e..a04fe4eb237d 100644
+> --- a/arch/x86/include/asm/kvm_emulate.h
+> +++ b/arch/x86/include/asm/kvm_emulate.h
+> @@ -189,7 +189,6 @@ struct x86_emulate_ops {
+>   void (*set_idt)(struct x86_emulate_ctxt *ctxt, struct desc_ptr *dt);
+>   ulong (*get_cr)(struct x86_emulate_ctxt *ctxt, int cr);
+>   int (*set_cr)(struct x86_emulate_ctxt *ctxt, int cr, ulong val);
+> - void (*set_rflags)(struct x86_emulate_ctxt *ctxt, ulong val);
+>   int (*cpl)(struct x86_emulate_ctxt *ctxt);
+>   int (*get_dr)(struct x86_emulate_ctxt *ctxt, int dr, ulong *dest);
+>   int (*set_dr)(struct x86_emulate_ctxt *ctxt, int dr, ulong value);
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index fb313fc896dd..57eac309c22e 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4646,11 +4646,6 @@ static int emulator_set_cr(struct x86_emulate_ctxt
+> *ctxt, int cr, ulong val)
+>   return res;
+>  }
 >
-> Paolo Bonzini (4):
->   KVM: x86: use new CS.RPL as CPL during task switch
->   KVM: x86: drop set_rflags callback
->   KVM: x86: check CS.DPL against RPL during task switch
->   KVM: x86: get CPL from SS.DPL
+> -static void emulator_set_rflags(struct x86_emulate_ctxt *ctxt, ulong val)
+> -{
+> - kvm_set_rflags(emul_to_vcpu(ctxt), val);
+> -}
+> -
+>  static int emulator_get_cpl(struct x86_emulate_ctxt *ctxt)
+>  {
+>   return kvm_x86_ops->get_cpl(emul_to_vcpu(ctxt));
+> @@ -4835,7 +4830,6 @@ static const struct x86_emulate_ops emulate_ops = {
+>   .set_idt     = emulator_set_idt,
+>   .get_cr              = emulator_get_cr,
+>   .set_cr              = emulator_set_cr,
+> - .set_rflags          = emulator_set_rflags,
+>   .cpl                 = emulator_get_cpl,
+>   .get_dr              = emulator_get_dr,
+>   .set_dr              = emulator_set_dr,
+> --
+> 1.8.3.1
 >
->  arch/x86/include/asm/kvm_emulate.h |  1 -
->  arch/x86/include/asm/kvm_host.h    |  1 -
->  arch/x86/kvm/emulate.c             | 63 ++++++++++++++++++++++----------------
->  arch/x86/kvm/svm.c                 | 35 +++++++++------------
->  arch/x86/kvm/vmx.c                 | 24 +++------------
->  arch/x86/kvm/x86.c                 |  6 ----
->  6 files changed, 54 insertions(+), 76 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
