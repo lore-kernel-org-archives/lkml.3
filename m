@@ -1,148 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaEYONU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 10:13:20 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:45116 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaEYONS (ORCPT
+	id S1751524AbaEYORY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 10:17:24 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:63248 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934AbaEYORW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 10:13:18 -0400
+	Sun, 25 May 2014 10:17:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400888504-31309-1-git-send-email-sboyd@codeaurora.org>
-References: <1400888504-31309-1-git-send-email-sboyd@codeaurora.org>
-Date: Sun, 25 May 2014 09:13:17 -0500
-Message-ID: <CAL_JsqJyCzNV0xK_uPp4o4F1Jhi8QmTY3KaHfeLcssnTea5H+Q@mail.gmail.com>
-Subject: Re: [PATCH] coccinelle: Check for missing NULL terminators in
- of_device_id tables
-From: Rob Herring <robherring2@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <1401024401-1992-1-git-send-email-manuel.schoelling@gmx.de>
+References: <1401024401-1992-1-git-send-email-manuel.schoelling@gmx.de>
+Date: Sun, 25 May 2014 22:17:21 +0800
+Message-ID: <CA+qeAOqUQ07YpFJjvFstUCDzt6-P_zBz-O1==OOYeBVOJ8Gppw@mail.gmail.com>
+Subject: Re: [PATCH] ipath: use time_before()/_after()
+From: Dongsheng Yang <dongsheng081251@gmail.com>
+To: =?UTF-8?Q?Manuel_Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Cc: infinipath@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 6:41 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Failure to terminate an of_device_id table can lead to confusing
-> failures depending on where the compiler places the array. Add a
-> check to make sure these tables are terminated. Thanks to Mitchel
-> Humpherys for coming up with the initial pattern.
-
-I've definitely debugged one of those problems. Do you have any actual
-fixes or there are no errors in the kernel?
-
-Rob
-
+On Sun, May 25, 2014 at 9:26 PM, Manuel Schölling
+<manuel.schoelling@gmx.de> wrote:
+> To be future-proof and for better readability the time comparisons are
+> modified to use time_before/_after() instead of plain, error-prone math.
 >
-> Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
-> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-> Cc: Nicolas Palix <nicolas.palix@imag.fr>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 > ---
->  scripts/coccinelle/misc/of_table.cocci | 81 ++++++++++++++++++++++++++++++++++
->  1 file changed, 81 insertions(+)
->  create mode 100644 scripts/coccinelle/misc/of_table.cocci
+>  drivers/infiniband/hw/ipath/ipath_intr.c |    4 ++--
+>  drivers/infiniband/hw/ipath/ipath_sdma.c |    4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
 >
-> diff --git a/scripts/coccinelle/misc/of_table.cocci b/scripts/coccinelle/misc/of_table.cocci
-> new file mode 100644
-> index 000000000000..da8bfa69fa3e
-> --- /dev/null
-> +++ b/scripts/coccinelle/misc/of_table.cocci
-> @@ -0,0 +1,81 @@
-> +/// Make sure of_device_id tables are NULL terminated
-> +//
-> +// Keywords: of_table
-> +// Confidence: Medium
-> +// Options: --include-headers
-> +
-> +virtual patch
-> +virtual context
-> +virtual org
-> +virtual report
-> +
-> +@bad_of_table exists@
-> +identifier var, arr;
-> +expression E;
-> +@@
-> +... struct of_device_id arr[] = {
-> +       ...,
-> +       {
-> +       ...,
-> +       .var = E,
-> +       ...
-> +       }
-> +};
-> +
-> +@depends on bad_of_table && context@
-> +identifier var, arr;
-> +expression E;
-> +@@
-> + ... struct of_device_id arr[] = {
-> +       ...,
-> +       {
-> +       ...,
-> +*      .var = E,
-> +       ...
-> +       }
-> +};
-> +
-> +@depends on bad_of_table && patch@
-> +identifier var, arr;
-> +expression E;
-> +@@
-> +... struct of_device_id arr[] = {
-> +       ...,
-> +       {
-> +       ...,
-> +       .var = E,
-> +       ...
-> +-      }
-> ++      },
-> ++      { }
-> +};
-> +
-> +@r depends on bad_of_table exists@
-> +position p1;
-> +identifier var, arr;
-> +expression E;
-> +@@
-> +... struct of_device_id arr[] = {
-> +       ...,
-> +       {
-> +       ...,
-> +       .var = E,
-> +       ...
-> +       }
-> +       @p1
-> +};
-> +
-> +@script:python depends on org@
-> +p1 << r.p1;
-> +arr << r.arr;
-> +@@
-> +
-> +cocci.print_main(arr,p1)
-> +
-> +@script:python depends on report@
-> +p1 << r.p1;
-> +arr << r.arr;
-> +@@
-> +
-> +msg = "%s is not NULL terminated at line %s" % (arr, p1[0].line)
-> +coccilib.report.print_report(p1[0],msg)
+> diff --git a/drivers/infiniband/hw/ipath/ipath_intr.c b/drivers/infiniband/hw/ipath/ipath_intr.c
+> index 26dfbc8..01ba792 100644
+> --- a/drivers/infiniband/hw/ipath/ipath_intr.c
+> +++ b/drivers/infiniband/hw/ipath/ipath_intr.c
+> @@ -70,7 +70,7 @@ void ipath_disarm_senderrbufs(struct ipath_devdata *dd)
+>         if (sbuf[0] || sbuf[1] || (piobcnt > 128 && (sbuf[2] || sbuf[3]))) {
+>                 int i;
+>                 if (ipath_debug & (__IPATH_PKTDBG|__IPATH_DBG) &&
+> -                       dd->ipath_lastcancel > jiffies) {
+> +                       time_after(dd->ipath_lastcancel, jiffies)) {
+
+Why not time_is_after_jiffies()?
+
+>                         __IPATH_DBG_WHICH(__IPATH_PKTDBG|__IPATH_DBG,
+>                                           "SendbufErrs %lx %lx", sbuf[0],
+>                                           sbuf[1]);
+> @@ -755,7 +755,7 @@ static int handle_errors(struct ipath_devdata *dd, ipath_err_t errs)
+>
+>         /* likely due to cancel; so suppress message unless verbose */
+>         if ((errs & (INFINIPATH_E_SPKTLEN | INFINIPATH_E_SPIOARMLAUNCH)) &&
+> -               dd->ipath_lastcancel > jiffies) {
+> +               time_after(dd->ipath_lastcancel, jiffies)) {
+>                 /* armlaunch takes precedence; it often causes both. */
+>                 ipath_cdbg(VERBOSE,
+>                         "Suppressed %s error (%llx) after sendbuf cancel\n",
+> diff --git a/drivers/infiniband/hw/ipath/ipath_sdma.c b/drivers/infiniband/hw/ipath/ipath_sdma.c
+> index 98ac18e..17a5177 100644
+> --- a/drivers/infiniband/hw/ipath/ipath_sdma.c
+> +++ b/drivers/infiniband/hw/ipath/ipath_sdma.c
+> @@ -247,7 +247,7 @@ static void sdma_abort_task(unsigned long opaque)
+>
+>         /* ipath_sdma_abort() is done, waiting for interrupt */
+>         if (status == IPATH_SDMA_ABORT_DISARMED) {
+> -               if (jiffies < dd->ipath_sdma_abort_intr_timeout)
+> +               if (time_before(jiffies, dd->ipath_sdma_abort_intr_timeout))
+>                         goto resched_noprint;
+>                 /* give up, intr got lost somewhere */
+>                 ipath_dbg("give up waiting for SDMADISABLED intr\n");
+> @@ -341,7 +341,7 @@ resched:
+>          * JAG - this is bad to just have default be a loop without
+>          * state change
+>          */
+> -       if (jiffies > dd->ipath_sdma_abort_jiffies) {
+> +       if (time_after(jiffies, dd->ipath_sdma_abort_jiffies)) {
+>                 ipath_dbg("looping with status 0x%08lx\n",
+>                           dd->ipath_sdma_status);
+>                 dd->ipath_sdma_abort_jiffies = jiffies + 5 * HZ;
 > --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> 1.7.10.4
 >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
