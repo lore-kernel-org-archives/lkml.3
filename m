@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389AbaEXXdd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 19:33:33 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:54073 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304AbaEXXdc (ORCPT
+	id S1751427AbaEYBx6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 21:53:58 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:36211 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaEYBx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 19:33:32 -0400
-Message-ID: <53812C46.3060607@gmail.com>
-Date: Sun, 25 May 2014 01:33:26 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sat, 24 May 2014 21:53:56 -0400
+From: <Wei.Yang@windriver.com>
+To: <davem@davemloft.net>
+CC: <peppe.cavallaro@st.com>, <wei.yang@windriver.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] net: driver: stmicro: Remove some useless the lock protection
+Date: Sun, 25 May 2014 09:53:44 +0800
+Message-ID: <1400982824-3871-1-git-send-email-Wei.Yang@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20140523.160945.226886017757584215.davem@davemloft.net>
+References: <20140523.160945.226886017757584215.davem@davemloft.net>
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org
-CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Maxime COQUELIN <maxime.coquelin@st.com>
-Subject: [FIX] [CRITICAL] Re: [PATCH] clk: divider: Fix overflow in clk_divider_bestdiv
-References: <1399479850-25292-1-git-send-email-t.figa@samsung.com> <5374F07E.9070106@samsung.com>
-In-Reply-To: <5374F07E.9070106@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+From: Yang Wei <Wei.Yang@windriver.com>
 
-On 15.05.2014 18:51, Tomasz Figa wrote:
-> Hi Mike,
-> 
-> On 07.05.2014 18:24, Tomasz Figa wrote:
->> Commit c686078 ("clk: divider: Add round to closest divider") introduced
->> a helper function to check whether given divisor is the best one instead
->> of direct check. However due to int type used instead of unsigned long
->> for passing calculated rates to this function in certain cases an
->> overflow could occur, for example when trying to obtain maximum possible
->> clock rate by calling clk_round_rate(..., UINT_MAX).
->>
->> This patch fixes this issue by changing the type of rate, now and best
->> arguments of the function to unsigned long, which is the type that
->> should be used for clock rates.
->>
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->> ---
->>  drivers/clk/clk-divider.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
->> index c572945..e0b360a 100644
->> --- a/drivers/clk/clk-divider.c
->> +++ b/drivers/clk/clk-divider.c
->> @@ -232,7 +232,7 @@ static int _div_round(struct clk_divider *divider, unsigned long parent_rate,
->>  }
->>  
->>  static bool _is_best_div(struct clk_divider *divider,
->> -		int rate, int now, int best)
->> +		unsigned long rate, unsigned long now, unsigned long best)
->>  {
->>  	if (divider->flags & CLK_DIVIDER_ROUND_CLOSEST)
->>  		return abs(rate - now) < abs(rate - best);
->>
-> 
-> Ping. It's quite important fix as the issue makes all Exynos boards
-> using sdhci-s3c almost unusable.
+kernel always invokes a pair of rtnl_lock adn rtnl_unlock to
+protect dev_ethtool(), so its not neccessary to invoke spin_lock/unlock
+in ethtool_ops.
 
-Any issues with this patch?
+Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+---
+Hi David,
 
-Due to this issue, now since almost 3 weeks, all Samsung boards using
-sdhci-s3c have been suffering from boot failures on linux-next due to
-incorrect clock rates being calculated.
+   I regenerate this patch based on net/next repo in v2.
 
-Best regards,
-Tomasz
+Wei
+ .../net/ethernet/stmicro/stmmac/stmmac_ethtool.c   |    6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+index c963394..7892666 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+@@ -322,9 +322,7 @@ static int stmmac_ethtool_getsettings(struct net_device *dev,
+ 		return -EBUSY;
+ 	}
+ 	cmd->transceiver = XCVR_INTERNAL;
+-	spin_lock_irq(&priv->lock);
+ 	rc = phy_ethtool_gset(phy, cmd);
+-	spin_unlock_irq(&priv->lock);
+ 	return rc;
+ }
+ 
+@@ -442,7 +440,6 @@ stmmac_get_pauseparam(struct net_device *netdev,
+ 	if (priv->flow_ctrl & FLOW_TX)
+ 		pause->tx_pause = 1;
+ 
+-	spin_unlock(&priv->lock);
+ }
+ 
+ static int
+@@ -457,8 +454,6 @@ stmmac_set_pauseparam(struct net_device *netdev,
+ 	if (priv->pcs)	/* FIXME */
+ 		return -EOPNOTSUPP;
+ 
+-	spin_lock(&priv->lock);
+-
+ 	if (pause->rx_pause)
+ 		new_pause |= FLOW_RX;
+ 	if (pause->tx_pause)
+@@ -473,7 +468,6 @@ stmmac_set_pauseparam(struct net_device *netdev,
+ 	} else
+ 		priv->hw->mac->flow_ctrl(priv->ioaddr, phy->duplex,
+ 					 priv->flow_ctrl, priv->pause);
+-	spin_unlock(&priv->lock);
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
+
