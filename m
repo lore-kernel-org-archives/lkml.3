@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459AbaEYS36 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 14:29:58 -0400
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:60605 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaEYS35 (ORCPT
+	id S1751482AbaEYSdI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 14:33:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60828 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaEYSdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 14:29:57 -0400
+	Sun, 25 May 2014 14:33:06 -0400
+Date: Sun, 25 May 2014 11:33:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Manuel Schoelling <manuel.schoelling@gmx.de>
+Cc: devel@driverdev.osuosl.org, arnd@arndb.de, peter.p.waskiewicz.jr@intel.com,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khoroshilov@ispras.ru
+Subject: Re: [PATCH] staging: gdm72xx: use time_before()
+Message-ID: <20140525183305.GA11364@kroah.com>
+References: <1401023339-29712-1-git-send-email-manuel.schoelling@gmx.de>
+ <20140525181431.GA20614@kroah.com>
+ <1401042273.7538.10.camel@schoellingm.dzne.de>
 MIME-Version: 1.0
-X-Originating-IP: [128.107.239.233]
-In-Reply-To: <20140525180357.GA18332@kroah.com>
-References: <1400909128-1409-1-git-send-email-c@24.io>
-	<20140525180357.GA18332@kroah.com>
-Date: Sun, 25 May 2014 11:29:56 -0700
-Message-ID: <CADadk9FcY3Xr-0qjACXDm77qtO19xtPQ3pWDWF-8V2NJqo4UZQ@mail.gmail.com>
-Subject: Re: [PATCH] Staging: Silicom: bpctl_mod.c & bypass.c: Fixed a lot of
- checkpatch.pl warnings
-From: Chaitanya Hazarey <c@24.io>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Chad Williamson <chad@dahc.us>, michael.banken@mathe.stud.uni-erlangen.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401042273.7538.10.camel@schoellingm.dzne.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry Greg, this is taking so long, will make this against your tree
-and send it out.
+On Sun, May 25, 2014 at 08:24:33PM +0200, Manuel Schoelling wrote:
+> On So, 2014-05-25 at 11:14 -0700, Greg KH wrote:
+> > On Sun, May 25, 2014 at 03:08:59PM +0200, Manuel Schölling wrote:
+> > > To be future-proof and for better readability the time comparisons are
+> > > modified to use time_before() instead of plain, error-prone math.
+> > > 
+> > > Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+> > > ---
+> > >  drivers/staging/gdm72xx/gdm_usb.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > This patch doesn't apply, can you please refresh it against my latest
+> > tree and resend?
+> That's weird. I pulled the lastest master from Linus and rebased the
+> patch, but no modification of my patch was required (latest commit
+> before my patch to that file was
+> 8943a92fc257c439ffe55fb0f9896be57c58c56b according to my repo). 
+> 
+> Maybe you have a more recent version than Linus?
 
-Thanks for looking into this,
 
-Chaitanya
+I have a much different version from Linus, with a few thousand patches
+added, otherwise how would I be able to queue up stuff to go to Linus
+for the next kernel release?  :)
 
-On Sun, May 25, 2014 at 11:03 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, May 23, 2014 at 10:25:28PM -0700, Chaitanya Hazarey wrote:
->> Added a blank line after declarations in many places to fix the
->> following warning issued by checkpatch.pl:
->>
->> WARNING: Missing a blank line after declarations
->>
->> Thanks Greg K-H and Dan for the patience. Hope it works this time, I did
->> apply it against staging and it was ok.
->
->
-> Hm, something is odd, it still doesn't apply properly:
->
-> $ p1 < ../s1
-> checking file drivers/staging/silicom/bpctl_mod.c
-> Hunk #40 FAILED at 4773.
-> Hunk #41 FAILED at 4821.
-> ...
-> Hunk #89 FAILED at 7534.
-> 3 out of 89 hunks FAILED
->
-> Can you refresh this against my tree again and resend?  I think we are
-> out of sync here still.
->
-> thanks,
->
-> greg k-h
+For the staging patches, either use the linux-next tree (which you
+should use for all kernel development), or my staging.git tree, and the
+staging-next branch on git.kernel.org, which is what gets pulled into
+linux-next every week-day.
+
+If you have more questions about this, take a look at
+Documentation/development-process/  it should explain how patches move
+to Linus and why working against Linus's tree isn't going to get you
+very far.
+
+thanks,
+
+greg k-h
