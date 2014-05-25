@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456AbaEYKSw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 06:18:52 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:61790 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaEYKSv (ORCPT
+	id S1751461AbaEYKXz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 06:23:55 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:49958 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaEYKXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 06:18:51 -0400
-Date: Sun, 25 May 2014 11:18:40 +0100
-From: Hani Benhabiles <kroosec@gmail.com>
-To: Paul Clements <paul.clements@us.sios.com>
-Cc: "nbd-general@lists.sourceforge.net" 
-	<nbd-general@lists.sourceforge.net>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nbd: Zero from and len fields in NBD_CMD_DISCONNECT.
-Message-ID: <20140525101840.GA3588@Inspiron-3521>
-References: <1400283807-27930-1-git-send-email-kroosec@gmail.com>
- <CAECXXi4_RJ-yk8Ct=sPPe-pq=shdU-4cKvRTT3yNvsoY42-8_Q@mail.gmail.com>
- <20140518091113.GA3770@Inspiron-3521>
+	Sun, 25 May 2014 06:23:53 -0400
+Date: Sun, 25 May 2014 15:53:47 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Ike Panhc <ike.pan@canonical.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] ideapad_laptop: Introduce the use of the managed version of
+ kzalloc
+Message-ID: <20140525102346.GA19485@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140518091113.GA3770@Inspiron-3521>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 18, 2014 at 10:11:13AM +0100, Hani Benhabiles wrote:
-> On Fri, May 16, 2014 at 10:56:33PM -0400, Paul Clements wrote:
-> > Agreed. But better yet, the request structure should just be zeroed when
-> > it's allocated.
-> > 
-> 
-> It is already initialized  in __nbd_ioctl() with the blk_rq_init() call which
-> sets the __sector value to -1 (which is 0xfffffffffffffe00 after the left shifts.)
-> 
-> This is the only (non-ugly / non-intrusive) way to do it afaict.
-> 
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. The label sysfs_failed is removed as it is no longer
+required.  Also, linux/device.h is added to make sure the devm_*()
+routine declarations are unambiguously available.
 
-Ping!
+The following Coccinelle semantic patch was used for making the change:
 
-Anything blocking this patch ?
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-Thanks.
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
-> > --
-> > Paul
-> > 
-> > 
-> > On Fri, May 16, 2014 at 7:43 PM, Hani Benhabiles <kroosec@gmail.com> wrote:
-> > 
-> > > Len field is already set to zero, but not the from field which is sent as
-> > > 0xfffffffffffffe00. This makes no sense, and may cause confuse server
-> > > implementations doing sanity checks (qemu-nbd is an example.)
-> > >
-> > > Signed-off-by: Hani Benhabiles <hani@linux.com>
-> > > ---
-> > >  drivers/block/nbd.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > >
-> > > diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-> > > index 3a70ea2..657bdac 100644
-> > > --- a/drivers/block/nbd.c
-> > > +++ b/drivers/block/nbd.c
-> > > @@ -246,7 +246,7 @@ static int nbd_send_req(struct nbd_device *nbd, struct
-> > > request *req)
-> > >         request.magic = htonl(NBD_REQUEST_MAGIC);
-> > >         request.type = htonl(nbd_cmd(req));
-> > >
-> > > -       if (nbd_cmd(req) == NBD_CMD_FLUSH) {
-> > > +       if (nbd_cmd(req) == NBD_CMD_FLUSH || nbd_cmd(req) == NBD_CMD_DISC)
-> > > {
-> > >                 /* Other values are reserved for FLUSH requests.  */
-> > >                 request.from = 0;
-> > >                 request.len = 0;
-> > > --
-> > > 1.8.3.2
-> > >
-> > >
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+Not compile tested due to incompatible architecture.
+ drivers/platform/x86/ideapad-laptop.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index 6dd060a..aadfb1f 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -36,6 +36,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ #include <linux/i8042.h>
++#include <linux/device.h>
+ 
+ #define IDEAPAD_RFKILL_DEV_NUM	(3)
+ 
+@@ -833,7 +834,7 @@ static int ideapad_acpi_add(struct platform_device *pdev)
+ 	if (read_method_int(adev->handle, "_CFG", &cfg))
+ 		return -ENODEV;
+ 
+-	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+@@ -844,7 +845,7 @@ static int ideapad_acpi_add(struct platform_device *pdev)
+ 
+ 	ret = ideapad_sysfs_init(priv);
+ 	if (ret)
+-		goto sysfs_failed;
++		return ret;
+ 
+ 	ret = ideapad_debugfs_init(priv);
+ 	if (ret)
+@@ -884,8 +885,6 @@ input_failed:
+ 	ideapad_debugfs_exit(priv);
+ debugfs_failed:
+ 	ideapad_sysfs_exit(priv);
+-sysfs_failed:
+-	kfree(priv);
+ 	return ret;
+ }
+ 
+@@ -903,7 +902,6 @@ static int ideapad_acpi_remove(struct platform_device *pdev)
+ 	ideapad_debugfs_exit(priv);
+ 	ideapad_sysfs_exit(priv);
+ 	dev_set_drvdata(&pdev->dev, NULL);
+-	kfree(priv);
+ 
+ 	return 0;
+ }
+-- 
+1.9.1
+
