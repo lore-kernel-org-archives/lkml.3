@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456AbaEYVLi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 17:11:38 -0400
-Received: from imap.thunk.org ([74.207.234.97]:60167 "EHLO imap.thunk.org"
+	id S1751514AbaEYVNW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 17:13:22 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:21723 "EHLO smtp2-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbaEYVLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 17:11:37 -0400
-Date: Sun, 25 May 2014 17:11:30 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Plamen Petrov <plamen.sisi@gmail.com>, Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        sandeen@redhat.com
-Subject: Re: [PATCH] do_mounts: try all available filesystems before panicking
-Message-ID: <20140525211129.GA5243@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Plamen Petrov <plamen.sisi@gmail.com>,
-	Dave Chinner <david@fromorbit.com>,
-	LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-	sandeen@redhat.com
-References: <1399314889-9829-1-git-send-email-plamen.sisi@gmail.com>
- <CA+55aFwxF2xnYerLdJZ2gQdZizK3953L16X5KkUAqD-YePausQ@mail.gmail.com>
+	id S1751075AbaEYVNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 17:13:20 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH] serial: efm32: add module_exit
+Date: Sun, 25 May 2014 23:13:05 +0200
+Message-Id: <1401052385-3786-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 2.0.0.rc2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwxF2xnYerLdJZ2gQdZizK3953L16X5KkUAqD-YePausQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 25, 2014 at 01:04:09PM -0700, Linus Torvalds wrote:
-> 
-> The fact is, I think xfs is just buggy. Returning 38 (ENOSYS) is
-> totally insane. "No such system call"? Somebody is on some bad bad
-> drugs. Not that the mount_block_root() loop and error handling might
-> not be a good thing to perhaps tweak _too_, but at the very least your
-> patch means that now it no longer prints out the error number at all.
+Add missing specification of efm32_uart_exit as module_exit.
 
-There's only a single instance of ENOSYS in fs/xfs/xfs_mount.c:
+This fixes the following compilation warning:
 
-	/*
-	 * We must be able to do sector-sized and sector-aligned IO.
-	 */
-	if (sector_size > sbp->sb_sectsize) {
-		if (loud)
-			xfs_warn(mp, "device supports %u byte sectors (not %u)",
-				sector_size, sbp->sb_sectsize);
-		error = ENOSYS;
-		goto release_buf;
-	}
+  drivers/tty/serial/efm32-uart.c:840:123: warning: ‘efm32_uart_exit’ defined but not used [-Wunused-function]
 
-Plamen, does changing the ENOSYS to EINVAL above fix things for you?
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Jiri Slaby <jslaby@suse.cz>
+---
 
-> Anyway, I'm also not seeing why that xfs error would be new to 3.14,
-> though.. Adding the XFS people to the cc.
+Hi,
 
-If I had to guess, commit daba5427d is new to 3.14, and it might
-explain the change in behavior.
+This can be seen with e.g. arm allmodconfig.
 
-Cheers,
+Best regards,
 
-						- Ted
+V.
+
+ drivers/tty/serial/efm32-uart.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/tty/serial/efm32-uart.c b/drivers/tty/serial/efm32-uart.c
+index c167a71..b373f64 100644
+--- a/drivers/tty/serial/efm32-uart.c
++++ b/drivers/tty/serial/efm32-uart.c
+@@ -842,6 +842,7 @@ static void __exit efm32_uart_exit(void)
+ 	platform_driver_unregister(&efm32_uart_driver);
+ 	uart_unregister_driver(&efm32_uart_reg);
+ }
++module_exit(efm32_uart_exit);
+ 
+ MODULE_AUTHOR("Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>");
+ MODULE_DESCRIPTION("EFM32 UART/USART driver");
+-- 
+2.0.0.rc2
+
