@@ -1,134 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaEYOsi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 10:48:38 -0400
-Received: from mailp.voltaire.com ([193.47.165.129]:60323 "EHLO mellanox.co.il"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751399AbaEYOrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 10:47:55 -0400
-From: Amir Vadai <amirv@mellanox.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Amir Vadai <amirv@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        netdev@vger.kernel.org, Yevgeny Petrilin <yevgenyp@mellanox.com>,
-        Yuval Atias <yuvala@mellanox.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next V6 1/2] cpumask: Utility function to set n'th cpu - local cpu first
-Date: Sun, 25 May 2014 17:47:26 +0300
-Message-Id: <1401029247-15196-2-git-send-email-amirv@mellanox.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1401029247-15196-1-git-send-email-amirv@mellanox.com>
-References: <1401029247-15196-1-git-send-email-amirv@mellanox.com>
+	id S1751439AbaEYPJZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 11:09:25 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:51668 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946AbaEYPJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 11:09:24 -0400
+X-Auth-Info: j2nDrbtcqnljUf9pmwwqa+3LBTHgHij8ttiiZJuQPTQ=
+From: Marek Vasut <marex@denx.de>
+To: Corentin LABBE <clabbe.montjoie@gmail.com>
+Subject: Re: [PATCH 3/3] crypto: Add Allwinner Security System crypto accelerator
+Date: Sun, 25 May 2014 16:30:09 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.12.4; x86_64; ; )
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, herbert@gondor.apana.org.au,
+        davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+References: <1400771396-9686-1-git-send-email-clabbe.montjoie@gmail.com> <201405241400.03456.marex@denx.de> <5381DAEF.20007@gmail.com>
+In-Reply-To: <5381DAEF.20007@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201405251630.09753.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function sets the n'th cpu - local cpu's first.
-For example: in a 16 cores server with even cpu's local, will get the
-following values:
-cpumask_set_cpu_local_first(0, numa, cpumask) => cpu 0 is set
-cpumask_set_cpu_local_first(1, numa, cpumask) => cpu 2 is set
-...
-cpumask_set_cpu_local_first(7, numa, cpumask) => cpu 14 is set
-cpumask_set_cpu_local_first(8, numa, cpumask) => cpu 1 is set
-cpumask_set_cpu_local_first(9, numa, cpumask) => cpu 3 is set
-...
-cpumask_set_cpu_local_first(15, numa, cpumask) => cpu 15 is set
+On Sunday, May 25, 2014 at 01:58:39 PM, Corentin LABBE wrote:
 
-Curently this function will be used by multi queue networking devices to
-calculate the irq affinity mask, such that as many local cpu's as
-possible will be utilized to handle the mq device irq's.
+[...]
 
-Signed-off-by: Amir Vadai <amirv@mellanox.com>
----
- include/linux/cpumask.h |  2 ++
- lib/cpumask.c           | 64 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 66 insertions(+)
+> > This is one IP block and it provides 5 algorithms. Put it under one
+> > config option please.
+> 
+> I want to let the user choose what it want to be used. Someone could want
+> only to accelerate md5 and to not use the PRNG. Lots of other hw crypto
+> driver do the same.
 
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index d08e4d2..3551d66 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -257,6 +257,8 @@ static inline void cpumask_set_cpu(unsigned int cpu, struct cpumask *dstp)
- 	set_bit(cpumask_check(cpu), cpumask_bits(dstp));
- }
- 
-+int cpumask_set_cpu_local_first(int i, int numa_node, cpumask_t *dstp);
-+
- /**
-  * cpumask_clear_cpu - clear a cpu in a cpumask
-  * @cpu: cpu number (< nr_cpu_ids)
-diff --git a/lib/cpumask.c b/lib/cpumask.c
-index b810b75..14049a9 100644
---- a/lib/cpumask.c
-+++ b/lib/cpumask.c
-@@ -163,4 +163,68 @@ void __init free_bootmem_cpumask_var(cpumask_var_t mask)
- {
- 	memblock_free_early(__pa(mask), cpumask_size());
- }
-+
-+/**
-+ * cpumask_set_cpu_local_first - set i'th cpu with local numa cpu's first
-+ *
-+ * @i: index number
-+ * @numa_node: local numa_node
-+ * @dstp: cpumask with the relevant cpu bit set according to the policy
-+ *
-+ * This function sets the cpumask according to a numa aware policy.
-+ * cpumask could be used as an affinity hint for the IRQ related to a
-+ * queue. When the policy is to spread queues across cores - local cores
-+ * first.
-+ *
-+ * Returns 0 on success, -ENOMEM for no memory, and -EAGAIN when failed to set
-+ * the cpu bit and need to re-call the function.
-+ */
-+int cpumask_set_cpu_local_first(int i, int numa_node, cpumask_t *dstp)
-+{
-+	cpumask_var_t mask;
-+	int cpu;
-+	int ret = 0;
-+
-+	if (!zalloc_cpumask_var(&mask, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	i %= num_online_cpus();
-+
-+	if (!cpumask_of_node(numa_node)) {
-+		/* Use all online cpu's for non numa aware system */
-+		cpumask_copy(mask, cpu_online_mask);
-+	} else {
-+		int n;
-+
-+		cpumask_and(mask,
-+			    cpumask_of_node(numa_node), cpu_online_mask);
-+
-+		n = cpumask_weight(mask);
-+		if (i >= n) {
-+			i -= n;
-+
-+			/* If index > number of local cpu's, mask out local
-+			 * cpu's
-+			 */
-+			cpumask_andnot(mask, cpu_online_mask, mask);
-+		}
-+	}
-+
-+	for_each_cpu(cpu, mask) {
-+		if (--i < 0)
-+			goto out;
-+	}
-+
-+	ret = -EAGAIN;
-+
-+out:
-+	free_cpumask_var(mask);
-+
-+	if (!ret)
-+		cpumask_set_cpu(cpu, dstp);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(cpumask_set_cpu_local_first);
-+
- #endif
--- 
-1.8.3.4
+I don't find this useful, most users will enable all of them anyway.
 
+> > Also, just shorted this to CONFIG_CRYPTO_SUNXI_SS , the _DEV stuff in the
+> > name is useless.
+> 
+> I think not, most of cryptographic hardware driver begin with CRYPTO_DEV
+> (CRYPTO_DEV_PADLOCK, CRYPTO_DEV_GEODE, CRYPTO_DEV_TALITOS etc...), only
+> S390 does not have a _DEV.
+
+OK. I don't mind either way.
+
+> > [...]
+> > 
+> >> diff --git a/drivers/crypto/sunxi-ss.c b/drivers/crypto/sunxi-ss.c
+> >> new file mode 100644
+> >> index 0000000..bbf57bc
+> >> --- /dev/null
+> >> +++ b/drivers/crypto/sunxi-ss.c
+> >> @@ -0,0 +1,1476 @@
+> >> +/*
+> >> + * sunxi-ss.c - hardware cryptographic accelerator for Allwinner A20
+> >> SoC
+> > 
+> > Why can this not be generic Allwinner-all-chips driver ? Does the IP
+> > block change that dramatically between the chips?
+> 
+> As I said in my introduction email, lots of allwinner chips seems to have
+> the same crypto device. But since I do not own any of those hardware, and
+> in most case does not have a datasheet, I only assume support for A20. I
+> will add this comment in the header of the driver.
+
+Can you ask others to test with other chips? Surely, you can easily prepare some 
+kind of a test for others to verify on their chips.
+
+[...]
+
+> >> +		dev_dbg(ss_ctx->dev, "DEBUG Seed %d %x\n", i, v);
+> >> +	}
+> > 
+> > But this debug instrumentation looks quite useless anyway.
+> 
+> As I said in my introduction mail, I cannot get PRNG to work, so it is the
+> reason of lots of dev_dbg() Anyway, I will remove them.
+
+Then please don't submit non-functional code for inclusion into kernel. Just 
+discard the PRNG part completely until it's operational. Submit just the 
+portions of code that are working please.
+[...]
