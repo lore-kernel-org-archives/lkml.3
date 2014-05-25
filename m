@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaEYObB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 10:31:01 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62588 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479AbaEYOaE (ORCPT
+	id S1751737AbaEYObA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 10:31:00 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:47030 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaEYOaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 10:30:04 -0400
+	Sun, 25 May 2014 10:30:06 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 4/5] nohz: Move full nohz kick to its own IPI
-Date: Sun, 25 May 2014 16:29:50 +0200
-Message-Id: <1401028191-29756-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/5] nohz: Use IPI implicit full barrier against rq->nr_running r/w
+Date: Sun, 25 May 2014 16:29:51 +0200
+Message-Id: <1401028191-29756-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1401028191-29756-1-git-send-email-fweisbec@gmail.com>
 References: <1401028191-29756-1-git-send-email-fweisbec@gmail.com>
@@ -26,15 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the irq work subsystem can queue remote callbacks, it's
-a perfect fit to safely queue IPIs when interrupts are disabled
-without worrying about concurrent callers.
+A full dynticks CPU is allowed to stop its tick when a single task runs.
+Meanwhile when a new task gets enqueued, the CPU must be notified so that
+it can restart its tick to maintain local fairness and other accounting
+details.
 
-Lets use it for the full dynticks kick to notify a CPU that it's
-exiting single task mode.
+This notification is performed by way of an IPI. Then when the target
+receives the IPI, we expect it to see the new value of rq->nr_running.
 
-This unbloats a bit the scheduler IPI that the nohz code was abusing
-for its cool "callable anywhere/anytime" properties.
+Hence the following ordering scenario:
+
+   CPU 0                   CPU 1
+
+   write rq->running       get IPI
+   smp_wmb()               smp_rmb()
+   send IPI                read rq->nr_running
+
+But Paul Mckenney says that nowadays IPIs imply a full barrier on
+all architectures. So we can safely remove this pair and rely on the
+implicit barriers that come along IPI send/receive. Lets
+just comment on this new assumption.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -45,99 +56,51 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/tick.h     |  9 ++++++++-
- kernel/sched/core.c      |  5 +----
- kernel/sched/sched.h     |  2 +-
- kernel/time/tick-sched.c | 10 ++++++----
- 4 files changed, 16 insertions(+), 10 deletions(-)
+ kernel/sched/core.c  |  9 +++++----
+ kernel/sched/sched.h | 10 ++++++++--
+ 2 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b84773c..8a4987f 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -181,7 +181,13 @@ static inline bool tick_nohz_full_cpu(int cpu)
- 
- extern void tick_nohz_init(void);
- extern void __tick_nohz_full_check(void);
--extern void tick_nohz_full_kick(void);
-+extern void tick_nohz_full_kick_cpu(int cpu);
-+
-+static inline void tick_nohz_full_kick(void)
-+{
-+	tick_nohz_full_kick_cpu(smp_processor_id());
-+}
-+
- extern void tick_nohz_full_kick_all(void);
- extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
-@@ -189,6 +195,7 @@ static inline void tick_nohz_init(void) { }
- static inline bool tick_nohz_full_enabled(void) { return false; }
- static inline bool tick_nohz_full_cpu(int cpu) { return false; }
- static inline void __tick_nohz_full_check(void) { }
-+static inline void tick_nohz_full_kick_cpu(int cpu) { }
- static inline void tick_nohz_full_kick(void) { }
- static inline void tick_nohz_full_kick_all(void) { }
- static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d9d8ece..fb6dfad 100644
+index fb6dfad..a06cac1 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1500,9 +1500,7 @@ void scheduler_ipi(void)
- 	 */
- 	preempt_fold_need_resched();
+@@ -670,10 +670,11 @@ bool sched_can_stop_tick(void)
  
--	if (llist_empty(&this_rq()->wake_list)
--			&& !tick_nohz_full_cpu(smp_processor_id())
--			&& !got_nohz_idle_kick())
-+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
- 		return;
+        rq = this_rq();
  
- 	/*
-@@ -1519,7 +1517,6 @@ void scheduler_ipi(void)
- 	 * somewhat pessimize the simple resched case.
- 	 */
- 	irq_enter();
--	tick_nohz_full_check();
- 	sched_ttwu_pending();
+-       /* Make sure rq->nr_running update is visible after the IPI */
+-       smp_rmb();
+-
+-       /* More than one running task need preemption */
++       /*
++	* More than one running task need preemption.
++	* nr_running update is assumed to be visible
++	* after IPI is sent from wakers.
++	*/
+        if (rq->nr_running > 1)
+                return false;
  
- 	/*
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 456e492..6089e00 100644
+index 6089e00..219bfbd 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -1225,7 +1225,7 @@ static inline void inc_nr_running(struct rq *rq)
+@@ -1223,8 +1223,14 @@ static inline void inc_nr_running(struct rq *rq)
+ #ifdef CONFIG_NO_HZ_FULL
+ 	if (rq->nr_running == 2) {
  		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
--			smp_send_reschedule(rq->cpu);
-+			tick_nohz_full_kick_cpu(rq->cpu);
+-			/* Order rq->nr_running write against the IPI */
+-			smp_wmb();
++			/*
++			 * Tick is needed if more than one task runs on a CPU.
++			 * Send the target an IPI to kick it out of nohz mode.
++			 *
++			 * We assume that IPI implies full memory barrier and the
++			 * new value of rq->nr_running is visible on reception
++			 * from the target.
++			 */
+ 			tick_nohz_full_kick_cpu(rq->cpu);
  		}
         }
- #endif
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6558b7a..3d63944 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -224,13 +224,15 @@ static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
- };
- 
- /*
-- * Kick the current CPU if it's full dynticks in order to force it to
-+ * Kick the CPU if it's full dynticks in order to force it to
-  * re-evaluate its dependency on the tick and restart it if necessary.
-  */
--void tick_nohz_full_kick(void)
-+void tick_nohz_full_kick_cpu(int cpu)
- {
--	if (tick_nohz_full_cpu(smp_processor_id()))
--		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+	if (!tick_nohz_full_cpu(cpu))
-+		return;
-+
-+	irq_work_queue_on(&per_cpu(nohz_full_kick_work, cpu), cpu);
- }
- 
- static void nohz_full_kick_ipi(void *info)
 -- 
 1.8.3.1
 
