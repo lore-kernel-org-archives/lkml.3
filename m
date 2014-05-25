@@ -1,55 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaEYKiZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 06:38:25 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47419 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342AbaEYKiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 06:38:24 -0400
-Message-ID: <5381C70E.3030605@linux.vnet.ibm.com>
-Date: Sun, 25 May 2014 16:03:50 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751472AbaEYKkp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 06:40:45 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:59246 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaEYKkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 06:40:43 -0400
+Date: Sun, 25 May 2014 16:10:35 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] video: Introduce the use of the managed version of kzalloc
+Message-ID: <20140525104035.GA3187@himangi-Dell>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, Morten.Rasmussen@arm.com,
-        efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org
-Subject: Re: [PATCH v2 01/11] sched: fix imbalance flag reset
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org> <1400860385-14555-2-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1400860385-14555-2-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052510-7182-0000-0000-00000AADA5D8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. Also, linux/device.h is added to make sure the devm_*()
+routine declarations are unambiguously available. The function
+mddi_dummy_remove is removed as it is no longer required after
+removing the kfree. The variable ret is also done away with.
 
-On 05/23/2014 09:22 PM, Vincent Guittot wrote:
-> The imbalance flag can stay set whereas there is no imbalance.
-> 
-> Let assume that we have 3 tasks that run on a dual cores /dual cluster system.
-> We will have some idle load balance which are triggered during tick.
-> Unfortunately, the tick is also used to queue background work so we can reach
-> the situation where short work has been queued on a CPU which already runs a
-> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an idle
-> CPU) and will try to pull the waiting task on the idle CPU. The waiting task is
-> a worker thread that is pinned on a CPU so an imbalance due to pinned task is
-> detected and the imbalance flag is set.
-> Then, we will not be able to clear the flag because we have at most 1 task on
-> each CPU but the imbalance flag will trig to useless active load balance
-> between the idle CPU and the busy CPU.
+The following Coccinelle semantic patch was used for making a part of
+the change:
 
-Why do we do active balancing today when there is at-most 1 task on the
-busiest cpu? Shouldn't we be skipping load balancing altogether? If we
-do active balancing when the number of tasks = 1, it will lead to a ping
-pong right?
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-Regards
-Preeti U Murthy
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
+
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+ drivers/video/fbdev/msm/mddi_client_dummy.c | 19 +++----------------
+ 1 file changed, 3 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/video/fbdev/msm/mddi_client_dummy.c b/drivers/video/fbdev/msm/mddi_client_dummy.c
+index f1b0dfc..cdb8f69 100644
+--- a/drivers/video/fbdev/msm/mddi_client_dummy.c
++++ b/drivers/video/fbdev/msm/mddi_client_dummy.c
+@@ -15,6 +15,7 @@
+  * GNU General Public License for more details.
+  */
+ 
++#include <linux/device.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+@@ -51,8 +52,7 @@ static int mddi_dummy_probe(struct platform_device *pdev)
+ {
+ 	struct msm_mddi_client_data *client_data = pdev->dev.platform_data;
+ 	struct panel_info *panel =
+-		kzalloc(sizeof(struct panel_info), GFP_KERNEL);
+-	int ret;
++		devm_kzalloc(&pdev->dev, sizeof(struct panel_info), GFP_KERNEL);
+ 	if (!panel)
+ 		return -ENOMEM;
+ 	platform_set_drvdata(pdev, panel);
+@@ -67,24 +67,11 @@ static int mddi_dummy_probe(struct platform_device *pdev)
+ 				      client_data->fb_resource, 1);
+ 	panel->panel_data.fb_data = client_data->private_client_data;
+ 	panel->pdev.dev.platform_data = &panel->panel_data;
+-	ret = platform_device_register(&panel->pdev);
+-	if (ret) {
+-		kfree(panel);
+-		return ret;
+-	}
+-	return 0;
+-}
+-
+-static int mddi_dummy_remove(struct platform_device *pdev)
+-{
+-	struct panel_info *panel = platform_get_drvdata(pdev);
+-	kfree(panel);
+-	return 0;
++	return platform_device_register(&panel->pdev);
+ }
+ 
+ static struct platform_driver mddi_client_dummy = {
+ 	.probe = mddi_dummy_probe,
+-	.remove = mddi_dummy_remove,
+ 	.driver = { .name = "mddi_c_dummy" },
+ };
+ 
+-- 
+1.9.1
 
