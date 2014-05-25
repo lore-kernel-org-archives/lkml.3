@@ -1,59 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaEYMgc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 08:36:32 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:45303 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaEYMgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 08:36:31 -0400
+	id S1751598AbaEYMjt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 08:39:49 -0400
+Received: from mout.gmx.net ([212.227.17.21]:60905 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751419AbaEYMjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 08:39:47 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: crope@iki.fi
+Cc: m.chehab@samsung.com, gregkh@linuxfoundation.org,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] msi3103: Use time_before_eq()
+Date: Sun, 25 May 2014 14:39:39 +0200
+Message-Id: <1401021579-22481-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <20140521131712.GG14357@phenom.ffwll.local>
-References: <1400674586-17968-1-git-send-email-dh.herrmann@gmail.com>
-	<20140521131712.GG14357@phenom.ffwll.local>
-Date: Sun, 25 May 2014 14:36:30 +0200
-Message-ID: <CANq1E4T4=4Sx85_zWVNhH=LYPXWwSaxEAHAG=rdB7GkGwok=ow@mail.gmail.com>
-Subject: Re: [PATCH] drm/gem: remove obsolete BUG_ON
-From: David Herrmann <dh.herrmann@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:xXAM9ZG+PfV/V6LQS3OBgaEbz2cxx011NTg23Yag5JbJeTMLq3B
+ 1Z60LE384s3HujASUmmwKEAp+wdhl7hsATTfXedC1srQBrnfSGSWJJutv0rt8dq1ujm8FwB
+ d3jX7MDv8/ruUowrrQ7PnqO12S0PzRlXYmJeMcp0Zw4KfVjt3OFWwPjkOQ1yo8v9YYKbOpA
+ DeBEkniDpkzaz5zDW5+YQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+To be future-proof and for better readability the time comparisons are
+modified to use time_before_eq() instead of plain, error-prone math.
 
-On Wed, May 21, 2014 at 3:17 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Wed, May 21, 2014 at 02:16:26PM +0200, David Herrmann wrote:
->> The shmem subsystem supports relocating pages on swap-in in case it was
->> loaded into the wrong zone. This was implemented 2 years ago in:
->>
->>     commit bde05d1ccd512696b09db9dd2e5f33ad19152605
->>     Author: Hugh Dickins <hughd@google.com>
->>     Date:   Tue May 29 15:06:38 2012 -0700
->>
->>         shmem: replace page if mapping excludes its zone
->>
->> If a driver requires pages to be in a specific zone, they _must_ set the
->> correct GFP flags (like __GFP_DMA32) in mapping_gfp_mask(mapping). shmem
->> will make sure that any page leaving the swap-cache is located in a
->> compatible zone.
->>
->> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
->
-> Imo the BUG_ON is nice since we want to make sure this never blows up. We
-> have a similar one in i915_gem.c since we do have platforms with 32bit
-> limits that support more than 4G or ram.
->
-> Imo better to update the comment and state that this is fixed now, but
-> better be paranoid.
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ drivers/staging/media/msi3101/sdr-msi3101.c |   28 +++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-Ok, I've kept the BUG_ON. I've also appended some more patches that
-clean-up the shmem handling. v2 is on the list.
+diff --git a/drivers/staging/media/msi3101/sdr-msi3101.c b/drivers/staging/media/msi3101/sdr-msi3101.c
+index 65d351f..7a0a8ca 100644
+--- a/drivers/staging/media/msi3101/sdr-msi3101.c
++++ b/drivers/staging/media/msi3101/sdr-msi3101.c
+@@ -207,10 +207,10 @@ static int msi3101_convert_stream_504(struct msi3101_state *s, u8 *dst,
+ 		dst_len += 1008;
+ 	}
+ 
+-	/* calculate samping rate and output it in 10 seconds intervals */
+-	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
++	/* calculate sampling rate and output it in 10 seconds intervals */
++	if (time_before_eq(s->jiffies_next + 10 * HZ, jiffies)) {
+ 		unsigned long jiffies_now = jiffies;
+-		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
++		unsigned long msecs = jiffies_to_msecs(jiffies_now - s->jiffies_next);
+ 		unsigned int samples = sample_num[i_max - 1] - s->sample;
+ 		s->jiffies_next = jiffies_now;
+ 		s->sample = sample_num[i_max - 1];
+@@ -265,7 +265,7 @@ static int msi3101_convert_stream_504_u8(struct msi3101_state *s, u8 *dst,
+ 		dst_len += 1008;
+ 	}
+ 
+-	/* calculate samping rate and output it in 10 seconds intervals */
++	/* calculate sampling rate and output it in 10 seconds intervals */
+ 	if (unlikely(time_is_before_jiffies(s->jiffies_next))) {
+ #define MSECS 10000UL
+ 		unsigned int samples = sample_num[i_max - 1] - s->sample;
+@@ -359,10 +359,10 @@ static int msi3101_convert_stream_384(struct msi3101_state *s, u8 *dst,
+ 		dst_len += 984;
+ 	}
+ 
+-	/* calculate samping rate and output it in 10 seconds intervals */
+-	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
++	/* calculate sampling rate and output it in 10 seconds intervals */
++	if (time_before_eq(s->jiffies_next + 10 * HZ, jiffies)) {
+ 		unsigned long jiffies_now = jiffies;
+-		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
++		unsigned long msecs = jiffies_to_msecs(jiffies_now - s->jiffies_next);
+ 		unsigned int samples = sample_num[i_max - 1] - s->sample;
+ 		s->jiffies_next = jiffies_now;
+ 		s->sample = sample_num[i_max - 1];
+@@ -424,10 +424,10 @@ static int msi3101_convert_stream_336(struct msi3101_state *s, u8 *dst,
+ 		dst_len += 1008;
+ 	}
+ 
+-	/* calculate samping rate and output it in 10 seconds intervals */
+-	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
++	/* calculate sampling rate and output it in 10 seconds intervals */
++	if (time_before_eq(s->jiffies_next + 10 * HZ, jiffies)) {
+ 		unsigned long jiffies_now = jiffies;
+-		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
++		unsigned long msecs = jiffies_to_msecs(jiffies_now - s->jiffies_next);
+ 		unsigned int samples = sample_num[i_max - 1] - s->sample;
+ 		s->jiffies_next = jiffies_now;
+ 		s->sample = sample_num[i_max - 1];
+@@ -487,10 +487,10 @@ static int msi3101_convert_stream_252(struct msi3101_state *s, u8 *dst,
+ 		dst_len += 1008;
+ 	}
+ 
+-	/* calculate samping rate and output it in 10 seconds intervals */
+-	if ((s->jiffies_next + msecs_to_jiffies(10000)) <= jiffies) {
++	/* calculate sampling rate and output it in 10 seconds intervals */
++	if (time_before_eq(s->jiffies_next + 10 * HZ, jiffies)) {
+ 		unsigned long jiffies_now = jiffies;
+-		unsigned long msecs = jiffies_to_msecs(jiffies_now) - jiffies_to_msecs(s->jiffies_next);
++		unsigned long msecs = jiffies_to_msecs(jiffies_now - s->jiffies_next);
+ 		unsigned int samples = sample_num[i_max - 1] - s->sample;
+ 		s->jiffies_next = jiffies_now;
+ 		s->sample = sample_num[i_max - 1];
+@@ -560,7 +560,7 @@ static int msi3101_convert_stream_252_u16(struct msi3101_state *s, u8 *dst,
+ 		dst_len += 1008;
+ 	}
+ 
+-	/* calculate samping rate and output it in 10 seconds intervals */
++	/* calculate sampling rate and output it in 10 seconds intervals */
+ 	if (unlikely(time_is_before_jiffies(s->jiffies_next))) {
+ #define MSECS 10000UL
+ 		unsigned int samples = sample_num[i_max - 1] - s->sample;
+-- 
+1.7.10.4
 
-Thanks
-David
