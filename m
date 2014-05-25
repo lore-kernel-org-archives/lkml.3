@@ -1,82 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386AbaEYHvl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 03:51:41 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:42030 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaEYHvj (ORCPT
+	id S1751372AbaEYIMX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 04:12:23 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50038 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750811AbaEYIMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 03:51:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdYU4ZXg+sYpeUFDqOhGhar5uJJzQJwJxNBbWdAMDcmUKw@mail.gmail.com>
-References: <1398287792-19831-1-git-send-email-linus.walleij@linaro.org>
- <1398287792-19831-3-git-send-email-linus.walleij@linaro.org>
- <CAGsJ_4zgQbsCZGXrAMqy6BbSvjtFUTYGw9px4UDRtUd=GUau=w@mail.gmail.com> <CACRpkdYU4ZXg+sYpeUFDqOhGhar5uJJzQJwJxNBbWdAMDcmUKw@mail.gmail.com>
-From: Barry Song <baohua@kernel.org>
-Date: Sun, 25 May 2014 15:51:19 +0800
-X-Google-Sender-Auth: klaGzpAGLgpIUPQnHBYCwoJT2bw
-Message-ID: <CAGsJ_4zEgwADkVzdFOHVgXbSmo13Y5SBMzssHA5D19rhdNSb2g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] RFT: pinctrl: sirf: move sgpio lock into state container
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
-        Linux GPIO List <linux-gpio@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 25 May 2014 04:12:15 -0400
+Message-ID: <1401005530.2322.43.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Marian Marinov <mm@1h.com>, Andy Lutomirski <luto@amacapital.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Richard Weinberger <richard@nod.at>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Jens Axboe <axboe@kernel.dk>
+Date: Sun, 25 May 2014 12:12:10 +0400
+In-Reply-To: <20140524222535.GD4232@ubuntumail>
+References: <1400161337.7699.33.camel@canyon.ip6.wittsend.com>
+	 <20140515140856.GA17453@kroah.com>
+	 <CAFLxGvwfbVdLUq0NrSrQNYH+bTzYLuCE2moooHH319qRfDkS6Q@mail.gmail.com>
+	 <20140515195010.GA22317@ubuntumail> <53751FFA.5040103@nod.at>
+	 <20140515202628.GB25896@mail.hallyn.com>
+	 <CALCETrWE72G86QKVZT2aqWsEmjwOPwsWMUNz5-JkDvbqaGbrvw@mail.gmail.com>
+	 <20140520141931.GH26600@ubuntumail> <537F04BF.3000301@1h.com>
+	 <1400850960.2332.4.camel@dabdike> <20140524222535.GD4232@ubuntumail>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-09 19:57 GMT+08:00 Linus Walleij <linus.walleij@linaro.org>:
-> On Thu, May 1, 2014 at 2:40 PM, Barry Song <baohua@kernel.org> wrote:
->> 2014-04-24 5:16 GMT+08:00 Linus Walleij <linus.walleij@linaro.org>:
->
->>> Instead of referring to a global static variable for the sgpio
->>> locking, use the state container to contain the lock.
->>>
->>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> hi Linus, thanks! this looks very good only if we fix the
->> gpiochip_add_pin_range() failure in patch 1:
->>
->> [    0.231658] pinmux-sirf b0120000.pinctrl: initialized SIRFSOC pinmux driver
->> [    0.261200] bio: create slab <bio-0> at 0
->> [    0.268264] GPIO chip /axi/peri-iobg/pinctrl@b0120000: could not
->> create pin range
->> [    0.276142] pinmux-sirf b0120000.pinctrl: could not add gpiochip pin range
->
-> Hm! This may mean that the pin controller is not there at this point,
-> so the pin controller needs to be probed first, before the gpiochip
-> and its range is probed.
->
-> What happens if you do this:
+On Sat, 2014-05-24 at 22:25 +0000, Serge Hallyn wrote:
+> Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> > On Fri, 2014-05-23 at 11:20 +0300, Marian Marinov wrote:
+> > > On 05/20/2014 05:19 PM, Serge Hallyn wrote:
+> > > > Quoting Andy Lutomirski (luto@amacapital.net):
+> > > >> On May 15, 2014 1:26 PM, "Serge E. Hallyn" <serge@hallyn.com> wrote:
+> > > >>> 
+> > > >>> Quoting Richard Weinberger (richard@nod.at):
+> > > >>>> Am 15.05.2014 21:50, schrieb Serge Hallyn:
+> > > >>>>> Quoting Richard Weinberger (richard.weinberger@gmail.com):
+> > > >>>>>> On Thu, May 15, 2014 at 4:08 PM, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > > >>>>>>> Then don't use a container to build such a thing, or fix the build scripts to not do that :)
+> > > >>>>>> 
+> > > >>>>>> I second this. To me it looks like some folks try to (ab)use Linux containers for purposes where KVM
+> > > >>>>>> would much better fit in. Please don't put more complexity into containers. They are already horrible
+> > > >>>>>> complex and error prone.
+> > > >>>>> 
+> > > >>>>> I, naturally, disagree :)  The only use case which is inherently not valid for containers is running a
+> > > >>>>> kernel.  Practically speaking there are other things which likely will never be possible, but if someone 
+> > > >>>>> offers a way to do something in containers, "you can't do that in containers" is not an apropos response.
+> > > >>>>> 
+> > > >>>>> "That abstraction is wrong" is certainly valid, as when vpids were originally proposed and rejected,
+> > > >>>>> resulting in the development of pid namespaces.  "We have to work out (x) first" can be valid (and I can
+> > > >>>>> think of examples here), assuming it's not just trying to hide behind a catch-22/chicken-egg problem.
+> > > >>>>> 
+> > > >>>>> Finally, saying "containers are complex and error prone" is conflating several large suites of userspace
+> > > >>>>> code and many kernel features which support them.  Being more precise would, if the argument is valid, lend
+> > > >>>>> it a lot more weight.
+> > > >>>> 
+> > > >>>> We (my company) use Linux containers since 2011 in production. First LXC, now libvirt-lxc. To understand the
+> > > >>>> internals better I also wrote my own userspace to create/start containers. There are so many things which can
+> > > >>>> hurt you badly. With user namespaces we expose a really big attack surface to regular users. I.e. Suddenly a
+> > > >>>> user is allowed to mount filesystems.
+> > > >>> 
+> > > >>> That is currently not the case.  They can mount some virtual filesystems and do bind mounts, but cannot mount
+> > > >>> most real filesystems.  This keeps us protected (for now) from potentially unsafe superblock readers in the 
+> > > >>> kernel.
+> > > >>> 
+> > > >>>> Ask Andy, he found already lots of nasty things...
+> > > >> 
+> > > >> I don't think I have anything brilliant to add to this discussion right now, except possibly:
+> > > >> 
+> > > >> ISTM that Linux distributions are, in general, vulnerable to all kinds of shenanigans that would happen if an
+> > > >> untrusted user can cause a block device to appear.  That user doesn't need permission to mount it
+> > > > 
+> > > > Interesting point.  This would further suggest that we absolutely must ensure that a loop device which shows up in
+> > > > the container does not also show up in the host.
+> > > 
+> > > Can I suggest the usage of the devices cgroup to achieve that?
+> > 
+> > Not really ... cgroups impose resource limits, it's namespaces that
+> > impose visibility separations.  In theory this can be done with the
+> > device namespace that's been proposed; however, a simpler way is simply
+> > to rm the device node in the host and mknod it in the guest.  I don't
+> > really see host visibility as a huge problem: in a shared OS
+> > virtualisation it's not really possible securely to separate the guest
+> > from the host (only vice versa).
+> > 
+> > But I really don't think we want to do it this way.  Giving a container
+> > the ability to do a mount is too dangerous.  What we want to do is
+> > intercept the mount in the host and perform it on behalf of the guest as
+> > host root in the guest's mount namespace.  If you do it that way, it
+> 
+> That doesn't help the problem of guests being able to provide bad input
+> for (basically fuzz) the in-kernel filesystem code.  So apparently I'm
+> suffering a failure of the imagination - what problem exactly does it solve?
 
-Linus, pinctrl has been probed by arch_initcall:
-419 static int __init sirfsoc_pinmux_init(void)
-420 {
-421         return platform_driver_register(&sirfsoc_pinmux_driver);
-422 }
-423 arch_initcall(sirfsoc_pinmux_init);
+Well, there's two types of fuzzing, one is on sys_mount, which this
+would help with because the host filters the mount including all
+parameters and may even redo the mount (from direct to bind etc).
 
-so moving to device_initcall for gpio has nothing different.
+If you're thinking the system can be compromised by fuzzing within the
+filesystem, then yes, I agree, but it's the same vulnerability an
+unvirtualised host would have, so I don't necessarily see it as our
+problem.
 
->
-> diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c
-> b/drivers/pinctrl/sirf/pinctrl-sirf.c
-> index 76502aab2cb1..ce7c3552398f 100644
-> --- a/drivers/pinctrl/sirf/pinctrl-sirf.c
-> +++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
-> @@ -950,7 +950,7 @@ static int __init sirfsoc_gpio_init(void)
->
->         return sirfsoc_gpio_probe(np);
->  }
-> -subsys_initcall(sirfsoc_gpio_init);
-> +device_initcall(sirfsoc_gpio_init);
->
->  MODULE_AUTHOR("Rongjun Ying <rongjun.ying@csr.com>, "
->         "Yuping Luo <yuping.luo@csr.com>, "
->
->
-> Yours,
-> Linus Walleij
+The problem vectored mount solves is the one of not wanting root in the
+container to have unfettered access to sys_mount because it allows the
+host to vet all calls and execute the ones it likes in the context of
+real root (possibly after modifying the parameters).
 
--barry
+James
+
+
