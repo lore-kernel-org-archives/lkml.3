@@ -1,101 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaEYHm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 03:42:58 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49972 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751270AbaEYHm4 (ORCPT
+	id S1751404AbaEYHqt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 03:46:49 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:41387 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaEYHqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 03:42:56 -0400
-Message-ID: <1401003771.2322.33.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] acornscsi: remove linked command support
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Hannes Reinecke <hare@suse.de>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 25 May 2014 11:42:51 +0400
-In-Reply-To: <1400937395.22523.55.camel@x220>
-References: <1400926433.31526.89.camel@x220> <538075E0.4080001@suse.de>
-	 <1400933617.6956.34.camel@dabdike.int.hansenpartnership.com>
-	 <1400937395.22523.55.camel@x220>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 25 May 2014 03:46:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
+References: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sun, 25 May 2014 16:46:26 +0900
+Message-ID: <CAAVeFu+A7=51KqJNxc2LirZVc5zfBv_tny4_vCFaLaUsQqEnGA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
+To: abdoulaye berthe <berthe.ab@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-24 at 15:16 +0200, Paul Bolle wrote:
-> On Sat, 2014-05-24 at 16:13 +0400, James Bottomley wrote:
-> > Wait, no, that's not a good idea.  We leave obsolete drivers to bitrot.
-> > Particularly we try not to touch them unless we have to because there
-> > might be a few people still using them and the more we tamper, the
-> > greater the risk that something gets broken.
-> 
-> Which is also a way to notice whether people still use those obsolete
-> drivers.
+On Sat, May 24, 2014 at 2:12 AM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+> This avoids handling gpiochip remove error in device
+> remove handler.
 
-Really, no.  We don't deliberately break old drivers to see if anyone
-notices.  Usually the feedback loop is months to years for the long tail
-to notice and by that time fixing the problem becomes a real pain if you
-allow driver churn.
+Be aware that at the moment many callers of gpiochip_remove() read its
+return value. So applying your patch as-is would break compilation.
 
-We keep old drivers that compile until there's a problem caused usually
-by something like API changes.
+This patch should therefore be the last of a series that first
+modifies all callers of gpiochip_remove() to ignore its return value,
+then neutralizes the function itself.
 
-> > On that principle, since
-> > there's no real reason to remove the code,
-> 
-> (Unless one carries the hope that any check, treewide, for a CONFIG_*
-> macro can be linked to a proper Kconfig symbol.)
+I am not sure whether the world would really be a better place after
+this though. Callers that don't need the return value of
+gpiochip_remove() can simply ignore it...
 
-The check can be fixed.  If you look at what Fengguang Wu does, he has a
-list of expected problems which he diffs.  Don't churn the tree to match
-the checker, make the checker match the tree.
+>
+> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+> ---
+>  drivers/gpio/gpiolib.c      | 24 +++++++-----------------
+>  include/linux/gpio/driver.h |  2 +-
+>  2 files changed, 8 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index f48817d..4878980 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
+>   *
+>   * A gpio_chip with any GPIOs still requested may not be removed.
+>   */
+> -int gpiochip_remove(struct gpio_chip *chip)
+> +void gpiochip_remove(struct gpio_chip *chip)
+>  {
+>         unsigned long   flags;
+> -       int             status = 0;
+>         unsigned        id;
+>
+>         acpi_gpiochip_remove(chip);
+> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
+>         of_gpiochip_remove(chip);
+>
+>         for (id = 0; id < chip->ngpio; id++) {
+> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+> -                       status = -EBUSY;
+> -                       break;
+> -               }
+> -       }
+> -       if (status == 0) {
+> -               for (id = 0; id < chip->ngpio; id++)
+> -                       chip->desc[id].chip = NULL;
+> -
+> -               list_del(&chip->list);
+> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+> +                       panic("gpiolib.c: gpiochip is still requested\n");
 
-> > it should stay ... until the
-> > whole driver bitrots to the extent that we can no-longer compile it.
-> 
-> I've run into this depreciation policy before. With aic7xxx_old (which I
-> eventually convinced Fedora to disable, a few relases before it was
-> removed from the tree). With aic94xx (which I also convinced Fedora to
-> disable). I also tried multiple times to shut up advansys' compile
-> time[1]. It seems SCSI might risk not to notice their bitrot, because
-> eventually everybody stops compiling these obsolete drivers, leaving
-> SCSI without feedback on their state.
+panic() sounds a little harsh here. Maybe a dev_err() would be enough?
 
-Why would we care?  If it compiles that's fine, it's not causing a
-problem and it might just be useful to somebody.
+>         }
+> +       for (id = 0; id < chip->ngpio; id++)
+> +               chip->desc[id].chip = NULL;
+>
+> +       list_del(&chip->list);
+>         spin_unlock_irqrestore(&gpio_lock, flags);
+> -
+> -       if (status == 0)
+> -               gpiochip_unexport(chip);
+> -
+> -       return status;
+> +       gpiochip_unexport(chip);
+>  }
+>  EXPORT_SYMBOL_GPL(gpiochip_remove);
+>
+> diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+> index 1827b43..72ed256 100644
+> --- a/include/linux/gpio/driver.h
+> +++ b/include/linux/gpio/driver.h
+> @@ -138,7 +138,7 @@ extern const char *gpiochip_is_requested(struct gpio_chip *chip,
+>
+>  /* add/remove chips */
+>  extern int gpiochip_add(struct gpio_chip *chip);
+> -extern int __must_check gpiochip_remove(struct gpio_chip *chip);
+> +void gpiochip_remove(struct gpio_chip *chip);
 
-The time obsolete drivers cause problems is tree or subsystem wide API
-changes.  Then we look at the amount of work required and sometimes
-remove them or do hack fixes. 
-
-> Anyhow, SCSI seems to be the only subsystem that uses this subcategory
-> of not-really-maintained drivers. Other subsystems appear to allow
-> anything to be fixed, even trivialities, which are what I tend to fix,
-> and only stop allowing fixes if the drivers involved are going to be
-> removed anyway. But maybe I just never ran into that category in other
-> subsystems.
-
-Try ide ... they have the same policy.
-
-Try to understand the reason: we have a long tail of people using
-obsolete systems who we try not to break.  Any change to an unmaintained
-driver which can't be tested risks that ... and I'm the one who would
-have to try to sort out the problem when it's noticed, hence the
-caution.  If we allow trivial churn, by the time the breakage is noticed
-(usually months to years later), the driver will have picked up a ton of
-changes and finding the problem one becomes really hard.  So
-unmaintained drivers get a default deep freeze maintenance policy.
-
-Even for a maintained driver, if the maintainer has little access to the
-hardware and few users they may also choose a deep freeze maintenance
-policy for the same reasons above; that's why no changes without
-maintainer ack.
-
-James
-
-
+"extern" should be preserved here for style consistency.
