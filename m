@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546AbaEYMwY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 08:52:24 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:37728 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaEYMwX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 08:52:23 -0400
-Message-ID: <5381E867.2010009@gmail.com>
-Date: Sun, 25 May 2014 08:56:07 -0400
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26
+	id S1751575AbaEYNFe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 09:05:34 -0400
+Received: from mout.gmx.net ([212.227.15.15]:55721 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751399AbaEYNFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 09:05:32 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] rtl8188eu: use time_before/time_after and change type of ips_deny_time
+Date: Sun, 25 May 2014 15:05:24 +0200
+Message-Id: <1401023124-28732-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: =?UTF-8?B?TWFsdGUgU2NocsO2ZGVy?= <maltesch@gmx.de>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: Radeon wakeup regression in 3.15-rc6
-References: <53805C4E.7050205@gmx.de>
-In-Reply-To: <53805C4E.7050205@gmx.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:RCopUYngBYBrrSpuRFTFTUBqTV3Mrf5n2l5E3/hlX02YzZGo+9M
+ fUwBeiTKbXhlfR/IGRP4WOV1s3gY1GUu36geISjZBtxsZa2+wL58YGXshdP1Yq6OCIFLTS6
+ VdCA0NDtsze3sV6uhDGDDZAgjthi9WA6VljXCdCB4+YYikRs3vSJEsTHZNg2P93YCG4gp0N
+ SmfY5eHqPY3S/M5p77YMQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Malte Schröder wrote:
-> Hi,
-> I just tried 3.15-rc6. I encountered a pretty nasty problem, which is
-> after suspending to RAM the system doesn't wake up properly. v3.14 is fine.
-> On wakeup all seems fine, i.e. hd starts to spin an USB-stuff wakes up.
-> But all I get from the graphics card is a white screen slowly filling
-> with random colored pixels. I had to hard reset the system.
->
-> I attached the kernel log, the X-servers log, lspci-output and my kernel
-> config.
->
-> Regards
-> Malte
-I have seen a bit of a screen distortion at the bottom of LCD on Radeon 
-after a wakeup.
-I tried to re-run with drm.debug=0x0e, however once I did it - the 
-problem has disappeared, and I have not been able to duplicate it again. 
-So just watching for now.
-OTOH I have seen (only one time) a black screen after wakeup on Nvidia. 
-So maybe some timing is now exposed in PM / DRM...
+To be future-proof and for better readability the time comparisons are
+modified to use time_before/_after() instead of plain, error-prone math.
+To suppress compiler warnings the type of ips_deny_time was changed.
 
-Woody
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ drivers/staging/rtl8188eu/core/rtw_pwrctrl.c    |    9 ++++++---
+ drivers/staging/rtl8188eu/include/rtw_pwrctrl.h |    2 +-
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c b/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c
+index f658373..eaf2630 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c
++++ b/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c
+@@ -122,7 +122,7 @@ static bool rtw_pwr_unassociated_idle(struct adapter *adapter)
+ 
+ 	bool ret = false;
+ 
+-	if (adapter->pwrctrlpriv.ips_deny_time >= jiffies)
++	if (time_after_eq(adapter->pwrctrlpriv.ips_deny_time, jiffies))
+ 		goto exit;
+ 
+ 	if (check_fwstate(pmlmepriv, WIFI_ASOC_STATE|WIFI_SITE_MONITOR) ||
+@@ -523,9 +523,11 @@ int _rtw_pwr_wakeup(struct adapter *padapter, u32 ips_deffer_ms, const char *cal
+ {
+ 	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
+ 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
++	unsigned long expires;
+ 	int ret = _SUCCESS;
+ 
+-	if (pwrpriv->ips_deny_time < jiffies + rtw_ms_to_systime(ips_deffer_ms))
++	expires = jiffies + rtw_ms_to_systime(ips_deffer_ms);
++	if (time_before(pwrpriv->ips_deny_time, expires))
+ 		pwrpriv->ips_deny_time = jiffies + rtw_ms_to_systime(ips_deffer_ms);
+ 
+ {
+@@ -580,7 +582,8 @@ int _rtw_pwr_wakeup(struct adapter *padapter, u32 ips_deffer_ms, const char *cal
+ 	}
+ 
+ exit:
+-	if (pwrpriv->ips_deny_time < jiffies + rtw_ms_to_systime(ips_deffer_ms))
++	expires = jiffies + rtw_ms_to_systime(ips_deffer_ms);
++	if (time_before(pwrpriv->ips_deny_time, expires))
+ 		pwrpriv->ips_deny_time = jiffies + rtw_ms_to_systime(ips_deffer_ms);
+ 	return ret;
+ }
+diff --git a/drivers/staging/rtl8188eu/include/rtw_pwrctrl.h b/drivers/staging/rtl8188eu/include/rtw_pwrctrl.h
+index 9a42859..4211023 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_pwrctrl.h
++++ b/drivers/staging/rtl8188eu/include/rtw_pwrctrl.h
+@@ -192,7 +192,7 @@ struct pwrctrl_priv {
+ 	u8	ips_mode_req;	/*  used to accept the mode setting request,
+ 				 *  will update to ipsmode later */
+ 	uint bips_processing;
+-	u32 ips_deny_time; /* will deny IPS when system time less than this */
++	unsigned long ips_deny_time; /* will deny IPS when system time less than this */
+ 	u8 ps_processing; /* temp used to mark whether in rtw_ps_processor */
+ 
+ 	u8	bLeisurePs;
+-- 
+1.7.10.4
 
