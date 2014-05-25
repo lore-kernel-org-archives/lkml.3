@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422AbaEYSjw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 14:39:52 -0400
-Received: from smtprelay0220.hostedemail.com ([216.40.44.220]:54792 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751071AbaEYSjv (ORCPT
+	id S1751459AbaEYSnm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 14:43:42 -0400
+Received: from mout.gmx.net ([212.227.15.18]:59386 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071AbaEYSnk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 14:39:51 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3870:3871:3872:3874:4321:5007:7652:8660:9038:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13148:13161:13229:13230:13311:13357:21067,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bead38_1b92b5b22db41
-X-Filterd-Recvd-Size: 2806
-Message-ID: <1401043188.22191.16.camel@joe-AO725>
-Subject: Re: [PATCH 7/6] ipc/sem.c: add a printk_once for
- semctl(GETNCNT/GETZCNT)
-From: Joe Perches <joe@perches.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, 1vier1@web.de
-Date: Sun, 25 May 2014 11:39:48 -0700
-In-Reply-To: <1401042063-24666-1-git-send-email-manfred@colorfullife.com>
-References: <1401042063-24666-1-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	Sun, 25 May 2014 14:43:40 -0400
+Message-ID: <1401043415.7538.11.camel@schoellingm.dzne.de>
+Subject: Re: [PATCH] staging: gdm72xx: use time_before()
+From: Manuel Schoelling <manuel.schoelling@gmx.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, arnd@arndb.de, peter.p.waskiewicz.jr@intel.com,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khoroshilov@ispras.ru
+Date: Sun, 25 May 2014 20:43:35 +0200
+In-Reply-To: <20140525183305.GA11364@kroah.com>
+References: <1401023339-29712-1-git-send-email-manuel.schoelling@gmx.de>
+	 <20140525181431.GA20614@kroah.com>
+	 <1401042273.7538.10.camel@schoellingm.dzne.de>
+	 <20140525183305.GA11364@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:4XmGdgiI85JRfSUmzHJozr/sDtpV7xJR3ANW8yOpDGhe3WqRTj7
+ 43VaezU3fjNuSOQPjeRA1+WYU8aU9/Ue9gBa/piVZvYWhwdFFsQ57/PQHtyLgVbf3Mhzru5
+ KkCuFMe6ho3lKAkMo/VGjh2cZs7mayaWo5GrtWKEj1lx/4ORIZYJarvBhvNu2a8QFfmlpvE
+ XZ9poRobPdS4V6bD3Xecg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-05-25 at 20:21 +0200, Manfred Spraul wrote:
-> The actual Linux implementation for semctl(GETNCNT) and semctl(GETZCNT)
-> always (since 0.99.10) reported a thread as sleeping on all semaphores
-> that are listed in the semop() call.
-> The documented behavior (both in the Linux man page and in the Single Unix
-> Specification) is that a task should be reported on exactly one semaphore:
-> The semaphore that caused the thread to got to sleep.
+On So, 2014-05-25 at 11:33 -0700, Greg KH wrote:
+> On Sun, May 25, 2014 at 08:24:33PM +0200, Manuel Schoelling wrote:
+> > On So, 2014-05-25 at 11:14 -0700, Greg KH wrote:
+> > > On Sun, May 25, 2014 at 03:08:59PM +0200, Manuel Schölling wrote:
+> > > > To be future-proof and for better readability the time comparisons are
+> > > > modified to use time_before() instead of plain, error-prone math.
+> > > > 
+> > > > Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+> > > > ---
+> > > >  drivers/staging/gdm72xx/gdm_usb.c |    2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > This patch doesn't apply, can you please refresh it against my latest
+> > > tree and resend?
+> > That's weird. I pulled the lastest master from Linus and rebased the
+> > patch, but no modification of my patch was required (latest commit
+> > before my patch to that file was
+> > 8943a92fc257c439ffe55fb0f9896be57c58c56b according to my repo). 
+> > 
+> > Maybe you have a more recent version than Linus?
 > 
-> This patch adds a printk_once() that is triggered if a thread hits
-> the relevant case.
-[]
-> diff --git a/ipc/sem.c b/ipc/sem.c
-[]
-> @@ -1000,6 +1000,18 @@ static int check_qop(struct sem_array *sma, int semnum, struct sem_queue *q,
->  {
->  	struct sembuf *sop = q->blocking;
->  
-> +	/*
-> +	 * Linux always (since 0.99.10) reported a task as sleeping on all
-> +	 * semaphores. This violates SUS, therefore it was changed to the
-> +	 * standard compliant behavior.
-> +	 * Give the administrators a chance to notice that an application
-> +	 * might misbehave because it relies on the Linux behavior.
-> +	 */
-> +	printk_once(KERN_INFO "semctl(GETNCNT/GETZCNT) is since 3.16 Single " \
-> +				"Unix Specification compliant.\n" \
-> +				"The task %d triggered the difference, " \
-> +				"watch for misbehavior.", current->pid);
+> 
+> I have a much different version from Linus, with a few thousand patches
+> added, otherwise how would I be able to queue up stuff to go to Linus
+> for the next kernel release?  :)
+> 
+> For the staging patches, either use the linux-next tree (which you
+> should use for all kernel development), or my staging.git tree, and the
+> staging-next branch on git.kernel.org, which is what gets pulled into
+> linux-next every week-day.
+> 
+> If you have more questions about this, take a look at
+> Documentation/development-process/  it should explain how patches move
+> to Linus and why working against Linus's tree isn't going to get you
+> very far.
+Ok, thanks for your answer, Greg. I will use the linux-next tree and send you a new version of that patch today.
 
-Unnecessary line continuations.
-Missing terminating newline after "misbehavior"
-Ideally coalesced or broken at linebreaks like:
+Bye,
 
-	pr_info_once("semctl(GETNCNT/GETZCNT) is Single Unix Specification compliant since kernel v3.16\n"
-		     "Task %d triggered the difference, watch for misbehavior\n",
-		     current->pid);
+Manuel
 
->  	if (sop->sem_num != semnum)
->  		return 0;
->  
-
-Should the printk_once (which could be pr_info_once or _ratelimited
-or maybe even emitted at KERN_DEBUG) be done only when
-the return is 1?
+> thanks,
+> 
+> greg k-h
 
 
