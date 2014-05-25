@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253AbaEYSD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 14:03:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60680 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaEYSD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 14:03:58 -0400
-Date: Sun, 25 May 2014 11:03:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chaitanya Hazarey <c@24.io>
-Cc: chad@dahc.us, michael.banken@mathe.stud.uni-erlangen.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: Silicom: bpctl_mod.c & bypass.c: Fixed a lot of
- checkpatch.pl warnings
-Message-ID: <20140525180357.GA18332@kroah.com>
-References: <1400909128-1409-1-git-send-email-c@24.io>
+	id S1751418AbaEYSHN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 14:07:13 -0400
+Received: from mout.gmx.net ([212.227.17.20]:64205 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751078AbaEYSHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 14:07:11 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: lidza.louina@gmail.com
+Cc: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] dgnc: Use time_after_eq()
+Date: Sun, 25 May 2014 20:07:02 +0200
+Message-Id: <1401041222-18992-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400909128-1409-1-git-send-email-c@24.io>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:w84mul56GVw9R0euGwP0tuwoTZG23oJ8iU94f2S05CP5ztfs5Jt
+ XllUhuzjOFFKZHI9mD61mWCB4wvPDsFFpnBP4wjXB0jGkRjtGUIWG3r74RQxFUXq89pTCcp
+ tpiAJRBADeSGMfbTWbxvrtVnxkWFlQZ5FsUDNrqR4yQLad8cyTgRSgXyIrh1kSHEcCp/BLt
+ 9K6hyqVO+0SDZdA4xRgIw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 10:25:28PM -0700, Chaitanya Hazarey wrote:
-> Added a blank line after declarations in many places to fix the
-> following warning issued by checkpatch.pl:
-> 
-> WARNING: Missing a blank line after declarations
-> 
-> Thanks Greg K-H and Dan for the patience. Hope it works this time, I did
-> apply it against staging and it was ok. 
+To be future-proof and for better readability the time comparisons are
+modified to use time_after_eq() instead of plain, error-prone math.
 
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ drivers/staging/dgnc/dgnc_neo.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Hm, something is odd, it still doesn't apply properly:
+diff --git a/drivers/staging/dgnc/dgnc_neo.c b/drivers/staging/dgnc/dgnc_neo.c
+index cf22c7b..a8ca22a 100644
+--- a/drivers/staging/dgnc/dgnc_neo.c
++++ b/drivers/staging/dgnc/dgnc_neo.c
+@@ -395,7 +395,8 @@ static inline void neo_clear_break(struct channel_t *ch, int force)
+ 
+ 	/* Turn break off, and unset some variables */
+ 	if (ch->ch_flags & CH_BREAK_SENDING) {
+-		if ((jiffies >= ch->ch_stop_sending_break) || force) {
++		if (time_after_eq(jiffies, ch->ch_stop_sending_break)
++		    || force) {
+ 			uchar temp = readb(&ch->ch_neo_uart->lcr);
+ 			writeb((temp & ~UART_LCR_SBC), &ch->ch_neo_uart->lcr);
+ 			neo_pci_posting_flush(ch->ch_bd);
+-- 
+1.7.10.4
 
-$ p1 < ../s1
-checking file drivers/staging/silicom/bpctl_mod.c
-Hunk #40 FAILED at 4773.
-Hunk #41 FAILED at 4821.
-...
-Hunk #89 FAILED at 7534.
-3 out of 89 hunks FAILED
-
-Can you refresh this against my tree again and resend?  I think we are
-out of sync here still.
-
-thanks,
-
-greg k-h
