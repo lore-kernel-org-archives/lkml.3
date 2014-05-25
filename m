@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaEYVyJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 17:54:09 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:47420 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaEYVyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 17:54:07 -0400
-Date: Sun, 25 May 2014 22:54:02 +0100
-From: Hani Benhabiles <kroosec@gmail.com>
-To: Paul Clements <paul.clements@us.sios.com>
-Cc: "nbd-general@lists.sourceforge.net" 
-	<nbd-general@lists.sourceforge.net>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nbd: Zero from and len fields in NBD_CMD_DISCONNECT.
-Message-ID: <20140525215402.GE3588@Inspiron-3521>
-References: <1400283807-27930-1-git-send-email-kroosec@gmail.com>
- <CAECXXi4_RJ-yk8Ct=sPPe-pq=shdU-4cKvRTT3yNvsoY42-8_Q@mail.gmail.com>
- <20140518091113.GA3770@Inspiron-3521>
- <20140525101840.GA3588@Inspiron-3521>
- <CAECXXi69w4HNUbZbb3JWxwZkqnyQf=dmm57UJEHOY0Xv6B4pEA@mail.gmail.com>
+	id S1751461AbaEYVyb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 17:54:31 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:58822 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811AbaEYVya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 17:54:30 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH linux-next] imx-drm: imx-tve: remove unused variable
+Date: Sun, 25 May 2014 23:54:14 +0200
+Message-Id: <1401054854-20932-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 2.0.0.rc2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAECXXi69w4HNUbZbb3JWxwZkqnyQf=dmm57UJEHOY0Xv6B4pEA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 25, 2014 at 02:11:13PM -0400, Paul Clements wrote:
-> On Sun, May 25, 2014 at 6:18 AM, Hani Benhabiles <kroosec@gmail.com> wrote:
-> > On Sun, May 18, 2014 at 10:11:13AM +0100, Hani Benhabiles wrote:
-> >> On Fri, May 16, 2014 at 10:56:33PM -0400, Paul Clements wrote:
-> >> > Agreed. But better yet, the request structure should just be zeroed when
-> >> > it's allocated.
-> >> >
-> >>
-> >> It is already initialized  in __nbd_ioctl() with the blk_rq_init() call which
-> >> sets the __sector value to -1 (which is 0xfffffffffffffe00 after the left shifts.)
-> >>
-> >> This is the only (non-ugly / non-intrusive) way to do it afaict.
-> >>
-> >
-> > Ping!
-> >
-> > Anything blocking this patch ?
-> 
-> It's cleaner to just zero the struct and get rid of the conditional
-> zeroing of specific fields. I'll prepare a patch in the next few days.
-> 
+Commit f9b0e251dfbf 'drm: make mode_valid callback optional' left variable ret
+unused; remove it.
 
-Sorry, I misunderstood which struct you were talking about!
+This fixes the following compilation warning:
 
-Will send a v2 shortly.
+  drivers/staging/imx-drm/imx-tve.c: In function ‘imx_tve_connector_mode_valid’:
+  drivers/staging/imx-drm/imx-tve.c:252:6: warning: unused variable ‘ret’ [-Wunused-variable]
 
-> Thanks,
-> Paul
-> 
-> >> > On Fri, May 16, 2014 at 7:43 PM, Hani Benhabiles <kroosec@gmail.com> wrote:
-> >> >
-> >> > > Len field is already set to zero, but not the from field which is sent as
-> >> > > 0xfffffffffffffe00. This makes no sense, and may cause confuse server
-> >> > > implementations doing sanity checks (qemu-nbd is an example.)
-> >> > >
-> >> > > Signed-off-by: Hani Benhabiles <hani@linux.com>
-> >> > > ---
-> >> > >  drivers/block/nbd.c | 2 +-
-> >> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >> > >
-> >> > > diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-> >> > > index 3a70ea2..657bdac 100644
-> >> > > --- a/drivers/block/nbd.c
-> >> > > +++ b/drivers/block/nbd.c
-> >> > > @@ -246,7 +246,7 @@ static int nbd_send_req(struct nbd_device *nbd, struct
-> >> > > request *req)
-> >> > >         request.magic = htonl(NBD_REQUEST_MAGIC);
-> >> > >         request.type = htonl(nbd_cmd(req));
-> >> > >
-> >> > > -       if (nbd_cmd(req) == NBD_CMD_FLUSH) {
-> >> > > +       if (nbd_cmd(req) == NBD_CMD_FLUSH || nbd_cmd(req) == NBD_CMD_DISC)
-> >> > > {
-> >> > >                 /* Other values are reserved for FLUSH requests.  */
-> >> > >                 request.from = 0;
-> >> > >                 request.len = 0;
-> >> > > --
-> >> > > 1.8.3.2
-> >> > >
-> >> > >
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+
+Hi,
+
+This can be seen with e.g. linux next-20140523 and arm allmodconfig.
+
+Best regards,
+
+V.
+
+ drivers/staging/imx-drm/imx-tve.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
+index 3e8b0a1..4caef2b1 100644
+--- a/drivers/staging/imx-drm/imx-tve.c
++++ b/drivers/staging/imx-drm/imx-tve.c
+@@ -249,7 +249,6 @@ static int imx_tve_connector_mode_valid(struct drm_connector *connector,
+ {
+ 	struct imx_tve *tve = con_to_tve(connector);
+ 	unsigned long rate;
+-	int ret;
+ 
+ 	/* pixel clock with 2x oversampling */
+ 	rate = clk_round_rate(tve->clk, 2000UL * mode->clock) / 2000;
+-- 
+2.0.0.rc2
+
