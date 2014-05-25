@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524AbaEYORY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 10:17:24 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:63248 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934AbaEYORW convert rfc822-to-8bit (ORCPT
+	id S1751461AbaEYOXh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 10:23:37 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:42087 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934AbaEYOXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 10:17:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401024401-1992-1-git-send-email-manuel.schoelling@gmx.de>
-References: <1401024401-1992-1-git-send-email-manuel.schoelling@gmx.de>
-Date: Sun, 25 May 2014 22:17:21 +0800
-Message-ID: <CA+qeAOqUQ07YpFJjvFstUCDzt6-P_zBz-O1==OOYeBVOJ8Gppw@mail.gmail.com>
-Subject: Re: [PATCH] ipath: use time_before()/_after()
-From: Dongsheng Yang <dongsheng081251@gmail.com>
-To: =?UTF-8?Q?Manuel_Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Cc: infinipath@intel.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 25 May 2014 10:23:35 -0400
+From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH] sched: remove redundant assignment to "rt_rq" in update_curr_rt(...)
+Date: Sun, 25 May 2014 15:23:31 +0100
+Message-Id: <1401027811-30066-1-git-send-email-giedrius.rekasius@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 25, 2014 at 9:26 PM, Manuel Schölling
-<manuel.schoelling@gmx.de> wrote:
-> To be future-proof and for better readability the time comparisons are
-> modified to use time_before/_after() instead of plain, error-prone math.
->
-> Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
-> ---
->  drivers/infiniband/hw/ipath/ipath_intr.c |    4 ++--
->  drivers/infiniband/hw/ipath/ipath_sdma.c |    4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/infiniband/hw/ipath/ipath_intr.c b/drivers/infiniband/hw/ipath/ipath_intr.c
-> index 26dfbc8..01ba792 100644
-> --- a/drivers/infiniband/hw/ipath/ipath_intr.c
-> +++ b/drivers/infiniband/hw/ipath/ipath_intr.c
-> @@ -70,7 +70,7 @@ void ipath_disarm_senderrbufs(struct ipath_devdata *dd)
->         if (sbuf[0] || sbuf[1] || (piobcnt > 128 && (sbuf[2] || sbuf[3]))) {
->                 int i;
->                 if (ipath_debug & (__IPATH_PKTDBG|__IPATH_DBG) &&
-> -                       dd->ipath_lastcancel > jiffies) {
-> +                       time_after(dd->ipath_lastcancel, jiffies)) {
+Variable "rt_rq" is used only in block "for_each_sched_rt_entity" so the
+value assigned to it at the beginning of the update_curr_rt(...) gets
+overwritten without ever being read. Remove redundant assignment and
+move variable declaration to the block in which it is being used.
 
-Why not time_is_after_jiffies()?
+Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+---
+ kernel/sched/rt.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
->                         __IPATH_DBG_WHICH(__IPATH_PKTDBG|__IPATH_DBG,
->                                           "SendbufErrs %lx %lx", sbuf[0],
->                                           sbuf[1]);
-> @@ -755,7 +755,7 @@ static int handle_errors(struct ipath_devdata *dd, ipath_err_t errs)
->
->         /* likely due to cancel; so suppress message unless verbose */
->         if ((errs & (INFINIPATH_E_SPKTLEN | INFINIPATH_E_SPIOARMLAUNCH)) &&
-> -               dd->ipath_lastcancel > jiffies) {
-> +               time_after(dd->ipath_lastcancel, jiffies)) {
->                 /* armlaunch takes precedence; it often causes both. */
->                 ipath_cdbg(VERBOSE,
->                         "Suppressed %s error (%llx) after sendbuf cancel\n",
-> diff --git a/drivers/infiniband/hw/ipath/ipath_sdma.c b/drivers/infiniband/hw/ipath/ipath_sdma.c
-> index 98ac18e..17a5177 100644
-> --- a/drivers/infiniband/hw/ipath/ipath_sdma.c
-> +++ b/drivers/infiniband/hw/ipath/ipath_sdma.c
-> @@ -247,7 +247,7 @@ static void sdma_abort_task(unsigned long opaque)
->
->         /* ipath_sdma_abort() is done, waiting for interrupt */
->         if (status == IPATH_SDMA_ABORT_DISARMED) {
-> -               if (jiffies < dd->ipath_sdma_abort_intr_timeout)
-> +               if (time_before(jiffies, dd->ipath_sdma_abort_intr_timeout))
->                         goto resched_noprint;
->                 /* give up, intr got lost somewhere */
->                 ipath_dbg("give up waiting for SDMADISABLED intr\n");
-> @@ -341,7 +341,7 @@ resched:
->          * JAG - this is bad to just have default be a loop without
->          * state change
->          */
-> -       if (jiffies > dd->ipath_sdma_abort_jiffies) {
-> +       if (time_after(jiffies, dd->ipath_sdma_abort_jiffies)) {
->                 ipath_dbg("looping with status 0x%08lx\n",
->                           dd->ipath_sdma_status);
->                 dd->ipath_sdma_abort_jiffies = jiffies + 5 * HZ;
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index bd2267a..7e0ea78 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -885,7 +885,6 @@ static void update_curr_rt(struct rq *rq)
+ {
+ 	struct task_struct *curr = rq->curr;
+ 	struct sched_rt_entity *rt_se = &curr->rt;
+-	struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
+ 	u64 delta_exec;
+ 
+ 	if (curr->sched_class != &rt_sched_class)
+@@ -910,7 +909,7 @@ static void update_curr_rt(struct rq *rq)
+ 		return;
+ 
+ 	for_each_sched_rt_entity(rt_se) {
+-		rt_rq = rt_rq_of_se(rt_se);
++		struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
+ 
+ 		if (sched_rt_runtime(rt_rq) != RUNTIME_INF) {
+ 			raw_spin_lock(&rt_rq->rt_runtime_lock);
+-- 
+1.9.3
+
