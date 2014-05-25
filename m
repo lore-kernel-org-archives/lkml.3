@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaEYSVL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 14:21:11 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:50623 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaEYSVK (ORCPT
+	id S1751514AbaEYSYp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 14:24:45 -0400
+Received: from mout.gmx.net ([212.227.15.19]:58646 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075AbaEYSYn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 14:21:10 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, 1vier1@web.de,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 7/6] ipc/sem.c: add a printk_once for semctl(GETNCNT/GETZCNT)
-Date: Sun, 25 May 2014 20:21:03 +0200
-Message-Id: <1401042063-24666-1-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.9.0
+	Sun, 25 May 2014 14:24:43 -0400
+Message-ID: <1401042273.7538.10.camel@schoellingm.dzne.de>
+Subject: Re: [PATCH] staging: gdm72xx: use time_before()
+From: Manuel Schoelling <manuel.schoelling@gmx.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, arnd@arndb.de, peter.p.waskiewicz.jr@intel.com,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khoroshilov@ispras.ru
+Date: Sun, 25 May 2014 20:24:33 +0200
+In-Reply-To: <20140525181431.GA20614@kroah.com>
+References: <1401023339-29712-1-git-send-email-manuel.schoelling@gmx.de>
+	 <20140525181431.GA20614@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:towAMdXT93+gYgG1fEEuX/SBoZRCr3+3CmM/5B46e3nvQdtIZe8
+ lnHwW+j13N4TjNPMv9NrcJaXgdo81tC1iKkPQjV1vzeEKxDUW3iF012JYEqyQGOUDr2RJ83
+ PLGbmfw9KKco/VoY7bqdtZnOSbAi/x/Htbk4eAHpPVVjn7PJvn3kjUgkQi7hkjv4QnmYDR1
+ gmfi/5SNixKsFqW3i0TbA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The actual Linux implementation for semctl(GETNCNT) and semctl(GETZCNT)
-always (since 0.99.10) reported a thread as sleeping on all semaphores
-that are listed in the semop() call.
-The documented behavior (both in the Linux man page and in the Single Unix
-Specification) is that a task should be reported on exactly one semaphore:
-The semaphore that caused the thread to got to sleep.
+On So, 2014-05-25 at 11:14 -0700, Greg KH wrote:
+> On Sun, May 25, 2014 at 03:08:59PM +0200, Manuel Schölling wrote:
+> > To be future-proof and for better readability the time comparisons are
+> > modified to use time_before() instead of plain, error-prone math.
+> > 
+> > Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+> > ---
+> >  drivers/staging/gdm72xx/gdm_usb.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> This patch doesn't apply, can you please refresh it against my latest
+> tree and resend?
+That's weird. I pulled the lastest master from Linus and rebased the
+patch, but no modification of my patch was required (latest commit
+before my patch to that file was
+8943a92fc257c439ffe55fb0f9896be57c58c56b according to my repo). 
 
-This patch adds a printk_once() that is triggered if a thread hits
-the relevant case.
+Maybe you have a more recent version than Linus?
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
----
- ipc/sem.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Bye,
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 9106321..3cc2f7b6 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1000,6 +1000,18 @@ static int check_qop(struct sem_array *sma, int semnum, struct sem_queue *q,
- {
- 	struct sembuf *sop = q->blocking;
- 
-+	/*
-+	 * Linux always (since 0.99.10) reported a task as sleeping on all
-+	 * semaphores. This violates SUS, therefore it was changed to the
-+	 * standard compliant behavior.
-+	 * Give the administrators a chance to notice that an application
-+	 * might misbehave because it relies on the Linux behavior.
-+	 */
-+	printk_once(KERN_INFO "semctl(GETNCNT/GETZCNT) is since 3.16 Single " \
-+				"Unix Specification compliant.\n" \
-+				"The task %d triggered the difference, " \
-+				"watch for misbehavior.", current->pid);
-+
- 	if (sop->sem_num != semnum)
- 		return 0;
- 
--- 
-1.9.0
+Manuel
+
+> thanks,
+> 
+> greg k-h
+
 
