@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459AbaEYSnm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 14:43:42 -0400
-Received: from mout.gmx.net ([212.227.15.18]:59386 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071AbaEYSnk convert rfc822-to-8bit (ORCPT
+	id S1751441AbaEYSur (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 14:50:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53563 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaEYSuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 14:43:40 -0400
-Message-ID: <1401043415.7538.11.camel@schoellingm.dzne.de>
-Subject: Re: [PATCH] staging: gdm72xx: use time_before()
-From: Manuel Schoelling <manuel.schoelling@gmx.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, arnd@arndb.de, peter.p.waskiewicz.jr@intel.com,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        khoroshilov@ispras.ru
-Date: Sun, 25 May 2014 20:43:35 +0200
-In-Reply-To: <20140525183305.GA11364@kroah.com>
-References: <1401023339-29712-1-git-send-email-manuel.schoelling@gmx.de>
-	 <20140525181431.GA20614@kroah.com>
-	 <1401042273.7538.10.camel@schoellingm.dzne.de>
-	 <20140525183305.GA11364@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:4XmGdgiI85JRfSUmzHJozr/sDtpV7xJR3ANW8yOpDGhe3WqRTj7
- 43VaezU3fjNuSOQPjeRA1+WYU8aU9/Ue9gBa/piVZvYWhwdFFsQ57/PQHtyLgVbf3Mhzru5
- KkCuFMe6ho3lKAkMo/VGjh2cZs7mayaWo5GrtWKEj1lx/4ORIZYJarvBhvNu2a8QFfmlpvE
- XZ9poRobPdS4V6bD3Xecg==
+	Sun, 25 May 2014 14:50:46 -0400
+Date: Mon, 26 May 2014 00:20:38 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr, David Miller <davem@davemloft.net>
+Subject: [PATCH v2] ehea: Introduce the use of the managed version of kzalloc
+Message-ID: <20140525185037.GA3041@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On So, 2014-05-25 at 11:33 -0700, Greg KH wrote:
-> On Sun, May 25, 2014 at 08:24:33PM +0200, Manuel Schoelling wrote:
-> > On So, 2014-05-25 at 11:14 -0700, Greg KH wrote:
-> > > On Sun, May 25, 2014 at 03:08:59PM +0200, Manuel Schölling wrote:
-> > > > To be future-proof and for better readability the time comparisons are
-> > > > modified to use time_before() instead of plain, error-prone math.
-> > > > 
-> > > > Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
-> > > > ---
-> > > >  drivers/staging/gdm72xx/gdm_usb.c |    2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > This patch doesn't apply, can you please refresh it against my latest
-> > > tree and resend?
-> > That's weird. I pulled the lastest master from Linus and rebased the
-> > patch, but no modification of my patch was required (latest commit
-> > before my patch to that file was
-> > 8943a92fc257c439ffe55fb0f9896be57c58c56b according to my repo). 
-> > 
-> > Maybe you have a more recent version than Linus?
-> 
-> 
-> I have a much different version from Linus, with a few thousand patches
-> added, otherwise how would I be able to queue up stuff to go to Linus
-> for the next kernel release?  :)
-> 
-> For the staging patches, either use the linux-next tree (which you
-> should use for all kernel development), or my staging.git tree, and the
-> staging-next branch on git.kernel.org, which is what gets pulled into
-> linux-next every week-day.
-> 
-> If you have more questions about this, take a look at
-> Documentation/development-process/  it should explain how patches move
-> to Linus and why working against Linus's tree isn't going to get you
-> very far.
-Ok, thanks for your answer, Greg. I will use the linux-next tree and send you a new version of that patch today.
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. Also, linux/device.h is added to make sure the devm_*()
+routine declarations are unambiguously available.
 
-Bye,
+The following Coccinelle semantic patch was used for making the change:
 
-Manuel
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-> thanks,
-> 
-> greg k-h
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+Not compiled due to incompatible architecture
+
+v2: add linux/device.h include
+ drivers/net/ethernet/ibm/ehea/ehea_main.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+index 538903b..a25f3c6 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -29,6 +29,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/in.h>
++#include<linux/device.h>
+ #include <linux/ip.h>
+ #include <linux/tcp.h>
+ #include <linux/udp.h>
+@@ -3273,7 +3274,7 @@ static int ehea_probe_adapter(struct platform_device *dev)
+ 		return -EINVAL;
+ 	}
+ 
+-	adapter = kzalloc(sizeof(*adapter), GFP_KERNEL);
++	adapter = devm_kzalloc(&dev->dev, sizeof(*adapter), GFP_KERNEL);
+ 	if (!adapter) {
+ 		ret = -ENOMEM;
+ 		dev_err(&dev->dev, "no mem for ehea_adapter\n");
+@@ -3359,7 +3360,6 @@ out_kill_eq:
+ 
+ out_free_ad:
+ 	list_del(&adapter->list);
+-	kfree(adapter);
+ 
+ out:
+ 	ehea_update_firmware_handles();
+@@ -3386,7 +3386,6 @@ static int ehea_remove(struct platform_device *dev)
+ 	ehea_destroy_eq(adapter->neq);
+ 	ehea_remove_adapter_mr(adapter);
+ 	list_del(&adapter->list);
+-	kfree(adapter);
+ 
+ 	ehea_update_firmware_handles();
+ 
+-- 
+1.9.1
 
