@@ -1,97 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaEYXqx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 19:46:53 -0400
-Received: from mail.siteground.com ([67.19.240.234]:48162 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaEYXqw (ORCPT
+	id S1751514AbaEYXsH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 19:48:07 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:40901 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaEYXsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 19:46:52 -0400
-Message-ID: <538280EC.1010202@1h.com>
-Date: Mon, 26 May 2014 02:46:52 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 25 May 2014 19:48:05 -0400
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Jos Huisken <jos.huisken@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: inotify, new idea?
-References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com> <20140417212834.GC17769@csclub.uwaterloo.ca> <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com> <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com> <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com> <5354DA0B.2060204@nod.at> <53804FC0.1010207@gmail.com> <538091C2.6040802@nod.at>
-In-Reply-To: <538091C2.6040802@nod.at>
-X-Enigmail-Version: 1.6
+In-Reply-To: <CABprBybqJvXU0dbXiq15GtUTjeLsxDyvyKmCEbZPJwq4sgcyZA@mail.gmail.com>
+References: <1400865144-27970-1-git-send-email-berthe.ab@gmail.com>
+ <CAAVeFu+A7=51KqJNxc2LirZVc5zfBv_tny4_vCFaLaUsQqEnGA@mail.gmail.com> <CABprBybqJvXU0dbXiq15GtUTjeLsxDyvyKmCEbZPJwq4sgcyZA@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Mon, 26 May 2014 08:47:43 +0900
+Message-ID: <CAAVeFu+77JTPuWNXstSvNoxW-nLu6u0sjE3MbJoVtfjpmktQRQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
+To: abdoulaye berthe <berthe.ab@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Mon, May 26, 2014 at 1:40 AM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+> Well, ignoring the return value as it is done in gpio-bt8xx makes the
+> compiler complain and display a warning message. The problem with
+> false warning is that it might distract you.
 
-On 05/24/2014 03:34 PM, Richard Weinberger wrote:
-> Am 24.05.2014 09:52, schrieb Michael Kerrisk (man-pages):
->> On 04/21/2014 10:42 AM, Richard Weinberger wrote:
->>> Am 21.04.2014 09:24, schrieb Michael Kerrisk:
->>>>> Does recursive monitoring even work with inotify? Last time I've tried it did failed as soon I did a mkdir
->>>>> -p a/b/c/d because mkdir() raced against the thread which installes the new watches.
->>>> 
->>>> As I understand it, you have to program to deal with the races (rescan directories after adding watches). I
->>>> recently did a lot of work updating the inotify(7) man page to discuss all the issues that I know of, and
->>>> their remedies. If I missed anything, I'd appreciate a note on it, so that it can be added. See 
->>>> http://man7.org/linux/man-pages/man7/inotify.7.html#NOTES
->>> 
->>> I'm aware of the rescan hack, but in my case it does not help because my program must not miss any event. 
->>> Currently I'm using a fuse overlay filesystem to log everything. Not perfect but works... :-)
->> 
->> Richard,
->> 
->> A late follow up question. How does your application deal with the event overflow problem (i.e., when you get a
->> large number of events much faster than your application can deal with them?
-> 
-> The downside of the FUSE approach is that you have to intercept every filesystem function. This can be a
-> performance issue. But due to this design the overflow problem cannot happen as the FUSE filesystem blocks until
-> the event has been proceed.
-> 
+Isn't the warning due to the __must_check in the function's
+declaration? If so just removing it might do the trick...
 
-Have anyone of you looked at this: https://github.com/1and1/linux-filemon/
+> I think that the patch
+> will makes things consistent once completed
 
-I haven't stress tested it, but in the past I ported it to more recent kernels:
-  https://github.com/hackman/filemon-patches
+Yeah fundamentally speaking I am not against this patch - I just
+wonder if it is worth going through all the call sites and changing
+them. Also we cannot exclude that a few users actually make something
+meaningful with the return value (don't know what that would be
+though).
 
-It is not polished, but it works.
-
-I'm considering fixing some of the issues at has for use in my home setup.
-
-Marian
-
-> Thanks, //richard -- To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a
-> message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html Please read
-> the FAQ at  http://www.tux.org/lkml/
-> 
-
-
-- -- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iEYEARECAAYFAlOCgOwACgkQ4mt9JeIbjJSXrgCdHCFADxvKN3Hxb4qinc/5Fj6V
-WYMAnArk3Zb8YqTUNoyNCh1zYplUUx9B
-=y/Sm
------END PGP SIGNATURE-----
+> Thanks a lot for the review.
+>
+> On Sun, May 25, 2014 at 9:46 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> On Sat, May 24, 2014 at 2:12 AM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+>>> This avoids handling gpiochip remove error in device
+>>> remove handler.
+>>
+>> Be aware that at the moment many callers of gpiochip_remove() read its
+>> return value. So applying your patch as-is would break compilation.
+>>
+>> This patch should therefore be the last of a series that first
+>> modifies all callers of gpiochip_remove() to ignore its return value,
+>> then neutralizes the function itself.
+>>
+>> I am not sure whether the world would really be a better place after
+>> this though. Callers that don't need the return value of
+>> gpiochip_remove() can simply ignore it...
+>>
+>>>
+>>> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+>>> ---
+>>>  drivers/gpio/gpiolib.c      | 24 +++++++-----------------
+>>>  include/linux/gpio/driver.h |  2 +-
+>>>  2 files changed, 8 insertions(+), 18 deletions(-)
+>>>
+>>> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+>>> index f48817d..4878980 100644
+>>> --- a/drivers/gpio/gpiolib.c
+>>> +++ b/drivers/gpio/gpiolib.c
+>>> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
+>>>   *
+>>>   * A gpio_chip with any GPIOs still requested may not be removed.
+>>>   */
+>>> -int gpiochip_remove(struct gpio_chip *chip)
+>>> +void gpiochip_remove(struct gpio_chip *chip)
+>>>  {
+>>>         unsigned long   flags;
+>>> -       int             status = 0;
+>>>         unsigned        id;
+>>>
+>>>         acpi_gpiochip_remove(chip);
+>>> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
+>>>         of_gpiochip_remove(chip);
+>>>
+>>>         for (id = 0; id < chip->ngpio; id++) {
+>>> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+>>> -                       status = -EBUSY;
+>>> -                       break;
+>>> -               }
+>>> -       }
+>>> -       if (status == 0) {
+>>> -               for (id = 0; id < chip->ngpio; id++)
+>>> -                       chip->desc[id].chip = NULL;
+>>> -
+>>> -               list_del(&chip->list);
+>>> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+>>> +                       panic("gpiolib.c: gpiochip is still requested\n");
+>>
+>> panic() sounds a little harsh here. Maybe a dev_err() would be enough?
+>>
+>>>         }
+>>> +       for (id = 0; id < chip->ngpio; id++)
+>>> +               chip->desc[id].chip = NULL;
+>>>
+>>> +       list_del(&chip->list);
+>>>         spin_unlock_irqrestore(&gpio_lock, flags);
+>>> -
+>>> -       if (status == 0)
+>>> -               gpiochip_unexport(chip);
+>>> -
+>>> -       return status;
+>>> +       gpiochip_unexport(chip);
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(gpiochip_remove);
+>>>
+>>> diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+>>> index 1827b43..72ed256 100644
+>>> --- a/include/linux/gpio/driver.h
+>>> +++ b/include/linux/gpio/driver.h
+>>> @@ -138,7 +138,7 @@ extern const char *gpiochip_is_requested(struct gpio_chip *chip,
+>>>
+>>>  /* add/remove chips */
+>>>  extern int gpiochip_add(struct gpio_chip *chip);
+>>> -extern int __must_check gpiochip_remove(struct gpio_chip *chip);
+>>> +void gpiochip_remove(struct gpio_chip *chip);
+>>
+>> "extern" should be preserved here for style consistency.
