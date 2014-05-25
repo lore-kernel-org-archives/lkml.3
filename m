@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaEYSHN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 14:07:13 -0400
-Received: from mout.gmx.net ([212.227.17.20]:64205 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaEYSHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 14:07:11 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: lidza.louina@gmail.com
-Cc: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] dgnc: Use time_after_eq()
-Date: Sun, 25 May 2014 20:07:02 +0200
-Message-Id: <1401041222-18992-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751413AbaEYSI5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 14:08:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60693 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaEYSI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 14:08:56 -0400
+Date: Sun, 25 May 2014 11:08:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: devel@driverdev.osuosl.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8 V2] drivers/staging: Remove useless return variables
+Message-ID: <20140525180855.GA30986@kroah.com>
+References: <1400929608-31128-1-git-send-email-peter.senna@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:w84mul56GVw9R0euGwP0tuwoTZG23oJ8iU94f2S05CP5ztfs5Jt
- XllUhuzjOFFKZHI9mD61mWCB4wvPDsFFpnBP4wjXB0jGkRjtGUIWG3r74RQxFUXq89pTCcp
- tpiAJRBADeSGMfbTWbxvrtVnxkWFlQZ5FsUDNrqR4yQLad8cyTgRSgXyIrh1kSHEcCp/BLt
- 9K6hyqVO+0SDZdA4xRgIw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400929608-31128-1-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be future-proof and for better readability the time comparisons are
-modified to use time_after_eq() instead of plain, error-prone math.
+On Sat, May 24, 2014 at 01:06:48PM +0200, Peter Senna Tschudin wrote:
+> This patch remove variables that are initialized with a constant,
+> are never updated, and are only used as parameter of return.
+> Return the constant instead of using a variable.
+> 
+> Verified by compilation only.
+> 
+> The coccinelle script that find and fixes this issue is:
+> // <smpl>
+> @@
+> type T;
+> constant C;
+> identifier ret;
+> @@
+> - T ret = C;
+> ... when != ret
+>     when strict
+> return
+> - ret
+> + C
+> ;
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> ---
+> Changes from V1:
+>  - Updated semantic patch
+>  - Refreshed for next-20140523
 
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
----
- drivers/staging/dgnc/dgnc_neo.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Can you refresh again?  It still doesn't apply :(
 
-diff --git a/drivers/staging/dgnc/dgnc_neo.c b/drivers/staging/dgnc/dgnc_neo.c
-index cf22c7b..a8ca22a 100644
---- a/drivers/staging/dgnc/dgnc_neo.c
-+++ b/drivers/staging/dgnc/dgnc_neo.c
-@@ -395,7 +395,8 @@ static inline void neo_clear_break(struct channel_t *ch, int force)
- 
- 	/* Turn break off, and unset some variables */
- 	if (ch->ch_flags & CH_BREAK_SENDING) {
--		if ((jiffies >= ch->ch_stop_sending_break) || force) {
-+		if (time_after_eq(jiffies, ch->ch_stop_sending_break)
-+		    || force) {
- 			uchar temp = readb(&ch->ch_neo_uart->lcr);
- 			writeb((temp & ~UART_LCR_SBC), &ch->ch_neo_uart->lcr);
- 			neo_pci_posting_flush(ch->ch_bd);
--- 
-1.7.10.4
+thanks,
 
+greg k-h
