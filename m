@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaEYNGD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 09:06:03 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62647 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596AbaEYNGA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 09:06:00 -0400
-Message-ID: <5381EAB5.90402@gmail.com>
-Date: Sun, 25 May 2014 16:05:57 +0300
-From: Amir Vadai <amirv.mellanox@gmail.com>
-Reply-To: amirv@mellanox.com
-Organization: Mellanox
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751617AbaEYNJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 09:09:09 -0400
+Received: from mout.gmx.net ([212.227.17.20]:56578 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435AbaEYNJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 09:09:07 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: gregkh@linuxfoundation.org
+Cc: peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
+        khoroshilov@ispras.ru, arnd@arndb.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] gdm72xx: use time_before()
+Date: Sun, 25 May 2014 15:08:59 +0200
+Message-Id: <1401023339-29712-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Or Gerlitz <ogerlitz@mellanox.com>, idos@mellanox.com,
-        Yevgeny Petrilin <yevgenyp@mellanox.com>
-Subject: Re: Extend irq_set_affinity_notifier() to use  a call chain
-References: <5381DEDC.8050204@gmail.com>
-In-Reply-To: <5381DEDC.8050204@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:Hjyxylgr1p5B7SkJTEMYsskwMfLynEwLWjU9RE8y0cib/r14jdu
+ Uub+5C/IjsOAjdSDa4ka1mgrzxuzymC2BvnpUTh31M4mDztU7koBWsPwYEaeY1UgxLwg+fd
+ JbACJy1Z4dftuKXloIyQ8si04dE4sia12EE1d2JeGiI3PC41b5/FNuCgm230fOAAyriPEWw
+ xW5VqGSfP7VcRhSF0B+nA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/25/2014 3:15 PM, Amir Vadai wrote:
-> Hi,
->
-> I'm working for Mellanox on mlx4_en NIC driver.
->
-> We need to be able to be notified on irq affinity changes.
-> This is because, during non-stop full bandwidth traffic, napi will poll
-> constantly and no interrupt will be fired. Because of that, even if the
-> user changes the irq affinity, polling will continue to be done on the
-> original CPU that was chosen on the first packet.
-> We would like to be notified when the affinity is changed. When such an
-> event happen, the driver will arm the interrupts and end the napi
-> session. An interrupt will start a new napi session on the right CPU.
->
-> In order to do that, I need to add a new irq affinity notification
-> callback (In addition to the existing cpu_rmap notification). For that I
-> would like to extend irq_set_affinity_notifier() to have a notifier
-> call-chain instead of a single notifier callback.
->
-> I wanted to hear your opinion on this, and unless there is a better
-> solution, will send an RFC later on.
->
-> References:
-> - http://patchwork.ozlabs.org/patch/65244/ - Review done by Thomas
-> Glexiber to Ben Hutchings first version of the irq affinity notifiers.
-> - http://patchwork.ozlabs.org/patch/79593/ - Final version of
-> irq_set_affinity_notifier() that was applied
->
-> Thanks,
-> Amir
+To be future-proof and for better readability the time comparisons are
+modified to use time_before() instead of plain, error-prone math.
 
-Didn't mention that a patch to set irq affinity notifier was already 
-added to mlx4_en [1], and now aRFS is broken because cpu_rmap callback 
-is dropped when mlx4_en callback is set.
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ drivers/staging/gdm72xx/gdm_usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[1] - http://patchwork.ozlabs.org/patch/348669/
-
-Amir
+diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
+index 20539d8..9ddf8f5 100644
+--- a/drivers/staging/gdm72xx/gdm_usb.c
++++ b/drivers/staging/gdm72xx/gdm_usb.c
+@@ -730,7 +730,7 @@ static int k_mode_thread(void *arg)
+ 			spin_unlock_irqrestore(&k_lock, flags2);
+ 
+ 			expire = jiffies + K_WAIT_TIME;
+-			while (jiffies < expire)
++			while (time_before(jiffies, expire))
+ 				schedule_timeout(K_WAIT_TIME);
+ 
+ 			spin_lock_irqsave(&rx->lock, flags);
+-- 
+1.7.10.4
 
