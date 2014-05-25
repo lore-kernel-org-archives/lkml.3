@@ -1,83 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaEYBx6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 May 2014 21:53:58 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:36211 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322AbaEYBx4 (ORCPT
+	id S1751398AbaEYDNk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 May 2014 23:13:40 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:45056 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751262AbaEYDNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 May 2014 21:53:56 -0400
-From: <Wei.Yang@windriver.com>
-To: <davem@davemloft.net>
-CC: <peppe.cavallaro@st.com>, <wei.yang@windriver.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] net: driver: stmicro: Remove some useless the lock protection
-Date: Sun, 25 May 2014 09:53:44 +0800
-Message-ID: <1400982824-3871-1-git-send-email-Wei.Yang@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20140523.160945.226886017757584215.davem@davemloft.net>
-References: <20140523.160945.226886017757584215.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 24 May 2014 23:13:39 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtcUAE1fgVNXQDTn/2dsb2JhbABZgweCRX6nUgEBAQEBAQUBgzyUSgICAYEDF3SCJQEBBAE6HCMFCwgDGB0ROR4GE4g6DAHXTBeFVYg0SQeEQAEDjz+KMwGLF4gQgzo7gTE
+Date: Sun, 25 May 2014 05:13:38 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/4] lib/debugobjects.c: move __initdata after name
+Message-Id: <20140525051338.44cbb304b48f28625fa60c1b@skynet.be>
+In-Reply-To: <20140524215634.GC24038@thin>
+References: <1400936839-25007-1-git-send-email-fabf@skynet.be>
+	<20140524215634.GC24038@thin>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yang Wei <Wei.Yang@windriver.com>
+On Sat, 24 May 2014 14:56:35 -0700
+Josh Triplett <josh@joshtriplett.org> wrote:
 
-kernel always invokes a pair of rtnl_lock adn rtnl_unlock to
-protect dev_ethtool(), so its not neccessary to invoke spin_lock/unlock
-in ethtool_ops.
+> On Sat, May 24, 2014 at 03:07:19PM +0200, Fabian Frederick wrote:
+> > Cc: Josh Triplett <josh@joshtriplett.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> 
+> No, don't make this change.  A quick "git grep __initdata" shows that to
+> the extent it has a consistent placement, it's either right after the
+> type ("static some_type __initdata varname") or right after the storage
+> class ("static __initdata some_type varname").  Other similar qualifiers
+> follow the same pattern.
 
-Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
----
-Hi David,
-
-   I regenerate this patch based on net/next repo in v2.
-
-Wei
- .../net/ethernet/stmicro/stmmac/stmmac_ethtool.c   |    6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-index c963394..7892666 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-@@ -322,9 +322,7 @@ static int stmmac_ethtool_getsettings(struct net_device *dev,
- 		return -EBUSY;
- 	}
- 	cmd->transceiver = XCVR_INTERNAL;
--	spin_lock_irq(&priv->lock);
- 	rc = phy_ethtool_gset(phy, cmd);
--	spin_unlock_irq(&priv->lock);
- 	return rc;
- }
- 
-@@ -442,7 +440,6 @@ stmmac_get_pauseparam(struct net_device *netdev,
- 	if (priv->flow_ctrl & FLOW_TX)
- 		pause->tx_pause = 1;
- 
--	spin_unlock(&priv->lock);
- }
- 
- static int
-@@ -457,8 +454,6 @@ stmmac_set_pauseparam(struct net_device *netdev,
- 	if (priv->pcs)	/* FIXME */
- 		return -EOPNOTSUPP;
- 
--	spin_lock(&priv->lock);
--
- 	if (pause->rx_pause)
- 		new_pause |= FLOW_RX;
- 	if (pause->tx_pause)
-@@ -473,7 +468,6 @@ stmmac_set_pauseparam(struct net_device *netdev,
- 	} else
- 		priv->hw->mac->flow_ctrl(priv->ioaddr, phy->duplex,
- 					 priv->flow_ctrl, priv->pause);
--	spin_unlock(&priv->lock);
- 	return ret;
- }
- 
--- 
-1.7.9.5
-
+It was another checkpatch warning asking to put __initdata after variable name...
