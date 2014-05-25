@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaEYVyb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 17:54:31 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:58822 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811AbaEYVya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 17:54:30 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH linux-next] imx-drm: imx-tve: remove unused variable
-Date: Sun, 25 May 2014 23:54:14 +0200
-Message-Id: <1401054854-20932-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 2.0.0.rc2
+	id S1751404AbaEYV6C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 17:58:02 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52462 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaEYV6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 17:58:00 -0400
+Date: Sun, 25 May 2014 23:57:56 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Vincent =?iso-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>
+Cc: linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] serial: efm32: add module_exit
+Message-ID: <20140525215756.GA18901@pengutronix.de>
+References: <1401052385-3786-1-git-send-email-vincent.stehle@laposte.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401052385-3786-1-git-send-email-vincent.stehle@laposte.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f9b0e251dfbf 'drm: make mode_valid callback optional' left variable ret
-unused; remove it.
-
-This fixes the following compilation warning:
-
-  drivers/staging/imx-drm/imx-tve.c: In function ‘imx_tve_connector_mode_valid’:
-  drivers/staging/imx-drm/imx-tve.c:252:6: warning: unused variable ‘ret’ [-Wunused-variable]
-
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-Cc: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
-
-Hi,
-
-This can be seen with e.g. linux next-20140523 and arm allmodconfig.
-
-Best regards,
-
-V.
-
- drivers/staging/imx-drm/imx-tve.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
-index 3e8b0a1..4caef2b1 100644
---- a/drivers/staging/imx-drm/imx-tve.c
-+++ b/drivers/staging/imx-drm/imx-tve.c
-@@ -249,7 +249,6 @@ static int imx_tve_connector_mode_valid(struct drm_connector *connector,
- {
- 	struct imx_tve *tve = con_to_tve(connector);
- 	unsigned long rate;
--	int ret;
+On Sun, May 25, 2014 at 11:13:05PM +0200, Vincent Stehlé wrote:
+> Add missing specification of efm32_uart_exit as module_exit.
+> 
+> This fixes the following compilation warning:
+> 
+>   drivers/tty/serial/efm32-uart.c:840:123: warning: ‘efm32_uart_exit’ defined but not used [-Wunused-function]
+This warning doesn't occur in my builds, probably because I have
+MODULES=n. I can reproduce it on allmodconfig though.
  
- 	/* pixel clock with 2x oversampling */
- 	rate = clk_round_rate(tve->clk, 2000UL * mode->clock) / 2000;
--- 
-2.0.0.rc2
+> Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
+Thanks
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
