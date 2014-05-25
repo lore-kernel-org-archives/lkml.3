@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaEYTnX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 15:43:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33614 "EHLO
+	id S1752071AbaEYTpi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 15:45:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33558 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751798AbaEYTnU (ORCPT
+	with ESMTP id S1751738AbaEYTmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 15:43:20 -0400
-Date: Sun, 25 May 2014 21:22:50 +0200
+	Sun, 25 May 2014 15:42:50 -0400
+Date: Sun, 25 May 2014 21:02:11 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Chen-Yu Tsai <wens@csie.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -20,79 +20,39 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>,
         Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH 18/22] ARM: sunxi: Introduce Allwinner A23 support
-Message-ID: <20140525192250.GY10768@lukather>
+Subject: Re: [PATCH 10/22] clk: sunxi: Add support for PLL6 pre-divider on
+ AHB1 clock
+Message-ID: <20140525190211.GT10768@lukather>
 References: <1400831485-28576-1-git-send-email-wens@csie.org>
- <1400831485-28576-19-git-send-email-wens@csie.org>
+ <1400831485-28576-11-git-send-email-wens@csie.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B7FF+pnjRCrp0ISR"
+	protocol="application/pgp-signature"; boundary="v15hXiddb3kq3Bam"
 Content-Disposition: inline
-In-Reply-To: <1400831485-28576-19-git-send-email-wens@csie.org>
+In-Reply-To: <1400831485-28576-11-git-send-email-wens@csie.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---B7FF+pnjRCrp0ISR
+--v15hXiddb3kq3Bam
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, May 23, 2014 at 03:51:21PM +0800, Chen-Yu Tsai wrote:
-> The Allwinner A23 is a dual-core Cortex-A7-based SoC. It re-uses most of
-> the IPs found in previous SoCs, notably the A31.
+On Fri, May 23, 2014 at 03:51:13PM +0800, Chen-Yu Tsai wrote:
+> On the A31 and A23, the PLL6 input to the AHB1 clock has a 2 bit wide
+> pre-divider. This was verified from the A23 user manual and A31/A23 SDK
+> sources.
 >=20
 > Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> ---
->  arch/arm/mach-sunxi/Kconfig |  8 ++++++++
->  arch/arm/mach-sunxi/sunxi.c | 12 ++++++++++++
->  2 files changed, 20 insertions(+)
->=20
-> diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-> index 0fbd4f1..6434e3b 100644
-> --- a/arch/arm/mach-sunxi/Kconfig
-> +++ b/arch/arm/mach-sunxi/Kconfig
-> @@ -35,4 +35,12 @@ config MACH_SUN7I
->  	select HAVE_ARM_ARCH_TIMER
->  	select SUN5I_HSTIMER
-> =20
-> +config MACH_SUN8I
-> +	bool "Allwinner A23 (sun8i) SoCs support"
-> +	default ARCH_SUNXI
-> +	select ARCH_HAS_RESET_CONTROLLER
-> +	select ARM_GIC
-> +	select MFD_SUN6I_PRCM
-> +	select RESET_CONTROLLER
-> +
->  endif
-> diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-> index df906e3..a43b295 100644
-> --- a/arch/arm/mach-sunxi/sunxi.c
-> +++ b/arch/arm/mach-sunxi/sunxi.c
-> @@ -159,3 +159,15 @@ DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Fa=
-mily")
->  	.dt_compat	=3D sun7i_board_dt_compat,
->  	.restart	=3D sun4i_restart,
->  MACHINE_END
-> +
-> +static const char * const sun8i_board_dt_compat[] =3D {
-> +	"allwinner,sun8i-a23",
-> +	NULL,
-> +};
-> +
-> +DT_MACHINE_START(SUN8I_DT, "Allwinner sun8i (A23) Family")
-> +	.init_machine	=3D sunxi_dt_init,
-> +	.init_time	=3D sun6i_timer_init,
-> +	.dt_compat	=3D sun8i_board_dt_compat,
-> +	.restart	=3D sun6i_restart,
-> +MACHINE_END
 
-You should rebase on top of the latest changes that got merged into
-arm-soc, or sunxi-next, most of these functions are gone now.
 
-Thanks,
+No, it should be part of the AHB1 clock code itself. It's internal
+clock logic, isn't a clock per se, and as such, shouldn't be
+reprensented as a separate clock.
+
 Maxime
 
 --=20
@@ -100,26 +60,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---B7FF+pnjRCrp0ISR
+--v15hXiddb3kq3Bam
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTgkMKAAoJEBx+YmzsjxAgEckQAL4GqQbGTuJKjwaeFGOdedNE
-kjUodvUxbDJxKQB+tteF1mFTeI77e8RZy/4kAdk7Sfu7xJ/83QaFDle5NKLonx88
-DoHo8h+wUkgCLlvApqIs1iGrJDtocrra/aTNU/yZLNvP/IXw6zPxuPJ+HuI839yQ
-xEIvJrEDtCd5YYQ1Um+I3ANVw7UIHrJhTrpY8ok0+KashmweQ3Y1YSarrCUM1eqD
-Hin6QldeLmqwuNRO9pPGJn3Yw0q6FMFV8FUi9ixNpib4EcABolak/2dlcp3aNqbh
-xE0j4ryZjVanImnFRHzo3SJ6iJ9jUCPlDCH6HuG8IWNt3ImvZuPuQ0W7p1UgeovS
-N1dyXLIq2sym4LCiKHn5pEU6Kss4kzmEuJhcd5h4g5isQTxlmIRzQ2N3DkPjaeKt
-V4akx/PLWdZuGLAAkdbnWZqTzIh6Fk3MPDcXuiEqjbS1FehrOWaogPN5c2L4Srr3
-pNxHFc+a633xTwfMfwKxPPC077kRI0GQrLoppPPcHBwO3L46cKF6dSTSa43bQGnY
-xDu8mX+i+Nu4AyuvzbtjjegpD3DAbVl6jhAUlrIUP97bjF/z1QjEAlb+whSZHcn4
-2ItU3lmr9Lfb+O9G5VdJqM/xAUogREssFQlxGLCLdhFA6omKBHQgU4/7WrUYSD+I
-CrFWQ588oNaoOh2t0L9q
-=aCbO
+iQIcBAEBAgAGBQJTgj4zAAoJEBx+YmzsjxAgioEP/iybxpcK3inAnC6ucveb0h+/
+ND25GBTBrQwCOGJSwU66vX0o6g8wQAzig8Pbq2Kids7GT1BB5xHCP9uwlOwJc2rj
+h4LZWWPOG8rVi0p1/c8yMLfJF8DQbVyFJf9/jeYjpd+/rvf37A/n+RYlPT+fkJ+e
+pS0T93Bj4/BBUN+uf1G0uoi7ROC45zj/wqTuYYCpczdahcT2BFzTAwpsZEhJQEPA
+5r8OomsTGPz5MFAG4QpFfXb4jsyCoWd+PXM97KF5MXS5QfUYVIVUWmaXQKrjZ1mi
+r6DPRGVE8EHA/pJzbKaWr7s+sRBuZKcJ0xYTwK6dvIsYYAbQRnLiPK5DWEX9JRBX
+C2l7wLvZpCzuNm7IuEbKALmTcQsec8mH6Hj5Za9cW8mcFL6FiwB8nEXtGyempBly
+6LiJUbcO4SmXgDYrc2a7k4A+dtgVrkH91Qg4ln7xWJedKYhd3+OelvSP6HrpWx7g
+HTtrkgz5+tY2Vm+9m/ABlOtyQq5Zl6LMnsM+OuZinhqfeqfT6ONqa+jdhN475qmi
+DGRmBmsmjBGuEp79wx8rUrV6N+yqL94Aak5UAI76kcVcAnK5Q2seU/NaBrXMiJLm
+4tgWNt1pmHb4A3K1NstpkQ1wFOqNUYZeYSaAAuuv1BpeanswfI1SbvUgJct7fMg2
+lrbMeo4HRlmMepWXIqBm
+=VxaK
 -----END PGP SIGNATURE-----
 
---B7FF+pnjRCrp0ISR--
+--v15hXiddb3kq3Bam--
