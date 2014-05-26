@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaEZHGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:06:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58217 "EHLO bear.ext.ti.com"
+	id S1751697AbaEZHHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:07:23 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855AbaEZHGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:06:48 -0400
-Message-ID: <5382E7FF.7070600@ti.com>
-Date: Mon, 26 May 2014 10:06:39 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751605AbaEZHHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 03:07:22 -0400
+Message-ID: <5382E81C.9070605@nod.at>
+Date: Mon, 26 May 2014 09:07:08 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: <mturquette@linaro.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <ldewangan@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <robh+dt@kernel.org>
-Subject: Re: [PATCH v2 0/2] clk: Support for Palmas clk32kg and clk32kgaudio
- clocks
-References: <1399382685-14781-1-git-send-email-peter.ujfalusi@ti.com> <20140506133136.GA11626@kahuna>
-In-Reply-To: <20140506133136.GA11626@kahuna>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: Marian Marinov <mm@1h.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Jos Huisken <jos.huisken@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: inotify, new idea?
+References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com> <20140417212834.GC17769@csclub.uwaterloo.ca> <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com> <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com> <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com> <5354DA0B.2060204@nod.at> <53804FC0.1010207@gmail.com> <538091C2.6040802@nod.at> <538280EC.1010202@1h.com>
+In-Reply-To: <538280EC.1010202@1h.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="bpO1hVVB6T7Or3074wsq59TQsOKi1N430"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--bpO1hVVB6T7Or3074wsq59TQsOKi1N430
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On 05/06/2014 04:31 PM, Nishanth Menon wrote:
-> On 16:24-20140506, Peter Ujfalusi wrote:
->> Hi,
->>
->> Changes since v1:
->> - binding documentation and driver has been separated based on Nishanth Menon's
->>   comment
+Am 26.05.2014 01:46, schrieb Marian Marinov:
+> Have anyone of you looked at this: https://github.com/1and1/linux-filem=
+on/
+>=20
+> I haven't stress tested it, but in the past I ported it to more recent =
+kernels:
+>   https://github.com/hackman/filemon-patches
+>=20
+> It is not polished, but it works.
+>=20
+> I'm considering fixing some of the issues at has for use in my home set=
+up.
 
-Could you take a look at this series please? I really hoped that it would make
-it to 3.16...
+Well, the patch itself has documented its major flaw:
++ * WARNING! This patch has been designed as EXPERIMENTAL. Its usage
++ * is DANGEROUS, because some filesystems could get exhausted by the
++ * masses of ORPHAN INODES!
 
 Thanks,
-Péter
-
->>
->> v1 of the driver can be found:
->> https://lkml.org/lkml/2014/4/3/104
->>
->> Palmas class of devices can provide 32K clock(s) to be used by other devices
->> on the board. Depending on the actual device the provided clocks can be:
->> CLK32K_KG and CLK32K_KGAUDIO
->> or only one:
->> CLK32K_KG (TPS659039 for example)
->>
->> Use separate compatible flags for the two 32K clock.
->> A system which needs or have only one of the 32k clock from
->> Palmas will need to add node(s) for each clock as separate section
->> in the dts file.
->> The two compatible property is:
->> "ti,palmas-clk32kg" for clk32kg clock
->> "ti,palmas-clk32kgaudio" for clk32kgaudio clock
->>
->> Apart from the register control of the clocks - which is done via
->> the clock API there is a posibility to enable the external sleep
->> control. In this way the clock can be enabled/disabled on demand by the
->> user of the clock.
->>
->> Regards,
->> Peter
->> ---
->> Peter Ujfalusi (2):
->>   dt/bindings: Binding documentation for Palmas clk32kg and clk32kgaudio
->>     clocks
->>   clk: Add driver for Palmas clk32kg and clk32kgaudio clocks
->>
->>  .../bindings/clock/clk-palmas-clk32kg-clocks.txt   |  35 +++
->>  drivers/clk/Kconfig                                |   7 +
->>  drivers/clk/Makefile                               |   1 +
->>  drivers/clk/clk-palmas.c                           | 307 +++++++++++++++++++++
->>  include/dt-bindings/mfd/palmas.h                   |  18 ++
->>  5 files changed, 368 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/clock/clk-palmas-clk32kg-clocks.txt
->>  create mode 100644 drivers/clk/clk-palmas.c
->>  create mode 100644 include/dt-bindings/mfd/palmas.h
->>
->> -- 
->> 1.9.2
->>
-> 
-> Series:
-> Reviewed-by: Nishanth Menon <nm@ti.com>
+//richard
 
 
+--bpO1hVVB6T7Or3074wsq59TQsOKi1N430
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTgugiAAoJEPmeIjfg4UaauusP/3uFyEzGLkEo+S+X9XFBvtLo
+Au4LOQ1XlnT0tAKyUkk/+TWUE9L1grxS5aMLFPnxJivUM73kaZFFjiGM7YyP2ktA
+jrCmeA5wjv297wgzp22GAIBadOVAVj9yGEnDua6yFdVzfYMLRxcXkrjbAfIgeze/
+r6lO0Q5Nv/8il/IYQkSTNwSkbhYRFF16Cnth/QkRotwWC1ufppg+rbeO7vRmQDR2
+JOPlejYk3b0Qr4oacO+KrJxM7cJG+72QSelnR9NAu028ngMv9myvH0L5Kp3vyFnF
+4li8/0RgXJpicxS4WhrgbRzVMX/zZLj9h2880eS5Hx8MLty6rzHyRVbryuKofkz6
+LqOqJwDmdE/VO2i4VQ/6ir7u24AkIHyhvGrKNfKP7X3WxxUyLPYEsUCAZ8Sd8E0e
+yGeIMnQJN+lxGsiQgBoH6CKO8oUuyEmKEiVHT+gTWl23HxIY77Eapft9vd4WKP6F
+dpKl9bFa7/PnN8dG300L7cLusCO+D8/HR3yY75N4SUJyf3CqrVsDIw0AGryFth4B
+WEwy10Vp8FKg5OBfc9DwHiC6DegRTi7DKTDoyudOjSn1oixrd0GbcLc09VMm8+VU
+u+GV6Aq8PqT31EJt2kb7IP6HuJUyvRvCkKWM61UWA+msrWkvR9Mg33zXYE3NnSth
+PRE9rosbJXwsSQrRi3a+
+=o8GT
+-----END PGP SIGNATURE-----
+
+--bpO1hVVB6T7Or3074wsq59TQsOKi1N430--
