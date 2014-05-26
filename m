@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaEZLyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:54:04 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:56011 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751624AbaEZLyC (ORCPT
+	id S1752310AbaEZLzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:55:45 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47759 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaEZLzn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:54:02 -0400
-X-IronPort-AV: E=Sophos;i="4.98,912,1392134400"; 
-   d="scan'208";a="31014759"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 1/2] workqueue: always pass cascading responsibility to the next flusher
-Date: Mon, 26 May 2014 19:58:12 +0800
-Message-ID: <1401105501-13307-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+	Mon, 26 May 2014 07:55:43 -0400
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20140526112348.907B7C421A5@trevor.secretlab.ca>
+Date: Mon, 26 May 2014 14:55:37 +0300
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com> <1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com> <20140514100856.5198DC4153D@trevor.secretlab.ca> <E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com> <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com> <20140516105814.3EA3FC403C2@trevor.secretlab.ca> <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com> <20140520055026.E3A98C412DA@trevor.secretlab.ca> <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com> <20140526104824.63F13C42129@trevor.secretlab.ca> <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com> <20140526112348.907B7C421A5@trevor.secretlab.ca>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the end of the cascading code of flush_workqueue(), the current
-first-flusher will hand over the cascading-responsibility to the next
-flusher and make the next flusher to be the new first-flusher.
+Hi Grant,
 
-But when the current first-flusher finds out that the color of the next
-flusher is already done, it will deprive first-flusher role from
-the next, and repeat cascading by itself for optimization.
+On May 26, 2014, at 2:23 PM, Grant Likely wrote:
 
-This optimization saves one mutex_lock(&wq->mutex) due to the current
-first-flusher already held it.
+> On Mon, 26 May 2014 12:57:32 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> Hi Grant,
+>> 
+>> On Mon, May 26, 2014 at 12:48 PM, Grant Likely
+>> <grant.likely@secretlab.ca> wrote:
+>>> On Tue, 20 May 2014 09:38:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>>> On Tue, May 20, 2014 at 7:50 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>>>>> Why has the overlay system been designed for plugging and unpluging whole
+>>>>>> overlays?
+>>>>>> That means the kernel has to remember the full stack, causing issues with
+>>>>>> e.g. kexec.
+>>>>> 
+>>>>> Mostly so that drivers don't see any difference in the livetree data
+>>>>> structure. It also means that userspace sees a single representation of
+>>>>> the hardware at any given time.
+>>>> 
+>>>> Sorry, I don't follow the argument about the "single representation of the
+>>>> hardware".
+>>> 
+>>> Er, s/of the hardware/of the tree/. Right now the overlay design
+>>> modifies the live tree which at the same time modifies the tree
+>>> representation in /sys/firmware/devicetree. If the design was changed to
+>>> keep the overlay logically separate, then I would think we want to
+>>> expose that information to usespace also. In fact, I think we would need
+>>> to for usecases like kexec.
+>> 
+>> OK, so it does modify the real tree, and doesn't keep the actual overlays.
+>> 
+>> I was under the impression the overlay stack was also kept in memory, to allow
+>> reversal, so there was a misunderstanding.
+>> 
+>> Hence for kexec, the tree in /sys/firmware/devicetree can just be passed
+>> to the new kernel, as that's the current representation of the hardware?
+> 
+> Heeheehee. We're back where we started. The original question is whether
+> or not that is a valid approach. If the overlay represents something
+> that can be hot plugged/unplugged, then passing it through to the second
+> kernel would be the wrong thing to do. If it was a permenant addition,
+> then it probably doesn't need to be removed.
+> 
+> We do actually keep the overlay info in memory for the purpose of
+> removal exactly so we can support hot unbinding of devices and drivers
+> that make use of overlays.
+> 
 
-This optimization reduces the cascading-latency, because the next flusher
-is not running currently, it will delay a little when we keep the next's
-responsibility for cascading.
+We can support either method. I am not feeling any wiser about which one should be
+the default TBH, so what about exporting a property and let the platform 
+figure out which is more appropriate?
 
-This optimization may also have other benefits. However, it is slow-path
-and low-probability-hit case, and it is not good at these aspects:
-    1) it adds a special case and makes the code complex, bad for review.
-    2) it adds a special state for the first-flusher which is allowed to
-       be deprived. It causes a race and we have to check wq->first_flusher
-       again with mutex held: 4ce48b37bfed ("workqueue: fix race condition
-       in flush_workqueue()").
+> g.
+> 
 
-Since it is slow-path, we remove this optimization and pass the cascading
-responsibility to the next flusher unconditionally. And the race condition
-mentioned above is gone, so we also revert the 4ce48b37bfed by removing
-the checking.
+Regards
 
-And since it always passes the cascading responsibility to the next flusher,
-it doesn't need to repeat to cascade, and the "while(true)" can be removed.
-But if we remove the "while(true)" loop and adjust the indent, "git diff"
-will result a complex patch which is hard to review. So we will remove the
-"while(true)" loop in the next patch which makes two patches are good
-for review. This patch just uses a "break" to disable repeating cascading
-at the end of the loop.
+-- Pantelis
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   14 ++------------
- 1 files changed, 2 insertions(+), 12 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index bc3c188..948a84f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2572,10 +2572,6 @@ void flush_workqueue(struct workqueue_struct *wq)
- 
- 	mutex_lock(&wq->mutex);
- 
--	/* we might have raced, check again with mutex held */
--	if (wq->first_flusher != &this_flusher)
--		goto out_unlock;
--
- 	wq->first_flusher = NULL;
- 
- 	WARN_ON_ONCE(!list_empty(&this_flusher.list));
-@@ -2631,14 +2627,8 @@ void flush_workqueue(struct workqueue_struct *wq)
- 		list_del_init(&next->list);
- 		wq->first_flusher = next;
- 
--		if (flush_workqueue_prep_pwqs(wq, wq->flush_color, -1))
--			break;
--
--		/*
--		 * Meh... this color is already done, clear first
--		 * flusher and repeat cascading.
--		 */
--		wq->first_flusher = NULL;
-+		flush_workqueue_prep_pwqs(wq, wq->flush_color, -1);
-+		break;
- 	}
- 
- out_unlock:
--- 
-1.7.4.4
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
