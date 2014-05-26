@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaEZSHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:07:05 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:55234 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737AbaEZSHC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:07:02 -0400
+	id S1752087AbaEZSH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:07:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15982 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751879AbaEZSH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 14:07:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,914,1392192000"; 
+   d="scan'208";a="545140612"
+Message-ID: <538382FA.8070601@intel.com>
+Date: Tue, 27 May 2014 02:07:54 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140526172101.GA6380@dztty>
-References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
- <1401110850-3552-2-git-send-email-tixxdz@opendz.org> <CALCETrUte7WRMi23+rp+XbgAoOcw=TPZe02YEuZRZyVroj+mfQ@mail.gmail.com>
- <20140526172101.GA6380@dztty>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 26 May 2014 11:06:40 -0700
-Message-ID: <CALCETrU=Jy-urWRcRnRyUNKgJFKykcQP6Diy35R3Uf=7fw_wqw@mail.gmail.com>
-Subject: Re: [PATCH 1/9] procfs: use flags to deny or allow access to /proc/<pid>/$entry
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org, Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [staging: r8192ee] WARNING: CPU: 0 PID: 1 at net/mac80211/rate.c:43
+ ieee80211_rate_control_register()
+References: <538355D5.7010006@intel.com> <538374E4.7010401@lwfinger.net>
+In-Reply-To: <538374E4.7010401@lwfinger.net>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 10:21 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> On Mon, May 26, 2014 at 09:57:16AM -0700, Andy Lutomirski wrote:
->> On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
->> > Add the deny or allow flags, so we can perform proper permission checks
->> > and set the result accordingly. These flags are needed in case we have
->> > to cache the result of permission checks that are done during ->open()
->> > time. Later during ->read(), we can decide to allow or deny the read().
->> >
->> > The pid entries that need these flags are:
->> > /proc/<pid>/stat
->> > /proc/<pid>/wchan
->> > /proc/<pid>/maps  (will be handled in next patches).
->> >
->> > These files are world readable, userspace depend on that. To prevent
->> > ASLR leaks and to avoid breaking userspace, we follow this scheme:
->> >
->> > a) Perform permission checks during ->open()
->> > b) Cache the result of a) and return success
->> > c) Recheck the cached result during ->read()
+On 05/27/2014 01:07 AM, Larry Finger wrote:
+> On 05/26/2014 09:55 AM, Jet Chen wrote:
+> 
+> Jet,
+> 
+>> 0day kernel testing robot got the below dmesg and the first bad commit is
 >>
->> Why is (c) needed?
-> In order to not break these entries, some of them are world readable.
->
-> So we perform the re-check that *single* cached integer, in order to
-> allow access for the non-sensitive, and block or pad with zeros the
-> sensitive.
-
-What I mean is: why not just not re-check?  Is it to paper over the
-lack of revoke.
-
->
->
->> >
->> >  /*
->> > + * Flags used to deny or allow current to access /proc/<pid>/$entry
->> > + * after proper permission checks.
->> > + */
->> > +enum {
->> > +       PID_ENTRY_DENY  = 0,    /* Deny access */
->> > +       PID_ENTRY_ALLOW = 1,    /* Allow access */
->> > +};
+>> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git staging-next
+>> commit 0629f3b8c33899140b48d5897259eab8ebae78ca
+>> Author:     Larry Finger <Larry.Finger@lwfinger.net>
+>> AuthorDate: Wed May 21 16:25:36 2014 -0500
+>> Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> CommitDate: Fri May 23 11:33:56 2014 +0900
 >>
->> I think this would be less alarming if this were:
->>
->> #define PID_ENTRY_DENY ((void *)1UL)
->> #define PID_ENTRY_ALLOW ((void *)2UL)
-> Hmm,
->
-> I would like to keep it enum, enum is type-safe and I want to follow the
-> semantics of /proc/pid/stat and others:
+>>      staging: r8192ee: Turn on build of the new driver
+>>          In addition, this commit contains a TODO file for this driver
+>>          Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+>>      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> The splat comes from the driver trying to register a rate-control algorithm that 
+> is already registered. That could happen because a driver is calling the 
+> registration routine twice, or because more than one driver is using the same 
+> routine name. As I think there is code to prevent the former, and I have never 
+> seen that splat here, I suspect that more than one driver has used the name. On 
+> my real hardware, I can only have one of these devices in the machine at a time.
+> 
+> Is if possible to test the attached patch to see if it fixes the problem? If 
+> not, could you get a listing of the loaded modules at the time of the splat? If 
+> this is not the fix, I will try to duplicate it here.
+> 
+> Thanks,
+> 
+> Larry
+> 
 
-It's not type-safe the way you're doing it, though.
+That patch fixes the problem.
 
---Andy
+Tested-by: Jet Chen <jet.chen@intel.com>
+
+Thanks,
+Jet
