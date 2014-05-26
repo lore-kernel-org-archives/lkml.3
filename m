@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaEZWT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 18:19:56 -0400
+	id S1753300AbaEZWUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 18:20:19 -0400
 Received: from relais.videotron.ca ([24.201.245.36]:61825 "EHLO
 	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaEZWTw (ORCPT
+	with ESMTP id S1753273AbaEZWTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 18:19:52 -0400
+	Mon, 26 May 2014 18:19:50 -0400
 Content-transfer-encoding: 7BIT
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
@@ -15,9 +15,10 @@ Cc: Vincent Guittot <vincent.guittot@linaro.org>,
         Morten Rasmussen <morten.rasmussen@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH v2 6/6] sched: final power vs capacity cleanup
-Date: Mon, 26 May 2014 18:19:39 -0400
-Message-id: <1401142779-6633-7-git-send-email-nicolas.pitre@linaro.org>
+Subject: [PATCH v2 4/6] sched: let struct sched_group_power care about CPU
+ capacity
+Date: Mon, 26 May 2014 18:19:37 -0400
+Message-id: <1401142779-6633-5-git-send-email-nicolas.pitre@linaro.org>
 X-Mailer: git-send-email 1.8.4.108.g55ea5f6
 In-reply-to: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org>
 References: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org>
@@ -30,436 +31,677 @@ to "CPU power".  The upcoming "power aware" scheduler work may create
 confusion with the notion of energy consumption if "power" is used too
 liberally.
 
-This contains the architecture visible changes.  Incidentally, only ARM
-takes advantage of the available pow^H^H^Hcapacity scaling hooks and
-therefore those changes outside kernel/sched/ are confined to one ARM
-specific file.  The default arch_scale_smt_power() hook is not overridden
-by anyone.
-
-Replacements are as follows:
-
-	arch_scale_freq_power  --> arch_scale_freq_capacity
-	arch_scale_smt_power   --> arch_scale_smt_capacity
-	SCHED_POWER_SCALE      --> SCHED_CAPACITY_SCALE
-	SCHED_POWER_SHIFT      --> SCHED_CAPACITY_SHIFT
-
-The local usage of "power" in arch/arm/kernel/topology.c is also changed
-to "capacity" as appropriate.
+Since struct sched_group_power is really about compute capacity of sched
+groups, let's rename it to struct sched_group_capacity. Similarly sgp
+becomes sgc. Related variables and functions dealing with groups are also
+adjusted accordingly.
 
 Signed-off-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/kernel/topology.c | 54 +++++++++++++++++++++---------------------
- include/linux/sched.h      |  6 ++---
- kernel/sched/core.c        |  6 ++---
- kernel/sched/fair.c        | 59 +++++++++++++++++++++++-----------------------
- 4 files changed, 63 insertions(+), 62 deletions(-)
+ include/linux/sched.h |   2 +-
+ kernel/sched/core.c   |  81 +++++++++++++++----------------
+ kernel/sched/fair.c   | 131 +++++++++++++++++++++++++-------------------------
+ kernel/sched/sched.h  |  16 +++---
+ 4 files changed, 115 insertions(+), 115 deletions(-)
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 71e1fec6d3..d42a7db222 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -26,30 +26,30 @@
- #include <asm/topology.h>
- 
- /*
-- * cpu power scale management
-+ * cpu capacity scale management
-  */
- 
- /*
-- * cpu power table
-+ * cpu capacity table
-  * This per cpu data structure describes the relative capacity of each core.
-  * On a heteregenous system, cores don't have the same computation capacity
-- * and we reflect that difference in the cpu_power field so the scheduler can
-- * take this difference into account during load balance. A per cpu structure
-- * is preferred because each CPU updates its own cpu_power field during the
-- * load balance except for idle cores. One idle core is selected to run the
-- * rebalance_domains for all idle cores and the cpu_power can be updated
-- * during this sequence.
-+ * and we reflect that difference in the cpu_capacity field so the scheduler
-+ * can take this difference into account during load balance. A per cpu
-+ * structure is preferred because each CPU updates its own cpu_capacity field
-+ * during the load balance except for idle cores. One idle core is selected
-+ * to run the rebalance_domains for all idle cores and the cpu_capacity can be
-+ * updated during this sequence.
-  */
- static DEFINE_PER_CPU(unsigned long, cpu_scale);
- 
--unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
-+unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
- {
- 	return per_cpu(cpu_scale, cpu);
- }
- 
--static void set_power_scale(unsigned int cpu, unsigned long power)
-+static void set_capacity_scale(unsigned int cpu, unsigned long capacity)
- {
--	per_cpu(cpu_scale, cpu) = power;
-+	per_cpu(cpu_scale, cpu) = capacity;
- }
- 
- #ifdef CONFIG_OF
-@@ -62,11 +62,11 @@ struct cpu_efficiency {
-  * Table of relative efficiency of each processors
-  * The efficiency value must fit in 20bit and the final
-  * cpu_scale value must be in the range
-- *   0 < cpu_scale < 3*SCHED_POWER_SCALE/2
-+ *   0 < cpu_scale < 3*SCHED_CAPACITY_SCALE/2
-  * in order to return at most 1 when DIV_ROUND_CLOSEST
-  * is used to compute the capacity of a CPU.
-  * Processors that are not defined in the table,
-- * use the default SCHED_POWER_SCALE value for cpu_scale.
-+ * use the default SCHED_CAPACITY_SCALE value for cpu_scale.
-  */
- static const struct cpu_efficiency table_efficiency[] = {
- 	{"arm,cortex-a15", 3891},
-@@ -83,9 +83,9 @@ static unsigned long middle_capacity = 1;
-  * Iterate all CPUs' descriptor in DT and compute the efficiency
-  * (as per table_efficiency). Also calculate a middle efficiency
-  * as close as possible to  (max{eff_i} - min{eff_i}) / 2
-- * This is later used to scale the cpu_power field such that an
-- * 'average' CPU is of middle power. Also see the comments near
-- * table_efficiency[] and update_cpu_power().
-+ * This is later used to scale the cpu_capacity field such that an
-+ * 'average' CPU is of middle capacity. Also see the comments near
-+ * table_efficiency[] and update_cpu_capacity().
-  */
- static void __init parse_dt_topology(void)
- {
-@@ -141,15 +141,15 @@ static void __init parse_dt_topology(void)
- 	 * cpu_scale because all CPUs have the same capacity. Otherwise, we
- 	 * compute a middle_capacity factor that will ensure that the capacity
- 	 * of an 'average' CPU of the system will be as close as possible to
--	 * SCHED_POWER_SCALE, which is the default value, but with the
-+	 * SCHED_CAPACITY_SCALE, which is the default value, but with the
- 	 * constraint explained near table_efficiency[].
- 	 */
- 	if (4*max_capacity < (3*(max_capacity + min_capacity)))
- 		middle_capacity = (min_capacity + max_capacity)
--				>> (SCHED_POWER_SHIFT+1);
-+				>> (SCHED_CAPACITY_SHIFT+1);
- 	else
- 		middle_capacity = ((max_capacity / 3)
--				>> (SCHED_POWER_SHIFT-1)) + 1;
-+				>> (SCHED_CAPACITY_SHIFT-1)) + 1;
- 
- }
- 
-@@ -158,20 +158,20 @@ static void __init parse_dt_topology(void)
-  * boot. The update of all CPUs is in O(n^2) for heteregeneous system but the
-  * function returns directly for SMP system.
-  */
--static void update_cpu_power(unsigned int cpu)
-+static void update_cpu_capacity(unsigned int cpu)
- {
- 	if (!cpu_capacity(cpu))
- 		return;
- 
--	set_power_scale(cpu, cpu_capacity(cpu) / middle_capacity);
-+	set_capacity_scale(cpu, cpu_capacity(cpu) / middle_capacity);
- 
--	printk(KERN_INFO "CPU%u: update cpu_power %lu\n",
--		cpu, arch_scale_freq_power(NULL, cpu));
-+	printk(KERN_INFO "CPU%u: update cpu_capacity %lu\n",
-+		cpu, arch_scale_freq_capacity(NULL, cpu));
- }
- 
- #else
- static inline void parse_dt_topology(void) {}
--static inline void update_cpu_power(unsigned int cpuid) {}
-+static inline void update_cpu_capacity(unsigned int cpuid) {}
- #endif
- 
-  /*
-@@ -267,7 +267,7 @@ void store_cpu_topology(unsigned int cpuid)
- 
- 	update_siblings_masks(cpuid);
- 
--	update_cpu_power(cpuid);
-+	update_cpu_capacity(cpuid);
- 
- 	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
- 		cpuid, cpu_topology[cpuid].thread_id,
-@@ -297,7 +297,7 @@ void __init init_cpu_topology(void)
- {
- 	unsigned int cpu;
- 
--	/* init core mask and power*/
-+	/* init core mask and capacity */
- 	for_each_possible_cpu(cpu) {
- 		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
- 
-@@ -307,7 +307,7 @@ void __init init_cpu_topology(void)
- 		cpumask_clear(&cpu_topo->core_sibling);
- 		cpumask_clear(&cpu_topo->thread_sibling);
- 
--		set_power_scale(cpu, SCHED_POWER_SCALE);
-+		set_capacity_scale(cpu, SCHED_CAPACITY_SCALE);
- 	}
- 	smp_wmb();
- 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 561f6f7369..c7f473a54d 100644
+index 42e98239c9..561f6f7369 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -854,10 +854,10 @@ enum cpu_idle_type {
+@@ -1013,7 +1013,7 @@ typedef const int (*sched_domain_flags_f)(void);
+ struct sd_data {
+ 	struct sched_domain **__percpu sd;
+ 	struct sched_group **__percpu sg;
+-	struct sched_group_power **__percpu sgp;
++	struct sched_group_capacity **__percpu sgc;
  };
  
- /*
-- * Increase resolution of cpu_power calculations
-+ * Increase resolution of cpu_capacity calculations
-  */
--#define SCHED_POWER_SHIFT	10
--#define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
-+#define SCHED_CAPACITY_SHIFT	10
-+#define SCHED_CAPACITY_SCALE	(1L << SCHED_CAPACITY_SHIFT)
- 
- /*
-  * sched-domains (multiprocessor balancing) declarations:
+ struct sched_domain_topology_level {
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1191b3937e..6d376d6560 100644
+index 240aa83e73..4ddc79a14f 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -5273,7 +5273,7 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
+@@ -5245,14 +5245,13 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
+ 		}
+ 
+ 		/*
+-		 * Even though we initialize ->power to something semi-sane,
+-		 * we leave power_orig unset. This allows us to detect if
++		 * Even though we initialize ->capacity to something semi-sane,
++		 * we leave capacity_orig unset. This allows us to detect if
+ 		 * domain iteration is still funny without causing /0 traps.
+ 		 */
+-		if (!group->sgp->power_orig) {
++		if (!group->sgc->capacity_orig) {
+ 			printk(KERN_CONT "\n");
+-			printk(KERN_ERR "ERROR: domain->cpu_power not "
+-					"set\n");
++			printk(KERN_ERR "ERROR: domain->cpu_capacity not set\n");
+ 			break;
+ 		}
+ 
+@@ -5274,9 +5273,9 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
  		cpulist_scnprintf(str, sizeof(str), sched_group_cpus(group));
  
  		printk(KERN_CONT " %s", str);
--		if (group->sgc->capacity != SCHED_POWER_SCALE) {
-+		if (group->sgc->capacity != SCHED_CAPACITY_SCALE) {
- 			printk(KERN_CONT " (cpu_capacity = %d)",
- 				group->sgc->capacity);
+-		if (group->sgp->power != SCHED_POWER_SCALE) {
+-			printk(KERN_CONT " (cpu_power = %d)",
+-				group->sgp->power);
++		if (group->sgc->capacity != SCHED_POWER_SCALE) {
++			printk(KERN_CONT " (cpu_capacity = %d)",
++				group->sgc->capacity);
  		}
-@@ -5739,7 +5739,7 @@ build_overlap_sched_groups(struct sched_domain *sd, int cpu)
+ 
+ 		group = group->next;
+@@ -5490,7 +5489,7 @@ static struct root_domain *alloc_rootdomain(void)
+ 	return rd;
+ }
+ 
+-static void free_sched_groups(struct sched_group *sg, int free_sgp)
++static void free_sched_groups(struct sched_group *sg, int free_sgc)
+ {
+ 	struct sched_group *tmp, *first;
+ 
+@@ -5501,8 +5500,8 @@ static void free_sched_groups(struct sched_group *sg, int free_sgp)
+ 	do {
+ 		tmp = sg->next;
+ 
+-		if (free_sgp && atomic_dec_and_test(&sg->sgp->ref))
+-			kfree(sg->sgp);
++		if (free_sgc && atomic_dec_and_test(&sg->sgc->ref))
++			kfree(sg->sgc);
+ 
+ 		kfree(sg);
+ 		sg = tmp;
+@@ -5520,7 +5519,7 @@ static void free_sched_domain(struct rcu_head *rcu)
+ 	if (sd->flags & SD_OVERLAP) {
+ 		free_sched_groups(sd->groups, 1);
+ 	} else if (atomic_dec_and_test(&sd->groups->ref)) {
+-		kfree(sd->groups->sgp);
++		kfree(sd->groups->sgc);
+ 		kfree(sd->groups);
+ 	}
+ 	kfree(sd);
+@@ -5731,17 +5730,17 @@ build_overlap_sched_groups(struct sched_domain *sd, int cpu)
+ 
+ 		cpumask_or(covered, covered, sg_span);
+ 
+-		sg->sgp = *per_cpu_ptr(sdd->sgp, i);
+-		if (atomic_inc_return(&sg->sgp->ref) == 1)
++		sg->sgc = *per_cpu_ptr(sdd->sgc, i);
++		if (atomic_inc_return(&sg->sgc->ref) == 1)
+ 			build_group_mask(sd, sg);
+ 
+ 		/*
+-		 * Initialize sgp->power such that even if we mess up the
++		 * Initialize sgc->capacity such that even if we mess up the
  		 * domains and no possible iteration will get us here, we won't
  		 * die on a /0 trap.
  		 */
--		sg->sgc->capacity = SCHED_POWER_SCALE * cpumask_weight(sg_span);
-+		sg->sgc->capacity = SCHED_CAPACITY_SCALE * cpumask_weight(sg_span);
- 		sg->sgc->capacity_orig = sg->sgc->capacity;
+-		sg->sgp->power = SCHED_POWER_SCALE * cpumask_weight(sg_span);
+-		sg->sgp->power_orig = sg->sgp->power;
++		sg->sgc->capacity = SCHED_POWER_SCALE * cpumask_weight(sg_span);
++		sg->sgc->capacity_orig = sg->sgc->capacity;
  
  		/*
-@@ -6945,7 +6945,7 @@ void __init sched_init(void)
- #ifdef CONFIG_SMP
- 		rq->sd = NULL;
- 		rq->rd = NULL;
--		rq->cpu_capacity = SCHED_POWER_SCALE;
-+		rq->cpu_capacity = SCHED_CAPACITY_SCALE;
- 		rq->post_schedule = 0;
- 		rq->active_balance = 0;
- 		rq->next_balance = jiffies;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index da35147ac6..5b7e3465cf 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1062,9 +1062,9 @@ static void update_numa_stats(struct numa_stats *ns, int nid)
- 	if (!cpus)
- 		return;
+ 		 * Make sure the first group of this domain contains the
+@@ -5779,8 +5778,8 @@ static int get_group(int cpu, struct sd_data *sdd, struct sched_group **sg)
  
--	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->compute_capacity;
-+	ns->load = (ns->load * SCHED_CAPACITY_SCALE) / ns->compute_capacity;
- 	ns->task_capacity =
--		DIV_ROUND_CLOSEST(ns->compute_capacity, SCHED_POWER_SCALE);
-+		DIV_ROUND_CLOSEST(ns->compute_capacity, SCHED_CAPACITY_SCALE);
- 	ns->has_free_capacity = (ns->nr_running < ns->task_capacity);
+ 	if (sg) {
+ 		*sg = *per_cpu_ptr(sdd->sg, cpu);
+-		(*sg)->sgp = *per_cpu_ptr(sdd->sgp, cpu);
+-		atomic_set(&(*sg)->sgp->ref, 1); /* for claim_allocations */
++		(*sg)->sgc = *per_cpu_ptr(sdd->sgc, cpu);
++		atomic_set(&(*sg)->sgc->ref, 1); /* for claim_allocations */
+ 	}
+ 
+ 	return cpu;
+@@ -5843,16 +5842,16 @@ build_sched_groups(struct sched_domain *sd, int cpu)
  }
  
-@@ -4368,7 +4368,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+ /*
+- * Initialize sched groups cpu_power.
++ * Initialize sched groups cpu_capacity.
+  *
+- * cpu_power indicates the capacity of sched group, which is used while
++ * cpu_capacity indicates the capacity of sched group, which is used while
+  * distributing the load between different sched groups in a sched domain.
+- * Typically cpu_power for all the groups in a sched domain will be same unless
+- * there are asymmetries in the topology. If there are asymmetries, group
+- * having more cpu_power will pickup more load compared to the group having
+- * less cpu_power.
++ * Typically cpu_capacity for all the groups in a sched domain will be same
++ * unless there are asymmetries in the topology. If there are asymmetries,
++ * group having more cpu_capacity will pickup more load compared to the
++ * group having less cpu_capacity.
+  */
+-static void init_sched_groups_power(int cpu, struct sched_domain *sd)
++static void init_sched_groups_capacity(int cpu, struct sched_domain *sd)
+ {
+ 	struct sched_group *sg = sd->groups;
+ 
+@@ -5866,8 +5865,8 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+ 	if (cpu != group_balance_cpu(sg))
+ 		return;
+ 
+-	update_group_power(sd, cpu);
+-	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
++	update_group_capacity(sd, cpu);
++	atomic_set(&sg->sgc->nr_busy_cpus, sg->group_weight);
+ }
+ 
+ /*
+@@ -5958,8 +5957,8 @@ static void claim_allocations(int cpu, struct sched_domain *sd)
+ 	if (atomic_read(&(*per_cpu_ptr(sdd->sg, cpu))->ref))
+ 		*per_cpu_ptr(sdd->sg, cpu) = NULL;
+ 
+-	if (atomic_read(&(*per_cpu_ptr(sdd->sgp, cpu))->ref))
+-		*per_cpu_ptr(sdd->sgp, cpu) = NULL;
++	if (atomic_read(&(*per_cpu_ptr(sdd->sgc, cpu))->ref))
++		*per_cpu_ptr(sdd->sgc, cpu) = NULL;
+ }
+ 
+ #ifdef CONFIG_NUMA
+@@ -6361,14 +6360,14 @@ static int __sdt_alloc(const struct cpumask *cpu_map)
+ 		if (!sdd->sg)
+ 			return -ENOMEM;
+ 
+-		sdd->sgp = alloc_percpu(struct sched_group_power *);
+-		if (!sdd->sgp)
++		sdd->sgc = alloc_percpu(struct sched_group_capacity *);
++		if (!sdd->sgc)
+ 			return -ENOMEM;
+ 
+ 		for_each_cpu(j, cpu_map) {
+ 			struct sched_domain *sd;
+ 			struct sched_group *sg;
+-			struct sched_group_power *sgp;
++			struct sched_group_capacity *sgc;
+ 
+ 		       	sd = kzalloc_node(sizeof(struct sched_domain) + cpumask_size(),
+ 					GFP_KERNEL, cpu_to_node(j));
+@@ -6386,12 +6385,12 @@ static int __sdt_alloc(const struct cpumask *cpu_map)
+ 
+ 			*per_cpu_ptr(sdd->sg, j) = sg;
+ 
+-			sgp = kzalloc_node(sizeof(struct sched_group_power) + cpumask_size(),
++			sgc = kzalloc_node(sizeof(struct sched_group_capacity) + cpumask_size(),
+ 					GFP_KERNEL, cpu_to_node(j));
+-			if (!sgp)
++			if (!sgc)
+ 				return -ENOMEM;
+ 
+-			*per_cpu_ptr(sdd->sgp, j) = sgp;
++			*per_cpu_ptr(sdd->sgc, j) = sgc;
+ 		}
+ 	}
+ 
+@@ -6418,15 +6417,15 @@ static void __sdt_free(const struct cpumask *cpu_map)
+ 
+ 			if (sdd->sg)
+ 				kfree(*per_cpu_ptr(sdd->sg, j));
+-			if (sdd->sgp)
+-				kfree(*per_cpu_ptr(sdd->sgp, j));
++			if (sdd->sgc)
++				kfree(*per_cpu_ptr(sdd->sgc, j));
+ 		}
+ 		free_percpu(sdd->sd);
+ 		sdd->sd = NULL;
+ 		free_percpu(sdd->sg);
+ 		sdd->sg = NULL;
+-		free_percpu(sdd->sgp);
+-		sdd->sgp = NULL;
++		free_percpu(sdd->sgc);
++		sdd->sgc = NULL;
+ 	}
+ }
+ 
+@@ -6503,7 +6502,7 @@ static int build_sched_domains(const struct cpumask *cpu_map,
+ 
+ 		for (sd = *per_cpu_ptr(d.sd, i); sd; sd = sd->parent) {
+ 			claim_allocations(i, sd);
+-			init_sched_groups_power(i, sd);
++			init_sched_groups_capacity(i, sd);
+ 		}
+ 	}
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 87a39559cc..9d30bf6e73 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4367,8 +4367,8 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+ 			avg_load += load;
  		}
  
- 		/* Adjust by relative CPU capacity of the group */
--		avg_load = (avg_load * SCHED_POWER_SCALE) / group->sgc->capacity;
-+		avg_load = (avg_load * SCHED_CAPACITY_SCALE) / group->sgc->capacity;
+-		/* Adjust by relative CPU power of the group */
+-		avg_load = (avg_load * SCHED_POWER_SCALE) / group->sgp->power;
++		/* Adjust by relative CPU capacity of the group */
++		avg_load = (avg_load * SCHED_POWER_SCALE) / group->sgc->capacity;
  
  		if (local_group) {
  			this_load = avg_load;
-@@ -5607,10 +5607,10 @@ static inline int get_sd_load_idx(struct sched_domain *sd,
+@@ -5530,7 +5530,7 @@ struct sg_lb_stats {
+ 	unsigned long group_load; /* Total load over the CPUs of the group */
+ 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+ 	unsigned long load_per_task;
+-	unsigned long group_power;
++	unsigned long group_capacity;
+ 	unsigned int sum_nr_running; /* Nr tasks running in the group */
+ 	unsigned int group_capacity_factor;
+ 	unsigned int idle_cpus;
+@@ -5551,7 +5551,7 @@ struct sd_lb_stats {
+ 	struct sched_group *busiest;	/* Busiest group in this sd */
+ 	struct sched_group *local;	/* Local group in this sd */
+ 	unsigned long total_load;	/* Total load of all groups in sd */
+-	unsigned long total_pwr;	/* Total power of all groups in sd */
++	unsigned long total_capacity;	/* Total capacity of all groups in sd */
+ 	unsigned long avg_load;	/* Average load across all groups in sd */
  
- static unsigned long default_scale_capacity(struct sched_domain *sd, int cpu)
- {
--	return SCHED_POWER_SCALE;
-+	return SCHED_CAPACITY_SCALE;
- }
- 
--unsigned long __weak arch_scale_freq_power(struct sched_domain *sd, int cpu)
-+unsigned long __weak arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
- {
- 	return default_scale_capacity(sd, cpu);
- }
-@@ -5625,7 +5625,7 @@ static unsigned long default_scale_smt_capacity(struct sched_domain *sd, int cpu
- 	return smt_gain;
- }
- 
--unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
-+unsigned long __weak arch_scale_smt_capacity(struct sched_domain *sd, int cpu)
- {
- 	return default_scale_smt_capacity(sd, cpu);
- }
-@@ -5656,10 +5656,10 @@ static unsigned long scale_rt_capacity(int cpu)
- 		available = total - avg;
+ 	struct sg_lb_stats busiest_stat;/* Statistics of the busiest group */
+@@ -5570,7 +5570,7 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
+ 		.busiest = NULL,
+ 		.local = NULL,
+ 		.total_load = 0UL,
+-		.total_pwr = 0UL,
++		.total_capacity = 0UL,
+ 		.busiest_stat = {
+ 			.avg_load = 0UL,
+ 		},
+@@ -5679,7 +5679,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 		power >>= SCHED_POWER_SHIFT;
  	}
  
--	if (unlikely((s64)total < SCHED_POWER_SCALE))
--		total = SCHED_POWER_SCALE;
-+	if (unlikely((s64)total < SCHED_CAPACITY_SCALE))
-+		total = SCHED_CAPACITY_SCALE;
- 
--	total >>= SCHED_POWER_SHIFT;
-+	total >>= SCHED_CAPACITY_SHIFT;
- 
- 	return div_u64(available, total);
- }
-@@ -5667,29 +5667,29 @@ static unsigned long scale_rt_capacity(int cpu)
- static void update_cpu_capacity(struct sched_domain *sd, int cpu)
- {
- 	unsigned long weight = sd->span_weight;
--	unsigned long capacity = SCHED_POWER_SCALE;
-+	unsigned long capacity = SCHED_CAPACITY_SCALE;
- 	struct sched_group *sdg = sd->groups;
- 
- 	if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
- 		if (sched_feat(ARCH_POWER))
--			capacity *= arch_scale_smt_power(sd, cpu);
-+			capacity *= arch_scale_smt_capacity(sd, cpu);
- 		else
- 			capacity *= default_scale_smt_capacity(sd, cpu);
- 
--		capacity >>= SCHED_POWER_SHIFT;
-+		capacity >>= SCHED_CAPACITY_SHIFT;
- 	}
- 
- 	sdg->sgc->capacity_orig = capacity;
+-	sdg->sgp->power_orig = power;
++	sdg->sgc->capacity_orig = power;
  
  	if (sched_feat(ARCH_POWER))
--		capacity *= arch_scale_freq_power(sd, cpu);
-+		capacity *= arch_scale_freq_capacity(sd, cpu);
- 	else
- 		capacity *= default_scale_capacity(sd, cpu);
+ 		power *= arch_scale_freq_power(sd, cpu);
+@@ -5695,26 +5695,26 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 		power = 1;
  
--	capacity >>= SCHED_POWER_SHIFT;
-+	capacity >>= SCHED_CAPACITY_SHIFT;
+ 	cpu_rq(cpu)->cpu_power = power;
+-	sdg->sgp->power = power;
++	sdg->sgc->capacity = power;
+ }
  
- 	capacity *= scale_rt_capacity(cpu);
--	capacity >>= SCHED_POWER_SHIFT;
-+	capacity >>= SCHED_CAPACITY_SHIFT;
- 
- 	if (!capacity)
- 		capacity = 1;
-@@ -5778,7 +5778,7 @@ static inline int
- fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+-void update_group_power(struct sched_domain *sd, int cpu)
++void update_group_capacity(struct sched_domain *sd, int cpu)
  {
- 	/*
--	 * Only siblings can have significantly less than SCHED_POWER_SCALE
-+	 * Only siblings can have significantly less than SCHED_CAPACITY_SCALE
- 	 */
- 	if (!(sd->flags & SD_SHARE_CPUPOWER))
+ 	struct sched_domain *child = sd->child;
+ 	struct sched_group *group, *sdg = sd->groups;
+-	unsigned long power, power_orig;
++	unsigned long capacity, capacity_orig;
+ 	unsigned long interval;
+ 
+ 	interval = msecs_to_jiffies(sd->balance_interval);
+ 	interval = clamp(interval, 1UL, max_load_balance_interval);
+-	sdg->sgp->next_update = jiffies + interval;
++	sdg->sgc->next_update = jiffies + interval;
+ 
+ 	if (!child) {
+ 		update_cpu_power(sd, cpu);
+ 		return;
+ 	}
+ 
+-	power_orig = power = 0;
++	capacity_orig = capacity = 0;
+ 
+ 	if (child->flags & SD_OVERLAP) {
+ 		/*
+@@ -5723,31 +5723,31 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 		 */
+ 
+ 		for_each_cpu(cpu, sched_group_cpus(sdg)) {
+-			struct sched_group_power *sgp;
++			struct sched_group_capacity *sgc;
+ 			struct rq *rq = cpu_rq(cpu);
+ 
+ 			/*
+-			 * build_sched_domains() -> init_sched_groups_power()
++			 * build_sched_domains() -> init_sched_groups_capacity()
+ 			 * gets here before we've attached the domains to the
+ 			 * runqueues.
+ 			 *
+ 			 * Use power_of(), which is set irrespective of domains
+ 			 * in update_cpu_power().
+ 			 *
+-			 * This avoids power/power_orig from being 0 and
++			 * This avoids capacity/capacity_orig from being 0 and
+ 			 * causing divide-by-zero issues on boot.
+ 			 *
+-			 * Runtime updates will correct power_orig.
++			 * Runtime updates will correct capacity_orig.
+ 			 */
+ 			if (unlikely(!rq->sd)) {
+-				power_orig += power_of(cpu);
+-				power += power_of(cpu);
++				capacity_orig += power_of(cpu);
++				capacity += power_of(cpu);
+ 				continue;
+ 			}
+ 
+-			sgp = rq->sd->groups->sgp;
+-			power_orig += sgp->power_orig;
+-			power += sgp->power;
++			sgc = rq->sd->groups->sgc;
++			capacity_orig += sgc->capacity_orig;
++			capacity += sgc->capacity;
+ 		}
+ 	} else  {
+ 		/*
+@@ -5757,14 +5757,14 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 
+ 		group = child->groups;
+ 		do {
+-			power_orig += group->sgp->power_orig;
+-			power += group->sgp->power;
++			capacity_orig += group->sgc->capacity_orig;
++			capacity += group->sgc->capacity;
+ 			group = group->next;
+ 		} while (group != child->groups);
+ 	}
+ 
+-	sdg->sgp->power_orig = power_orig;
+-	sdg->sgp->power = power;
++	sdg->sgc->capacity_orig = capacity_orig;
++	sdg->sgc->capacity = capacity;
+ }
+ 
+ /*
+@@ -5784,9 +5784,9 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
  		return 0;
-@@ -5843,11 +5843,11 @@ static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *gro
+ 
+ 	/*
+-	 * If ~90% of the cpu_power is still there, we're good.
++	 * If ~90% of the cpu_capacity is still there, we're good.
+ 	 */
+-	if (group->sgp->power * 32 > group->sgp->power_orig * 29)
++	if (group->sgc->capacity * 32 > group->sgc->capacity_orig * 29)
+ 		return 1;
+ 
+ 	return 0;
+@@ -5823,7 +5823,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+ 
+ static inline int sg_imbalanced(struct sched_group *group)
+ {
+-	return group->sgp->imbalance;
++	return group->sgc->imbalance;
+ }
+ 
+ /*
+@@ -5831,22 +5831,23 @@ static inline int sg_imbalanced(struct sched_group *group)
+  *
+  * Avoid the issue where N*frac(smt_power) >= 1 creates 'phantom' cores by
+  * first dividing out the smt factor and computing the actual number of cores
+- * and limit power unit capacity with that.
++ * and limit unit capacity with that.
+  */
+ static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *group)
+ {
+ 	unsigned int capacity_factor, smt, cpus;
+-	unsigned int power, power_orig;
++	unsigned int capacity, capacity_orig;
+ 
+-	power = group->sgp->power;
+-	power_orig = group->sgp->power_orig;
++	capacity = group->sgc->capacity;
++	capacity_orig = group->sgc->capacity_orig;
  	cpus = group->group_weight;
  
- 	/* smt := ceil(cpus / capacity), assumes: 1 < smt_capacity < 2 */
--	smt = DIV_ROUND_UP(SCHED_POWER_SCALE * cpus, capacity_orig);
-+	smt = DIV_ROUND_UP(SCHED_CAPACITY_SCALE * cpus, capacity_orig);
+-	/* smt := ceil(cpus / power), assumes: 1 < smt_power < 2 */
+-	smt = DIV_ROUND_UP(SCHED_POWER_SCALE * cpus, power_orig);
++	/* smt := ceil(cpus / capacity), assumes: 1 < smt_capacity < 2 */
++	smt = DIV_ROUND_UP(SCHED_POWER_SCALE * cpus, capacity_orig);
  	capacity_factor = cpus / smt; /* cores */
  
- 	capacity_factor = min_t(unsigned,
--		capacity_factor, DIV_ROUND_CLOSEST(capacity, SCHED_POWER_SCALE));
-+		capacity_factor, DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE));
+-	capacity_factor = min_t(unsigned, capacity_factor, DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE));
++	capacity_factor = min_t(unsigned,
++		capacity_factor, DIV_ROUND_CLOSEST(capacity, SCHED_POWER_SCALE));
  	if (!capacity_factor)
  		capacity_factor = fix_small_capacity(env->sd, group);
  
-@@ -5893,7 +5893,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+@@ -5890,9 +5891,9 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			sgs->idle_cpus++;
+ 	}
  
- 	/* Adjust by relative CPU capacity of the group */
- 	sgs->group_capacity = group->sgc->capacity;
--	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / sgs->group_capacity;
-+	sgs->avg_load = (sgs->group_load*SCHED_CAPACITY_SCALE) / sgs->group_capacity;
+-	/* Adjust by relative CPU power of the group */
+-	sgs->group_power = group->sgp->power;
+-	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / sgs->group_power;
++	/* Adjust by relative CPU capacity of the group */
++	sgs->group_capacity = group->sgc->capacity;
++	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / sgs->group_capacity;
  
  	if (sgs->sum_nr_running)
  		sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
-@@ -6087,7 +6087,7 @@ static int check_asym_packing(struct lb_env *env, struct sd_lb_stats *sds)
+@@ -6007,8 +6008,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 			sgs = &sds->local_stat;
+ 
+ 			if (env->idle != CPU_NEWLY_IDLE ||
+-			    time_after_eq(jiffies, sg->sgp->next_update))
+-				update_group_power(env->sd, env->dst_cpu);
++			    time_after_eq(jiffies, sg->sgc->next_update))
++				update_group_capacity(env->sd, env->dst_cpu);
+ 		}
+ 
+ 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
+@@ -6038,7 +6039,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ next_group:
+ 		/* Now, start updating sd_lb_stats */
+ 		sds->total_load += sgs->group_load;
+-		sds->total_pwr += sgs->group_power;
++		sds->total_capacity += sgs->group_capacity;
+ 
+ 		sg = sg->next;
+ 	} while (sg != env->sd->groups);
+@@ -6085,7 +6086,7 @@ static int check_asym_packing(struct lb_env *env, struct sd_lb_stats *sds)
+ 		return 0;
  
  	env->imbalance = DIV_ROUND_CLOSEST(
- 		sds->busiest_stat.avg_load * sds->busiest_stat.group_capacity,
--		SCHED_POWER_SCALE);
-+		SCHED_CAPACITY_SCALE);
+-		sds->busiest_stat.avg_load * sds->busiest_stat.group_power,
++		sds->busiest_stat.avg_load * sds->busiest_stat.group_capacity,
+ 		SCHED_POWER_SCALE);
  
  	return 1;
- }
-@@ -6116,7 +6116,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
- 		imbn = 1;
+@@ -6101,7 +6102,7 @@ static int check_asym_packing(struct lb_env *env, struct sd_lb_stats *sds)
+ static inline
+ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ {
+-	unsigned long tmp, pwr_now = 0, pwr_move = 0;
++	unsigned long tmp, capa_now = 0, capa_move = 0;
+ 	unsigned int imbn = 2;
+ 	unsigned long scaled_busy_load_per_task;
+ 	struct sg_lb_stats *local, *busiest;
+@@ -6116,7 +6117,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
  
  	scaled_busy_load_per_task =
--		(busiest->load_per_task * SCHED_POWER_SCALE) /
-+		(busiest->load_per_task * SCHED_CAPACITY_SCALE) /
- 		busiest->group_capacity;
+ 		(busiest->load_per_task * SCHED_POWER_SCALE) /
+-		busiest->group_power;
++		busiest->group_capacity;
  
  	if (busiest->avg_load + scaled_busy_load_per_task >=
-@@ -6135,7 +6135,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 	    local->avg_load + (scaled_busy_load_per_task * imbn)) {
+@@ -6130,34 +6131,34 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 	 * moving them.
+ 	 */
+ 
+-	pwr_now += busiest->group_power *
++	capa_now += busiest->group_capacity *
  			min(busiest->load_per_task, busiest->avg_load);
- 	capa_now += local->group_capacity *
+-	pwr_now += local->group_power *
++	capa_now += local->group_capacity *
  			min(local->load_per_task, local->avg_load);
--	capa_now /= SCHED_POWER_SCALE;
-+	capa_now /= SCHED_CAPACITY_SCALE;
+-	pwr_now /= SCHED_POWER_SCALE;
++	capa_now /= SCHED_POWER_SCALE;
  
  	/* Amount of load we'd subtract */
  	if (busiest->avg_load > scaled_busy_load_per_task) {
-@@ -6146,16 +6146,16 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+-		pwr_move += busiest->group_power *
++		capa_move += busiest->group_capacity *
+ 			    min(busiest->load_per_task,
+ 				busiest->avg_load - scaled_busy_load_per_task);
+ 	}
  
  	/* Amount of load we'd add */
- 	if (busiest->avg_load * busiest->group_capacity <
--	    busiest->load_per_task * SCHED_POWER_SCALE) {
-+	    busiest->load_per_task * SCHED_CAPACITY_SCALE) {
- 		tmp = (busiest->avg_load * busiest->group_capacity) /
- 		      local->group_capacity;
+-	if (busiest->avg_load * busiest->group_power <
++	if (busiest->avg_load * busiest->group_capacity <
+ 	    busiest->load_per_task * SCHED_POWER_SCALE) {
+-		tmp = (busiest->avg_load * busiest->group_power) /
+-		      local->group_power;
++		tmp = (busiest->avg_load * busiest->group_capacity) /
++		      local->group_capacity;
  	} else {
--		tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
-+		tmp = (busiest->load_per_task * SCHED_CAPACITY_SCALE) /
- 		      local->group_capacity;
+ 		tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
+-		      local->group_power;
++		      local->group_capacity;
  	}
- 	capa_move += local->group_capacity *
+-	pwr_move += local->group_power *
++	capa_move += local->group_capacity *
  		    min(local->load_per_task, local->avg_load + tmp);
--	capa_move /= SCHED_POWER_SCALE;
-+	capa_move /= SCHED_CAPACITY_SCALE;
+-	pwr_move /= SCHED_POWER_SCALE;
++	capa_move /= SCHED_POWER_SCALE;
  
  	/* Move if we gain throughput */
- 	if (capa_move > capa_now)
-@@ -6205,7 +6205,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
- 		load_above_capacity =
+-	if (pwr_move > pwr_now)
++	if (capa_move > capa_now)
+ 		env->imbalance = busiest->load_per_task;
+ }
+ 
+@@ -6205,7 +6206,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
  			(busiest->sum_nr_running - busiest->group_capacity_factor);
  
--		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
-+		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_CAPACITY_SCALE);
- 		load_above_capacity /= busiest->group_capacity;
+ 		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
+-		load_above_capacity /= busiest->group_power;
++		load_above_capacity /= busiest->group_capacity;
  	}
  
-@@ -6223,7 +6223,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 	/*
+@@ -6220,8 +6221,8 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 
+ 	/* How much load to actually move to equalise the imbalance */
  	env->imbalance = min(
- 		max_pull * busiest->group_capacity,
- 		(sds->avg_load - local->avg_load) * local->group_capacity
--	) / SCHED_POWER_SCALE;
-+	) / SCHED_CAPACITY_SCALE;
+-		max_pull * busiest->group_power,
+-		(sds->avg_load - local->avg_load) * local->group_power
++		max_pull * busiest->group_capacity,
++		(sds->avg_load - local->avg_load) * local->group_capacity
+ 	) / SCHED_POWER_SCALE;
  
  	/*
- 	 * if *imbalance is less than the average load per runnable task
-@@ -6277,7 +6277,8 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
+@@ -6276,7 +6277,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
  	if (!sds.busiest || busiest->sum_nr_running == 0)
  		goto out_balanced;
  
--	sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_capacity;
-+	sds.avg_load = (SCHED_CAPACITY_SCALE * sds.total_load)
-+						/ sds.total_capacity;
+-	sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_pwr;
++	sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_capacity;
  
  	/*
  	 * If the busiest group is imbalanced the below checks don't
-@@ -6376,7 +6377,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 			continue;
+@@ -6609,7 +6610,7 @@ more_balance:
+ 		 * We failed to reach balance because of affinity.
+ 		 */
+ 		if (sd_parent) {
+-			int *group_imbalance = &sd_parent->groups->sgp->imbalance;
++			int *group_imbalance = &sd_parent->groups->sgc->imbalance;
  
- 		capacity = capacity_of(i);
--		capacity_factor = DIV_ROUND_CLOSEST(capacity, SCHED_POWER_SCALE);
-+		capacity_factor = DIV_ROUND_CLOSEST(capacity, SCHED_CAPACITY_SCALE);
- 		if (!capacity_factor)
- 			capacity_factor = fix_small_capacity(env->sd, group);
+ 			if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
+ 				*group_imbalance = 1;
+@@ -6996,7 +6997,7 @@ static inline void set_cpu_sd_state_busy(void)
+ 		goto unlock;
+ 	sd->nohz_idle = 0;
+ 
+-	atomic_inc(&sd->groups->sgp->nr_busy_cpus);
++	atomic_inc(&sd->groups->sgc->nr_busy_cpus);
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -7013,7 +7014,7 @@ void set_cpu_sd_state_idle(void)
+ 		goto unlock;
+ 	sd->nohz_idle = 1;
+ 
+-	atomic_dec(&sd->groups->sgp->nr_busy_cpus);
++	atomic_dec(&sd->groups->sgc->nr_busy_cpus);
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -7212,7 +7213,7 @@ end:
+  * of an idle cpu is the system.
+  *   - This rq has more than one task.
+  *   - At any scheduler domain level, this cpu's scheduler group has multiple
+- *     busy cpu's exceeding the group's power.
++ *     busy cpu's exceeding the group's capacity.
+  *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+  *     domain span are idle.
+  */
+@@ -7220,7 +7221,7 @@ static inline int nohz_kick_needed(struct rq *rq)
+ {
+ 	unsigned long now = jiffies;
+ 	struct sched_domain *sd;
+-	struct sched_group_power *sgp;
++	struct sched_group_capacity *sgc;
+ 	int nr_busy, cpu = rq->cpu;
+ 
+ 	if (unlikely(rq->idle_balance))
+@@ -7250,8 +7251,8 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+ 
+ 	if (sd) {
+-		sgp = sd->groups->sgp;
+-		nr_busy = atomic_read(&sgp->nr_busy_cpus);
++		sgc = sd->groups->sgc;
++		nr_busy = atomic_read(&sgc->nr_busy_cpus);
+ 
+ 		if (nr_busy > 1)
+ 			goto need_kick_unlock;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 600e2291a7..a5b957d53c 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -728,15 +728,15 @@ DECLARE_PER_CPU(struct sched_domain *, sd_numa);
+ DECLARE_PER_CPU(struct sched_domain *, sd_busy);
+ DECLARE_PER_CPU(struct sched_domain *, sd_asym);
+ 
+-struct sched_group_power {
++struct sched_group_capacity {
+ 	atomic_t ref;
+ 	/*
+-	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
+-	 * single CPU.
++	 * CPU capacity of this group, SCHED_LOAD_SCALE being max capacity
++	 * for a single CPU.
+ 	 */
+-	unsigned int power, power_orig;
++	unsigned int capacity, capacity_orig;
+ 	unsigned long next_update;
+-	int imbalance; /* XXX unrelated to power but shared group state */
++	int imbalance; /* XXX unrelated to capacity but shared group state */
+ 	/*
+ 	 * Number of busy cpus in this group.
+ 	 */
+@@ -750,7 +750,7 @@ struct sched_group {
+ 	atomic_t ref;
+ 
+ 	unsigned int group_weight;
+-	struct sched_group_power *sgp;
++	struct sched_group_capacity *sgc;
+ 
+ 	/*
+ 	 * The CPUs this group covers.
+@@ -773,7 +773,7 @@ static inline struct cpumask *sched_group_cpus(struct sched_group *sg)
+  */
+ static inline struct cpumask *sched_group_mask(struct sched_group *sg)
+ {
+-	return to_cpumask(sg->sgp->cpumask);
++	return to_cpumask(sg->sgc->cpumask);
+ }
+ 
+ /**
+@@ -1167,7 +1167,7 @@ extern const struct sched_class idle_sched_class;
+ 
+ #ifdef CONFIG_SMP
+ 
+-extern void update_group_power(struct sched_domain *sd, int cpu);
++extern void update_group_capacity(struct sched_domain *sd, int cpu);
+ 
+ extern void trigger_load_balance(struct rq *rq);
  
 -- 
 1.8.4.108.g55ea5f6
