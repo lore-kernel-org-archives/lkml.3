@@ -1,126 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaEZQ66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 12:58:58 -0400
-Received: from mga11.intel.com ([192.55.52.93]:20669 "EHLO mga11.intel.com"
+	id S1752678AbaEZQ7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 12:59:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43092 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752019AbaEZQ56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 12:57:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,914,1392192000"; 
-   d="scan'208";a="545122353"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH 14/15] x86/xsaves: Enable xsaves/xrstors
-Date: Mon, 26 May 2014 10:01:21 -0700
-Message-Id: <1401123682-5384-15-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
-References: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
+	id S1752019AbaEZQ7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 12:59:06 -0400
+Date: Mon, 26 May 2014 12:58:58 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: linux-audit@redhat.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        containers <containers@lists.linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, sgrubb@redhat.com,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH V3 0/6] namespaces: log namespaces per task
+Message-ID: <20140526165858.GC8079@madcap2.tricolour.ca>
+References: <cover.1400271129.git.rgb@redhat.com>
+ <CAHO5Pa0EdUsV9jJuLbkmbvFyopecQiUDZd0UasAJ5kMhtsVxjQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHO5Pa0EdUsV9jJuLbkmbvFyopecQiUDZd0UasAJ5kMhtsVxjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+On 14/05/22, Michael Kerrisk wrote:
+> Richard,
 
-If xsaves/xrstors is enabled, compacted format of xsave area will be used
-and less memory may be used for context switching per process. Modified
-optimization implemented in xsaves/xrstors improves performance of saving
-xstate as well.
+Hi Michael,
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/kernel/xsave.c | 38 ++++++++++++++++++++++++++++++++------
- 1 file changed, 32 insertions(+), 6 deletions(-)
+> On Tue, May 20, 2014 at 3:12 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
+> > The purpose is to track namespaces in use by logged processes from the
+> > perspective of init_*_ns.
+> >
+> > 1/6 defines a function to generate them and assigns them.
+> >
+> > Use a serial number per namespace (unique across one boot of one kernel)
+> > instead of the inode number (which is claimed to have had the right to change
+> > reserved and is not necessarily unique if there is more than one proc fs).  It
+> > could be argued that the inode numbers have now become a defacto interface and
+> > can't change now, but I'm proposing this approach to see if this helps address
+> > some of the objections to the earlier patchset.
+> >
+> > 2/6 adds access functions to get to the serial numbers in a similar way to
+> > inode access for namespace proc operations.
+> >
+> > 3/6 implements, as suggested by Serge Hallyn, making these serial numbers
+> > available in /proc/self/ns/{ipc,mnt,net,pid,user,uts}_snum.  I chose "snum"
+> > instead of "seq" for consistency with inum and there are a number of other uses
+> > of "seq" in the namespace code.
+> >
+> > 4/6 exposes proc's ns entries structure which lists a number of useful
+> > operations per namespace type for other subsystems to use.
+> 
+> Since the 3 and 4 change the ABI, please CC iterations of this patch
+> series to linux-api@vger.kernel.org, as per Documentation/SubmitChecklist.
 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 8fa7c7d..2e9a77d 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -8,6 +8,7 @@
- 
- #include <linux/bootmem.h>
- #include <linux/compat.h>
-+#include <linux/cpu.h>
- #include <asm/i387.h>
- #include <asm/fpu-internal.h>
- #include <asm/sigframe.h>
-@@ -24,7 +25,9 @@ u64 pcntxt_mask;
- struct xsave_struct *init_xstate_buf;
- 
- static struct _fpx_sw_bytes fx_sw_reserved, fx_sw_reserved_ia32;
--static unsigned int *xstate_offsets, *xstate_sizes, xstate_features;
-+static unsigned int *xstate_offsets, *xstate_sizes;
-+static unsigned int *xstate_comp_offsets, *xstate_comp_sizes;
-+static unsigned int xstate_features;
- 
- /*
-  * If a processor implementation discern that a processor state component is
-@@ -283,7 +286,7 @@ sanitize_restored_xstate(struct task_struct *tsk,
- 
- 	if (use_xsave()) {
- 		/* These bits must be zero. */
--		xsave_hdr->reserved1[0] = xsave_hdr->reserved1[1] = 0;
-+		memset(xsave_hdr->reserved, 0, 48);
- 
- 		/*
- 		 * Init the state that is not present in the memory
-@@ -526,6 +529,30 @@ static int __init eager_fpu_setup(char *s)
- }
- __setup("eagerfpu=", eager_fpu_setup);
- 
-+
-+/*
-+ * Calculate total size of enabled xstates in XCR0/pcntxt_mask.
-+ */
-+static void __init init_xstate_size(void)
-+{
-+	unsigned int eax, ebx, ecx, edx;
-+	int i;
-+
-+	if (!cpu_has_xsaves) {
-+		cpuid_count(XSTATE_CPUID, 0, &eax, &ebx, &ecx, &edx);
-+		xstate_size = ebx;
-+		return;
-+	}
-+
-+	xstate_size = FXSAVE_SIZE + XSAVE_HDR_SIZE;
-+	for (i = 2; i < 64; i++) {
-+		if (test_bit(i, (unsigned long *)&pcntxt_mask)) {
-+			cpuid_count(XSTATE_CPUID, i, &eax, &ebx, &ecx, &edx);
-+			xstate_size += eax;
-+		}
-+	}
-+}
-+
- /*
-  * Enable and initialize the xsave feature.
-  */
-@@ -557,8 +584,7 @@ static void __init xstate_enable_boot_cpu(void)
- 	/*
- 	 * Recompute the context size for enabled features
- 	 */
--	cpuid_count(XSTATE_CPUID, 0, &eax, &ebx, &ecx, &edx);
--	xstate_size = ebx;
-+	init_xstate_size();
- 
- 	update_regset_xstate_info(xstate_size, pcntxt_mask);
- 	prepare_fx_sw_frame();
-@@ -578,8 +604,8 @@ static void __init xstate_enable_boot_cpu(void)
- 		}
- 	}
- 
--	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x\n",
--		pcntxt_mask, xstate_size);
-+	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x using %s\n",
-+		pcntxt_mask, xstate_size, cpu_has_xsaves ? "xsaves" : "xsave");
- }
- 
- /*
--- 
-1.8.1.2
+Neither patch 3/6 nor 4/6 changes the syscall interface.
 
+Patch 3/6 adds /proc/<pid>/ns/ entries, which looks more like #16 in
+that document (for which /proc/<pid>/ns/<nstype> was never added).
+
+Patch 4/6 adds internel kernel symbols which are never exposed to the
+user.
+
+Perhaps "expose" was the wrong word to use in the patch description.
+This usage implies that it is no longer labelled "static" in its source
+files to be able to expose that interface to other internal kernel
+subsystems.
+
+Ref:
+	SubmitChecklist (#16)
+	Documentation/stable_api_nonsense.txt
+	Documentation/ABI/README
+
+> Michael
+> 
+> > 5/6 provides an example of usage for audit_log_task_info() which is used by
+> > syscall audits, among others.  audit_log_task() and audit_common_recv_message()
+> > would be other potential use cases.
+> >
+> > Proposed output format:
+> > This differs slightly from Aristeu's patch because of the label conflict with
+> > "pid=" due to including it in existing records rather than it being a seperate
+> > record.  The serial numbers are printed in hex.
+> >         type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+> >
+> > 6/6 tracks the creation and deletion of of namespaces, listing the type of
+> > namespace instance, related namespace id if there is one and the newly minted
+> > serial number.
+> >
+> > Proposed output format:
+> >         type=NS_INIT msg=audit(1400217435.706:94): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 old_snum=0 snum=a1 res=1
+> >         type=NS_DEL msg=audit(1400217435.730:95): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 snum=a1 res=1
+> >
+> >
+> > v2 -> v3:
+> >         Use atomic64_t in ns_serial to simplify it.
+> >         Avoid funciton duplication in proc, keying on dentry.
+> >         Squash down audit patch to avoid rcu sleep issues.
+> >         Add tracking for creation and deletion of namespace instances.
+> >
+> > v1 -> v2:
+> >         Avoid rollover by switching from an int to a long long.
+> >         Change rollover behaviour from simply avoiding zero to raising a BUG.
+> >         Expose serial numbers in /proc/<pid>/ns/*_snum.
+> >         Expose ns_entries and use it in audit.
+> >
+> >
+> > Notes:
+> > There has been some progress made for audit in net namespaces and pid
+> > namespaces since this previous thread.  net namespaces are now served as peers
+> > by one auditd in the init_net namespace with processes in a non-init_net
+> > namespace being able to write records if they are in the init_user_ns and have
+> > CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
+> > records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
+> > of userspace processes that try to join netlink broadcast groups.
+> >
+> > This set does not try to solve the non-init namespace audit messages and
+> > auditd problem yet.  That will come later, likely with additional auditd
+> > instances running in another namespace with a limited ability to influence the
+> > master auditd.  I echo Eric B's idea that messages destined for different
+> > namespaces would have to be tailored for that namespace with references that
+> > make sense (such as the right pid number reported to that pid namespace, and
+> > not leaking info about parents or peers).
+> >
+> > Bugs:
+> > Patch 6/6 has a timing bug such that mnt and net namespace initial namespaces
+> > never get logged, I suspect because they are initialized before the audit
+> > subsystem.  I've tried moving audit from __initcall to subsys_initcall, but
+> > that doesn't help.
+> >
+> > Questions:
+> > Is there a way to link serial numbers of namespaces involved in migration of a
+> > container to another kernel?  It sounds like what is needed is a part of a
+> > mangement application that is able to pull the audit rcords from constituent
+> > hosts to build an audit trail of a container.
+> >
+> > What additional events should list this information?
+> >
+> > Does this present any problematic information leaks?  Only CAP_AUDIT_CONTROL
+> > (and proposed CAP_AUDIT_READ) in init_user_ns can get to this information in
+> > the init namespace at the moment from audit.  *However*, the addition of the
+> > proc/<pid>/ns/*_snum does make it available to other processes now.
+> >
+> >
+> > Richard Guy Briggs (6):
+> >   namespaces: assign each namespace instance a serial number
+> >   namespaces: expose namespace instance serial number in proc_ns_operations
+> >   namespaces: expose ns instance serial numbers in proc
+> >   namespaces: expose ns_entries
+> >   audit: log namespace serial numbers
+> >   audit: log creation and deletion of namespace instances
+> >
+> >  fs/mount.h                     |    1 +
+> >  fs/namespace.c                 |   12 +++++++++
+> >  fs/proc/namespaces.c           |   35 +++++++++++++++++++-------
+> >  include/linux/audit.h          |   15 +++++++++++
+> >  include/linux/ipc_namespace.h  |    1 +
+> >  include/linux/nsproxy.h        |    8 ++++++
+> >  include/linux/pid_namespace.h  |    1 +
+> >  include/linux/proc_ns.h        |    2 +
+> >  include/linux/user_namespace.h |    1 +
+> >  include/linux/utsname.h        |    1 +
+> >  include/net/net_namespace.h    |    1 +
+> >  include/uapi/linux/audit.h     |    2 +
+> >  init/version.c                 |    1 +
+> >  ipc/msgutil.c                  |    1 +
+> >  ipc/namespace.c                |   20 +++++++++++++++
+> >  kernel/audit.c                 |   53 +++++++++++++++++++++++++++++++++++++++-
+> >  kernel/nsproxy.c               |   17 +++++++++++++
+> >  kernel/pid.c                   |    1 +
+> >  kernel/pid_namespace.c         |   19 ++++++++++++++
+> >  kernel/user.c                  |    1 +
+> >  kernel/user_namespace.c        |   18 +++++++++++++
+> >  kernel/utsname.c               |   20 +++++++++++++++
+> >  net/core/net_namespace.c       |   20 ++++++++++++++-
+> >  23 files changed, 240 insertions(+), 11 deletions(-)
+> >
+> > _______________________________________________
+> > Containers mailing list
+> > Containers@lists.linux-foundation.org
+> > https://lists.linuxfoundation.org/mailman/listinfo/containers
+> 
+> 
+> 
+> -- 
+> Michael Kerrisk Linux man-pages maintainer;
+> http://www.kernel.org/doc/man-pages/
+> Author of "The Linux Programming Interface", http://blog.man7.org/
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
