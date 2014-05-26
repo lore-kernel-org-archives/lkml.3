@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaEZMX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 08:23:57 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51488 "HELO
+	id S1751827AbaEZMgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 08:36:14 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54409 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751664AbaEZMX4 (ORCPT
+	with SMTP id S1751537AbaEZMgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 08:23:56 -0400
+	Mon, 26 May 2014 08:36:13 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        matthew.garrett@nebula.com, rafael.j.wysocki@intel.com,
-        dmitry.torokhov@gmail.com
-Subject: Re: [PATCH V7 08/11] ACPI: always register memory hotplug scan handler even if CONFIG_X86_INTEL_LPSS is cleared
-Date: Mon, 26 May 2014 14:40:58 +0200
-Message-ID: <2390763.sjfZLLMhWb@vostro.rjw.lan>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Kui Zhang <kuizhang@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: rmmod thermal, unable to handle kernel NULL pointer dereference
+Date: Mon, 26 May 2014 14:53:16 +0200
+Message-ID: <1497452.gmjrTF0UzW@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140526115235.GD1765@lahna.fi.intel.com>
-References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <4177604.8JWRhYqtaS@vostro.rjw.lan> <20140526115235.GD1765@lahna.fi.intel.com>
+In-Reply-To: <537C6262.5030500@intel.com>
+References: <CAKx2Y1mzLesGFYz30fH8xCZTkvNGPUNYkHptYLYq_hVExoh_8g@mail.gmail.com> <537C6262.5030500@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,34 +26,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 26, 2014 02:52:35 PM Mika Westerberg wrote:
-> On Mon, May 26, 2014 at 01:53:39PM +0200, Rafael J. Wysocki wrote:
-> > > I'm wondering whether it is worth the ugliness to get platform bus
-> > > enumeration the default?
-> > > 
-> > > Since you already have the PNP whitelist, can't we just use that for PNP
-> > > and keep these files as they are? In other words, don't make any kind of
-> > > physical device by default and let the scan handlers to decide.
+On Wednesday, May 21, 2014 04:22:58 PM Aaron Lu wrote:
+> On 05/21/2014 01:57 PM, Kui Zhang wrote:
+> > Hello,
 > > 
-> > Well, that's tempting, but then we'd get one more whitelist pretty much without
-> > any benefit, because we'd be still going to have the list in acpi_platform.c.
+> > I get following error when rmmod thermal.
 > > 
-> > The purpose of the whole exercise is not to prevent PNP devices from being
-> > created by default (which admittedly is a nice side effect), but to get rid
-> > of the white list in acpi_platform.c - and in particular, to avoid the
-> > necessity to add every ACPI-enumerated platform device to that list in the
-> > future.
+> > rmmod  thermal
+> > Killed
 > 
-> Yes, I understand but that list currently has only 5 entries. Are
-> we expecting to have much more entries there in the future?
+> Thanks for the report. Here is a fix patch that should solve this
+> problem.
+> 
+> From: Aaron Lu <aaron.lu@intel.com>
+> Date: Wed, 21 May 2014 16:00:42 +0800
+> Subject: [PATCH] ACPI / thermal: fix workqueue destroy order
+> 
+> When the thermal module is to be removed, we should destroy the wq
+> acpi_thermal_pm_queue after the ACPI driver's remove callback is
+> executed as we will need to flush the workqueue there, or a NULL pointer
+> access will be hit.
+> 
+> Reported-by: Kui Zhang <kuizhang@gmail.com>
+> Reference: http://www.spinics.net/lists/kernel/msg1747251.html
+> Cc: All applicable <stable@vger.kernel.org>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-Yes, we are.  Pretty much anything that's DT-enumerable today may be
-ACPI-enumerable in the future.  But you should know that. ;-)
+I'm going to push this as a fix for 3.15, thanks!
 
-> For LPSS devices we can't get rid of the list since we need to pass
-> ->driver_data based on the _HID anyway.
+> ---
+>  drivers/acpi/thermal.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+> index c1e31a41f949..25bbc55dca89 100644
+> --- a/drivers/acpi/thermal.c
+> +++ b/drivers/acpi/thermal.c
+> @@ -1278,8 +1278,8 @@ static int __init acpi_thermal_init(void)
+>  
+>  static void __exit acpi_thermal_exit(void)
+>  {
+> -	destroy_workqueue(acpi_thermal_pm_queue);
+>  	acpi_bus_unregister_driver(&acpi_thermal_driver);
+> +	destroy_workqueue(acpi_thermal_pm_queue);
+>  
+>  	return;
+>  }
+> 
 
-Obviously.
-
-Rafael
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
