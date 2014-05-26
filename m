@@ -1,42 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaEZV1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 17:27:04 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:52541 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaEZV1A (ORCPT
+	id S1751805AbaEZVcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 17:32:18 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:45899 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaEZVcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 17:27:00 -0400
-Date: Mon, 26 May 2014 23:26:34 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH v2] sbus: Introduce the use of the managed version of
+	Mon, 26 May 2014 17:32:16 -0400
+Date: Tue, 27 May 2014 03:02:07 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr, Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH] display7seg: Introduce the use of the managed version of
  kzalloc
-Message-ID: <20140526212633.GA30752@ravnborg.org>
-References: <20140525105825.GA3437@himangi-Dell>
+Message-ID: <20140526213207.GA1815@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140525105825.GA3437@himangi-Dell>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Himangi.
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. The header file is added to make the devm function explicitly
+available.
 
-On Sun, May 25, 2014 at 04:28:25PM +0530, Himangi Saraogi wrote:
-> This patch moves data allocated using kzalloc to managed data allocated
-> using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-> functions. The header file is added to make the devm function explicitly
-> available.
-This version looks much better.
-If you in the subject replaces sbus: with display7seg: then you can add my:
+The following Coccinelle semantic patch was used for making a part of
+the change:
+
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
+
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
+
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 Acked-by: Sam Ravnborg <sam@ravnborg.org>
+---
+Not compile tested due to incompatible architecture.
 
-"sbus:" is very generic, but this patch touches only
-this single driver.
+ drivers/sbus/char/display7seg.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-	Sam
+diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
+index 7c71e7b..b48899c 100644
+--- a/drivers/sbus/char/display7seg.c
++++ b/drivers/sbus/char/display7seg.c
+@@ -4,6 +4,7 @@
+  * Copyright (c) 2000 Eric Brower (ebrower@usa.net)
+  */
+ 
++#include <linux/device.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/fs.h>
+@@ -180,7 +181,7 @@ static int d7s_probe(struct platform_device *op)
+ 	if (d7s_device)
+ 		goto out;
+ 
+-	p = kzalloc(sizeof(*p), GFP_KERNEL);
++	p = devm_kzalloc(&op->dev, sizeof(*p), GFP_KERNEL);
+ 	err = -ENOMEM;
+ 	if (!p)
+ 		goto out;
+@@ -231,7 +232,6 @@ out_iounmap:
+ 	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
+ 
+ out_free:
+-	kfree(p);
+ 	goto out;
+ }
+ 
+@@ -251,7 +251,6 @@ static int d7s_remove(struct platform_device *op)
+ 
+ 	misc_deregister(&d7s_miscdev);
+ 	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
+-	kfree(p);
+ 
+ 	return 0;
+ }
+-- 
+1.9.1
+
