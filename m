@@ -1,49 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaEZWQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 18:16:31 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:50997 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959AbaEZWQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752969AbaEZWQZ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 26 May 2014 18:16:25 -0400
-From: Alexander Holler <holler@ahsoftware.de>
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:63917 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931AbaEZWQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 18:16:20 -0400
+Date: Mon, 26 May 2014 23:16:15 +0100
+From: Daniel Walter <dwalter@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 19/27] mtd: nand: bcm47: show device structure in sysfs
-Date: Tue, 27 May 2014 00:12:44 +0200
-Message-Id: <1401142372-14148-20-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
-References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
+Cc: bfields@fieldses.org, richard@nod.at
+Subject: [PATCH 11/12] [net/sunrpc] Remove obsolete strict_strto calls
+Message-ID: <20140526221615.GM25779@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a common error in nand-drivers which do not set up a parent device for
-the mtd-device by using a new inline function.
+From: Daniel Walter <dwalter@google.com>
+Subject: [PATCH 11/12] [net/sunrpc] replace strict_strto calls
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Replace obsolete strict_strto calls with appropriate kstrto calls
+
+Signed-off-by: Daniel Walter <dwalter@google.com>
 ---
- drivers/mtd/nand/bcm47xxnflash/main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/sunrpc/addr.c     | 16 ++++++----------
+ net/sunrpc/auth.c     |  2 +-
+ net/sunrpc/xprtsock.c |  4 ++--
+ 3 files changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/mtd/nand/bcm47xxnflash/main.c b/drivers/mtd/nand/bcm47xxnflash/main.c
-index 1074459..f995d5c 100644
---- a/drivers/mtd/nand/bcm47xxnflash/main.c
-+++ b/drivers/mtd/nand/bcm47xxnflash/main.c
-@@ -34,8 +34,7 @@ static int bcm47xxnflash_probe(struct platform_device *pdev)
- 		return -ENOMEM;
+diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
+index a622ad6..2e0a6f9 100644
+--- a/net/sunrpc/addr.c
++++ b/net/sunrpc/addr.c
+@@ -176,7 +176,7 @@ static int rpc_parse_scope_id(struct net *net, const char *buf,
+ 	len = (buf + buflen) - delim - 1;
+ 	p = kstrndup(delim + 1, len, GFP_KERNEL);
+ 	if (p) {
+-		unsigned long scope_id = 0;
++		u32 scope_id = 0;
+ 		struct net_device *dev;
  
- 	b47n->nand_chip.priv = b47n;
--	b47n->mtd.owner = THIS_MODULE;
--	b47n->mtd.priv = &b47n->nand_chip; /* Required */
-+	mtd_setup_common_members(&b47n->mtd, &b47n->nand_chip, pdev);
- 	b47n->cc = container_of(nflash, struct bcma_drv_cc, nflash);
+ 		dev = dev_get_by_name(net, p);
+@@ -184,7 +184,7 @@ static int rpc_parse_scope_id(struct net *net, const char *buf,
+ 			scope_id = dev->ifindex;
+ 			dev_put(dev);
+ 		} else {
+-			if (strict_strtoul(p, 10, &scope_id) == 0) {
++			if (kstrtou32(p, 10, &scope_id) == 0) {
+ 				kfree(p);
+ 				return 0;
+ 			}
+@@ -304,7 +304,7 @@ char *rpc_sockaddr2uaddr(const struct sockaddr *sap, gfp_t gfp_flags)
+  * @sap: buffer into which to plant socket address
+  * @salen: size of buffer
+  *
+- * @uaddr does not have to be '\0'-terminated, but strict_strtoul() and
++ * @uaddr does not have to be '\0'-terminated, but kstrtou8() and
+  * rpc_pton() require proper string termination to be successful.
+  *
+  * Returns the size of the socket address if successful; otherwise
+@@ -315,7 +315,7 @@ size_t rpc_uaddr2sockaddr(struct net *net, const char *uaddr,
+ 			  const size_t salen)
+ {
+ 	char *c, buf[RPCBIND_MAXUADDRLEN + sizeof('\0')];
+-	unsigned long portlo, porthi;
++	u8 portlo, porthi;
+ 	unsigned short port;
  
- 	if (b47n->cc->core->bus->chipinfo.id == BCMA_CHIP_ID_BCM4706) {
+ 	if (uaddr_len > RPCBIND_MAXUADDRLEN)
+@@ -327,18 +327,14 @@ size_t rpc_uaddr2sockaddr(struct net *net, const char *uaddr,
+ 	c = strrchr(buf, '.');
+ 	if (unlikely(c == NULL))
+ 		return 0;
+-	if (unlikely(strict_strtoul(c + 1, 10, &portlo) != 0))
+-		return 0;
+-	if (unlikely(portlo > 255))
++	if (unlikely(kstrtou8(c + 1, 10, &portlo) != 0))
+ 		return 0;
+ 
+ 	*c = '\0';
+ 	c = strrchr(buf, '.');
+ 	if (unlikely(c == NULL))
+ 		return 0;
+-	if (unlikely(strict_strtoul(c + 1, 10, &porthi) != 0))
+-		return 0;
+-	if (unlikely(porthi > 255))
++	if (unlikely(kstrtou8(c + 1, 10, &porthi) != 0))
+ 		return 0;
+ 
+ 	port = (unsigned short)((porthi << 8) | portlo);
+diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
+index 5285ead..0a64ffe 100644
+--- a/net/sunrpc/auth.c
++++ b/net/sunrpc/auth.c
+@@ -48,7 +48,7 @@ static int param_set_hashtbl_sz(const char *val, const struct kernel_param *kp)
+ 
+ 	if (!val)
+ 		goto out_inval;
+-	ret = strict_strtoul(val, 0, &num);
++	ret = kstrtoul(val, 0, &num);
+ 	if (ret == -EINVAL)
+ 		goto out_inval;
+ 	nbits = fls(num);
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 25a3dcf..45db0c6 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -3057,12 +3057,12 @@ static int param_set_uint_minmax(const char *val,
+ 		const struct kernel_param *kp,
+ 		unsigned int min, unsigned int max)
+ {
+-	unsigned long num;
++	unsigned int num;
+ 	int ret;
+ 
+ 	if (!val)
+ 		return -EINVAL;
+-	ret = strict_strtoul(val, 0, &num);
++	ret = kstrtouint(val, 0, &num);
+ 	if (ret == -EINVAL || num < min || num > max)
+ 		return -EINVAL;
+ 	*((unsigned int *)kp->arg) = num;
 -- 
-1.8.3.2
+1.9.3
 
