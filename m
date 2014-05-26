@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaEZURl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 16:17:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218AbaEZURj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 16:17:39 -0400
-Date: Mon, 26 May 2014 16:17:32 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: linux-audit@redhat.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        containers <containers@lists.linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, sgrubb@redhat.com,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH V3 0/6] namespaces: log namespaces per task
-Message-ID: <20140526201732.GD8079@madcap2.tricolour.ca>
-References: <cover.1400271129.git.rgb@redhat.com>
- <CAHO5Pa0EdUsV9jJuLbkmbvFyopecQiUDZd0UasAJ5kMhtsVxjQ@mail.gmail.com>
- <20140526165858.GC8079@madcap2.tricolour.ca>
- <CAKgNAkgfV5K6BWjibCVwzJE3GYfmAHNzk+aU05M0xEdrfZmzPg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkgfV5K6BWjibCVwzJE3GYfmAHNzk+aU05M0xEdrfZmzPg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752039AbaEZUTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 16:19:20 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:56515 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751616AbaEZUTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 16:19:17 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiwKAAyhg1NbsG99/2dsb2JhbABZgweCRaheBAEBAQEBAQUBgzyUUIEXF3SCZhwjGIECJBOIRgHVKYVViH2ERwEDjz+KMwGLF4gQgzo7
+Date: Mon, 26 May 2014 22:19:14 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 1/1] block/blk-lib.c: make __blkdev_issue_zeroout static
+Message-Id: <20140526221914.503f8b9dab389f8100638b71@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/05/26, Michael Kerrisk (man-pages) wrote:
-> Hi Richard
-> 
-> On Mon, May 26, 2014 at 6:58 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> > On 14/05/22, Michael Kerrisk wrote:
-> >> Richard,
-> >
-> > Hi Michael,
-> >
-> >> On Tue, May 20, 2014 at 3:12 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> >> > The purpose is to track namespaces in use by logged processes from the
-> >> > perspective of init_*_ns.
-> >> >
-> >> > 1/6 defines a function to generate them and assigns them.
-> >> >
-> >> > Use a serial number per namespace (unique across one boot of one kernel)
-> >> > instead of the inode number (which is claimed to have had the right to change
-> >> > reserved and is not necessarily unique if there is more than one proc fs).  It
-> >> > could be argued that the inode numbers have now become a defacto interface and
-> >> > can't change now, but I'm proposing this approach to see if this helps address
-> >> > some of the objections to the earlier patchset.
-> >> >
-> >> > 2/6 adds access functions to get to the serial numbers in a similar way to
-> >> > inode access for namespace proc operations.
-> >> >
-> >> > 3/6 implements, as suggested by Serge Hallyn, making these serial numbers
-> >> > available in /proc/self/ns/{ipc,mnt,net,pid,user,uts}_snum.  I chose "snum"
-> >> > instead of "seq" for consistency with inum and there are a number of other uses
-> >> > of "seq" in the namespace code.
-> >> >
-> >> > 4/6 exposes proc's ns entries structure which lists a number of useful
-> >> > operations per namespace type for other subsystems to use.
-> >>
-> >> Since the 3 and 4 change the ABI, please CC iterations of this patch
-> >> series to linux-api@vger.kernel.org, as per Documentation/SubmitChecklist.
-> >
-> > Neither patch 3/6 nor 4/6 changes the syscall interface.
-> 
-> (Agreed.)
-> 
-> > Patch 3/6 adds /proc/<pid>/ns/ entries, which looks more like #16 in
-> > that document (for which /proc/<pid>/ns/<nstype> was never added).
-> 
-> But, that's a change to the surface that the kernel exposes to user
-> space, right? If so, it is best CCed to linux-api.
+__blkdev_issue_zeroout is only used in blk-lib.c
 
-Got it.  Thanks!
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ block/blk-lib.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> Thanks,
-> 
-> Michael
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 97a733c..8411be3 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -226,8 +226,8 @@ EXPORT_SYMBOL(blkdev_issue_write_same);
+  *  Generate and issue number of bios with zerofiled pages.
+  */
+ 
+-int __blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+-			sector_t nr_sects, gfp_t gfp_mask)
++static int __blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
++				  sector_t nr_sects, gfp_t gfp_mask)
+ {
+ 	int ret;
+ 	struct bio *bio;
+-- 
+1.9.1
 
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
