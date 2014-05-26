@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaEZKsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:48:33 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:38980 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaEZKsb (ORCPT
+	id S1751862AbaEZKut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:50:49 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:48549 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaEZKus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:48:31 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-In-Reply-To: <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
-References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>
-	<20140514100856.5198DC4153D@trevor.secretlab.ca>
-	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>
-	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
-	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>
-	<CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>
-	<20140520055026.E3A98C412DA@trevor.secretlab.ca>
-	<CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
-Date: Mon, 26 May 2014 11:48:24 +0100
-Message-Id: <20140526104824.63F13C42129@trevor.secretlab.ca>
+	Mon, 26 May 2014 06:50:48 -0400
+Date: Mon, 26 May 2014 13:50:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] staging: dgap: implement proper error handling in
+ dgap_firmware_load()
+Message-ID: <20140526105031.GF15585@mwanda>
+References: <20140526102347.GA13793@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526102347.GA13793@devel.8.8.4.4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 May 2014 09:38:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Grant,
+On Mon, May 26, 2014 at 07:23:47PM +0900, Daeseok Youn wrote:
+> When dgap_tty_init() and dgap_tty_register_ports() are failed,
+> these are needed to free some memory properly.
 > 
-> On Tue, May 20, 2014 at 7:50 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> >> Why has the overlay system been designed for plugging and unpluging whole
-> >> overlays?
-> >> That means the kernel has to remember the full stack, causing issues with
-> >> e.g. kexec.
-> >
-> > Mostly so that drivers don't see any difference in the livetree data
-> > structure. It also means that userspace sees a single representation of
-> > the hardware at any given time.
+> It can be handled by calling dgap_tty_uninit() and dgap_cleanup_board().
+> But tty's ports are not registered yet when these function are failed,
+> so brd->nasync set to zero.
 > 
-> Sorry, I don't follow the argument about the "single representation of the
-> hardware".
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/dgap/dgap.c |   21 ++++++++++++++++-----
+>  1 files changed, 16 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> index 60b7d70..db24f70 100644
+> --- a/drivers/staging/dgap/dgap.c
+> +++ b/drivers/staging/dgap/dgap.c
+> @@ -954,19 +954,30 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+>  	 * Do tty device initialization.
+>  	 */
+>  	ret = dgap_tty_init(brd);
+> -	if (ret < 0) {
+> -		dgap_tty_uninit(brd);
+> -		return ret;
+> -	}
+> +	if (ret < 0)
+> +		goto err_cleanup;
+>  
+>  	ret = dgap_tty_register_ports(brd);
+>  	if (ret)
+> -		return ret;
+> +		goto err_cleanup;
+>  
+>  	brd->state = BOARD_READY;
+>  	brd->dpastatus = BD_RUNNING;
+>  
+>  	return 0;
+> +
+> +err_cleanup:
+> +	/*
+> +	 * Clear nasync to zero for avoiding to call
+> +	 * some destroyer for tty's ports which are not
+> +	 * registered yet in dgap_tty_uninit().
+> +	 */
+> +	brd->nasync = 0;
+> +
+> +	dgap_tty_uninit(brd);
+> +	dgap_cleanup_board(brd);
+> +	return ret;
 
-Er, s/of the hardware/of the tree/. Right now the overlay design
-modifies the live tree which at the same time modifies the tree
-representation in /sys/firmware/devicetree. If the design was changed to
-keep the overlay logically separate, then I would think we want to
-expose that information to usespace also. In fact, I think we would need
-to for usecases like kexec.
+Wow.  This is nasty.  We shouldn't have to call dgap_tty_uninit() when
+the init failed.  Can't we clean this up instead of adding
+"brd->nasync = 0;" work arounds?
 
-> 
-> >> Why not allowing the addition of removal of subtrees of the full device
-> >> tree?
-> >
-> > Overlays is more than just a subtree. A single overlay can make
-> > manipulations of multiple subtrees that should be handled as logically
-> > atomic.
-> 
-> Sure, it's more complicated due to the atomicity of multiple changes.
-> 
-> >> This is similar to other hotpluggable subsystems (which are not necessarily
-> >> DT-based), like PCI Express. That way the kernel can pass a
-> >> DT-representation of the actual current device tree to a kexec'ed kernel.
-> >
-> > I'm not following you argument. Hardware hotplug systems like PCIe don't
-> > manipulate the firmware data. The kernel detects the new device and
-> > populates the Linux device model directly. Firmware provided data (ACPI
-> > or FDT) isn't involved.
-> 
-> I mean the kernel doesn't remember the exact order in a stack, to reverse
-> operations. E.g. I can add hotplug a PCIe bridge with multiple devices
-> behind it, and unplug a single device later. It's still one subtree, though.
-
-The problem comes when one overlay adds a node or configuration that is
-depended on by the second overlay, but there isn't a direct reference by
-the second overlay into the first.
-
-g.
+regards,
+dan carpenter
 
