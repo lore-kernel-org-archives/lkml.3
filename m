@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaEZBSZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 21:18:25 -0400
-Received: from ozlabs.org ([103.22.144.67]:33935 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404AbaEZBSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 21:18:24 -0400
-Date: Mon, 26 May 2014 11:18:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the nfsd tree
-Message-ID: <20140526111815.25153c0c@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751540AbaEZBTK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 21:19:10 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:26897 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751401AbaEZBTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 May 2014 21:19:09 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlxMAC+VglN5LL1sPGdsb2JhbABZgwdSjXOcWgEBAQEBAQaQUIc6AYEGFwMBAQEBODWCJQEBAQQBAiQTHCMQCAMYCSUPBQ0HEQMHGhOILgMQDtENDYYaFxaFP4ZnghYHhEAElXKBIGuBdYsYgh6JPCsv
+Date: Mon, 26 May 2014 11:19:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Plamen Petrov <plamen.sisi@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] do_mounts: try all available filesystems before panicking
+Message-ID: <20140526011904.GT8554@dastard>
+References: <1399314889-9829-1-git-send-email-plamen.sisi@gmail.com>
+ <CA+55aFwxF2xnYerLdJZ2gQdZizK3953L16X5KkUAqD-YePausQ@mail.gmail.com>
+ <20140526000813.GS8554@dastard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/kOHIW.gRG1Y3L4DprM9YWcU"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526000813.GS8554@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/kOHIW.gRG1Y3L4DprM9YWcU
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 26, 2014 at 10:08:13AM +1000, Dave Chinner wrote:
+> On Sun, May 25, 2014 at 01:04:09PM -0700, Linus Torvalds wrote:
+> > On Mon, May 5, 2014 at 11:34 AM, Plamen Petrov <plamen.sisi@gmail.com> wrote:
+> > >
+> > > The story short: on systems with btrfs root I have a kernel .config with ext4,
+> > > xfs and btrfs built-in which works fine with 3.13.x, but 3.14.x panics. After
+> > > inserting some debug printks, I got this info from mount_block_root:
+> > >
+> > > ---> EACCESS=13, EINVAL=22, Available filesystems: ext3 ext2 ext4 fuseblk xfs btrfs
+> > > -----> Tried ext3, error code is -22.
+> > > -----> Tried ext2, error code is -22.
+> > > -----> Tried ext4, error code is -22.
+> > > -----> Tried fuseblk, error code is -22.
+> > > -----> Tried xfs, error code is -38.
+> > > VFS: Cannot open root device "sda2" or unknown-block(8,2): error -38
+> > > Please append a correct "root=" boot option; here are the available partitions:
 
-Hi Bruce,
+BTW, This is the original thread with lots of triage in it:
 
-After merging the nfsd tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+http://www.spinics.net/lists/linux-btrfs/msg33455.html
 
-fs/nfsd/nfs4proc.c: In function 'warn_on_nonidempotent_op':
-fs/nfsd/nfs4proc.c:1861:3: error: implicit declaration of function 'nfsd4_o=
-p_name' [-Werror=3Dimplicit-function-declaration]
-   pr_err("unable to encode reply to nonidempotent op %d (%s)\n",
-   ^
+But that doesn't reach any conclusion. I suspect that the
+change of btrfs init (from very early (@~1.8s into the boot) until a
+few milliseconds before the root mount is changing the order in
+which the filesystem type list is traversed by the mount, resulting
+in XFS being used to probe the device before btrfs.
 
-Caused by commit 4d332a993e64 ("nfsd4: fix encoding of out-of-space replies=
-").
+Why XFS is seeing /dev/sda2 as containing an XFS filesystem is not
+yet clear, but perhaps once you've dumped the the first sector of
+the btrfs partition all will become clear....
 
-I have used the nfsd tree from next-20140523 for today.
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/kOHIW.gRG1Y3L4DprM9YWcU
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTgpZcAAoJEMDTa8Ir7ZwVuGgP/A51PJKKkDx/UDlVMF1Z+iIG
-p3P5qBPgRBrDRPu+VWvVaezIiiAFFvoAC+KVN+1Q33TbdePbyKRdmwqOdyC+7I59
-2rByBRKvRRUoUQaqGMMherOAwhLluLLBSvC6pcdRVexBT7FNKgI6YCQLROtPsVjz
-+UPopAUwsqSZJC/FDCFrekKrpkxSCZKL92F2/MWr3Net/0s/l9SBceRoEg28JdMh
-Nq1W9J14qnxFGH7QWQ6olTlUwhsOA6f9Qs+KMHsx2id1VFVBqC/34qKdAGLrpXZP
-I2pgjokfjw3KLD6lNGQ2dYz0EbZr1FbFeRVHR+uRA/1MEclUebGhvcZwKLkc6PCx
-lt7C//nRaPDluXhgXKq349FI8IXe+OJpcZbYQ1VGFaH9JCWy389hohAeYyQLG/fi
-kVaCyFriNBHZgYDKwjutdg6RTA1cKNQGf5lC+BfbNCYyzTcUoF8DZyabVdmkjfbA
-X2ZqPpg59aAdGnnuSrFNf9/giDEBO+27RjZO1pHky1D9T9/KUJz+TWOIAz7i/rOo
-broZ9QBC1EPQDKsPavg9qZTcQhDhouj7WHsOZNRi2gIf0CBBylNPboxFGDnLkGXs
-Py8B0PI/8bIgAiKi0oyvcjsZEwZUWXH6/uRckolD+VpMomJTjP9qh64i9JtELG01
-aEQZ3kTEpDSk009bo1TL
-=zxuV
------END PGP SIGNATURE-----
-
---Sig_/kOHIW.gRG1Y3L4DprM9YWcU--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
