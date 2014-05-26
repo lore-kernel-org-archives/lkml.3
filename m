@@ -1,77 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaEZPkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:40:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12212 "EHLO mx1.redhat.com"
+	id S1752632AbaEZPn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:43:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17141 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752190AbaEZPkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:40:17 -0400
-Date: Mon, 26 May 2014 18:39:09 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, yang.z.zhang@intel.com, mtosatti@redhat.com,
-        stable@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] KVM: lapic: sync highest ISR to hardware apic on EOI
-Message-ID: <20140526153909.GA27903@redhat.com>
-References: <1400856713-18628-1-git-send-email-pbonzini@redhat.com>
- <20140526142848.GA27553@redhat.com>
- <53835636.5050801@redhat.com>
+	id S1752212AbaEZPn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 11:43:56 -0400
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Benoit Taine <benoit.taine@lip6.fr>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 9/18] staging: rtl8723au: Use kmemdup instead of kmalloc + memcpy
+References: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
+	<1401117687-28911-10-git-send-email-benoit.taine@lip6.fr>
+Date: Mon, 26 May 2014 17:43:45 +0200
+In-Reply-To: <1401117687-28911-10-git-send-email-benoit.taine@lip6.fr> (Benoit
+	Taine's message of "Mon, 26 May 2014 17:21:18 +0200")
+Message-ID: <wrfjy4xo35qm.fsf@ultrasam.lan.trained-monkey.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53835636.5050801@redhat.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 04:56:54PM +0200, Paolo Bonzini wrote:
-> Il 26/05/2014 16:28, Michael S. Tsirkin ha scritto:
-> >> static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
-> >> {
-> >>-	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-> >>+	struct kvm_vcpu *vcpu;
-> >>+	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-> >>+		return;
-> >>+
-> >>+	vcpu = apic->vcpu;
-> >>+
-> >>+	/*
-> >>+	 * We do get here for APIC virtualization enabled if the guest
-> >>+	 * uses the Hyper-V APIC enlightenment.  In this case we may need
-> >>+	 * to trigger a new interrupt delivery by writing the SVI field;
-> >>+	 * on the other hand isr_count and highest_isr_cache are unused
-> >>+	 * and must be left alone.
-> >>+	 */
-> >>+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-> >>+		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
-> >>+					       apic_find_highest_isr(apic));
-> >
-> >I note that an indirect call on data path is mostly unnecessary here:
-> >	static int vmx_vm_has_apicv(struct kvm *kvm)
-> >	{
-> >		return enable_apicv && irqchip_in_kernel(kvm);
-> >	}
-> >is all it does, and irqchip_in_kernel also has an rmb within it, which
-> >is somewhat expensive on x86: and there's no way to reach this code
-> >with irqchip disabled, correct?
-> 
-> smp_rmb is just a compiler barrier, it's not expensive.  The indirect call
-> is probably more expensive.
-> 
-> That said, other places in the paths (kvm_cpu_has_injectable_intr,
-> kvm_cpu_get_interrupt) already call kvm_apic_vid_enabled, so this patch
-> doesn't introduce something new.
-> 
-> >How about adding a bool flag in kvm_vcpu_arch, and testing that?
-> 
-> Yes, that's possible.  It's also possible to test
-> kvm_x86_ops->hwapic_isr_update != NULL and zero the field in vmx.c's
-> hardware_setup.
-> Can you make a patch?
-> 
-> Paolo
+Benoit Taine <benoit.taine@lip6.fr> writes:
+> This issue was reported by coccicheck using the semantic patch 
+> at scripts/coccinelle/api/memdup.cocci
+>
+> Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+> ---
+> Tested by compilation without errors.
+>
+>  drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c |    3 +--
+>  drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c |   16 ++++++----------
+>  2 files changed, 7 insertions(+), 12 deletions(-)
 
-On top of this one? Sure.
+Benoit,
 
--- 
-MST
+I believe this was already applied to staging-next - if you feel
+something is missing. Could you please re-diff against the latest
+staging-next tree.
+
+Cheers,
+Jes
+
+commit 4a6eea4dcbc0328c3126fed264c42b0725bea659
+Author: Benoit Taine <benoit.taine@lip6.fr>
+Date:   Thu May 22 15:08:33 2014 +0200
+
+    staging: rtl8723au: Use kmemdup() instead of memcpy() to duplicate memory
+    
+    This issue was reported by coccicheck using the semantic patch
+    at scripts/coccinelle/api/memdup.cocci, and tested by compilation.
+    
+    Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+>
+> diff --git a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
+> index e2d426a..f917edd 100644
+> --- a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
+> +++ b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
+> @@ -339,12 +339,11 @@ int rtl8723a_FirmwareDownload(struct rtw_adapter *padapter)
+>  		rtStatus = _FAIL;
+>  		goto Exit;
+>  	}
+> -	firmware_buf = kzalloc(fw->size, GFP_KERNEL);
+> +	firmware_buf = kmemdup(fw->data, fw->size, GFP_KERNEL);
+>  	if (!firmware_buf) {
+>  		rtStatus = _FAIL;
+>  		goto Exit;
+>  	}
+> -	memcpy(firmware_buf, fw->data, fw->size);
+>  	buf = firmware_buf;
+>  	fw_size = fw->size;
+>  	release_firmware(fw);
+> diff --git a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
+> index 182f57c..735eb99 100644
+> --- a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
+> +++ b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
+> @@ -1426,14 +1426,13 @@ static int rtw_cfg80211_set_probe_req_wpsp2pie(struct rtw_adapter *padapter,
+>  				pmlmepriv->wps_probe_req_ie = NULL;
+>  			}
+>  
+> -			pmlmepriv->wps_probe_req_ie =
+> -				kmalloc(wps_ielen, GFP_KERNEL);
+> +			pmlmepriv->wps_probe_req_ie = kmemdup(wps_ie,
+> +							wps_ielen, GFP_KERNEL);
+>  			if (pmlmepriv->wps_probe_req_ie == NULL) {
+>  				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
+>  					  __func__, __LINE__);
+>  				return -EINVAL;
+>  			}
+> -			memcpy(pmlmepriv->wps_probe_req_ie, wps_ie, wps_ielen);
+>  			pmlmepriv->wps_probe_req_ie_len = wps_ielen;
+>  		}
+>  	}
+> @@ -1697,12 +1696,11 @@ static int rtw_cfg80211_set_wpa_ie(struct rtw_adapter *padapter, const u8 *pie,
+>  		ret = -EINVAL;
+>  		goto exit;
+>  	}
+> -	buf = kzalloc(ielen, GFP_KERNEL);
+> +	buf = kmemdup(pie, ielen, GFP_KERNEL);
+>  	if (buf == NULL) {
+>  		ret = -ENOMEM;
+>  		goto exit;
+>  	}
+> -	memcpy(buf, pie, ielen);
+>  
+>  	/* dump */
+>  	DBG_8723A("set wpa_ie(length:%zu):\n", ielen);
+> @@ -3178,14 +3176,13 @@ static int rtw_cfg80211_set_beacon_wpsp2pie(struct net_device *ndev, char *buf,
+>  				pmlmepriv->wps_beacon_ie = NULL;
+>  			}
+>  
+> -			pmlmepriv->wps_beacon_ie =
+> -				kmalloc(wps_ielen, GFP_KERNEL);
+> +			pmlmepriv->wps_beacon_ie = kmemdup(wps_ie, wps_ielen,
+> +							   GFP_KERNEL);
+>  			if (pmlmepriv->wps_beacon_ie == NULL) {
+>  				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
+>  					  __func__, __LINE__);
+>  				return -EINVAL;
+>  			}
+> -			memcpy(pmlmepriv->wps_beacon_ie, wps_ie, wps_ielen);
+>  			pmlmepriv->wps_beacon_ie_len = wps_ielen;
+>  
+>  #ifdef CONFIG_8723AU_AP_MODE
+> @@ -3270,14 +3267,13 @@ static int rtw_cfg80211_set_assoc_resp_wpsp2pie(struct net_device *net,
+>  			pmlmepriv->wps_assoc_resp_ie = NULL;
+>  		}
+>  
+> -		pmlmepriv->wps_assoc_resp_ie = kmalloc(len, GFP_KERNEL);
+> +		pmlmepriv->wps_assoc_resp_ie = kmemdup(buf, len, GFP_KERNEL);
+>  		if (pmlmepriv->wps_assoc_resp_ie == NULL) {
+>  			DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
+>  				  __func__, __LINE__);
+>  			return -EINVAL;
+>  
+>  		}
+> -		memcpy(pmlmepriv->wps_assoc_resp_ie, buf, len);
+>  		pmlmepriv->wps_assoc_resp_ie_len = len;
+>  	}
+>  
