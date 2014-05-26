@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977AbaEZTCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:02:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48022 "EHLO mail.kernel.org"
+	id S1752069AbaEZTC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:02:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48041 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787AbaEZTCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:02:54 -0400
+	id S1751696AbaEZTC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 15:02:57 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,27 +16,24 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/2] trace: Warn the user when not available
-Date: Mon, 26 May 2014 16:02:29 -0300
-Message-Id: <1401130950-24879-1-git-send-email-acme@kernel.org>
+Subject: [PATCH 2/2] perf tools: Add warning when disabling perl scripting support due to missing devel files
+Date: Mon, 26 May 2014 16:02:30 -0300
+Message-Id: <1401130950-24879-2-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1401130950-24879-1-git-send-email-acme@kernel.org>
+References: <1401130950-24879-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-When the audit-libs devel package is not found at build time we disable
-the 'trace' command, as we are not able to map syscall numbers to
-strings, but then the message the user is presented is cryptic:
+We were just showing "libperl: OFF", unlike other features where we
+present the user with a message helping have a feature built in.
 
-  [root@zoo linux]# trace ls
-  perf: 'ls' is not a perf-command. See 'perf --help'.
+Fix it by adding the following message:
 
-Fix it by presenting a more helpful message:
-
-  [root@zoo linux]# trace l
-  trace command not available: missing audit-libs devel package at build time.
+config/Makefile:450: Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -48,37 +45,24 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-uxeunqetd0sgxyibusapen9a@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-t7yeud34ehimlfi6pklb29p7@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/perf.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 431798a4110d..78f7b920e548 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -481,14 +481,18 @@ int main(int argc, const char **argv)
- 		fprintf(stderr, "cannot handle %s internally", cmd);
- 		goto out;
- 	}
--#ifdef HAVE_LIBAUDIT_SUPPORT
- 	if (!prefixcmp(cmd, "trace")) {
-+#ifdef HAVE_LIBAUDIT_SUPPORT
- 		set_buildid_dir();
- 		setup_path();
- 		argv[0] = "trace";
- 		return cmd_trace(argc, argv, NULL);
--	}
-+#else
-+		fprintf(stderr,
-+			"trace command not available: missing audit-libs devel package at build time.\n");
-+		goto out;
- #endif
-+	}
- 	/* Look for flags.. */
- 	argv++;
- 	argc--;
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 729bbdf5cec7..319426f632fc 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -447,6 +447,7 @@ else
+   ifneq ($(feature-libperl), 1)
+     CFLAGS += -DNO_LIBPERL
+     NO_LIBPERL := 1
++    msg := $(warning Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed);
+   else
+     LDFLAGS += $(PERL_EMBED_LDFLAGS)
+     EXTLIBS += $(PERL_EMBED_LIBADD)
 -- 
 1.9.3
 
