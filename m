@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684AbaEZGGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 02:06:34 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:62794 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951AbaEZGGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 02:06:33 -0400
-Message-ID: <5382D9E5.5000306@gmail.com>
-Date: Mon, 26 May 2014 08:06:29 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751548AbaEZGIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 02:08:09 -0400
+Received: from ozlabs.org ([103.22.144.67]:51295 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381AbaEZGIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 02:08:07 -0400
+Date: Mon, 26 May 2014 16:07:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: linux-next: build failure after merge of the clockevents tree
+Message-ID: <20140526160759.7ccb7757@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: mtk.manpages@gmail.com, Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Jos Huisken <jos.huisken@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: inotify, new idea?
-References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com> <20140417212834.GC17769@csclub.uwaterloo.ca> <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com> <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com> <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com> <5354DA0B.2060204@nod.at> <53804FC0.1010207@gmail.com> <538091C2.6040802@nod.at>
-In-Reply-To: <538091C2.6040802@nod.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/3a93CqgYKFF2zDP=6mmc7DE"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2014 02:34 PM, Richard Weinberger wrote:
-> Am 24.05.2014 09:52, schrieb Michael Kerrisk (man-pages):
->> On 04/21/2014 10:42 AM, Richard Weinberger wrote:
->>> Am 21.04.2014 09:24, schrieb Michael Kerrisk:
->>>>> Does recursive monitoring even work with inotify?
->>>>> Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
->>>>> mkdir() raced against the thread which installes the new watches.
->>>>
->>>> As I understand it, you have to program to deal with the races (rescan
->>>> directories after adding watches). I recently did a lot of work
->>>> updating the inotify(7) man page to discuss all the issues that I know
->>>> of, and their remedies. If I missed anything, I'd appreciate a note on
->>>> it, so that it can be added. See
->>>> http://man7.org/linux/man-pages/man7/inotify.7.html#NOTES
->>>
->>> I'm aware of the rescan hack, but in my case it does not help
->>> because my program must not miss any event.
->>> Currently I'm using a fuse overlay filesystem to log everything.
->>> Not perfect but works... :-)
->>
->> Richard,
->>
->> A late follow up question. How does your application deal with the
->> event overflow problem (i.e., when you get a large number of events 
->> much faster than your application can deal with them?
-> 
-> The downside of the FUSE approach is that you have to intercept
-> every filesystem function.
-> This can be a performance issue.
-> But due to this design the overflow problem cannot happen as the
-> FUSE filesystem blocks until the event has been proceed.
+--Sig_/3a93CqgYKFF2zDP=6mmc7DE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Ahh -- that clears things up for me. Thanks, Richard.
+Hi Daniel,
 
+After merging the clockevents tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
+
+
+drivers/clocksource/timer-sun5i.c: In function 'sun5i_timer_init':
+drivers/clocksource/timer-sun5i.c:167:2: error: implicit declaration of fun=
+ction 'of_reset_control_get' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit e50a00be5c42 ("clocksource: sun5i: Add support for
+reset controller").
+
+I have used the clockevents tree from next-20140523 for today.
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Michael
+--Sig_/3a93CqgYKFF2zDP=6mmc7DE
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTgtpEAAoJEMDTa8Ir7ZwVGD8P/Ahah+Rf9fXUNc/+z0qx64/u
+Vfe8+2jinBD0Zf5lv+QS2myVvzV33oKZ0/+Euz5MLLoyPTT7e4k19UrVIdLwSWsr
+b4lBCQxl2bmnKuz3X21ycX8CpVhrIp58yYSGaQ3bFDrBGOHf8UVC83Z6/+t+tQLv
+Q0zlWAF1MfvW3JCuIEP2PynXcJDJtXWiKhElCoGJIS0akSclgWSvW65gC40+ZFUY
+yeXlqz2bVnzxQvag9yTTpxbxOpVxZd57rDPGWmTKW1v0ENienN8vy9Jjv4xPGhNE
+9eKCRzKmr4PdNqVUsQgCHbIWZgy+3VAxRTDjhx7UeDjeWdIVYBUO0IX1X8YxvQ7r
+JF+A1ndb9IQjXurT6TaoMtXRZ3rUKfmA1EjhL9qi7zM6wbOYxE2tyMdDEMTOgVHf
+eEuQwM39hT3pBD7yW0ebWSPRYic4ucyzaPHG6P0KQOxyMTm90iNxmNeBJZuWLUSh
+iJdmZNQAQ+uPQQqUM+AmF2Ahil84X5Au4Ti+3dXQXdncR2QM3xW+nshqE8oXhp0I
+ccGHeJg4Ix+FTQA7/DSJV/GEVbHVnohxuWXlY+fmNKz/HRUEY7Wm+zlScYGFzsYP
+W4ZYkVr6C9moIzF507GPTwD87Qkt9Q9OZYDHg+YxkbCxc6TimsZ41aw/Akb2cP4i
+MN+UanV8T8dQVo6CQv/P
+=Mt7C
+-----END PGP SIGNATURE-----
+
+--Sig_/3a93CqgYKFF2zDP=6mmc7DE--
