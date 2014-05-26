@@ -1,95 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaEZVcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 17:32:35 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:62832 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932AbaEZVcb (ORCPT
+	id S1752163AbaEZVdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 17:33:19 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:48640 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750AbaEZVdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 17:32:31 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:c57e:23b4:6c1a:bac4]
-In-Reply-To: <1397475725-5036-2-git-send-email-peter.ujfalusi@ti.com>
-References: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
-	<1397475725-5036-2-git-send-email-peter.ujfalusi@ti.com>
-Date: Mon, 26 May 2014 14:32:30 -0700
-Message-ID: <CAOesGMg43jT6D_ot2tKfRXXgAgwqs5Pu_tAFKc35yxLAczrzGQ@mail.gmail.com>
-Subject: Re: [PATCH v3 01/10] platform_data: edma: Be precise with the paRAM struct
-From: Olof Johansson <olof@lixom.net>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>, Sekhar Nori <nsekhar@ti.com>,
-        Joel Fernandes <joelf@ti.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+	Mon, 26 May 2014 17:33:14 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Content-Type: text/plain; charset=UTF-8
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+In-Reply-To: <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>
+	<20140514100856.5198DC4153D@trevor.secretlab.ca>
+	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>
+	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
+	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>
+	<CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>
+	<20140520055026.E3A98C412DA@trevor.secretlab.ca>
+	<CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
+	<20140526104824.63F13C42129@trevor.secretlab.ca>
+	<CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>
+	<20140526112348.907B7C421A5@trevor.secretlab.ca>
+	<A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com>
+Date: Mon, 26 May 2014 22:33:03 +0100
+Message-Id: <20140526213303.C1C73C40E11@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 26 May 2014 14:55:37 +0300, Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
+> Hi Grant,
+> 
+> On May 26, 2014, at 2:23 PM, Grant Likely wrote:
+> 
+> > On Mon, 26 May 2014 12:57:32 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> >> Hi Grant,
+> >> 
+> >> On Mon, May 26, 2014 at 12:48 PM, Grant Likely
+> >> <grant.likely@secretlab.ca> wrote:
+> >>> On Tue, 20 May 2014 09:38:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> >>>> On Tue, May 20, 2014 at 7:50 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> >>>>>> Why has the overlay system been designed for plugging and unpluging whole
+> >>>>>> overlays?
+> >>>>>> That means the kernel has to remember the full stack, causing issues with
+> >>>>>> e.g. kexec.
+> >>>>> 
+> >>>>> Mostly so that drivers don't see any difference in the livetree data
+> >>>>> structure. It also means that userspace sees a single representation of
+> >>>>> the hardware at any given time.
+> >>>> 
+> >>>> Sorry, I don't follow the argument about the "single representation of the
+> >>>> hardware".
+> >>> 
+> >>> Er, s/of the hardware/of the tree/. Right now the overlay design
+> >>> modifies the live tree which at the same time modifies the tree
+> >>> representation in /sys/firmware/devicetree. If the design was changed to
+> >>> keep the overlay logically separate, then I would think we want to
+> >>> expose that information to usespace also. In fact, I think we would need
+> >>> to for usecases like kexec.
+> >> 
+> >> OK, so it does modify the real tree, and doesn't keep the actual overlays.
+> >> 
+> >> I was under the impression the overlay stack was also kept in memory, to allow
+> >> reversal, so there was a misunderstanding.
+> >> 
+> >> Hence for kexec, the tree in /sys/firmware/devicetree can just be passed
+> >> to the new kernel, as that's the current representation of the hardware?
+> > 
+> > Heeheehee. We're back where we started. The original question is whether
+> > or not that is a valid approach. If the overlay represents something
+> > that can be hot plugged/unplugged, then passing it through to the second
+> > kernel would be the wrong thing to do. If it was a permenant addition,
+> > then it probably doesn't need to be removed.
+> > 
+> > We do actually keep the overlay info in memory for the purpose of
+> > removal exactly so we can support hot unbinding of devices and drivers
+> > that make use of overlays.
+> > 
+> 
+> We can support either method. I am not feeling any wiser about which one should be
+> the default TBH, so what about exporting a property and let the platform 
+> figure out which is more appropriate?
 
-On Mon, Apr 14, 2014 at 4:41 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> The edmacc_param struct should follow the layout of the paRAM area in the
-> HW. Be explicit on the size of the fields (u32) and also mark the struct
-> as packed to avoid any padding on non 32bit architectures.
->
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Acked-by: Joel Fernandes <joelf@ti.com>
-> ---
->  include/linux/platform_data/edma.h | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
-> index f50821cb64be..923f8a3e4ce0 100644
-> --- a/include/linux/platform_data/edma.h
-> +++ b/include/linux/platform_data/edma.h
-> @@ -43,15 +43,15 @@
->
->  /* PaRAM slots are laid out like this */
->  struct edmacc_param {
-> -       unsigned int opt;
-> -       unsigned int src;
-> -       unsigned int a_b_cnt;
-> -       unsigned int dst;
-> -       unsigned int src_dst_bidx;
-> -       unsigned int link_bcntrld;
-> -       unsigned int src_dst_cidx;
-> -       unsigned int ccnt;
-> -};
-> +       u32 opt;
-> +       u32 src;
-> +       u32 a_b_cnt;
-> +       u32 dst;
-> +       u32 src_dst_bidx;
-> +       u32 link_bcntrld;
-> +       u32 src_dst_cidx;
-> +       u32 ccnt;
-> +} __packed;
->
->  /* fields in edmacc_param.opt */
->  #define SAM            BIT(0)
+After thinking about it more, I think it is very likely that removing
+all the overlays is the correct thing to do in the kexec use-case. When
+kexec-ing, it makes sense that we'd want the exact same behaviour from
+the kexec'ed kernel. That means we want the device drivers to do the
+same thing including loading whatever overlays they depend on.
 
-I came across this patch when I was looking at a pull request from
-Sekhar for EDMA cleanups, and it made me look closer at the contents
-of this file.
+If the flattened tree was left applied, then the behaviour becomes
+different.
 
-The include/linux/platform_data/ directory is meant to hold
-platform_data definitions for drivers, and nothing more.
-platform_data/edma.h also contains a whole bunch of interface
-definitions for the driver. They do not belong there, and should be
-moved to a different include file.
+I say always remove the overlays unless explicitly told not to, but I'm
+struggling to come up with use cases where keeping them applied is
+desirable.
 
-That also includes the above struct, because as far as I can tell it's
-a runtime state structure, not something that is passed in with
-platform data.
+g.
 
-Can someone please clean this up? Thanks.
-
-
--Olof
