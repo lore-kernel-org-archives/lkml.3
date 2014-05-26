@@ -1,93 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaEZHpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:45:32 -0400
-Received: from ozlabs.org ([103.22.144.67]:49422 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231AbaEZHpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:45:31 -0400
-Date: Mon, 26 May 2014 17:45:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>
-Subject: linux-next: manual merge of the cgroup tree with Linus' tree
-Message-ID: <20140526174522.391b5f31@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/jUdNaDOeRqJFmZ.Yocm71Hh"; protocol="application/pgp-signature"
+	id S1751750AbaEZHr4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:47:56 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:63295 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaEZHry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 03:47:54 -0400
+MIME-version: 1.0
+Content-disposition: inline
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfee691-b7f2f6d0000040c4-bd-5382f1a6e77a
+Content-transfer-encoding: 8BIT
+Date: Mon, 26 May 2014 16:46:24 +0900
+From: Changman Lee <cm224.lee@samsung.com>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Jaegeuk Kim'" <jaegeuk@kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid crash when trace
+ f2fs_submit_page_mbio event in ra_sum_pages
+Message-id: <20140526074624.GA28081@cm224.lee>
+References: <005801cf70e7$66cb0090$346101b0$@samsung.com>
+ <1400643406.12240.6.camel@kjgkr> <20140523051413.GB26933@cm224.lee>
+ <00cc01cf78ab$87d88b10$9789a130$@samsung.com>
+In-reply-to: <00cc01cf78ab$87d88b10$9789a130$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zI91lH5uCDbbtlrb43/SRzeLJ+lnM
+	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
+	5vTeYC/YaFdx7cRZ9gbGR/pdjJwcEgImEgs2TGCGsMUkLtxbz9bFyMUhJLCMUeJQx2YWmKL9
+	y26zQySmM0r8f9zFDpLgFRCU+DH5HlARBwezgLzEkUvZIGFmAWmJR39nsEOE1SWmTMmFaP3J
+	KHH1SQcTSA2LgKrE2hvfWEFsNgEtifbTa8F2iQgoSfyav4gVpIFZoJdRYu7iu2ANwgJZEvsX
+	PWKE2KsncfD7FqiD1jNKPNnwCmwSp4CVxJ2F38CKRAVUJKac3Ab2joTAOXaJll2dUKsFJL5N
+	PgR2tYSArMSmA1DvS0ocXHGDZQKj+Cwkv81C+G0Wkt9mIfy2gJFlFaNoakFyQXFSepGpXnFi
+	bnFpXrpecn7uJkZIFE7cwXj/gPUhxmSg5ROZpUST84FRnFcSb2hsZmRhamJqbGRuaUaasJI4
+	b/qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjFs8speUfr1lXBD0OvOZDMvVL+tkg5z2
+	1rAKnZ3iEeqXpZ9ndtK1gvm8TgXv6pRMx4+LNoqI51kHrhHWdlEJ+rmpR2ilZWcD36GbyvNf
+	+102mrDuzf6gvFJvqU9Fey8uXSi3SlRsY+y83TP4D87IUHgpKv+mru/NrmQvE5XQNwvuZjw/
+	sUfqtxJLcUaioRZzUXEiAPyoT4TYAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEKsWRmVeSWpSXmKPExsVy+t9jQd1lH5uCDU5dFbP43/SRzeLJ+lnM
+	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYohoYbTJSE1NSixRS85Lz
+	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA9ioplCXmlAKFAhKLi5X07TBN
+	CA1x07WAaYzQ9Q0JgusxMkADCesYM+b03mAv2GhXce3EWfYGxkf6XYycHBICJhL7l91mh7DF
+	JC7cW8/WxcjFISQwnVHi/+MusASvgKDEj8n3WLoYOTiYBeQljlzKBgkzC0hLPPo7gx0irC4x
+	ZUouROtPRomrTzqYQGpYBFQl1t74xgpiswloSbSfXssCYosIKEn8mr+IFaSBWaCXUWLu4rtg
+	DcICWRL7Fz1ihNirJ3Hw+xZ2iKnrGSWebHgFNolTwErizsJvYEWiAioSU05uY5vAKDgLya2z
+	EG6dheTWWQi3LmBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHOPPpHYwrmywOMQowMGo
+	xMN7wLspWIg1say4MvcQowQHs5IIb/MHoBBvSmJlVWpRfnxRaU5q8SHGZKCvJzJLiSbnA9NP
+	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwFm0tr+m95dJ/
+	euOMXbIcdreSzhz96Sy7vzLjrP6CSB/bleHrj/1baiN2nuvckX1PX8kzB9mZctg+lGP/v6Jj
+	evcuvc0JAiyuPzoarVN/+F1TP9a/qkJvj0aoiJ+xDZM3a3jVwZalqwWcKtfW+gcUsDZF31Gv
+	EgzTm9U3aZnUma8NgVeOhuQrsRRnJBpqMRcVJwIAoTqJsjUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jUdNaDOeRqJFmZ.Yocm71Hh
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 26, 2014 at 02:26:24PM +0800, Chao Yu wrote:
+> Hi changman,
+> 
+> > -----Original Message-----
+> > From: Changman Lee [mailto:cm224.lee@samsung.com]
+> > Sent: Friday, May 23, 2014 1:14 PM
+> > To: Jaegeuk Kim
+> > Cc: Chao Yu; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net
+> > Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid crash when trace f2fs_submit_page_mbio event in
+> > ra_sum_pages
+> > 
+> > On Wed, May 21, 2014 at 12:36:46PM +0900, Jaegeuk Kim wrote:
+> > > Hi Chao,
+> > >
+> > > 2014-05-16 (금), 17:14 +0800, Chao Yu:
+> > > > Previously we allocate pages with no mapping in ra_sum_pages(), so we may
+> > > > encounter a crash in event trace of f2fs_submit_page_mbio where we access
+> > > > mapping data of the page.
+> > > >
+> > > > We'd better allocate pages in bd_inode mapping and invalidate these pages after
+> > > > we restore data from pages. It could avoid crash in above scenario.
+> > > >
+> > > > Call Trace:
+> > > >  [<f1031630>] ? ftrace_raw_event_f2fs_write_checkpoint+0x80/0x80 [f2fs]
+> > > >  [<f10377bb>] f2fs_submit_page_mbio+0x1cb/0x200 [f2fs]
+> > > >  [<f103c5da>] restore_node_summary+0x13a/0x280 [f2fs]
+> > > >  [<f103e22d>] build_curseg+0x2bd/0x620 [f2fs]
+> > > >  [<f104043b>] build_segment_manager+0x1cb/0x920 [f2fs]
+> > > >  [<f1032c85>] f2fs_fill_super+0x535/0x8e0 [f2fs]
+> > > >  [<c115b66a>] mount_bdev+0x16a/0x1a0
+> > > >  [<f102f63f>] f2fs_mount+0x1f/0x30 [f2fs]
+> > > >  [<c115c096>] mount_fs+0x36/0x170
+> > > >  [<c1173635>] vfs_kern_mount+0x55/0xe0
+> > > >  [<c1175388>] do_mount+0x1e8/0x900
+> > > >  [<c1175d72>] SyS_mount+0x82/0xc0
+> > > >  [<c16059cc>] sysenter_do_call+0x12/0x22
+> > > >
+> > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > > ---
+> > > >  fs/f2fs/node.c |   49 ++++++++++++++++++++++++++++---------------------
+> > > >  1 file changed, 28 insertions(+), 21 deletions(-)
+> > > >
+> > > > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > > > index 3d60d3d..b5cd814 100644
+> > > > --- a/fs/f2fs/node.c
+> > > > +++ b/fs/f2fs/node.c
+> > > > @@ -1658,13 +1658,16 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+> > > >
+> > > >  /*
+> > > >   * ra_sum_pages() merge contiguous pages into one bio and submit.
+> > > > - * these pre-readed pages are linked in pages list.
+> > > > + * these pre-readed pages are alloced in bd_inode's mapping tree.
+> > > >   */
+> > > > -static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+> > > > +static int ra_sum_pages(struct f2fs_sb_info *sbi, struct page **pages,
+> > > >  				int start, int nrpages)
+> > > >  {
+> > > >  	struct page *page;
+> > > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
+> > 
+> > How about use sbi->meta_inode instead of bd_inode, then we can do
+> > caching summary pages for further i/o.
+> 
+> In my understanding, In ra_sum_pages() we readahead node pages in NODE segment,
+> then we could padding current summary caching with nid of node page's footer.
+> So we should not cache this readaheaded pages in meta_inode's mapping.
+> Do I miss something?
+> 
+> Regards
+> 
 
-Hi Tejun,
+Sorry, you're right. Forget about caching. I've confused ra_sum_pages with summary segments.
 
-Today's linux-next merge of the cgroup tree got a conflict in
-mm/memcontrol.c between commit 6f6acb00514c ("memcg: fix swapcache
-charge from kernel thread context") from Linus' tree and commit
-ec903c0c858e ("cgroup: rename css_tryget*() to css_tryget_online*()")
-from the cgroup tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc mm/memcontrol.c
-index 5177c6d4a2dd,b6f91d61b3af..000000000000
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@@ -1077,19 -1074,10 +1074,19 @@@ static struct mem_cgroup *get_mem_cgrou
- =20
-  	rcu_read_lock();
-  	do {
- -		memcg =3D mem_cgroup_from_task(rcu_dereference(mm->owner));
- -		if (unlikely(!memcg))
- +		/*
- +		 * Page cache insertions can happen withou an
- +		 * actual mm context, e.g. during disk probing
- +		 * on boot, loopback IO, acct() writes etc.
- +		 */
- +		if (unlikely(!mm))
-  			memcg =3D root_mem_cgroup;
- +		else {
- +			memcg =3D mem_cgroup_from_task(rcu_dereference(mm->owner));
- +			if (unlikely(!memcg))
- +				memcg =3D root_mem_cgroup;
- +		}
-- 	} while (!css_tryget(&memcg->css));
-+ 	} while (!css_tryget_online(&memcg->css));
-  	rcu_read_unlock();
-  	return memcg;
-  }
-
---Sig_/jUdNaDOeRqJFmZ.Yocm71Hh
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTgvEYAAoJEMDTa8Ir7ZwVc9EP/1DrxrZ9bI8SRI8IbN1VxNm8
-tSc59dl1QRemdQksz8+GnjThNz8I9N8JxvEb/7wweLFwtRw5101+ToCbckzeHiJn
-0llcPn8ZWPp2nbvMFM5ceO4vhsu1+ffxrZUByY+UHwLgNXwnjBIo3kDgRGn0EQ5j
-dqTYFECPEVumn1Dj0FUVMHGU0IL/K0DZRH8GhDk93/3YCS8TAL23jUgYCfO3C2GD
-CDjpeqVHsgnbop3Zu7/hSQYNNZb6+9orgMNX96YVwJFTeX14Cl5gneSdcQgFNE1G
-F7tzsE0n6w6Mf+NQiTju123i2vQevYQwVGHEYfLVag0RDSXJy+tm11w0KUtli1gd
-MM0Fn9ybCStIWgE7jmUpujfeBTeTzyAkP1hd7xfo297Jh7Oe7Ix0WDm0OCOuJKcT
-4YoREfFHlSk4BdnnSFjMhGEU/BlWG6RsJB+dcep2UPfnbx8BHMY/aCEZv2sQDM7p
-GKiAy90Nczv3AvBbTKpPLlxODkyTUl7tv47hhPPmNfxuTwuCDjnaGqR30CCo0Wux
-bpKzIhez6OwdZV+7H7WxYIQpfQ02ADE2S8tcYyoti2NCl+/zFLdFfb0LTvOIz6eA
-uU4meQERKSKccA/jCJfmM7jI/uIlyAFxVsxiE8V7pR+2LF8jSWoRGtd+yd6Sr3rN
-Cm/bWHYao8+lSutW+Knc
-=vkXu
------END PGP SIGNATURE-----
-
---Sig_/jUdNaDOeRqJFmZ.Yocm71Hh--
+> > 
+> > > > +	struct address_space *mapping = inode->i_mapping;
+> > > >  	int page_idx = start;
+> > > > +	int alloced, readed;
+> > > >  	struct f2fs_io_info fio = {
+> > > >  		.type = META,
+> > > >  		.rw = READ_SYNC | REQ_META | REQ_PRIO
+> > > > @@ -1672,21 +1675,23 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head
+> > *pages,
+> > > >
+> > > >  	for (; page_idx < start + nrpages; page_idx++) {
+> > > >  		/* alloc temporal page for read node summary info*/
+> > > > -		page = alloc_page(GFP_F2FS_ZERO);
+> > > > +		page = grab_cache_page(mapping, page_idx);
+> > > >  		if (!page)
+> > > >  			break;
+> > > > -
+> > > > -		lock_page(page);
+> > > > -		page->index = page_idx;
+> > > > -		list_add_tail(&page->lru, pages);
+> > > > +		page_cache_release(page);
+> > >
+> > > IMO, we don't need to do like this.
+> > > Instead,
+> > > 	for() {
+> > > 		page = grab_cache_page();
+> > > 		if (!page)
+> > > 			break;
+> > > 		page[page_idx] = page;
+> > > 		f2fs_submit_page_mbio(sbi, page, &fio);
+> > > 	}
+> > > 	f2fs_submit_merged_bio(sbi, META, READ);
+> > > 	return page_idx - start;
+> > >
+> > > Afterwards, in restore_node_summry(),
+> > > 	lock_page() will wait the end_io for read.
+> > > 	...
+> > > 	f2fs_put_page(pages[index], 1);
+> > >
+> > > Thanks,
+> > >
+> > > >  	}
+> > > >
+> > > > -	list_for_each_entry(page, pages, lru)
+> > > > -		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
+> > > > +	alloced = page_idx - start;
+> > > > +	readed = find_get_pages_contig(mapping, start, alloced, pages);
+> > > > +	BUG_ON(alloced != readed);
+> > > > +
+> > > > +	for (page_idx = 0; page_idx < readed; page_idx++)
+> > > > +		f2fs_submit_page_mbio(sbi, pages[page_idx],
+> > > > +					pages[page_idx]->index, &fio);
+> > > >
+> > > >  	f2fs_submit_merged_bio(sbi, META, READ);
+> > > >
+> > > > -	return page_idx - start;
+> > > > +	return readed;
+> > > >  }
+> > > >
+> > > >  int restore_node_summary(struct f2fs_sb_info *sbi,
+> > > > @@ -1694,11 +1699,11 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+> > > >  {
+> > > >  	struct f2fs_node *rn;
+> > > >  	struct f2fs_summary *sum_entry;
+> > > > -	struct page *page, *tmp;
+> > > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
+> > > >  	block_t addr;
+> > > >  	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+> > > > -	int i, last_offset, nrpages, err = 0;
+> > > > -	LIST_HEAD(page_list);
+> > > > +	struct page *pages[bio_blocks];
+> > > > +	int i, index, last_offset, nrpages, err = 0;
+> > > >
+> > > >  	/* scan the node segment */
+> > > >  	last_offset = sbi->blocks_per_seg;
+> > > > @@ -1709,29 +1714,31 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+> > > >  		nrpages = min(last_offset - i, bio_blocks);
+> > > >
+> > > >  		/* read ahead node pages */
+> > > > -		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
+> > > > +		nrpages = ra_sum_pages(sbi, pages, addr, nrpages);
+> > > >  		if (!nrpages)
+> > > >  			return -ENOMEM;
+> > > >
+> > > > -		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+> > > > +		for (index = 0; index < nrpages; index++) {
+> > > >  			if (err)
+> > > >  				goto skip;
+> > > >
+> > > > -			lock_page(page);
+> > > > -			if (unlikely(!PageUptodate(page))) {
+> > > > +			lock_page(pages[index]);
+> > > > +			if (unlikely(!PageUptodate(pages[index]))) {
+> > > >  				err = -EIO;
+> > > >  			} else {
+> > > > -				rn = F2FS_NODE(page);
+> > > > +				rn = F2FS_NODE(pages[index]);
+> > > >  				sum_entry->nid = rn->footer.nid;
+> > > >  				sum_entry->version = 0;
+> > > >  				sum_entry->ofs_in_node = 0;
+> > > >  				sum_entry++;
+> > > >  			}
+> > > > -			unlock_page(page);
+> > > > +			unlock_page(pages[index]);
+> > > >  skip:
+> > > > -			list_del(&page->lru);
+> > > > -			__free_pages(page, 0);
+> > > > +			page_cache_release(pages[index]);
+> > > >  		}
+> > > > +
+> > > > +		invalidate_mapping_pages(inode->i_mapping, addr,
+> > > > +							addr + nrpages);
+> > > >  	}
+> > > >  	return err;
+> > > >  }
+> > >
+> > > --
+> > > Jaegeuk Kim
+> > 
+> > 
+> > 
+> > > ------------------------------------------------------------------------------
+> > > "Accelerate Dev Cycles with Automated Cross-Browser Testing - For FREE
+> > > Instantly run your Selenium tests across 300+ browser/OS combos.
+> > > Get unparalleled scalability from the best Selenium testing platform available
+> > > Simple to use. Nothing to install. Get started now for free."
+> > > http://p.sf.net/sfu/SauceLabs
+> > 
+> > > _______________________________________________
+> > > Linux-f2fs-devel mailing list
+> > > Linux-f2fs-devel@lists.sourceforge.net
+> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
