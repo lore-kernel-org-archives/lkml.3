@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaEZSYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:24:30 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50426 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaEZSY2 (ORCPT
+	id S1751900AbaEZS0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:26:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48752 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466AbaEZS0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:24:28 -0400
-Message-ID: <1401128657.24099.17.camel@localhost.localdomain>
-Subject: [PATCH 1/2] emac: add missing support of 10mbit in emac/rgmii
-From: Ivan Mikhaylov <ivan@ru.ibm.com>
-To: netdev@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alistair Popple <alistair@popple.id.au>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Date: Mon, 26 May 2014 22:24:17 +0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052618-9332-0000-0000-000000E764AD
+	Mon, 26 May 2014 14:26:47 -0400
+Date: Mon, 26 May 2014 19:26:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140526182644.GP18016@ZenIV.linux.org.uk>
+References: <20140526093741.GA1765@lahna.fi.intel.com>
+ <20140526135746.GM18016@ZenIV.linux.org.uk>
+ <20140526142948.GA1685@lahna.fi.intel.com>
+ <20140526152703.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In chips of emac/rgmii b'000' for 0/1 channel isn't suitable which
-resulted in non working network interface in this mode.
+On Mon, May 26, 2014 at 11:17:42AM -0700, Linus Torvalds wrote:
+> On Mon, May 26, 2014 at 8:27 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > That's the livelock.  OK.
+> 
+> Hmm. Is there any reason we don't have some exclusion around
+> "check_submounts_and_drop()"?
+> 
+> That would seem to be the simplest way to avoid any livelock: just
+> don't allow concurrent calls (we could make the lock per-filesystem or
+> whatever). This whole case should all be for just exceptional cases
+> anyway.
+> 
+> We already sleep in that thing (well, "cond_resched()"), so taking a
+> mutex should be fine.
 
-Signed-off-by: Ivan Mikhaylov <ivan@ru.ibm.com>
+What makes you think that it's another check_submounts_and_drop()?
+And not, e.g., shrink_dcache_parent().  Or memory shrinkers.  Or
+some twit sitting in a subdirectory and doing stat(2) in a loop, for
+that matter...
 
----
- drivers/net/ethernet/ibm/emac/rgmii.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/net/ethernet/ibm/emac/rgmii.c b/drivers/net/ethernet/ibm/emac/rgmii.c
-index 4fb2f96..a01182c 100644
---- a/drivers/net/ethernet/ibm/emac/rgmii.c
-+++ b/drivers/net/ethernet/ibm/emac/rgmii.c
-@@ -45,6 +45,7 @@
- 
- /* RGMIIx_SSR */
- #define RGMII_SSR_MASK(idx)	(0x7 << ((idx) * 8))
-+#define RGMII_SSR_10(idx)	(0x1 << ((idx) * 8))
- #define RGMII_SSR_100(idx)	(0x2 << ((idx) * 8))
- #define RGMII_SSR_1000(idx)	(0x4 << ((idx) * 8))
- 
-@@ -139,6 +140,8 @@ void rgmii_set_speed(struct platform_device *ofdev, int input, int speed)
- 		ssr |= RGMII_SSR_1000(input);
- 	else if (speed == SPEED_100)
- 		ssr |= RGMII_SSR_100(input);
-+	else if (speed == SPEED_10)
-+		ssr |= RGMII_SSR_10(input);
- 
- 	out_be32(&p->ssr, ssr);
- 
--- 
-1.9.3
-
-
-
+I really, really wonder WTF is causing that - we have spent 20-odd
+seconds spinning while dentries in there were being evicted by
+something.  That - on sysfs, where dentry_kill() should be non-blocking
+and very fast.  Something very fishy is going on and I'd really like
+to understand the use pattern we are seeing there.
