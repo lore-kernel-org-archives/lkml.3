@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaEZTxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:53:34 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:62464 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751232AbaEZTxd (ORCPT
+	id S1752162AbaEZTxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:53:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48796 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935AbaEZTxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:53:33 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiQKAGibg1NbsG99/2dsb2JhbABZgwdSqlEEAQEBAQEBBQGDPJRQgRUXdIJTExwjGIECJBOIRgHVJIVViH2ERwEDjz+KMwGLF4gQgXiBQjs
-Date: Mon, 26 May 2014 21:53:30 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jonathan Corbet <corbet@lwn.net>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] Documentation/filesystems/seq_file.txt:
- create_proc_entry deprecated
-Message-Id: <20140526215330.b258fa45046b9f801491d5e9@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 May 2014 15:53:44 -0400
+Date: Mon, 26 May 2014 20:53:41 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/process_vm_access: move into ipc/
+Message-ID: <20140526195341.GQ18016@ZenIV.linux.org.uk>
+References: <20140524135925.32597.45754.stgit@zurg>
+ <alpine.LSU.2.11.1405261210140.3411@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1405261210140.3411@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linked article in seq_file.txt still uses create_proc_entry which was removed in
+On Mon, May 26, 2014 at 12:16:20PM -0700, Hugh Dickins wrote:
+> On Sat, 24 May 2014, Konstantin Khlebnikov wrote:
+> 
+> > "CROSS_MEMORY_ATTACH" and mm/process_vm_access.c seems misnamed and misplaced.
+> > Actually it's a kind of IPC and it has no more relation to MM than sys_read().
+> > This patch moves code into ipc/ and config option into init/Kconfig.
+> > 
+> > Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+> 
+> I disagree, and SysV's ipc/ isn't where I would expect to find it.
+> How about we just leave it where it is in mm?
 
-80e928f7ebb958
-"proc: Kill create_proc_entry()"
+Anything playing with get_user_pages(tsk, ...) with tsk != current is very
+much a part of VM guts.
 
-This patch adds information for kernel 3.10 and above
-
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- Documentation/filesystems/seq_file.txt | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-index a1e2e0d..1fe0ccb 100644
---- a/Documentation/filesystems/seq_file.txt
-+++ b/Documentation/filesystems/seq_file.txt
-@@ -54,6 +54,15 @@ how the mechanism works without getting lost in other details.  (Those
- wanting to see the full source for this module can find it at
- http://lwn.net/Articles/22359/).
- 
-+Deprecated create_proc_entry
-+
-+Note that the above article uses create_proc_entry which was removed in
-+kernel 3.10. Current versions require the following update
-+
-+-	entry = create_proc_entry("sequence", 0, NULL);
-+-	if (entry)
-+-		entry->proc_fops = &ct_file_ops;
-++	entry = proc_create("sequence", 0, NULL, &ct_file_ops);
- 
- The iterator interface
- 
--- 
-1.9.1
+While we are at it, do_generic_file_read() *is* in mm/filemap.c.  And signals
+and pipes are also "a kind of IPC", so the rationale is really weak.
