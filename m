@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaEZTdy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:33:54 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:51391 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603AbaEZTdx (ORCPT
+	id S1751849AbaEZThB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:37:01 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:52612 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaEZTg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:33:53 -0400
-Date: Mon, 26 May 2014 21:33:50 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/5] irq_work: Split raised and lazy lists
-Message-ID: <20140526193347.GJ2066@localhost.localdomain>
-References: <1401028191-29756-1-git-send-email-fweisbec@gmail.com>
- <1401028191-29756-2-git-send-email-fweisbec@gmail.com>
- <20140526155944.GL30445@twins.programming.kicks-ass.net>
- <20140526165312.GF2066@localhost.localdomain>
- <20140526192633.GB5444@laptop.programming.kicks-ass.net>
+	Mon, 26 May 2014 15:36:59 -0400
+Date: Mon, 26 May 2014 12:35:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Davidlohr Bueso <davidlohr@hp.com>
+cc: akpm@linux-foundation.org, mingo@kernel.org, peterz@infradead.org,
+        riel@redhat.com, mgorman@suse.de, aswin@hp.com, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] mm/rmap: share the i_mmap_rwsem
+In-Reply-To: <1400816006-3083-5-git-send-email-davidlohr@hp.com>
+Message-ID: <alpine.LSU.2.11.1405261216460.3411@eggly.anvils>
+References: <1400816006-3083-1-git-send-email-davidlohr@hp.com> <1400816006-3083-5-git-send-email-davidlohr@hp.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140526192633.GB5444@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 09:26:33PM +0200, Peter Zijlstra wrote:
-> On Mon, May 26, 2014 at 06:53:13PM +0200, Frederic Weisbecker wrote:
-> > On Mon, May 26, 2014 at 05:59:44PM +0200, Peter Zijlstra wrote:
-> > > On Sun, May 25, 2014 at 04:29:47PM +0200, Frederic Weisbecker wrote:
-> > > > An irq work can be handled from two places: from the tick if the work
-> > > > carries the "lazy" flag and the tick is periodic, or from a self IPI.
-> > > > 
-> > > > We merge all these works in a single list and we use some per cpu latch
-> > > > to avoid raising a self-IPI when one is already pending.
-> > > > 
-> > > > Now we could do away with this ugly latch if only the list was only made of
-> > > > non-lazy works. Just enqueueing a work on the empty list would be enough
-> > > > to know if we need to raise an IPI or not.
-> > > > 
-> > > > Also we are going to implement remote irq work queuing. Then the per CPU
-> > > > latch will need to become atomic in the global scope. That's too bad
-> > > > because, here as well, just enqueueing a work on an empty list of
-> > > > non-lazy works would be enough to know if we need to raise an IPI or not.
-> > > > 
-> > > > So lets take a way out of this: split the works in two distinct lists,
-> > > > one for the works that can be handled by the next tick and another
-> > > > one for those handled by the IPI. Just checking if the latter is empty
-> > > > when we queue a new work is enough to know if we need to raise an IPI.
-> > > 
-> > > That ^
-> > > 
-> > > >  bool irq_work_queue(struct irq_work *work)
-> > > >  {
-> > > > +	unsigned long flags;
-> > > > +
-> > > >  	/* Only queue if not already pending */
-> > > >  	if (!irq_work_claim(work))
-> > > >  		return false;
-> > > >  
-> > > > -	/* Queue the entry and raise the IPI if needed. */
-> > > > -	preempt_disable();
-> > > > +	/* Check dynticks safely */
-> > > > +	local_irq_save(flags);
-> > > 
-> > > Does not mention this ^
-> > > 
-> > > 'sup?
-> > 
-> > Because it's really just a technical detail.
-> > If we enqueue before checking for tick stopped, we can avoid disabling irqs
-> > because it's fine if we just raced with an irq in-between.
-> > 
-> > But now that we enqueue _after_, we can't afford an IRQ in between.
-> > 
-> > Should I update the comments maybe?
-> 
-> Well, yes because it was entirely non-obvious, but maybe we can write it
-> such that we can avoid the irq disable, because they're expensive.
-> 
-> How about something like:
-> 
-> 	if (work->flags & IRQ_WORK_LAZY) {
-> 		if (llist_add(&work->llnode, __get_cpu_var(lazy_list)) && 
-> 		    tick_nohz_tick_stopped())
-> 			arch_irq_work_raise();
-> 	} else {
-> 		if (llist_add(&work->llnode, __get_cpu_var(raise_list)))
-> 			arch_irq_work_raise();
-> 	}
-> 
-> That way we check it after the enqueue.
+On Thu, 22 May 2014, Davidlohr Bueso wrote:
 
-Hmm, ok.
+> Similarly to rmap_walk_anon() and collect_procs_anon(),
+> there is opportunity to share the lock in rmap_walk_file()
+> and collect_procs_file() for file backed pages.
+
+And lots of other places, no?  I welcome i_mmap_rwsem, but I think
+you're approaching it wrongly to separate this off from 2/5, then
+follow anon_vma for the places that can be converted to lock_read().
+
+If you go back through 2/5 and study the context of each, I think
+you'll find most make no modification to the tree, and can well
+use the lock_read() rather than the lock_write().
+
+I could be wrong, but I don't think there are any hidden gotchas.
+There certainly are in the anon_vma case (where THP makes special
+use of the anon_vma lock), and used to be in the i_mmap_lock case
+(when invalidation had to be single-threaded across cond_rescheds),
+but I think i_mmap_rwsem should be straightforward.
+
+Sure, it's safe to use the lock_write() variant, but please don't
+prefer it to lock_read() without good reason.
+
+Hugh
+
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/linux/fs.h  | 10 ++++++++++
+>  mm/memory-failure.c |  4 ++--
+>  mm/rmap.c           |  4 ++--
+>  3 files changed, 14 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 60a1d7d..4c2c228 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -467,6 +467,16 @@ static inline void i_mmap_unlock_write(struct address_space *mapping)
+>  	up_write(&mapping->i_mmap_rwsem);
+>  }
+>  
+> +static inline void i_mmap_lock_read(struct address_space *mapping)
+> +{
+> +	down_read(&mapping->i_mmap_rwsem);
+> +}
+> +
+> +static inline void i_mmap_unlock_read(struct address_space *mapping)
+> +{
+> +	up_read(&mapping->i_mmap_rwsem);
+> +}
+> +
+>  /*
+>   * Might pages of this file be mapped into userspace?
+>   */
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index 1389a28..acbcd8e 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -434,7 +434,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+>  	struct task_struct *tsk;
+>  	struct address_space *mapping = page->mapping;
+>  
+> -	i_mmap_lock_write(mapping);
+> +	i_mmap_lock_read(mapping);
+>  	read_lock(&tasklist_lock);
+>  	for_each_process(tsk) {
+>  		pgoff_t pgoff = page_pgoff(page);
+> @@ -456,7 +456,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+>  		}
+>  	}
+>  	read_unlock(&tasklist_lock);
+> -	i_mmap_unlock_write(mapping);
+> +	i_mmap_unlock_read(mapping);
+>  }
+>  
+>  /*
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 9a56e4f..5841dcb 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1685,7 +1685,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
+>  
+>  	if (!mapping)
+>  		return ret;
+> -	i_mmap_lock_write(mapping);
+> +	i_mmap_lock_read(mapping);
+>  	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+>  		unsigned long address = vma_address(page, vma);
+>  
+> @@ -1708,7 +1708,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
+>  	ret = rwc->file_nonlinear(page, mapping, rwc->arg);
+>  
+>  done:
+> -	i_mmap_unlock_write(mapping);
+> +	i_mmap_unlock_read(mapping);
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.8.1.4
