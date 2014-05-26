@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaEZWFf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 18:05:35 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:38512 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932AbaEZWFe (ORCPT
+	id S1751624AbaEZWHC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 18:07:02 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:64146 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaEZWHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 18:05:34 -0400
-Date: Mon, 26 May 2014 23:05:29 +0100
+	Mon, 26 May 2014 18:07:00 -0400
+Date: Mon, 26 May 2014 23:06:55 +0100
 From: Daniel Walter <dwalter@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: eric.y.miao@gmail.com, richard@nod.at
-Subject: [PATCH 03/12] [arch/arm/mach-pxa] Remove obsolete strict_strto calls
-Message-ID: <20140526220529.GE25779@google.com>
+Cc: ben-linux@fluff.org, richard@nod.at
+Subject: [PATCH 04/12] [arch/arm/mach-s3c24xx] Remove obsolete strict_strto
+ calls
+Message-ID: <20140526220655.GF25779@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,42 +23,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Walter <dwalter@google.com>
-Subject: [PATCH 03/12] [arch/arm/mach-pxa] replace strict_strto call with kstrto
+Subject: [PATCH 04/12] [arch/arm/mach-s3c24xx] replace strict_strto* with kstrto*
 
-Replace obsolete call to strict_strto with kstrto
+Replace obsolete strict_strto call with kstrto
 
 Signed-off-by: Daniel Walter <dwalter@google.com>
 ---
- arch/arm/mach-pxa/balloon3.c | 2 +-
- arch/arm/mach-pxa/viper.c    | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-s3c24xx/mach-jive.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-pxa/balloon3.c b/arch/arm/mach-pxa/balloon3.c
-index 43596e0..d897292 100644
---- a/arch/arm/mach-pxa/balloon3.c
-+++ b/arch/arm/mach-pxa/balloon3.c
-@@ -90,7 +90,7 @@ int __init parse_balloon3_features(char *arg)
- 	if (!arg)
+diff --git a/arch/arm/mach-s3c24xx/mach-jive.c b/arch/arm/mach-s3c24xx/mach-jive.c
+index 5faa723..a4024c2 100644
+--- a/arch/arm/mach-s3c24xx/mach-jive.c
++++ b/arch/arm/mach-s3c24xx/mach-jive.c
+@@ -243,7 +243,7 @@ static int __init jive_mtdset(char *options)
+ 	if (options == NULL || options[0] == '\0')
  		return 0;
  
--	return strict_strtoul(arg, 0, &balloon3_features_present);
-+	return kstrtoul(arg, 0, &balloon3_features_present);
- }
- early_param("balloon3_features", parse_balloon3_features);
- 
-diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
-index 41f27f6..de3b080 100644
---- a/arch/arm/mach-pxa/viper.c
-+++ b/arch/arm/mach-pxa/viper.c
-@@ -769,7 +769,7 @@ static unsigned long viper_tpm;
- 
- static int __init viper_tpm_setup(char *str)
- {
--	return strict_strtoul(str, 10, &viper_tpm) >= 0;
-+	return kstrtoul(str, 10, &viper_tpm) >= 0;
- }
- 
- __setup("tpm=", viper_tpm_setup);
+-	if (strict_strtoul(options, 10, &set)) {
++	if (kstrtoul(options, 10, &set)) {
+ 		printk(KERN_ERR "failed to parse mtdset=%s\n", options);
+ 		return 0;
+ 	}
 -- 
 1.9.3
 
