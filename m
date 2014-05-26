@@ -1,116 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaEZPed (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:34:33 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:49635 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704AbaEZPea (ORCPT
+	id S1753174AbaEZPft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:35:49 -0400
+Received: from romulus.wittsend.com ([130.205.32.3]:53640 "EHLO
+	romulus.wittsend.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180AbaEZPfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:34:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Pawel Moll <pawel.moll@arm.com>, Lee Jones <lee.jones@linaro.org>,
+	Mon, 26 May 2014 11:35:43 -0400
+Message-ID: <1401118325.7572.82.camel@canyon.ip6.wittsend.com>
+Subject: Re: [lxc-devel] [RFC PATCH 11/11] loop: Allow priveleged operations
+ for root in the namespace which owns a device
+From: "Michael H. Warfield" <mhw@WittsEnd.com>
+Reply-To: mhw@WittsEnd.com
+To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
+Cc: "Michael H.Warfield" <mhw@WittsEnd.com>, Marian Marinov <mm@1h.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: vexpress: refine dependencies for new code
-Date: Mon, 26 May 2014 17:34:24 +0200
-Message-ID: <6862654.ZzBrnrRESe@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:yUPeQRPeWNEChrvfjofjEYWgVNbaE/wv1jaXw35DxT5
- LlyaJ/RljaKeus0vpA4jYMqjW+dmWTC/hlsuYGEKRdtnw608hK
- VzLBlxmhJGYZcTEgqxgyw1OqlmMVu8l/xUZ/S+7GDb57onGt4e
- 7fgrKMwDNVh5nyjX63OL0H1j6vI08/6Cj3q4ppy8+f10WE8dtp
- I+Vb3N9G6LwlH8/naSU1UVbFPhjBqHb4yxnXL2pn6GNKAdIAaF
- CnQGzDCeiQn+mD4Q8wEJLZxyL59udKyFpzZEBcYrlgGboRGTqc
- szR+scoe60GxqtalWZSdtdx2ScFaXNNkLoBePbqYsvRLWSjuoV
- yjRncm/Zg6wm/77arKd0=
+Date: Mon, 26 May 2014 11:32:05 -0400
+In-Reply-To: <20140526091614.GA13666@ubuntu-mba51>
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+	 <1400103299-144589-12-git-send-email-seth.forshee@canonical.com>
+	 <537EE129.1020603@1h.com> <20140526091614.GA13666@ubuntu-mba51>
+Organization: Thaumaturgy & Speculums Technology
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-Kfe4mcxTS8ZwNLMY4/4g"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+X-WittsEnd-MailScanner-Information: Please contact the ISP for more information
+X-WittsEnd-MailScanner-ID: s4QFW6qp003751
+X-WittsEnd-MailScanner: Found to be clean
+X-WittsEnd-MailScanner-From: mhw@wittsend.com
+X-WittsEnd-MailScanner-Watermark: 1401723130.09026@gkjpo6ee3Y8E+ASnmA++AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The versatile express changes for 3.16 introduced a number of
-build regressions for randconfig kernels by not tracking dependencies
-between the components right.
 
-This patch tries to rectify that:
+--=-Kfe4mcxTS8ZwNLMY4/4g
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-* the mach-vexpress code cannot link without the syscfg driver,
-  which in turn needs MFD_VEXPRESS_SYSREG
-* various drivers call devm_regmap_init_vexpress_config(), which
-  has to be exported so it can be used by loadable modules
-* the configuration bus uses OF DT helper functions that are not
-  available to platforms disable CONFIG_OF
-* The sysreg driver exports GPIOs through gpiolib, which can
-  be disabled on some platforms.
-* The clocksource code cannot be built on platforms that don't
-  use modern timekeeping but rely on gettimeoffset.
+On Mon, 2014-05-26 at 11:16 +0200, Seth Forshee wrote:
+> On Fri, May 23, 2014 at 08:48:25AM +0300, Marian Marinov wrote:
+> > -----BEGIN PGP SIGNED MESSAGE-----
+> > Hash: SHA1
+> >=20
+> > One question about this patch.
+> >=20
+> > Why don't you use the devices cgroup check if the root user in that nam=
+espace is allowed to use this device?
+> >=20
+> > This way you can be sure that the root in that namespace can not access=
+ devices to which the host system did not gave
+> > him access to.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> That might be possible, but I don't want to require something on the
+> host to whitelist the device for the container. Then loop would need to
+> automatically add the device to devices.allow, which doesn't seem
+> desirable to me. But I'm not entirely opposed to the idea if others
+> think this is a better way to go.
 
-diff --git a/arch/arm/mach-vexpress/Kconfig b/arch/arm/mach-vexpress/Kconfig
-index e0726e4..2cc994e 100644
---- a/arch/arm/mach-vexpress/Kconfig
-+++ b/arch/arm/mach-vexpress/Kconfig
-@@ -18,6 +18,8 @@ menuconfig ARCH_VEXPRESS
- 	select POWER_SUPPLY
- 	select REGULATOR_FIXED_VOLTAGE if REGULATOR
- 	select VEXPRESS_CONFIG
-+	select VEXPRESS_SYSCFG
-+	select MFD_VEXPRESS_SYSREG
- 	help
- 	  This option enables support for systems using Cortex processor based
- 	  ARM core and logic (FPGA) tiles on the Versatile Express motherboard,
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index 827f8a5..1f37d98 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -54,6 +54,7 @@ config VEXPRESS_CONFIG
- 	bool "Versatile Express configuration bus"
- 	default y if ARCH_VEXPRESS
- 	depends on ARM || ARM64
-+	depends on OF
- 	select REGMAP
- 	help
- 	  Platform configuration infrastructure for the ARM Ltd.
-diff --git a/drivers/bus/vexpress-config.c b/drivers/bus/vexpress-config.c
-index 27a07df..a64763b 100644
---- a/drivers/bus/vexpress-config.c
-+++ b/drivers/bus/vexpress-config.c
-@@ -118,7 +118,7 @@ struct regmap *devm_regmap_init_vexpress_config(struct device *dev)
- 
- 	return regmap;
- }
--
-+EXPORT_SYMBOL_GPL(devm_regmap_init_vexpress_config);
- 
- struct device *vexpress_config_bridge_register(struct device *parent,
- 		struct vexpress_config_bridge_ops *ops, void *context)
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 2c27b02..43f1acf 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -194,7 +194,7 @@ config CLKSRC_QCOM
- 
- config CLKSRC_VERSATILE
- 	bool "ARM Versatile (Express) reference platforms clock source"
--	depends on GENERIC_SCHED_CLOCK
-+	depends on GENERIC_SCHED_CLOCK && !ARCH_USES_GETTIMEOFFSET
- 	select CLKSRC_OF
- 	default y if MFD_VEXPRESS_SYSREG
- 	help
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index a3987af..6cc4b6a 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1261,7 +1261,7 @@ endmenu
- 
- config MFD_VEXPRESS_SYSREG
- 	bool "Versatile Express System Registers"
--	depends on VEXPRESS_CONFIG
-+	depends on VEXPRESS_CONFIG && GPIOLIB
- 	default y
- 	select CLKSRC_MMIO
- 	select GPIO_GENERIC_PLATFORM
+I don't see any safe way to avoid it.  The host has to be in control of
+what devices can and can not be accessed by the container.
+
+> Seth
+
+Regards,
+Mike
+--=20
+Michael H. Warfield (AI4NB) | (770) 978-7061 |  mhw@WittsEnd.com
+   /\/\|=3Dmhw=3D|\/\/          | (678) 463-0932 |  http://www.wittsend.com=
+/mhw/
+   NIC whois: MHW9          | An optimist believes we live in the best of a=
+ll
+ PGP Key: 0x674627FF        | possible worlds.  A pessimist is sure of it!
+
+
+--=-Kfe4mcxTS8ZwNLMY4/4g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQEVAwUAU4NedcDrlnVnRif/AQglggf+Iu35K45u4EYY+LCEQdUPuokcXDkWWajp
+rQr2A1BB7xBWz8SIG8seIMdYmMBEyFBEf8lIQDMg3tzrfK1evXaLv8DV9cRtAzDG
+qcv5Y3g77zfTuH2G3v3qkA0m4+Mr0+iAFtWDpx2c5MqG8JikS958vWrI+zUkEzJe
+QBIoKkGxrNsJMcbWPkalFaYPDRiDUSAi8pVfeSvtx3NZ3Svyp0Oq1IHAEBbHcCpr
+sG5In/w4SqujbkXgw0McQqVlVXJ2co44ZdShHP8ObwB9BURlc+brKkiRslIHEze4
+xFrZBblVeCnHMpCr7TTjmME8s86efOwkV0pSWB6plHtkHotq4kT2JA==
+=Jpae
+-----END PGP SIGNATURE-----
+
+--=-Kfe4mcxTS8ZwNLMY4/4g--
 
