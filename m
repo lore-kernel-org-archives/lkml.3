@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaEZISm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 04:18:42 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:29271 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841AbaEZISk (ORCPT
+	id S1751957AbaEZISx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 04:18:53 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:37360 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaEZISt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 04:18:40 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-93-5382f8cfcf55
+	Mon, 26 May 2014 04:18:49 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-72-5382f8d41dd0
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: dri-devel@lists.freedesktop.org
 Cc: YoungJun Cho <yj44.cho@samsung.com>,
@@ -18,155 +18,171 @@ Cc: YoungJun Cho <yj44.cho@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 4/9] drm/exynos: ipp: add cmd_lock for cmd_list
-Date: Mon, 26 May 2014 10:17:18 +0200
-Message-id: <1401092243-25568-5-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 5/9] drm/exynos: ipp: add ipp_remove_id()
+Date: Mon, 26 May 2014 10:17:19 +0200
+Message-id: <1401092243-25568-6-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401092243-25568-1-git-send-email-a.hajda@samsung.com>
 References: <1401092243-25568-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xa7rnfzQFG5xYb2px5et7NotJ9yew
-	WLy4d5HF4mzTG3aLy7vmsFnMOL+PyWLtkbvsFjMmv2Sz2LtzMqMDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJWx/loHU8Fj9Ypb656xNTAeVOxi5OSQEDCROLxtAxuELSZx4d56
-	IJuLQ0hgKaPE72/TWUESQgJ9TBJ9R5RBbDYBTYm/m2+CNYgIKEv8nbiKEaSBWeAjk0TL9w/s
-	XYwcHMIC9hInNiaC1LAIqEp03N7MCGLzCjhLNCxoY4ZYJidx8thksPmcAi4Srz+uZAJpFQKq
-	+f2dfwIj7wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYISH1dQfj0mNWhxgFOBiVeHhf
-	5DUFC7EmlhVX5h5ilOBgVhLhbf4AFOJNSaysSi3Kjy8qzUktPsTIxMEp1cDYcGphn/HqHxXX
-	Uq/HcCi3iMfoqa+XXNBqtuZS44Sn9twHPI/nzjHdMmOdbXTR6m/WZckb5osUMxyOiotd+KxI
-	5PTlEPFTttF/lXLijkode9pmlK9cFOkuLpDUcynOUObsN4GlwlYx17Y9V2/69pT70SsebU+h
-	SzOZthfyOvFV7tA9fb4v57ESS3FGoqEWc1FxIgDZVy6CBwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xa7pXfjQFG0zq1LO48vU9m8Wk+xNY
+	LF7cu8hicbbpDbvF5V1z2CxmnN/HZLH2yF12ixmTX7JZ7N05mdGB0+N+93Emj74tqxg9Pm+S
+	C2CO4rJJSc3JLEst0rdL4Mp4PauPreCuSsXM6b4NjOvkuhg5OSQETCRaeiezQNhiEhfurWfr
+	YuTiEBJYyiix4co/Rginj0ni4OVZjCBVbAKaEn8332QDsUUElCX+TlwFVsQs8JFJouX7B3aQ
+	hLCApcSj/b/BxrIIqEp8nvAerJlXwFli2ovtUOvkJE4em8wKYnMKuEi8/riSqYuRA2ibs8Tv
+	7/wTGHkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJqi87GBcfszrEKMDBqMTDeyKo
+	KViINbGsuDL3EKMEB7OSCG/zB6AQb0piZVVqUX58UWlOavEhRiYOTqkGRhPmHT8zGh5YPl1y
+	M76VJ1WTvYv9Kl/21kL52V+bY/XTJtb5Ppa0lVR5YWQdc2PFjtsS5pmVa36kt+XFbP8Svkr8
+	XdKzM3cSLl9bvuA8h++b1X/vT/m7wLdUvPdhMf+KWEXflVWZukeeZCtJm/ar2sj2XzixYqW/
+	3deHHOY/nP7UlZ5tuPXmsRJLcUaioRZzUXEiALmX2hEIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: YoungJun Cho <yj44.cho@samsung.com>
 
-This patch adds cmd_lock for cmd_list synchronization.
+This patch adds ipp_remove_id() for idr resource free.
 
 Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
 Acked-by: Seong-Woo Kim <sw0312.kim@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 Tested-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 20 ++++++++++++++++++--
- drivers/gpu/drm/exynos/exynos_drm_ipp.h |  2 ++
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 42 ++++++++++++++++++++++++---------
+ 1 file changed, 31 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 0d85433..b60ae54 100644
+index b60ae54..f1c51b4 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -284,9 +284,14 @@ static struct exynos_drm_ippdrv *ipp_find_drv_by_handle(u32 prop_id)
- 	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
- 		DRM_DEBUG_KMS("count[%d]ippdrv[0x%x]\n", count++, (int)ippdrv);
+@@ -167,6 +167,13 @@ static int ipp_create_id(struct idr *id_idr, struct mutex *lock, void *obj,
+ 	return 0;
+ }
  
--		list_for_each_entry(c_node, &ippdrv->cmd_list, list)
--			if (c_node->property.prop_id == prop_id)
-+		mutex_lock(&ippdrv->cmd_lock);
-+		list_for_each_entry(c_node, &ippdrv->cmd_list, list) {
-+			if (c_node->property.prop_id == prop_id) {
-+				mutex_unlock(&ippdrv->cmd_lock);
- 				return ippdrv;
-+			}
-+		}
-+		mutex_unlock(&ippdrv->cmd_lock);
- 	}
- 
- 	return ERR_PTR(-ENODEV);
-@@ -318,6 +323,7 @@ int exynos_drm_ipp_get_property(struct drm_device *drm_dev, void *data,
- 	if (!prop_list->ipp_id) {
- 		list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list)
- 			count++;
++static void ipp_remove_id(struct idr *id_idr, struct mutex *lock, u32 id)
++{
++	mutex_lock(lock);
++	idr_remove(id_idr, id);
++	mutex_unlock(lock);
++}
 +
- 		/*
- 		 * Supports ippdrv list count for user application.
- 		 * First step user application getting ippdrv count.
-@@ -379,9 +385,11 @@ static int ipp_find_and_set_property(struct drm_exynos_ipp_property *property)
- 	 * when we find this command no using prop_id.
- 	 * return property information set in this command node.
- 	 */
-+	mutex_lock(&ippdrv->cmd_lock);
- 	list_for_each_entry(c_node, &ippdrv->cmd_list, list) {
- 		if ((c_node->property.prop_id == prop_id) &&
- 		    (c_node->state == IPP_STATE_STOP)) {
-+			mutex_unlock(&ippdrv->cmd_lock);
- 			DRM_DEBUG_KMS("found cmd[%d]ippdrv[0x%x]\n",
- 				property->cmd, (int)ippdrv);
- 
-@@ -389,6 +397,7 @@ static int ipp_find_and_set_property(struct drm_exynos_ipp_property *property)
- 			return 0;
- 		}
+ static void *ipp_find_obj(struct idr *id_idr, struct mutex *lock, u32 id)
+ {
+ 	void *obj;
+@@ -501,7 +508,7 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
+ 	c_node->start_work = ipp_create_cmd_work();
+ 	if (IS_ERR(c_node->start_work)) {
+ 		DRM_ERROR("failed to create start work.\n");
+-		goto err_clear;
++		goto err_remove_id;
  	}
-+	mutex_unlock(&ippdrv->cmd_lock);
  
- 	DRM_ERROR("failed to search property.\n");
+ 	c_node->stop_work = ipp_create_cmd_work();
+@@ -542,16 +549,22 @@ err_free_stop:
+ 	kfree(c_node->stop_work);
+ err_free_start:
+ 	kfree(c_node->start_work);
++err_remove_id:
++	ipp_remove_id(&ctx->prop_idr, &ctx->prop_lock, property->prop_id);
+ err_clear:
+ 	kfree(c_node);
+ 	return ret;
+ }
  
-@@ -519,7 +528,9 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
+-static void ipp_clean_cmd_node(struct drm_exynos_ipp_cmd_node *c_node)
++static void ipp_clean_cmd_node(struct ipp_context *ctx,
++				struct drm_exynos_ipp_cmd_node *c_node)
+ {
+ 	/* delete list */
+ 	list_del(&c_node->list);
  
- 	INIT_LIST_HEAD(&c_node->event_list);
- 	list_splice_init(&priv->event_list, &c_node->event_list);
-+	mutex_lock(&ippdrv->cmd_lock);
- 	list_add_tail(&c_node->list, &ippdrv->cmd_list);
-+	mutex_unlock(&ippdrv->cmd_lock);
- 
- 	/* make dedicated state without m2m */
- 	if (!ipp_is_m2m_cmd(property->cmd))
-@@ -1110,10 +1121,12 @@ int exynos_drm_ipp_cmd_ctrl(struct drm_device *drm_dev, void *data,
- 
++	ipp_remove_id(&ctx->prop_idr, &ctx->prop_lock,
++			c_node->property.prop_id);
++
+ 	/* destroy mutex */
+ 	mutex_destroy(&c_node->lock);
+ 	mutex_destroy(&c_node->mem_lock);
+@@ -1122,7 +1135,7 @@ int exynos_drm_ipp_cmd_ctrl(struct drm_device *drm_dev, void *data,
  		c_node->state = IPP_STATE_STOP;
  		ippdrv->dedicated = false;
-+		mutex_lock(&ippdrv->cmd_lock);
- 		ipp_clean_cmd_node(c_node);
+ 		mutex_lock(&ippdrv->cmd_lock);
+-		ipp_clean_cmd_node(c_node);
++		ipp_clean_cmd_node(ctx, c_node);
  
  		if (list_empty(&ippdrv->cmd_list))
  			pm_runtime_put_sync(ippdrv->dev);
-+		mutex_unlock(&ippdrv->cmd_lock);
- 		break;
- 	case IPP_CTRL_PAUSE:
- 		cmd_work = c_node->stop_work;
-@@ -1688,6 +1701,7 @@ static int ipp_subdrv_probe(struct drm_device *drm_dev, struct device *dev)
- 		ippdrv->event_workq = ctx->event_workq;
- 		ippdrv->sched_event = ipp_sched_event;
- 		INIT_LIST_HEAD(&ippdrv->cmd_list);
-+		mutex_init(&ippdrv->cmd_lock);
+@@ -1686,7 +1699,7 @@ static int ipp_subdrv_probe(struct drm_device *drm_dev, struct device *dev)
+ 				    &ipp_id);
+ 		if (ret || ipp_id == 0) {
+ 			DRM_ERROR("failed to create id.\n");
+-			goto err_idr;
++			goto err;
+ 		}
  
- 		if (is_drm_iommu_supported(drm_dev)) {
+ 		DRM_DEBUG_KMS("count[%d]ippdrv[0x%x]ipp_id[%d]\n",
+@@ -1707,34 +1720,40 @@ static int ipp_subdrv_probe(struct drm_device *drm_dev, struct device *dev)
  			ret = drm_iommu_attach_device(drm_dev, ippdrv->dev);
-@@ -1757,6 +1771,7 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
- 	DRM_DEBUG_KMS("for priv[0x%x]\n", (int)priv);
- 
- 	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
-+		mutex_lock(&ippdrv->cmd_lock);
- 		list_for_each_entry_safe(c_node, tc_node,
- 			&ippdrv->cmd_list, list) {
- 			DRM_DEBUG_KMS("count[%d]ippdrv[0x%x]\n",
-@@ -1781,6 +1796,7 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
- 					pm_runtime_put_sync(ippdrv->dev);
+ 			if (ret) {
+ 				DRM_ERROR("failed to activate iommu\n");
+-				goto err_iommu;
++				goto err;
  			}
  		}
-+		mutex_unlock(&ippdrv->cmd_lock);
  	}
  
- 	kfree(priv);
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-index fbb80ac..09cb5a2 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-@@ -148,6 +148,7 @@ struct exynos_drm_ipp_ops {
-  * @event_workq: event work queue.
-  * @c_node: current command information.
-  * @cmd_list: list head for command information.
-+ * @cmd_lock: lock for synchronization of access to cmd_list.
-  * @prop_list: property informations of current ipp driver.
-  * @check_property: check property about format, size, buffer.
-  * @reset: reset ipp block.
-@@ -165,6 +166,7 @@ struct exynos_drm_ippdrv {
- 	struct workqueue_struct	*event_workq;
- 	struct drm_exynos_ipp_cmd_node *c_node;
- 	struct list_head	cmd_list;
-+	struct mutex	cmd_lock;
- 	struct drm_exynos_ipp_prop_list prop_list;
+ 	return 0;
  
- 	int (*check_property)(struct device *dev,
+-err_iommu:
++err:
+ 	/* get ipp driver entry */
+-	list_for_each_entry_reverse(ippdrv, &exynos_drm_ippdrv_list, drv_list)
++	list_for_each_entry_continue_reverse(ippdrv, &exynos_drm_ippdrv_list,
++						drv_list) {
+ 		if (is_drm_iommu_supported(drm_dev))
+ 			drm_iommu_detach_device(drm_dev, ippdrv->dev);
+ 
+-err_idr:
+-	idr_destroy(&ctx->ipp_idr);
+-	idr_destroy(&ctx->prop_idr);
++		ipp_remove_id(&ctx->ipp_idr, &ctx->ipp_lock,
++				ippdrv->prop_list.ipp_id);
++	}
++
+ 	return ret;
+ }
+ 
+ static void ipp_subdrv_remove(struct drm_device *drm_dev, struct device *dev)
+ {
+ 	struct exynos_drm_ippdrv *ippdrv;
++	struct ipp_context *ctx = get_ipp_context(dev);
+ 
+ 	/* get ipp driver entry */
+ 	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
+ 		if (is_drm_iommu_supported(drm_dev))
+ 			drm_iommu_detach_device(drm_dev, ippdrv->dev);
+ 
++		ipp_remove_id(&ctx->ipp_idr, &ctx->ipp_lock,
++				ippdrv->prop_list.ipp_id);
++
+ 		ippdrv->drm_dev = NULL;
+ 		exynos_drm_ippdrv_unregister(ippdrv);
+ 	}
+@@ -1765,6 +1784,7 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
+ 	struct drm_exynos_file_private *file_priv = file->driver_priv;
+ 	struct exynos_drm_ipp_private *priv = file_priv->ipp_priv;
+ 	struct exynos_drm_ippdrv *ippdrv = NULL;
++	struct ipp_context *ctx = get_ipp_context(dev);
+ 	struct drm_exynos_ipp_cmd_node *c_node, *tc_node;
+ 	int count = 0;
+ 
+@@ -1791,7 +1811,7 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
+ 				}
+ 
+ 				ippdrv->dedicated = false;
+-				ipp_clean_cmd_node(c_node);
++				ipp_clean_cmd_node(ctx, c_node);
+ 				if (list_empty(&ippdrv->cmd_list))
+ 					pm_runtime_put_sync(ippdrv->dev);
+ 			}
 -- 
 1.9.1
 
