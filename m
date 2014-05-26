@@ -1,265 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750AbaEZHr4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:47:56 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:63295 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274AbaEZHry (ORCPT
+	id S1751824AbaEZHsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:48:14 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43582 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaEZHsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:47:54 -0400
-MIME-version: 1.0
-Content-disposition: inline
-Content-type: text/plain; charset=utf-8
-X-AuditID: cbfee691-b7f2f6d0000040c4-bd-5382f1a6e77a
-Content-transfer-encoding: 8BIT
-Date: Mon, 26 May 2014 16:46:24 +0900
-From: Changman Lee <cm224.lee@samsung.com>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Jaegeuk Kim'" <jaegeuk@kernel.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid crash when trace
- f2fs_submit_page_mbio event in ra_sum_pages
-Message-id: <20140526074624.GA28081@cm224.lee>
-References: <005801cf70e7$66cb0090$346101b0$@samsung.com>
- <1400643406.12240.6.camel@kjgkr> <20140523051413.GB26933@cm224.lee>
- <00cc01cf78ab$87d88b10$9789a130$@samsung.com>
-In-reply-to: <00cc01cf78ab$87d88b10$9789a130$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zI91lH5uCDbbtlrb43/SRzeLJ+lnM
-	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
-	5vTeYC/YaFdx7cRZ9gbGR/pdjJwcEgImEgs2TGCGsMUkLtxbz9bFyMUhJLCMUeJQx2YWmKL9
-	y26zQySmM0r8f9zFDpLgFRCU+DH5HlARBwezgLzEkUvZIGFmAWmJR39nsEOE1SWmTMmFaP3J
-	KHH1SQcTSA2LgKrE2hvfWEFsNgEtifbTa8F2iQgoSfyav4gVpIFZoJdRYu7iu2ANwgJZEvsX
-	PWKE2KsncfD7FqiD1jNKPNnwCmwSp4CVxJ2F38CKRAVUJKac3Ab2joTAOXaJll2dUKsFJL5N
-	PgR2tYSArMSmA1DvS0ocXHGDZQKj+Cwkv81C+G0Wkt9mIfy2gJFlFaNoakFyQXFSepGpXnFi
-	bnFpXrpecn7uJkZIFE7cwXj/gPUhxmSg5ROZpUST84FRnFcSb2hsZmRhamJqbGRuaUaasJI4
-	b/qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjFs8speUfr1lXBD0OvOZDMvVL+tkg5z2
-	1rAKnZ3iEeqXpZ9ndtK1gvm8TgXv6pRMx4+LNoqI51kHrhHWdlEJ+rmpR2ilZWcD36GbyvNf
-	+102mrDuzf6gvFJvqU9Fey8uXSi3SlRsY+y83TP4D87IUHgpKv+mru/NrmQvE5XQNwvuZjw/
-	sUfqtxJLcUaioRZzUXEiAPyoT4TYAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEKsWRmVeSWpSXmKPExsVy+t9jQd1lH5uCDU5dFbP43/SRzeLJ+lnM
-	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYohoYbTJSE1NSixRS85Lz
-	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA9ioplCXmlAKFAhKLi5X07TBN
-	CA1x07WAaYzQ9Q0JgusxMkADCesYM+b03mAv2GhXce3EWfYGxkf6XYycHBICJhL7l91mh7DF
-	JC7cW8/WxcjFISQwnVHi/+MusASvgKDEj8n3WLoYOTiYBeQljlzKBgkzC0hLPPo7gx0irC4x
-	ZUouROtPRomrTzqYQGpYBFQl1t74xgpiswloSbSfXssCYosIKEn8mr+IFaSBWaCXUWLu4rtg
-	DcICWRL7Fz1ihNirJ3Hw+xZ2iKnrGSWebHgFNolTwErizsJvYEWiAioSU05uY5vAKDgLya2z
-	EG6dheTWWQi3LmBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHOPPpHYwrmywOMQowMGo
-	xMN7wLspWIg1say4MvcQowQHs5IIb/MHoBBvSmJlVWpRfnxRaU5q8SHGZKCvJzJLiSbnA9NP
-	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwFm0tr+m95dJ/
-	euOMXbIcdreSzhz96Sy7vzLjrP6CSB/bleHrj/1baiN2nuvckX1PX8kzB9mZctg+lGP/v6Jj
-	evcuvc0JAiyuPzoarVN/+F1TP9a/qkJvj0aoiJ+xDZM3a3jVwZalqwWcKtfW+gcUsDZF31Gv
-	EgzTm9U3aZnUma8NgVeOhuQrsRRnJBpqMRcVJwIAoTqJsjUDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 26 May 2014 03:48:10 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-96-5382f1b8bd31
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tomasz Figa <t.figa@samsung.com>,
+        devicetree@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RESEND PATCH 0/5] charger/mfd: max14577: Part 2 of adding support for
+ MAX77836
+Date: Mon, 26 May 2014 09:47:30 +0200
+Message-id: <1401090455-28726-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/xy7o7PjYFG2zcyWOxccZ6VoupD5+w
+	WUx68p7ZYv6Rc6wWE1dOZrbof7OQ1eLcq5WMFq9fGFqcbXrDbnH/61FGi29XOpgsLu+aw2ax
+	9shddoul1y8yWUyYvpbFonXvEXaL092sFutnvGZxEPJYM28No8flvl4mj52z7rJ7rFz+hc1j
+	8wotj02rOtk87lzbw+Yx72SgR9+WVYwenzfJBXBFcdmkpOZklqUW6dslcGXs2XOVteCNYsWN
+	OVPZGhgfSHUxcnJICJhIdHfuYYawxSQu3FvP1sXIxSEksJRR4sGsJmYIp49JYtHLBlaQKjYB
+	Y4nNy5ewgdgiApUS306fYAGxmQWusUiseJYLYgsLREk8WbQOrIZFQFXi3K6VYDavgLvErrcd
+	jBDb5CROHpvMOoGRewEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkPD9uoNx6TGrQ4wC
+	HIxKPLwv8pqChVgTy4orcw8xSnAwK4nwNn8ACvGmJFZWpRblxxeV5qQWH2Jk4uCUamC0nRW7
+	dGXisTRBYZ3u9COLV0Qsrf+9uN7nN3tvySQXicsVvs1Tea6sn6hT/VMs65L53oVva+bIOy53
+	eOW6m2sR344N2zZsjZy+UPL3bJ3WfQ4vd1e7ZBwX3sJy8U+v6O9Vqu6ytovzCuWC9/z67nn0
+	F9eN5B+/D2nI+fE5nNg+P+PcokO770z3V2Ipzkg01GIuKk4EAEeGzgk9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 02:26:24PM +0800, Chao Yu wrote:
-> Hi changman,
-> 
-> > -----Original Message-----
-> > From: Changman Lee [mailto:cm224.lee@samsung.com]
-> > Sent: Friday, May 23, 2014 1:14 PM
-> > To: Jaegeuk Kim
-> > Cc: Chao Yu; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid crash when trace f2fs_submit_page_mbio event in
-> > ra_sum_pages
-> > 
-> > On Wed, May 21, 2014 at 12:36:46PM +0900, Jaegeuk Kim wrote:
-> > > Hi Chao,
-> > >
-> > > 2014-05-16 (금), 17:14 +0800, Chao Yu:
-> > > > Previously we allocate pages with no mapping in ra_sum_pages(), so we may
-> > > > encounter a crash in event trace of f2fs_submit_page_mbio where we access
-> > > > mapping data of the page.
-> > > >
-> > > > We'd better allocate pages in bd_inode mapping and invalidate these pages after
-> > > > we restore data from pages. It could avoid crash in above scenario.
-> > > >
-> > > > Call Trace:
-> > > >  [<f1031630>] ? ftrace_raw_event_f2fs_write_checkpoint+0x80/0x80 [f2fs]
-> > > >  [<f10377bb>] f2fs_submit_page_mbio+0x1cb/0x200 [f2fs]
-> > > >  [<f103c5da>] restore_node_summary+0x13a/0x280 [f2fs]
-> > > >  [<f103e22d>] build_curseg+0x2bd/0x620 [f2fs]
-> > > >  [<f104043b>] build_segment_manager+0x1cb/0x920 [f2fs]
-> > > >  [<f1032c85>] f2fs_fill_super+0x535/0x8e0 [f2fs]
-> > > >  [<c115b66a>] mount_bdev+0x16a/0x1a0
-> > > >  [<f102f63f>] f2fs_mount+0x1f/0x30 [f2fs]
-> > > >  [<c115c096>] mount_fs+0x36/0x170
-> > > >  [<c1173635>] vfs_kern_mount+0x55/0xe0
-> > > >  [<c1175388>] do_mount+0x1e8/0x900
-> > > >  [<c1175d72>] SyS_mount+0x82/0xc0
-> > > >  [<c16059cc>] sysenter_do_call+0x12/0x22
-> > > >
-> > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > ---
-> > > >  fs/f2fs/node.c |   49 ++++++++++++++++++++++++++++---------------------
-> > > >  1 file changed, 28 insertions(+), 21 deletions(-)
-> > > >
-> > > > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> > > > index 3d60d3d..b5cd814 100644
-> > > > --- a/fs/f2fs/node.c
-> > > > +++ b/fs/f2fs/node.c
-> > > > @@ -1658,13 +1658,16 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
-> > > >
-> > > >  /*
-> > > >   * ra_sum_pages() merge contiguous pages into one bio and submit.
-> > > > - * these pre-readed pages are linked in pages list.
-> > > > + * these pre-readed pages are alloced in bd_inode's mapping tree.
-> > > >   */
-> > > > -static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
-> > > > +static int ra_sum_pages(struct f2fs_sb_info *sbi, struct page **pages,
-> > > >  				int start, int nrpages)
-> > > >  {
-> > > >  	struct page *page;
-> > > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
-> > 
-> > How about use sbi->meta_inode instead of bd_inode, then we can do
-> > caching summary pages for further i/o.
-> 
-> In my understanding, In ra_sum_pages() we readahead node pages in NODE segment,
-> then we could padding current summary caching with nid of node page's footer.
-> So we should not cache this readaheaded pages in meta_inode's mapping.
-> Do I miss something?
-> 
-> Regards
-> 
+Dear Dmitry, David,
 
-Sorry, you're right. Forget about caching. I've confused ra_sum_pages with summary segments.
 
-> > 
-> > > > +	struct address_space *mapping = inode->i_mapping;
-> > > >  	int page_idx = start;
-> > > > +	int alloced, readed;
-> > > >  	struct f2fs_io_info fio = {
-> > > >  		.type = META,
-> > > >  		.rw = READ_SYNC | REQ_META | REQ_PRIO
-> > > > @@ -1672,21 +1675,23 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head
-> > *pages,
-> > > >
-> > > >  	for (; page_idx < start + nrpages; page_idx++) {
-> > > >  		/* alloc temporal page for read node summary info*/
-> > > > -		page = alloc_page(GFP_F2FS_ZERO);
-> > > > +		page = grab_cache_page(mapping, page_idx);
-> > > >  		if (!page)
-> > > >  			break;
-> > > > -
-> > > > -		lock_page(page);
-> > > > -		page->index = page_idx;
-> > > > -		list_add_tail(&page->lru, pages);
-> > > > +		page_cache_release(page);
-> > >
-> > > IMO, we don't need to do like this.
-> > > Instead,
-> > > 	for() {
-> > > 		page = grab_cache_page();
-> > > 		if (!page)
-> > > 			break;
-> > > 		page[page_idx] = page;
-> > > 		f2fs_submit_page_mbio(sbi, page, &fio);
-> > > 	}
-> > > 	f2fs_submit_merged_bio(sbi, META, READ);
-> > > 	return page_idx - start;
-> > >
-> > > Afterwards, in restore_node_summry(),
-> > > 	lock_page() will wait the end_io for read.
-> > > 	...
-> > > 	f2fs_put_page(pages[index], 1);
-> > >
-> > > Thanks,
-> > >
-> > > >  	}
-> > > >
-> > > > -	list_for_each_entry(page, pages, lru)
-> > > > -		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
-> > > > +	alloced = page_idx - start;
-> > > > +	readed = find_get_pages_contig(mapping, start, alloced, pages);
-> > > > +	BUG_ON(alloced != readed);
-> > > > +
-> > > > +	for (page_idx = 0; page_idx < readed; page_idx++)
-> > > > +		f2fs_submit_page_mbio(sbi, pages[page_idx],
-> > > > +					pages[page_idx]->index, &fio);
-> > > >
-> > > >  	f2fs_submit_merged_bio(sbi, META, READ);
-> > > >
-> > > > -	return page_idx - start;
-> > > > +	return readed;
-> > > >  }
-> > > >
-> > > >  int restore_node_summary(struct f2fs_sb_info *sbi,
-> > > > @@ -1694,11 +1699,11 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
-> > > >  {
-> > > >  	struct f2fs_node *rn;
-> > > >  	struct f2fs_summary *sum_entry;
-> > > > -	struct page *page, *tmp;
-> > > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
-> > > >  	block_t addr;
-> > > >  	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-> > > > -	int i, last_offset, nrpages, err = 0;
-> > > > -	LIST_HEAD(page_list);
-> > > > +	struct page *pages[bio_blocks];
-> > > > +	int i, index, last_offset, nrpages, err = 0;
-> > > >
-> > > >  	/* scan the node segment */
-> > > >  	last_offset = sbi->blocks_per_seg;
-> > > > @@ -1709,29 +1714,31 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
-> > > >  		nrpages = min(last_offset - i, bio_blocks);
-> > > >
-> > > >  		/* read ahead node pages */
-> > > > -		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
-> > > > +		nrpages = ra_sum_pages(sbi, pages, addr, nrpages);
-> > > >  		if (!nrpages)
-> > > >  			return -ENOMEM;
-> > > >
-> > > > -		list_for_each_entry_safe(page, tmp, &page_list, lru) {
-> > > > +		for (index = 0; index < nrpages; index++) {
-> > > >  			if (err)
-> > > >  				goto skip;
-> > > >
-> > > > -			lock_page(page);
-> > > > -			if (unlikely(!PageUptodate(page))) {
-> > > > +			lock_page(pages[index]);
-> > > > +			if (unlikely(!PageUptodate(pages[index]))) {
-> > > >  				err = -EIO;
-> > > >  			} else {
-> > > > -				rn = F2FS_NODE(page);
-> > > > +				rn = F2FS_NODE(pages[index]);
-> > > >  				sum_entry->nid = rn->footer.nid;
-> > > >  				sum_entry->version = 0;
-> > > >  				sum_entry->ofs_in_node = 0;
-> > > >  				sum_entry++;
-> > > >  			}
-> > > > -			unlock_page(page);
-> > > > +			unlock_page(pages[index]);
-> > > >  skip:
-> > > > -			list_del(&page->lru);
-> > > > -			__free_pages(page, 0);
-> > > > +			page_cache_release(pages[index]);
-> > > >  		}
-> > > > +
-> > > > +		invalidate_mapping_pages(inode->i_mapping, addr,
-> > > > +							addr + nrpages);
-> > > >  	}
-> > > >  	return err;
-> > > >  }
-> > >
-> > > --
-> > > Jaegeuk Kim
-> > 
-> > 
-> > 
-> > > ------------------------------------------------------------------------------
-> > > "Accelerate Dev Cycles with Automated Cross-Browser Testing - For FREE
-> > > Instantly run your Selenium tests across 300+ browser/OS combos.
-> > > Get unparalleled scalability from the best Selenium testing platform available
-> > > Simple to use. Nothing to install. Get started now for free."
-> > > http://p.sf.net/sfu/SauceLabs
-> > 
-> > > _______________________________________________
-> > > Linux-f2fs-devel mailing list
-> > > Linux-f2fs-devel@lists.sourceforge.net
-> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+This is resend of second part of patches adding support for MAX77836
+device to the max14577 drivers.
+
+These patches are hanging on the lists for some time. Could you
+look at them and give me acks or any comment what have to be fixed?
+
+It is still before 3.16 merge window so your acks would be appreciated.
+If it is possible I would like to push the patches through Lee Jones'
+MFD tree (I already have other necessary acks).
+
+
+I need acks or reviews from power supply subsystem maintainers for
+patches:
+ - 1/5: charger: max14577: Add support for MAX77836 charger
+ - 3/5: charger: max14577: Configure battery-dependent settings from DTS
+ - 4/5: power: max17040: Add ID for MAX77836 Fuel Gauge block
+These patches were published for the first time around February 2014.
+
+Could you look at them?
+
+
+Below is original cover letter.
+
+
+Best regards,
+Krzysztof Kozlowski
+
+
+Cover letter
+============
+
+This is second part of patches adding support for MAX77836 device
+to the max14577 drivers.
+
+The first part [1] was applied by Lee Jones [2][3] and this patchset
+*depends* on it.
+
+This patchset changes the max14577 charger and regulator drivers
+and documents Device Tree bindings.
+
+The patches 1 to 3 depends on each other so they should be pulled at once.
+Patches 4, 5 and 6 can be applied independently. However still the
+smoothest way to apply this would be through one tree after obtaining
+necessary acks from maintainers.
+
+
+
+Changes since v4 (for this second part only)
+============================================
+1. Updated Kconfig entries mentioning MAX77836.
+2. Added patch 5/6 (regulator: max14577: Implement SUSPEND mode for
+   MAX77836 LDO-s)
+3. Charger: Require a charger subnode in DTS with charger settings.
+   Previously the charger driver didn't use any properties from DTS.
+   Now it needs a subnode with settings because it supports different
+   devices with different charging characteristics.
+4. Rebased on 3.15-rc2.
+
+Changes since v3
+================
+1. Applied minor fixes (pointed by Lee Jones).
+2. Added one ACK (Lee Jones) and Review-by (Tomasz Figa).
+3. Patch 14/charger: Minor change in parsing EOC value from DTS.
+4. Rebased on next-20140224.
+
+Changes since v2
+================
+1. Added ACK-s.
+2. Applied minor checkpatch fixes (pointed by Lee Jones).
+3. Rebased on next-20140217.
+
+Changes since v1
+================
+1. Added ACK-s, reviews and tested-by tags.
+2. Removed applied patches (they were merged to the linux-next tree).
+3. Applied comments from review (Lee Jones) to 5/15 (detection of device type)
+   and 8/15 (add max77836 support to max14577).
+4. Rebased on next tree.
+5. Added patch 13 and 14 (pointed by Jenny Tc):
+   - regulator/mfd: max14577: Export symbols for calculating charger current
+   - charger: max14577: Configure battery-dependent settings from DTS
+6. Updated bindings documentation with new charger bindings.
+
+
+References
+==========
+[1] http://thread.gmane.org/gmane.linux.kernel/1682503
+[2] http://www.spinics.net/lists/kernel/msg1728274.html
+[3] https://git.kernel.org/cgit/linux/kernel/git/lee/mfd.git/log/?h=ib-mfd-extcon-3.16
+
+Previous, full v4 patchset can be found here:
+http://thread.gmane.org/gmane.linux.kernel/1654267
+
+
+Krzysztof Kozlowski (5):
+  charger: max14577: Add support for MAX77836 charger
+  regulator/mfd: max14577: Export symbols for calculating charger
+    current
+  charger: max14577: Configure battery-dependent settings from DTS
+  power: max17040: Add ID for MAX77836 Fuel Gauge block
+  devicetree: mfd: max14577: Add device tree bindings document
+
+ Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++
+ drivers/mfd/max14577.c                             | 100 ++++++-
+ drivers/power/Kconfig                              |   4 +-
+ drivers/power/max14577_charger.c                   | 291 ++++++++++++++++++---
+ drivers/power/max17040_battery.c                   |   1 +
+ drivers/regulator/max14577.c                       |  80 +-----
+ include/linux/mfd/max14577-private.h               |  92 +++++--
+ include/linux/mfd/max14577.h                       |  31 +++
+ 8 files changed, 614 insertions(+), 137 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+
+-- 
+1.9.1
+
