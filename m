@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaEZGor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 02:44:47 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:18415 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaEZGop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 02:44:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 25 May 2014 23:38:04 -0700
-Message-ID: <5382E324.5090108@nvidia.com>
-Date: Mon, 26 May 2014 09:45:56 +0300
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751399AbaEZHCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:02:51 -0400
+Received: from mout.gmx.net ([212.227.15.19]:52454 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855AbaEZHCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 03:02:50 -0400
+Message-ID: <5382E711.8050506@gmx.de>
+Date: Mon, 26 May 2014 09:02:41 +0200
+From: =?UTF-8?B?TWFsdGUgU2NocsO2ZGVy?= <maltesch@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Alex Courbot <acourbot@nvidia.com>, Lucas Stach <l.stach@pengutronix.de>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Ben Skeggs" <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
-References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
-		 <1400493433.8467.24.camel@weser.hi.pengutronix.de>
-		 <5379D7A0.3050509@nvidia.com>
-		 <1400494582.8467.28.camel@weser.hi.pengutronix.de>
-		 <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
-	 <1400837055.4921.4.camel@weser.hi.pengutronix.de>
-	 <537F1853.7050800@nvidia.com>
- <1400839186.4921.17.camel@weser.hi.pengutronix.de>
- <537F5DED.8050702@nvidia.com>
-In-Reply-To: <537F5DED.8050702@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+To: Woody Suwalski <terraluna977@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Radeon wakeup regression in 3.15-rc6
+References: <53805C4E.7050205@gmx.de> 
+In-Reply-To: <53805C4E.7050205@gmx.de> 
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="aotU5AumpaQ45uFVuKnl7puIi7g3W90U1"
+X-Provags-ID: V03:K0:T7rAP1gfzK+KB0IFmpHbuAkpwHFGRBeKc2J6bjIxifIS6AX0HPo
+ jAaHNVcLz+od+uvF69GOdiSzYaSQCBiIags+JO1TwaMm007LGySAOKWy3zN0bTneQb6kohF
+ Jm5lIuEuZ3w1YGWD+g1mybhOCPZox58sWYzIM1rfJDfDh90Rb2MH0nd1H2fw1wnvo+5b888
+ F1e0Tjr1ns4JFFMUCUfFA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.05.2014 17:40, Alex Courbot wrote:
-> On 05/23/2014 06:59 PM, Lucas Stach wrote:
-> So after checking with more knowledgeable people, it turns out this is 
-> the expected behavior on ARM and BAR regions should be mapped uncached 
-> on GK20A. All the more reasons to avoid using the BAR at all.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--aotU5AumpaQ45uFVuKnl7puIi7g3W90U1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-This is actually specific to Tegra.
-
->> You may want to make yourself aware of all the quirks required for
->> sharing memory between the GPU and CPU on an ARM host. I think there are
->> far more involved than what you see now and writing an replacement for
->> TTM will not be an easy task.
+On 25.05.2014 14:56, Woody Suwalski wrote:
+> Malte Schr=C3=B6der wrote:
+>> Hi,
+>> I just tried 3.15-rc6. I encountered a pretty nasty problem, which is
+>> after suspending to RAM the system doesn't wake up properly. v3.14 is
+>> fine.
+>> On wakeup all seems fine, i.e. hd starts to spin an USB-stuff wakes up=
+=2E
+>> But all I get from the graphics card is a white screen slowly filling
+>> with random colored pixels. I had to hard reset the system.
 >>
->> Doing away with the concept of two memory areas will not get you to a
->> single unified address space. You would have to deal with things like
->> not being able to change the caching state of pages in the systems
->> lowmem yourself. You will still have to deal with remapping pages that
->> aren't currently visible to the CPU (ok this is not an issue on Jetson
->> right now as it only has 2GB of RAM), because it's in systems highmem,
->> or even in a different LPAE area.
+>> I attached the kernel log, the X-servers log, lspci-output and my kern=
+el
+>> config.
 >>
->> You really want to be sure you are aware of all the consequences of
->> this, before considering this task.
-> 
-> Yep, that's why I am seeking advice here. My first hope is that with a 
-> few tweaks we will be able to keep using TTM and the current nouveau_bo 
-> implementation. But unless I missed something this is not going to be easy.
-> 
-> We can also use something like the patch I originally sent to make it 
-> work, although not with good performance, on GK20A. Not very graceful, 
-> but it will allow applications to run.
-> 
-> In the long run though, we will want to achieve better performance, and 
-> it seems like a BO implementation targeted at UMA devices would also be 
-> beneficial to quite a few desktop GPUs. So as tricky as it may be I'm 
-> interested in gathering thoughts and why not giving it a first try with 
-> GK20A, even if it imposes some limitations like having buffers in lowmem 
-> in a first time (we can probably live with this one for a short while, 
-> and 64 bits will also be coming to the rescue :))
+>> Regards
+>> Malte
+> I have seen a bit of a screen distortion at the bottom of LCD on Radeon=
 
-I don't think lowmem or LPAE is any problem, if the memory manager is
-designed with that in mind. Vast majority of the buffers kernel
-allocates do not need to be touched in kernel space.
+> after a wakeup.
+> I tried to re-run with drm.debug=3D0x0e, however once I did it - the
+> problem has disappeared, and I have not been able to duplicate it again=
+=2E
+> So just watching for now.
+> OTOH I have seen (only one time) a black screen after wakeup on Nvidia.=
 
-Actually I can't think of any buffers that we allocate on behalf of user
-space that would need to be permanently mapped also to kernel. In case
-or relocs only push buffer needs to be temporarily mapped to kernel.
+> So maybe some timing is now exposed in PM / DRM...
+>=20
+> Woody
+>=20
+>=20
 
-Ultimately even relocs are not necessary if we expose GPU virtual
-addresses directly to user space. But that's another topic.
+I pulled git://people.freedesktop.org/~deathsimple/linux drm-fixes-3.15
+ from http://article.gmane.org/gmane.comp.video.dri.devel/106114 and my
+problem is gone ...
 
-Terje
+--=20
+Gru=C3=9F
+Malte Schr=C3=B6der
+---------------------------------------------------------------------
+MalteSch@gmx.de
+
+
+--aotU5AumpaQ45uFVuKnl7puIi7g3W90U1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCAAGBQJTgucUAAoJEJhhoDgpnptogcEQAJAeJsCSjM1srBrFsr570KKu
+KqpAQ7yE0TMlm71JUEOpLr59C/dQO5+FcMz203SuRB/WdFXrraQmu3oBb+7UCE++
+PDPNa+rPv1Xul4L+cecI5sFxAGFsCMM8MvROJ0XWaUuwnAPo1MWwvHjBg/xXsALV
+fi6Ufdijg2S8qUsqkFB8/4B+pEshWs0XwsOoijTZTpleFLyPPxmClw5Asy+VR7rf
+as4s8Vd2fH6Bt13/Qf6tdJ/ccJ2CKDB6sMMTar/viRIxzlm/ovWX4O4rgfGV9vWy
+cGkSpt5zQPkhbEt/Guj8WeJO8x5tbaNOPdgwk+V96u0ykxlAQuSObcqvv94zQ3Ed
+CW1ezxLUCxZtUcAenBuWQ28+GkMvsTusH1d6c9gAVcEo8R8hjXtDoP9U1JA6BGr4
+qcPhNvj9kZfUeSy4MjjERmyQ9C8rov43jaAeZTXLz9mod9nm19lN0d43/0kRzJK9
+m9JcEqV2Mp3wGtbVE3ekOj3MxbU4u7QQLdOHQXKEMc930pqf87u3RTJMO8oL073L
+d/LTQKdn/YK2U670d57kmUUvdVPadDcRple54L4Xd0o5VP2CylyNDriOKfAh+Lsj
+pRgdgSxymN8qKRaZMgzG0J/m1weDJJkId1NoE8Q7Qp3QUvvxp9H14HXU2MMTBcN2
+ROtdjTTDGvPZq7jGIKAz
+=D5tS
+-----END PGP SIGNATURE-----
+
+--aotU5AumpaQ45uFVuKnl7puIi7g3W90U1--
