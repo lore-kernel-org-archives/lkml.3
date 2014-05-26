@@ -1,260 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaEZP1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:27:01 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:61587 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaEZPSa (ORCPT
+	id S1753419AbaEZP1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:27:08 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48592 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaEZP1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:18:30 -0400
-From: Andreas Noever <andreas.noever@gmail.com>
-To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v3 08/15] thunderbolt: Scan for downstream switches
-Date: Mon, 26 May 2014 17:18:05 +0200
-Message-Id: <1401117492-2870-9-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
-References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+	Mon, 26 May 2014 11:27:05 -0400
+Date: Mon, 26 May 2014 16:27:03 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, linux-fsdevel@vger.kernel.org
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140526152703.GN18016@ZenIV.linux.org.uk>
+References: <20140526093741.GA1765@lahna.fi.intel.com>
+ <20140526135746.GM18016@ZenIV.linux.org.uk>
+ <20140526142948.GA1685@lahna.fi.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526142948.GA1685@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add utility methods tb_port_state and tb_wait_for_port. Add
-tb_scan_switch which recursively checks for downstream switches.
+On Mon, May 26, 2014 at 05:29:48PM +0300, Mika Westerberg wrote:
 
-Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
----
- drivers/thunderbolt/switch.c | 97 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.c     | 44 ++++++++++++++++++++
- drivers/thunderbolt/tb.h     | 16 ++++++++
- 3 files changed, 157 insertions(+)
+> I attached the dmesg with 'echo t > /proc/sysrq-trigger' included.
 
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index 21457cc..279b9c5 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -53,6 +53,92 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
- }
- 
- /**
-+ * tb_port_state() - get connectedness state of a port
-+ *
-+ * The port must have a TB_CAP_PHY (i.e. it should be a real port).
-+ *
-+ * Return: Returns an enum tb_port_state on success or an error code on failure.
-+ */
-+static int tb_port_state(struct tb_port *port)
-+{
-+	struct tb_cap_phy phy;
-+	int res;
-+	if (port->cap_phy == 0) {
-+		tb_port_WARN(port, "does not have a PHY\n");
-+		return -EINVAL;
-+	}
-+	res = tb_port_read(port, &phy, TB_CFG_PORT, port->cap_phy, 2);
-+	if (res)
-+		return res;
-+	return phy.state;
-+}
-+
-+/**
-+ * tb_wait_for_port() - wait for a port to become ready
-+ *
-+ * Wait up to 1 second for a port to reach state TB_PORT_UP. If
-+ * wait_if_unplugged is set then we also wait if the port is in state
-+ * TB_PORT_UNPLUGGED (it takes a while for the device to be registered after
-+ * switch resume). Otherwise we only wait if a device is registered but the link
-+ * has not yet been established.
-+ *
-+ * Return: Returns an error code on failure. Returns 0 if the port is not
-+ * connected or failed to reach state TB_PORT_UP within one second. Returns 1
-+ * if the port is connected and in state TB_PORT_UP.
-+ */
-+int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
-+{
-+	int retries = 10;
-+	int state;
-+	if (!port->cap_phy) {
-+		tb_port_WARN(port, "does not have PHY\n");
-+		return -EINVAL;
-+	}
-+	if (tb_is_upstream_port(port)) {
-+		tb_port_WARN(port, "is the upstream port\n");
-+		return -EINVAL;
-+	}
-+
-+	while (retries--) {
-+		state = tb_port_state(port);
-+		if (state < 0)
-+			return state;
-+		if (state == TB_PORT_DISABLED) {
-+			tb_port_info(port, "is disabled (state: 0)\n");
-+			return 0;
-+		}
-+		if (state == TB_PORT_UNPLUGGED) {
-+			if (wait_if_unplugged) {
-+				/* used during resume */
-+				tb_port_info(port,
-+					     "is unplugged (state: 7), retrying...\n");
-+				msleep(100);
-+				continue;
-+			}
-+			tb_port_info(port, "is unplugged (state: 7)\n");
-+			return 0;
-+		}
-+		if (state == TB_PORT_UP) {
-+			tb_port_info(port,
-+				     "is connected, link is up (state: 2)\n");
-+			return 1;
-+		}
-+
-+		/*
-+		 * After plug-in the state is TB_PORT_CONNECTING. Give it some
-+		 * time.
-+		 */
-+		tb_port_info(port,
-+			     "is connected, link is not up (state: %d), retrying...\n",
-+			     state);
-+		msleep(100);
-+	}
-+	tb_port_warn(port,
-+		     "failed to reach state TB_PORT_UP. Ignoring port...\n");
-+	return 0;
-+}
-+
-+/**
-  * tb_init_port() - initialize a port
-  *
-  * This is a helper method for tb_switch_alloc. Does not check or initialize
-@@ -63,6 +149,7 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
- static int tb_init_port(struct tb_switch *sw, u8 port_nr)
- {
- 	int res;
-+	int cap;
- 	struct tb_port *port = &sw->ports[port_nr];
- 	port->sw = sw;
- 	port->port = port_nr;
-@@ -71,6 +158,16 @@ static int tb_init_port(struct tb_switch *sw, u8 port_nr)
- 	if (res)
- 		return res;
- 
-+	/* Port 0 is the switch itself and has no PHY. */
-+	if (port->config.type == TB_TYPE_PORT && port_nr != 0) {
-+		cap = tb_find_cap(port, TB_CFG_PORT, TB_CAP_PHY);
-+
-+		if (cap > 0)
-+			port->cap_phy = cap;
-+		else
-+			tb_port_WARN(port, "non switch port without a PHY\n");
-+	}
-+
- 	tb_dump_port(sw->tb, &port->config);
- 
- 	/* TODO: Read dual link port, DP port and more from EEPROM. */
-diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index f1b6100..3b716fd 100644
---- a/drivers/thunderbolt/tb.c
-+++ b/drivers/thunderbolt/tb.c
-@@ -11,6 +11,47 @@
- #include "tb.h"
- #include "tb_regs.h"
- 
-+
-+/* enumeration & hot plug handling */
-+
-+
-+static void tb_scan_port(struct tb_port *port);
-+
-+/**
-+ * tb_scan_switch() - scan for and initialize downstream switches
-+ */
-+static void tb_scan_switch(struct tb_switch *sw)
-+{
-+	int i;
-+	for (i = 1; i <= sw->config.max_port_number; i++)
-+		tb_scan_port(&sw->ports[i]);
-+}
-+
-+/**
-+ * tb_scan_port() - check for and initialize switches below port
-+ */
-+static void tb_scan_port(struct tb_port *port)
-+{
-+	struct tb_switch *sw;
-+	if (tb_is_upstream_port(port))
-+		return;
-+	if (port->config.type != TB_TYPE_PORT)
-+		return;
-+	if (tb_wait_for_port(port, false) <= 0)
-+		return;
-+	if (port->remote) {
-+		tb_port_WARN(port, "port already has a remote!\n");
-+		return;
-+	}
-+	sw = tb_switch_alloc(port->sw->tb, tb_downstream_route(port));
-+	if (!sw)
-+		return;
-+	port->remote = tb_upstream_port(sw);
-+	tb_upstream_port(sw)->remote = port;
-+	tb_scan_switch(sw);
-+}
-+
-+
- /* hotplug handling */
- 
- struct tb_hotplug_event {
-@@ -134,6 +175,9 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
- 	if (!tb->root_switch)
- 		goto err_locked;
- 
-+	/* Full scan to discover devices added before the driver was loaded. */
-+	tb_scan_switch(tb->root_switch);
-+
- 	/* Allow tb_handle_hotplug to progress events */
- 	tb->hotplug_active = true;
- 	mutex_unlock(&tb->lock);
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index af123c4..70a66fe 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -29,6 +29,7 @@ struct tb_port {
- 	struct tb_regs_port_header config;
- 	struct tb_switch *sw;
- 	struct tb_port *remote; /* remote port, NULL if not connected */
-+	int cap_phy; /* offset, zero if not found */
- 	u8 port; /* port number on switch */
- };
- 
-@@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
- void tb_switch_free(struct tb_switch *sw);
- 
-+int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
-+
- int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
- 
- 
-@@ -173,4 +176,17 @@ static inline bool tb_is_upstream_port(struct tb_port *port)
- 	return port == tb_upstream_port(port->sw);
- }
- 
-+/**
-+ * tb_downstream_route() - get route to downstream switch
-+ *
-+ * Port must not be the upstream port (otherwise a loop is created).
-+ *
-+ * Return: Returns a route to the switch behind @port.
-+ */
-+static inline u64 tb_downstream_route(struct tb_port *port)
-+{
-+	return tb_route(port->sw)
-+	       | ((u64) port->port << (port->sw->config.depth * 8));
-+}
-+
- #endif
--- 
-1.9.3
 
+> [  133.826957] usb 3-10.3: USB disconnect, device number 7
+> [  159.326769] BUG: soft lockup - CPU#6 stuck for 22s! [systemd-udevd:1824]
+> [  159.326809] CPU: 6 PID: 1824 Comm: systemd-udevd Tainted: G          I   3.15.0-rc7 #55
+> [  159.326810] Hardware name: Gigabyte Technology Co., Ltd. Z87X-UD7 TH/Z87X-UD7 TH-CF, BIOS F4 03/18/2014
+> [  159.326812] task: ffff880472854a80 ti: ffff8804747ec000 task.ti: ffff8804747ec000
+[snip]
+> [  159.326834] Call Trace:
+> [  159.326838]  [<ffffffff811e74e6>] dentry_kill+0x36/0x280
+> [  159.326840]  [<ffffffff811e793a>] shrink_dentry_list+0x8a/0x110
+> [  159.326842]  [<ffffffff811e81c4>] check_submounts_and_drop+0x74/0xa0
+> [  159.326845]  [<ffffffff81245c5d>] kernfs_dop_revalidate+0x5d/0xd0
+> [  159.326847]  [<ffffffff811dba4d>] lookup_fast+0x26d/0x2c0
+> [  159.326849]  [<ffffffff811dd2b5>] path_lookupat+0x155/0x780
+> [  159.326851]  [<ffffffff811dc152>] ? final_putname+0x22/0x50
+> [  159.326853]  [<ffffffff811e198f>] ? user_path_at_empty+0x5f/0x90
+> [  159.326856]  [<ffffffff811b6eb5>] ? kmem_cache_alloc+0x35/0x1f0
+> [  159.326858]  [<ffffffff811dc1cf>] ? getname_flags+0x4f/0x1a0
+> [  159.326860]  [<ffffffff811dd90b>] filename_lookup+0x2b/0xc0
+> [  159.326862]  [<ffffffff811e1984>] user_path_at_empty+0x54/0x90
+> [  159.326865]  [<ffffffff811d65ff>] ? SYSC_newstat+0x1f/0x40
+> [  159.326867]  [<ffffffff811d69ec>] SyS_readlink+0x4c/0x130
+> [  159.326870]  [<ffffffff81113c76>] ? __audit_syscall_exit+0x1f6/0x2a0
+> [  159.326872]  [<ffffffff816ade69>] system_call_fastpath+0x16/0x1b
+
+
+That's the livelock.  OK.  But in the stack traces below
+	a) that systemd-udevd instance is happily running in userland
+and
+	b) the only traces of dentry_kill() in the stack are noise
+in stacks of gdbus and dbus-daemon.
+
+*grumble*  I wonder if we should instrument d_shrink_add()/d_lru_shrink_mode()
+so that they would tag dentry with pointer to current, allowing us to report
+something useful in select_collect()...
+
+What's really strange is that the same livelock seems to repeat at least
+once more; dentries involved the first time around should've been dead
+and buried by then.  And AFAICS, in the log you've originally posted
+exactly that has happened - both times to the same process...
+
+Do these livelocks keep happening indefinitely, once triggered?  IOW,
+is that a buggered state of dcache and/or kernfs, or is it a transient pileup
+that happens when we invalidate a subtree there?
