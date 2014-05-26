@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbaEZTJN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:09:13 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:53262 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751487AbaEZTJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:09:11 -0400
-Message-ID: <1401131350.6068.20.camel@x220>
-Subject: [PATCH] staging: comedi: remove check for CONFIG_KMOD
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 26 May 2014 21:09:10 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 May 2014 19:09:10.0211 (UTC) FILETIME=[F95FC130:01CF7915]
-X-RcptDomain: vger.kernel.org
+	id S1752091AbaEZTJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:09:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63788 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751507AbaEZTJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 15:09:25 -0400
+Date: Mon, 26 May 2014 15:53:44 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations (v2)
+Message-ID: <20140526185344.GA19976@amt.cnet>
+References: <20140523193706.GA22854@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140523193706.GA22854@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comedi driver was added in v2.6.29. That's the same release that
-removed the Kconfig symbol KMOD. So the code behind a test for its
-macro has been hidden since it was in staging. Remove it.
 
-Remove a useless assignment to "dev->in_request_module" too. That
-variable seems pointless anyhow, but that's a different issue.
+Zone specific allocations, such as GFP_DMA32, should not be restricted
+to cpusets allowed node list: the zones which such allocations demand
+might be contained in particular nodes outside the cpuset node list.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested. Done on top of next-20140526.
+The alternative would be to not perform such allocations from
+applications which are cpuset restricted, which is unrealistic.
 
- drivers/staging/comedi/comedi_fops.c | 8 --------
- 1 file changed, 8 deletions(-)
+Fixes KVM's alloc_page(gfp_mask=GFP_DMA32) with cpuset as explained.
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 012c8fd1aabb..70ad00c501ef 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -2351,14 +2351,6 @@ static int comedi_open(struct inode *inode, struct file *file)
- 	if (capable(CAP_NET_ADMIN) && dev->in_request_module)
- 		goto ok;
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+
+v2: fix slowpath as well (David Rientjes)
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 3d54c41..b70a336 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2392,6 +2392,10 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
  
--	dev->in_request_module = true;
--
--#ifdef CONFIG_KMOD
--	mutex_unlock(&dev->mutex);
--	request_module("char-major-%i-%i", COMEDI_MAJOR, dev->minor);
--	mutex_lock(&dev->mutex);
--#endif
--
- 	dev->in_request_module = false;
+ 	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
+ 		return 1;
++#ifdef CONFIG_NUMA
++	if (gfp_zone(gfp_mask) < policy_zone)
++		return 1;
++#endif
+ 	might_sleep_if(!(gfp_mask & __GFP_HARDWALL));
+ 	if (node_isset(node, current->mems_allowed))
+ 		return 1;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5dba293..dfea3dc 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2698,6 +2698,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	unsigned int cpuset_mems_cookie;
+ 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+ 	struct mem_cgroup *memcg = NULL;
++	nodemask_t *cpuset_mems_allowed = &cpuset_current_mems_allowed;
  
- 	if (!dev->attached && !capable(CAP_NET_ADMIN)) {
--- 
-1.9.0
-
+ 	gfp_mask &= gfp_allowed_mask;
+ 
+@@ -2726,9 +2727,14 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ retry_cpuset:
+ 	cpuset_mems_cookie = read_mems_allowed_begin();
+ 
++#ifdef CONFIG_NUMA
++	if (gfp_zone(gfp_mask) < policy_zone)
++		cpuset_mems_allowed = NULL;
++#endif
++
+ 	/* The preferred zone is used for statistics later */
+ 	first_zones_zonelist(zonelist, high_zoneidx,
+-				nodemask ? : &cpuset_current_mems_allowed,
++				nodemask ? : cpuset_mems_allowed,
+ 				&preferred_zone);
+ 	if (!preferred_zone)
+ 		goto out;
