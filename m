@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaEZKH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:07:27 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48320 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195AbaEZKHP (ORCPT
+	id S1752331AbaEZKHY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:07:24 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:61846 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259AbaEZKHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:07:15 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-ad-538312529976
-From: Heesub Shin <heesub.shin@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>
-Subject: [PATCH 8/9] staging: ion: shrink highmem pages on kswapd
-Date: Mon, 26 May 2014 19:05:00 +0900
-Message-id: <1401098701-24049-8-git-send-email-heesub.shin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
-References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t8zTd0goeZggzU3lCze/73PZrF94zdW
-	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
-	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8ARxWWTkpqTWZZapG+X
-	wJWx8MsX1oKHfBUTdr5jbWBcztPFyMkhIWAicXfNJmYIW0ziwr31bCC2kMAyRonXj51gaj53
-	vWHsYuQCik9nlDg5byoThNPOJPH95jIgh4ODTUBb4tC2YJAGEQFjif6zs9hBapgF5jBLTNl6
-	gQkkISzgKLH011kWEJtFQFVi/stVjCA2r4C7RO+CJ+wQ2+QkTh6bzApicwp4SEx8MocF4iJ3
-	idsbH7KBDJUQuMYu8W3nRmaIQQIS3yYfYgE5QkJAVmLTAahvJCUOrrjBMoFReAEjwypG0dSC
-	5ILipPQiQ73ixNzi0rx0veT83E2MkIjp3cF4+4D1IcZkoHETmaVEk/OBEZdXEm9obGZkYWpi
-	amxkbmlGmrCSOG/Sw6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzrA9b8UxC38Ox0/Mp/
-	sOnAviPiZ3s4/JhLiucd8xXd79XxU3HCdU+Wr3LRxxNy+g0vTT/L8D4037Wva7ZJgtnUaTZl
-	r6dzyW6cnH4t1G2uW9yUDay/18+W/Virvbe96drs9erHtgnq37UL8ulY4pDuZTTNm4uZzbM+
-	amoNT55Zk8f/OV7vvimxFGckGmoxFxUnAgBKlzlhrgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQd0goeZgg43b5Sze/73PZrF94zdW
-	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
-	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8AR1cBok5GamJJapJCa
-	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
-	DtOE0BA3XQuYxghd35AguB4jAzSQsI4xY+GXL6wFD/kqJux8x9rAuJyni5GTQ0LAROJz1xtG
-	CFtM4sK99WxdjFwcQgLTGSVOzpvKBOG0M0l8v7kMyOHgYBPQlji0LRikQUTAWKL/7Cx2kBpm
-	gTnMElO2XmACSQgLOEos/XWWBcRmEVCVmP9yFdgGXgF3id4FT9ghtslJnDw2mRXE5hTwkJj4
-	ZA5YvRBQze2ND9kmMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREckc+kdzCuarA4
-	xCjAwajEw3vAuylYiDWxrLgy9xCjBAezkgivFmdzsBBvSmJlVWpRfnxRaU5q8SHGZKCrJjJL
-	iSbnA5NFXkm8obGJmZGlkZmxibmxMWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwsl37
-	6n3rrpFvX/BrM8uoNSYr85bvYL+olT7h43tm1RXnu3P+NkbMMt5c0XtM8vu7XF0fkSeqsS1l
-	Vqptz9hnXf7wUrR1/pmkzv+PDK5eaNshcfOB1NWu2cr7JLSeqRyca9Rotv1c2VPrKDeXw9W/
-	ikMYubNXv4x5o2115pfu75pL58L8vq/iV2Ipzkg01GIuKk4EAIfMcMgMAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 26 May 2014 06:07:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400849527-7384-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1400849527-7384-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Mon, 26 May 2014 12:07:15 +0200
+Message-ID: <CAPDyKFruVPo-k+19pQ4zGrVBH0gqszQ5vphsTAm6HTXUX5riFg@mail.gmail.com>
+Subject: Re: [PATCH v3 08/13] mmc: mmci: add 8bit bus support in variant data
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ION system heap keeps pages in its pool for better performance. When the
-system is under memory pressure, slab shrinker calls the callback
-registered and then the pages pooled get freed.
+On 23 May 2014 14:52,  <srinivas.kandagatla@linaro.org> wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> This patch adds 8bit bus enable to variant structure giving more flexibility
+> to the driver to support more SOCs which have different clock register layout.
+>
+> Without this patch other new SOCs like Qcom will have to add more code
+> to special case them.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mmc/host/mmci.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+> index dec70d2..a81f303 100644
+> --- a/drivers/mmc/host/mmci.c
+> +++ b/drivers/mmc/host/mmci.c
+> @@ -52,6 +52,7 @@ static unsigned int fmax = 515633;
+>   * struct variant_data - MMCI variant-specific quirks
+>   * @clkreg: default value for MCICLOCK register
+>   * @clkreg_enable: enable value for MMCICLOCK register
+> + * @clkreg_8bit_bus_enable: enable value for 8 bit bus
+>   * @datalength_bits: number of bits in the MMCIDATALENGTH register
+>   * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
+>   *           is asserted (likewise for RX)
+> @@ -74,6 +75,7 @@ static unsigned int fmax = 515633;
+>  struct variant_data {
+>         unsigned int            clkreg;
+>         unsigned int            clkreg_enable;
+> +       unsigned int            clkreg_8bit_bus_enable;
+>         unsigned int            datalength_bits;
+>         unsigned int            fifosize;
+>         unsigned int            fifohalfsize;
+> @@ -116,6 +118,7 @@ static struct variant_data variant_u300 = {
+>         .fifosize               = 16 * 4,
+>         .fifohalfsize           = 8 * 4,
+>         .clkreg_enable          = MCI_ST_U300_HWFCEN,
+> +       .clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
 
-When the shrinker is called, it checks gfp_mask and determines whether
-the pages from highmem need to be freed or the pages from lowmem.
-Usually, slab shrinker is invoked on kswapd context which gfp_mask is
-always GFP_KERNEL, so only lowmem pages are released on kswapd context.
-This means that highmem pages in the pool are never reclaimed until
-direct reclaim occurs. This can be problematic when the page pool holds
-excessive amounts of highmem.
+Linus, will have to confirm this. I don't know if the u300 variant
+support 8-bit.
 
-For now, the shrinker callback cannot know exactly which zone should be
-targeted for reclamation, as enough information are not passed to. Thus,
-it makes sense to shrink both lowmem and highmem zone on kswapd context.
+Kind regards
+Ulf Hansson
 
-Reported-by: Wonseo Choi <wonseo.choi@samsung.com>
-Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
----
- drivers/staging/android/ion/ion_page_pool.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index c1cea42b..5864f3d 100644
---- a/drivers/staging/android/ion/ion_page_pool.c
-+++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -21,6 +21,7 @@
- #include <linux/list.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/swap.h>
- #include "ion_priv.h"
- 
- static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
-@@ -118,7 +119,10 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 	int freed;
- 	bool high;
- 
--	high = !!(gfp_mask & __GFP_HIGHMEM);
-+	if (current_is_kswapd())
-+		high = 1;
-+	else
-+		high = !!(gfp_mask & __GFP_HIGHMEM);
- 
- 	if (nr_to_scan == 0)
- 		return ion_page_pool_total(pool, high);
--- 
-1.9.1
-
+>         .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
+>         .datalength_bits        = 16,
+>         .sdio                   = true,
+> @@ -144,6 +147,7 @@ static struct variant_data variant_ux500 = {
+>         .fifohalfsize           = 8 * 4,
+>         .clkreg                 = MCI_CLK_ENABLE,
+>         .clkreg_enable          = MCI_ST_UX500_HWFCEN,
+> +       .clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+>         .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
+>         .datalength_bits        = 24,
+>         .sdio                   = true,
+> @@ -160,6 +164,7 @@ static struct variant_data variant_ux500v2 = {
+>         .fifohalfsize           = 8 * 4,
+>         .clkreg                 = MCI_CLK_ENABLE,
+>         .clkreg_enable          = MCI_ST_UX500_HWFCEN,
+> +       .clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+>         .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
+>         .datalength_bits        = 24,
+>         .sdio                   = true,
+> @@ -340,7 +345,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
+>         if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_4)
+>                 clk |= MCI_4BIT_BUS;
+>         if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_8)
+> -               clk |= MCI_ST_8BIT_BUS;
+> +               clk |= variant->clkreg_8bit_bus_enable;
+>
+>         if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
+>                 clk |= MCI_ST_UX500_NEG_EDGE;
+> --
+> 1.9.1
+>
