@@ -1,91 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156AbaEZLpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:45:19 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:48120 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaEZLpR (ORCPT
+	id S1752115AbaEZLsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:48:15 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55917 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616AbaEZLsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:45:17 -0400
-X-Nat-Received: from [202.181.97.72]:24791 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1401104713.5618
-To: Motohiro.Kosaki@us.fujitsu.com, david@fromorbit.com, riel@redhat.com
-Cc: kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        hch@infradead.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] mm/vmscan: Do not block forever atshrink_inactive_list().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20140520004449.GE18954@dastard>
-	<20140519225915.3370328d.akpm@linux-foundation.org>
-	<20140520063024.GH18954@dastard>
-	<201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
-	<6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
-In-Reply-To: <6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
-Message-Id: <201405262045.CDG95893.HLFFOSFMQOVOJt@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 26 May 2014 20:45:11 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 26052014 #8026966, status: clean
+	Mon, 26 May 2014 07:48:11 -0400
+Message-ID: <538329F3.7090806@hitachi.com>
+Date: Mon, 26 May 2014 20:48:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next ] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <536A16A6.5040709@hitachi.com> <20140507115551.22259.70581.stgit@ltc230.yrl.intra.hitachi.co.jp> <5383249A.6060407@in.ibm.com>
+In-Reply-To: <5383249A.6060407@in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa wrote:
-> Dave, if you are OK with this updated patch, please let me know commit ID of your patch.
+(2014/05/26 20:25), Suzuki K. Poulose wrote:
+> On 05/07/2014 05:25 PM, Masami Hiramatsu wrote:
+>> On ia64 and ppc64, the function pointer does not point the
+>> entry address of the function, but the address of function
+>> discriptor (which contains the entry address and misc
+>> data.) Since the kprobes passes the function pointer stored
+>> by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+>> initalizing its blacklist, it fails and reports many errors
+>> as below.
+>>
+>>   Failed to find blacklist 0001013168300000
+>>   Failed to find blacklist 0001013000f0a000
+>>   Failed to find blacklist 000101315f70a000
+>>   Failed to find blacklist 000101324c80a000
+>>   Failed to find blacklist 0001013063f0a000
+>>   Failed to find blacklist 000101327800a000
+>>   Failed to find blacklist 0001013277f0a000
+>>   Failed to find blacklist 000101315a70a000
+>>   Failed to find blacklist 0001013277e0a000
+>>   Failed to find blacklist 000101305a20a000
+>>   Failed to find blacklist 0001013277d0a000
+>>   Failed to find blacklist 00010130bdc0a000
+>>   Failed to find blacklist 00010130dc20a000
+>>   Failed to find blacklist 000101309a00a000
+>>   Failed to find blacklist 0001013277c0a000
+>>   Failed to find blacklist 0001013277b0a000
+>>   Failed to find blacklist 0001013277a0a000
+>>   Failed to find blacklist 000101327790a000
+>>   Failed to find blacklist 000101303140a000
+>>   Failed to find blacklist 0001013a3280a000
+>>
+>> To fix this bug, this introduces function_entry() macro to
+>> retrieve the entry address from the given function pointer,
+>> and uses it in NOKPROBE_SYMBOL().
+>>
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Reported-by: Tony Luck <tony.luck@gmail.com>
+>> Cc: Tony Luck <tony.luck@intel.com>
+>> Cc: Fenghua Yu <fenghua.yu@intel.com>
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+>> Cc: Kevin Hao <haokexin@gmail.com>
+>> Cc: linux-ia64@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: linuxppc-dev@lists.ozlabs.org
+>> ---
+>>  arch/ia64/include/asm/types.h    |    2 ++
+>>  arch/powerpc/include/asm/types.h |   11 +++++++++++
+>>  include/linux/kprobes.h          |    3 ++-
+>>  include/linux/types.h            |    4 ++++
+>>  4 files changed, 19 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
+>> index 4c351b1..6ab7b6c 100644
+>> --- a/arch/ia64/include/asm/types.h
+>> +++ b/arch/ia64/include/asm/types.h
+>> @@ -27,5 +27,7 @@ struct fnptr {
+>>  	unsigned long gp;
+>>  };
+>>  
+>> +#define constant_function_entry(fn) (((struct fnptr *)(fn))->ip)
+>> +
+>>  #endif /* !__ASSEMBLY__ */
+>>  #endif /* _ASM_IA64_TYPES_H */
+>> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+>> index bfb6ded..fd297b8 100644
+>> --- a/arch/powerpc/include/asm/types.h
+>> +++ b/arch/powerpc/include/asm/types.h
+>> @@ -25,6 +25,17 @@ typedef struct {
+>>  	unsigned long env;
+>>  } func_descr_t;
+>>  
+>> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+>> +/*
+>> + * On PPC64 ABIv1 the function pointer actually points to the
+>> + * function's descriptor. The first entry in the descriptor is the
+>> + * address of the function text.
+>> + */
+>> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
+>> +#else
+>> +#define constant_function_entry(fn)	((unsigned long)(fn))
+>> +#endif
+>> +
+>>  #endif /* __ASSEMBLY__ */
+>>  
+>>  #endif /* _ASM_POWERPC_TYPES_H */
+>> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+>> index e059507..637eafe 100644
+>> --- a/include/linux/kprobes.h
+>> +++ b/include/linux/kprobes.h
+>> @@ -40,6 +40,7 @@
+>>  #include <linux/rcupdate.h>
+>>  #include <linux/mutex.h>
+>>  #include <linux/ftrace.h>
+>> +#include <linux/types.h>
+>>  
+>>  #ifdef CONFIG_KPROBES
+>>  #include <asm/kprobes.h>
+>> @@ -485,7 +486,7 @@ static inline int enable_jprobe(struct jprobe *jp)
+>>  #define __NOKPROBE_SYMBOL(fname)			\
+>>  static unsigned long __used				\
+>>  	__attribute__((section("_kprobe_blacklist")))	\
+>> -	_kbl_addr_##fname = (unsigned long)fname;
+>> +	_kbl_addr_##fname = constant_function_entry(fname);
+>>  #define NOKPROBE_SYMBOL(fname)	__NOKPROBE_SYMBOL(fname)
+> 
+> 
+> Throws up build errors for me :
+> 
+>   CC      kernel/notifier.o
+> kernel/notifier.c:105:1: error: initializer element is not constant
+>  NOKPROBE_SYMBOL(notifier_call_chain);
+>  ^
+> kernel/notifier.c:188:1: error: initializer element is not constant
+>  NOKPROBE_SYMBOL(__atomic_notifier_call_chain);
+>  ^
+> kernel/notifier.c:196:1: error: initializer element is not constant
+>  NOKPROBE_SYMBOL(atomic_notifier_call_chain);
+>  ^
+> kernel/notifier.c:546:1: error: initializer element is not constant
+>  NOKPROBE_SYMBOL(notify_die);
+>  ^
+> make[1]: *** [kernel/notifier.o] Error 1
+> make: *** [kernel] Error 2
 
-I overlooked that too_many_isolated() in mm/vmscan.c already has
+Thanks for the test!
 
-  if (current_is_kswapd())
-    return 0;
+>> +#define constant_function_entry(fn)	(((func_descr_t *)(fn))->entry)
 
-lines. Therefore, it turned out that my patch is irrelevant to XFS issue.
-Does patch shown below make sense?
+Ah! right, This is not allowed for initialization...
+I'll update it to deref pointer when it is used.
 
-Regards.
-----------
->From e133aadd65df3d8622efced3443888ed3e60327b Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 26 May 2014 20:37:12 +0900
-Subject: [PATCH] mm/vmscan: Do not throttle when hibernation_mode != 0.
+Thank you again!
 
-In shrink_inactive_list(), we do not insert delay at
 
-  if (!sc->hibernation_mode && !current_is_kswapd())
-    wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+> 
+> Thanks
+> Suzuki
+> 
+> 
 
-if sc->hibernation_mode != 0.
-Follow the same reason, we should not insert delay at
 
-  while (unlikely(too_many_isolated(zone, file, sc))) {
-    congestion_wait(BLK_RW_ASYNC, HZ/10);
-
-    /* We are about to die and free our memory. Return now. */
-    if (fatal_signal_pending(current))
-      return SWAP_CLUSTER_MAX;
-  }
-
-if sc->hibernation_mode != 0.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- mm/vmscan.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 32c661d..89c42ca 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1362,6 +1362,9 @@ static int too_many_isolated(struct zone *zone, int file,
- 	if (current_is_kswapd())
- 		return 0;
- 
-+	if (sc->hibernation_mode)
-+		return 0;
-+
- 	if (!global_reclaim(sc))
- 		return 0;
- 
 -- 
-1.7.1
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
