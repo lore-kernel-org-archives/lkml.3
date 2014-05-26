@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536AbaEZGDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 02:03:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24446 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaEZGDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 02:03:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,910,1392192000"; 
-   d="scan'208";a="546497827"
-Message-ID: <5382D914.4070603@linux.intel.com>
-Date: Mon, 26 May 2014 14:03:00 +0800
-From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751617AbaEZGDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 02:03:46 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:16563
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751586AbaEZGDp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 02:03:45 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cosminstefan.stoica@freescale.com" 
+	<cosminstefan.stoica@freescale.com>,
+        Shawn Guo <Shawn.Guo@freescale.com>
+Subject: RE: linux-next: manual merge of the clockevents tree with the
+ arm-soc tree
+Thread-Topic: linux-next: manual merge of the clockevents tree with the
+ arm-soc tree
+Thread-Index: AQHPeKV0wlyS0ArKs0KlDb/ybYfCx5tSXjeQ
+Date: Mon, 26 May 2014 06:03:38 +0000
+Message-ID: <8c52af4f7de64210bb4e37e265e9e827@DM2PR03MB509.namprd03.prod.outlook.com>
+References: <20140526154331.7fc6b30c@canb.auug.org.au>
+In-Reply-To: <20140526154331.7fc6b30c@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 02234DBFF6
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(164054003)(51704005)(189002)(199002)(83072002)(86362001)(54356999)(46102001)(50986999)(77096999)(81342001)(79102001)(76482001)(19580395003)(92566001)(76176999)(4396001)(20776003)(31966008)(19580405001)(77982001)(74502001)(101416001)(87936001)(80022001)(81542001)(74316001)(66066001)(85852003)(83322001)(33646001)(99396002)(99286001)(76576001)(74662001)(64706001)(2656002)(21056001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB400;H:DM2PR03MB509.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: lee.jones@linaro.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH RESEND v2 2/4] mfd: intel_soc_pmic: I2C interface
-References: <1400805629-10322-1-git-send-email-lejun.zhu@linux.intel.com> <1400805629-10322-3-git-send-email-lejun.zhu@linux.intel.com> <20140523175312.GI22111@sirena.org.uk>
-In-Reply-To: <20140523175312.GI22111@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 5/24/2014 1:53 AM, Mark Brown wrote:
-> On Fri, May 23, 2014 at 08:40:27AM +0800, Zhu, Lejun wrote:
+> Subject: linux-next: manual merge of the clockevents tree with the arm-soc
+> tree
 > 
->> +static int pmic_i2c_lookup_gpio(struct device *dev, int acpi_index)
->> +{
->> +	struct gpio_desc *desc;
->> +	int gpio;
->> +
->> +	desc = gpiod_get_index(dev, KBUILD_MODNAME, acpi_index);
->> +	if (IS_ERR(desc))
->> +		return PTR_ERR(desc);
->> +
->> +	gpio = desc_to_gpio(desc);
->> +
->> +	gpiod_put(desc);
->> +
->> +	return gpio;
->> +}
+> Hi Daniel,
 > 
-> Why not just have the driver work with the gpiod API, is there any real
-> need to convert to a GPIO number?
-
-The whole function will be removed since the gpio set code is removed
-during probe.
-
->> +static const struct i2c_device_id pmic_i2c_id[] = {
->> +	{ "crystal_cove", (kernel_ulong_t)&crystal_cove_pmic},
->> +	{ "INT33FD", (kernel_ulong_t)&crystal_cove_pmic},
->> +	{ "INT33FD:00", (kernel_ulong_t)&crystal_cove_pmic},
->> +	{ }
->> +};
->> +MODULE_DEVICE_TABLE(i2c, pmic_i2c_id);
+> Today's linux-next merge of the clockevents tree got a conflict in
+> arch/arm/boot/dts/vf610.dtsi between commit 0517fe6aa880 ("ARM: dts:
+> vf610-twr: Add support for sdhc1") from the arm-soc tree and commit
+> 07513e1330a9 ("ARM: dts: vf610: Add Freescale FlexTimer Module timer
+> node") from the clockevents tree.
 > 
-> The INT33FD ones here look like they should only be in the ACPI table.
-
-You are right. Only INT33FD:00 should be here.
-
->> +static int __init pmic_i2c_init(void)
->> +{
->> +	int ret;
->> +
->> +	ret = i2c_add_driver(&pmic_i2c_driver);
->> +	if (ret != 0)
->> +		pr_err("Failed to register pmic I2C driver: %d\n", ret);
->> +
->> +	return ret;
->> +}
->> +subsys_initcall(pmic_i2c_init);
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 > 
-> module_i2c_driver() - you shouldn't need subsys_initcall().
 
-I'll change it to module_init.
+Acked-by: Xiubo Li <Li.Xiubo@freescale.com>
 
-Best Regards
-Lejun
+Thanks,
 
+BRs
+Xiubo
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/boot/dts/vf610.dtsi
+> index 73355ddc5186,3c91b84066a1..000000000000
+> --- a/arch/arm/boot/dts/vf610.dtsi
+> +++ b/arch/arm/boot/dts/vf610.dtsi
+> @@@ -360,17 -347,19 +360,30 @@@
+>   				status = "disabled";
+>   			};
+> 
+>  +			esdhc1: esdhc@400b2000 {
+>  +				compatible = "fsl,imx53-esdhc";
+>  +				reg = <0x400b2000 0x4000>;
+>  +				interrupts = <0 28 0x04>;
+>  +				clocks = <&clks VF610_CLK_IPG_BUS>,
+>  +					<&clks VF610_CLK_PLATFORM_BUS>,
+>  +					<&clks VF610_CLK_ESDHC1>;
+>  +				clock-names = "ipg", "ahb", "per";
+>  +				status = "disabled";
+>  +			};
+>  +
+> + 			ftm: ftm@400b8000 {
+> + 				compatible = "fsl,ftm-timer";
+> + 				reg = <0x400b8000 0x1000 0x400b9000 0x1000>;
+> + 				interrupts = <0 44 IRQ_TYPE_LEVEL_HIGH>;
+> + 				clock-names = "ftm-evt", "ftm-src",
+> + 					"ftm-evt-counter-en", "ftm-src-counter-en";
+> + 				clocks = <&clks VF610_CLK_FTM2>,
+> + 					<&clks VF610_CLK_FTM3>,
+> + 					<&clks VF610_CLK_FTM2_EXT_FIX_EN>,
+> + 					<&clks VF610_CLK_FTM3_EXT_FIX_EN>;
+> + 				status = "disabled";
+> + 			};
+> +
+>   			fec0: ethernet@400d0000 {
+>   				compatible = "fsl,mvf600-fec";
+>   				reg = <0x400d0000 0x1000>;
