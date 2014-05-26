@@ -1,163 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaEZNjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:39:42 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:52182 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314AbaEZNjl (ORCPT
+	id S1752678AbaEZNkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:40:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:60673 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304AbaEZNkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:39:41 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH 0/9] procfs: smooth steps to secure some /proc/<pid>/*
-Date: Mon, 26 May 2014 14:27:21 +0100
-Message-Id: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.11.7
+	Mon, 26 May 2014 09:40:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Paul Bolle <pebolle@tiscali.nl>,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH v5 3/5] ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
+Date: Mon, 26 May 2014 15:39:15 +0200
+Message-ID: <6624276.NBS809VbNB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5013253.K6sZTxep7b@wuerfel>
+References: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org> <1400857819-7975-4-git-send-email-daniel.thompson@linaro.org> <5013253.K6sZTxep7b@wuerfel>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:FtRMWiF4HgbPbIidFtPKrwZynrrxbrCZH4fG/jIIqwl
+ gz8JbfEEuc6PsoInkz8fS3DeIfwx0nuPUOBhQ398QUYdXe0hnN
+ kqMlcqtjfEZ9gxIZNg87sPlQov9Zj/EERiDnidtu/c/tR4Xrsn
+ KZ0e1uPVAJFD61zPphtukwfE3Yunkd+TAFZE+WMXnn0Yc8Tmmv
+ PPQMtJ7TTk7WaWGcTi31Twro1y/vwzZq8Y3lEYu9oWNvd7J2Ee
+ lxVWUu/ojdW2ugemDC9UEOsqkvSUQJuXpX4yarzgHCgewPV300
+ 07DA/NDYOYgtL9ovCrxsMWdHi1Ns3bpMdq+U8T3uJIea3broR9
+ O2nwqlhU4IvuI3MEm7fY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Series to apply on top of next-20140526
+On Friday 23 May 2014 17:35:34 Arnd Bergmann wrote:
+> On Friday 23 May 2014 16:10:17 Daniel Thompson wrote:
+> > Only a small handful of platforms support DEBUG_LL_UART_NONE but it
+> > lurks in the menus of every single platform config ready to break the
+> > build. This is an especial problem for defconfigs since it is often
+> > selected by default.
+> > 
+> > This patch limit this choice only to platforms capable of supporting it.
+> > 
+> > Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> > ---
+> >  arch/arm/Kconfig.debug | 13 ++++++++++++-
+> >  1 file changed, 12 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> > index eab8ecb..4c8d7db 100644
+> > --- a/arch/arm/Kconfig.debug
+> > +++ b/arch/arm/Kconfig.debug
+> > @@ -842,7 +842,18 @@ choice
+> >  
+> >       config DEBUG_LL_UART_NONE
+> >               bool "No low-level debugging UART"
+> > -             depends on !ARCH_MULTIPLATFORM
+> > +             depends on ARCH_AT91 || \
+> > +                     ARCH_CLPS711X || \
+> > +                     ARCH_FOOTBRIDGE || \
+> > +                     ARCH_KS8695 || \
+> > +                     ARCH_NETX || \
+> > +                     ARCH_OMAP1 || \
+> > +                     ARCH_SA1100 || \
+> > +                     ARCH_S3C24XX || \
+> > +                     ARCH_S3C64XX || \
+> > +                     ARCH_S5P64X0 || \
+> > +                     ARCH_S5PC100 || \
+> > +                     ARCH_S5PV210
+> >               help
+> >                 Say Y here if your platform doesn't provide a UART option
+> >                 above. This relies on your platform choosing the right UART
+> 
+> ARCH_S3C24XX has been moved over in linux-next to use debug/s3c24xx.S.
+> A few others will likely move soon (AT91, CLPS711x, S5PV210), as the
+> platforms get moved to ARCH_MULTIPLATFORM.
+> 
+> As an alternative to your patch, we could decide to move the remaining
+> files as well.
 
-Some /proc/<pid>/* are sensitive files that need appropriate permission
-checks.
+Follow-up: I also noticed that AT91, CLPS711X, FOOTBRIDGE and all the SAMSUNG
+platforms already have an entry in the list, so DEBUG_LL_UART_NONE is redundant
+for them. The below change should be enough.
 
-Currently there are two issues with these files, to summarize:
-1) unprivileged process:
-   open("/proc/1/*", O_RDONLY)
-   and passes the fd to something privileged.
+For AT91 this is actually better because the old AT91X40 support doesn't
+have working DEBUG_LL support. This gets handled correctly by 
+AT91_DEBUG_LL_DBGU0/AT91_DEBUG_LL_DBGU1, but not DEBUG_LL_UART_NONE.
 
-   This affects already running deamons and processes.
+	Arnd
 
-2) unprivileged process:
-   open("/proc/self/*", O_RDONLY) and forks.
-   The parent execve a privileged process.
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index fd127d6..cae828a 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -864,7 +864,8 @@ choice
+ 
+ 	config DEBUG_LL_UART_NONE
+ 		bool "No low-level debugging UART"
+-		depends on !ARCH_MULTIPLATFORM
++		depends on ARCH_KS8695 || ARCH_NETX || ARCH_OMAP1 || ARCH_SA1100
+ 		help
+ 		  Say Y here if your platform doesn't provide a UART option
+ 		  above. This relies on your platform choosing the right UART
 
-   This affects processes that are executed by that user...
-
-   The only restriction: is to find a privileged program that reads
-   from the specified input. Determined attackers may find one...
-
-   Some distro just don't chip these suid binaries.
-
-
-A months ago I've sent a series to use file->f_cred during ->read()
-to protect the sensitive entries:
-https://lkml.org/lkml/2013/10/1/371
-
-That solution was rejected, Ok.
-
-It seems that every body is busy, and in the mean time these files are
-exposed, and can be used to bypass ASLR. So I propose here smooth steps
-to secure at least issue (1) and it works without breaking userspace,
-but it does not cover all files. If this series is Ack-ed I'll send
-another series to handle the left ones.
-
-
-For issue (2) from the file->f_cred discussion:
-https://lkml.org/lkml/2013/10/1/371
-
-Every one seems to want a mechanism to revoke the fd. Yes I do agree, it
-should be the best solution. However it should not stop us from handling
-issue (1).
-
-
-So to solve issue (1) of *already* *running* processes:
-
-I start with the entries that contain sensitive info and at the same
-time are world readable:
-/proc/<pid>/stat
-/proc/<pid>/wchan
-/proc/<pid>/maps  (will be handled in next patches).
-
-/proc/<pid>/{stack|syscall} I add the ptrace capability check and cache
-it.
-
-
-The following scheme is used in order to prevent ASLR leaks:
-a) Perform permission checks during ->open()
-b) Cache the result of a) and return succes
-c) Recheck the cached result during ->read()
-d) If cached == DENY:
-   then we replace the sensitive fields with zeros, userspace won't
-   break and sensitive fields are protected.
-
-   As proposed by Ingo and as it's currently done for /proc/*/stat:
-   https://lkml.org/lkml/2013/10/3/203
-
-
-Some of these files use sequence iterators, and have their proper
-internal logic. I've made sure that we don't change this logic nor the
-handlers. The only change is: make the cached permission check done
-during ->open() available during ->read().
-
-This design will also cover every one concerns about LSM, especially
-the YAMA module.
-
-
-As I've said the logic of the handlers of these files did not change, I
-just made the cached permission available. This should work with any
-future improvements.
-
-
-Please, if time permits do review!
-
-Thanks!
-
-
-Patches:
-
-1) Preparation for the whole series:
-Patch 1/9: preparation patch to add flags to deny or allow access.
-Patch 2/9: preparation patch to unify the permission checks.
-           The new pid_entry_access() can be used by other code too.
-
-2) Preparation to handle /proc/<pid>/{wchan|syscall}
-Patch 3/9: add helpers to handle shared code between wchan and syscall.
-           This patch makes sure that the internal handlers will keep
-	   their semantic.
-
-3) Improve /proc/<pid>/{wchan|syscall} protections:
-Patch 4/9: improve /proc/<pid>/whcan protection.
-Patch 5/9: improve /proc/<pid>/syscall protection.
-
-4) Preparation to handle /proc/<pid>/{stat|stack}
-Patch 6/9: add shared struct 'pid_seq_private' that will be used by both
-           /proc/<pid>/{stat|stack} to have access to the cached
-	   permission checks.
-Patch 7/9: add helper to handle shared code between stat and stack.
-           This patch makes sure that these entries will continue to use
-	   sequence iterators and that the semantic of their internal
-	   handlers wont change.
-
-5): Improve /proc/<pid>/{stat|stack} protections:
-Patch 8/9: improve /proc/<pid>/stat protection.
-Patch 9/9: improve /proc/<pid>/stack protection.
-
-
-Djalal Harouni (9)
- procfs: use flags to deny or allow access to /proc/<pid>/$entry
- procfs: add pid_entry_access() for proper checks on /proc/<pid>/*
- procfs: add proc_read_from_buffer() and pid_entry_read() helpers
- procfs: improve /proc/<pid>/wchan protection
- procfs: improve /proc/<pid>/syscall protection
- procfs: add pid_seq_private struct to handle /proc/<pid>/{stat|stack}
- procfs: add pid_entry_show() helper to handle /proc/<pid>/{stat|stack}
- procfs: improve /proc/<pid>/stat protection
- procfs: improve /proc/<pid>/stack protection
-
- fs/proc/array.c    |  90 ++++++++++++++++++++++++++++++++++++++++---
- fs/proc/base.c     | 248 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------
- fs/proc/generic.c  |  22 +++++++++++
- fs/proc/internal.h |  34 ++++++++++++++--
- 4 files changed, 361 insertions(+), 33 deletions(-)
