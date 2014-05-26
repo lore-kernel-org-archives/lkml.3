@@ -1,85 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542AbaEZEkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 00:40:15 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:33787 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaEZEkN (ORCPT
+	id S1751617AbaEZEkx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 00:40:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52576 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaEZEkw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 00:40:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANuQgHH1_O-8XHhRREdu5WjOwz1oeASdVf7TQFdGxjr0WDSvhQ@mail.gmail.com>
-References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
-	<1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
-	<CANuQgHH1_O-8XHhRREdu5WjOwz1oeASdVf7TQFdGxjr0WDSvhQ@mail.gmail.com>
-Date: Mon, 26 May 2014 10:10:12 +0530
-Message-ID: <CANuQgHFeDXozQH4LRuidKBOvmhPn8afTpdUg0U4csbsbsyz-OA@mail.gmail.com>
-Subject: Re: [PATCH v6 0/6] add cpuidle support for Exynos5420
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 May 2014 00:40:52 -0400
+Date: Mon, 26 May 2014 00:40:45 -0400 (EDT)
+Message-Id: <20140526.004045.1779020170437806699.davem@davemloft.net>
+To: joe@perches.com
+Cc: manuel.schoelling@gmx.de, kevin.curtis@farsite.co.uk,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] wan: time_before()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1401040732.22191.8.camel@joe-AO725>
+References: <1401039163-10727-1-git-send-email-manuel.schoelling@gmx.de>
+	<1401040732.22191.8.camel@joe-AO725>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 25 May 2014 21:40:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 May 2014 11:10, Chander Kashyap <chander.kashyap@linaro.org> wrote:
-> Hi Daniel/Kgene,
->
-> On 16 May 2014 13:33, Chander Kashyap <chander.kashyap@linaro.org> wrote:
->> Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7 cores.
->>
->> This patchset adds cpuidle support for Exynos5420 SoC based on
->> generic big.little cpuidle driver.
->>
->> Tested on SMDK5420.
->>
->> This patch set depends on:
->>         1. [PATCH 0/5] MCPM backend for Exynos5420
->>            http://www.spinics.net/lists/arm-kernel/msg331100.html
->> Changelog is in respective patches.
->> Chander Kashyap (5):
->>   driver: cpuidle-big-little: add of_device_id structure
->>   arm: exynos: add generic function to calculate cpu number
->>   cpuidle: config: Add ARCH_EXYNOS entry to select cpuidle-big-little
->>     driver
->>   driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
->>   exynos: cpuidle: do not allow cpuidle registration for Exynos5420
->>   mcpm: exynos: populate suspend and powered_up callbacks
->>
->>  arch/arm/mach-exynos/exynos.c        |    4 +++-
->>  arch/arm/mach-exynos/mcpm-exynos.c   |   36 ++++++++++++++++++++++++++++++++++
->>  arch/arm/mach-exynos/regs-pmu.h      |    9 +++++++++
->>  drivers/cpuidle/Kconfig.arm          |    2 +-
->>  drivers/cpuidle/cpuidle-big_little.c |   12 +++++++++++-
->>  5 files changed, 60 insertions(+), 3 deletions(-)
->>
->> --
->> 1.7.9.5
->>
->
-> As dependency patches are merged. If their are no further comment, can
-> these patches be taken?
->
+From: Joe Perches <joe@perches.com>
+Date: Sun, 25 May 2014 10:58:52 -0700
 
-ping
+> On Sun, 2014-05-25 at 19:32 +0200, Manuel Schölling wrote:
+>> To be future-proof and for better readability the time comparisons are
+>> modified to use time_before() instead of plain, error-prone math.
+> 
+> Sensible change, but it seems these should be
+> udelay(some_constant) instead of a a rather
+> variable time wait based on a system/config
+> defined jiffies.
 
-> --
-> with warm regards,
-> Chander Kashyap
-
-
-
--- 
-with warm regards,
-Chander Kashyap
+Agreed, this code probably wants udelay(10) or something like
+that.
