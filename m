@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaEZIS7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 04:18:59 -0400
+	id S1752070AbaEZITf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 04:19:35 -0400
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:29493 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaEZIS5 (ORCPT
+	with ESMTP id S1751805AbaEZIS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 04:18:57 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-ce-5382f8e46e16
+	Mon, 26 May 2014 04:18:58 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-e0-5382f8e67e5a
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: dri-devel@lists.freedesktop.org
-Cc: YoungJun Cho <yj44.cho@samsung.com>,
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Inki Dae <inki.dae@samsung.com>,
+        YoungJun Cho <yj44.cho@samsung.com>, Inki Dae <inki.dae@samsung.com>,
         Joonyoung Shim <jy0922.shim@samsung.com>,
         Seung-Woo Kim <sw0312.kim@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 8/9] drm/exynos: ipp: update comment for struct drm_ipp_buf_info
-Date: Mon, 26 May 2014 10:17:22 +0200
-Message-id: <1401092243-25568-9-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 9/9] drm/exynos: ipp: remove description of non-existing field
+Date: Mon, 26 May 2014 10:17:23 +0200
+Message-id: <1401092243-25568-10-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401092243-25568-1-git-send-email-a.hajda@samsung.com>
 References: <1401092243-25568-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xa7pPfjQFG3zaJW5x5et7NotJ9yew
-	WLy4d5HF4mzTG3aLy7vmsFnMOL+PyWLtkbvsFjMmv2Sz2LtzMqMDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJWxcup21oL77BXb171lbGA8wtbFyMkhIWAi8X/CL0YIW0ziwr31
-	QHEuDiGBpYwST54vZwFJCAn0MUnceiUNYrMJaEr83XwTrFlEQFni78RVjCANzAIfmSRavn9g
-	B0kICwRILH14lhXEZhFQldjybjOYzSvgLDHxcD/UNjmJk8cmg8U5BVwkXn9cydTFyAG0zFni
-	93f+CYy8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEBNWXHYyLj1kdYhTgYFTi4T0R
-	1BQsxJpYVlyZe4hRgoNZSYS3+QNQiDclsbIqtSg/vqg0J7X4ECMTB6dUA6OsevUU5f1hKopv
-	D//fGftfXqDLWqzzc+ShG68WrNk945IKo9A0SZdCSQURGeU51v+5pwWvY3a/K2M79/V/na9c
-	/cba23wf5be6rtvx0KPI8nHmqaZ5tzb7qfA0mD0zTmCtMN63gPOZy7HP63/+Pyf9+4pcCU/d
-	m3Nb90dk/PzD/iP26j77sMdKLMUZiYZazEXFiQAJg3xjCAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t/xa7rPfjQFG/x7Zm5xa905VosrX9+z
+	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZvF3p2TGR24PO53H2fy6Nuy
+	itHj8ya5AOYoLpuU1JzMstQifbsErozbx3rZCzrYKtavfMHWwNjD2sXIySEhYCLxY+1Kdghb
+	TOLCvfVsXYxcHEICSxklGvYeYodw+pgkjt44zQRSxSagKfF38002EFtEQFni78RVjCBFzAIz
+	mCUun+sCGyUs4Cex/80ysBUsAqoSC950s4DYvAIuEreXPWaBWCcncfLYZLAaTqD4648rgRZw
+	AG1zlvj9nX8CI+8CRoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCEB9mUH4+JjVocYBTgY
+	lXh4TwQ1BQuxJpYVV+YeYpTgYFYS4W3+ABTiTUmsrEotyo8vKs1JLT7EyMTBKdXAuFYscOm8
+	h5LHLyy0ujOTf8Ga/2xOWVdLPQ7t9P1j+433SVvF5tlZR1I8CwWzVc7/UTT4VDfR4aTIaZOq
+	GWLfrHNbs5l7joRffvjYVVqTc+2TXUan919WFfy/tFhVX2begV31f6bJsW5bInajef6T9T8O
+	Tpe4a3J1gcDmPK38hlbbu1tVUxXT+5RYijMSDbWYi4oTAYu7lOoOAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: YoungJun Cho <yj44.cho@samsung.com>
+ipp_id field is removed from exynos_drm_ippdrv struct.
+The patch removes its description as well.
 
-The attribute gem_objs in struct drm_exynos_ipp_buf_info was
-changed to handles. So the comment needs to be updated also.
-
-Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
-Acked-by: Seong-Woo Kim <sw0312.kim@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Tested-by: Andrzej Hajda <a.hajda@samsung.com>
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.h | 1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-index 09cb5a2..e06c41e 100644
+index e06c41e..7aaeaae 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-@@ -83,7 +83,7 @@ struct drm_exynos_ipp_cmd_node {
- /*
-  * A structure of buffer information.
-  *
-- * @gem_objs: Y, Cb, Cr each gem object.
-+ * @handles: Y, Cb, Cr each gem object handle.
-  * @base: Y, Cb, Cr each planar address.
-  */
- struct drm_exynos_ipp_buf_info {
+@@ -142,7 +142,6 @@ struct exynos_drm_ipp_ops {
+  * @parent_dev: parent device information.
+  * @dev: platform device.
+  * @drm_dev: drm device.
+- * @ipp_id: id of ipp driver.
+  * @dedicated: dedicated ipp device.
+  * @ops: source, destination operations.
+  * @event_workq: event work queue.
 -- 
 1.9.1
 
