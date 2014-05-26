@@ -1,168 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaEZCns (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 22:43:48 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:9890 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751187AbaEZCnq (ORCPT
+	id S1751499AbaEZCpd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 22:45:33 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:47044 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaEZCpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 22:43:46 -0400
-From: <fwu@marvell.com>
-To: <linus.walleij@linaro.org>, <swarren@wwwdotorg.org>, <tony@atomide.com>
-CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>, <fwu@marvell.com>,
-        <cxie4@marvell.com>, <ylmao@marvell.com>, <njiang1@marvell.com>,
-        <tianxf@marvell.com>, <fswu@marvell.com>
-Subject: [PATCH v3] pinctrl: to avoid duplicated calling enable_pinmux_setting for a pin
-Date: Mon, 26 May 2014 10:43:37 +0800
-Message-ID: <1401072217-3180-1-git-send-email-fwu@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 25 May 2014 22:45:32 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: [PATCH 1/9] perf, tools: Support handling complete branch stacks as histograms v6
+References: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
+	<1400259938-3436-2-git-send-email-andi@firstfloor.org>
+	<87fvk6ji10.fsf@sejong.aot.lge.com>
+	<20140523213503.GD29957@tassilo.jf.intel.com>
+Date: Mon, 26 May 2014 11:45:30 +0900
+In-Reply-To: <20140523213503.GD29957@tassilo.jf.intel.com> (Andi Kleen's
+	message of "Fri, 23 May 2014 14:35:03 -0700")
+Message-ID: <8738fxjm0l.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-25_03:2014-05-23,2014-05-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=9
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1405260038
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fan Wu <fwu@marvell.com>
+Hi Andi,
 
-What the patch did:
-1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
-  calling pinctrl_select_state
-2.Remove the HW disable operation in in pinmux_disable_setting function.
+On Fri, 23 May 2014 14:35:03 -0700, Andi Kleen wrote:
+> On Mon, May 19, 2014 at 05:21:15PM +0900, Namhyung Kim wrote:
+>> This is gone with 540476de74c9 ("perf tools: Remove
+>> symbol_conf.use_callchain check").
+>
+> The patchkit applies to tip/perf/core.
 
-The reason why to do this is that:
-1.To avoid duplicated calling enable_setting operation without disabling
-  operation which will let Pin's desc->mux_usecount keep being added.
-2.The HW pin disable operation is not useful for most of the vendors' platform.
-  And this can be used to avoid the HW glitch after using the item 1#
-  modification.
+The commit 540476de74c9 is also in the tip/perf/core.  Please check
+machine_resolve_callchain_sample().
 
-In the following case, the issue can be reproduced:
-1)There is a driver need to switch Pin state dynamicly, E.g. b/t "sleep" and
-"default" state
-2)The Pin setting configuration in DTS node may be like the following one:
-component a {
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&a_grp_setting &c_grp_setting>;
-	pinctrl-1 = <&b_grp_setting &c_grp_setting>;
-}
-The "c_grp_setting" config node is totaly same, maybe like following one:
-c_grp_setting: c_grp_setting {
-	pinctrl-single,pins = <GPIO48 AF6>;
-	MFP_DEFAULT;
-}
-3)When switching the Pin state in the following official Pinctrl sequence:
-	pin = pinctrl_get();
-	state = pinctrl_lookup_state(wanted_state);
-	pinctrl_select_state(state);
-	pinctrl_put();
+>
+>> > +				 * Check for overlap into the callchain.
+>> > +				 * The return address is one off compared to
+>> > +				 * the branch entry. To adjust for this
+>> > +				 * assume the calling instruction is not longer
+>> > +				 * than 8 bytes.
+>> > +				 */
+>> > +				if (be[i].from < chain->ips[first_call] &&
+>> > +				    be[i].from >= chain->ips[first_call] - 8)
+>> > +					first_call++;
+>> 
+>> It seems that you need to check chain->ips[first_call] is greater than
+>> PERF_CONTEXT_MAX and use such value as the cpumode...
+>
+> I don't understand the comment. The only IP that gets resolved is the from/to.
+> And add_callchain_ip does it own resolution.
+>
+> Wouldn't make any sense to get it from first_call
 
-Test Result:
-1)The switch is completed as expectation, that is: component's
-Pins configuration are changed according to the description in the
-"wanted_state" group setting
-2)The "desc->mux_usecount" of corresponding Pins in "c_group" is added without being
-decreased, because the "desc" is for each physical pin while the "setting" is
-for each setting node in the DTS.
-Thus, if the "c_grp_setting" in pinctrl-0 is not disabled ahead of enabling
-"c_grp_setting" in pinctrl-1, the desc->mux_usecount will be kept added without
-any chance to be decreased.
+Okay, let me explain it this way..
 
-According to the comments in the original code, only the setting, in old state
-but not in new state, will be "disable"(calling pinmux_disable_setting), which
-is correct logic but not intact. We still need consider case that the setting
-is in both old state and new state.
-We can do this in the following two ways:
-1) Avoid "enable"(calling pinmux_enable_setting) the Same Pins setting repeatedly.
-2) "Disable"(calling pinmux_disable_setting) the "Same Pins setting", actually
-two setting instance, ahead of enabling them.
+You're checking the branch stack with normal callchain to find overlap
+by comparing the 'from' address and the address in chain->ips[].  But
+chain->ips[0] doesn't contain a valid address but a PERF_CONTEXT_XXX for
+cpumode of subsequent callchains.  So the first_call of 0 won't do
+anything meaningful for you and it'd still contain overlapped
+callchains.
 
-Analysis:
-1.The solution 2# is better because it can avoid too much iteration.
-2.If we disable all of the setting in the old state and one/ones of the setting(s) is/are
-existed in the new state, the Pin's mux function change may happen when
-some SoC vendors defined the "pinctrl-single,function-off" in their DTS file.
-old_setting=>disabled_setting=>new_setting.
-3.In the pinmux framework, when Pin state is switched, the setting in the old state should be
-marked as "disabled".
+  $ perf --version
+  perf version 3.15.rc4.g816bf8
+  
+  $ perf record -b -g ./tcall
+  
+  $ perf report -D | grep -A35 SAMPLE
+  4748858059190923 0x3608 [0x240]: PERF_RECORD_SAMPLE(IP, 0x1): 31914/31914: 0xffffffff81043ffa period: 1 addr: 0
+  ... chain: nr:17
+  .....  0: ffffffffffffff80
+  .....  1: ffffffff81043ffa
+  .....  2: ffffffff81029d40
+  .....  3: ffffffff81025554
+  .....  4: ffffffff811246c7
+  .....  5: ffffffff81125d69
+  .....  6: ffffffff811280dc
+  .....  7: ffffffff811a4266
+  .....  8: ffffffff811a4bb1
+  .....  9: ffffffff811f1a4f
+  ..... 10: ffffffff811a344c
+  ..... 11: ffffffff811a49bb
+  ..... 12: ffffffff811a4ac8
+  ..... 13: ffffffff811a4d3d
+  ..... 14: ffffffff81664689
+  ..... 15: fffffffffffffe00
+  ..... 16: 0000003153ebca47
+  ... branch stack: nr:16
+  .....  0: ffffffff81029d3b -> ffffffff81043ff0
+  .....  1: ffffffff810280c9 -> ffffffff81029d18
+  .....  2: ffffffff81043ffd -> ffffffff810280be
+  .....  3: 0000000000000000 -> 0000000000000000
+  .....  4: 0000000000000000 -> 0000000000000000
+  .....  5: 0000000000000000 -> 0000000000000000
+  .....  6: 0000000000000000 -> 0000000000000000
+  .....  7: 0000000000000000 -> 0000000000000000
+  .....  8: 0000000000000000 -> 0000000000000000
+  .....  9: 0000000000000000 -> 0000000000000000
+  ..... 10: 0000000000000000 -> 0000000000000000
+  ..... 11: 0000000000000000 -> 0000000000000000
+  ..... 12: 0000000000000000 -> 0000000000000000
+  ..... 13: 0000000000000000 -> 0000000000000000
+  ..... 14: 0000000000000000 -> 0000000000000000
+  ..... 15: 0000000000000000 -> 0000000000000000
 
-Conclusion:
-1.To Remove the HW disabling operation to above the glitch mentioned above.
-2.Handle the issue mentioned above by disabling all of the settings in old
-state and then enable the all of the settings in new state.
+As you can see, chain->ips[0] is ffffffffffffff80 (= -128) that is
+defined as PERF_CONTEXT_KERNEL.  And in this case nr of branch stack is
+16 but it's actually 3.  I guess you need to ignore 0 entries..
 
-Signed-off-by: Fan Wu <fwu@marvell.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/pinctrl/core.c   |   24 +++++-------------------
- drivers/pinctrl/pinmux.c |    4 ----
- 2 files changed, 5 insertions(+), 23 deletions(-)
+Also perf report seems to fail to resolve symbols/srclines in branch
+stack (possibly due to missing cpumode) and find loops.
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index c0fe609..4445a67 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -989,29 +989,15 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
- 
- 	if (p->state) {
- 		/*
--		 * The set of groups with a mux configuration in the old state
--		 * may not be identical to the set of groups with a mux setting
--		 * in the new state. While this might be unusual, it's entirely
--		 * possible for the "user"-supplied mapping table to be written
--		 * that way. For each group that was configured in the old state
--		 * but not in the new state, this code puts that group into a
--		 * safe/disabled state.
-+		 * For each pinmux setting in the old state, forget SW's record
-+		 * of mux owner for that pingroup. Any pingroups which are
-+		 * still owned by the new state will be re-acquired by the call
-+		 * to pinmux_enable_setting() in the loop below.
- 		 */
- 		list_for_each_entry(setting, &p->state->settings, node) {
--			bool found = false;
- 			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
- 				continue;
--			list_for_each_entry(setting2, &state->settings, node) {
--				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
--					continue;
--				if (setting2->data.mux.group ==
--						setting->data.mux.group) {
--					found = true;
--					break;
--				}
--			}
--			if (!found)
--				pinmux_disable_setting(setting);
-+			pinmux_disable_setting(setting);
- 		}
- 	}
- 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 9248ce4..c2c4aff 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -469,7 +469,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- {
- 	struct pinctrl_dev *pctldev = setting->pctldev;
- 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
--	const struct pinmux_ops *ops = pctldev->desc->pmxops;
- 	int ret;
- 	const unsigned *pins;
- 	unsigned num_pins;
-@@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- 				 pins[i], desc->name, gname);
- 		}
- 	}
--
--	if (ops->disable)
--		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
- }
- 
- #ifdef CONFIG_DEBUG_FS
--- 
-1.7.9.5
+  $ perf report --branch-history --stdio
+  ...
+       0.00%  native_writ  [k] native_write_msr_safe  [kernel.kallsyms]
+              |
+              ---0xffffffff81043ff0
+                 0xffffffff81029d3b
+                 0xffffffff81029d18
+                 0xffffffff810280c9
+                 0xffffffff810280be
+                 0xffffffff81043ffd
+                 |          
+                 |--99.77%-- 0xffffffff81043ff0
+                 |          0xffffffff81029d3b
+                 |          0xffffffff81029d18
+                 |          0xffffffff810280c9
+                 |          0xffffffff810280be
+                 |          0xffffffff81043ffd
+                 |          0
+                 |          0
+                 |          |          
+                 |          |--91.43%-- native_write_msr_safe +10
+                 |          |          intel_pmu_enable_all +80
+                 |          |          x86_pmu_enable +628
+                 |          |          perf_pmu_enable +39
+                 |          |          perf_event_context_sched_in +121
+                 |          |          perf_event_comm +364
+                 |          |          set_task_comm +102
+                 |          |          setup_new_exec +129
+                 |          |          load_elf_binary +1007
+                 |          |          
+                 |           --8.57%-- 0
+                 |                     0
+                 |                     |          
+                 |                     |--91.78%-- native_write_msr_safe +10
+                 |                     |          intel_pmu_enable_all +80
+                 |                     |          x86_pmu_enable +628
+                 |                     |          perf_pmu_enable +39
+                 |                     |          perf_event_context_sched_in +121
+                 |                     |          perf_event_comm +364
+                 |                     |          set_task_comm +102
+                 |                     |          setup_new_exec +129
+                 |                     |          
+                 |                      --8.22%-- 0
+                 |                                0
+                 |                                native_write_msr_safe +10
+                 |                                intel_pmu_enable_all +80
+                 |                                x86_pmu_enable +628
+                 |                                perf_pmu_enable +39
+                 |                                perf_event_context_sched_in +121
+                 |                                perf_event_comm +364
+                 |                                set_task_comm +102
+                  --0.23%-- [...]
 
+
+
+>
+>> 
+>> 
+>> > +			} else
+>> > +				be[i] = branch->entries[branch->nr - i - 1];
+>> > +		}
+>> > +
+>> > +		nr = remove_loops(be, nr);
+>> > +
+>> > +		for (i = 0; i < nr; i++) {
+>> > +			err = add_callchain_ip(machine, thread, parent,
+>> > +					       root_al,
+>> > +					       -1, be[i].to);
+>> > +			if (!err)
+>> > +				err = add_callchain_ip(machine, thread,
+>> > +						       parent, root_al,
+>> > +						       -1, be[i].from);
+>> 
+>> ... for here.
+>> 
+>> 
+>> > +			if (err == -EINVAL)
+>> > +				break;
+>> > +			if (err)
+>> > +				return err;
+>> > +		}
+>> > +		chain_nr -= nr;
+>> 
+>> It seems it could make some callchain nodes being ignored.  What if a
+>> case like small callchains with matches to only 2 nodes in the LBR?
+>> 
+>>   nr = 16, chain_nr = 10 and first_call = 2
+>
+> The chain_nr variable is just to handle it when the user
+> specified a max_stack value. nr is always capped to max_stack too.
+> If lbr size is >= max_stack it will end up being 0 or negative and the 
+> following loop to add normal call stack entries will do nothing.
+>
+> I think that's the correct behavior.
+
+Hmm.. I assumed user didn't specify a max_stack but failed to understand
+how the code prevents from ignoring remaining 8 callchain nodes.
+
+Thanks,
+Namhyung
