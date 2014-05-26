@@ -1,223 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359AbaEZLKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:10:23 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50540 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaEZLKU (ORCPT
+	id S1752389AbaEZLL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:11:29 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62388 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaEZLL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:10:20 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v7 2/2] CPU hotplug,
- smp: Flush any pending IPI callbacks before CPU offline
-To: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
-        hch@infradead.org
-Cc: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 26 May 2014 16:38:38 +0530
-Message-ID: <20140526110831.16203.25130.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140526110743.16203.18186.stgit@srivatsabhat.in.ibm.com>
-References: <20140526110743.16203.18186.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Mon, 26 May 2014 07:11:27 -0400
+Message-ID: <53832157.2020502@gmail.com>
+Date: Mon, 26 May 2014 13:11:19 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
+Subject: Re: [PATCH v11 0/3] Exynos 5410 support
+References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
+In-Reply-To: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052611-1396-0000-0000-000004E8D3F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During CPU offline, in stop-machine, we don't enforce any rule in the
-_DISABLE_IRQ stage, regarding the order in which the outgoing CPU and the other
-CPUs disable their local interrupts. Hence, we can encounter a scenario as
-depicted below, in which IPIs are sent by the other CPUs to the CPU going
-offline (while it is *still* online), but the outgoing CPU notices them only
-*after* it has gone offline.
+Hi,
 
+On 26.05.2014 05:23, Tarek Dakhran wrote:
+> The series of patches represent support of Exynos 5410 SoC
+> 
+> The Exynos 5410 is the first Samsung SoC based on big.LITTLE architecture
+> 
+> Patches add new platform description, support of clock controller and device
+> tree for Exynos 5410.
+> 
+> Has been build on Samsung Linux Kernel
+>   (branch: for-next, commit: 97eae6c Merge branch 'v3.16-next/multiplatform' into for-next)
+> 
+> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
+> 		    2) Exynos 5410 reference board (multi_v7_defconfig)
+> 		    3) Odroid-XU board (exynos_defconfig)
+> 		    4) Odroid-XU board (multi_v7_defconfig)
+> 
+> I hope this is clean and would be applied.
+> 
+> Tarek.
+> 
+> Tarek Dakhran (3):
+>   ARM: EXYNOS: Add support for EXYNOS5410 SoC
+>   clk: exynos5410: register clocks using common clock framework
+>   ARM: dts: Add initial device tree support for EXYNOS5410
+> 
+>  .../devicetree/bindings/clock/exynos5410-clock.txt |   45 +++++
+>  arch/arm/boot/dts/Makefile                         |    1 +
+>  arch/arm/boot/dts/exynos5410-smdk5410.dts          |   82 ++++++++
+>  arch/arm/boot/dts/exynos5410.dtsi                  |  206 +++++++++++++++++++
+>  arch/arm/mach-exynos/Kconfig                       |    5 +
+>  arch/arm/mach-exynos/common.h                      |   12 +-
+>  drivers/clk/samsung/Makefile                       |    1 +
+>  drivers/clk/samsung/clk-exynos5410.c               |  209 ++++++++++++++++++++
+>  include/dt-bindings/clock/exynos5410.h             |   33 ++++
+>  9 files changed, 592 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
+>  create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
+>  create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
+>  create mode 100644 drivers/clk/samsung/clk-exynos5410.c
+>  create mode 100644 include/dt-bindings/clock/exynos5410.h
+> 
 
-              CPU 1                                         CPU 2
-          (Online CPU)                               (CPU going offline)
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-       Enter _PREPARE stage                          Enter _PREPARE stage
-
-                                                     Enter _DISABLE_IRQ stage
-
-
-                                                   =
-       Got a device interrupt,                     | Didn't notice the IPI
-       and the interrupt handler                   | since interrupts were
-       called smp_call_function()                  | disabled on this CPU.
-       and sent an IPI to CPU 2.                   |
-                                                   =
-
-
-       Enter _DISABLE_IRQ stage
-
-
-       Enter _RUN stage                              Enter _RUN stage
-
-                                  =
-       Busy loop with interrupts  |                  Invoke take_cpu_down()
-       disabled.                  |                  and take CPU 2 offline
-                                  =
-
-
-       Enter _EXIT stage                             Enter _EXIT stage
-
-       Re-enable interrupts                          Re-enable interrupts
-
-                                                     The pending IPI is noted
-                                                     immediately, but alas,
-                                                     the CPU is offline at
-                                                     this point.
-
-
-
-This of course, makes the smp-call-function IPI handler code unhappy and it
-complains about "receiving an IPI on an offline CPU".
-
-However, if we look closely, we observe that the IPI was sent when CPU 2 was
-still online, and hence it was perfectly legal for CPU 1 to send the IPI at
-that point. Furthermore, receiving an IPI on an offline CPU is terrible only
-if there were pending callbacks yet to be executed by that CPU (in other words,
-its a bug if the CPU went offline with work still pending).
-
-So, fix this by flushing all the queued smp-call-function callbacks on the
-outgoing CPU in the CPU_DYING stage[1], including those callbacks for which the
-source CPU's IPIs might not have been received on the outgoing CPU yet. This
-ensures that all pending IPI callbacks are run before the CPU goes completely
-offline. But note that the outgoing CPU can still get IPIs from the other CPUs
-just after it exits stop-machine, due to the scenario mentioned above. But
-because we flush the callbacks before going offline, this will be completely
-harmless.
-
-Further, this solution also guarantees that there will be pending callbacks
-on an offline CPU *only if* the source CPU initiated the IPI-send-procedure
-*after* the target CPU went offline, which clearly indicates a bug in the
-sender code.
-
-So, considering all this, teach the smp-call-function IPI handler code to
-complain only if an offline CPU received an IPI *and* it still had pending
-callbacks to execute, since that is the only buggy scenario.
-
-There is another case (somewhat theoretical though) where IPIs might arrive
-late on the target CPU (possibly _after_ the CPU has gone offline): due to IPI
-latencies in the hardware. But with this patch, even this scenario turns out
-to be harmless, since we explicitly loop through the call_single_queue and
-flush out any pending callbacks without waiting for the corresponding IPIs
-to arrive.
-
-
-[1]. The CPU_DYING part needs a little more explanation: by the time we
-execute the CPU_DYING notifier callbacks, the CPU would have already been
-marked offline. But we want to flush out the pending callbacks at this stage,
-ignoring the fact that the CPU is offline. So restructure the IPI handler
-code so that we can by-pass the "is-cpu-offline?" check in this particular
-case. (Of course, the right solution here is to fix CPU hotplug to mark the
-CPU offline _after_ invoking the CPU_DYING notifiers, but this requires a
-lot of audit to ensure that this change doesn't break any existing code;
-hence lets go with the solution proposed above until that is done).
-
-Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- kernel/smp.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 48 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 306f818..5295388 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -29,6 +29,8 @@ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
- 
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct llist_head, call_single_queue);
- 
-+static void flush_smp_call_function_queue(bool warn_cpu_offline);
-+
- static int
- hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- {
-@@ -52,6 +54,20 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
- 
-+	case CPU_DYING:
-+	case CPU_DYING_FROZEN:
-+		/*
-+		 * The IPIs for the smp-call-function callbacks queued by other
-+		 * CPUs might arrive late, either due to hardware latencies or
-+		 * because this CPU disabled interrupts (inside stop-machine)
-+		 * before the IPIs were sent. So flush out any pending callbacks
-+		 * explicitly (without waiting for the IPIs to arrive), to
-+		 * ensure that the outgoing CPU doesn't go offline with work
-+		 * still pending.
-+		 */
-+		flush_smp_call_function_queue(false);
-+		break;
-+
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		free_cpumask_var(cfd->cpumask);
-@@ -177,23 +193,47 @@ static int generic_exec_single(int cpu, struct call_single_data *csd,
- 	return 0;
- }
- 
--/*
-- * Invoked by arch to handle an IPI for call function single. Must be
-- * called from the arch with interrupts disabled.
-+/**
-+ * generic_smp_call_function_single_interrupt - Execute SMP IPI callbacks
-+ *
-+ * Invoked by arch to handle an IPI for call function single.
-+ * Must be called with interrupts disabled.
-  */
- void generic_smp_call_function_single_interrupt(void)
- {
-+	flush_smp_call_function_queue(true);
-+}
-+
-+/**
-+ * flush_smp_call_function_queue - Flush pending smp-call-function callbacks
-+ *
-+ * @warn_cpu_offline: If set to 'true', warn if callbacks were queued on an
-+ * 		      offline CPU. Skip this check if set to 'false'.
-+ *
-+ * Flush any pending smp-call-function callbacks queued on this CPU. This is
-+ * invoked by the generic IPI handler, as well as by a CPU about to go offline,
-+ * to ensure that all pending IPI functions are run before it goes completely
-+ * offline.
-+ *
-+ * Loop through the call_single_queue and run all the queued functions.
-+ * Must be called with interrupts disabled.
-+ */
-+static void flush_smp_call_function_queue(bool warn_cpu_offline)
-+{
-+	struct llist_head *head;
- 	struct llist_node *entry;
- 	struct call_single_data *csd, *csd_next;
- 	static bool warned;
- 
--	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-+	WARN_ON(!irqs_disabled());
-+
-+	head = &__get_cpu_var(call_single_queue);
-+	entry = llist_del_all(head);
- 	entry = llist_reverse_order(entry);
- 
--	/*
--	 * Shouldn't receive this interrupt on a cpu that is not yet online.
--	 */
--	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
-+	/* There shouldn't be any pending callbacks on an offline CPU. */
-+	if (unlikely(warn_cpu_offline && !cpu_online(smp_processor_id()) &&
-+		     !warned && !llist_empty(head))) {
- 		warned = true;
- 		WARN(1, "IPI on offline CPU %d\n", smp_processor_id());
- 
-
+Best regards,
+Tomasz
