@@ -1,99 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaEZFnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 01:43:18 -0400
-Received: from mail.eperm.de ([89.247.134.16]:43888 "EHLO mail.eperm.de"
+	id S1751658AbaEZFnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 01:43:40 -0400
+Received: from ozlabs.org ([103.22.144.67]:33530 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151AbaEZFnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 01:43:17 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        aquini@redhat.com, jeremy.wayne.powell@gmail.com, clemens@ladisch.de,
-        pwalten@au1.ibm.com, joe@perches.com
-Subject: Re: [PATCH v7 0/6] SP800-90A Deterministic Random Bit Generator
-Date: Mon, 26 May 2014 07:42:57 +0200
-Message-ID: <1449817.RiX7azh5Ri@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20140523211459.GA21019@gondor.apana.org.au>
-References: <20140523211459.GA21019@gondor.apana.org.au>
+	id S1751607AbaEZFnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 01:43:39 -0400
+Date: Mon, 26 May 2014 15:43:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cosmin Stoica <cosminstefan.stoica@freescale.com>,
+        Shawn Guo <shawn.guo@freescale.com>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: linux-next: manual merge of the clockevents tree with the arm-soc
+ tree
+Message-ID: <20140526154331.7fc6b30c@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/fnJgPSxbvrLc3RXv=182FNj"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 24. Mai 2014, 05:14:59 schrieb Herbert Xu:
+--Sig_/fnJgPSxbvrLc3RXv=182FNj
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi Herbert,
+Hi Daniel,
 
-> Stephan Mueller <smueller@chronox.de> wrote:
-> > Hi,
-> > 
-> > the following set of patches implements the deterministic random bit
-> > generator (DRBG) specified by SP800-90A.
-> > 
-> > The DRBG implementation offers the following:
-> >        * All three DRBG types are implemented with a derivation function.
-> >        * All DRBG types are available with and without prediction
-> >        resistance.
-> >        * All SHA types of SHA-1, SHA-256, SHA-384, SHA-512 are available
-> >        
-> >          for the HMAC and Hash DRBGs.
-> >        
-> >        * All AES types of AES-128, AES-192 and AES-256 are available for
-> >        the
-> >        
-> >          CTR DRBG.
-> >        
-> >        * A self test is implemented with drbg_healthcheck().
-> >        * The FIPS 140-2 continuous self test is implemented.
-> >        * Additional cipher primitives, such as Serpent or Twofish, can be
-> >        
-> >          added to the DRBG without changing the implementation. The only
-> >          change necessary is to the DRBG definition given in the cores[]
-> >          array.
-> 
-> Where is the code that actually uses this?
+Today's linux-next merge of the clockevents tree got a conflict in
+arch/arm/boot/dts/vf610.dtsi between commit 0517fe6aa880 ("ARM: dts:
+vf610-twr: Add support for sdhc1") from the arm-soc tree and commit
+07513e1330a9 ("ARM: dts: vf610: Add Freescale FlexTimer Module timer
+node") from the clockevents tree.
 
-There are several answers to this.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-First: as required by NIST SP800-131A, the ANSI X9.31 DRNG is considered to be 
-sunset by the end of 2015. The FIPS 140-2 validation part of NIST requires 
-that ANSI X9.31 DRNGs are not allowed for new validations since the start of 
-this year and prohibited for revalidations starting next year. The replacement 
-of ANSI X9.31 is SP800-90A.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The Linux kernel currently implements one DRNG in ansi_cprng.c. This DRNG is 
-an ANSI X9.31 DRNG. This means, the offered SP800-90A implementation can be 
-considered a replacement of ansi_cprng.c.
+diff --cc arch/arm/boot/dts/vf610.dtsi
+index 73355ddc5186,3c91b84066a1..000000000000
+--- a/arch/arm/boot/dts/vf610.dtsi
++++ b/arch/arm/boot/dts/vf610.dtsi
+@@@ -360,17 -347,19 +360,30 @@@
+  				status =3D "disabled";
+  			};
+ =20
+ +			esdhc1: esdhc@400b2000 {
+ +				compatible =3D "fsl,imx53-esdhc";
+ +				reg =3D <0x400b2000 0x4000>;
+ +				interrupts =3D <0 28 0x04>;
+ +				clocks =3D <&clks VF610_CLK_IPG_BUS>,
+ +					<&clks VF610_CLK_PLATFORM_BUS>,
+ +					<&clks VF610_CLK_ESDHC1>;
+ +				clock-names =3D "ipg", "ahb", "per";
+ +				status =3D "disabled";
+ +			};
+ +
++ 			ftm: ftm@400b8000 {
++ 				compatible =3D "fsl,ftm-timer";
++ 				reg =3D <0x400b8000 0x1000 0x400b9000 0x1000>;
++ 				interrupts =3D <0 44 IRQ_TYPE_LEVEL_HIGH>;
++ 				clock-names =3D "ftm-evt", "ftm-src",
++ 					"ftm-evt-counter-en", "ftm-src-counter-en";
++ 				clocks =3D <&clks VF610_CLK_FTM2>,
++ 					<&clks VF610_CLK_FTM3>,
++ 					<&clks VF610_CLK_FTM2_EXT_FIX_EN>,
++ 					<&clks VF610_CLK_FTM3_EXT_FIX_EN>;
++ 				status =3D "disabled";
++ 			};
++=20
+  			fec0: ethernet@400d0000 {
+  				compatible =3D "fsl,mvf600-fec";
+  				reg =3D <0x400d0000 0x1000>;
 
-A second aspect is the implementation of the stdrng. Currently, the offered 
-patch does not include the stdrng selection. I am currently working on the 
-completion of the addition of the stdrng selection to the offered patch. My 
-idea is the following: currently, all DRBG types are registered with their own 
-cra_name. However, there shall be one particular DRBG registered twice. When 
-registering the instance again, the cra_name shall be "stdrng". In addition, 
-if the kernel command line contains fips=1, the cra_priority of that stdrng 
-should be set to 300. That implies that when the kernel resolves the stdrng, 
-it resolves to get_random_bytes in normal mode, but to the stdrng DRBG in FIPS 
-mode.
+--Sig_/fnJgPSxbvrLc3RXv=182FNj
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Here some code snippet from my patch I am working on:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-if (fips_stdrng) {
-                memcpy(alg->cra_name, "stdrng", 6);
+iQIcBAEBCAAGBQJTgtSIAAoJEMDTa8Ir7ZwVlA0P/0POL6vfY5pCCxiOIgIAXwXX
+WCpHd+yxKm3KrmxPXDf5TT63efkJmENLk4veUPT6bKL75nV7rCErP0RYeby3AWbR
+VeVGWYoXJj21eRCFxyfO6d4kRAPnE9+3kXGtloemTbrFWVsVQY6fcJ1cWVvUXBMm
+U13Q1DW04JfHtMfIurAQvwJS7KX8gPrse9UvGvaJcc9baty35u6QJvwf53cw0q5S
+cw8PWme/kZpsQ5lsHcyExeU7O9vnsB+ASoVwqfqxiAVA8AhGAkVtv2lfmoxpsb7H
+vbnBl/wCmYW2bVGvEXKESQ/DLn6IDGw0FKn0ET2yPLgkJRLt/+cvJL5ZUvLyTh/c
+ArhQuu9RIqofO3PyVLymcL/WxbbbdOa3r4bVPn+Vv0BY2kk85/nylB+uL6xham3y
+s/1GeLwgVcO9N50GWNEm3EY9Hs8LWcQ2lzD956cAsTb+VWak+FYMez7U0sceAI/B
+dLugcX8fFp1ylr/Jagh8Rll1hJ8hNgM317+UnAgkWkrWdjgRhP4oz3HumGjlebtc
+Ab4+2Qg7E67ZRc3ORXUR5KF8/aKI3wzr4lF/BDmrladWC0s5/Rf84BR0OthRkfo7
+0OngBMR8BK2YJ4LS04ki44V42LXNvRBNQ2/o7HKixpzdAeXvuELD8CtBuZLnduua
+L3bDLcjJUcTvPf3u0Y53
+=PJg3
+-----END PGP SIGNATURE-----
 
-...
-
-if (fips_stdrng)
-                alg->cra_priority = 300;
-        else
-                alg->cra_priority = 100;
-
-Ciao
-Stephan
--- 
-| Cui bono? |
+--Sig_/fnJgPSxbvrLc3RXv=182FNj--
