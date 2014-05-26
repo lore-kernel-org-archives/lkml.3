@@ -1,263 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaEZO6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:58:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37823 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752065AbaEZO6l (ORCPT
+	id S1752708AbaEZPBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:01:13 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43270 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103AbaEZPBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:58:41 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 1/5] mfd: axp20x: add AXP221 PMIC support
-Date: Mon, 26 May 2014 16:58:08 +0200
-Message-Id: <1401116292-24066-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401116292-24066-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1401116292-24066-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 26 May 2014 11:01:12 -0400
+Date: Mon, 26 May 2014 16:00:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Keerthy <j-keerthy@ti.com>
+Cc: linux-omap@vger.kernel.org, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        lee.jones@linaro.org
+Message-ID: <20140526150052.GP22111@sirena.org.uk>
+References: <1401098197-647-1-git-send-email-j-keerthy@ti.com>
+ <1401098197-647-6-git-send-email-j-keerthy@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="F+XLDYyeDCF2A2Dn"
+Content-Disposition: inline
+In-Reply-To: <1401098197-647-6-git-send-email-j-keerthy@ti.com>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.248.185
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 5/5] regulator: tps65917: Add Regulator driver for
+ tps65917 PMIC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the AXP221 PMIC device to the existing AXP20x driver.
 
-The AXP221 defines a new set of registers, power supplies and regulators,
-but most of the API is similar to the AXP20x ones.
-The AXP20x irq chip definition is reused, though some interrupts are not
-available in the AXP221.
+--F+XLDYyeDCF2A2Dn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/mfd/axp20x.c       | 58 +++++++++++++++++++++++++++++++++++++++++++---
- include/linux/mfd/axp20x.h | 56 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 111 insertions(+), 3 deletions(-)
+On Mon, May 26, 2014 at 03:26:37PM +0530, Keerthy wrote:
+> This patch adds support for TPS65917 PMIC regulators.
+>=20
+> The regulators set consists of 5 SMPSs and 5 LDOs. The output
+> voltages are configurable and are meant to supply power to the
+> main processor and other components.
 
-diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-index dee6539..ca9fe2e 100644
---- a/drivers/mfd/axp20x.c
-+++ b/drivers/mfd/axp20x.c
-@@ -33,6 +33,11 @@ static const struct regmap_range axp20x_writeable_ranges[] = {
- 	regmap_reg_range(AXP20X_DCDC_MODE, AXP20X_FG_RES),
- };
- 
-+static const struct regmap_range axp22x_writeable_ranges[] = {
-+	regmap_reg_range(AXP20X_DATACACHE(0), AXP20X_IRQ5_STATE),
-+	regmap_reg_range(AXP20X_DCDC_MODE, AXP22X_BATLOW_THRES1),
-+};
-+
- static const struct regmap_range axp20x_volatile_ranges[] = {
- 	regmap_reg_range(AXP20X_IRQ1_EN, AXP20X_IRQ5_STATE),
- };
-@@ -42,6 +47,11 @@ static const struct regmap_access_table axp20x_writeable_table = {
- 	.n_yes_ranges	= ARRAY_SIZE(axp20x_writeable_ranges),
- };
- 
-+static const struct regmap_access_table axp22x_writeable_table = {
-+	.yes_ranges	= axp22x_writeable_ranges,
-+	.n_yes_ranges	= ARRAY_SIZE(axp22x_writeable_ranges),
-+};
-+
- static const struct regmap_access_table axp20x_volatile_table = {
- 	.yes_ranges	= axp20x_volatile_ranges,
- 	.n_yes_ranges	= ARRAY_SIZE(axp20x_volatile_ranges),
-@@ -70,6 +80,15 @@ static const struct regmap_config axp20x_regmap_config = {
- 	.cache_type	= REGCACHE_RBTREE,
- };
- 
-+static const struct regmap_config axp22x_regmap_config = {
-+	.reg_bits	= 8,
-+	.val_bits	= 8,
-+	.wr_table	= &axp22x_writeable_table,
-+	.volatile_table	= &axp20x_volatile_table,
-+	.max_register	= AXP22X_BATLOW_THRES1,
-+	.cache_type	= REGCACHE_RBTREE,
-+};
-+
- #define AXP20X_IRQ(_irq, _off, _mask) \
- 	[AXP20X_IRQ_##_irq] = { .reg_offset = (_off), .mask = BIT(_mask) }
- 
-@@ -116,6 +135,7 @@ static const struct regmap_irq axp20x_regmap_irqs[] = {
- static const struct of_device_id axp20x_of_match[] = {
- 	{ .compatible = "x-powers,axp202", .data = (void *) AXP202_ID },
- 	{ .compatible = "x-powers,axp209", .data = (void *) AXP209_ID },
-+	{ .compatible = "x-powers,axp221", .data = (void *) AXP221_ID },
- 	{ },
- };
- MODULE_DEVICE_TABLE(of, axp20x_of_match);
-@@ -149,6 +169,21 @@ static const char * const axp20x_supplies[] = {
- 	"ldo5in",
- };
- 
-+static const char *axp22x_supplies[] = {
-+	"vbus",
-+	"acin",
-+	"vin1",
-+	"vin2",
-+	"vin3",
-+	"vin4",
-+	"vin5",
-+	"aldoin",
-+	"dldoin",
-+	"eldoin",
-+	"ldoioin",
-+	"rtcldoin",
-+};
-+
- static struct mfd_cell axp20x_cells[] = {
- 	{
- 		.name			= "axp20x-pek",
-@@ -161,6 +196,14 @@ static struct mfd_cell axp20x_cells[] = {
- 	},
- };
- 
-+static struct mfd_cell axp22x_cells[] = {
-+	{
-+		.name			= "axp20x-regulator",
-+		.parent_supplies	= axp22x_supplies,
-+		.num_parent_supplies	= ARRAY_SIZE(axp22x_supplies),
-+	},
-+};
-+
- static struct axp20x_dev *axp20x_pm_power_off;
- static void axp20x_power_off(void)
- {
-@@ -190,7 +233,12 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
- 	axp20x->dev = &i2c->dev;
- 	dev_set_drvdata(axp20x->dev, axp20x);
- 
--	axp20x->regmap = devm_regmap_init_i2c(i2c, &axp20x_regmap_config);
-+	if (axp20x->variant == AXP221_ID)
-+		axp20x->regmap = devm_regmap_init_i2c(i2c,
-+						      &axp22x_regmap_config);
-+	else
-+		axp20x->regmap = devm_regmap_init_i2c(i2c,
-+						      &axp20x_regmap_config);
- 	if (IS_ERR(axp20x->regmap)) {
- 		ret = PTR_ERR(axp20x->regmap);
- 		dev_err(&i2c->dev, "regmap init failed: %d\n", ret);
-@@ -206,8 +254,12 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
- 		return ret;
- 	}
- 
--	ret = mfd_add_devices(axp20x->dev, -1, axp20x_cells,
--			      ARRAY_SIZE(axp20x_cells), NULL, 0, NULL);
-+	if (axp20x->variant == AXP221_ID)
-+		ret = mfd_add_devices(axp20x->dev, -1, axp22x_cells,
-+				      ARRAY_SIZE(axp20x_cells), NULL, 0, NULL);
-+	else
-+		ret = mfd_add_devices(axp20x->dev, -1, axp20x_cells,
-+				      ARRAY_SIZE(axp20x_cells), NULL, 0, NULL);
- 
- 	if (ret) {
- 		dev_err(&i2c->dev, "failed to add MFD devices: %d\n", ret);
-diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
-index d0e31a2..8a8ce02 100644
---- a/include/linux/mfd/axp20x.h
-+++ b/include/linux/mfd/axp20x.h
-@@ -14,6 +14,7 @@
- enum {
- 	AXP202_ID = 0,
- 	AXP209_ID,
-+	AXP221_ID,
- };
- 
- #define AXP20X_DATACACHE(m)		(0x04 + (m))
-@@ -43,6 +44,28 @@ enum {
- #define AXP20X_V_LTF_DISCHRG		0x3c
- #define AXP20X_V_HTF_DISCHRG		0x3d
- 
-+#define AXP22X_PWR_OUT_CTRL1		0x10
-+#define AXP22X_PWR_OUT_CTRL2		0x12
-+#define AXP22X_PWR_OUT_CTRL3		0x13
-+#define AXP22X_DLDO1_V_OUT		0x15
-+#define AXP22X_DLDO2_V_OUT		0x16
-+#define AXP22X_DLDO3_V_OUT		0x17
-+#define AXP22X_DLDO4_V_OUT		0x18
-+#define AXP22X_ELDO1_V_OUT		0x19
-+#define AXP22X_ELDO2_V_OUT		0x1a
-+#define AXP22X_ELDO3_V_OUT		0x1b
-+#define AXP22X_DC5LDO_V_OUT		0x1c
-+#define AXP22X_DCDC1_V_OUT		0x21
-+#define AXP22X_DCDC2_V_OUT		0x22
-+#define AXP22X_DCDC3_V_OUT		0x23
-+#define AXP22X_DCDC4_V_OUT		0x24
-+#define AXP22X_DCDC5_V_OUT		0x25
-+#define AXP22X_DCDC23_V_RAMP_CTRL	0x27
-+#define AXP22X_ALDO1_V_OUT		0x28
-+#define AXP22X_ALDO2_V_OUT		0x29
-+#define AXP22X_ALDO3_V_OUT		0x2a
-+#define AXP22X_CHRG_CTRL3		0x35
-+
- /* Interrupt */
- #define AXP20X_IRQ1_EN			0x40
- #define AXP20X_IRQ2_EN			0x41
-@@ -96,6 +119,9 @@ enum {
- #define AXP20X_VBUS_MON			0x8b
- #define AXP20X_OVER_TMP			0x8f
- 
-+#define AXP22X_PWREN_CTRL1		0x8c
-+#define AXP22X_PWREN_CTRL2		0x8d
-+
- /* GPIO */
- #define AXP20X_GPIO0_CTRL		0x90
- #define AXP20X_LDO5_V_OUT		0x91
-@@ -104,6 +130,11 @@ enum {
- #define AXP20X_GPIO20_SS		0x94
- #define AXP20X_GPIO3_CTRL		0x95
- 
-+#define AXP22X_LDO_IO0_V_OUT		0x91
-+#define AXP22X_LDO_IO1_V_OUT		0x93
-+#define AXP22X_GPIO_STATE		0x94
-+#define AXP22X_GPIO_PULL_DOWN		0x95
-+
- /* Battery */
- #define AXP20X_CHRG_CC_31_24		0xb0
- #define AXP20X_CHRG_CC_23_16		0xb1
-@@ -116,6 +147,8 @@ enum {
- #define AXP20X_CC_CTRL			0xb8
- #define AXP20X_FG_RES			0xb9
- 
-+#define AXP22X_BATLOW_THRES1		0xe6
-+
- /* Regulators IDs */
- enum {
- 	AXP20X_LDO1 = 0,
-@@ -128,6 +161,29 @@ enum {
- 	AXP20X_REG_ID_MAX,
- };
- 
-+enum {
-+	AXP22X_DCDC1 = 0,
-+	AXP22X_DCDC2,
-+	AXP22X_DCDC3,
-+	AXP22X_DCDC4,
-+	AXP22X_DCDC5,
-+	AXP22X_DC5LDO,
-+	AXP22X_ALDO1,
-+	AXP22X_ALDO2,
-+	AXP22X_ALDO3,
-+	AXP22X_ELDO1,
-+	AXP22X_ELDO2,
-+	AXP22X_ELDO3,
-+	AXP22X_DLDO1,
-+	AXP22X_DLDO2,
-+	AXP22X_DLDO3,
-+	AXP22X_DLDO4,
-+	AXP22X_RTC_LDO,
-+	AXP22X_LDO_IO0,
-+	AXP22X_LDO_IO1,
-+	AXP22X_REG_ID_MAX,
-+};
-+
- /* IRQs */
- enum {
- 	AXP20X_IRQ_ACIN_OVER_V = 1,
--- 
-1.8.3.2
+This appears to look *very* like the Palmas driver, should it not be
+sharing code with that?  If it were just data tables it'd be less of a
+concern but there's quite a bit of actual code here.
 
+--F+XLDYyeDCF2A2Dn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTg1cgAAoJELSic+t+oim9gJ8P/1eaPzxLm+nLLyS3uRty7y2X
+VL9Wrdqi8s1PhwfrRB1CQ0SMe2CRnKxNBp1hbZmgN7grZA6vOK2QSFUoaEyGU0+K
+0njx32XyAJndD6S/jEM0u5j55CqbFYDKwP1qeh3k39x1YBvVZR7ICsswxbYC1Iel
+Q667celyq81GvQgatm+Pi1qvSp31J1o2fH6xbILmDZ3P+3eD//Ti92oC4qhQVBNI
+7EhYC/NycsU1gxnnkxe1bpQkvBLaDDlO5njw7+nzO0R9jG36CI2g1CzsCRVUq5eC
+6JopYH0LcC38xhsnJWcLXiOz67iWTCrB9QVuqWmQ61IgFWZ+O7bChmv3gQuV1njj
+pbG/zp2dKK1F03GtxTk+aaYknokRLiCuX9GPogv1erztKcXPtHDUfTWCwYHoqd1F
+f+sC99QCbZhmG2wpMNQ7zScBwXrOypHeLxptK5J0nr4kqi8V1CJykkzQA/wiCfB9
++sPfYeHHUi002LUau+uL8cimtRObvLKLslA/jpTlT0nn6TLDBtCqlTsFdHHnLSRJ
+X1fVOlG17h/ZED0lV7d3rwXVJogywVBnWvJ6CFa0ke8Q+BB74gWlElYTvY2JRG1m
+ZBHyr540LKfyztVP9DgLuuMA1f81GF55l/mx684j6BfIODQepgvPdPJzymn+/58N
+8MOLYzced923r/HSEgw5
+=lygs
+-----END PGP SIGNATURE-----
+
+--F+XLDYyeDCF2A2Dn--
