@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbaEZNmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:42:15 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:55216 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaEZNmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:42:14 -0400
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH 1/9] procfs: use flags to deny or allow access to /proc/<pid>/$entry
-Date: Mon, 26 May 2014 14:27:22 +0100
-Message-Id: <1401110850-3552-2-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
-References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+	id S1752701AbaEZNmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:42:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18632 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752589AbaEZNmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 09:42:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,913,1392192000"; 
+   d="scan'208";a="436951925"
+Date: Mon, 26 May 2014 16:42:34 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jin Yao <yao.jin@linux.intel.com>,
+        Li Aubrey <aubrey.li@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/4] ACPI / LPSS: custom power domain for LPSS
+Message-ID: <20140526134234.GA12107@xps8300>
+References: <20140523130252.GH18308@xps8300>
+ <1400850909-12146-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <11413734.64aCNVobNb@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <11413734.64aCNVobNb@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the deny or allow flags, so we can perform proper permission checks
-and set the result accordingly. These flags are needed in case we have
-to cache the result of permission checks that are done during ->open()
-time. Later during ->read(), we can decide to allow or deny the read().
+On Mon, May 26, 2014 at 03:03:27PM +0200, Rafael J. Wysocki wrote:
+> On Friday, May 23, 2014 04:15:09 PM Heikki Krogerus wrote:
+> > A power domain where we save the context of the additional
+> > LPSS registers. We need to do this or all LPSS devices are
+> > left in reset state when resuming from D3 on some Baytrails.
+> > The devices with the fractional clock divider also have
+> > zeros for N and M values after resuming unless they are
+> > reset.
+> > 
+> > Li Aubrey found the root cause for the issue. The idea of
+> > using power domain for LPSS came from Mika Westerberg.
+> > 
+> > Reported-by: Jin Yao <yao.jin@linux.intel.com>
+> > Suggested-by: Li Aubrey <aubrey.li@linux.intel.com>
+> > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> 
+> Queued up for 3.16, but I needed to rebase it to take some other changes
+> into account.  Can you please have a look and the bleeding-edge branch in
+> my tree and see if everything looks good in there?
 
-The pid entries that need these flags are:
-/proc/<pid>/stat
-/proc/<pid>/wchan
-/proc/<pid>/maps  (will be handled in next patches).
+I checked the bleeding-edge and it looks good to me. Thanks for taking
+care of the issue with "%lx".
 
-These files are world readable, userspace depend on that. To prevent
-ASLR leaks and to avoid breaking userspace, we follow this scheme:
+About the sparse warning from the clk-fractional-divider.c. Since
+there is no real issue, let's follow the style in the other clock
+types and ignore the warning. So let's keep that patch as it is. OK?
 
-a) Perform permission checks during ->open()
-b) Cache the result of a) and return success
-c) Recheck the cached result during ->read()
-d) If cached == PID_ENTRY_DENY:
-   then we replace the sensitive fields with zeros, userspace won't
-   break and sensitive fields are protected.
 
-These flags are internal to /proc/<pid>/*
 
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/proc/internal.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 3ab6d14..e696284 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -19,6 +19,15 @@ struct ctl_table_header;
- struct mempolicy;
- 
- /*
-+ * Flags used to deny or allow current to access /proc/<pid>/$entry
-+ * after proper permission checks.
-+ */
-+enum {
-+	PID_ENTRY_DENY	= 0,	/* Deny access */
-+	PID_ENTRY_ALLOW	= 1,	/* Allow access */
-+};
-+
-+/*
-  * This is not completely implemented yet. The idea is to
-  * create an in-memory tree (like the actual /proc filesystem
-  * tree) of these proc_dir_entries, so that we can dynamically
 -- 
-1.7.11.7
-
+heikki
