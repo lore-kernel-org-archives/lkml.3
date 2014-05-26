@@ -1,90 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758AbaEZGa4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 02:30:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10644 "EHLO mga09.intel.com"
+	id S1751801AbaEZGbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 02:31:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49327 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292AbaEZGaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 02:30:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,911,1392192000"; 
-   d="asc'?scan'208";a="517675368"
-Date: Mon, 26 May 2014 11:44:35 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, dma <dmaengine@vger.kernel.org>
-Subject: [GIT PULL] slave-dmaengine fixes
-Message-ID: <20140526061435.GB21128@intel.com>
+	id S1751512AbaEZGbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 02:31:43 -0400
+Message-ID: <5382DFE8.1080104@ti.com>
+Date: Mon, 26 May 2014 09:32:08 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DWg365Y4B18r8evw"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mike Turquette <mturquette@linaro.org>, Nishanth Menon <nm@ti.com>,
+        =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Paul <paul@pwsan.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ARM: OMAP5+: Support Duty Cycle Correction(DCC)
+References: <1400237160-25125-1-git-send-email-nm@ti.com> <20140523210720.23136.65858@quantum>
+In-Reply-To: <20140523210720.23136.65858@quantum>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/24/2014 12:07 AM, Mike Turquette wrote:
+> Quoting Nishanth Menon (2014-05-16 03:45:57)
+>> Hi,
+>>
+>> This patch series has been carried over in vendor kernel for quiet
+>> few years now.
+>>
+>> Unfortunately, it was very recently re-discovered and upstream kernel
+>> is noticed to be broken for OMAP5 1.5GHz - at least we are operating
+>> DPLL at frequency higher than what it was intended to be when CPUFreq
+>> is enabled. Thankfully, with nominal voltage(we dont use AVS yet in
+>> upstream for the mentioned platforms) and margins in trimming, we
+>> have so far not crashed - but I strongly suspect this might be some
+>> boundary case survival.
+>
+> DCC also exists in OMAP4. In some cases customers used it, in other
+> cases we just ran the PLL way out of spec and the mpu_clk would divide
+> by 2.
+>
+> Is this broken for OMAP4 as well?
 
---DWg365Y4B18r8evw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, its broken. This series does not address the OMAP4 needs for it, 
+but can be expanded later by just defining a proper clock type with 
+OMAP4 specific DCC rate limits etc. for it. We would need properly 
+functioning DVFS for OMAP4 panda first though I guess... (support for 
+the TPS regulator.)
 
-Hi Linus,
+-Tero
 
-Here is the pull request for slave dmaengine for 3.15. We have three small
-fixes. First one from Andy reverts the devm_request irq as we need to ensur=
-e the
-tasklet is killed after irq is freed, so we need to do free irq in our code.
-Other two from Arnd are fixing the compilation issue in omap and sa11x0
-drivers with ARM randconfigs
+>
+> Regards,
+> Mike
+>
+>>
+>> Verified on the following impacted platforms using 3.15-rc4 based
+>> vendor kernel.
+>>
+>> Before:
+>> OMAP5432: http://slexy.org/view/s20cs0qQFg
+>> DRA72x: http://slexy.org/view/s2TXtSa6mH (refused to lock)
+>> DRA75x: http://slexy.org/view/s20AW8MU5c
+>> After:
+>> OMAP5432: http://slexy.org/view/s21iAfWxpu
+>> DRA72x: http://slexy.org/view/s2hwsvGLmC (locks properly)
+>> DRA75x: http://slexy.org/view/s21ehw8WQn
+>>
+>> Hopefully, we can get these into some kernel revision in some form.
+>>
+>> NOTE: Support for 4470(which is the only other platform requiring
+>> DCC) is not present in upstream kernel and there are no plans to
+>> support that SoC, even if it is added at a later point, support can be
+>> extended as needed.
+>>
+>> Series based on v3.15-rc5 tag.
+>> Also available on my tree:
+>>          https://github.com/nmenon/linux-2.6-playground/
+>>          branch:  push/clock/dcc
+>>
+>>          weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/clock/dcc
+>>
+>> Verification:
+>> 3.15-rc4 based kernel - DRA75x-evm, 72x-evm, OMAP5uevm
+>> 3.15-rc5 - OMAP5uEVM(only one supporting 1.5GHz atm)
+>>
+>> Andrii Tseglytskyi (1):
+>>    ARM: OMAP5+: dpll: support Duty Cycle Correction(DCC)
+>>
+>> Nishanth Menon (2):
+>>    clk: dpll: support OMAP5 MPU DPLL that need special handling for
+>>      higher frequencies
+>>    ARM: dts: OMAP5/DRA7: use omap5-mpu-dpll-clock capable of dealing
+>>      with higher frequencies
+>>
+>>   .../devicetree/bindings/clock/ti/dpll.txt          |    1 +
+>>   arch/arm/boot/dts/dra7xx-clocks.dtsi               |    2 +-
+>>   arch/arm/boot/dts/omap54xx-clocks.dtsi             |    2 +-
+>>   arch/arm/mach-omap2/dpll3xxx.c                     |    9 +++++++++
+>>   drivers/clk/ti/dpll.c                              |   21 ++++++++++++++++++++
+>>   include/linux/clk/ti.h                             |    4 ++++
+>>   6 files changed, 37 insertions(+), 2 deletions(-)
+>>
+>> Regards,
+>> Nishanth Menon
+>> --
+>> 1.7.9.5
+>>
 
-The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
-  Linus Torvalds (1):
-        Linux 3.15-rc2
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
-
-Andy Shevchenko (1):
-      dmaengine: dw: went back to plain {request,free}_irq() calls
-
-Arnd Bergmann (2):
-      dmaengine: omap: hide filter_fn for built-in drivers
-      dmaengine: sa11x0: remove broken #ifdef
-
- drivers/dma/dw/core.c    |   11 ++++++-----
- drivers/dma/sa11x0-dma.c |    4 ----
- include/linux/omap-dma.h |    2 +-
- 3 files changed, 7 insertions(+), 10 deletions(-)
-
---=20
-Thanks
-~Vinod
-
---DWg365Y4B18r8evw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTgtvKAAoJEHwUBw8lI4NHu6UP+wdZH2bTvkSpIAbUgI7C1MJN
-NdPE7kOTc1YUNmuBScqWL4EKqmDXOO88i37P5zdmXJKX/31SS2gonAoKGr3+x5Gc
-sKIasVa94iXj3uRn5WONwBNZWtUdVlSF3+uT78+tDBfyZdZgdimoXhhEjWTkWV71
-mZuUYpt5ghItE82BLpRQJuYFSWfbRIPUhRGC7kAZfpGrSGd6HbK7z9SMeS2zOYlH
-cw+ZL56V8z34x9+9ht0nxa4wDyxo8vbpGD27BKFRhJyCj8jwbBBta4tWnz3dIG0K
-Pnwwa0J4ARR7iDyqvWv6cucsCTYNd/E4E5eiUtnZXuSeR6v/qTJu/qXs2PGBrfFP
-Qrj+l/suRF8doW8QZy8L7+s4QhUNkS0YNZaaxSHmj91sTDK5lR80LAyZY/ZsUwHR
-jJ2UkVtcopdtYM02W2HmA9Sz9Uhx1/1WtBM1ASAquqtUSKD5/aYIc8JhSRlS+YVx
-TLGw9kaQYs0ZGfJt3ZxhPQPKKuU/mCdPIv/C8gfJgZyvuRMCVzdX6OdQJu9RqNp/
-tQcVtkv9tPzCK0P7EqX/eN7PXspTR54371FSpFVj6dxjBXJx2dayCMMNh4zAD0v4
-0QjKkSX8JnMGLZ2R3TXPj+BVqSDzPl8FGNTQF4jW15iSIteN/xA938yMzNCmKtld
-du0tUrv/nlfaLOnNz1R9
-=SG8/
------END PGP SIGNATURE-----
-
---DWg365Y4B18r8evw--
