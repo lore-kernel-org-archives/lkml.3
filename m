@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaEZEE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 00:04:26 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:34061 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaEZEEZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 00:04:25 -0400
+	id S1751487AbaEZEHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 00:07:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:33393 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707AbaEZEHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 00:07:44 -0400
+Date: Mon, 26 May 2014 14:07:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Ball <chris@printf.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: linux-next: build failure after merge of the mmc tree
+Message-ID: <20140526140735.3f405672@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140524125946.GA31533@Nokia-N900>
-References: <cover.1400736536.git.viresh.kumar@linaro.org>
-	<c73c825beda0207867bd29e40fece217cbf15925.1400736536.git.viresh.kumar@linaro.org>
-	<20140522145209.GA5246@developer>
-	<CAKohpo=e62HPRF0N7kDvZEBAVPMFUeXVoL4jU--i7bZhn6Kjgw@mail.gmail.com>
-	<20140524125946.GA31533@Nokia-N900>
-Date: Mon, 26 May 2014 09:34:24 +0530
-Message-ID: <CAKohpomN=e2ygpv_y+PXaPQM_7ULkQoKa0UrU5CN9Yeqtp3v_g@mail.gmail.com>
-Subject: Re: [PATCH V3 1/8] cpufreq: cpufreq-cpu0: remove dependency on thermal
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Eduardo Valentin <edubezval@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        Sudeep Holla <sudeep.holla@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/KzmGYHm9LCcuIKJ4PfNygRs"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 May 2014 18:29, Pavel Machek <pavel@ucw.cz> wrote:
-> On Fri 2014-05-23 10:03:27, Viresh Kumar wrote:
->> On 22 May 2014 20:22, Eduardo Valentin <edubezval@gmail.com> wrote:
->> > However, on CPUs that needs thermal managment, it makes sense to have
->> > such dependency, from functional perspective. Mainly because scaling
->> > frequency and voltage up would be allowed only when thermal management
->> > is enabled.
->>
->> AFAIK, dependencies in KCONFIG are only for fixing compilation time issues.
->
-> I do not think that's correct.
+--Sig_/KzmGYHm9LCcuIKJ4PfNygRs
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, that what I accepted later as well.. Dependency is whatever without which
-the module is unusable.
+Hi Chris,
 
-And cpufreq-cpu0 is usable without THERMAL and so this dependency should
-go away..
+After merging the mmc tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
+
+drivers/mmc/host/sdhci-s3c.c: In function 'sdhci_s3c_notify_change':
+drivers/mmc/host/sdhci-s3c.c:402:25: error: 'struct sdhci_host' has no memb=
+er named 'card_tasklet'
+
+Caused by commit 3560db8e247a ("mmc: sdhci: push card_tasklet into
+threaded irq handler").  This is the second left over one I found.
+Please check for any more (grep is your friend).
+
+I have used the mmc tree from next-20140522 again for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/KzmGYHm9LCcuIKJ4PfNygRs
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTgr4MAAoJEMDTa8Ir7ZwVXwIP/2dwyMqvpTqE6d/LXO7kIdeX
+UnvPA7SP9Z6MVDbphQlfzB2n98dFK0cl30100Nn9kJGQs5IHrDEYoeHGdTfUPASM
+4pjr2BXFJe3/lEgLFb84TIBI+Pjb/v3sUtTAjFACKl9FChTLfM4qIu1WBVTAl5/D
+ksmFRjsId5OdYChoMCEeiQOGR+kSTVJbvjHOC5++AIGnJ5fNMmGsOhsSMxBYl9al
+fxTN4Y8JiFAW2LaRDOtDDviM8llQwxMZbN590SbSUDTmCIHxHIlE1R8OBXb9jMtX
+x3/F3TFMyYbdSs4WJfwgnODAHyHDNp1VCN7Dp5mQ0uAZh9qOOCK3obQ5wu0sAXvH
+z6z2FcHijzEEvVihBe8oP8HMn/ICUbcQPQuTmAKJU0E7VqGTSfJ0ZQjwGxlNEzy3
+WuuOyZwOIN+vfjQSUfXUzHgf+rWP16brqRHk+NdTvu+7WAEeSg3t4xu9yYOs5txh
+w1Hn2JjVHSXDciOETa2l1W2q2gLdlCLjRn1OVCthu2AJnRnoW7eaMTGaVyhyoc5O
+liHThXyp+tNQfgDMDr1f53fIGCZj+CM6TnsUGf/31qkTBmZ05jZuylOgKLmtubzI
+jhpQIdopx0kvEr80DjycigJQgXualM2otBEJVwh3hE1Kb4hHYTlhmIAM6ip9iKcK
+oeFl/r1yhoPqSRPAex9A
+=dbTR
+-----END PGP SIGNATURE-----
+
+--Sig_/KzmGYHm9LCcuIKJ4PfNygRs--
