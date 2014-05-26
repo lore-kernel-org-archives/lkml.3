@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaEZP2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:28:40 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:49739 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657AbaEZPS2 (ORCPT
+	id S1753208AbaEZP3A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:29:00 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59232 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530AbaEZPS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:18:28 -0400
+	Mon, 26 May 2014 11:18:26 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v3 06/15] thunderbolt: Add thunderbolt capability handling
-Date: Mon, 26 May 2014 17:18:03 +0200
-Message-Id: <1401117492-2870-7-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v3 03/15] thunderbolt: Setup control channel
+Date: Mon, 26 May 2014 17:18:00 +0200
+Message-Id: <1401117492-2870-4-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
 References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
@@ -22,162 +22,262 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt config areas contain capability lists similar to those found
-on pci devices. This patch introduces a tb_find_cap utility method to
-search for capabilities.
+Add struct tb which will contain our view of the thunderbolt bus.  For
+now it just contains a pointer to the control channel and a workqueue
+for hotplug events.
+
+Add thunderbolt_alloc_and_start() and thunderbolt_shutdown_and_free()
+which are responsible for setup and teardown of struct tb.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
  drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/cap.c    | 116 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.h     |   2 +
- 3 files changed, 119 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/cap.c
+ drivers/thunderbolt/nhi.c    |  18 +++++-
+ drivers/thunderbolt/tb.c     | 134 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.h     |  35 +++++++++++
+ 4 files changed, 186 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/thunderbolt/tb.c
+ create mode 100644 drivers/thunderbolt/tb.h
 
 diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 4ac18d9..617b314 100644
+index 4b21c99..1f996bb 100644
 --- a/drivers/thunderbolt/Makefile
 +++ b/drivers/thunderbolt/Makefile
 @@ -1,3 +1,3 @@
  obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := nhi.o ctl.o tb.o switch.o
-+thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
+-thunderbolt-objs := nhi.o ctl.o
++thunderbolt-objs := nhi.o ctl.o tb.o
  
-diff --git a/drivers/thunderbolt/cap.c b/drivers/thunderbolt/cap.c
+diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+index d73a744..f3a4ac2 100644
+--- a/drivers/thunderbolt/nhi.c
++++ b/drivers/thunderbolt/nhi.c
+@@ -16,6 +16,7 @@
+ 
+ #include "nhi.h"
+ #include "nhi_regs.h"
++#include "tb.h"
+ 
+ #define RING_TYPE(ring) ((ring)->is_tx ? "TX ring" : "RX ring")
+ 
+@@ -517,6 +518,7 @@ static void nhi_shutdown(struct tb_nhi *nhi)
+ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct tb_nhi *nhi;
++	struct tb *tb;
+ 	int res;
+ 
+ 	res = pcim_enable_device(pdev);
+@@ -575,14 +577,26 @@ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	/* magic value - clock related? */
+ 	iowrite32(3906250 / 10000, nhi->iobase + 0x38c00);
+ 
+-	pci_set_drvdata(pdev, nhi);
++	dev_info(&nhi->pdev->dev, "NHI initialized, starting thunderbolt\n");
++	tb = thunderbolt_alloc_and_start(nhi);
++	if (!tb) {
++		/*
++		 * At this point the RX/TX rings might already have been
++		 * activated. Do a proper shutdown.
++		 */
++		nhi_shutdown(nhi);
++		return -EIO;
++	}
++	pci_set_drvdata(pdev, tb);
+ 
+ 	return 0;
+ }
+ 
+ static void nhi_remove(struct pci_dev *pdev)
+ {
+-	struct tb_nhi *nhi = pci_get_drvdata(pdev);
++	struct tb *tb = pci_get_drvdata(pdev);
++	struct tb_nhi *nhi = tb->nhi;
++	thunderbolt_shutdown_and_free(tb);
+ 	nhi_shutdown(nhi);
+ }
+ 
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
 new file mode 100644
-index 0000000..a7b47e7
+index 0000000..6920979
 --- /dev/null
-+++ b/drivers/thunderbolt/cap.c
-@@ -0,0 +1,116 @@
++++ b/drivers/thunderbolt/tb.c
+@@ -0,0 +1,134 @@
 +/*
-+ * Thunderbolt Cactus Ridge driver - capabilities lookup
++ * Thunderbolt Cactus Ridge driver - bus logic (NHI independent)
 + *
 + * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
 +#include <linux/slab.h>
 +#include <linux/errno.h>
++#include <linux/delay.h>
 +
 +#include "tb.h"
 +
++/* hotplug handling */
 +
-+struct tb_cap_any {
-+	union {
-+		struct tb_cap_basic basic;
-+		struct tb_cap_extended_short extended_short;
-+		struct tb_cap_extended_long extended_long;
-+	};
-+} __packed;
++struct tb_hotplug_event {
++	struct work_struct work;
++	struct tb *tb;
++	u64 route;
++	u8 port;
++	bool unplug;
++};
 +
-+static bool tb_cap_is_basic(struct tb_cap_any *cap)
++/**
++ * tb_handle_hotplug() - handle hotplug event
++ *
++ * Executes on tb->wq.
++ */
++static void tb_handle_hotplug(struct work_struct *work)
 +{
-+	/* basic.cap is u8. This checks only the lower 8 bit of cap. */
-+	return cap->basic.cap != 5;
-+}
++	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
++	struct tb *tb = ev->tb;
++	mutex_lock(&tb->lock);
++	if (!tb->hotplug_active)
++		goto out; /* during init, suspend or shutdown */
 +
-+static bool tb_cap_is_long(struct tb_cap_any *cap)
-+{
-+	return !tb_cap_is_basic(cap)
-+	       && cap->extended_short.next == 0
-+	       && cap->extended_short.length == 0;
-+}
-+
-+static enum tb_cap tb_cap(struct tb_cap_any *cap)
-+{
-+	if (tb_cap_is_basic(cap))
-+		return cap->basic.cap;
-+	else
-+		/* extended_short/long have cap at the same offset. */
-+		return cap->extended_short.cap;
-+}
-+
-+static u32 tb_cap_next(struct tb_cap_any *cap, u32 offset)
-+{
-+	int next;
-+	if (offset == 1) {
-+		/*
-+		 * The first pointer is part of the switch header and always
-+		 * a simple pointer.
-+		 */
-+		next = cap->basic.next;
-+	} else {
-+		/*
-+		 * Somehow Intel decided to use 3 different types of capability
-+		 * headers. It is not like anyone could have predicted that
-+		 * single byte offsets are not enough...
-+		 */
-+		if (tb_cap_is_basic(cap))
-+			next = cap->basic.next;
-+		else if (!tb_cap_is_long(cap))
-+			next = cap->extended_short.next;
-+		else
-+			next = cap->extended_long.next;
-+	}
-+	/*
-+	 * "Hey, we could terminate some capability lists with a null offset
-+	 *  and others with a pointer to the last element." - "Great idea!"
-+	 */
-+	if (next == offset)
-+		return 0;
-+	return next;
++	/* do nothing for now */
++out:
++	mutex_unlock(&tb->lock);
++	kfree(ev);
 +}
 +
 +/**
-+ * tb_find_cap() - find a capability
++ * tb_schedule_hotplug_handler() - callback function for the control channel
 + *
-+ * Return: Returns a positive offset if the capability was found and 0 if not.
-+ * Returns an error code on failure.
++ * Delegates to tb_handle_hotplug.
 + */
-+int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap)
++static void tb_schedule_hotplug_handler(void *data, u64 route, u8 port,
++					bool unplug)
 +{
-+	u32 offset = 1;
-+	struct tb_cap_any header;
-+	int res;
-+	int retries = 10;
-+	while (retries--) {
-+		res = tb_port_read(port, &header, space, offset, 1);
-+		if (res) {
-+			/* Intel needs some help with linked lists. */
-+			if (space == TB_CFG_PORT && offset == 0xa
-+			    && port->config.type == TB_TYPE_DP_HDMI_OUT) {
-+				offset = 0x39;
-+				continue;
-+			}
-+			return res;
-+		}
-+		if (offset != 1) {
-+			if (tb_cap(&header) == cap)
-+				return offset;
-+			if (tb_cap_is_long(&header)) {
-+				/* tb_cap_extended_long is 2 dwords */
-+				res = tb_port_read(port, &header, space,
-+						   offset, 2);
-+				if (res)
-+					return res;
-+			}
-+		}
-+		offset = tb_cap_next(&header, offset);
-+		if (!offset)
-+			return 0;
-+	}
-+	tb_port_WARN(port,
-+		     "run out of retries while looking for cap %#x in config space %d, last offset: %#x\n",
-+		     cap, space, offset);
-+	return -EIO;
++	struct tb *tb = data;
++	struct tb_hotplug_event *ev = kmalloc(sizeof(*ev), GFP_KERNEL);
++	if (!ev)
++		return;
++	INIT_WORK(&ev->work, tb_handle_hotplug);
++	ev->tb = tb;
++	ev->route = route;
++	ev->port = port;
++	ev->unplug = unplug;
++	queue_work(tb->wq, &ev->work);
 +}
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 389dbb4..38e4c23 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -159,6 +159,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
- void tb_switch_free(struct tb_switch *sw);
- 
-+int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
 +
- 
- static inline int tb_route_length(u64 route)
- {
++/**
++ * thunderbolt_shutdown_and_free() - shutdown everything
++ *
++ * Free all switches and the config channel.
++ *
++ * Used in the error path of thunderbolt_alloc_and_start.
++ */
++void thunderbolt_shutdown_and_free(struct tb *tb)
++{
++	mutex_lock(&tb->lock);
++
++	if (tb->ctl) {
++		tb_ctl_stop(tb->ctl);
++		tb_ctl_free(tb->ctl);
++	}
++	tb->ctl = NULL;
++	tb->hotplug_active = false; /* signal tb_handle_hotplug to quit */
++
++	/* allow tb_handle_hotplug to acquire the lock */
++	mutex_unlock(&tb->lock);
++	if (tb->wq) {
++		flush_workqueue(tb->wq);
++		destroy_workqueue(tb->wq);
++		tb->wq = NULL;
++	}
++	mutex_destroy(&tb->lock);
++	kfree(tb);
++}
++
++/**
++ * thunderbolt_alloc_and_start() - setup the thunderbolt bus
++ *
++ * Allocates a tb_cfg control channel, initializes the root switch, enables
++ * plug events and activates pci devices.
++ *
++ * Return: Returns NULL on error.
++ */
++struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
++{
++	struct tb *tb;
++
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		return NULL;
++
++	tb->nhi = nhi;
++	mutex_init(&tb->lock);
++	mutex_lock(&tb->lock);
++
++	tb->wq = alloc_ordered_workqueue("thunderbolt", 0);
++	if (!tb->wq)
++		goto err_locked;
++
++	tb->ctl = tb_ctl_alloc(tb->nhi, tb_schedule_hotplug_handler, tb);
++	if (!tb->ctl)
++		goto err_locked;
++	/*
++	 * tb_schedule_hotplug_handler may be called as soon as the config
++	 * channel is started. Thats why we have to hold the lock here.
++	 */
++	tb_ctl_start(tb->ctl);
++
++	/* Allow tb_handle_hotplug to progress events */
++	tb->hotplug_active = true;
++	mutex_unlock(&tb->lock);
++	return tb;
++
++err_locked:
++	mutex_unlock(&tb->lock);
++	thunderbolt_shutdown_and_free(tb);
++	return NULL;
++}
++
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+new file mode 100644
+index 0000000..6055dfd
+--- /dev/null
++++ b/drivers/thunderbolt/tb.h
+@@ -0,0 +1,35 @@
++/*
++ * Thunderbolt Cactus Ridge driver - bus logic (NHI independent)
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ */
++
++#ifndef TB_H_
++#define TB_H_
++
++#include "ctl.h"
++
++/**
++ * struct tb - main thunderbolt bus structure
++ */
++struct tb {
++	struct mutex lock;	/*
++				 * Big lock. Must be held when accessing cfg or
++				 * any struct tb_switch / struct tb_port.
++				 */
++	struct tb_nhi *nhi;
++	struct tb_ctl *ctl;
++	struct workqueue_struct *wq; /* ordered workqueue for plug events */
++	bool hotplug_active; /*
++			      * tb_handle_hotplug will stop progressing plug
++			      * events and exit if this is not set (it needs to
++			      * acquire the lock one more time). Used to drain
++			      * wq after cfg has been paused.
++			      */
++
++};
++
++struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi);
++void thunderbolt_shutdown_and_free(struct tb *tb);
++
++#endif
 -- 
 1.9.3
 
