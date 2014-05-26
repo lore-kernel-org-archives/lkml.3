@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaEZPtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:49:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33606 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaEZPtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:49:45 -0400
-Date: Mon, 26 May 2014 08:49:17 -0700
-From: tip-bot for Arnd Bergmann <tipbot@zytor.com>
-Message-ID: <tip-8d2af85e87eda746ff50801f5decd8aed9aed28e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, arnd@arndb.de,
-        hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, arnd@arndb.de,
-        grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <12285212.fBJyVfk69p@wuerfel>
-References: <12285212.fBJyVfk69p@wuerfel>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] ARM: iop13xx: fix msi support with sparse IRQ
-Git-Commit-ID: 8d2af85e87eda746ff50801f5decd8aed9aed28e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752648AbaEZPyl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:54:41 -0400
+Received: from mx01-fr.bfs.de ([193.174.231.67]:16723 "EHLO mx01-fr.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752453AbaEZPyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 11:54:39 -0400
+Message-ID: <538363B6.2010803@bfs.de>
+Date: Mon, 26 May 2014 17:54:30 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Benoit Taine <benoit.taine@lip6.fr>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 3/18] VMCI: Use kmemdup instead of kmalloc + memcpy
+References: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr> <1401117687-28911-3-git-send-email-benoit.taine@lip6.fr>
+In-Reply-To: <1401117687-28911-3-git-send-email-benoit.taine@lip6.fr>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8d2af85e87eda746ff50801f5decd8aed9aed28e
-Gitweb:     http://git.kernel.org/tip/8d2af85e87eda746ff50801f5decd8aed9aed28e
-Author:     Arnd Bergmann <arnd@arndb.de>
-AuthorDate: Mon, 26 May 2014 17:12:10 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 26 May 2014 17:45:09 +0200
 
-ARM: iop13xx: fix msi support with sparse IRQ
 
-patch 37ebbcff7837 ("arm: iop13xx: Use sparse irqs for MSI") moved
-iop13xx over to sparse IRQ support, but this broke the build for the
-msi.c file, which now has to include mach/irqs.h itself.
+Am 26.05.2014 17:21, schrieb Benoit Taine:
+> This issue was reported by coccicheck using the semantic patch 
+> at scripts/coccinelle/api/memdup.cocci
+> 
+> Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+> ---
+> Tested by compilation without errors.
+> 
+>  drivers/misc/vmw_vmci/vmci_datagram.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/misc/vmw_vmci/vmci_datagram.c b/drivers/misc/vmw_vmci/vmci_datagram.c
+> index f3cdd90..d93b469 100644
+> --- a/drivers/misc/vmw_vmci/vmci_datagram.c
+> +++ b/drivers/misc/vmw_vmci/vmci_datagram.c
+> @@ -276,11 +276,10 @@ static int dg_dispatch_as_host(u32 context_id, struct vmci_datagram *dg)
+>  		}
+>  
+>  		/* We make a copy to enqueue. */
+> -		new_dg = kmalloc(dg_size, GFP_KERNEL);
+> +		new_dg = kmemdup(dg, dg_size, GFP_KERNEL);
+>  		if (new_dg == NULL)
+>  			return VMCI_ERROR_NO_MEM;
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Link: http://lkml.kernel.org/r/12285212.fBJyVfk69p@wuerfel
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
----
- arch/arm/mach-iop13xx/msi.c | 1 +
- 1 file changed, 1 insertion(+)
+i can not see much of the code but this looks like
+  new_dg=dg;
+what is possible in c99.
 
-diff --git a/arch/arm/mach-iop13xx/msi.c b/arch/arm/mach-iop13xx/msi.c
-index 655072d..e7730cf 100644
---- a/arch/arm/mach-iop13xx/msi.c
-+++ b/arch/arm/mach-iop13xx/msi.c
-@@ -23,6 +23,7 @@
- #include <linux/msi.h>
- #include <asm/mach/irq.h>
- #include <asm/irq.h>
-+#include <mach/irqs.h>
- 
- /* IMIPR0 CP6 R8 Page 1
-  */
+re,
+ wh
+
+>  
+> -		memcpy(new_dg, dg, dg_size);
+>  		retval = vmci_ctx_enqueue_datagram(dg->dst.context, new_dg);
+>  		if (retval < VMCI_SUCCESS) {
+>  			kfree(new_dg);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
