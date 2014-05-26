@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaEZMt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 08:49:59 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:54906 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751985AbaEZMt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 08:49:57 -0400
-Message-ID: <1401108595.6068.5.camel@x220>
-Subject: Re: [GIT PULL] qcom SoC changes for v3.16
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
-        linus.walleij@linaro.org, iivanov@mm-sol.com,
-        srinivas.kandagatla@linaro.org
-Date: Mon, 26 May 2014 14:49:55 +0200
-In-Reply-To: <alpine.DEB.2.00.1405231339340.15680@galak-ubuntu.qualcomm.com>
-References: <alpine.DEB.2.00.1405231339340.15680@galak-ubuntu.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1752246AbaEZMxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 08:53:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47282 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751778AbaEZMxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 08:53:32 -0400
+Message-ID: <53833944.6030605@redhat.com>
+Date: Mon, 26 May 2014 14:53:24 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Wei Huang <huangwei.virt@gmail.com>, kvm@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, jan.kiszka@siemens.com, gleb@kernel.org,
+        avi.kivity@gmail.com
+Subject: Re: [PATCH v2 0/4] KVM: x86: get CPL from SS.DPL
+References: <CALeycy_8q9jcbwCGp6qpcN8TyH7Ve2WUxCbo+kcd_bHYzXDqOA@mail.gmail.com> <CALeycy-hH7=S5tLo1TWQTqGpwsjjx6_c3yaJZs0Vywyv-fZQaQ@mail.gmail.com>
+In-Reply-To: <CALeycy-hH7=S5tLo1TWQTqGpwsjjx6_c3yaJZs0Vywyv-fZQaQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 May 2014 12:49:55.0044 (UTC) FILETIME=[FE3CD240:01CF78E0]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-23 at 13:42 -0500, Kumar Gala wrote:
-> Ivan T. Ivanov (1):
->        ARM: debug: qcom: make UART address selection configuration option
+Il 26/05/2014 00:58, Wei Huang ha scritto:
+> If so , my question: is there other special cases similar to task switch
+> which can break patch 4?
 
-This one just landed in linux-next (next-20140526).
+I don't think so.  CPL can only change when SS is loaded, i.e. for 
+inter-privilege transfers that aren't far calls or far jumps to a 
+conforming code segment.
 
-It removed the Kconfig options DEBUG_MSM_UART1, DEBUG_MSM_UART3, and
-DEBUG_MSM_UART3. It did not touch these references to their macros:
-    arch/arm/mach-msm/io.c:60:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-    arch/arm/mach-msm/io.c:61:                defined(CONFIG_DEBUG_MSM_UART3)
-    arch/arm/mach-msm/io.c:79:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-    arch/arm/mach-msm/io.c:80:                defined(CONFIG_DEBUG_MSM_UART3)
+I count only three such cases (protected mode int, protected mode iret, 
+call gate), none of which is implemented in the KVM emulator.  In fact, 
+the emulator doesn't implement task gates either---luckily all 
+information about the destination task is provided by the processor in 
+the VMCB or VMCS.
 
-Is a patch to fix this queued somewhere?
-
-
-Paul Bolle
-
+Paolo
