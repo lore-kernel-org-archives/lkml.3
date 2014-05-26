@@ -1,106 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaEZKHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:07:24 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:61846 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259AbaEZKHQ (ORCPT
+	id S1752307AbaEZKHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:07:21 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:48320 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271AbaEZKHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:07:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1400849527-7384-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400849527-7384-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Mon, 26 May 2014 12:07:15 +0200
-Message-ID: <CAPDyKFruVPo-k+19pQ4zGrVBH0gqszQ5vphsTAm6HTXUX5riFg@mail.gmail.com>
-Subject: Re: [PATCH v3 08/13] mmc: mmci: add 8bit bus support in variant data
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 May 2014 06:07:17 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-78-538312539d39
+From: Heesub Shin <heesub.shin@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>
+Subject: [PATCH 9/9] staging: ion: optimize struct ion_system_heap
+Date: Mon, 26 May 2014 19:05:01 +0900
+Message-id: <1401098701-24049-9-git-send-email-heesub.shin@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
+References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t8zPd1goeZgg6X3dC3e/73PZrF94zdW
+	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
+	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8ARxWWTkpqTWZZapG+X
+	wJVxoKmDpeATf8WKA3/ZGhhX8nYxcnJICJhIrOy9yQJhi0lcuLeerYuRi0NIYBmjxLn75xhh
+	ii4vvMUOkZjOKLF+xi+oqnYmicU7DgBVcXCwCWhLHNoWDNIgImAs0X92FlgDs8AcZokpWy8w
+	gSSEBZwktjbfYwWxWQRUJZb2HAHbwCvgLnF09QFWiG1yEiePTQazOQU8JCY+mQN2nhBQze2N
+	D8EWSwhcY5dY+2kiM8QgAYlvkw+xgBwhISArsekAM8QcSYmDK26wTGAUXsDIsIpRNLUguaA4
+	Kb3ISK84Mbe4NC9dLzk/dxMjJGb6djDePGB9iDEZaNxEZinR5HxgzOWVxBsamxlZmJqYGhuZ
+	W5qRJqwkzrvoYVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYOicCMlCtWfPq2IbO/7M1k
+	Xh82i9lw08JTP38enfOzO7X7z9YVHUnPX+8If7qWe1LIX6cFCprWt6ysxM035IUrlyjw2mjZ
+	/Fn8L3z7ri9z5SwPfevclaMf8SNzsd/0wtW31p84x/P8qpeXWZW76iLrrHnx8lyqWgZFfziK
+	Z0k+8FryY1nYPA8lluKMREMt5qLiRACApTKMrwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQd1goeZgg08bNS3e/73PZrF94zdW
+	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
+	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8AR1cBok5GamJJapJCa
+	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
+	DtOE0BA3XQuYxghd35AguB4jAzSQsI4x40BTB0vBJ/6KFQf+sjUwruTtYuTkkBAwkbi88BY7
+	hC0mceHeerYuRi4OIYHpjBLrZ/yCctqZJBbvOMDYxcjBwSagLXFoWzBIg4iAsUT/2VnsIDXM
+	AnOYJaZsvcAEkhAWcJLY2nyPFcRmEVCVWNpzhBHE5hVwlzi6+gArxDY5iZPHJoPZnAIeEhOf
+	zGEBsYWAam5vfMg2gZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgiHwmtYNxZYPF
+	IUYBDkYlHt4D3k3BQqyJZcWVuYcYJTiYlUR4tTibg4V4UxIrq1KL8uOLSnNSiw8xJgNdNZFZ
+	SjQ5H5gs8kriDY1NzIwsjcyMTcyNjUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBcd9u
+	i4JvX8TP6NzvrDzYLXcgbaMyXxLLxozfko72Ztbz571gzO8omZvHdW6vc+HBXU6vFuene8/4
+	lGC4dQWHtF2O3BWhGQpsir9DTq3vSD88O1alfCZTROKXNbfuN4hUqQT2Oj9weW3A5L+1/INx
+	Xe0ESQtB8djJ0jozavdmOSoqfOPIlEtWYinOSDTUYi4qTgQAcyNYlgwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 2014 14:52,  <srinivas.kandagatla@linaro.org> wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> This patch adds 8bit bus enable to variant structure giving more flexibility
-> to the driver to support more SOCs which have different clock register layout.
->
-> Without this patch other new SOCs like Qcom will have to add more code
-> to special case them.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/mmc/host/mmci.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index dec70d2..a81f303 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -52,6 +52,7 @@ static unsigned int fmax = 515633;
->   * struct variant_data - MMCI variant-specific quirks
->   * @clkreg: default value for MCICLOCK register
->   * @clkreg_enable: enable value for MMCICLOCK register
-> + * @clkreg_8bit_bus_enable: enable value for 8 bit bus
->   * @datalength_bits: number of bits in the MMCIDATALENGTH register
->   * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
->   *           is asserted (likewise for RX)
-> @@ -74,6 +75,7 @@ static unsigned int fmax = 515633;
->  struct variant_data {
->         unsigned int            clkreg;
->         unsigned int            clkreg_enable;
-> +       unsigned int            clkreg_8bit_bus_enable;
->         unsigned int            datalength_bits;
->         unsigned int            fifosize;
->         unsigned int            fifohalfsize;
-> @@ -116,6 +118,7 @@ static struct variant_data variant_u300 = {
->         .fifosize               = 16 * 4,
->         .fifohalfsize           = 8 * 4,
->         .clkreg_enable          = MCI_ST_U300_HWFCEN,
-> +       .clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+struct ion_system_heap has an array for storing pointers to page pools
+and it is allocated separately from the containing structure. There is
+no point in allocating those two small objects individually, bothering
+slab allocator. Using a variable length array simplifies code lines and
+reduces overhead to the slab.
 
-Linus, will have to confirm this. I don't know if the u300 variant
-support 8-bit.
+Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+---
+ drivers/staging/android/ion/ion_system_heap.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-Kind regards
-Ulf Hansson
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index d78d589e..690d866 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -48,7 +48,7 @@ static inline unsigned int order_to_size(int order)
+ 
+ struct ion_system_heap {
+ 	struct ion_heap heap;
+-	struct ion_page_pool **pools;
++	struct ion_page_pool *pools[0];
+ };
+ 
+ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
+@@ -259,16 +259,15 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
+ 	struct ion_system_heap *heap;
+ 	int i;
+ 
+-	heap = kzalloc(sizeof(struct ion_system_heap), GFP_KERNEL);
++	heap = kzalloc(sizeof(struct ion_system_heap) +
++			sizeof(struct ion_page_pool *) * num_orders,
++			GFP_KERNEL);
+ 	if (!heap)
+ 		return ERR_PTR(-ENOMEM);
+ 	heap->heap.ops = &system_heap_ops;
+ 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
+ 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
+-	heap->pools = kzalloc(sizeof(struct ion_page_pool *) * num_orders,
+-			      GFP_KERNEL);
+-	if (!heap->pools)
+-		goto free_heap;
++
+ 	for (i = 0; i < num_orders; i++) {
+ 		struct ion_page_pool *pool;
+ 		gfp_t gfp_flags = low_order_gfp_flags;
+@@ -287,8 +286,6 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
+ destroy_pools:
+ 	while (i--)
+ 		ion_page_pool_destroy(heap->pools[i]);
+-	kfree(heap->pools);
+-free_heap:
+ 	kfree(heap);
+ 	return ERR_PTR(-ENOMEM);
+ }
+-- 
+1.9.1
 
->         .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
->         .datalength_bits        = 16,
->         .sdio                   = true,
-> @@ -144,6 +147,7 @@ static struct variant_data variant_ux500 = {
->         .fifohalfsize           = 8 * 4,
->         .clkreg                 = MCI_CLK_ENABLE,
->         .clkreg_enable          = MCI_ST_UX500_HWFCEN,
-> +       .clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
->         .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
->         .datalength_bits        = 24,
->         .sdio                   = true,
-> @@ -160,6 +164,7 @@ static struct variant_data variant_ux500v2 = {
->         .fifohalfsize           = 8 * 4,
->         .clkreg                 = MCI_CLK_ENABLE,
->         .clkreg_enable          = MCI_ST_UX500_HWFCEN,
-> +       .clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
->         .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
->         .datalength_bits        = 24,
->         .sdio                   = true,
-> @@ -340,7 +345,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
->         if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_4)
->                 clk |= MCI_4BIT_BUS;
->         if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_8)
-> -               clk |= MCI_ST_8BIT_BUS;
-> +               clk |= variant->clkreg_8bit_bus_enable;
->
->         if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
->                 clk |= MCI_ST_UX500_NEG_EDGE;
-> --
-> 1.9.1
->
