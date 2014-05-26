@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbaEZOCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:02:53 -0400
-Received: from imap.thunk.org ([74.207.234.97]:32845 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752304AbaEZOCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:02:52 -0400
-Date: Mon, 26 May 2014 10:02:44 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, duanj.fnst@cn.fujitsu.com,
-        fabf@skynet.be
-Subject: Re: kernel-doc (was Re: + lib-digsigc-kernel-doc-warning-fixes.patch
- added to -mm tree)
-Message-ID: <20140526140244.GC22284@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Alexey Dobriyan <adobriyan@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	duanj.fnst@cn.fujitsu.com, fabf@skynet.be
-References: <CACVxJT82k0YO7eo8ECu3Rq__vu8L6TE2rhwVGoGLk_7nj+SYFg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVxJT82k0YO7eo8ECu3Rq__vu8L6TE2rhwVGoGLk_7nj+SYFg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752532AbaEZODP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 10:03:15 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:64841 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122AbaEZODN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 10:03:13 -0400
+Message-ID: <1401112989.23186.28.camel@marge.simpson.net>
+Subject: Re: balance storm
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Libo Chen <libo.chen@huawei.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
+        peterz@infradead.org
+Date: Mon, 26 May 2014 16:03:09 +0200
+In-Reply-To: <53832A36.5020205@huawei.com>
+References: <5382AF2E.1040407@huawei.com>
+	 <1401090987.5339.79.camel@marge.simpson.net> <53832A36.5020205@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 04:27:04PM +0300, Alexey Dobriyan wrote:
-> On Thu, May 22, 2014 at 10:28 PM,  <akpm@linux-foundation.org> wrote:
-> >   * digsig_verify() - digital signature verification with public key
-> >   * @keyring:   keyring to search key in
-> >   * @sig:       digital signature
-> > - * @sigen:     length of the signature
-> > + * @siglen:    length of the signature
-> >   * @data:      data
-> >   * @datalen:   length of the data
-> 
-> Does anyone use kernel-doc generated documentation?
-> I'm serious.
+On Mon, 2014-05-26 at 19:49 +0800, Libo Chen wrote:
 
-The kernel-doc generated documentation is available on the web, and I
-suspect a number of people find it when they run Google Searches.
+> how to turn off SD_SHARE_PKG_RESOURCES in userspace ?
 
-The danger of course is that they might get documentation which is out
-of sync with the upstream kernel (or whatever kernel they are
-developing against), but I know I've found it useful on occasion.
+I use a script Ingo gave me years and years ago to
+twiddle /proc/sys/kernel/sched_domain/cpuN/domainN/flags domain wise.
+Doing that won't do you any good without a handler to build/tear down
+sd_llc when you poke at flags though.  You can easily add a sched
+feature to play with it.
 
-	   	     	   	     	   - Ted
-
+-Mike
 
