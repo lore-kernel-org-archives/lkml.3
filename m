@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaEZHtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:49:43 -0400
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:7612
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751826AbaEZHtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752070AbaEZHtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:49:41 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:49260 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaEZHtj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 May 2014 03:49:39 -0400
-Date: Mon, 26 May 2014 15:49:15 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Cosmin Stoica <cosminstefan.stoica@freescale.com>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: Re: linux-next: manual merge of the clockevents tree with the
- arm-soc tree
-Message-ID: <20140526074913.GD2650@dragon>
-References: <20140526154331.7fc6b30c@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140526154331.7fc6b30c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(24454002)(51704005)(80022001)(77096999)(57986005)(6806004)(76176999)(50986999)(20776003)(74662001)(33716001)(54356999)(77982001)(64706001)(86362001)(33656002)(87936001)(31966008)(76482001)(23726002)(46406003)(81342001)(44976005)(46102001)(83322001)(85852003)(19580395003)(102836001)(21056001)(83506001)(4396001)(50466002)(74502001)(81542001)(47776003)(92566001)(26826002)(99396002)(92726001)(79102001)(97756001)(104016001)(83072002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB393;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:gate-tx3.freescale.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 02234DBFF6
-Authentication-Results: spf=fail (sender IP is 192.88.168.1)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <5381C70E.3030605@linux.vnet.ibm.com>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-2-git-send-email-vincent.guittot@linaro.org> <5381C70E.3030605@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 26 May 2014 09:49:18 +0200
+Message-ID: <CAKfTPtDBZyrJJpUHPZcG9Jf4egneyqQ7TR3QXiR0Wff8ZBkHAw@mail.gmail.com>
+Subject: Re: [PATCH v2 01/11] sched: fix imbalance flag reset
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On 25 May 2014 12:33, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> Hi Vincent,
+>
+> On 05/23/2014 09:22 PM, Vincent Guittot wrote:
+>> The imbalance flag can stay set whereas there is no imbalance.
+>>
+>> Let assume that we have 3 tasks that run on a dual cores /dual cluster system.
+>> We will have some idle load balance which are triggered during tick.
+>> Unfortunately, the tick is also used to queue background work so we can reach
+>> the situation where short work has been queued on a CPU which already runs a
+>> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an idle
+>> CPU) and will try to pull the waiting task on the idle CPU. The waiting task is
+>> a worker thread that is pinned on a CPU so an imbalance due to pinned task is
+>> detected and the imbalance flag is set.
+>> Then, we will not be able to clear the flag because we have at most 1 task on
+>> each CPU but the imbalance flag will trig to useless active load balance
+>> between the idle CPU and the busy CPU.
+>
+> Why do we do active balancing today when there is at-most 1 task on the
+> busiest cpu? Shouldn't we be skipping load balancing altogether? If we
+> do active balancing when the number of tasks = 1, it will lead to a ping
+> pong right?
 
-On Mon, May 26, 2014 at 03:43:31PM +1000, Stephen Rothwell wrote:
-> Hi Daniel,
-> 
-> Today's linux-next merge of the clockevents tree got a conflict in
-> arch/arm/boot/dts/vf610.dtsi between commit 0517fe6aa880 ("ARM: dts:
-> vf610-twr: Add support for sdhc1") from the arm-soc tree and commit
-> 07513e1330a9 ("ARM: dts: vf610: Add Freescale FlexTimer Module timer
-> node") from the clockevents tree.
+That's the purpose of the patch to prevent this useless active load
+balance. When the imbalance flag is set, an active load balance is
+triggered whatever the load balance is because of pinned tasks that
+prevents a balance state.
 
-Next time, please leave the dts patches to go via arch tree, so that we
-can save such conflicts.
+Vincent
 
-Shawn
+>
+> Regards
+> Preeti U Murthy
+>
