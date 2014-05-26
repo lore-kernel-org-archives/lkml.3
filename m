@@ -1,280 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaEZPT1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:19:27 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:55341 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466AbaEZPSe (ORCPT
+	id S1752872AbaEZPTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:19:38 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43313 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246AbaEZPTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:18:34 -0400
-From: Andreas Noever <andreas.noever@gmail.com>
-To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v3 14/15] thunderbolt: Read switch uid from EEPROM
-Date: Mon, 26 May 2014 17:18:11 +0200
-Message-Id: <1401117492-2870-15-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
-References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+	Mon, 26 May 2014 11:19:35 -0400
+Date: Mon, 26 May 2014 16:19:15 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, tiwai@suse.de, perex@perex.cz,
+        dianders@chromium.org, swarren@wwwdotorg.org
+Message-ID: <20140526151915.GT22111@sirena.org.uk>
+References: <1401092902-20525-1-git-send-email-tushar.behera@linaro.org>
+ <1401092902-20525-3-git-send-email-tushar.behera@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iWgke0titJZxhgDH"
+Content-Disposition: inline
+In-Reply-To: <1401092902-20525-3-git-send-email-tushar.behera@linaro.org>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.248.185
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] ASoC: max98095: Add master clock handling
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add eeprom access code and read the uid during switch initialization.
-The UID will be used to check device identity after suspend.
 
-Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
----
- drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/eeprom.c | 189 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/switch.c |   5 ++
- drivers/thunderbolt/tb.h     |   3 +
- 4 files changed, 198 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/eeprom.c
+--iWgke0titJZxhgDH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 0122ca6..5d1053c 100644
---- a/drivers/thunderbolt/Makefile
-+++ b/drivers/thunderbolt/Makefile
-@@ -1,3 +1,3 @@
- obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o
-+thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o eeprom.o
- 
-diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
-new file mode 100644
-index 0000000..d1ae1e4
---- /dev/null
-+++ b/drivers/thunderbolt/eeprom.c
-@@ -0,0 +1,189 @@
-+/*
-+ * Thunderbolt Cactus Ridge driver - eeprom access
-+ *
-+ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#include "tb.h"
-+
-+/**
-+ * tb_eeprom_ctl_write() - write control word
-+ */
-+static int tb_eeprom_ctl_write(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
-+{
-+	return tb_sw_write(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
-+}
-+
-+/**
-+ * tb_eeprom_ctl_write() - read control word
-+ */
-+static int tb_eeprom_ctl_read(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
-+{
-+	return tb_sw_read(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
-+}
-+
-+enum tb_eeprom_transfer {
-+	TB_EEPROM_IN,
-+	TB_EEPROM_OUT,
-+};
-+
-+/**
-+ * tb_eeprom_active - enable rom access
-+ *
-+ * WARNING: Always disable access after usage. Otherwise the controller will
-+ * fail to reprobe.
-+ */
-+static int tb_eeprom_active(struct tb_switch *sw, bool enable)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	if (enable) {
-+		ctl.access_high = 1;
-+		res = tb_eeprom_ctl_write(sw, &ctl);
-+		if (res)
-+			return res;
-+		ctl.access_low = 0;
-+		return tb_eeprom_ctl_write(sw, &ctl);
-+	} else {
-+		ctl.access_low = 1;
-+		res = tb_eeprom_ctl_write(sw, &ctl);
-+		if (res)
-+			return res;
-+		ctl.access_high = 0;
-+		return tb_eeprom_ctl_write(sw, &ctl);
-+	}
-+}
-+
-+/**
-+ * tb_eeprom_transfer - transfer one bit
-+ *
-+ * If TB_EEPROM_IN is passed, then the bit can be retrieved from ctl->data_in.
-+ * IF TB_EEPROM_OUT is passed, then ctl->data_out will be written.
-+ */
-+static int tb_eeprom_transfer(struct tb_switch *sw, struct tb_eeprom_ctl *ctl,
-+			      enum tb_eeprom_transfer direction)
-+{
-+	int res;
-+	if (direction == TB_EEPROM_OUT) {
-+		res = tb_eeprom_ctl_write(sw, ctl);
-+		if (res)
-+			return res;
-+	}
-+	ctl->clock = 1;
-+	res = tb_eeprom_ctl_write(sw, ctl);
-+	if (res)
-+		return res;
-+	if (direction == TB_EEPROM_IN) {
-+		res = tb_eeprom_ctl_read(sw, ctl);
-+		if (res)
-+			return res;
-+	}
-+	ctl->clock = 0;
-+	return tb_eeprom_ctl_write(sw, ctl);
-+}
-+
-+/**
-+ * tb_eeprom_out - write one byte to the bus
-+ */
-+static int tb_eeprom_out(struct tb_switch *sw, u8 val)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int i;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	for (i = 0; i < 8; i++) {
-+		ctl.data_out = val & 0x80;
-+		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_OUT);
-+		if (res)
-+			return res;
-+		val <<= 1;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * tb_eeprom_in - read one byte from the bus
-+ */
-+static int tb_eeprom_in(struct tb_switch *sw, u8 *val)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int i;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	*val = 0;
-+	for (i = 0; i < 8; i++) {
-+		*val <<= 1;
-+		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_IN);
-+		if (res)
-+			return res;
-+		*val |= ctl.data_in;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * tb_eeprom_read_n - read count bytes from offset into val
-+ */
-+static int tb_eeprom_read_n(struct tb_switch *sw, u16 offset, u8 *val,
-+		size_t count)
-+{
-+	int i, res;
-+	res = tb_eeprom_active(sw, true);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, 3);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, offset >> 8);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, offset);
-+	if (res)
-+		return res;
-+	for (i = 0; i < count; i++) {
-+		res = tb_eeprom_in(sw, val + i);
-+		if (res)
-+			return res;
-+	}
-+	return tb_eeprom_active(sw, false);
-+}
-+
-+int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid)
-+{
-+	u8 data[9];
-+	struct tb_cap_plug_events cap;
-+	int res;
-+	if (!sw->cap_plug_events) {
-+		tb_sw_warn(sw, "no TB_CAP_PLUG_EVENTS, cannot read eeprom\n");
-+		return -ENOSYS;
-+	}
-+	res = tb_sw_read(sw, &cap, TB_CFG_SWITCH, sw->cap_plug_events,
-+			     sizeof(cap) / 4);
-+	if (res)
-+		return res;
-+	if (!cap.eeprom_ctl.present || cap.eeprom_ctl.not_present) {
-+		tb_sw_warn(sw, "no NVM\n");
-+		return -ENOSYS;
-+	}
-+
-+	if (cap.drom_offset > 0xffff) {
-+		tb_sw_warn(sw, "drom offset is larger than 0xffff: %#x\n",
-+				cap.drom_offset);
-+		return -ENXIO;
-+	}
-+
-+	/* read uid */
-+	res = tb_eeprom_read_n(sw, cap.drom_offset, data, 9);
-+	if (res)
-+		return res;
-+	/* TODO: check checksum in data[0] */
-+	*uid = *(u64 *)(data+1);
-+	return 0;
-+}
-+
-+
-+
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index a6968cc..eef5f1c 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -370,6 +370,11 @@ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
- 	}
- 	sw->cap_plug_events = cap;
- 
-+	if (tb_eeprom_read_uid(sw, &sw->uid))
-+		tb_sw_warn(sw, "could not read uid from eeprom\n");
-+	else
-+		tb_sw_info(sw, "uid: %#llx\n", sw->uid);
-+
- 	if (tb_plug_events_active(sw, true))
- 		goto err;
- 
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 508abc4..a89087f 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -19,6 +19,7 @@ struct tb_switch {
- 	struct tb_regs_switch_header config;
- 	struct tb_port *ports;
- 	struct tb *tb;
-+	u64 uid;
- 	int cap_plug_events; /* offset, zero if not found */
- 	bool is_unplugged; /* unplugged, will go away */
- };
-@@ -231,6 +232,8 @@ int tb_path_activate(struct tb_path *path);
- void tb_path_deactivate(struct tb_path *path);
- bool tb_path_is_invalid(struct tb_path *path);
- 
-+int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid);
-+
- 
- static inline int tb_route_length(u64 route)
- {
--- 
-1.9.3
+On Mon, May 26, 2014 at 01:58:22PM +0530, Tushar Behera wrote:
+> If master clock is provided through device tree, then update
+> the master clock frequency during set_sysclk.
 
+Applied, thanks.
+
+--iWgke0titJZxhgDH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTg1twAAoJELSic+t+oim9lZYQAJabidoIPELzOnxdAZU7wFDD
+RzdfEgu+f8bv4U1Rbum7GeZ0XUZrVHMCb/tVJUrPDBEg5WDqquk6+b+YLvbT7Sp1
+gE+79eSazHJmJMYMKMDB4LqAwL6wUsY93Ma1qX22qETaG7ropEDKkrQufinsX5E/
+fwJhcXoX/OUnZcxLb/PIvjADQW3I/V618AeIonGFmosZCrlfLRXOOS+BvjhNlU03
+MHmkDfQy+3TPvltUyHHbWeVlOye1NJMFr0BS7m1bwFyO+lieyBUaLmElPDE1I5PT
+HC90ZWWy205eQ/vSD9DO+Ke9+nazDvj8KeX3Cn9jyBBkZ1zfqHZ2vcFM8j3QNSze
+C2NoiP6rFwtNgP/dQCrt+cJs6VmvcKMUpX7bL8GplcKlZzTROmzFl12yTRX7phgv
+yLkKt9v7b9rGRs/a+PLiC9HfmimWLXu4S246c4QKyghZmBEtMarEB54MUeKaT9XI
+s8OkGpjsoJ6lG85T4kPIW64yvmAt9pAuPpLbfMtCLKrcbvI269td+Ylp4oVdG/cK
+yFmXbh30+IgKKtc4ZKtL+T+mE/OeA7vZVxzO/9/jmCsV83hpX78id40fuPN/mlJo
+kT8vVCKwnk8D5xiXQG08ZYiIZ/JL8HMrLF/T8cDtc78xGoBk269OZHQwdPSYrMM0
+ytJMqoxgq51/ho8AbO4w
+=jm0w
+-----END PGP SIGNATURE-----
+
+--iWgke0titJZxhgDH--
