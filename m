@@ -1,82 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaEZNYX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:24:23 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:65028 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588AbaEZNYW (ORCPT
+	id S1752401AbaEZNZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:25:18 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:54876 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaEZNZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:24:22 -0400
+	Mon, 26 May 2014 09:25:16 -0400
+Message-ID: <538340EE.7070408@linaro.org>
+Date: Mon, 26 May 2014 15:26:06 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140526094240.B5508E009B@blue.fi.intel.com>
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
-	<20140519130114.GA3140@dhcp22.suse.cz>
-	<20140519143540.BE9F6E009B@blue.fi.intel.com>
-	<20140519143837.GA5228@infradead.org>
-	<CAAih0NjpHKc11JfG3MOnvisXesg-LoaS0Cx1rOA5ggDEHNfY6g@mail.gmail.com>
-	<20140526094240.B5508E009B@blue.fi.intel.com>
-Date: Mon, 26 May 2014 08:24:21 -0500
-Message-ID: <CAAih0Nght-5k6mp-_jc+GipxPfxPYdCEabH_8M2QMkM_B5FPWw@mail.gmail.com>
-Subject: Re: remap_file_pages() use
-From: Jeff Smith <jsmith.lkml@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Kenny Simpson <theonetruekenny@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@alien8.de>
+CC: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
+        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 4/7] acpi, apei, ghes: Factor out NMI error notification
+ context.
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org> <1397056476-9183-5-git-send-email-tomasz.nowicki@linaro.org> <20140513194125.GD8760@pd.tnic> <537F39D7.6090309@linaro.org> <20140523164824.GG21332@pd.tnic>
+In-Reply-To: <20140523164824.GG21332@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Mirrored mapping is absolutely required by several
->> independent proprietary platforms I'm aware of, and remap_file_pages()
->> has historically been the only sane way to accomplish this. (i.e.,
->> shm_open(), mmap(NULL, 2^(n+1) pages), remap_file_pages() on 2nd
->> half).
+On 23.05.2014 18:48, Borislav Petkov wrote:
+> On Fri, May 23, 2014 at 02:06:47PM +0200, Tomasz Nowicki wrote:
+>> I had that thoughts too. Looking at simple MCE calls, yes, it does
+>> make sense to create corresponding arch-specific version and provide
+>> logic as needed. I think that NMI is much more complicated....
 >
-> Em.. What's wrong with shm_open() + two mmap()s to cover both halfs?
+> How about this ontop of your patches. It builds here but it is not
+> trivial for me to try it on !X86. Maybe you can test it quicker than me
+> finding some other arch box first... :)
 >
-> fd = shm_open();
-> addr1 = mmap(NULL, 2*SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-> addr2 = mmap(addr1 + SIZE, PROT_READ|PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
->
-> Is there a reason why it doens't work?
 
-Your addr2 mmap() call is a bit incorrect semantically and
-syntactically (you skipped the length arg). The addr2 request will
-fail because mmap() does not implicitly munmap() occupied virtual
-address space. Even if you did that, the following still has a race
-condition between the addr2 request and another thread grabbing the
-same virtual space, which nothing short of a lock on all threads'
-mmap()-ing logic can protect:
+Now I do follow :) Nicely done, I have applied your patch and indeed 
+there are more arch dependencies for !X86. I created another patch (it 
+can be applied on top of last patch set). Does it look reasonable?
 
-addr1 = mmap(NULL, 2*SIZE, PROT_READ, MAP_SHARED, fd, 0);
-munmap(addr1 + SIZE, SIZE);
-/* race on virtual address space here, but n/a for remap_file_pages() ... */
-addr2 = mmap(addr1, SIZE, PROT_READ, MAP_SHARED | MAP_FIXED, fd, 0);
 
-remap_file_pages() is not subject to this problem and allows the
-creation of considerably cleaner code. Protecting the address space
-corner cases with locks or arbitrarily bounded munmap()-and-retry
-loops is a substantial burden over the historically provided approach.
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index 86f9301..0f03ab6 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -54,7 +54,18 @@ struct nmiaction {
 
->> but failing that, a reservation API would need
->> to be created (possibly a MAP_RESERVE flag) that would set aside a
->> region that could only be subsequently mapped via explicit
->> address-requesting mmap() calls.
->
-> I don't get this part.
+  int __register_nmi_handler(unsigned int, struct nmiaction *);
 
-I'm proposing that a call along the lines of mmap(NULL, len, prot,
-MAP_RESERVED | ..., fd, offset) could return a virtual address block
-that is -not- actually mapped but -is- protected from other mmap()
-calls not explicitly requesting the space via their addr parameters.
-Unfortunately, you'd also need to define separate semantics to
-un-reserving not-mapped space, etc.
+-void unregister_nmi_handler(unsigned int, const char *);
++void unregister_nmi_handler(unsigned int type, const char *name);
++
++static inline int arch_apei_register_nmi(nmi_handler_t fn,
++					 const char *name)
++{
++	return register_nmi_handler(NMI_LOCAL, fn, 0, name);
++}
++
++static inline void arch_apei_unregister_nmi(const char *name)
++{
++	unregister_nmi_handler(NMI_LOCAL, name);
++}
 
-The important issue is that users need to be able to trivially protect
-themselves from transient virtual address space congestion problems
-and only fail early on long-term exhaustion situations.
+  void stop_nmi(void);
+  void restart_nmi(void);
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index 35a44d9..84c79af 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -47,13 +47,11 @@
+  #include <linux/genalloc.h>
+  #include <linux/pci.h>
+  #include <linux/aer.h>
++#include <linux/nmi.h>
+
+  #include <acpi/ghes.h>
+  #include <asm/apei.h>
+  #include <asm/tlbflush.h>
+-#ifdef CONFIG_ACPI_APEI_NMI
+-#include <asm/nmi.h>
+-#endif
+
+  #include "apei-internal.h"
+
+@@ -718,7 +716,6 @@ static int ghes_notify_sci(struct notifier_block *this,
+  	return ret;
+  }
+
+-#ifdef CONFIG_ACPI_APEI_NMI
+  /*
+   * printk is not safe in NMI context.  So in NMI handler, we allocate
+   * required memory from lock-less memory allocator
+@@ -817,7 +814,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct 
+pt_regs *regs)
+  {
+  	struct ghes *ghes, *ghes_global = NULL;
+  	int sev, sev_global = -1;
+-	int ret = NMI_DONE;
++	int ret = APEI_NMI_DONE;
+
+  	BUG_ON(!IS_ENABLED(CONFIG_ACPI_APEI_NMI));
+
+@@ -832,14 +829,14 @@ static int ghes_notify_nmi(unsigned int cmd, 
+struct pt_regs *regs)
+  			sev_global = sev;
+  			ghes_global = ghes;
+  		}
+-		ret = NMI_HANDLED;
++		ret = APEI_NMI_HANDLED;
+  	}
+
+-	if (ret == NMI_DONE)
++	if (ret == APEI_NMI_DONE)
+  		goto out;
+
+  	if (sev_global >= GHES_SEV_PANIC) {
+-		oops_begin();
++		arch_apei_nmi_oops_begin();
+  		ghes_print_queued_estatus();
+  		__ghes_print_estatus(KERN_EMERG, ghes_global->generic,
+  				     ghes_global->estatus);
+@@ -914,7 +911,7 @@ static int ghes_notify_init_nmi(struct ghes *ghes)
+  	ghes_estatus_pool_expand(len);
+  	mutex_lock(&ghes_list_mutex);
+  	if (list_empty(&ghes_nmi))
+-		status = register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0, "ghes");
++		status = arch_apei_register_nmi(ghes_notify_nmi, "ghes");
+  	list_add_rcu(&ghes->list, &ghes_nmi);
+  	mutex_unlock(&ghes_list_mutex);
+
+@@ -928,7 +925,7 @@ static void ghes_notify_remove_nmi(struct ghes *ghes)
+  	mutex_lock(&ghes_list_mutex);
+  	list_del_rcu(&ghes->list);
+  	if (list_empty(&ghes_nmi))
+-		unregister_nmi_handler(NMI_LOCAL, "ghes");
++		arch_apei_unregister_nmi("ghes");
+  	mutex_unlock(&ghes_list_mutex);
+  	/*
+  	 * To synchronize with NMI handler, ghes can only be
+@@ -941,17 +938,14 @@ static void ghes_notify_remove_nmi(struct ghes *ghes)
+
+  static void ghes_init_nmi(void)
+  {
++	if (!IS_ENABLED(CONFIG_ACPI_APEI_NMI))
++		return;
++
+  	init_irq_work(&ghes_proc_irq_work, ghes_proc_in_irq);
+  	ghes_notify_tab[ACPI_HEST_NOTIFY_NMI].init_call = ghes_notify_init_nmi;
+  	ghes_notify_tab[ACPI_HEST_NOTIFY_NMI].remove_call =
+  							ghes_notify_remove_nmi;
+  }
+-#else
+-static inline void ghes_init_nmi(void)
+-{
+-
+-}
+-#endif
+
+  static int ghes_notify_init_polled(struct ghes *ghes)
+  {
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index 084b4c5..1aa351c 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -56,4 +56,19 @@ extern int proc_dowatchdog(struct ctl_table *, int ,
+  			   void __user *, size_t *, loff_t *);
+  #endif
+
++#define APEI_NMI_DONE		0
++#define APEI_NMI_HANDLED	1
++
++#ifdef CONFIG_ACPI_APEI_NMI
++#include <asm/nmi.h>
++#define arch_apei_nmi_oops_begin()	oops_begin()
++#else
++#define arch_apei_register_nmi(fn, n) ({		\
++	void __attribute__((unused)) *dummy = fn;	\
++	(-ENOSYS);					\
++});
++#define arch_apei_unregister_nmi(n)
++#define arch_apei_nmi_oops_begin()
++#endif /* CONFIG_ACPI_APEI_NMI */
++
+  #endif
+
+Regards,
+Tomasz
