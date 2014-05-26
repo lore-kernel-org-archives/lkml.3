@@ -1,360 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaEZLg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:36:29 -0400
-Received: from mail.eperm.de ([89.247.134.16]:45736 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710AbaEZLg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:36:27 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: herbert@gondor.apana.org.au, aquini@redhat.com,
-        jeremy.wayne.powell@gmail.com, clemens@ladisch.de, pwalten@au1.ibm.com,
-        joe@perches.com
-Subject: [PATCH v8 2/7] header file for DRBG
-Date: Mon, 26 May 2014 13:27:18 +0200
-Message-ID: <200160080.0KhMofbnEN@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1672386.pGc00MSMM2@myon.chronox.de>
-References: <1672386.pGc00MSMM2@myon.chronox.de>
+	id S1752487AbaEZLgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:36:38 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57192 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752464AbaEZLgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 07:36:36 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        matthew.garrett@nebula.com, rafael.j.wysocki@intel.com,
+        dmitry.torokhov@gmail.com
+Subject: Re: [PATCH V7 08/11] ACPI: always register memory hotplug scan handler even if CONFIG_X86_INTEL_LPSS is cleared
+Date: Mon, 26 May 2014 13:53:39 +0200
+Message-ID: <4177604.8JWRhYqtaS@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140526105636.GC1765@lahna.fi.intel.com>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <1400781753-2682-9-git-send-email-rui.zhang@intel.com> <20140526105636.GC1765@lahna.fi.intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The header file includes the definition of:
+On Monday, May 26, 2014 01:56:36 PM Mika Westerberg wrote:
+> On Fri, May 23, 2014 at 02:02:30AM +0800, Zhang Rui wrote:
+> > The new ACPI device enumeration mechanism, which will be introduced
+> > in a later patch, will enumerate the _HID devices w/o any scan
+> > handler attached to platform bus.
+> > This means that, for the devices that are attached to a configurable
+> > scan handler, we should make sure no platform devices would be
+> > created for them even if the scan handler is compiled out.
+> > 
+> > Fix this problem for lpss devices by always register the lpss scan handler,
+> > but with meaningful callbacks only when CONFIG_X86_INTEL_LPSS is set.
+> > 
+> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > ---
+> >  drivers/acpi/Makefile    |  2 +-
+> >  drivers/acpi/acpi_lpss.c | 63 ++++++++++++++++++++++++++++++------------------
+> >  drivers/acpi/internal.h  |  4 ---
+> >  3 files changed, 41 insertions(+), 28 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+> > index 171efc2..605eff7 100644
+> > --- a/drivers/acpi/Makefile
+> > +++ b/drivers/acpi/Makefile
+> > @@ -39,7 +39,7 @@ acpi-y				+= processor_core.o
+> >  acpi-y				+= ec.o
+> >  acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+> >  acpi-y				+= pci_root.o pci_link.o pci_irq.o
+> > -acpi-$(CONFIG_X86_INTEL_LPSS)	+= acpi_lpss.o
+> > +acpi-y				+= acpi_lpss.o
+> >  acpi-y				+= acpi_platform.o
+> >  acpi-y				+= acpi_pnp.o
+> >  acpi-y				+= power.o
+> > diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> > index 69e29f4..bb5b3f2 100644
+> > --- a/drivers/acpi/acpi_lpss.c
+> > +++ b/drivers/acpi/acpi_lpss.c
+> > @@ -24,6 +24,8 @@
+> >  
+> >  ACPI_MODULE_NAME("acpi_lpss");
+> >  
+> > +#ifdef CONFIG_X86_INTEL_LPSS
+> > +
+> >  #define LPSS_CLK_SIZE	0x04
+> >  #define LPSS_LTR_SIZE	0x18
+> >  
+> > @@ -159,40 +161,50 @@ static struct lpss_device_desc byt_i2c_dev_desc = {
+> >  	.shared_clock = &i2c_clock,
+> >  };
+> >  
+> > +#define LPSS_PTR(desc) ((unsigned long)&desc)
+> > +
+> > +#else
+> > +
+> > +#define LPSS_PTR(desc) 0
+> > +
+> > +#endif
+> > +
+> >  static const struct acpi_device_id acpi_lpss_device_ids[] = {
+> >  	/* Generic LPSS devices */
+> > -	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
+> > +	{ "INTL9C60", LPSS_PTR(lpss_dma_desc) },
+> >  
+> >  	/* Lynxpoint LPSS devices */
+> > -	{ "INT33C0", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT33C1", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT33C2", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT33C3", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
+> > -	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
+> > -	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
+> > +	{ "INT33C0", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT33C1", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT33C2", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT33C3", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT33C4", LPSS_PTR(lpt_uart_dev_desc) },
+> > +	{ "INT33C5", LPSS_PTR(lpt_uart_dev_desc) },
+> > +	{ "INT33C6", LPSS_PTR(lpt_sdio_dev_desc) },
+> >  	{ "INT33C7", },
+> >  
+> >  	/* BayTrail LPSS devices */
+> > -	{ "80860F09", (unsigned long)&byt_pwm_dev_desc },
+> > -	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
+> > -	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
+> > -	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
+> > -	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
+> > +	{ "80860F09", LPSS_PTR(byt_pwm_dev_desc) },
+> > +	{ "80860F0A", LPSS_PTR(byt_uart_dev_desc) },
+> > +	{ "80860F0E", LPSS_PTR(byt_spi_dev_desc) },
+> > +	{ "80860F14", LPSS_PTR(byt_sdio_dev_desc) },
+> > +	{ "80860F41", LPSS_PTR(byt_i2c_dev_desc) },
+> >  	{ "INT33B2", },
+> >  
+> > -	{ "INT3430", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT3431", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT3432", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT3433", (unsigned long)&lpt_dev_desc },
+> > -	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
+> > -	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
+> > -	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
+> > +	{ "INT3430", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT3431", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT3432", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT3433", LPSS_PTR(lpt_dev_desc) },
+> > +	{ "INT3434", LPSS_PTR(lpt_uart_dev_desc) },
+> > +	{ "INT3435", LPSS_PTR(lpt_uart_dev_desc) },
+> > +	{ "INT3436", LPSS_PTR(lpt_sdio_dev_desc) },
+> >  	{ "INT3437", },
+> >  
+> >  	{ }
+> >  };
+> >  
+> > +#ifdef CONFIG_X86_INTEL_LPSS
+> > +
+> >  static int is_memory(struct acpi_resource *res, void *not_used)
+> >  {
+> >  	struct resource r;
+> > @@ -503,18 +515,23 @@ static void acpi_lpss_unbind(struct device *dev)
+> >  {
+> >  	dev->power.set_latency_tolerance = NULL;
+> >  }
+> > +#endif /* CONFIG_X86_INTEL_LPSS */
+> >  
+> >  static struct acpi_scan_handler lpss_handler = {
+> >  	.ids = acpi_lpss_device_ids,
+> > -	.attach = acpi_lpss_create_device,
+> > -	.bind = acpi_lpss_bind,
+> > -	.unbind = acpi_lpss_unbind,
+> >  };
+> >  
+> >  void __init acpi_lpss_init(void)
+> >  {
+> > +#ifdef CONFIG_X86_INTEL_LPSS
+> >  	if (!lpt_clk_init()) {
+> >  		bus_register_notifier(&platform_bus_type, &acpi_lpss_nb);
+> > +		lpss_handler.attach = acpi_lpss_create_device;
+> > +		lpss_handler.bind = acpi_lpss_bind;
+> > +		lpss_handler.unbind = acpi_lpss_unbind;
+> >  		acpi_scan_add_handler(&lpss_handler);
+> > +		return;
+> >  	}
+> > +#endif
+> > +	acpi_scan_add_handler(&lpss_handler);
+> 
+> I'm wondering whether it is worth the ugliness to get platform bus
+> enumeration the default?
+> 
+> Since you already have the PNP whitelist, can't we just use that for PNP
+> and keep these files as they are? In other words, don't make any kind of
+> physical device by default and let the scan handlers to decide.
 
-* DRBG data structures with
-        - struct drbg_state as main structure
-        - struct drbg_core referencing the backend ciphers
-        - struct drbg_state_ops callbach handlers for specific code
-          supporting the Hash, HMAC, CTR DRBG implementations
-        - struct drbg_conc defining a linked list for input data
-        - struct drbg_test_data holding the test "entropy" data for CAVS
-          testing and testmgr.c
-        - struct drbg_gen allowing test data, additional information
-          string and personalization string data to be funneled through
-          the kernel crypto API -- the DRBG requires additional
-          parameters when invoking the reset and random number
-          generation requests than intended by the kernel crypto API
+Well, that's tempting, but then we'd get one more whitelist pretty much without
+any benefit, because we'd be still going to have the list in acpi_platform.c.
 
-* wrapper function to the kernel crypto API functions using struct
-  drbg_gen to pass through all data needed for DRBG
+The purpose of the whole exercise is not to prevent PNP devices from being
+created by default (which admittedly is a nice side effect), but to get rid
+of the white list in acpi_platform.c - and in particular, to avoid the
+necessity to add every ACPI-enumerated platform device to that list in the
+future.
 
-* wrapper functions to kernel crypto API functions usable for testing
-  code to inject test_data into the DRBG as needed by CAVS testing and
-  testmgr.c.
-
-* DRBG flags required for the operation of the DRBG and for selecting
-  the particular DRBG type and backend cipher
-
-* getter functions for data from struct drbg_core
-
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- include/crypto/drbg.h | 289 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 289 insertions(+)
- create mode 100644 include/crypto/drbg.h
-
-diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
-new file mode 100644
-index 0000000..b507c5b6
---- /dev/null
-+++ b/include/crypto/drbg.h
-@@ -0,0 +1,289 @@
-+/*
-+ * DRBG based on NIST SP800-90A
-+ *
-+ * Copyright Stephan Mueller <smueller@chronox.de>, 2014
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ * 1. Redistributions of source code must retain the above copyright
-+ *    notice, and the entire permission notice in its entirety,
-+ *    including the disclaimer of warranties.
-+ * 2. Redistributions in binary form must reproduce the above copyright
-+ *    notice, this list of conditions and the following disclaimer in the
-+ *    documentation and/or other materials provided with the distribution.
-+ * 3. The name of the author may not be used to endorse or promote
-+ *    products derived from this software without specific prior
-+ *    written permission.
-+ *
-+ * ALTERNATIVELY, this product may be distributed under the terms of
-+ * the GNU General Public License, in which case the provisions of the GPL are
-+ * required INSTEAD OF the above restrictions.  (This clause is
-+ * necessary due to a potential bad interaction between the GPL and
-+ * the restrictions contained in a BSD-style copyright.)
-+ *
-+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
-+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF
-+ * WHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE
-+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
-+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-+ * USE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH
-+ * DAMAGE.
-+ */
-+
-+#ifndef _DRBG_H
-+#define _DRBG_H
-+
-+
-+#include <linux/random.h>
-+#include <linux/scatterlist.h>
-+#include <crypto/hash.h>
-+#include <linux/module.h>
-+#include <linux/crypto.h>
-+#include <linux/slab.h>
-+#include <crypto/internal/rng.h>
-+#include <crypto/rng.h>
-+#include <linux/fips.h>
-+#include <linux/spinlock.h>
-+
-+/*
-+ * Concatenation Helper and string operation helper
-+ *
-+ * SP800-90A requires the concatenation of different data. To avoid copying
-+ * buffers around or allocate additional memory, the following data structure
-+ * is used to point to the original memory with its size. In addition, it
-+ * is used to build a linked list. The linked list defines the concatenation
-+ * of individual buffers. The order of memory block referenced in that
-+ * linked list determines the order of concatenation.
-+ */
-+struct drbg_string {
-+	const unsigned char *buf;
-+	size_t len;
-+	struct drbg_string *next;
-+};
-+
-+static inline void drbg_string_fill(struct drbg_string *string,
-+				    const unsigned char *buf, size_t len)
-+{
-+	string->buf = buf;
-+	string->len = len;
-+	string->next = NULL;
-+}
-+
-+struct drbg_state;
-+typedef uint32_t drbg_flag_t;
-+
-+struct drbg_core {
-+	drbg_flag_t flags;	/* flags for the cipher */
-+	__u8 statelen;		/* maximum state length */
-+	/*
-+	 * maximum length of personalization string or additional input
-+	 * string -- exponent for base 2
-+	 */
-+	__u8 max_addtllen;
-+	/* maximum bits per RNG request -- exponent for base 2*/
-+	__u8 max_bits;
-+	/* maximum number of requests -- exponent for base 2 */
-+	__u8 max_req;
-+	__u8 blocklen_bytes;	/* block size of output in bytes */
-+	char cra_name[CRYPTO_MAX_ALG_NAME]; /* mapping to kernel crypto API */
-+	 /* kernel crypto API backend cipher name */
-+	char backend_cra_name[CRYPTO_MAX_ALG_NAME];
-+};
-+
-+struct drbg_state_ops {
-+	int (*update)(struct drbg_state *drbg, struct drbg_string *seed,
-+		      int reseed);
-+	int (*generate)(struct drbg_state *drbg,
-+			unsigned char *buf, unsigned int buflen,
-+			struct drbg_string *addtl);
-+	int (*crypto_init)(struct drbg_state *drbg);
-+	int (*crypto_fini)(struct drbg_state *drbg);
-+
-+};
-+
-+struct drbg_test_data {
-+	struct drbg_string *testentropy; /* TEST PARAMETER: test entropy */
-+};
-+
-+struct drbg_state {
-+	spinlock_t drbg_lock;	/* lock around DRBG */
-+	unsigned char *V;	/* internal state 10.1.1.1 1a) */
-+	/* hash: static value 10.1.1.1 1b) hmac / ctr: key */
-+	unsigned char *C;
-+	/* Number of RNG requests since last reseed -- 10.1.1.1 1c) */
-+	size_t reseed_ctr;
-+	 /* some memory the DRBG can use for its operation */
-+	unsigned char *scratchpad;
-+	void *priv_data;	/* Cipher handle */
-+	bool seeded;		/* DRBG fully seeded? */
-+	bool pr;		/* Prediction resistance enabled? */
-+#ifdef CONFIG_CRYPTO_FIPS
-+	bool fips_primed;	/* Continuous test primed? */
-+	unsigned char *prev;	/* FIPS 140-2 continuous test value */
-+#endif
-+	const struct drbg_state_ops *d_ops;
-+	const struct drbg_core *core;
-+	struct drbg_test_data *test_data;
-+};
-+
-+static inline __u8 drbg_statelen(struct drbg_state *drbg)
-+{
-+	if (drbg && drbg->core)
-+		return drbg->core->statelen;
-+	return 0;
-+}
-+
-+static inline __u8 drbg_blocklen(struct drbg_state *drbg)
-+{
-+	if (drbg && drbg->core)
-+		return drbg->core->blocklen_bytes;
-+	return 0;
-+}
-+
-+static inline __u8 drbg_keylen(struct drbg_state *drbg)
-+{
-+	if (drbg && drbg->core)
-+		return (drbg->core->statelen - drbg->core->blocklen_bytes);
-+	return 0;
-+}
-+
-+static inline size_t drbg_max_request_bytes(struct drbg_state *drbg)
-+{
-+	/* max_bits is in bits, but buflen is in bytes */
-+	return (1 << (drbg->core->max_bits - 3));
-+}
-+
-+static inline size_t drbg_max_addtl(struct drbg_state *drbg)
-+{
-+	return (1UL<<(drbg->core->max_addtllen));
-+}
-+
-+static inline size_t drbg_max_requests(struct drbg_state *drbg)
-+{
-+	return (1UL<<(drbg->core->max_req));
-+}
-+
-+/*
-+ * kernel crypto API input data structure for DRBG generate in case dlen
-+ * is set to 0
-+ */
-+struct drbg_gen {
-+	unsigned char *outbuf;	/* output buffer for random numbers */
-+	unsigned int outlen;	/* size of output buffer */
-+	struct drbg_string *addtl;	/* additional information string */
-+	struct drbg_test_data *test_data;	/* test data */
-+};
-+
-+/*
-+ * This is a wrapper to the kernel crypto API function of
-+ * crypto_rng_get_bytes() to allow the caller to provide additional data.
-+ *
-+ * @drng DRBG handle -- see crypto_rng_get_bytes
-+ * @outbuf output buffer -- see crypto_rng_get_bytes
-+ * @outlen length of output buffer -- see crypto_rng_get_bytes
-+ * @addtl_input additional information string input buffer
-+ * @addtllen length of additional information string buffer
-+ *
-+ * return
-+ *	see crypto_rng_get_bytes
-+ */
-+static inline int crypto_drbg_get_bytes_addtl(struct crypto_rng *drng,
-+			unsigned char *outbuf, unsigned int outlen,
-+			struct drbg_string *addtl)
-+{
-+	int ret;
-+	struct drbg_gen genbuf;
-+	genbuf.outbuf = outbuf;
-+	genbuf.outlen = outlen;
-+	genbuf.addtl = addtl;
-+	genbuf.test_data = NULL;
-+	ret = crypto_rng_get_bytes(drng, (u8 *)&genbuf, 0);
-+	return ret;
-+}
-+
-+/*
-+ * TEST code
-+ *
-+ * This is a wrapper to the kernel crypto API function of
-+ * crypto_rng_get_bytes() to allow the caller to provide additional data and
-+ * allow furnishing of test_data
-+ *
-+ * @drng DRBG handle -- see crypto_rng_get_bytes
-+ * @outbuf output buffer -- see crypto_rng_get_bytes
-+ * @outlen length of output buffer -- see crypto_rng_get_bytes
-+ * @addtl_input additional information string input buffer
-+ * @addtllen length of additional information string buffer
-+ * @test_data filled test data
-+ *
-+ * return
-+ *	see crypto_rng_get_bytes
-+ */
-+static inline int crypto_drbg_get_bytes_addtl_test(struct crypto_rng *drng,
-+			unsigned char *outbuf, unsigned int outlen,
-+			struct drbg_string *addtl,
-+			struct drbg_test_data *test_data)
-+{
-+	int ret;
-+	struct drbg_gen genbuf;
-+	genbuf.outbuf = outbuf;
-+	genbuf.outlen = outlen;
-+	genbuf.addtl = addtl;
-+	genbuf.test_data = test_data;
-+	ret = crypto_rng_get_bytes(drng, (u8 *)&genbuf, 0);
-+	return ret;
-+}
-+
-+/*
-+ * TEST code
-+ *
-+ * This is a wrapper to the kernel crypto API function of
-+ * crypto_rng_reset() to allow the caller to provide test_data
-+ *
-+ * @drng DRBG handle -- see crypto_rng_reset
-+ * @pers personalization string input buffer
-+ * @perslen length of additional information string buffer
-+ * @test_data filled test data
-+ *
-+ * return
-+ *	see crypto_rng_reset
-+ */
-+static inline int crypto_drbg_reset_test(struct crypto_rng *drng,
-+					 struct drbg_string *pers,
-+					 struct drbg_test_data *test_data)
-+{
-+	int ret;
-+	struct drbg_gen genbuf;
-+	genbuf.outbuf = NULL;
-+	genbuf.outlen = 0;
-+	genbuf.addtl = pers;
-+	genbuf.test_data = test_data;
-+	ret = crypto_rng_reset(drng, (u8 *)&genbuf, 0);
-+	return ret;
-+}
-+
-+/* DRBG type flags */
-+#define DRBG_CTR	((drbg_flag_t)1<<0)
-+#define DRBG_HMAC	((drbg_flag_t)1<<1)
-+#define DRBG_HASH	((drbg_flag_t)1<<2)
-+#define DRBG_TYPE_MASK	(DRBG_CTR | DRBG_HMAC | DRBG_HASH)
-+/* DRBG strength flags */
-+#define DRBG_STRENGTH128	((drbg_flag_t)1<<3)
-+#define DRBG_STRENGTH192	((drbg_flag_t)1<<4)
-+#define DRBG_STRENGTH256	((drbg_flag_t)1<<5)
-+#define DRBG_STRENGTH_MASK	(DRBG_STRENGTH128 | DRBG_STRENGTH192 | \
-+				 DRBG_STRENGTH256)
-+
-+enum drbg_prefixes {
-+	DRBG_PREFIX0 = 0x00,
-+	DRBG_PREFIX1,
-+	DRBG_PREFIX2,
-+	DRBG_PREFIX3
-+};
-+
-+#endif /* _DRBG_H */
--- 
-1.9.3
-
+Rafael
 
