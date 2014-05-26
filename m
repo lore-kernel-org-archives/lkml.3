@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaEZR0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:26:51 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:51215 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaEZRZ0 (ORCPT
+	id S1752742AbaEZR2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 13:28:15 -0400
+Received: from smtprelay0050.hostedemail.com ([216.40.44.50]:55769 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751308AbaEZR2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:25:26 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Oliver Neukum <oneukum@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
-        Xiao Jin <jin.xiao@intel.com>, linux-usb@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
-Subject: [PATCH 00/63] USB: (mostly runtime PM) patches for v3.16-rc
-Date: Mon, 26 May 2014 19:22:49 +0200
-Message-Id: <1401125032-28490-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <20140524204235.GA24047@localhost>
-References: <20140524204235.GA24047@localhost>
+	Mon, 26 May 2014 13:28:14 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3870:3871:3872:3874:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13069:13163:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: chin84_2a6a6f03fa513
+X-Filterd-Recvd-Size: 1700
+Message-ID: <1401125290.519.18.camel@joe-AO725>
+Subject: Re: [PATCH 1/3] staging: panel: (coding style) Matching braces
+From: Joe Perches <joe@perches.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Dominique van den Broeck <domdevlin@free.fr>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 26 May 2014 10:28:10 -0700
+In-Reply-To: <20140526142827.GG13929@1wt.eu>
+References: <1400674201-9560-1-git-send-email-domdevlin@free.fr>
+	 <20140526142827.GG13929@1wt.eu>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Turns out that the three current implementations of aggressive runtime
-power management in USB-TTY drivers were quite badly broken (and has so
-been since first merged in v2.6.27 and v2.6.32).
+On Mon, 2014-05-26 at 16:28 +0200, Willy Tarreau wrote:
+> I believe that most of the kernel code prefers the two-line format resluting
+> in this instead :
+> 
+> 		}
+> 		else if (*esc >= 'A' && *esc <= 'Z') {
+> 			value |= (*esc - 'A' + 10) << shift;
+> 		}
+> 		else if (*esc >= 'a' && *esc <= 'z') {
+> 			value |= (*esc - 'a' + 10) << shift;
+> 		}
+> 		else {
 
-These patches fix this runtime PM mess, but also do some clean up and
-fix a few other issues.
+grep shows what kernel style is most used.
 
-Note that all patches but the cdc-acm ones (and the single wusbcore one)
-are usb-serial, but I decided to include them all in one series as
-several bugs were reproduced in both cdc-acm and usb-serial.
+Your form:
+	}
+	else if (...) {
 
-For reference, I'm responding to the thread with Xiao Jin's initial bug
-report, but the full thread is posted to linux-usb only.
+(This shows 3 lines per instance)
+$ grep-2.5.4 -rP --include=*.[ch] '}\n[ \t]*else if.*{\n' * | wc -l
+909
 
-Johan
+Generally used form:
+	} else if (...) {
 
+(mostly shows 2 lines per instance)
+$ grep-2.5.4 -rP --include=*.[ch] '} else if.*{\n' * | wc -l
+31653
 
-Johan Hovold (61):
-  USB: sierra: fix AA deadlock in open error path
-  USB: sierra: fix use after free at suspend/resume
-  USB: sierra: fix urb and memory leak in resume error path
-  USB: sierra: fix urb and memory leak on disconnect
-  USB: sierra: fix remote wakeup
-  USB: sierra: fix characters being dropped at close
-  USB: sierra: fix urbs not being killed on shutdown
-  USB: sierra: fix resume error reporting
-  USB: sierra: fix line-control pipe direction
-  USB: sierra: remove bogus endpoint test
-  USB: sierra: remove unused variable
-  USB: sierra: remove unimplemented set_termios
-  USB: sierra: remove disconnected test from close
-  USB: sierra: do not resume I/O on closed ports
-  USB: sierra: remove redundant modem-control requests
-  USB: sierra: use interface-data accessors
-  USB: sierra: clean up suspend
-  USB: sierra: refactor delayed-urb submission
-  USB: sierra: minimise no-suspend window during close
-  USB: sierra: do not resume I/O on closing ports
-  USB: option: fix runtime PM handling
-  USB: option: fix line-control pipe direction
-  USB: option: add missing usb_mark_last_busy
-  USB: usb_wwan: fix write and suspend race
-  USB: usb_wwan: fix urb leak at shutdown
-  USB: usb_wwan: fix potential NULL-deref at resume
-  USB: usb_wwan: fix potential blocked I/O after resume
-  USB: usb_wwan: fix discarded writes on resume errors
-  USB: usb_wwan: fix remote wakeup
-  USB: usb_wwan: remove redundant modem-control request
-  USB: usb_wwan: remove unimplemented set_termios
-  USB: usb_wwan: remove redundant urb kill from port remove
-  USB: usb_wwan: kill interrupt urb explicitly at suspend
-  USB: usb_wwan: make resume error messages uniform
-  USB: usb_wwan: use interface-data accessors
-  USB: usb_wwan: clean up delayed-urb submission
-  USB: usb_wwan: remove comment from close
-  USB: usb_wwan: remove some superfluous comments
-  USB: usb_wwan: remove bogus function prototype
-  USB: usb_wwan: report failed submissions as errors
-  USB: usb_wwan: do not resume I/O on closing ports
-  USB: serial: fix potential runtime pm imbalance at device remove
-  USB: serial: remove overly defensive port tests
-  USB: kobil_sct: fix control requests without data stage
-  USB: cdc-acm: fix write and suspend race
-  USB: cdc-acm: fix write and resume race
-  USB: cdc-acm: fix broken runtime suspend
-  USB: cdc-acm: fix runtime PM for control messages
-  USB: cdc-acm: fix shutdown and suspend race
-  USB: cdc-acm: fix potential urb leak and PM imbalance in write
-  USB: cdc-acm: fix open and suspend race
-  USB: cdc-acm: fix failed open not being detected
-  USB: cdc-acm: fix I/O after failed open
-  USB: cdc-acm: fix runtime PM imbalance at shutdown
-  USB: cdc-acm: simplify runtime PM locking
-  USB: cdc-acm: remove redundant disconnected test from shutdown
-  USB: cdc-acm: minimise no-suspend window during shutdown
-  USB: cdc-acm: do not update PM busy on read errors
-  USB: cdc-acm: remove redundant usb_mark_last_busy
-  USB: cdc-acm: use tty-port dtr_rts
-  USB: wusbcore: fix control-pipe directions
+That's ~50:1 preference for "} else if (...) {"
 
-xiao jin (2):
-  USB: usb_wwan: fix urb leak in write error path
-  USB: usb_wwan: fix race between write and resume
+> It's just a matter of taste I know,
 
- drivers/usb/class/cdc-acm.c     | 177 +++++++++++++++++-------------
- drivers/usb/class/cdc-acm.h     |   2 +-
- drivers/usb/serial/bus.c        |  14 ++-
- drivers/usb/serial/kobil_sct.c  |  22 ++--
- drivers/usb/serial/option.c     |  13 ++-
- drivers/usb/serial/sierra.c     | 198 ++++++++++++++++++++--------------
- drivers/usb/serial/usb-serial.c |  38 +++----
- drivers/usb/serial/usb-wwan.h   |   6 +-
- drivers/usb/serial/usb_wwan.c   | 234 ++++++++++++++++++++--------------------
- drivers/usb/wusbcore/wa-rpipe.c |   4 +-
- 10 files changed, 390 insertions(+), 318 deletions(-)
+true enough.
 
--- 
-1.8.5.5
 
