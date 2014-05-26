@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaEZHSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:18:07 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52434 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaEZHSG (ORCPT
+	id S1751517AbaEZHU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:20:26 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:60340 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186AbaEZHUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:18:06 -0400
-X-AuditID: 85900ec0-d452db9000001514-e5-5382eaaa5e92
-Message-ID: <5382EAA9.1010003@hitachi.com>
-Date: Mon, 26 May 2014 16:18:01 +0900
+	Mon, 26 May 2014 03:20:25 -0400
+X-AuditID: 85900ec0-d1328b9000001514-e9-5382eb36736c
+Message-ID: <5382EB36.2060501@hitachi.com>
+Date: Mon, 26 May 2014 16:20:22 +0900
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Petr Mladek <pmladek@suse.cz>,
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
         Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>
-Subject: Re: Re: [RFC PATCH 1/2] printk: Add context information to the
- header of /dev/kmsg
-References: <20140519102835.30455.10437.stgit@yunodevel>            <20140519102838.30455.86863.stgit@yunodevel> <11176.1400556970@turing-police.cc.vt.edu>
-In-Reply-To: <11176.1400556970@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH V2 0/2] ftrace: Introduce the new I/F "nr_saved_cmdlines"
+References: <20140220084428.3839.59555.stgit@yunodevel>
+In-Reply-To: <20140220084428.3839.59555.stgit@yunodevel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Steven,
 
-(2014/05/20 12:36), Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 19 May 2014 19:28:38 +0900, Yoshihiro YUNOMAE said:
->
->> The header information is changed as follows:
->>     <prefix>,<seq#>,<timestamp>,<fragmented>,<PID>/<interrupt context>;<msg>
->
-> Has this been tested with popular userspace that reads /dev/kmsg, to make
-> sure that it actually plays nice with a 5th field being added?  Yes, I know
+Would you review this patch set?
 
-I checked it for systemd-journald and rsyslog on the source code level,
-those tools don't handle new flag and field before ';' in the header of
-/dev/kmsg. Those tools use only log level, sequence#, and timestamp.
-So, even if we add these new flag and field for each message,
-those tools will be able to work.
-
-But, we'll fix this issue by other method if we found it in any
-subsystems except for the SCSI layer.
-(In the SCSI layer, we'll tackle this issue by using tracing feature.)
-
-Thank you,
+Thanks,
 Yoshihiro YUNOMAE
+
+(2014/02/20 17:44), Yoshihiro YUNOMAE wrote:
+> Hi,
+>
+> This patch set introduces the new I/F "nr_saved_cmdlines" for increasing
+> the number of saved cmdlines. Current saved_cmdlines can store just 128 command
+> names and PIDs, but process names are often lost like <...> when we read trace
+> data. If the process exists, we can get the name by using ps command. However,
+> if the process already has not existed, we cannot get the name.
+>
+> To solve this issue, we introduce the new I/F "nr_saved_cmdlines" to expand
+> the max number of saved command line names. This I/F is very simple.
+> If we write a number to nr_saved_cmdlines, the number of command name will be
+> stored. And, if we read the I/F, we can get current maximum number of command
+> name. The default number is 128 which is current default number, so this patch
+> does not change the usage of memory for saved_cmdlines when we boot kernel.
+>
+> Thanks!
+>
+> Changes in V2:
+> - Fix a racing problem of savedcmd between saved_cmdlines I/F and
+>    nr_saved_cmdlines I/F. If one reads saved_cmdlines and writes a value to
+>    nr_saved_cmdlines at the same time, then the write returns -EBUSY. [2/2]
+>
+> ---
+>
+> Yoshihiro YUNOMAE (2):
+>        ftrace: Make saved_cmdlines use seq_read
+>        ftrace: Introduce nr_saved_cmdlines I/F
+>
+>
+>   kernel/trace/trace.c |  316 +++++++++++++++++++++++++++++++++++++++++---------
+>   1 file changed, 261 insertions(+), 55 deletions(-)
+>
 
 -- 
 Yoshihiro YUNOMAE
