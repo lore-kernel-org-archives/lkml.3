@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaEZOpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:45:51 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:50315 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752469AbaEZOpu (ORCPT
+	id S1752560AbaEZOqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 10:46:09 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:44885 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588AbaEZOqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:45:50 -0400
-Message-ID: <1401115547.6068.11.camel@x220>
-Subject: [PATCH] [next-20140526] rtl8192ee: btcoexist: remove undefined
- Kconfig macros
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 26 May 2014 16:45:47 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 May 2014 14:45:48.0125 (UTC) FILETIME=[2E98C8D0:01CF78F1]
-X-RcptDomain: vger.kernel.org
+	Mon, 26 May 2014 10:46:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140508204907.17877.4848.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140508204257.17877.4639.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<20140508204907.17877.4848.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Mon, 26 May 2014 16:46:06 +0200
+X-Google-Sender-Auth: SnW9mdpZcLfDBbXeC9JB_59_4gs
+Message-ID: <CAMuHMdWp-dUFwSgw30SYqXxAtAsrXDgaxcgfBZwV=1pEVN3B=A@mail.gmail.com>
+Subject: Re: [PATCH v3 3/4] sh/PCI: Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Magnus Damm <damm@opensource.se>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are references to four undefined Kconfig macros in the code.
-Commit 8542373dccd2 ("Staging: rtl8812ae: remove undefined Kconfig
-macros") removed identical references from another staging driver, but
-they resurfaced in rtl8192ee. Remove these again as the checks for them
-still will always evaluate to false.
+On Thu, May 8, 2014 at 10:49 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> --- a/arch/sh/drivers/pci/fixups-dreamcast.c
+> +++ b/arch/sh/drivers/pci/fixups-dreamcast.c
+> @@ -31,6 +31,8 @@
+>  static void gapspci_fixup_resources(struct pci_dev *dev)
+>  {
+>         struct pci_channel *p = dev->sysdata;
+> +       struct resource res;
+> +       struct pci_bus_region region;
+>
+>         printk(KERN_NOTICE "PCI: Fixing up device %s\n", pci_name(dev));
+>
+> @@ -50,11 +52,21 @@ static void gapspci_fixup_resources(struct pci_dev *dev)
+>
+>                 /*
+>                  * Redirect dma memory allocations to special memory window.
+> +                *
+> +                * If this GAPSPCI region were mapped by a BAR, the CPU
+> +                * phys_addr_t would be pci_resource_start(), and the bus
+> +                * address would be pci_bus_address(pci_resource_start()).
+> +                * But apparently there's no BAR mapping it, so we just
+> +                * "know" its CPU address is GAPSPCI_DMA_BASE.
+>                  */
+> +               res.start = GAPSPCI_DMA_BASE;
+> +               res.end = GAPSPCI_DMA_BASE + GAPSPCI_DMA_SIZE - 1;
+> +               res.flags = IORESOURCE_MEM;
+> +               pcibios_resource_to_bus(dev, &region, &resource);
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested with git grep.
+In response to http://kisskb.ellerman.id.au/kisskb/buildresult/11212250/
 
-See also the almost identical commit 5212f518ac0f ("rtlwifi: btcoexist:
-remove undefined Kconfig macros").
+| /scratch/kisskb/src/arch/sh/drivers/pci/fixups-dreamcast.c: In
+function 'gapspci_fixup_resources':
+| /scratch/kisskb/src/arch/sh/drivers/pci/fixups-dreamcast.c:65:42:
+error: 'resource' undeclared (first use in this function)
+| /scratch/kisskb/src/arch/sh/drivers/pci/fixups-dreamcast.c:65:42:
+note: each undeclared identifier is reported only once for each
+function it appears in
 
- drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c | 10 ----------
- 1 file changed, 10 deletions(-)
+"resource" seem to have been replaced by "res", but this warning still happens:
 
-diff --git a/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c b/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c
-index 9757f138a37f..2d9fc24b1e21 100644
---- a/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c
-+++ b/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c
-@@ -736,17 +736,7 @@ bool exhalbtc92e_initlize_variables(struct rtl_priv *adapter)
- 	else
- 		btcoexist->binded = true;
- 
--#if (defined(CONFIG_PCI_HCI))
--	btcoexist->chip_interface = BTC_INTF_PCI;
--#elif (defined(CONFIG_USB_HCI))
--	btcoexist->chip_interface = BTC_INTF_USB;
--#elif (defined(CONFIG_SDIO_HCI))
--	btcoexist->chip_interface = BTC_INTF_SDIO;
--#elif (defined(CONFIG_GSPI_HCI))
--	btcoexist->chip_interface = BTC_INTF_GSPI;
--#else
- 	btcoexist->chip_interface = BTC_INTF_UNKNOWN;
--#endif
- 
- 	if (NULL == btcoexist->adapter)
- 		btcoexist->adapter = adapter;
--- 
-1.9.0
+| /scratch/kisskb/src/arch/sh/drivers/pci/fixups-dreamcast.c:65:3:
+warning: passing argument 1 of 'pcibios_resource_to_bus' from
+incompatible pointer type [enabled by default]
+| /scratch/kisskb/src/include/linux/pci.h:737:6: note: expected
+'struct pci_bus *' but argument is of type 'struct pci_dev *'
 
+>                 BUG_ON(!dma_declare_coherent_memory(&dev->dev,
+> -                                               GAPSPCI_DMA_BASE,
+> -                                               GAPSPCI_DMA_BASE,
+> -                                               GAPSPCI_DMA_SIZE,
+> +                                               res.start,
+> +                                               region.start,
+> +                                               resource_size(&res),
+>                                                 DMA_MEMORY_MAP |
+>                                                 DMA_MEMORY_EXCLUSIVE));
+>                 break;
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
