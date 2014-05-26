@@ -1,121 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbaEZUY6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 16:24:58 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:51233 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaEZUYx (ORCPT
+	id S1751772AbaEZU0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 16:26:20 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:33638 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaEZU0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 16:24:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140526182644.GP18016@ZenIV.linux.org.uk>
-References: <20140526093741.GA1765@lahna.fi.intel.com>
-	<20140526135746.GM18016@ZenIV.linux.org.uk>
-	<20140526142948.GA1685@lahna.fi.intel.com>
-	<20140526152703.GN18016@ZenIV.linux.org.uk>
-	<CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
-	<20140526182644.GP18016@ZenIV.linux.org.uk>
-Date: Mon, 26 May 2014 13:24:52 -0700
-X-Google-Sender-Auth: p9dQ7kp7k2qcTylRpz_KfXo9XeA
-Message-ID: <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+	Mon, 26 May 2014 16:26:18 -0400
+Date: Mon, 26 May 2014 13:25:02 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] mm/process_vm_access: move into ipc/
+In-Reply-To: <CALYGNiNE2cdPaxw3f2y0-g2aRZZD1HbrBHpu-zf9Pdjb69kh3w@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1405261314510.3748@eggly.anvils>
+References: <20140524135925.32597.45754.stgit@zurg> <alpine.LSU.2.11.1405261210140.3411@eggly.anvils> <CALYGNiNE2cdPaxw3f2y0-g2aRZZD1HbrBHpu-zf9Pdjb69kh3w@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 11:26 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, May 26, 2014 at 11:17:42AM -0700, Linus Torvalds wrote:
->> On Mon, May 26, 2014 at 8:27 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> >
->> > That's the livelock.  OK.
->>
->> Hmm. Is there any reason we don't have some exclusion around
->> "check_submounts_and_drop()"?
->>
->> That would seem to be the simplest way to avoid any livelock: just
->> don't allow concurrent calls (we could make the lock per-filesystem or
->> whatever). This whole case should all be for just exceptional cases
->> anyway.
->>
->> We already sleep in that thing (well, "cond_resched()"), so taking a
->> mutex should be fine.
->
-> What makes you think that it's another check_submounts_and_drop()?
+On Mon, 26 May 2014, Konstantin Khlebnikov wrote:
+> On Mon, May 26, 2014 at 11:16 PM, Hugh Dickins <hughd@google.com> wrote:
+> > On Sat, 24 May 2014, Konstantin Khlebnikov wrote:
+> >
+> >> "CROSS_MEMORY_ATTACH" and mm/process_vm_access.c seems misnamed and misplaced.
+> >> Actually it's a kind of IPC and it has no more relation to MM than sys_read().
+> >> This patch moves code into ipc/ and config option into init/Kconfig.
+> >>
+> >> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+> >
+> > I disagree, and SysV's ipc/ isn't where I would expect to find it.
+> > How about we just leave it where it is in mm?
+> 
+> Ok, how about moving only config option? It adds couple syscalls and
+> nothing more.
+> I don't think it should be in "Processor type and features".
+> All other options related to non-standard syscalls are in "General
+> setup' init/Kconfig.
 
-Two things.
+That sounds reasonable to me.  I see you also snuck in a change
+to the prompt string: which indeed seems an improvement, but you
+ought to mention it in the comment, rather than hiding it in the move.
 
-(1) The facts.
+(I sometimes wonder if its help text ought to say "This CMA has
+absolutely nothing to do with the Contiguous Memory Allocator";
+but adding that might increase the confusion rather than reduce it,)
 
-Just check the callchains on every single CPU in Mika's original email.
+Hugh
 
-It *is* another check_submounts_and_drop() (in Mika's case, always
-through kernfs_dop_revalidate()). It's not me "thinking" so. You can
-see it for yourself.
-
-This seems to be triggered by systemd-udevd doing (in every single thread):
-
-readlink():
-  SyS_readlink ->
-    user_path_at_empty ->
-      filename_lookup ->
-        path_lookupat ->
-          link_path_walk ->
-            lookup_fast ->
-              kernfs_dop_revalidate ->
-                check_submounts_and_drop
-
-and I suspect it's the "kernfs_active()" check that basically causes
-that storm of revalidate failures that leads to lots of
-check_submounts_and_drop() cases.
-
-(2) The code.
-
-Yes, the whole looping over the dentry tree happens in other places
-too, but shrink_dcache_parents() is already called under s_umount, and
-the out-of-memory pruning isn't done in a for-loop.
-
-So if it's a livelock, check_submounts_and_drop() really is pretty
-special. I agree that it's not necessarily unique from a race
-standpoint, but it does seem to be in a class of its own when it comes
-to be able to *trigger* any potential livelock. In particular, the
-fact that kernfs can generate that sudden storm of
-check_submounts_and_drop() calls when something goes away.
-
-> I really, really wonder WTF is causing that - we have spent 20-odd
-> seconds spinning while dentries in there were being evicted by
-> something.  That - on sysfs, where dentry_kill() should be non-blocking
-> and very fast.  Something very fishy is going on and I'd really like
-> to understand the use pattern we are seeing there.
-
-I think it literally is just a livelock. Just look at the NMI
-backtraces for each stuck CPU: most of them are waiting for the dentry
-lock in d_walk(). They have probably all a few dentries on their own
-list. One of the CPU is actually _in_ shrink_dentry_list().
-
-Now, the way our ticket spinlocks work, they are actually fair: which
-means that I can easily imagine us getting into a pattern, where if
-you have the right insane starting conditions, each CPU will basically
-get their own dentry list.
-
-That said, the only way I can see that nobody ever makes any progress
-is if somebody as the inode locked, and then dentry_kill() turns into
-a no-op. Otherwise one of those threads should always kill one or more
-dentries, afaik. We do have that "trylock on i_lock, then trylock on
-parent->d_lock", and if either of those fails, drop and re-try loop. I
-wonder if we can get into a situation where lots of people hold each
-others dentries locks sufficiently that dentry_kill() just ends up
-failing and looping..
-
-Anyway, I'd like Mika to test the stupid "let's serialize the dentry
-shrinking in check_submounts_and_drop()" to see if his problem goes
-away. I agree that it's not the _proper_ fix, but we're damn late in
-the rc series..
-
-               Linus
+> 
+> >> diff --git a/init/Kconfig b/init/Kconfig
+> >> index 9d3585b..d6ddb7a 100644
+> >> --- a/init/Kconfig
+> >> +++ b/init/Kconfig
+> >> @@ -261,6 +261,16 @@ config POSIX_MQUEUE_SYSCTL
+> >>       depends on SYSCTL
+> >>       default y
+> >>
+> >> +config CROSS_MEMORY_ATTACH
+> >> +     bool "Enable process_vm_readv/writev syscalls"
+> >> +     depends on MMU
+> >> +     default y
+> >> +     help
+> >> +       Enabling this option adds the system calls process_vm_readv and
+> >> +       process_vm_writev which allow a process with the correct privileges
+> >> +       to directly read from or write to to another process's address space.
+> >> +       See the man page for more details.
+> >> +
+> >> diff --git a/mm/Kconfig b/mm/Kconfig
+> >> index 1b5a95f..2ec35d7 100644
+> >> --- a/mm/Kconfig
+> >> +++ b/mm/Kconfig
+> >> @@ -430,16 +430,6 @@ choice
+> >>         benefit.
+> >>  endchoice
+> >>
+> >> -config CROSS_MEMORY_ATTACH
+> >> -     bool "Cross Memory Support"
+> >> -     depends on MMU
+> >> -     default y
+> >> -     help
+> >> -       Enabling this option adds the system calls process_vm_readv and
+> >> -       process_vm_writev which allow a process with the correct privileges
+> >> -       to directly read from or write to to another process's address space.
+> >> -       See the man page for more details.
+> >> -
+> >>  #
+> >>  # UP and nommu archs use km based percpu allocator
+> >>  #
