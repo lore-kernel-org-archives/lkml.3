@@ -1,443 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaEZHso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:48:44 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:43612 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869AbaEZHsX (ORCPT
+	id S1752044AbaEZHtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:49:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:41357 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980AbaEZHtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:48:23 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-ad-5382f1c0fcf8
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Tomasz Figa <t.figa@samsung.com>,
-        devicetree@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Jenny Tc <jenny.tc@intel.com>
-Subject: [RESEND PATCH 3/5] charger: max14577: Configure battery-dependent
- settings from DTS
-Date: Mon, 26 May 2014 09:47:33 +0200
-Message-id: <1401090455-28726-4-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1401090455-28726-1-git-send-email-k.kozlowski@samsung.com>
-References: <1401090455-28726-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xy7oHPjYFG5xpZrPYOGM9q8XUh0/Y
-	LCY9ec9sMf/IOVaLiSsnM1v0v1nIanHu1UpGi7Vfe9gtXr8wtDjb9Ibd4v7Xo4wW3650MFlc
-	3jWHzWLtkbvsFkuvX2SymDB9LYtF694j7Banu1kt1s94zeIg7LFm3hpGj8t9vUweO2fdZfdY
-	ufwLm8fmFVoei/e8ZPLYtKqTzePOtT1sHvNOBnr0bVnF6PF5k1wAdxSXTUpqTmZZapG+XQJX
-	xt7Tl1kLrsVVfJn7l7mBcZZfFyMHh4SAicSZHZpdjJxAppjEhXvr2boYuTiEBJYySlzsWA3l
-	9DFJtG/ZxghSxSZgLLF5+RI2EFtEoFLi2+kTLCBFzAJfWST6P+wHKxIWiJN4evQPK8gGFgFV
-	iZN/YkDCvALuEm3/mxghtslJnDw2GayEU8BDYt5HW5CwEFBJ59vd7BMYeRcwMqxiFE0tTS4o
-	TkrPNdIrTswtLs1L10vOz93ECAn/rzsYlx6zOsQowMGoxMP7Iq8pWIg1say4MvcQowQHs5II
-	b/MHoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGiGXiu1ufLRKotzkemZp30f38sZWCrB8fbHRz
-	a/zPf/3RNqYD6arhE36//vFY7U3P4z6TRdOOeUtL5OuI+2yTv53xUcXy1nTHRwoWf6ea+c1p
-	M2DYf8B6ziTm45dkXt80irJ4qXjRRTx9c4yGo8T9dUeuLJ/UqKCw7ONu8ccTJwSIB7JMSb3W
-	qsRSnJFoqMVcVJwIAJjSXLxdAgAA
+	Mon, 26 May 2014 03:49:20 -0400
+Date: Mon, 26 May 2014 09:49:23 +0200
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+To: Jaehoon Chung <jh80.chung@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Chris Ball <chris@printf.net>
+Subject: Re: [PATCH RFC] mmc: add slot argument to mmc_of_parse
+Message-ID: <20140526074923.GC12777@ldesroches-Latitude-E6320>
+Mail-Followup-To: Jaehoon Chung <jh80.chung@samsung.com>,
+	Ulf Hansson <ulf.hansson@linaro.org>,
+	linux-mmc <linux-mmc@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	Chris Ball <chris@printf.net>
+References: <1399457217-22846-1-git-send-email-ludovic.desroches@atmel.com>
+ <CAPDyKFqeunnWmguTH89byNc5Yy+CBY4avMeeon3ZSfNMmGJa9Q@mail.gmail.com>
+ <537ED0AE.7040901@samsung.com>
+ <20140526070301.GA12777@ldesroches-Latitude-E6320>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140526070301.GA12777@ldesroches-Latitude-E6320>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove hard-coded values for:
- - Fast Charge current,
- - End Of Charge current,
- - Fast Charge timer,
- - Overvoltage Protection Threshold,
- - Battery Constant Voltage,
-and use DTS to configure them. This allows using the max14577 charger
-driver with different batteries.
+On Mon, May 26, 2014 at 09:03:01AM +0200, Ludovic Desroches wrote:
+> Hi,
+> 
+> Sorry I was on vacation, I'll send a cleaner patch updating other drivers
+> this week.
 
-Now the charger driver requires valid configuration data from DTS. In
-case of wrong configuration data it fails during probe. Patch adds
-of_compatible to the charger mfd cell in MFD driver core.
+Continuing to clear out my inbox, I have seen you send a patch for it.
+Thanks. 
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Jenny Tc <jenny.tc@intel.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/max14577.c               |   5 +-
- drivers/power/max14577_charger.c     | 232 +++++++++++++++++++++++++++++++----
- include/linux/mfd/max14577-private.h |  16 +++
- include/linux/mfd/max14577.h         |   8 ++
- 4 files changed, 233 insertions(+), 28 deletions(-)
-
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index cef2149ac096..13030573a8ca 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -116,7 +116,10 @@ static struct mfd_cell max14577_devs[] = {
- 		.name = "max14577-regulator",
- 		.of_compatible = "maxim,max14577-regulator",
- 	},
--	{ .name = "max14577-charger", },
-+	{
-+		.name = "max14577-charger",
-+		.of_compatible = "maxim,max14577-charger",
-+	},
- };
- 
- static struct mfd_cell max77836_devs[] = {
-diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
-index 19c8f42abf24..f32f94a9a144 100644
---- a/drivers/power/max14577_charger.c
-+++ b/drivers/power/max14577_charger.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/power_supply.h>
- #include <linux/mfd/max14577-private.h>
-+#include <linux/mfd/max14577.h>
- 
- struct max14577_charger {
- 	struct device *dev;
-@@ -27,6 +28,8 @@ struct max14577_charger {
- 
- 	unsigned int		charging_state;
- 	unsigned int		battery_state;
-+
-+	struct max14577_charger_platform_data	*pdata;
- };
- 
- /*
-@@ -178,15 +181,107 @@ static int max14577_get_present(struct max14577_charger *chg)
- 	return 1;
- }
- 
-+static inline int max14577_init_constant_voltage(struct max14577_charger *chg,
-+		unsigned int uvolt)
-+{
-+	u8 reg_data;
-+
-+	if (uvolt < MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN ||
-+			uvolt > MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		return -EINVAL;
-+
-+	if (uvolt == 4200000)
-+		reg_data = 0x0;
-+	else if (uvolt == MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		reg_data = 0x1f;
-+	else if (uvolt <= 4280000) {
-+		unsigned int val = uvolt;
-+
-+		val -= MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN;
-+		val /= MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP;
-+		if (uvolt <= 4180000)
-+			reg_data = 0x1 + val;
-+		else
-+			reg_data = val; /* Fix for gap between 4.18V and 4.22V */
-+	} else
-+		return -EINVAL;
-+
-+	reg_data <<= CHGCTRL3_MBCCVWRC_SHIFT;
-+
-+	return max14577_write_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL3, reg_data);
-+}
-+
-+static inline int max14577_init_eoc(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	unsigned int current_bits = 0xf;
-+	u8 reg_data;
-+
-+	switch (chg->max14577->dev_type) {
-+	case MAXIM_DEVICE_TYPE_MAX77836:
-+		if (uamp < 5000)
-+			return -EINVAL; /* Requested current is too low */
-+
-+		if (uamp >= 7500 && uamp < 10000)
-+			current_bits = 0x0;
-+		else if (uamp <= 50000) {
-+			/* <5000, 7499> and <10000, 50000> */
-+			current_bits = uamp / 5000;
-+		} else {
-+			uamp = min(uamp, 100000U) - 50000U;
-+			current_bits = 0xa + uamp / 10000;
-+		}
-+		break;
-+
-+	case MAXIM_DEVICE_TYPE_MAX14577:
-+	default:
-+		if (uamp < MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN)
-+			return -EINVAL; /* Requested current is too low */
-+
-+		uamp = min(uamp, MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
-+		uamp -= MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN;
-+		current_bits = uamp / MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP;
-+		break;
-+	}
-+
-+	reg_data = current_bits << CHGCTRL5_EOCS_SHIFT;
-+
-+	return max14577_update_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL5, CHGCTRL5_EOCS_MASK,
-+			reg_data);
-+}
-+
-+static inline int max14577_init_fast_charge(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	u8 reg_data;
-+	int ret;
-+	const struct maxim_charger_current *limits =
-+		&maxim_charger_currents[chg->max14577->dev_type];
-+
-+	ret = maxim_charger_calc_reg_current(limits, uamp, uamp, &reg_data);
-+	if (ret) {
-+		dev_err(chg->dev, "Wrong value for fast charge: %u\n", uamp);
-+		return ret;
-+	}
-+
-+	return max14577_update_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL4,
-+			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
-+			reg_data);
-+}
-+
- /*
-  * Sets charger registers to proper and safe default values.
-  * Some of these values are equal to defaults in MAX14577E
-  * data sheet but there are minor differences.
-  */
--static void max14577_charger_reg_init(struct max14577_charger *chg)
-+static int max14577_charger_reg_init(struct max14577_charger *chg)
- {
- 	struct regmap *rmap = chg->max14577->regmap;
- 	u8 reg_data;
-+	int ret;
- 
- 	/*
- 	 * Charger-Type Manual Detection, default off (set CHGTYPMAN to 0)
-@@ -198,10 +293,6 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 			CDETCTRL1_CHGDETEN_MASK | CDETCTRL1_CHGTYPMAN_MASK,
- 			reg_data);
- 
--	/* Battery Fast-Charge Timer, set to: 6hrs */
--	reg_data = 0x3 << CHGCTRL1_TCHW_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
--
- 	/*
- 	 * Wall-Adapter Rapid Charge, default on
- 	 * Battery-Charger, default on
-@@ -210,32 +301,57 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 	reg_data |= 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL2, reg_data);
- 
--	/* Battery-Charger Constant Voltage (CV) Mode, set to: 4.35V */
--	reg_data = 0xf << CHGCTRL3_MBCCVWRC_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL3, reg_data);
--
--	/*
--	 * Fast Battery-Charge Current Low,
--	 * default 200-950mA (max14577) / 100-475mA (max77836)
--	 *
--	 * Fast Battery-Charge Current High,
--	 * set to 450mA (max14577) / 225mA (max77836)
--	 */
--	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
--	reg_data |= 0x5 << CHGCTRL4_MBCICHWRCH_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL4, reg_data);
--
--	/* End-of-Charge Current, set to 50mA (max14577) / 7.5mA (max77836) */
--	reg_data = 0x0 << CHGCTRL5_EOCS_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL5, reg_data);
--
- 	/* Auto Charging Stop, default off */
- 	reg_data = 0x0 << CHGCTRL6_AUTOSTOP_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL6, reg_data);
- 
--	/* Overvoltage-Protection Threshold, set to 6.5V */
--	reg_data = 0x2 << CHGCTRL7_OTPCGHCVS_SHIFT;
-+	ret = max14577_init_constant_voltage(chg, chg->pdata->constant_uvolt);
-+	if (ret)
-+		return ret;
-+
-+	ret = max14577_init_eoc(chg, chg->pdata->eoc_uamp);
-+	if (ret)
-+		return ret;
-+
-+	ret = max14577_init_fast_charge(chg, chg->pdata->fast_charge_uamp);
-+	if (ret)
-+		return ret;
-+
-+	/* Initialize Battery Fast-Charge Timer */
-+	switch (chg->pdata->fast_charge_timer) {
-+	case 5 ... 7:
-+		reg_data = chg->pdata->fast_charge_timer - 3;
-+		break;
-+	case 0:
-+		/* Disable */
-+		reg_data = 0x7;
-+	default:
-+		dev_err(chg->dev, "Wrong value for Fast-Charge Timer: %u\n",
-+				chg->pdata->fast_charge_timer);
-+		return -EINVAL;
-+	}
-+	reg_data <<= CHGCTRL1_TCHW_SHIFT;
-+	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
-+
-+	/* Initialize Overvoltage-Protection Threshold */
-+	switch (chg->pdata->ovp_uvolt) {
-+	case 7500000:
-+		reg_data = 0x0;
-+		break;
-+	case 6000000:
-+	case 6500000:
-+	case 7000000:
-+		reg_data = 0x1 + (chg->pdata->ovp_uvolt - 6000000) / 500000;
-+		break;
-+	default:
-+		dev_err(chg->dev, "Wrong value for OVP: %u\n",
-+				chg->pdata->ovp_uvolt);
-+		return -EINVAL;
-+	}
-+	reg_data <<= CHGCTRL7_OTPCGHCVS_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL7, reg_data);
-+
-+	return 0;
- }
- 
- /* Support property from charger */
-@@ -295,6 +411,58 @@ static int max14577_charger_get_property(struct power_supply *psy,
- 	return ret;
- }
- 
-+#ifdef CONFIG_OF
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	struct max14577_charger_platform_data *pdata;
-+	struct device_node *np = pdev->dev.of_node;
-+	int ret;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "No charger OF node\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "Memory alloc for charger pdata failed\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-timer",
-+			&pdata->fast_charge_timer);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,constant-uvolt",
-+			&pdata->constant_uvolt);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-uamp",
-+			&pdata->fast_charge_uamp);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,eoc-uamp", &pdata->eoc_uamp);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,ovp-uvolt", &pdata->ovp_uvolt);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	return pdata;
-+}
-+#else /* CONFIG_OF */
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_OF */
-+
- static int max14577_charger_probe(struct platform_device *pdev)
- {
- 	struct max14577_charger *chg;
-@@ -309,7 +477,13 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 	chg->dev = &pdev->dev;
- 	chg->max14577 = max14577;
- 
--	max14577_charger_reg_init(chg);
-+	chg->pdata = max14577_charger_dt_init(pdev);
-+	if (IS_ERR_OR_NULL(chg->pdata))
-+		return PTR_ERR(chg->pdata);
-+
-+	ret = max14577_charger_reg_init(chg);
-+	if (ret)
-+		return ret;
- 
- 	chg->charger.name = "max14577-charger",
- 	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY,
-@@ -323,6 +497,10 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/* Check for valid values for charger */
-+	BUILD_BUG_ON(MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN +
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP * 0xf !=
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index 7d514839c764..5c842f3b6da5 100644
---- a/include/linux/mfd/max14577-private.h
-+++ b/include/linux/mfd/max14577-private.h
-@@ -293,6 +293,22 @@ enum max14577_charger_reg {
- #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
- #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
- 
-+/*
-+ * MAX14577 charger End-Of-Charge current limits
-+ * (as in CHGCTRL5 register), uA
-+ */
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
-+
-+/*
-+ * MAX14577/MAX77836 Battery Constant Voltage
-+ * (as in CHGCTRL3 register), uV
-+ */
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN		4000000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP		20000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX		4350000U
-+
- /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
- #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
- 
-diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
-index 3c098d57b1d1..d068846a13cf 100644
---- a/include/linux/mfd/max14577.h
-+++ b/include/linux/mfd/max14577.h
-@@ -54,6 +54,14 @@ struct max14577_regulator_platform_data {
- 	struct device_node *of_node;
- };
- 
-+struct max14577_charger_platform_data {
-+	unsigned int fast_charge_timer;
-+	unsigned int constant_uvolt;
-+	unsigned int fast_charge_uamp;
-+	unsigned int eoc_uamp;
-+	unsigned int ovp_uvolt;
-+};
-+
- /*
-  * MAX14577 MFD platform data
-  */
--- 
-1.9.1
-
+> 
+> Regards
+> 
+> Ludovic
+> 
+> On Fri, May 23, 2014 at 01:38:06PM +0900, Jaehoon Chung wrote:
+> > Hi, All.
+> > 
+> > This patch is working on progress?
+> > I want to merge this patch for fixing dw-mmc controller problem.
+> > 
+> > If this patch didn't work on progress, i will send the patch based-on this patch.
+> > 
+> > Best Regards,
+> > Jaehoon Chung
+> > 
+> > On 05/14/2014 06:53 PM, Ulf Hansson wrote:
+> > > On 7 May 2014 12:06, Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
+> > >> Some hosts manage several slots. In these case information such as the bus
+> > >> width, chip detect and others are into the slot node. So we have to parse
+> > >> child nodes. If not NULL, slot node will be used instead of the device
+> > >> node.
+> > >>
+> > >> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> > >> ---
+> > >>
+> > >> Hi,
+> > >>
+> > >> Since this patch is only a RFC, I have not yet updated drivers using this
+> > >> function.
+> > >>
+> > >> I would like to use mmc_of_parse to reduce code duplication. My issue is that
+> > >> atmel mci is a bit different from others mci host since it can provide
+> > >> several slots, so it allocates several mmc hosts. By the way, it is not the
+> > >> only one.
+> > >>
+> > >> When calling mmc_alloc_host, host->parent is set to &pdev->dev. mmc_of_parse
+> > >> uses host->parent->of_node but in my case settings are in the slot nodes so in
+> > >> the child nodes. That's why I would like to have a way to tell which node I
+> > >> want to use.
+> > > 
+> > > Seems reasonable, thanks for working on this!
+> > > 
+> > >>
+> > >>
+> > >> Regards
+> > >>
+> > >> Ludovic
+> > >>
+> > >>
+> > >>
+> > >>  drivers/mmc/core/host.c |    9 +++++++--
+> > >>  1 file changed, 7 insertions(+), 2 deletions(-)
+> > >>
+> > >> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> > >> index fdea825..ed6cea5 100644
+> > >> --- a/drivers/mmc/core/host.c
+> > >> +++ b/drivers/mmc/core/host.c
+> > >> @@ -300,13 +300,15 @@ static inline void mmc_host_clk_sysfs_init(struct mmc_host *host)
+> > >>  /**
+> > >>   *     mmc_of_parse() - parse host's device-tree node
+> > >>   *     @host: host whose node should be parsed.
+> > >> + *     @slot: some devices provide several slots so the node to parse
+> > >> + *     is not the host one.
+> > >>   *
+> > >>   * To keep the rest of the MMC subsystem unaware of whether DT has been
+> > >>   * used to to instantiate and configure this host instance or not, we
+> > >>   * parse the properties and set respective generic mmc-host flags and
+> > >>   * parameters.
+> > >>   */
+> > >> -int mmc_of_parse(struct mmc_host *host)
+> > >> +int mmc_of_parse(struct mmc_host *host, struct device_node *slot)
+> > >>  {
+> > >>         struct device_node *np;
+> > >>         u32 bus_width;
+> > >> @@ -317,7 +319,10 @@ int mmc_of_parse(struct mmc_host *host)
+> > >>         if (!host->parent || !host->parent->of_node)
+> > >>                 return 0;
+> > >>
+> > >> -       np = host->parent->of_node;
+> > >> +       if (slot)
+> > >> +               np = slot;
+> > >> +       else
+> > >> +               np = host->parent->of_node;
+> > >>
+> > >>         /* "bus-width" is translated to MMC_CAP_*_BIT_DATA flags */
+> > >>         if (of_property_read_u32(np, "bus-width", &bus_width) < 0) {
+> > >> --
+> > >> 1.7.9.5
+> > >>
+> > > 
+> > > How about adding a new API, __mmc_of_parse((struct mmc_host *host,
+> > > struct device_node *slot)
+> > > Then let the old API mmc_of_parse() remain as is, but let it call the
+> > > new API with slot == NULL.
+> > > 
+> > > Atmel can then use the new API, but the other drivers can remain as is.
+> > > 
+> > > Kind regards
+> > > Ulf Hansson
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
