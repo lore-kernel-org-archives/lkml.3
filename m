@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaEZVpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 17:45:49 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:35852 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaEZVpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 17:45:47 -0400
-Date: Mon, 26 May 2014 14:44:29 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Shrinkers and proportional reclaim
-In-Reply-To: <1400749779-24879-1-git-send-email-mgorman@suse.de>
-Message-ID: <alpine.LSU.2.11.1405261441320.7154@eggly.anvils>
-References: <1400749779-24879-1-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752333AbaEZVrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 17:47:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37464 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443AbaEZVrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 17:47:41 -0400
+Message-ID: <5383B65F.6030602@zytor.com>
+Date: Mon, 26 May 2014 14:47:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andy Lutomirski <luto@amacapital.net>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH 0/15] x86/xsaves: Optimize xstate context switch by xsaves/xrstors
+References: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com> <538397F5.6010002@amacapital.net> <3E5A0FA7E9CA944F9D5414FEC6C712205A605703@ORSMSX106.amr.corp.intel.com> <CALCETrUyVBfWkhckAo0STtY_Sq4OGXw5-c8f_w_ZKQxSWxTCvA@mail.gmail.com>
+In-Reply-To: <CALCETrUyVBfWkhckAo0STtY_Sq4OGXw5-c8f_w_ZKQxSWxTCvA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014, Mel Gorman wrote:
+On 05/26/2014 02:40 PM, Andy Lutomirski wrote:
+>>>
+>>> Are we going to want to encourage userspace to do something like
+>>> sticking vzeroupper right before each syscall to make any
+>>> xsaves/xrestores faster?
+>>
+>> This patch set allow compacted format in kernel and standard format
+>> in user space. This works fine for both kernel and user application.
+> 
+> My question is purely about optimization: if userspace does a blocking
+> system call, will it be significantly faster if userspace zeros out as
+> much of the extended state as possible before doing the system call?
+> 
+> I think I tried this once with xsaveopt and decided that it didn't
+> make much of a difference.
+> 
 
-> This series is aimed at regressions noticed during reclaim activity. The
-> first two patches are shrinker patches that were posted ages ago but never
-> merged for reasons that are unclear to me. I'm posting them again to see if
-> there was a reason they were dropped or if they just got lost. Dave?  Time?
-> The last patch adjusts proportional reclaim. Yuanhan Liu, can you retest
-> the vm scalability test cases on a larger machine? Hugh, does this work
-> for you on the memcg test cases?
+XSAVEOPT and XSAVES would be the same in this case.  Keep in mind, too,
+that relatively few system calls result in context switches, which is
+the only time this ends up mattering.
 
-Yes it does, thank you.
-
-Though the situation is muddy, since on our current internal tree, I'm
-surprised to find that the memcg test case no longer fails reliably
-without our workaround and without your fix.
-
-"Something must have changed"; but it would take a long time to work
-out what.  If I travel back in time with git, to where we first applied
-the "vindictive" patch, then yes that test case convincingly fails
-without either (my or your) patch, and passes with either patch.
-
-And you have something that satisfies Yuanhan too, that's great.
-
-I'm also pleased to see Dave and Tim reduce the contention in
-grab_super_passive(): that's a familiar symbol from livelock dumps.
-
-You might want to add this little 4/3, that we've had in for a
-while; but with grab_super_passive() out of super_cache_count(),
-it will have much less importance.
+	-hpa
 
 
-[PATCH 4/3] fs/superblock: Avoid counting without __GFP_FS
-
-Don't waste time counting objects in super_cache_count() if no __GFP_FS:
-super_cache_scan() would only back out with SHRINK_STOP in that case.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-
- fs/super.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- melgo/fs/super.c	2014-05-26 13:39:33.000131904 -0700
-+++ linux/fs/super.c	2014-05-26 13:56:19.012155813 -0700
-@@ -110,6 +110,12 @@ static unsigned long super_cache_count(s
- 	struct super_block *sb;
- 	long	total_objects = 0;
- 
-+	/*
-+	 * None can be freed without __GFP_FS, so don't waste time counting.
-+	 */
-+	if (!(sc->gfp_mask & __GFP_FS))
-+		return 0;
-+
- 	sb = container_of(shrink, struct super_block, s_shrink);
- 
- 	/*
