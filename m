@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaEZNVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:21:15 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:55723 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaEZNVM (ORCPT
+	id S1752566AbaEZNVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:21:38 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:47409 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545AbaEZNVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:21:12 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-01-53833fc6195d
+	Mon, 26 May 2014 09:21:35 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-fa-53833fc5f4ee
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Sangbeom Kim <sbkim73@samsung.com>, Lee Jones <lee.jones@linaro.org>,
@@ -18,655 +18,421 @@ Cc: linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         devicetree@vger.kernel.org,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3/3] regulator: s2mpa01: Remove driver because it was merged
- into s2mps11
-Date: Mon, 26 May 2014 15:20:23 +0200
-Message-id: <1401110423-5647-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 1/3] regulator: s2mps11: Refactor setting ramp delay
+Date: Mon, 26 May 2014 15:20:21 +0200
+Message-id: <1401110423-5647-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401110423-5647-1-git-send-email-k.kozlowski@samsung.com>
 References: <1401110423-5647-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xq7rH7JuDDbbsNbLYOGM9q8XUh0/Y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t/xq7pH7ZuDDd4cVrXYOGM9q8XUh0/Y
 	LOYfOcdq8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBYzzu9jslh75C67xck/vYwWF1d8YbJY
-	P+M1iwOvx85Zd9k9Nq3qZPO4c20Pm0ffllWMHp83yQWwRnHZpKTmZJalFunbJXBlrOo+wlaw
-	cBpjxdLFj5kaGK9VdjFyckgImEicenmMCcIWk7hwbz1bFyMXh5DAUkaJ54u3MEI4fUwSv5Ye
-	ZAGpYhMwlti8fAlYlYjADUaJ49MuM3cxcnAwC6xgkrjvDFIjLBAtsW7lOWYQm0VAVeLQl1Ws
-	IDavgJvEz/OPWSC2yUmcPDYZLM4p4C5x/fYxsLgQUM2Du5NZJjDyLmBkWMUomlqaXFCclJ5r
-	qFecmFtcmpeul5yfu4kREpJfdjAuPmZ1iFGAg1GJh/dEUFOwEGtiWXFl7iFGCQ5mJRFeLc7m
-	YCHelMTKqtSi/Pii0pzU4kOMTBycUg2MNrLbT1rxZE3b++Boyfe5uf9ma+wyUhNelBbqFcHf
-	/Dn4vMZ37r8R/dNX3jZZ8i5rhrTQl/r6+JQDbVELRXvdy6Z3dK38sPQfA//Pu0t3z1vNpfnY
-	TlRrVf75sikL+Vome25r0k/JWBv/ytqiIFLA+kDyl9S3j+8nZJ+S2cTJWBP1pffg6/I3SizF
-	GYmGWsxFxYkAQ67oaicCAAA=
+	P+M1iwOvx85Zd9k9Nq3qZPO4c20Pm0ffllWMHp83yQWwRnHZpKTmZJalFunbJXBlPNnzjbHg
+	UWzF9suHWRsY/3h3MXJySAiYSLy8/ZQZwhaTuHBvPVsXIxeHkMBSRolde7sYIZw+JonpS/+z
+	gVSxCRhLbF6+BKxKROAGo8TxaZeB2jk4mAVWMEncdwapERZwkfjS0sYCYrMIqEoc7PzJCGLz
+	CrhJvD7ynB1im5zEyWOTWUFsTgF3ieu3j4HVCwHVPLg7mWUCI+8CRoZVjKKppckFxUnpuYZ6
+	xYm5xaV56XrJ+bmbGCEB+WUH4+JjVocYBTgYlXh4TwQ1BQuxJpYVV+YeYpTgYFYS4dXibA4W
+	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwDjRebNn2MZ3O7Y4zXW+EP/laHmJo8D+lPCDB7caNLUJ
+	x9hutM/btLD2U5/IvdBvGf9yjXkanqvPZyj81Ldmam6tfcexqlJ9A7YWvXmJipcdhWqe8HSb
+	Rr2I8tp6/Oa5ZMvv5fc0LqZ921rwa2n43U0Bjw503tSuV2JxWvLS+v2R3bMy0m4VqCuxFGck
+	GmoxFxUnAgAnSY1zJgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The s2mpa01 regulator driver can be safely removed since it was merged
-into s2mps11 driver.
+Prepare for merging the s2mpa01 regulator driver into s2mps11 by:
+1. Adding common id for buck regulators.
+2. Splitting shared ramp delay settings to match S2MPA01.
+3. Adding a configuration of registers for setting ramp delay for each
+   buck regulator.
+
+The functionality of the driver should not change as this patch only
+prepares for supporting S2MPA01 device.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- Documentation/devicetree/bindings/mfd/s2mpa01.txt |  90 ----
- drivers/regulator/Kconfig                         |   7 -
- drivers/regulator/Makefile                        |   1 -
- drivers/regulator/s2mpa01.c                       | 482 ----------------------
- 4 files changed, 580 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
- delete mode 100644 drivers/regulator/s2mpa01.c
+ drivers/regulator/s2mps11.c | 210 ++++++++++++++++++++++++++++++--------------
+ 1 file changed, 144 insertions(+), 66 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/s2mpa01.txt b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
-deleted file mode 100644
-index c13d3d8c3947..000000000000
---- a/Documentation/devicetree/bindings/mfd/s2mpa01.txt
-+++ /dev/null
-@@ -1,90 +0,0 @@
--
--* Samsung S2MPA01 Voltage and Current Regulator
--
--The Samsung S2MPA01 is a multi-function device which includes high
--efficiency buck converters including Dual-Phase buck converter, various LDOs,
--and an RTC. It is interfaced to the host controller using an I2C interface.
--Each sub-block is addressed by the host system using different I2C slave
--addresses.
--
--Required properties:
--- compatible: Should be "samsung,s2mpa01-pmic".
--- reg: Specifies the I2C slave address of the PMIC block. It should be 0x66.
--
--Optional properties:
--- interrupt-parent: Specifies the phandle of the interrupt controller to which
--  the interrupts from s2mpa01 are delivered to.
--- interrupts: An interrupt specifier for the sole interrupt generated by the
--  device.
--
--Optional nodes:
--- regulators: The regulators of s2mpa01 that have to be instantiated should be
--  included in a sub-node named 'regulators'. Regulator nodes and constraints
--  included in this sub-node use the standard regulator bindings which are
--  documented elsewhere.
--
--Properties for BUCK regulator nodes:
--- regulator-ramp-delay: ramp delay in uV/us. May be 6250, 12500
--  (default), 25000, or 50000. May be 0 for disabling the ramp delay on
--  BUCK{1,2,3,4}.
--
-- In the absence of the regulator-ramp-delay property, the default ramp
-- delay will be used.
--
--  NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
--  for a particular group of BUCKs. So provide same regulator-ramp-delay=<value>.
--
--  The following BUCKs share ramp settings:
--  * 1 and 6
--  * 2 and 4
--  * 8, 9, and 10
--
--The following are the names of the regulators that the s2mpa01 PMIC block
--supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
--as per the datasheet of s2mpa01.
--
--	- LDOn
--		  - valid values for n are 1 to 26
--		  - Example: LDO1, LD02, LDO26
--	- BUCKn
--		  - valid values for n are 1 to 10.
--		  - Example: BUCK1, BUCK2, BUCK9
--
--Example:
--
--	s2mpa01_pmic@66 {
--		compatible = "samsung,s2mpa01-pmic";
--		reg = <0x66>;
--
--		regulators {
--			ldo1_reg: LDO1 {
--				regulator-name = "VDD_ALIVE";
--				regulator-min-microvolt = <1000000>;
--				regulator-max-microvolt = <1000000>;
--			};
--
--			ldo2_reg: LDO2 {
--				regulator-name = "VDDQ_MMC2";
--				regulator-min-microvolt = <2800000>;
--				regulator-max-microvolt = <2800000>;
--				regulator-always-on;
--			};
--
--			buck1_reg: BUCK1 {
--				regulator-name = "vdd_mif";
--				regulator-min-microvolt = <950000>;
--				regulator-max-microvolt = <1350000>;
--				regulator-always-on;
--				regulator-boot-on;
--			};
--
--			buck2_reg: BUCK2 {
--				regulator-name = "vdd_arm";
--				regulator-min-microvolt = <950000>;
--				regulator-max-microvolt = <1350000>;
--				regulator-always-on;
--				regulator-boot-on;
--				regulator-ramp-delay = <50000>;
--			};
--		};
--	};
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index c4aa87fd12af..d735ffb36c21 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -440,13 +440,6 @@ config REGULATOR_RC5T583
- 	  through regulator interface. The device supports multiple DCDC/LDO
- 	  outputs which can be controlled by i2c communication.
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 02e2fb2fca66..fa12d75b784f 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -32,13 +32,32 @@
+ #include <linux/mfd/samsung/s2mps11.h>
+ #include <linux/mfd/samsung/s2mps14.h>
  
--config REGULATOR_S2MPA01
--	tristate "Samsung S2MPA01 voltage regulator"
--	depends on MFD_SEC_CORE
--	help
--	 This driver controls Samsung S2MPA01 voltage output regulator
--	 via I2C bus. S2MPA01 has 10 Bucks and 26 LDO outputs.
--
- config REGULATOR_S2MPS11
- 	tristate "Samsung S2MPA01/S2MPS11/S2MPS14 voltage regulator"
- 	depends on MFD_SEC_CORE
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index c14696b290c0..f479b91e7a32 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -60,7 +60,6 @@ obj-$(CONFIG_REGULATOR_PBIAS) += pbias-regulator.o
- obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
- obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
- obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
--obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
- obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
- obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
- obj-$(CONFIG_REGULATOR_ST_PWM) += st-pwm.o
-diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-deleted file mode 100644
-index ee83b4876420..000000000000
---- a/drivers/regulator/s2mpa01.c
-+++ /dev/null
-@@ -1,482 +0,0 @@
--/*
-- * Copyright (c) 2013 Samsung Electronics Co., Ltd
-- *		http://www.samsung.com
-- *
-- *  This program is free software; you can redistribute  it and/or modify it
-- *  under  the terms of  the GNU General  Public License as published by the
-- *  Free Software Foundation;  either version 2 of the  License, or (at your
-- *  option) any later version.
-- *
-- */
--
--#include <linux/bug.h>
--#include <linux/err.h>
--#include <linux/gpio.h>
--#include <linux/slab.h>
--#include <linux/module.h>
--#include <linux/of.h>
--#include <linux/regmap.h>
--#include <linux/platform_device.h>
--#include <linux/regulator/driver.h>
--#include <linux/regulator/machine.h>
--#include <linux/regulator/of_regulator.h>
--#include <linux/mfd/samsung/core.h>
--#include <linux/mfd/samsung/s2mpa01.h>
--
--#define S2MPA01_REGULATOR_CNT ARRAY_SIZE(regulators)
--
--struct s2mpa01_info {
--	int ramp_delay24;
--	int ramp_delay3;
--	int ramp_delay5;
--	int ramp_delay16;
--	int ramp_delay7;
--	int ramp_delay8910;
--};
--
--static int get_ramp_delay(int ramp_delay)
--{
--	unsigned char cnt = 0;
--
--	ramp_delay /= 6250;
--
--	while (true) {
--		ramp_delay = ramp_delay >> 1;
--		if (ramp_delay == 0)
--			break;
--		cnt++;
--	}
--
--	if (cnt > 3)
--		cnt = 3;
--
--	return cnt;
--}
--
--static int s2mpa01_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
--				   unsigned int old_selector,
--				   unsigned int new_selector)
--{
--	struct s2mpa01_info *s2mpa01 = rdev_get_drvdata(rdev);
--	unsigned int ramp_delay = 0;
--	int old_volt, new_volt;
--
++/*
++ * Enum used as a common id of buck regulators on S2MPA01 and S2MPS11.
++ */
++enum s2mpx_bucks {
++	S2MPX_BUCK1,
++	S2MPX_BUCK2,
++	S2MPX_BUCK3,
++	S2MPX_BUCK4,
++	S2MPX_BUCK5,
++	S2MPX_BUCK6,
++	S2MPX_BUCK7,
++	S2MPX_BUCK8,
++	S2MPX_BUCK9,
++	S2MPX_BUCK10,
++};
++
+ struct s2mps11_info {
++	enum sec_device_type dev_type;
+ 	unsigned int rdev_num;
+ 	int ramp_delay2;
+-	int ramp_delay34;
++	int ramp_delay3;
++	int ramp_delay4;
+ 	int ramp_delay5;
+ 	int ramp_delay16;
+-	int ramp_delay7810;
++	int ramp_delay7;
++	int ramp_delay810;
+ 	int ramp_delay9;
+ 	/*
+ 	 * One bit for each S2MPS14 regulator whether the suspend mode
+@@ -49,6 +68,47 @@ struct s2mps11_info {
+ 	int *ext_control_gpio;
+ };
+ 
++/*
++ * Description of ramp delay register for one buck regulator
++ * on S2MPA01 and S2MPS11.
++ */
++struct s2mpx_ramp_reg {
++	unsigned int ramp_shift;
++	unsigned int ramp_reg;
++	unsigned int enable_shift;
++	bool enable_supported;
++};
++
++#define s2mps11_ramp_reg(r_shift) {					\
++	.ramp_shift		= S2MPS11_ ## r_shift ## _RAMP_SHIFT,	\
++	.ramp_reg		= S2MPS11_REG_RAMP_BUCK,		\
++	.enable_shift		= 0,					\
++	.enable_supported	= false,				\
++}
++#define s2mps11_buck2346_ramp_reg(r_shift, r_reg, e_shift) {		\
++	.ramp_shift		= S2MPS11_ ## r_shift ## _RAMP_SHIFT,	\
++	.ramp_reg		= S2MPS11_REG_ ## r_reg,		\
++	.enable_shift		= S2MPS11_ ## e_shift ## _RAMP_EN_SHIFT,\
++	.enable_supported	= true,					\
++}
++
++static const struct s2mpx_ramp_reg s2mps11_ramp_regs[] = {
++	[S2MPX_BUCK1]	= s2mps11_ramp_reg(BUCK16),
++	[S2MPX_BUCK2]	= s2mps11_buck2346_ramp_reg(BUCK2, RAMP, BUCK2),
++	[S2MPX_BUCK3]	= s2mps11_buck2346_ramp_reg(BUCK34, RAMP, BUCK3),
++	[S2MPX_BUCK4]	= s2mps11_buck2346_ramp_reg(BUCK34, RAMP, BUCK4),
++	[S2MPX_BUCK5]	= s2mps11_ramp_reg(BUCK5),
++	[S2MPX_BUCK6]	= s2mps11_buck2346_ramp_reg(BUCK16, RAMP_BUCK, BUCK6),
++	[S2MPX_BUCK7]	= s2mps11_ramp_reg(BUCK7810),
++	[S2MPX_BUCK8]	= s2mps11_ramp_reg(BUCK7810),
++	[S2MPX_BUCK9]	= s2mps11_ramp_reg(BUCK9),
++	[S2MPX_BUCK10]	= s2mps11_ramp_reg(BUCK7810),
++};
++
++static const struct s2mpx_ramp_reg * const s2mpx_ramp_regs[] = {
++	[S2MPS11X] = s2mps11_ramp_regs,
++};
++
+ static int get_ramp_delay(int ramp_delay)
+ {
+ 	unsigned char cnt = 0;
+@@ -68,6 +128,23 @@ static int get_ramp_delay(int ramp_delay)
+ 	return cnt;
+ }
+ 
++/*
++ * Maps a buck regulator id to enum s2mpx_bucks.
++ * Valid only for buck regulators on on S2MPS11.
++ *
++ * Returns a value of enum s2mpx_bucks or -EINVAL.
++ */
++static int get_s2mpx_buck_id(enum sec_device_type dev_type,
++		int rdev_id)
++{
++	switch (dev_type) {
++	case S2MPS11X:
++		return rdev_id - S2MPS11_BUCK1;
++	default:
++		return -EINVAL;
++	}
++}
++
+ static int s2mps11_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+ 				   unsigned int old_selector,
+ 				   unsigned int new_selector)
+@@ -75,29 +152,40 @@ static int s2mps11_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+ 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
+ 	unsigned int ramp_delay = 0;
+ 	int old_volt, new_volt;
++	int buck_id = get_s2mpx_buck_id(s2mps11->dev_type, rdev_get_id(rdev));
+ 
 -	switch (rdev_get_id(rdev)) {
--	case S2MPA01_BUCK2:
--	case S2MPA01_BUCK4:
--		ramp_delay = s2mpa01->ramp_delay24;
--		break;
--	case S2MPA01_BUCK3:
--		ramp_delay = s2mpa01->ramp_delay3;
--		break;
--	case S2MPA01_BUCK5:
--		ramp_delay = s2mpa01->ramp_delay5;
--		break;
--	case S2MPA01_BUCK1:
--	case S2MPA01_BUCK6:
--		ramp_delay = s2mpa01->ramp_delay16;
--		break;
--	case S2MPA01_BUCK7:
--		ramp_delay = s2mpa01->ramp_delay7;
--		break;
--	case S2MPA01_BUCK8:
--	case S2MPA01_BUCK9:
--	case S2MPA01_BUCK10:
--		ramp_delay = s2mpa01->ramp_delay8910;
--		break;
--	}
--
--	if (ramp_delay == 0)
--		ramp_delay = rdev->desc->ramp_delay;
--
--	old_volt = rdev->desc->min_uV + (rdev->desc->uV_step * old_selector);
--	new_volt = rdev->desc->min_uV + (rdev->desc->uV_step * new_selector);
--
--	return DIV_ROUND_UP(abs(new_volt - old_volt), ramp_delay);
--}
--
--static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
--{
--	struct s2mpa01_info *s2mpa01 = rdev_get_drvdata(rdev);
--	unsigned int ramp_val, ramp_shift, ramp_reg = S2MPA01_REG_RAMP2;
+-	case S2MPS11_BUCK2:
++	switch (buck_id) {
++	case S2MPX_BUCK2:
+ 		ramp_delay = s2mps11->ramp_delay2;
+ 		break;
+-	case S2MPS11_BUCK3:
+-	case S2MPS11_BUCK4:
+-		ramp_delay = s2mps11->ramp_delay34;
++	case S2MPX_BUCK3:
++		ramp_delay = s2mps11->ramp_delay3;
+ 		break;
+-	case S2MPS11_BUCK5:
++	case S2MPX_BUCK4:
++		ramp_delay = s2mps11->ramp_delay4;
++		break;
++	case S2MPX_BUCK5:
+ 		ramp_delay = s2mps11->ramp_delay5;
+ 		break;
+-	case S2MPS11_BUCK6:
+-	case S2MPS11_BUCK1:
++	case S2MPX_BUCK6:
++	case S2MPX_BUCK1:
+ 		ramp_delay = s2mps11->ramp_delay16;
+ 		break;
+-	case S2MPS11_BUCK7:
+-	case S2MPS11_BUCK8:
+-	case S2MPS11_BUCK10:
+-		ramp_delay = s2mps11->ramp_delay7810;
++	case S2MPX_BUCK7:
++		ramp_delay = s2mps11->ramp_delay7;
+ 		break;
+-	case S2MPS11_BUCK9:
++	case S2MPX_BUCK8:
++	case S2MPX_BUCK10:
++		ramp_delay = s2mps11->ramp_delay810;
++		break;
++	case S2MPX_BUCK9:
+ 		ramp_delay = s2mps11->ramp_delay9;
++		break;
++	default:
++		dev_err(rdev_get_dev(rdev),
++				"Wrong regulator id %d for set_voltage_time_sel\n",
++				rdev_get_id(rdev));
++		return -EINVAL;
+ 	}
+ 
+ 	if (ramp_delay == 0)
+@@ -112,66 +200,55 @@ static int s2mps11_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ {
+ 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
+-	unsigned int ramp_val, ramp_shift, ramp_reg = S2MPS11_REG_RAMP_BUCK;
 -	unsigned int ramp_enable = 1, enable_shift = 0;
--	int ret;
--
++	const struct s2mpx_ramp_reg *ramp_reg;
++	unsigned int ramp_val;
++	unsigned int ramp_enable = 1;
++	int buck_id;
+ 	int ret;
+ 
 -	switch (rdev_get_id(rdev)) {
--	case S2MPA01_BUCK1:
--		enable_shift = S2MPA01_BUCK1_RAMP_EN_SHIFT;
--		if (!ramp_delay) {
--			ramp_enable = 0;
--			break;
--		}
+-	case S2MPS11_BUCK1:
++	buck_id = get_s2mpx_buck_id(s2mps11->dev_type, rdev_get_id(rdev));
++
++	switch (buck_id) {
++	case S2MPX_BUCK1:
+ 		if (ramp_delay > s2mps11->ramp_delay16)
+ 			s2mps11->ramp_delay16 = ramp_delay;
+ 		else
+ 			ramp_delay = s2mps11->ramp_delay16;
 -
--		if (ramp_delay > s2mpa01->ramp_delay16)
--			s2mpa01->ramp_delay16 = ramp_delay;
--		else
--			ramp_delay = s2mpa01->ramp_delay16;
+-		ramp_shift = S2MPS11_BUCK16_RAMP_SHIFT;
+ 		break;
+-	case S2MPS11_BUCK2:
+-		enable_shift = S2MPS11_BUCK2_RAMP_EN_SHIFT;
++	case S2MPX_BUCK2:
+ 		if (!ramp_delay) {
+ 			ramp_enable = 0;
+ 			break;
+ 		}
+ 
+ 		s2mps11->ramp_delay2 = ramp_delay;
+-		ramp_shift = S2MPS11_BUCK2_RAMP_SHIFT;
+-		ramp_reg = S2MPS11_REG_RAMP;
+ 		break;
+-	case S2MPS11_BUCK3:
+-		enable_shift = S2MPS11_BUCK3_RAMP_EN_SHIFT;
++	case S2MPX_BUCK3:
+ 		if (!ramp_delay) {
+ 			ramp_enable = 0;
+ 			break;
+ 		}
+ 
+-		if (ramp_delay > s2mps11->ramp_delay34)
+-			s2mps11->ramp_delay34 = ramp_delay;
++		if (ramp_delay > s2mps11->ramp_delay3)
++			s2mps11->ramp_delay3 = ramp_delay;
+ 		else
+-			ramp_delay = s2mps11->ramp_delay34;
 -
--		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
--		break;
--	case S2MPA01_BUCK2:
--		enable_shift = S2MPA01_BUCK2_RAMP_EN_SHIFT;
--		if (!ramp_delay) {
--			ramp_enable = 0;
--			break;
--		}
+-		ramp_shift = S2MPS11_BUCK34_RAMP_SHIFT;
+-		ramp_reg = S2MPS11_REG_RAMP;
++			ramp_delay = s2mps11->ramp_delay3;
+ 		break;
+ 	case S2MPS11_BUCK4:
+-		enable_shift = S2MPS11_BUCK4_RAMP_EN_SHIFT;
+ 		if (!ramp_delay) {
+ 			ramp_enable = 0;
+ 			break;
+ 		}
+ 
+-		if (ramp_delay > s2mps11->ramp_delay34)
+-			s2mps11->ramp_delay34 = ramp_delay;
++		if (ramp_delay > s2mps11->ramp_delay4)
++			s2mps11->ramp_delay4 = ramp_delay;
+ 		else
+-			ramp_delay = s2mps11->ramp_delay34;
 -
--		if (ramp_delay > s2mpa01->ramp_delay24)
--			s2mpa01->ramp_delay24 = ramp_delay;
--		else
--			ramp_delay = s2mpa01->ramp_delay24;
+-		ramp_shift = S2MPS11_BUCK34_RAMP_SHIFT;
+-		ramp_reg = S2MPS11_REG_RAMP;
++			ramp_delay = s2mps11->ramp_delay4;
+ 		break;
+ 	case S2MPS11_BUCK5:
+ 		s2mps11->ramp_delay5 = ramp_delay;
+-		ramp_shift = S2MPS11_BUCK5_RAMP_SHIFT;
+ 		break;
+ 	case S2MPS11_BUCK6:
+-		enable_shift = S2MPS11_BUCK6_RAMP_EN_SHIFT;
+ 		if (!ramp_delay) {
+ 			ramp_enable = 0;
+ 			break;
+@@ -181,36 +258,37 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 			s2mps11->ramp_delay16 = ramp_delay;
+ 		else
+ 			ramp_delay = s2mps11->ramp_delay16;
 -
--		ramp_shift = S2MPA01_BUCK24_RAMP_SHIFT;
--		ramp_reg = S2MPA01_REG_RAMP1;
--		break;
--	case S2MPA01_BUCK3:
--		enable_shift = S2MPA01_BUCK3_RAMP_EN_SHIFT;
--		if (!ramp_delay) {
--			ramp_enable = 0;
--			break;
--		}
+-		ramp_shift = S2MPS11_BUCK16_RAMP_SHIFT;
+ 		break;
+ 	case S2MPS11_BUCK7:
++		if (ramp_delay > s2mps11->ramp_delay7)
++			s2mps11->ramp_delay7 = ramp_delay;
++		else
++			ramp_delay = s2mps11->ramp_delay7;
++		break;
+ 	case S2MPS11_BUCK8:
+ 	case S2MPS11_BUCK10:
+-		if (ramp_delay > s2mps11->ramp_delay7810)
+-			s2mps11->ramp_delay7810 = ramp_delay;
++		if (ramp_delay > s2mps11->ramp_delay810)
++			s2mps11->ramp_delay810 = ramp_delay;
+ 		else
+-			ramp_delay = s2mps11->ramp_delay7810;
 -
--		s2mpa01->ramp_delay3 = ramp_delay;
--		ramp_shift = S2MPA01_BUCK3_RAMP_SHIFT;
--		ramp_reg = S2MPA01_REG_RAMP1;
--		break;
--	case S2MPA01_BUCK4:
--		enable_shift = S2MPA01_BUCK4_RAMP_EN_SHIFT;
--		if (!ramp_delay) {
--			ramp_enable = 0;
--			break;
--		}
--
--		if (ramp_delay > s2mpa01->ramp_delay24)
--			s2mpa01->ramp_delay24 = ramp_delay;
--		else
--			ramp_delay = s2mpa01->ramp_delay24;
--
--		ramp_shift = S2MPA01_BUCK24_RAMP_SHIFT;
--		ramp_reg = S2MPA01_REG_RAMP1;
--		break;
--	case S2MPA01_BUCK5:
--		s2mpa01->ramp_delay5 = ramp_delay;
--		ramp_shift = S2MPA01_BUCK5_RAMP_SHIFT;
--		break;
--	case S2MPA01_BUCK6:
--		if (ramp_delay > s2mpa01->ramp_delay16)
--			s2mpa01->ramp_delay16 = ramp_delay;
--		else
--			ramp_delay = s2mpa01->ramp_delay16;
--
--		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
--		break;
--	case S2MPA01_BUCK7:
--		s2mpa01->ramp_delay7 = ramp_delay;
--		ramp_shift = S2MPA01_BUCK7_RAMP_SHIFT;
--		break;
--	case S2MPA01_BUCK8:
--	case S2MPA01_BUCK9:
--	case S2MPA01_BUCK10:
--		if (ramp_delay > s2mpa01->ramp_delay8910)
--			s2mpa01->ramp_delay8910 = ramp_delay;
--		else
--			ramp_delay = s2mpa01->ramp_delay8910;
--
--		ramp_shift = S2MPA01_BUCK8910_RAMP_SHIFT;
--		break;
--	default:
--		return 0;
--	}
--
--	if (!ramp_enable)
--		goto ramp_disable;
--
--	/* Ramp delay can be enabled/disabled only for buck[1234] */
--	if (rdev_get_id(rdev) >= S2MPA01_BUCK1 &&
--			rdev_get_id(rdev) <= S2MPA01_BUCK4) {
--		ret = regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
+-		ramp_shift = S2MPS11_BUCK7810_RAMP_SHIFT;
++			ramp_delay = s2mps11->ramp_delay810;
+ 		break;
+ 	case S2MPS11_BUCK9:
+ 		s2mps11->ramp_delay9 = ramp_delay;
+-		ramp_shift = S2MPS11_BUCK9_RAMP_SHIFT;
+ 		break;
+ 	default:
+ 		return 0;
+ 	}
+ 
++	ramp_reg = &s2mpx_ramp_regs[s2mps11->dev_type][buck_id];
++
+ 	if (!ramp_enable)
+ 		goto ramp_disable;
+ 
+ 	/* Ramp delay can be enabled/disabled only for buck[2346] */
+-	if ((rdev_get_id(rdev) >= S2MPS11_BUCK2 &&
+-			rdev_get_id(rdev) <= S2MPS11_BUCK4) ||
+-			rdev_get_id(rdev) == S2MPS11_BUCK6)  {
++	if (ramp_reg->enable_supported) {
+ 		ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
 -					 1 << enable_shift, 1 << enable_shift);
--		if (ret) {
--			dev_err(&rdev->dev, "failed to enable ramp rate\n");
--			return ret;
--		}
--	}
--
--	ramp_val = get_ramp_delay(ramp_delay);
--
++					 1 << ramp_reg->enable_shift,
++					 1 << ramp_reg->enable_shift);
+ 		if (ret) {
+ 			dev_err(&rdev->dev, "failed to enable ramp rate\n");
+ 			return ret;
+@@ -219,12 +297,13 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 
+ 	ramp_val = get_ramp_delay(ramp_delay);
+ 
 -	return regmap_update_bits(rdev->regmap, ramp_reg, 0x3 << ramp_shift,
 -				  ramp_val << ramp_shift);
--
--ramp_disable:
--	return regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
++	return regmap_update_bits(rdev->regmap, ramp_reg->ramp_reg,
++				0x3 << ramp_reg->ramp_shift,
++				ramp_val << ramp_reg->ramp_shift);
+ 
+ ramp_disable:
+ 	return regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
 -				  1 << enable_shift, 0);
--}
--
--static struct regulator_ops s2mpa01_ldo_ops = {
--	.list_voltage		= regulator_list_voltage_linear,
--	.map_voltage		= regulator_map_voltage_linear,
--	.is_enabled		= regulator_is_enabled_regmap,
--	.enable			= regulator_enable_regmap,
--	.disable		= regulator_disable_regmap,
--	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
--	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
--	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
--};
--
--static struct regulator_ops s2mpa01_buck_ops = {
--	.list_voltage		= regulator_list_voltage_linear,
--	.map_voltage		= regulator_map_voltage_linear,
--	.is_enabled		= regulator_is_enabled_regmap,
--	.enable			= regulator_enable_regmap,
--	.disable		= regulator_disable_regmap,
--	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
--	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
--	.set_voltage_time_sel	= s2mpa01_regulator_set_voltage_time_sel,
--	.set_ramp_delay		= s2mpa01_set_ramp_delay,
--};
--
--#define regulator_desc_ldo1(num)	{		\
--	.name		= "LDO"#num,			\
--	.id		= S2MPA01_LDO##num,		\
--	.ops		= &s2mpa01_ldo_ops,		\
--	.type		= REGULATOR_VOLTAGE,		\
--	.owner		= THIS_MODULE,			\
--	.min_uV		= S2MPA01_LDO_MIN,		\
--	.uV_step	= S2MPA01_LDO_STEP1,		\
--	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
--	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
--	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
--	.enable_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
--	.enable_mask	= S2MPA01_ENABLE_MASK		\
--}
--#define regulator_desc_ldo2(num)	{		\
--	.name		= "LDO"#num,			\
--	.id		= S2MPA01_LDO##num,		\
--	.ops		= &s2mpa01_ldo_ops,		\
--	.type		= REGULATOR_VOLTAGE,		\
--	.owner		= THIS_MODULE,			\
--	.min_uV		= S2MPA01_LDO_MIN,		\
--	.uV_step	= S2MPA01_LDO_STEP2,		\
--	.n_voltages	= S2MPA01_LDO_N_VOLTAGES,	\
--	.vsel_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
--	.vsel_mask	= S2MPA01_LDO_VSEL_MASK,	\
--	.enable_reg	= S2MPA01_REG_L1CTRL + num - 1,	\
--	.enable_mask	= S2MPA01_ENABLE_MASK		\
--}
--
--#define regulator_desc_buck1_4(num)	{			\
--	.name		= "BUCK"#num,				\
--	.id		= S2MPA01_BUCK##num,			\
--	.ops		= &s2mpa01_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= S2MPA01_BUCK_MIN1,			\
--	.uV_step	= S2MPA01_BUCK_STEP1,			\
--	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
--	.vsel_reg	= S2MPA01_REG_B1CTRL2 + (num - 1) * 2,	\
--	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPA01_REG_B1CTRL1 + (num - 1) * 2,	\
--	.enable_mask	= S2MPA01_ENABLE_MASK			\
--}
--
--#define regulator_desc_buck5	{				\
--	.name		= "BUCK5",				\
--	.id		= S2MPA01_BUCK5,			\
--	.ops		= &s2mpa01_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= S2MPA01_BUCK_MIN2,			\
--	.uV_step	= S2MPA01_BUCK_STEP1,			\
--	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
--	.vsel_reg	= S2MPA01_REG_B5CTRL2,			\
--	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPA01_REG_B5CTRL1,			\
--	.enable_mask	= S2MPA01_ENABLE_MASK			\
--}
--
--#define regulator_desc_buck6_7(num)	{			\
--	.name		= "BUCK"#num,				\
--	.id		= S2MPA01_BUCK##num,			\
--	.ops		= &s2mpa01_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= S2MPA01_BUCK_MIN1,			\
--	.uV_step	= S2MPA01_BUCK_STEP1,			\
--	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
--	.vsel_reg	= S2MPA01_REG_B6CTRL2 + (num - 6) * 2,	\
--	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPA01_REG_B6CTRL1 + (num - 6) * 2,	\
--	.enable_mask	= S2MPA01_ENABLE_MASK			\
--}
--
--#define regulator_desc_buck8	{				\
--	.name		= "BUCK8",				\
--	.id		= S2MPA01_BUCK8,			\
--	.ops		= &s2mpa01_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= S2MPA01_BUCK_MIN2,			\
--	.uV_step	= S2MPA01_BUCK_STEP2,			\
--	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
--	.vsel_reg	= S2MPA01_REG_B8CTRL2,			\
--	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPA01_REG_B8CTRL1,			\
--	.enable_mask	= S2MPA01_ENABLE_MASK			\
--}
--
--#define regulator_desc_buck9	{				\
--	.name		= "BUCK9",				\
--	.id		= S2MPA01_BUCK9,			\
--	.ops		= &s2mpa01_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= S2MPA01_BUCK_MIN4,			\
--	.uV_step	= S2MPA01_BUCK_STEP2,			\
--	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
--	.vsel_reg	= S2MPA01_REG_B9CTRL2,			\
--	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPA01_REG_B9CTRL1,			\
--	.enable_mask	= S2MPA01_ENABLE_MASK			\
--}
--
--#define regulator_desc_buck10	{				\
--	.name		= "BUCK10",				\
--	.id		= S2MPA01_BUCK10,			\
--	.ops		= &s2mpa01_buck_ops,			\
--	.type		= REGULATOR_VOLTAGE,			\
--	.owner		= THIS_MODULE,				\
--	.min_uV		= S2MPA01_BUCK_MIN3,			\
--	.uV_step	= S2MPA01_BUCK_STEP2,			\
--	.n_voltages	= S2MPA01_BUCK_N_VOLTAGES,		\
--	.ramp_delay	= S2MPA01_RAMP_DELAY,			\
--	.vsel_reg	= S2MPA01_REG_B10CTRL2,			\
--	.vsel_mask	= S2MPA01_BUCK_VSEL_MASK,		\
--	.enable_reg	= S2MPA01_REG_B10CTRL1,			\
--	.enable_mask	= S2MPA01_ENABLE_MASK			\
--}
--
--static struct regulator_desc regulators[] = {
--	regulator_desc_ldo2(1),
--	regulator_desc_ldo1(2),
--	regulator_desc_ldo1(3),
--	regulator_desc_ldo1(4),
--	regulator_desc_ldo1(5),
--	regulator_desc_ldo2(6),
--	regulator_desc_ldo1(7),
--	regulator_desc_ldo1(8),
--	regulator_desc_ldo1(9),
--	regulator_desc_ldo1(10),
--	regulator_desc_ldo2(11),
--	regulator_desc_ldo1(12),
--	regulator_desc_ldo1(13),
--	regulator_desc_ldo1(14),
--	regulator_desc_ldo1(15),
--	regulator_desc_ldo1(16),
--	regulator_desc_ldo1(17),
--	regulator_desc_ldo1(18),
--	regulator_desc_ldo1(19),
--	regulator_desc_ldo1(20),
--	regulator_desc_ldo1(21),
--	regulator_desc_ldo2(22),
--	regulator_desc_ldo2(23),
--	regulator_desc_ldo1(24),
--	regulator_desc_ldo1(25),
--	regulator_desc_ldo1(26),
--	regulator_desc_buck1_4(1),
--	regulator_desc_buck1_4(2),
--	regulator_desc_buck1_4(3),
--	regulator_desc_buck1_4(4),
--	regulator_desc_buck5,
--	regulator_desc_buck6_7(6),
--	regulator_desc_buck6_7(7),
--	regulator_desc_buck8,
--	regulator_desc_buck9,
--	regulator_desc_buck10,
--};
--
--static int s2mpa01_pmic_probe(struct platform_device *pdev)
--{
--	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
--	struct of_regulator_match rdata[S2MPA01_REGULATOR_MAX];
--	struct device_node *reg_np = NULL;
--	struct regulator_config config = { };
--	struct s2mpa01_info *s2mpa01;
--	int i;
--
--	s2mpa01 = devm_kzalloc(&pdev->dev, sizeof(*s2mpa01), GFP_KERNEL);
--	if (!s2mpa01)
--		return -ENOMEM;
--
--	for (i = 0; i < S2MPA01_REGULATOR_CNT; i++)
--		rdata[i].name = regulators[i].name;
--
--	if (iodev->dev->of_node) {
--		reg_np = of_get_child_by_name(iodev->dev->of_node,
--							"regulators");
--			if (!reg_np) {
--				dev_err(&pdev->dev,
--					"could not find regulators sub-node\n");
--				return -EINVAL;
--			}
--
--		of_regulator_match(&pdev->dev, reg_np, rdata,
--						S2MPA01_REGULATOR_MAX);
--		of_node_put(reg_np);
--	}
--
--	platform_set_drvdata(pdev, s2mpa01);
--
--	config.dev = &pdev->dev;
--	config.regmap = iodev->regmap_pmic;
--	config.driver_data = s2mpa01;
--
--	for (i = 0; i < S2MPA01_REGULATOR_MAX; i++) {
--		struct regulator_dev *rdev;
--		if (pdata)
--			config.init_data = pdata->regulators[i].initdata;
--		else
--			config.init_data = rdata[i].init_data;
--
--		if (reg_np)
--			config.of_node = rdata[i].of_node;
--
--		rdev = devm_regulator_register(&pdev->dev,
--						&regulators[i], &config);
--		if (IS_ERR(rdev)) {
--			dev_err(&pdev->dev, "regulator init failed for %d\n",
--				i);
--			return PTR_ERR(rdev);
--		}
--	}
--
--	return 0;
--}
--
--static const struct platform_device_id s2mpa01_pmic_id[] = {
--	{ "s2mpa01-pmic", 0},
--	{ },
--};
--MODULE_DEVICE_TABLE(platform, s2mpa01_pmic_id);
--
--static struct platform_driver s2mpa01_pmic_driver = {
--	.driver = {
--		.name = "s2mpa01-pmic",
--		.owner = THIS_MODULE,
--	},
--	.probe = s2mpa01_pmic_probe,
--	.id_table = s2mpa01_pmic_id,
--};
--
--module_platform_driver(s2mpa01_pmic_driver);
--
--/* Module information */
--MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
--MODULE_AUTHOR("Sachin Kamat <sachin.kamat@samsung.com>");
--MODULE_DESCRIPTION("SAMSUNG S2MPA01 Regulator Driver");
--MODULE_LICENSE("GPL");
++				  1 << ramp_reg->enable_shift, 0);
+ }
+ 
+ static struct regulator_ops s2mps11_ldo_ops = {
+@@ -250,7 +329,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.set_ramp_delay		= s2mps11_set_ramp_delay,
+ };
+ 
+-#define regulator_desc_s2mps11_ldo1(num)	{		\
++#define regulator_desc_s2mps11_ldo1(num) {		\
+ 	.name		= "LDO"#num,			\
+ 	.id		= S2MPS11_LDO##num,		\
+ 	.ops		= &s2mps11_ldo_ops,		\
+@@ -605,8 +684,7 @@ static void s2mps14_pmic_dt_parse_ext_control_gpio(struct platform_device *pdev,
+ }
+ 
+ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
+-		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11,
+-		enum sec_device_type dev_type)
++		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11)
+ {
+ 	struct device_node *reg_np;
+ 
+@@ -617,7 +695,7 @@ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
+ 	}
+ 
+ 	of_regulator_match(&pdev->dev, reg_np, rdata, s2mps11->rdev_num);
+-	if (dev_type == S2MPS14X)
++	if (s2mps11->dev_type == S2MPS14X)
+ 		s2mps14_pmic_dt_parse_ext_control_gpio(pdev, rdata, s2mps11);
+ 
+ 	of_node_put(reg_np);
+@@ -634,15 +712,14 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	struct s2mps11_info *s2mps11;
+ 	int i, ret = 0;
+ 	const struct regulator_desc *regulators;
+-	enum sec_device_type dev_type;
+ 
+ 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
+ 				GFP_KERNEL);
+ 	if (!s2mps11)
+ 		return -ENOMEM;
+ 
+-	dev_type = platform_get_device_id(pdev)->driver_data;
+-	switch (dev_type) {
++	s2mps11->dev_type = platform_get_device_id(pdev)->driver_data;
++	switch (s2mps11->dev_type) {
+ 	case S2MPS11X:
+ 		s2mps11->rdev_num = ARRAY_SIZE(s2mps11_regulators);
+ 		regulators = s2mps11_regulators;
+@@ -652,7 +729,8 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		regulators = s2mps14_regulators;
+ 		break;
+ 	default:
+-		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
++		dev_err(&pdev->dev, "Invalid device type: %u\n",
++				s2mps11->dev_type);
+ 		return -EINVAL;
+ 	};
+ 
+@@ -686,7 +764,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	for (i = 0; i < s2mps11->rdev_num; i++)
+ 		rdata[i].name = regulators[i].name;
+ 
+-	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11, dev_type);
++	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11);
+ 	if (ret)
+ 		goto out;
+ 
 -- 
 1.9.1
 
