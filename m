@@ -1,111 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaEZNqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:46:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:34003 "EHLO mail.kernel.org"
+	id S1752572AbaEZNrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:47:21 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:42998 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752465AbaEZNqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:46:52 -0400
-Date: Mon, 26 May 2014 10:46:47 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Elie De Brauwer <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <steve@chygwyn.com>,
-        =?iso-8859-1?Q?R=E9mi?= Denis-Courmont 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Chris Friesen <chris.friesen@windriver.com>
-Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
-Message-ID: <20140526134647.GB8176@kernel.org>
-References: <536101C9.9090601@gmail.com>
- <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com>
- <20140512143451.GB13801@kernel.org>
- <20140521210535.GA5414@kernel.org>
- <537E0961.8040005@gmail.com>
+	id S1752228AbaEZNrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 09:47:19 -0400
+Message-ID: <538345F0.40605@mm-sol.com>
+Date: Mon, 26 May 2014 16:47:28 +0300
+From: Georgi Djakov <gdjakov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537E0961.8040005@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Paul Bolle <pebolle@tiscali.nl>, Kumar Gala <galak@codeaurora.org>
+CC: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
+        linus.walleij@linaro.org, iivanov@mm-sol.com,
+        srinivas.kandagatla@linaro.org
+Subject: Re: [GIT PULL] qcom SoC changes for v3.16
+References: <alpine.DEB.2.00.1405231339340.15680@galak-ubuntu.qualcomm.com> <1401108595.6068.5.camel@x220>
+In-Reply-To: <1401108595.6068.5.camel@x220>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 22, 2014 at 04:27:45PM +0200, Michael Kerrisk (man-pages) escreveu:
-> Hi Arnaldo,
-> 
-> On 05/21/2014 11:05 PM, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, May 12, 2014 at 11:34:51AM -0300, Arnaldo Carvalho de Melo escreveu:
-> >> Em Mon, May 12, 2014 at 12:15:25PM +0200, Michael Kerrisk (man-pages) escreveu:
-> >>> Hi Arnaldo,
-> >  
-> >>> Ping!
-> > 
-> >> I acknowledge the problem, the timeout has to be passed to the
-> >> underlying ->recvmsg() implementations that should return the time spent
-> >> waiting for each packet, so that we can accrue that at recvmmsg level.
-> >  
-> >> We can do either passing an extra timeout parameter to the recvmsg
-> >> implementations or using some struct sock member to specify that
-> >> timeout.
-> >  
-> >> The first approach is intrusive, touches tons of files, so I'll try
-> >> making it all mostly transparent by hooking into sock_rcvtimeo()
-> >> somehow.
-> > 
-> > But after thinking a bit more, looks like we need to do that, please
-> > take a look at the attached patch to see if it addresses the problem.
-> > 
-> > Mostly it adds a new timeop to the per protocol recvmsg()
-> > implementations, that, if not NULL, should be used instead of
-> > SO_RCVTIMEO.
-> > 
-> > since the underlying recvmsg implementations already check that timeout,
-> > return what is remaining, that will then be used in subsequent recvmsg
-> > calls, at the end we just convert it back to timespec format.
-> > 
-> > In most cases it is just passed to skb_recv_datagram, that will check
-> > the pointer, use it and update if not NULL.
-> > 
-> > Should have no problems, but I only did a boot with a system with this
-> > patch applied, no problems noticed on a normal desktop session, ssh,
-> > etc.
-> 
-> Thanks! I applied this patch against 3.15-rc6.
-> 
-> recvmmsg() now (mostly) does what I expect: 
-> * it waits until either the timeout expires or vlen messages 
->   have been received
-> * If no message is received before timeout, it returns -1/EAGAIN.
-> * If vlen messages are received before the timeout expires, then
->   the remaining time is returned in timeout.
-> 
-> One question: in the event that the call is interrupted by a signal 
-> handler, it fails (as expected) with EINTR, but the 'timeout' value is 
-> not updated with the remaining time on the timer. Would it be desirable 
-> to emulate the behavior of select() (and other syscalls) in this 
-> respect, and instead return the remaining time if interrupted by 
-> a signal?
+On 05/26/2014 03:49 PM, Paul Bolle wrote:
+> On Fri, 2014-05-23 at 13:42 -0500, Kumar Gala wrote:
+>> Ivan T. Ivanov (1):
+>>         ARM: debug: qcom: make UART address selection configuration option
+>
+> This one just landed in linux-next (next-20140526).
+>
+> It removed the Kconfig options DEBUG_MSM_UART1, DEBUG_MSM_UART3, and
+> DEBUG_MSM_UART3. It did not touch these references to their macros:
+>      arch/arm/mach-msm/io.c:60:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
+>      arch/arm/mach-msm/io.c:61:                defined(CONFIG_DEBUG_MSM_UART3)
+>      arch/arm/mach-msm/io.c:79:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
+>      arch/arm/mach-msm/io.c:80:                defined(CONFIG_DEBUG_MSM_UART3)
+>
+> Is a patch to fix this queued somewhere?
+>
 
-I think so, will check how to achieve that!
- 
-> Cheers,
-> 
-> Michael
-> 
-> -- 
-> Michael Kerrisk
-> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-> Linux/UNIX System Programming Training: http://man7.org/training/
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Not yet, but I'll send one in a minute.
+
+Thanks,
+Georgi
