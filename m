@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaEZTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:02:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48041 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696AbaEZTC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:02:57 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/2] perf tools: Add warning when disabling perl scripting support due to missing devel files
-Date: Mon, 26 May 2014 16:02:30 -0300
-Message-Id: <1401130950-24879-2-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1401130950-24879-1-git-send-email-acme@kernel.org>
-References: <1401130950-24879-1-git-send-email-acme@kernel.org>
+	id S1751886AbaEZTFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:05:16 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:56489 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751128AbaEZTFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 15:05:15 -0400
+X-Greylist: delayed 969 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 15:05:14 EDT
+Date: Mon, 26 May 2014 20:49:04 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] watchdog: via_wdt: replace del_timer by del_timer_sync
+Message-ID: <20140526184904.GA21259@spo001.leaseweb.com>
+References: <1396360159-16244-1-git-send-email-Julia.Lawall@lip6.fr> <1396360159-16244-4-git-send-email-Julia.Lawall@lip6.fr>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396360159-16244-4-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Julia,
 
-We were just showing "libperl: OFF", unlike other features where we
-present the user with a message helping have a feature built in.
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Use del_timer_sync to ensure that the timer is stopped on all CPUs before
+> the driver exits.
+> 
+> This change was suggested by Thomas Gleixner.
+> 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r@
+> identifier i,t,ex;
+> @@
+> struct t i = { .remove = ex, };
+> 
+> @@
+> identifier r.ex;
+> @@
+> ex(...) {
+>   <...
+> - del_timer
+> + del_timer_sync
+>     (...)
+>   ...>
+> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+> Not tested.
+> 
+>  drivers/watchdog/via_wdt.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/watchdog/via_wdt.c b/drivers/watchdog/via_wdt.c
+> index d2cd9f0..56369c4 100644
+> --- a/drivers/watchdog/via_wdt.c
+> +++ b/drivers/watchdog/via_wdt.c
+> @@ -232,7 +232,7 @@ err_out_disable_device:
+>  static void wdt_remove(struct pci_dev *pdev)
+>  {
+>  	watchdog_unregister_device(&wdt_dev);
+> -	del_timer(&timer);
+> +	del_timer_sync(&timer);
+>  	iounmap(wdt_mem);
+>  	release_mem_region(mmio, VIA_WDT_MMIO_LEN);
+>  	release_resource(&wdt_res);
+> 
 
-Fix it by adding the following message:
+This was added 2 or 3 weeks ago to linux-watchdog-next.
 
-config/Makefile:450: Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-t7yeud34ehimlfi6pklb29p7@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/config/Makefile | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 729bbdf5cec7..319426f632fc 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -447,6 +447,7 @@ else
-   ifneq ($(feature-libperl), 1)
-     CFLAGS += -DNO_LIBPERL
-     NO_LIBPERL := 1
-+    msg := $(warning Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed);
-   else
-     LDFLAGS += $(PERL_EMBED_LDFLAGS)
-     EXTLIBS += $(PERL_EMBED_LIBADD)
--- 
-1.9.3
+Kind regards,
+Wim.
 
