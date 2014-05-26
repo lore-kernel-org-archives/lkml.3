@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaEZKTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:19:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52111 "EHLO mail.skyhub.de"
+	id S1751932AbaEZKVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:21:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59514 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaEZKTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:19:10 -0400
-Date: Mon, 26 May 2014 12:18:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
-Subject: [PATCH] x86, MCE: Flesh out when to panic comment
-Message-ID: <20140526101859.GD25732@pd.tnic>
-References: <20140521163315.GJ21205@pd.tnic>
- <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
- <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
- <20140521214319.GF25130@pd.tnic>
- <537D1E8B.1010505@zytor.com>
- <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
- <20140521215411.GI25130@pd.tnic>
- <537D21F2.8030702@zytor.com>
- <20140521221121.GL25130@pd.tnic>
- <537D2522.80702@zytor.com>
+	id S1751501AbaEZKVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 06:21:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,912,1392192000"; 
+   d="scan'208";a="537645874"
+Date: Mon, 26 May 2014 13:21:45 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
+        Heikki Krogerus <heikki.krogerus@intel.com>
+Subject: Re: [PATCH V7 10/11] ACPI: use platform bus as the default bus for
+ _HID enumeration
+Message-ID: <20140526102145.GB1765@lahna.fi.intel.com>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
+ <1400781753-2682-11-git-send-email-rui.zhang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <537D2522.80702@zytor.com>
+In-Reply-To: <1400781753-2682-11-git-send-email-rui.zhang@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 03:13:54PM -0700, H. Peter Anvin wrote:
-> Seems like a comment would be in order, though.
+On Fri, May 23, 2014 at 02:02:32AM +0800, Zhang Rui wrote:
+> Because of the growing demand for enumerating ACPI devices to
+> platform bus, this patch changes the code to enumerate ACPI
+> devices to platform bus by default, if the device
+> 1. has _HID.
+> 2. does not have a scan handler attached.
+> 3. is not SPB slave device, which should be enumerated by its parent.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> ---
+>  drivers/acpi/acpi_platform.c | 28 ----------------------------
+>  drivers/acpi/scan.c          | 43 ++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 42 insertions(+), 29 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> index dbfe49e..33376a9 100644
+> --- a/drivers/acpi/acpi_platform.c
+> +++ b/drivers/acpi/acpi_platform.c
+> @@ -22,24 +22,6 @@
+>  
+>  ACPI_MODULE_NAME("platform");
+>  
+> -/*
+> - * The following ACPI IDs are known to be suitable for representing as
+> - * platform devices.
+> - */
+> -static const struct acpi_device_id acpi_platform_device_ids[] = {
+> -
+> -	{ "PNP0D40" },
+> -	{ "ACPI0003" },
+> -	{ "VPC2004" },
+> -	{ "BCM4752" },
 
----
-From: Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86, MCE: Flesh out when to panic comment
+You can't remove this one as it is bluetooth connected to HS-UART and
+thus has UARTSerialBus() connector.
 
-Recent discussion (link below) showed that it is not really clear what
-appropriate recovery actions we're taking when in a machine check
-exception. Flesh out the comment which was explaining that with more
-detail.
-
-Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/CALCETrXudJ8BkNF_M-r4O40XLN%2BPnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/cpu/mcheck/mce.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 68317c80de7f..9f070339b09f 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1151,10 +1151,14 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		no_way_out = worst >= MCE_PANIC_SEVERITY;
- 
- 	/*
--	 * At insane "tolerant" levels we take no action. Otherwise
--	 * we only die if we have no other choice. For less serious
--	 * issues we try to recover, or limit damage to the current
--	 * process.
-+	 * At insane "tolerant" levels we take no action. Otherwise we only die
-+	 * if we have no other choice. Which means, we're definitely going to
-+	 * panic on unrecoverable, uncontainable errors which would otherwise
-+	 * influence machine state and/or cause any type of corruption. The
-+	 * decision what do to is done by mce_severity().
-+	 *
-+	 * For less serious issues we try to recover, or limit damage to the
-+	 * current process.
- 	 */
- 	if (cfg->tolerant < 3) {
- 		if (no_way_out)
--- 
-1.9.0
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+> -
+> -	/* Intel Smart Sound Technology */
+> -	{ "INT33C8" },
+> -	{ "80860F28" },
+> -
+> -	{ }
+> -};
