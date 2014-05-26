@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaEZJ4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 05:56:20 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42200 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaEZJ4T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 05:56:19 -0400
-Message-ID: <1401098173.12646.1.camel@phoenix>
-Subject: [RFT][PATCH] regulator: pfuze100: Support enable/disable for fixed
- regulator
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Robin Gong <b38343@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Mon, 26 May 2014 17:56:13 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752037AbaEZJ5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 05:57:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52840 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750914AbaEZJ5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 05:57:41 -0400
+Date: Mon, 26 May 2014 11:57:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: tthayer@altera.com
+Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, dinguyen@altera.com, dougthompson@xmission.com,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tthayer.linux@gmail.com
+Subject: Re: [PATCHv5 3/3] edac: altera: Add EDAC support for Altera SoC
+ SDRAM Controller
+Message-ID: <20140526095730.GC25732@pd.tnic>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+ <1400169891-29546-4-git-send-email-tthayer@altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1400169891-29546-4-git-send-email-tthayer@altera.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code has .enable_reg and .enable_mask settings, but the implementation
-for corresponding callbacks are missing. Fix it.
+On Thu, May 15, 2014 at 11:04:51AM -0500, tthayer@altera.com wrote:
+> From: Thor Thayer <tthayer@altera.com>
+> 
+> v2: Use the SDRAM controller registers to calculate memory size
+>     instead of the Device Tree. Update To & Cc list. Add maintainer
+>     information.
+> 
+> v3: EDAC driver cleanup based on comments from Mailing list.
+> 
+> v4: Panic on DBE. Add macro around inject-error reads to prevent
+>     them from being optimized out. Remove of_match_ptr since this
+>     will always use Device Tree.
+> 
+> v5: Addition of printk to trigger function to ensure read vars
+>     are not optimized out.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Robin,
-Can you review and test this patch?
-Thanks,
-Axel
+Yeah, you could turn those vX: messages into a real commit message -
+much better than none at all :-)
 
- drivers/regulator/pfuze100-regulator.c | 3 +++
- 1 file changed, 3 insertions(+)
+Other than that, the edac bits look ok. I'll wait out until you guys've
+sorted the devicetree issues so ping me when it is ready to pick up.
 
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index 67e678c..b6b4529 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -125,6 +125,9 @@ static struct regulator_ops pfuze100_ldo_regulator_ops = {
- };
- 
- static struct regulator_ops pfuze100_fixed_regulator_ops = {
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
- 	.list_voltage = regulator_list_voltage_linear,
- };
- 
+Thanks.
+
 -- 
-1.8.3.2
+Regards/Gruss,
+    Boris.
 
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
