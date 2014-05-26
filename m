@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaEZIie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 04:38:34 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50231 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaEZIic (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 04:38:32 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 1/3] of: Add vendor prefix for Linear Technology Corporation
-Date: Mon, 26 May 2014 10:38:14 +0200
-Message-Id: <1401093496-28474-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.0.0.rc2
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1751922AbaEZIkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 04:40:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53858 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750914AbaEZIj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 04:39:58 -0400
+Date: Mon, 26 May 2014 16:39:35 +0800
+From: Dave Young <dyoung@redhat.com>
+To: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, vgoyal@redhat.com
+Subject: [PATCH] export efi.flags to sysfs
+Message-ID: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Linear Technology Corporation to the list of device tree vendor prefixes.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+For efi=old_map and any old_map quirks like SGI UV in current
+tree kexec/kdump will fail because it depends on the new 1:1 mapping.
+
+Thus export the mapping method to sysfs so kexec tools can switch
+to original way to boot.
+
+Since we have efi.flags for all efi facilities so let's just export the
+efi.flags itself, it maybe useful for other arches and use cases.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
-Changes since v1:
- - Changed vendor prefix to lltc
----
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/firmware/efi/efi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 0f01c9b..98e739f 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -65,6 +65,7 @@ lantiq	Lantiq Semiconductor
- lg	LG Corporation
- linux	Linux-specific binding
- lsi	LSI Corp. (LSI Logic)
-+lltc	Linear Technology Corporation
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
- microchip	Microchip Technology Inc.
--- 
-2.0.0.rc2
-
+Index: linux-2.6/drivers/firmware/efi/efi.c
+===================================================================
+--- linux-2.6.orig/drivers/firmware/efi/efi.c
++++ linux-2.6/drivers/firmware/efi/efi.c
+@@ -86,16 +86,19 @@ static ssize_t name##_show(struct kobjec
+ EFI_ATTR_SHOW(fw_vendor);
+ EFI_ATTR_SHOW(runtime);
+ EFI_ATTR_SHOW(config_table);
++EFI_ATTR_SHOW(flags);
+ 
+ static struct kobj_attribute efi_attr_fw_vendor = __ATTR_RO(fw_vendor);
+ static struct kobj_attribute efi_attr_runtime = __ATTR_RO(runtime);
+ static struct kobj_attribute efi_attr_config_table = __ATTR_RO(config_table);
++static struct kobj_attribute efi_attr_flags = __ATTR_RO(flags);
+ 
+ static struct attribute *efi_subsys_attrs[] = {
+ 	&efi_attr_systab.attr,
+ 	&efi_attr_fw_vendor.attr,
+ 	&efi_attr_runtime.attr,
+ 	&efi_attr_config_table.attr,
++	&efi_attr_flags.attr,
+ 	NULL,
+ };
+ 
