@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaEZP0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:26:23 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:39864 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716AbaEZPSc (ORCPT
+	id S1753404AbaEZP1B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:27:01 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61587 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaEZPSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:18:32 -0400
+	Mon, 26 May 2014 11:18:30 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v3 10/15] thunderbolt: Add path setup code.
-Date: Mon, 26 May 2014 17:18:07 +0200
-Message-Id: <1401117492-2870-11-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v3 08/15] thunderbolt: Scan for downstream switches
+Date: Mon, 26 May 2014 17:18:05 +0200
+Message-Id: <1401117492-2870-9-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
 References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
@@ -22,379 +22,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A thunderbolt path is a unidirectional channel between two thunderbolt
-ports. Two such paths are needed to establish a pci tunnel.
-
-This patch introduces struct tb_path as well as a set of tb_path_*
-methods which are used do activate & deactive paths.
+Add utility methods tb_port_state and tb_wait_for_port. Add
+tb_scan_switch which recursively checks for downstream switches.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/path.c   | 215 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/switch.c |  34 +++++++
- drivers/thunderbolt/tb.h     |  62 +++++++++++++
- 4 files changed, 312 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/path.c
+ drivers/thunderbolt/switch.c | 97 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.c     | 44 ++++++++++++++++++++
+ drivers/thunderbolt/tb.h     | 16 ++++++++
+ 3 files changed, 157 insertions(+)
 
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 617b314..3532f36 100644
---- a/drivers/thunderbolt/Makefile
-+++ b/drivers/thunderbolt/Makefile
-@@ -1,3 +1,3 @@
- obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
-+thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o
- 
-diff --git a/drivers/thunderbolt/path.c b/drivers/thunderbolt/path.c
-new file mode 100644
-index 0000000..8fcf8a7
---- /dev/null
-+++ b/drivers/thunderbolt/path.c
-@@ -0,0 +1,215 @@
-+/*
-+ * Thunderbolt Cactus Ridge driver - path/tunnel functionality
-+ *
-+ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/errno.h>
-+
-+#include "tb.h"
-+
-+
-+static void tb_dump_hop(struct tb_port *port, struct tb_regs_hop *hop)
-+{
-+	tb_port_info(port, " Hop through port %d to hop %d (%s)\n",
-+		     hop->out_port, hop->next_hop,
-+		     hop->enable ? "enabled" : "disabled");
-+	tb_port_info(port, "  Weight: %d Priority: %d Credits: %d Drop: %d\n",
-+		     hop->weight, hop->priority,
-+		     hop->initial_credits, hop->drop_packages);
-+	tb_port_info(port, "   Counter enabled: %d Counter index: %d\n",
-+		     hop->counter_enable, hop->counter);
-+	tb_port_info(port, "  Flow Control (In/Eg): %d/%d Shared Buffer (In/Eg): %d/%d\n",
-+		     hop->ingress_fc, hop->egress_fc,
-+		     hop->ingress_shared_buffer, hop->egress_shared_buffer);
-+	tb_port_info(port, "  Unknown1: %#x Unknown2: %#x Unknown3: %#x\n",
-+		     hop->unknown1, hop->unknown2, hop->unknown3);
-+}
-+
-+/**
-+ * tb_path_alloc() - allocate a thunderbolt path
-+ *
-+ * Return: Returns a tb_path on success or NULL on failure.
-+ */
-+struct tb_path *tb_path_alloc(struct tb *tb, int num_hops)
-+{
-+	struct tb_path *path = kzalloc(sizeof(*path), GFP_KERNEL);
-+	if (!path)
-+		return NULL;
-+	path->hops = kcalloc(num_hops, sizeof(*path->hops), GFP_KERNEL);
-+	if (!path->hops) {
-+		kfree(path);
-+		return NULL;
-+	}
-+	path->tb = tb;
-+	path->path_length = num_hops;
-+	return path;
-+}
-+
-+/**
-+ * tb_path_free() - free a deactivated path
-+ */
-+void tb_path_free(struct tb_path *path)
-+{
-+	if (path->activated) {
-+		tb_WARN(path->tb, "trying to free an activated path\n")
-+		return;
-+	}
-+	kfree(path->hops);
-+	kfree(path);
-+}
-+
-+static void __tb_path_deallocate_nfc(struct tb_path *path, int first_hop)
-+{
-+	int i, res;
-+	for (i = first_hop; i < path->path_length; i++) {
-+		res = tb_port_add_nfc_credits(path->hops[i].in_port,
-+					      -path->nfc_credits);
-+		if (res)
-+			tb_port_warn(path->hops[i].in_port,
-+				     "nfc credits deallocation failed for hop %d\n",
-+				     i);
-+	}
-+}
-+
-+static void __tb_path_deactivate_hops(struct tb_path *path, int first_hop)
-+{
-+	int i, res;
-+	struct tb_regs_hop hop = { };
-+	for (i = first_hop; i < path->path_length; i++) {
-+		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
-+				    2 * path->hops[i].in_hop_index, 2);
-+		if (res)
-+			tb_port_warn(path->hops[i].in_port,
-+				     "hop deactivation failed for hop %d, index %d\n",
-+				     i, path->hops[i].in_hop_index);
-+	}
-+}
-+
-+void tb_path_deactivate(struct tb_path *path)
-+{
-+	if (!path->activated) {
-+		tb_WARN(path->tb, "trying to deactivate an inactive path\n");
-+		return;
-+	}
-+	tb_info(path->tb,
-+		"deactivating path from %llx:%x to %llx:%x\n",
-+		tb_route(path->hops[0].in_port->sw),
-+		path->hops[0].in_port->port,
-+		tb_route(path->hops[path->path_length - 1].out_port->sw),
-+		path->hops[path->path_length - 1].out_port->port);
-+	__tb_path_deactivate_hops(path, 0);
-+	__tb_path_deallocate_nfc(path, 0);
-+	path->activated = false;
-+}
-+
-+/**
-+ * tb_path_activate() - activate a path
-+ *
-+ * Activate a path starting with the last hop and iterating backwards. The
-+ * caller must fill path->hops before calling tb_path_activate().
-+ *
-+ * Return: Returns 0 on success or an error code on failure.
-+ */
-+int tb_path_activate(struct tb_path *path)
-+{
-+	int i, res;
-+	enum tb_path_port out_mask, in_mask;
-+	if (path->activated) {
-+		tb_WARN(path->tb, "trying to activate already activated path\n");
-+		return -EINVAL;
-+	}
-+
-+	tb_info(path->tb,
-+		"activating path from %llx:%x to %llx:%x\n",
-+		tb_route(path->hops[0].in_port->sw),
-+		path->hops[0].in_port->port,
-+		tb_route(path->hops[path->path_length - 1].out_port->sw),
-+		path->hops[path->path_length - 1].out_port->port);
-+
-+	/* Clear counters. */
-+	for (i = path->path_length - 1; i >= 0; i--) {
-+		if (path->hops[i].in_counter_index == -1)
-+			continue;
-+		res = tb_port_clear_counter(path->hops[i].in_port,
-+					    path->hops[i].in_counter_index);
-+		if (res)
-+			goto err;
-+	}
-+
-+	/* Add non flow controlled credits. */
-+	for (i = path->path_length - 1; i >= 0; i--) {
-+		res = tb_port_add_nfc_credits(path->hops[i].in_port,
-+					      path->nfc_credits);
-+		if (res) {
-+			__tb_path_deallocate_nfc(path, i);
-+			goto err;
-+		}
-+	}
-+
-+	/* Activate hops. */
-+	for (i = path->path_length - 1; i >= 0; i--) {
-+		struct tb_regs_hop hop;
-+
-+		/* dword 0 */
-+		hop.next_hop = path->hops[i].next_hop_index;
-+		hop.out_port = path->hops[i].out_port->port;
-+		/* TODO: figure out why these are good values */
-+		hop.initial_credits = (i == path->path_length - 1) ? 16 : 7;
-+		hop.unknown1 = 0;
-+		hop.enable = 1;
-+
-+		/* dword 1 */
-+		out_mask = (i == path->path_length - 1) ?
-+				TB_PATH_DESTINATION : TB_PATH_INTERNAL;
-+		in_mask = (i == 0) ? TB_PATH_SOURCE : TB_PATH_INTERNAL;
-+		hop.weight = path->weight;
-+		hop.unknown2 = 0;
-+		hop.priority = path->priority;
-+		hop.drop_packages = path->drop_packages;
-+		hop.counter = path->hops[i].in_counter_index;
-+		hop.counter_enable = path->hops[i].in_counter_index != -1;
-+		hop.ingress_fc = path->ingress_fc_enable & in_mask;
-+		hop.egress_fc = path->egress_fc_enable & out_mask;
-+		hop.ingress_shared_buffer = path->ingress_shared_buffer
-+					    & in_mask;
-+		hop.egress_shared_buffer = path->egress_shared_buffer
-+					    & out_mask;
-+		hop.unknown3 = 0;
-+
-+		tb_port_info(path->hops[i].in_port, "Writing hop %d, index %d",
-+			     i, path->hops[i].in_hop_index);
-+		tb_dump_hop(path->hops[i].in_port, &hop);
-+		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
-+				    2 * path->hops[i].in_hop_index, 2);
-+		if (res) {
-+			__tb_path_deactivate_hops(path, i);
-+			__tb_path_deallocate_nfc(path, 0);
-+			goto err;
-+		}
-+	}
-+	path->activated = true;
-+	tb_info(path->tb, "path activation complete\n");
-+	return 0;
-+err:
-+	tb_WARN(path->tb, "path activation failed\n");
-+	return res;
-+}
-+
-+/**
-+ * tb_path_is_invalid() - check whether any ports on the path are invalid
-+ *
-+ * Return: Returns true if the path is invalid, false otherwise.
-+ */
-+bool tb_path_is_invalid(struct tb_path *path)
-+{
-+	int i = 0;
-+	for (i = 0; i < path->path_length; i++) {
-+		if (path->hops[i].in_port->sw->is_unplugged)
-+			return true;
-+		if (path->hops[i].out_port->sw->is_unplugged)
-+			return true;
-+	}
-+	return false;
-+}
 diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index c092f7c..a6968cc 100644
+index 21457cc..279b9c5 100644
 --- a/drivers/thunderbolt/switch.c
 +++ b/drivers/thunderbolt/switch.c
-@@ -139,6 +139,40 @@ int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
+@@ -53,6 +53,92 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
  }
  
  /**
-+ * tb_port_add_nfc_credits() - add/remove non flow controlled credits to port
++ * tb_port_state() - get connectedness state of a port
 + *
-+ * Change the number of NFC credits allocated to @port by @credits. To remove
-+ * NFC credits pass a negative amount of credits.
++ * The port must have a TB_CAP_PHY (i.e. it should be a real port).
 + *
-+ * Return: Returns 0 on success or an error code on failure.
++ * Return: Returns an enum tb_port_state on success or an error code on failure.
 + */
-+int tb_port_add_nfc_credits(struct tb_port *port, int credits)
++static int tb_port_state(struct tb_port *port)
 +{
-+	if (credits == 0)
-+		return 0;
-+	tb_port_info(port,
-+		     "adding %#x NFC credits (%#x -> %#x)",
-+		     credits,
-+		     port->config.nfc_credits,
-+		     port->config.nfc_credits + credits);
-+	port->config.nfc_credits += credits;
-+	return tb_port_write(port, &port->config.nfc_credits,
-+			     TB_CFG_PORT, 4, 1);
++	struct tb_cap_phy phy;
++	int res;
++	if (port->cap_phy == 0) {
++		tb_port_WARN(port, "does not have a PHY\n");
++		return -EINVAL;
++	}
++	res = tb_port_read(port, &phy, TB_CFG_PORT, port->cap_phy, 2);
++	if (res)
++		return res;
++	return phy.state;
 +}
 +
 +/**
-+ * tb_port_clear_counter() - clear a counter in TB_CFG_COUNTER
++ * tb_wait_for_port() - wait for a port to become ready
 + *
-+ * Return: Returns 0 on success or an error code on failure.
++ * Wait up to 1 second for a port to reach state TB_PORT_UP. If
++ * wait_if_unplugged is set then we also wait if the port is in state
++ * TB_PORT_UNPLUGGED (it takes a while for the device to be registered after
++ * switch resume). Otherwise we only wait if a device is registered but the link
++ * has not yet been established.
++ *
++ * Return: Returns an error code on failure. Returns 0 if the port is not
++ * connected or failed to reach state TB_PORT_UP within one second. Returns 1
++ * if the port is connected and in state TB_PORT_UP.
 + */
-+int tb_port_clear_counter(struct tb_port *port, int counter)
++int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
 +{
-+	u32 zero[3] = { 0, 0, 0 };
-+	tb_port_info(port, "clearing counter %d\n", counter);
-+	return tb_port_write(port, zero, TB_CFG_COUNTERS, 3 * counter, 3);
++	int retries = 10;
++	int state;
++	if (!port->cap_phy) {
++		tb_port_WARN(port, "does not have PHY\n");
++		return -EINVAL;
++	}
++	if (tb_is_upstream_port(port)) {
++		tb_port_WARN(port, "is the upstream port\n");
++		return -EINVAL;
++	}
++
++	while (retries--) {
++		state = tb_port_state(port);
++		if (state < 0)
++			return state;
++		if (state == TB_PORT_DISABLED) {
++			tb_port_info(port, "is disabled (state: 0)\n");
++			return 0;
++		}
++		if (state == TB_PORT_UNPLUGGED) {
++			if (wait_if_unplugged) {
++				/* used during resume */
++				tb_port_info(port,
++					     "is unplugged (state: 7), retrying...\n");
++				msleep(100);
++				continue;
++			}
++			tb_port_info(port, "is unplugged (state: 7)\n");
++			return 0;
++		}
++		if (state == TB_PORT_UP) {
++			tb_port_info(port,
++				     "is connected, link is up (state: 2)\n");
++			return 1;
++		}
++
++		/*
++		 * After plug-in the state is TB_PORT_CONNECTING. Give it some
++		 * time.
++		 */
++		tb_port_info(port,
++			     "is connected, link is not up (state: %d), retrying...\n",
++			     state);
++		msleep(100);
++	}
++	tb_port_warn(port,
++		     "failed to reach state TB_PORT_UP. Ignoring port...\n");
++	return 0;
 +}
 +
 +/**
   * tb_init_port() - initialize a port
   *
   * This is a helper method for tb_switch_alloc. Does not check or initialize
+@@ -63,6 +149,7 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
+ static int tb_init_port(struct tb_switch *sw, u8 port_nr)
+ {
+ 	int res;
++	int cap;
+ 	struct tb_port *port = &sw->ports[port_nr];
+ 	port->sw = sw;
+ 	port->port = port_nr;
+@@ -71,6 +158,16 @@ static int tb_init_port(struct tb_switch *sw, u8 port_nr)
+ 	if (res)
+ 		return res;
+ 
++	/* Port 0 is the switch itself and has no PHY. */
++	if (port->config.type == TB_TYPE_PORT && port_nr != 0) {
++		cap = tb_find_cap(port, TB_CFG_PORT, TB_CAP_PHY);
++
++		if (cap > 0)
++			port->cap_phy = cap;
++		else
++			tb_port_WARN(port, "non switch port without a PHY\n");
++	}
++
+ 	tb_dump_port(sw->tb, &port->config);
+ 
+ 	/* TODO: Read dual link port, DP port and more from EEPROM. */
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index f1b6100..3b716fd 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -11,6 +11,47 @@
+ #include "tb.h"
+ #include "tb_regs.h"
+ 
++
++/* enumeration & hot plug handling */
++
++
++static void tb_scan_port(struct tb_port *port);
++
++/**
++ * tb_scan_switch() - scan for and initialize downstream switches
++ */
++static void tb_scan_switch(struct tb_switch *sw)
++{
++	int i;
++	for (i = 1; i <= sw->config.max_port_number; i++)
++		tb_scan_port(&sw->ports[i]);
++}
++
++/**
++ * tb_scan_port() - check for and initialize switches below port
++ */
++static void tb_scan_port(struct tb_port *port)
++{
++	struct tb_switch *sw;
++	if (tb_is_upstream_port(port))
++		return;
++	if (port->config.type != TB_TYPE_PORT)
++		return;
++	if (tb_wait_for_port(port, false) <= 0)
++		return;
++	if (port->remote) {
++		tb_port_WARN(port, "port already has a remote!\n");
++		return;
++	}
++	sw = tb_switch_alloc(port->sw->tb, tb_downstream_route(port));
++	if (!sw)
++		return;
++	port->remote = tb_upstream_port(sw);
++	tb_upstream_port(sw)->remote = port;
++	tb_scan_switch(sw);
++}
++
++
+ /* hotplug handling */
+ 
+ struct tb_hotplug_event {
+@@ -134,6 +175,9 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ 	if (!tb->root_switch)
+ 		goto err_locked;
+ 
++	/* Full scan to discover devices added before the driver was loaded. */
++	tb_scan_switch(tb->root_switch);
++
+ 	/* Allow tb_handle_hotplug to progress events */
+ 	tb->hotplug_active = true;
+ 	mutex_unlock(&tb->lock);
 diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 661f182..8bbdc2b 100644
+index af123c4..70a66fe 100644
 --- a/drivers/thunderbolt/tb.h
 +++ b/drivers/thunderbolt/tb.h
-@@ -35,6 +35,60 @@ struct tb_port {
+@@ -29,6 +29,7 @@ struct tb_port {
+ 	struct tb_regs_port_header config;
+ 	struct tb_switch *sw;
+ 	struct tb_port *remote; /* remote port, NULL if not connected */
++	int cap_phy; /* offset, zero if not found */
+ 	u8 port; /* port number on switch */
  };
  
- /**
-+ * struct tb_path_hop - routing information for a tb_path
-+ *
-+ * Hop configuration is always done on the IN port of a switch.
-+ * in_port and out_port have to be on the same switch. Packets arriving on
-+ * in_port with "hop" = in_hop_index will get routed to through out_port. The
-+ * next hop to take (on out_port->remote) is determined by next_hop_index.
-+ *
-+ * in_counter_index is the index of a counter (in TB_CFG_COUNTERS) on the in
-+ * port.
-+ */
-+struct tb_path_hop {
-+	struct tb_port *in_port;
-+	struct tb_port *out_port;
-+	int in_hop_index;
-+	int in_counter_index; /* write -1 to disable counters for this hop. */
-+	int next_hop_index;
-+};
-+
-+/**
-+ * enum tb_path_port - path options mask
-+ */
-+enum tb_path_port {
-+	TB_PATH_NONE = 0,
-+	TB_PATH_SOURCE = 1, /* activate on the first hop (out of src) */
-+	TB_PATH_INTERNAL = 2, /* activate on other hops (not the first/last) */
-+	TB_PATH_DESTINATION = 4, /* activate on the last hop (into dst) */
-+	TB_PATH_ALL = 7,
-+};
-+
-+/**
-+ * struct tb_path - a unidirectional path between two ports
-+ *
-+ * A path consists of a number of hops (see tb_path_hop). To establish a PCIe
-+ * tunnel two paths have to be created between the two PCIe ports.
-+ *
-+ */
-+struct tb_path {
-+	struct tb *tb;
-+	int nfc_credits; /* non flow controlled credits */
-+	enum tb_path_port ingress_shared_buffer;
-+	enum tb_path_port egress_shared_buffer;
-+	enum tb_path_port ingress_fc_enable;
-+	enum tb_path_port egress_fc_enable;
-+
-+	int priority:3;
-+	int weight:4;
-+	bool drop_packages;
-+	bool activated;
-+	struct tb_path_hop *hops;
-+	int path_length; /* number of hops */
-+};
-+
-+
-+/**
-  * struct tb - main thunderbolt bus structure
-  */
- struct tb {
-@@ -165,9 +219,17 @@ void tb_sw_set_unpplugged(struct tb_switch *sw);
- struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
+@@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
+ void tb_switch_free(struct tb_switch *sw);
  
- int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
-+int tb_port_add_nfc_credits(struct tb_port *port, int credits);
-+int tb_port_clear_counter(struct tb_port *port, int counter);
- 
++int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
++
  int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
  
-+struct tb_path *tb_path_alloc(struct tb *tb, int num_hops);
-+void tb_path_free(struct tb_path *path);
-+int tb_path_activate(struct tb_path *path);
-+void tb_path_deactivate(struct tb_path *path);
-+bool tb_path_is_invalid(struct tb_path *path);
-+
  
- static inline int tb_route_length(u64 route)
- {
+@@ -173,4 +176,17 @@ static inline bool tb_is_upstream_port(struct tb_port *port)
+ 	return port == tb_upstream_port(port->sw);
+ }
+ 
++/**
++ * tb_downstream_route() - get route to downstream switch
++ *
++ * Port must not be the upstream port (otherwise a loop is created).
++ *
++ * Return: Returns a route to the switch behind @port.
++ */
++static inline u64 tb_downstream_route(struct tb_port *port)
++{
++	return tb_route(port->sw)
++	       | ((u64) port->port << (port->sw->config.depth * 8));
++}
++
+ #endif
 -- 
 1.9.3
 
