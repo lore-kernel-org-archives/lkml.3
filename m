@@ -1,78 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaEZP1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:27:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48592 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaEZP1F (ORCPT
+	id S1753387AbaEZP1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:27:00 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:55590 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673AbaEZPSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:27:05 -0400
-Date: Mon, 26 May 2014 16:27:03 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, linux-fsdevel@vger.kernel.org
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140526152703.GN18016@ZenIV.linux.org.uk>
-References: <20140526093741.GA1765@lahna.fi.intel.com>
- <20140526135746.GM18016@ZenIV.linux.org.uk>
- <20140526142948.GA1685@lahna.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140526142948.GA1685@lahna.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 May 2014 11:18:30 -0400
+From: Andreas Noever <andreas.noever@gmail.com>
+To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org
+Cc: Andreas Noever <andreas.noever@gmail.com>
+Subject: [PATCH v3 09/15] thunderbolt: Handle hotplug events
+Date: Mon, 26 May 2014 17:18:06 +0200
+Message-Id: <1401117492-2870-10-git-send-email-andreas.noever@gmail.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 05:29:48PM +0300, Mika Westerberg wrote:
+We reveive a plug event callback whenever a thunderbolt device is added
+or removed. This patch fills in the tb_handle_hotplug method and starts
+reacting to these events by adding/removing switches from the hierarchy.
 
-> I attached the dmesg with 'echo t > /proc/sysrq-trigger' included.
+Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+---
+ drivers/thunderbolt/switch.c | 42 +++++++++++++++++++++++++++++++++++++++-
+ drivers/thunderbolt/tb.c     | 46 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/thunderbolt/tb.h     |  3 +++
+ 3 files changed, 89 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+index 279b9c5..c092f7c 100644
+--- a/drivers/thunderbolt/switch.c
++++ b/drivers/thunderbolt/switch.c
+@@ -195,6 +195,24 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
+ 		sw->__unknown1, sw->__unknown4);
+ }
+ 
++struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
++{
++	u8 next_port = route; /*
++			       * Routes use a stride of 8 bits,
++			       * eventhough a port index has 6 bits at most.
++			       * */
++	if (route == 0)
++		return sw;
++	if (next_port > sw->config.max_port_number)
++		return 0;
++	if (tb_is_upstream_port(&sw->ports[next_port]))
++		return 0;
++	if (!sw->ports[next_port].remote)
++		return 0;
++	return get_switch_at_route(sw->ports[next_port].remote->sw,
++				   route >> TB_ROUTE_SHIFT);
++}
++
+ /**
+  * tb_plug_events_active() - enable/disable plug events on a switch
+  *
+@@ -243,7 +261,8 @@ void tb_switch_free(struct tb_switch *sw)
+ 		sw->ports[i].remote = NULL;
+ 	}
+ 
+-	tb_plug_events_active(sw, false);
++	if (!sw->is_unplugged)
++		tb_plug_events_active(sw, false);
+ 
+ 	kfree(sw->ports);
+ 	kfree(sw);
+@@ -327,3 +346,24 @@ err:
+ 	return NULL;
+ }
+ 
++/**
++ * tb_sw_set_unpplugged() - set is_unplugged on switch and downstream switches
++ */
++void tb_sw_set_unpplugged(struct tb_switch *sw)
++{
++	int i;
++	if (sw == sw->tb->root_switch) {
++		tb_sw_WARN(sw, "cannot unplug root switch\n");
++		return;
++	}
++	if (sw->is_unplugged) {
++		tb_sw_WARN(sw, "is_unplugged already set\n");
++		return;
++	}
++	sw->is_unplugged = true;
++	for (i = 0; i <= sw->config.max_port_number; i++) {
++		if (!tb_is_upstream_port(&sw->ports[i]) && sw->ports[i].remote)
++			tb_sw_set_unpplugged(sw->ports[i].remote->sw);
++	}
++}
++
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index 3b716fd..1efcacc 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -71,11 +71,55 @@ static void tb_handle_hotplug(struct work_struct *work)
+ {
+ 	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
+ 	struct tb *tb = ev->tb;
++	struct tb_switch *sw;
++	struct tb_port *port;
+ 	mutex_lock(&tb->lock);
+ 	if (!tb->hotplug_active)
+ 		goto out; /* during init, suspend or shutdown */
+ 
+-	/* do nothing for now */
++	sw = get_switch_at_route(tb->root_switch, ev->route);
++	if (!sw) {
++		tb_warn(tb,
++			"hotplug event from non existent switch %llx:%x (unplug: %d)\n",
++			ev->route, ev->port, ev->unplug);
++		goto out;
++	}
++	if (ev->port > sw->config.max_port_number) {
++		tb_warn(tb,
++			"hotplug event from non existent port %llx:%x (unplug: %d)\n",
++			ev->route, ev->port, ev->unplug);
++		goto out;
++	}
++	port = &sw->ports[ev->port];
++	if (tb_is_upstream_port(port)) {
++		tb_warn(tb,
++			"hotplug event for upstream port %llx:%x (unplug: %d)\n",
++			ev->route, ev->port, ev->unplug);
++		goto out;
++	}
++	if (ev->unplug) {
++		if (port->remote) {
++			tb_port_info(port, "unplugged\n");
++			tb_sw_set_unpplugged(port->remote->sw);
++			tb_switch_free(port->remote->sw);
++			port->remote = NULL;
++		} else {
++			tb_port_info(port,
++				     "got unplug event for disconnected port, ignoring\n");
++		}
++	} else if (port->remote) {
++		tb_port_info(port,
++			     "got plug event for connected port, ignoring\n");
++	} else {
++		tb_port_info(port, "hotplug: scanning\n");
++		tb_scan_port(port);
++		if (!port->remote) {
++			tb_port_info(port, "hotplug: no switch found\n");
++		} else if (port->remote->sw->config.depth > 1) {
++			tb_sw_warn(port->remote->sw,
++				   "hotplug: chaining not supported\n");
++		}
++	}
+ out:
+ 	mutex_unlock(&tb->lock);
+ 	kfree(ev);
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 70a66fe..661f182 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -20,6 +20,7 @@ struct tb_switch {
+ 	struct tb_port *ports;
+ 	struct tb *tb;
+ 	int cap_plug_events; /* offset, zero if not found */
++	bool is_unplugged; /* unplugged, will go away */
+ };
+ 
+ /**
+@@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+ 
+ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
+ void tb_switch_free(struct tb_switch *sw);
++void tb_sw_set_unpplugged(struct tb_switch *sw);
++struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
+ 
+ int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
+ 
+-- 
+1.9.3
 
-> [  133.826957] usb 3-10.3: USB disconnect, device number 7
-> [  159.326769] BUG: soft lockup - CPU#6 stuck for 22s! [systemd-udevd:1824]
-> [  159.326809] CPU: 6 PID: 1824 Comm: systemd-udevd Tainted: G          I   3.15.0-rc7 #55
-> [  159.326810] Hardware name: Gigabyte Technology Co., Ltd. Z87X-UD7 TH/Z87X-UD7 TH-CF, BIOS F4 03/18/2014
-> [  159.326812] task: ffff880472854a80 ti: ffff8804747ec000 task.ti: ffff8804747ec000
-[snip]
-> [  159.326834] Call Trace:
-> [  159.326838]  [<ffffffff811e74e6>] dentry_kill+0x36/0x280
-> [  159.326840]  [<ffffffff811e793a>] shrink_dentry_list+0x8a/0x110
-> [  159.326842]  [<ffffffff811e81c4>] check_submounts_and_drop+0x74/0xa0
-> [  159.326845]  [<ffffffff81245c5d>] kernfs_dop_revalidate+0x5d/0xd0
-> [  159.326847]  [<ffffffff811dba4d>] lookup_fast+0x26d/0x2c0
-> [  159.326849]  [<ffffffff811dd2b5>] path_lookupat+0x155/0x780
-> [  159.326851]  [<ffffffff811dc152>] ? final_putname+0x22/0x50
-> [  159.326853]  [<ffffffff811e198f>] ? user_path_at_empty+0x5f/0x90
-> [  159.326856]  [<ffffffff811b6eb5>] ? kmem_cache_alloc+0x35/0x1f0
-> [  159.326858]  [<ffffffff811dc1cf>] ? getname_flags+0x4f/0x1a0
-> [  159.326860]  [<ffffffff811dd90b>] filename_lookup+0x2b/0xc0
-> [  159.326862]  [<ffffffff811e1984>] user_path_at_empty+0x54/0x90
-> [  159.326865]  [<ffffffff811d65ff>] ? SYSC_newstat+0x1f/0x40
-> [  159.326867]  [<ffffffff811d69ec>] SyS_readlink+0x4c/0x130
-> [  159.326870]  [<ffffffff81113c76>] ? __audit_syscall_exit+0x1f6/0x2a0
-> [  159.326872]  [<ffffffff816ade69>] system_call_fastpath+0x16/0x1b
-
-
-That's the livelock.  OK.  But in the stack traces below
-	a) that systemd-udevd instance is happily running in userland
-and
-	b) the only traces of dentry_kill() in the stack are noise
-in stacks of gdbus and dbus-daemon.
-
-*grumble*  I wonder if we should instrument d_shrink_add()/d_lru_shrink_mode()
-so that they would tag dentry with pointer to current, allowing us to report
-something useful in select_collect()...
-
-What's really strange is that the same livelock seems to repeat at least
-once more; dentries involved the first time around should've been dead
-and buried by then.  And AFAICS, in the log you've originally posted
-exactly that has happened - both times to the same process...
-
-Do these livelocks keep happening indefinitely, once triggered?  IOW,
-is that a buggered state of dcache and/or kernfs, or is it a transient pileup
-that happens when we invalidate a subtree there?
