@@ -1,176 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaEZLiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:38:46 -0400
-Received: from mail.eperm.de ([89.247.134.16]:45754 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaEZLip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:38:45 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: herbert@gondor.apana.org.au, aquini@redhat.com,
-        jeremy.wayne.powell@gmail.com, clemens@ladisch.de, pwalten@au1.ibm.com,
-        joe@perches.com
-Subject: [PATCH v8 0/7] SP800-90A Deterministic Random Bit Generator
-Date: Mon, 26 May 2014 13:25:45 +0200
-Message-ID: <1672386.pGc00MSMM2@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+	id S1751940AbaEZLoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:44:16 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:47939 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaEZLoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 07:44:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <alpine.LSU.2.11.1405191403280.969@eggly.anvils>
+References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com>
+	<alpine.LSU.2.11.1405132118330.4401@eggly.anvils>
+	<537396A2.9090609@cybernetics.com>
+	<alpine.LSU.2.11.1405141456420.2268@eggly.anvils>
+	<CANq1E4QgSbD9G70H7W4QeXbZ77_Kn1wV7edwzN4k4NjQJS=36A@mail.gmail.com>
+	<20140519160942.GD3427@quack.suse.cz>
+	<alpine.LSU.2.11.1405191403280.969@eggly.anvils>
+Date: Mon, 26 May 2014 13:44:13 +0200
+Message-ID: <CANq1E4TDDzG+HtBz261_nid3kVRG_jwcWHizzkdZCZZE3BaLgQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jan Kara <jack@suse.cz>, Tony Battersby <tonyb@cybernetics.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Christoph Lameter <clameter@sgi.com>, Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi
 
-the following set of patches implements the deterministic random bit generator
-(DRBG) specified by SP800-90A.
+(CC migrate.c committers)
 
-The DRBG implementation offers the following:
+On Tue, May 20, 2014 at 12:11 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Mon, 19 May 2014, Jan Kara wrote:
+>> On Mon 19-05-14 13:44:25, David Herrmann wrote:
+>> > On Thu, May 15, 2014 at 12:35 AM, Hugh Dickins <hughd@google.com> wrote:
+>> > > The aspect which really worries me is this: the maintenance burden.
+>> > > This approach would add some peculiar new code, introducing a rare
+>> > > special case: which we might get right today, but will very easily
+>> > > forget tomorrow when making some other changes to mm.  If we compile
+>> > > a list of danger areas in mm, this would surely belong on that list.
+>> >
+>> > I tried doing the page-replacement in the last 4 days, but honestly,
+>> > it's far more complex than I thought. So if no-one more experienced
+>
+> To be honest, I'm quite glad to hear that: it is still a solution worth
+> considering, but I'd rather continue the search for a better solution.
 
-	* All three DRBG types are implemented with a derivation function.
-	* All DRBG types are available with and without prediction resistance.
-	* All SHA types of SHA-1, SHA-256, SHA-384, SHA-512 are available
-	  for the HMAC and Hash DRBGs.
-	* All AES types of AES-128, AES-192 and AES-256 are available for the
-	  CTR DRBG.
-	* A self test is implemented with drbg_healthcheck().
-	* The FIPS 140-2 continuous self test is implemented.
-	* Additional cipher primitives, such as Serpent or Twofish, can be
-	  added to the DRBG without changing the implementation. The only
-	  change necessary is to the DRBG definition given in the cores[]
-	  array.
+What if we set VM_IO for memory-mappings if a file supports sealing?
+That might be a hack and quite restrictive, but we could also add a
+VM_DONTPIN flag that just prevents any page-pinning like GUP (which is
+also a side-effect of VM_IO). This is basically what we do to protect
+PCI BARs from that race during hotplug (well, VM_PFNMAP ist what
+protects those, but the code is the same). If we mention in the
+man-page that memfd-objects don't support direct-IO, we'd be fine, I
+think. Not sure if that hack is better than the page-replacement,
+though. It'd be definitely much simpler.
 
-As defined in SP800-131A, the ANSI X9.31 DRNG is to be sunset by the end of
-this year for official uses, including FIPS 140-2 compliance.
+Regarding page-replacement, I tried using migrate_page(), however,
+this obviously fails in page_freeze_refs() due to the elevated
+ref-count and we cannot account for those, as they might vanish
+asynchronously. Now I wonder whether we could just add a new mode
+MIGRATE_PHASE_OUT that avoids freezing the page and forces the copy.
+Existing refs would still operate on the old page, but any new access
+gets the new page. This way, we could collect pages with elevated
+ref-counts in shmem similar to do_move_page_to_node_array() and then
+call migrate_pages(). Now migrate_pages() takes good care to prevent
+any new refs during migration. try_to_unmap(TTU_MIGRATION) marks PTEs
+as 'in-migration', so accesses are delayed. Page-faults wait on the
+page-lock and retry due to mapping==NULL. lru is disabled beforehand.
+Therefore, there cannot be any racing page-lookups as they all stall
+on the migration. Moreover, page_freeze_refs() fails only if the page
+is pinned by independent users (usually some form of I/O).
+Question is what those additional ref-counts might be. Given that
+shmem 'owns' its pages, none of these external references should pass
+those refs around. All they use it for is I/O. Therefore, we shouldn't
+even need an additional try_to_unmap() _after_ MIGRATE_PHASE_OUT as we
+expect those external refs to never pass page-refs around. If that's a
+valid assumption (and I haven't found any offenders so far), we should
+be good with migrate_pages(MIGRATE_PHASE_OUT) as I described.
 
-Additional tests including the CAVS test framework are available at [1].
+Comments?
 
-[1] http://www.chronox.de/drbg.html
+While skimming over migrate.c I noticed two odd behaviors:
+1) migration_entry_wait() is used to wait on a migration to finish,
+before accessing PTE entries. However, we call get_page() there, which
+increases the ref-count of the old page and causes page_freeze_refs()
+to fail. There's no way we can know how many tasks wait on a migration
+entry when calling page_freeze_refs(). I have no idea how that's
+supposed to work? Why don't we store the new page in the migration-swp
+entry so any lookups stall on the new page? We don't care for
+ref-counts on that page and if the migration fails, new->mapping is
+set to NULL and any lookup is retried. remove_migration_pte() can
+restore the old page correctly.
+2) remove_migration_pte() calls get_page(new) before writing the PTE.
+But who releases the ref of the old page?
 
-Changes v2:
-
- * Overhauling code structure for simpler code as suggested by Rafael
-   Aquini:
-     - each DRBG type exports only two crypto functions,
-     - the individual DRBG implementations structure closely according
-       to
-       SP 800-90A,
-     - using struct drbg_string to refer to buffers to avoid too many
-       function parameters and prevent multiple data structure
-       conversions
-     - use inline more thoroughly
-     - replace macros with small inline functions
-     - remove unnecessary indirections
-     - replace of large stack variables with a scratch buffer allocated
-       at
-       the beginning of DRBG operation -- see comments about scratchpad
-       throughout the code
- * Revamping DRBG flags usage: flags are only intended to select the
-   appropriate DRBG type and DRBG strength. Flags are not intended to be
-   visible to external callers.
- * Adding comments throughout the code to refer to the appropriate steps
-   documented in SP 800-90A.
- * Fix invocation of kernel crypto API hash
- * Fix coding style and apply scripts/checkpatch.pl
- * Change locking approach: only very small code sections are guarded by
-   a lock. This implies that the entire DRBG operates on a shadow copy
-   of the original DRBG state -- see comments for drbg_copy_drbg
- * Perform thorough testing:
-   - Performing of a full scale CAVS test with CAVS interface available
-     at http://www.chronox.de/drbg.html
-   - Performing tests by obtaining data which is not a multiple of
-     cipher block size and check it with the ent tool to ensure that the
-     generation loop does not reuse stale buffers to avoid errors like
-     CVE-2013-4345.
-
-Changes v3:
-
- * fix invocation of drbg_sec_strength to determine the amount of seed
-   needed for the DRBG. The function returns information as a byte
-   value, but the invoker assumed a bit value.
- * change default value returned by drbg_sec_strength to be the maximum
-   entropy defined by SP800-90A to catch erroneous invocations of the function.
- * Fix invocaction of d_ops in drbg_generate: drbg->d_ops ==>
-   shadow->d_ops
- * Make return of drbg_fips_continuous_test cleaner as suggested by
-   Clemens Ladisch
- * Fix comments on how to invoke the DRBG at the beginning of the file
-   drbg_ctr_df: replace the for loop for calculation of padlen that used
-   to call up to 16 modulo operations with one modulo operation
- * drbg_ctr_df: replace plain integer values with sizeof() to make code
-   clearer
- * drbg_hash_hashgen: replace memset() on drbg->scratchpad with memset()
-   on src/dst pointers to make code clearer
- * as recommended by Peter Waltenberg: add re-invocation of self tests
-   as required by 11.3.3 -- the tests are commented out because they make
-   no mathematical sense. However, if a FIPS 140-2 validation requires
-   these tests, the code just needs to be activated.
- * as recommended by Peter Waltenberg: add error path tests as required
-   by 11.3.2 -- see new function of drbg_healthcheck_sanity
- * add debug printk
- * perform testing in FIPS 140-2 mode
- * as recommended by Peter Waltenberg: add drbg_generate_long to
-   generate arbitrary long strings
-
-Changes v4:
- * change return codes of generate functions to signed int to convey
-   error codes and to match the kernel crypto API expectations on the
-   generate function.
- * add BUG_ON throughout drbg_healthcheck_sanity() since any failure
-   should be caught to prevent the DRBG from operating
- * change layout of debugging printk
-
-Changes v5:
- * make numerous character buffer pointers and drbg_string pointers
-   const as suggested by Joe Perches
-
-Changes v6:
- * change name of array cores to drbg_cores as suggested by Joe Perches
- * make drbg_cores static as suggested by Joe Perches
- * catch programming error regarding array overflow in drbg_algs
-   gracefully
-
-Changes v7:
- * editorial changes: cleanup comments and make them KNF-conformant as
-   requested by Rafael Aquini
- * rebase patch to 3.15-rc5
-
-Changes v8:
- * fix of always triggering BUG_ON in drbg_healthcheck_sanity
- * add logic to name one DRBG instance as stdrng in cra_name. The default
-   DRBG to be named stdrng is hard coded. Using the module option of
-   "stdrng", the caller can select its own stdrng DRBG.
- * as recommended by Herbert Xu: cra_name is equal to cra_driver_name
-   (this change implies changes to the testmgr.c file)
- * make drbg_fill_array more readable by replacing the parameters of
-   i and j with references to drbg_cores and crypto_alg
- * add documentation of drbg.stdrng to Documentation/kernel-parameters.txt
- * rebase patch to 3.15-rc7
-
-Stephan Mueller (7):
-  SP800-90A Deterministic Random Bit Generator
-  header file for DRBG
-  DRBG kernel configuration options
-  compile the DRBG code
-  DRBG testmgr test vectors
-  Add DRBG test code to testmgr
-  Add documentation of drbg.stdrng
-
- Documentation/kernel-parameters.txt |   10 +
- crypto/Kconfig                      |   36 +-
- crypto/Makefile                     |    1 +
- crypto/drbg.c                       | 2019 +++++++++++++++++++++++++++++++++++
- crypto/testmgr.c                    |  247 +++++
- crypto/testmgr.h                    |  843 +++++++++++++++
- include/crypto/drbg.h               |  289 +++++
- 7 files changed, 3444 insertions(+), 1 deletion(-)
- create mode 100644 crypto/drbg.c
- create mode 100644 include/crypto/drbg.h
-
--- 
-1.9.3
-
-
+Thanks
+David
