@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaEZHQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:16:29 -0400
+	id S1751775AbaEZHQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:16:43 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:25204 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaEZHQ1 (ORCPT
+	with ESMTP id S1751679AbaEZHQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:16:27 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-fc-5382ea48e15f
+	Mon, 26 May 2014 03:16:28 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-25-5382ea4ae4a6
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
 Cc: Libo Chen <clbchenlibo.chen@huawei.com>,
         Anton Vorontsov <anton@enomsg.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RESEND PATCH 1/2] power: max8925: Fix NULL ptr dereference on memory
- allocation failure
-Date: Mon, 26 May 2014 09:16:10 +0200
-Message-id: <1401088571-4407-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [RESEND PATCH 2/2] power: max8925: Use of_get_child_by_name
+Date: Mon, 26 May 2014 09:16:11 +0200
+Message-id: <1401088571-4407-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xy7oer5qCDRr/8Foc3KppMfnWXjaL
-	SU/eM1tMXDmZ2eL1C0OLy7vmsDmweUzo/8TosXPWXXaPliNvWT02r9Dy6NuyitHj8ya5ALYo
-	LpuU1JzMstQifbsErozn95+xFZzgqvixu5exgbGZs4uRk0NCwERiV/NHVghbTOLCvfVsXYxc
-	HEICSxklprzoZYVw+pgk1s1ezARSxSZgLLF5+RI2EFtEoFLi2+kTLCBFzAJNjBJNb/8zgiSE
-	BZIlVs++D1bEIqAqcX/+ZLA4r4CbxMeWyVDr5CROHpvMOoGRewEjwypG0dTS5ILipPRcQ73i
-	xNzi0rx0veT83E2MkBD5soNx8TGrQ4wCHIxKPLwngpqChVgTy4orcw8xSnAwK4nwXsgFCvGm
-	JFZWpRblxxeV5qQWH2Jk4uCUamBcYN6wfJG60PmD3C0e2RfMp+66v2+Hvf7l5/NlHTlvsNs8
-	1eS4XvziwLb9ZQemvr2yvs/r98Qwx4ee3GXZt6eJqfNHMk36r+HmcenyxuX7IlJvN+n/2LTc
-	xWODmrlj+nyzEK2ZNmXHjnD+m8Z6SCrC//pen/yvX+aX/FIt+Hqs3fVPgY767GUaSizFGYmG
-	WsxFxYkAD57jYu8BAAA=
+In-reply-to: <1401088571-4407-1-git-send-email-k.kozlowski@samsung.com>
+References: <1401088571-4407-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMJMWRmVeSWpSXmKPExsVy+t/xy7per5qCDT78FLQ4uFXTYvKtvWwW
+	k568Z7aYuHIys8XrF4YWl3fNYXNg85jQ/4nRY+esu+weLUfesnpsXqHl0bdlFaPH501yAWxR
+	XDYpqTmZZalF+nYJXBkn+q6yFmxgq+j+d525gXEzaxcjJ4eEgInEuTeToWwxiQv31rN1MXJx
+	CAksZZS4eOkFlNPHJHHj0Wd2kCo2AWOJzcuXsIHYIgKVEt9On2ABKWIWaGKUaHr7nxEkISzg
+	IjHh015mEJtFQFVi8cI1TCA2r4CbxO+Vr5gg1slJnDwGspqDg1PAXWLSLWeQsBBQye7mt0wT
+	GHkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJqK87GJceszrEKMDBqMTD+yKvKViI
+	NbGsuDL3EKMEB7OSCO+FXKAQb0piZVVqUX58UWlOavEhRiYOTqkGxo45eteUHFNPTGdjqjKc
+	nbW8y+/DgwwtqX6jr898vWXyyzfOOnbq1pO1EnV5/nPrzzuqe//plmZ7bs8YdGWfrAVrxqey
+	6XpWZuV9Ok5zeRlbhYP+ZEqralT0VL/7HPlhyloxkxyFph1sPNuaznFNOMWo9KHqUN/2i5ph
+	HtEcNyTWRodsnFGpxFKckWioxVxUnAgA7+qFSAYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check the return value of devm_kzalloc() to fix possible NULL pointer
-dereference and properly exit the probe() on memory allocation failure.
+Use of_get_child_by_name to obtain reference to charger node instead of
+of_find_node_by_name which can walk outside of the parent node.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/power/max8925_power.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/power/max8925_power.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index b4513f284bbc..0cf237808d47 100644
+index 0cf237808d47..a6d45eef64dd 100644
 --- a/drivers/power/max8925_power.c
 +++ b/drivers/power/max8925_power.c
-@@ -452,13 +452,14 @@ max8925_power_dt_init(struct platform_device *pdev)
- 	pdata = devm_kzalloc(&pdev->dev,
- 			sizeof(struct max8925_power_pdata),
- 			GFP_KERNEL);
-+	if (!pdata)
-+		goto ret;
+@@ -443,7 +443,7 @@ max8925_power_dt_init(struct platform_device *pdev)
+ 	if (!nproot)
+ 		return pdev->dev.platform_data;
  
- 	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
- 	of_property_read_u32(np, "batt-detect", &batt_detect);
- 	of_property_read_u32(np, "fast-charge", &fast_charge);
- 	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
- 	of_property_read_u32(np, "no-temp-support", &no_temp_support);
--	of_node_put(np);
- 
- 	pdata->batt_detect = batt_detect;
- 	pdata->fast_charge = fast_charge;
-@@ -466,6 +467,8 @@ max8925_power_dt_init(struct platform_device *pdev)
- 	pdata->no_insert_detect = no_insert_detect;
- 	pdata->no_temp_support = no_temp_support;
- 
-+ret:
-+	of_node_put(np);
- 	return pdata;
- }
- #else
+-	np = of_find_node_by_name(nproot, "charger");
++	np = of_get_child_by_name(nproot, "charger");
+ 	if (!np) {
+ 		dev_err(&pdev->dev, "failed to find charger node\n");
+ 		return NULL;
 -- 
 1.9.1
 
