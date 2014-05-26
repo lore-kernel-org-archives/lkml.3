@@ -1,85 +1,535 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaEZUtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 16:49:12 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:41436 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaEZUtJ (ORCPT
+	id S1751951AbaEZUwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 16:52:23 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:49227 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaEZUwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 16:49:09 -0400
+	Mon, 26 May 2014 16:52:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140526203232.GC5444@laptop.programming.kicks-ass.net>
-References: <20140526145605.016140154@infradead.org>
-	<CALYGNiMG1NVBUS4TJrYJMr92yWGZHSdGUdCGtBJDHoUMMhE+Wg@mail.gmail.com>
-	<20140526203232.GC5444@laptop.programming.kicks-ass.net>
-Date: Tue, 27 May 2014 00:49:08 +0400
-Message-ID: <CALYGNiO8FNKjtETQMRSqgiArjfQ9nRAALUg9GGdNYbpKru=Sjw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] VM_PINNED
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Mike Marciniszyn <infinipath@intel.com>
+In-Reply-To: <1401136302-27654-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+References: <1401136302-27654-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+Date: Mon, 26 May 2014 22:52:17 +0200
+X-Google-Sender-Auth: 2Fu1w_z-OGU9EaVZD_tm-IVnH_I
+Message-ID: <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
+Subject: Re: [PATCH v4] openrisc: irq: use irqchip framework
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux <linux@openrisc.net>, Jonas Bonn <jonas@southpole.se>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 12:32 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, May 27, 2014 at 12:19:16AM +0400, Konstantin Khlebnikov wrote:
->> On Mon, May 26, 2014 at 6:56 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > Hi all,
->> >
->> > I mentioned at LSF/MM that I wanted to revive this, and at the time there were
->> > no disagreements.
->> >
->> > I finally got around to refreshing the patch(es) so here goes.
->> >
->> > These patches introduce VM_PINNED infrastructure, vma tracking of persistent
->> > 'pinned' page ranges. Pinned is anything that has a fixed phys address (as
->> > required for say IO DMA engines) and thus cannot use the weaker VM_LOCKED. One
->> > popular way to pin pages is through get_user_pages() but that not nessecarily
->> > the only way.
->>
->> Lol, this looks like resurrection of VM_RESERVED which I've removed
->> not so long time ago.
+CC devicetree for the bindings
 
-That was swap-out prevention from 2.4 era, something between VM_IO and
-VM_LOCKED with various side effects.
+On Mon, May 26, 2014 at 10:31 PM, Stefan Kristiansson
+<stefan.kristiansson@saunalahti.fi> wrote:
+> In addition to consolidating the or1k-pic with other interrupt
+> controllers, this makes OpenRISC less tied to its on-cpu
+> interrupt controller.
+>
+> All or1k-pic specific parts are moved out of irq.c and into
+> drivers/irqchip/irq-or1k-pic.c
+>
+> In that transition, the funtionality have been divided into
+> three chip variants.
+> One that handles level triggered interrupts, one that handles edge
+> triggered interrupts and one that handles the interrupt
+> controller that is present in the or1200 OpenRISC cpu
+> implementation.
+>
+> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> ---
+> Changes in v2:
+>  - Move or1k-pic related code into irq-or1k-pic
+>  - Add documentation for device tree bindings
+>
+> Changes in v3:
+>  - Split level-, edge-triggered and or1200 implementation into seperate
+>    chip variants.
+>
+> Changes in v4:
+>  - Fix typos in documentation
+> ---
+>  .../interrupt-controller/opencores,or1k-pic.txt    |  23 +++
+>  arch/openrisc/Kconfig                              |   1 +
+>  arch/openrisc/include/asm/irq.h                    |   3 +
+>  arch/openrisc/kernel/irq.c                         | 146 ++---------------
+>  drivers/irqchip/Kconfig                            |   4 +
+>  drivers/irqchip/Makefile                           |   1 +
+>  drivers/irqchip/irq-or1k-pic.c                     | 182 +++++++++++++++++++++
+>  7 files changed, 227 insertions(+), 133 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
+>  create mode 100644 drivers/irqchip/irq-or1k-pic.c
+>
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
+> new file mode 100644
+> index 0000000..55c04fa
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
+> @@ -0,0 +1,23 @@
+> +OpenRISC 1000 Programmable Interrupt Controller
+> +
+> +Required properties:
+> +
+> +- compatible : should be "opencores,or1k-pic-level" for variants with
+> +  level triggered interrupt lines, "opencores,or1k-pic-edge" for variants with
+> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
+> +  with the non-spec compliant or1200 type implementation.
+> +
+> +  "opencores,or1k-pic" is also provided as an alias to "opencores,or1200-pic",
+> +  but this is only for backwards compatibility.
+> +
+> +- interrupt-controller : Identifies the node as an interrupt controller
+> +- #interrupt-cells : Specifies the number of cells needed to encode an
+> +  interrupt source. The value shall be 1.
+> +
+> +Example:
+> +
+> +intc: interrupt-controller {
+> +       compatible = "opencores,or1k-pic-level";
+> +       interrupt-controller;
+> +       #interrupt-cells = <1>;
+> +};
+> diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+> index e71d712..88e8336 100644
+> --- a/arch/openrisc/Kconfig
+> +++ b/arch/openrisc/Kconfig
+> @@ -22,6 +22,7 @@ config OPENRISC
+>         select GENERIC_STRNLEN_USER
+>         select MODULES_USE_ELF_RELA
+>         select HAVE_DEBUG_STACKOVERFLOW
+> +       select OR1K_PIC
+>
+>  config MMU
+>         def_bool y
+> diff --git a/arch/openrisc/include/asm/irq.h b/arch/openrisc/include/asm/irq.h
+> index eb612b1..b84634c 100644
+> --- a/arch/openrisc/include/asm/irq.h
+> +++ b/arch/openrisc/include/asm/irq.h
+> @@ -24,4 +24,7 @@
+>
+>  #define NO_IRQ         (-1)
+>
+> +void handle_IRQ(unsigned int, struct pt_regs *);
+> +extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
+> +
+>  #endif /* __ASM_OPENRISC_IRQ_H__ */
+> diff --git a/arch/openrisc/kernel/irq.c b/arch/openrisc/kernel/irq.c
+> index 8ec77bc..967eb14 100644
+> --- a/arch/openrisc/kernel/irq.c
+> +++ b/arch/openrisc/kernel/irq.c
+> @@ -16,11 +16,10 @@
+>
+>  #include <linux/interrupt.h>
+>  #include <linux/init.h>
+> -#include <linux/of.h>
+>  #include <linux/ftrace.h>
+>  #include <linux/irq.h>
+> +#include <linux/irqchip.h>
+>  #include <linux/export.h>
+> -#include <linux/irqdomain.h>
+>  #include <linux/irqflags.h>
+>
+>  /* read interrupt enabled status */
+> @@ -37,150 +36,31 @@ void arch_local_irq_restore(unsigned long flags)
+>  }
+>  EXPORT_SYMBOL(arch_local_irq_restore);
+>
+> -
+> -/* OR1K PIC implementation */
+> -
+> -/* We're a couple of cycles faster than the generic implementations with
+> - * these 'fast' versions.
+> - */
+> -
+> -static void or1k_pic_mask(struct irq_data *data)
+> -{
+> -       mtspr(SPR_PICMR, mfspr(SPR_PICMR) & ~(1UL << data->hwirq));
+> -}
+> -
+> -static void or1k_pic_unmask(struct irq_data *data)
+> -{
+> -       mtspr(SPR_PICMR, mfspr(SPR_PICMR) | (1UL << data->hwirq));
+> -}
+> -
+> -static void or1k_pic_ack(struct irq_data *data)
+> -{
+> -       /* EDGE-triggered interrupts need to be ack'ed in order to clear
+> -        * the latch.
+> -        * LEVEL-triggered interrupts do not need to be ack'ed; however,
+> -        * ack'ing the interrupt has no ill-effect and is quicker than
+> -        * trying to figure out what type it is...
+> -        */
+> -
+> -       /* The OpenRISC 1000 spec says to write a 1 to the bit to ack the
+> -        * interrupt, but the OR1200 does this backwards and requires a 0
+> -        * to be written...
+> -        */
+> -
+> -#ifdef CONFIG_OR1K_1200
+> -       /* There are two oddities with the OR1200 PIC implementation:
+> -        * i)  LEVEL-triggered interrupts are latched and need to be cleared
+> -        * ii) the interrupt latch is cleared by writing a 0 to the bit,
+> -        *     as opposed to a 1 as mandated by the spec
+> -        */
+> -
+> -       mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->hwirq));
+> -#else
+> -       WARN(1, "Interrupt handling possibly broken\n");
+> -       mtspr(SPR_PICSR, (1UL << data->hwirq));
+> -#endif
+> -}
+> -
+> -static void or1k_pic_mask_ack(struct irq_data *data)
+> -{
+> -       /* Comments for pic_ack apply here, too */
+> -
+> -#ifdef CONFIG_OR1K_1200
+> -       mtspr(SPR_PICMR, mfspr(SPR_PICMR) & ~(1UL << data->hwirq));
+> -       mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->hwirq));
+> -#else
+> -       WARN(1, "Interrupt handling possibly broken\n");
+> -       mtspr(SPR_PICMR, (1UL << data->hwirq));
+> -       mtspr(SPR_PICSR, (1UL << data->hwirq));
+> -#endif
+> -}
+> -
+> -#if 0
+> -static int or1k_pic_set_type(struct irq_data *data, unsigned int flow_type)
+> -{
+> -       /* There's nothing to do in the PIC configuration when changing
+> -        * flow type.  Level and edge-triggered interrupts are both
+> -        * supported, but it's PIC-implementation specific which type
+> -        * is handled. */
+> -
+> -       return irq_setup_alt_chip(data, flow_type);
+> -}
+> -#endif
+> -
+> -static struct irq_chip or1k_dev = {
+> -       .name = "or1k-PIC",
+> -       .irq_unmask = or1k_pic_unmask,
+> -       .irq_mask = or1k_pic_mask,
+> -       .irq_ack = or1k_pic_ack,
+> -       .irq_mask_ack = or1k_pic_mask_ack,
+> -};
+> -
+> -static struct irq_domain *root_domain;
+> -
+> -static inline int pic_get_irq(int first)
+> -{
+> -       int hwirq;
+> -
+> -       hwirq = ffs(mfspr(SPR_PICSR) >> first);
+> -       if (!hwirq)
+> -               return NO_IRQ;
+> -       else
+> -               hwirq = hwirq + first -1;
+> -
+> -       return irq_find_mapping(root_domain, hwirq);
+> -}
+> -
+> -
+> -static int or1k_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
+> +void __init init_IRQ(void)
+>  {
+> -       irq_set_chip_and_handler_name(irq, &or1k_dev,
+> -                                     handle_level_irq, "level");
+> -       irq_set_status_flags(irq, IRQ_LEVEL | IRQ_NOPROBE);
+> -
+> -       return 0;
+> +       irqchip_init();
+>  }
+>
+> -static const struct irq_domain_ops or1k_irq_domain_ops = {
+> -       .xlate = irq_domain_xlate_onecell,
+> -       .map = or1k_map,
+> -};
+> -
+> -/*
+> - * This sets up the IRQ domain for the PIC built in to the OpenRISC
+> - * 1000 CPU.  This is the "root" domain as these are the interrupts
+> - * that directly trigger an exception in the CPU.
+> - */
+> -static void __init or1k_irq_init(void)
+> -{
+> -       struct device_node *intc = NULL;
+> -
+> -       /* The interrupt controller device node is mandatory */
+> -       intc = of_find_compatible_node(NULL, NULL, "opencores,or1k-pic");
+> -       BUG_ON(!intc);
+> -
+> -       /* Disable all interrupts until explicitly requested */
+> -       mtspr(SPR_PICMR, (0UL));
+> -
+> -       root_domain = irq_domain_add_linear(intc, 32,
+> -                                           &or1k_irq_domain_ops, NULL);
+> -}
+> +static void (*handle_arch_irq)(struct pt_regs *);
+>
+> -void __init init_IRQ(void)
+> +void __init set_handle_irq(void (*handle_irq)(struct pt_regs *))
+>  {
+> -       or1k_irq_init();
+> +       handle_arch_irq = handle_irq;
+>  }
+>
+> -void __irq_entry do_IRQ(struct pt_regs *regs)
+> +void handle_IRQ(unsigned int irq, struct pt_regs *regs)
+>  {
+> -       int irq = -1;
+>         struct pt_regs *old_regs = set_irq_regs(regs);
+>
+>         irq_enter();
+>
+> -       while ((irq = pic_get_irq(irq + 1)) != NO_IRQ)
+> -               generic_handle_irq(irq);
+> +       generic_handle_irq(irq);
+>
+>         irq_exit();
+>         set_irq_regs(old_regs);
+>  }
+> +
+> +void __irq_entry do_IRQ(struct pt_regs *regs)
+> +{
+> +       handle_arch_irq(regs);
+> +}
+> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+> index d770f74..f06e4c8 100644
+> --- a/drivers/irqchip/Kconfig
+> +++ b/drivers/irqchip/Kconfig
+> @@ -47,6 +47,10 @@ config CLPS711X_IRQCHIP
+>         select SPARSE_IRQ
+>         default y
+>
+> +config OR1K_PIC
+> +       bool
+> +       select IRQ_DOMAIN
+> +
+>  config ORION_IRQCHIP
+>         bool
+>         select IRQ_DOMAIN
+> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+> index f180f8d..4377695 100644
+> --- a/drivers/irqchip/Makefile
+> +++ b/drivers/irqchip/Makefile
+> @@ -11,6 +11,7 @@ obj-$(CONFIG_METAG)                   += irq-metag-ext.o
+>  obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)   += irq-metag.o
+>  obj-$(CONFIG_ARCH_MOXART)              += irq-moxart.o
+>  obj-$(CONFIG_CLPS711X_IRQCHIP)         += irq-clps711x.o
+> +obj-$(CONFIG_OR1K_PIC)                 += irq-or1k-pic.o
+>  obj-$(CONFIG_ORION_IRQCHIP)            += irq-orion.o
+>  obj-$(CONFIG_ARCH_SUNXI)               += irq-sun4i.o
+>  obj-$(CONFIG_ARCH_SUNXI)               += irq-sunxi-nmi.o
+> diff --git a/drivers/irqchip/irq-or1k-pic.c b/drivers/irqchip/irq-or1k-pic.c
+> new file mode 100644
+> index 0000000..17ff033
+> --- /dev/null
+> +++ b/drivers/irqchip/irq-or1k-pic.c
+> @@ -0,0 +1,182 @@
+> +/*
+> + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
+> + * Copyright (C) 2014 Stefan Kristansson <stefan.kristiansson@saunalahti.fi>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <linux/irq.h>
+> +#include <linux/of.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_address.h>
+> +
+> +#include "irqchip.h"
+> +
+> +/* OR1K PIC implementation */
+> +
+> +struct or1k_pic_dev {
+> +       struct irq_chip chip;
+> +       irq_flow_handler_t handle;
+> +       unsigned long flags;
+> +};
+> +
+> +/*
+> + * We're a couple of cycles faster than the generic implementations with
+> + * these 'fast' versions.
+> + */
+> +
+> +static void or1k_pic_mask(struct irq_data *data)
+> +{
+> +       mtspr(SPR_PICMR, mfspr(SPR_PICMR) & ~(1UL << data->hwirq));
+> +}
+> +
+> +static void or1k_pic_unmask(struct irq_data *data)
+> +{
+> +       mtspr(SPR_PICMR, mfspr(SPR_PICMR) | (1UL << data->hwirq));
+> +}
+> +
+> +static void or1k_pic_ack(struct irq_data *data)
+> +{
+> +       mtspr(SPR_PICSR, (1UL << data->hwirq));
+> +}
+> +
+> +static void or1k_pic_mask_ack(struct irq_data *data)
+> +{
+> +       mtspr(SPR_PICMR, mfspr(SPR_PICMR) & ~(1UL << data->hwirq));
+> +       mtspr(SPR_PICSR, (1UL << data->hwirq));
+> +}
+> +
+> +/*
+> + * There are two oddities with the OR1200 PIC implementation:
+> + * i)  LEVEL-triggered interrupts are latched and need to be cleared
+> + * ii) the interrupt latch is cleared by writing a 0 to the bit,
+> + *     as opposed to a 1 as mandated by the spec
+> + */
+> +static void or1k_pic_or1200_ack(struct irq_data *data)
+> +{
+> +       mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->hwirq));
+> +}
+> +
+> +static void or1k_pic_or1200_mask_ack(struct irq_data *data)
+> +{
+> +       mtspr(SPR_PICMR, mfspr(SPR_PICMR) & ~(1UL << data->hwirq));
+> +       mtspr(SPR_PICSR, mfspr(SPR_PICSR) & ~(1UL << data->hwirq));
+> +}
+> +
+> +static struct or1k_pic_dev or1k_pic_level = {
+> +       .chip = {
+> +               .name = "or1k-PIC-level",
+> +               .irq_unmask = or1k_pic_unmask,
+> +               .irq_mask = or1k_pic_mask,
+> +               .irq_mask_ack = or1k_pic_mask,
+> +       },
+> +       .handle = handle_level_irq,
+> +       .flags = IRQ_LEVEL | IRQ_NOPROBE,
+> +};
+> +
+> +static struct or1k_pic_dev or1k_pic_edge = {
+> +       .chip = {
+> +               .name = "or1k-PIC-edge",
+> +               .irq_unmask = or1k_pic_unmask,
+> +               .irq_mask = or1k_pic_mask,
+> +               .irq_ack = or1k_pic_ack,
+> +               .irq_mask_ack = or1k_pic_mask_ack,
+> +       },
+> +       .handle = handle_edge_irq,
+> +       .flags = IRQ_LEVEL | IRQ_NOPROBE,
+> +};
+> +
+> +static struct or1k_pic_dev or1k_pic_or1200 = {
+> +       .chip = {
+> +               .name = "or1200-PIC",
+> +               .irq_unmask = or1k_pic_unmask,
+> +               .irq_mask = or1k_pic_mask,
+> +               .irq_ack = or1k_pic_or1200_ack,
+> +               .irq_mask_ack = or1k_pic_or1200_mask_ack,
+> +       },
+> +       .handle = handle_level_irq,
+> +       .flags = IRQ_LEVEL | IRQ_NOPROBE,
+> +};
+> +
+> +static struct irq_domain *root_domain;
+> +
+> +static inline int pic_get_irq(int first)
+> +{
+> +       int hwirq;
+> +
+> +       hwirq = ffs(mfspr(SPR_PICSR) >> first);
+> +       if (!hwirq)
+> +               return NO_IRQ;
+> +       else
+> +               hwirq = hwirq + first - 1;
+> +
+> +       return irq_find_mapping(root_domain, hwirq);
+> +}
+> +
+> +static void or1k_pic_handle_irq(struct pt_regs *regs)
+> +{
+> +       int irq = -1;
+> +
+> +       while ((irq = pic_get_irq(irq + 1)) != NO_IRQ)
+> +               handle_IRQ(irq, regs);
+> +}
+> +
+> +static int or1k_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
+> +{
+> +       struct or1k_pic_dev *pic = d->host_data;
+> +
+> +       irq_set_chip_and_handler(irq, &pic->chip, pic->handle);
+> +       irq_set_status_flags(irq, pic->flags);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct irq_domain_ops or1k_irq_domain_ops = {
+> +       .xlate = irq_domain_xlate_onecell,
+> +       .map = or1k_map,
+> +};
+> +
+> +/*
+> + * This sets up the IRQ domain for the PIC built in to the OpenRISC
+> + * 1000 CPU.  This is the "root" domain as these are the interrupts
+> + * that directly trigger an exception in the CPU.
+> + */
+> +static int __init or1k_pic_init(struct device_node *node,
+> +                                struct or1k_pic_dev *pic)
+> +{
+> +       /* Disable all interrupts until explicitly requested */
+> +       mtspr(SPR_PICMR, (0UL));
+> +
+> +       root_domain = irq_domain_add_linear(node, 32, &or1k_irq_domain_ops,
+> +                                           pic);
+> +
+> +       set_handle_irq(or1k_pic_handle_irq);
+> +
+> +       return 0;
+> +}
+> +
+> +static int __init or1k_pic_or1200_init(struct device_node *node,
+> +                                      struct device_node *parent)
+> +{
+> +       return or1k_pic_init(node, &or1k_pic_or1200);
+> +}
+> +IRQCHIP_DECLARE(or1k_pic_or1200, "opencores,or1200-pic", or1k_pic_or1200_init);
+> +IRQCHIP_DECLARE(or1k_pic, "opencores,or1k-pic", or1k_pic_or1200_init);
+> +
+> +static int __init or1k_pic_level_init(struct device_node *node,
+> +                                     struct device_node *parent)
+> +{
+> +       return or1k_pic_init(node, &or1k_pic_level);
+> +}
+> +IRQCHIP_DECLARE(or1k_pic_level, "opencores,or1k-pic-level",
+> +               or1k_pic_level_init);
+> +
+> +static int __init or1k_pic_edge_init(struct device_node *node,
+> +                                    struct device_node *parent)
+> +{
+> +       return or1k_pic_init(node, &or1k_pic_edge);
+> +}
+> +IRQCHIP_DECLARE(or1k_pic_edge, "opencores,or1k-pic-edge", or1k_pic_edge_init);
+> --
+> 1.8.3.2
+>
 
->
-> Not sure what VM_RESERVED did, but there might be a similarity.
->
->> Maybe single-bit state isn't flexible enought?
->
-> Not sure what you mean, the one bit is perfectly fine for what I want it
-> to do.
->
->> This supposed to supports pinning only by one user and only in its own mm?
->
-> Pretty much, that's adequate for all users I'm aware of and mirrors the
-> mlock semantics.
 
-Ok, fine. Because get_user_pages is used sometimes for pinning pages
-from different mm.
 
-Another suggestion. VM_RESERVED is stronger than VM_LOCKED and extends
-its functionality.
-Maybe it's easier to add VM_DONTMIGRATE and use it together with VM_LOCKED.
-This will make accounting easier. No?
+-- 
+Gr{oetje,eeting}s,
 
->
->> This might be done as extension of existing memory-policy engine.
->> It allows to keep vm_area_struct slim in normal cases and change
->> behaviour when needed.
->> memory-policy might hold reference-counter of "pinners", track
->> ownership and so on.
->
-> That all sounds like raping the mempolicy code and massive over
-> engineering.
->
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
