@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaEZQh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 12:37:57 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:55423 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128AbaEZQh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 12:37:56 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: pebolle@tiscali.nl, galak@codeaurora.org, iivanov@mm-sol.com
-Cc: arm@kernel.org, khilman@linaro.org, arnd@arndb.de,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olof@lixom.net, davidb@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
-        linus.walleij@linaro.org, srinivas.kandagatla@linaro.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v2] ARM: msm: Update the references to DEBUG_MSM_UARTx
-Date: Mon, 26 May 2014 19:37:40 +0300
-Message-Id: <1401122260-12002-1-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401116287.6068.15.camel@x220>
-References: <1401116287.6068.15.camel@x220>
+	id S1751684AbaEZQlX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 12:41:23 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:61389 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaEZQlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 12:41:22 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH 3/3] ARM: imx: don't allocate memory for .dma_mask of struct device
+Date: Mon, 26 May 2014 18:41:23 +0200
+Message-Id: <1401122483-31603-3-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1401122483-31603-1-git-send-email-emilgoode@gmail.com>
+References: <1401122483-31603-1-git-send-email-emilgoode@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig options DEBUG_MSM_UART1, DEBUG_MSM_UART2, DEBUG_MSM_UART3,
-MSM_DEBUG_UART1, MSM_DEBUG_UART2 and MSM_DEBUG_UART3 are removed, but 
-they are still referenced in the following files:
-	arch/arm/mach-msm/io.c,
-	arch/arm/mach-msm/board-trout.c
-	arch/arm/mach-msm/board-trout-gpio.c
+The first patch in this series changed the platform_device_alloc
+function to assign the u64 .dma_mask pointer of struct device to
+the address of a u64 .dma_mask member of struct platform_object.
 
-Fix this by updating the reference to the new Kconfig option.
+This means that we no longer should allocate memory for the .dma_mask
+pointer of struct device when using platform_device_alloc() and the
+u64 .dma_mask of struct platform_object that it points to will be freed
+when the release callback function platform_device_release is called.
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
+ arch/arm/mach-imx/devices/platform-ipu-core.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-Changes since v1:
- - Fixed similar issue in board-trout.c and board-trout-gpio.c
-
- Applies to next-20140526.
-
- arch/arm/mach-msm/board-trout-gpio.c |    2 +-
- arch/arm/mach-msm/board-trout.c      |    2 +-
- arch/arm/mach-msm/io.c               |    6 ++----
- 3 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/mach-msm/board-trout-gpio.c b/arch/arm/mach-msm/board-trout-gpio.c
-index 87e1d01..e24930e 100644
---- a/arch/arm/mach-msm/board-trout-gpio.c
-+++ b/arch/arm/mach-msm/board-trout-gpio.c
-@@ -94,7 +94,7 @@ static int trout_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- 	}
+diff --git a/arch/arm/mach-imx/devices/platform-ipu-core.c b/arch/arm/mach-imx/devices/platform-ipu-core.c
+index 6bd7c3f..4499a7d 100644
+--- a/arch/arm/mach-imx/devices/platform-ipu-core.c
++++ b/arch/arm/mach-imx/devices/platform-ipu-core.c
+@@ -79,10 +79,6 @@ struct platform_device *__init imx_alloc_mx3_camera(
+ 	if (!pdev)
+ 		return ERR_PTR(-ENOMEM);
  
- static struct msm_gpio_chip msm_gpio_banks[] = {
--#if defined(CONFIG_MSM_DEBUG_UART1)
-+#if defined(CONFIG_DEBUG_MSM_UART) && (CONFIG_DEBUG_UART_PHYS == 0xa9a00000)
- 	/* H2W pins <-> UART1 */
- 	TROUT_GPIO_BANK("MISC2", 0x00,   TROUT_GPIO_MISC2_BASE, 0x40),
- #else
-diff --git a/arch/arm/mach-msm/board-trout.c b/arch/arm/mach-msm/board-trout.c
-index 015d544..8369dfd 100644
---- a/arch/arm/mach-msm/board-trout.c
-+++ b/arch/arm/mach-msm/board-trout.c
-@@ -90,7 +90,7 @@ static void __init trout_map_io(void)
- 	msm_map_common_io();
- 	iotable_init(trout_io_desc, ARRAY_SIZE(trout_io_desc));
+-	pdev->dev.dma_mask = kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
+-	if (!pdev->dev.dma_mask)
+-		goto err;
+-
+ 	*pdev->dev.dma_mask = DMA_BIT_MASK(32);
+ 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
  
--#ifdef CONFIG_MSM_DEBUG_UART3
-+#if defined(CONFIG_DEBUG_MSM_UART) && (CONFIG_DEBUG_UART_PHYS == 0xa9c00000)
- 	/* route UART3 to the "H2W" extended usb connector */
- 	writeb(0x80, TROUT_CPLD_BASE + 0x00);
- #endif
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index 34e0947..b042dca 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -57,8 +57,7 @@ static struct map_desc msm_io_desc[] __initdata = {
- 		.length =   MSM_SHARED_RAM_SIZE,
- 		.type =     MT_DEVICE,
- 	},
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--		defined(CONFIG_DEBUG_MSM_UART3)
-+#if defined(CONFIG_DEBUG_MSM_UART)
- 	{
- 		/* Must be last: virtual and pfn filled in by debug_ll_addr() */
- 		.length = SZ_4K,
-@@ -76,8 +75,7 @@ void __init msm_map_common_io(void)
- 	 * pages are peripheral interface or not.
- 	 */
- 	asm("mcr p15, 0, %0, c15, c2, 4" : : "r" (0));
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--		defined(CONFIG_DEBUG_MSM_UART3)
-+#if defined(CONFIG_DEBUG_MSM_UART)
- #ifdef CONFIG_MMU
- 	debug_ll_addr(&msm_io_desc[size - 1].pfn,
- 		      &msm_io_desc[size - 1].virtual);
+@@ -96,7 +92,6 @@ struct platform_device *__init imx_alloc_mx3_camera(
+ 		ret = platform_device_add_data(pdev, pdata, sizeof(*pdata));
+ 		if (ret) {
+ err:
+-			kfree(pdev->dev.dma_mask);
+ 			platform_device_put(pdev);
+ 			return ERR_PTR(-ENODEV);
+ 		}
 -- 
-1.7.9.5
+1.7.10.4
 
