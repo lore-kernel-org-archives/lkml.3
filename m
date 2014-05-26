@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbaEZXsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 19:48:41 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65255 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaEZXsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 19:48:39 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5383D2CA.5020303@roeck-us.net>
-Date: Mon, 26 May 2014 16:48:26 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] watchdog: Remove drivers for W83697HF and W83697UG
-References: <1396722457-8275-1-git-send-email-linux@roeck-us.net> <1396722457-8275-2-git-send-email-linux@roeck-us.net> <20140526212646.GB23827@spo001.leaseweb.com>
-In-Reply-To: <20140526212646.GB23827@spo001.leaseweb.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751850AbaEZX5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 19:57:51 -0400
+Received: from shell.v3.sk ([195.168.3.45]:60730 "EHLO shell.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaEZX5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 19:57:48 -0400
+X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 19:57:47 EDT
+Message-ID: <1401148238.1590.2.camel@odvarok>
+Subject: Re: [PATCH] [media] usbtv: fix leak at failure path in usbtv_probe()
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Date: Tue, 27 May 2014 01:50:38 +0200
+In-Reply-To: <1400878027-22954-1-git-send-email-khoroshilov@ispras.ru>
+References: <1400878027-22954-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2014 02:26 PM, Wim Van Sebroeck wrote:
-> Hi Guenter,
->
->> Since both chips are now supported by the w83627hf watchdog driver,
->> the chip specific drivers are no longer needed and can be removed.
->>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->> v3: rebase to latest upstream kernel
->> v2: resend, no change to v1
->>
->>   drivers/watchdog/Kconfig        |   30 ---
->>   drivers/watchdog/Makefile       |    2 -
->>   drivers/watchdog/w83697hf_wdt.c |  460 ---------------------------------------
->>   drivers/watchdog/w83697ug_wdt.c |  397 ---------------------------------
->>   4 files changed, 889 deletions(-)
->>   delete mode 100644 drivers/watchdog/w83697hf_wdt.c
->>   delete mode 100644 drivers/watchdog/w83697ug_wdt.c
->>
->
-> Has been added to linux-watchdog-next.
->
->
-Thanks!
+On Sat, 2014-05-24 at 00:47 +0400, Alexey Khoroshilov wrote:
+> Error handling code in usbtv_probe() misses usb_put_dev().
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-Guenter
+Acked-by: Lubomir Rintel <lkundrak@v3.sk>
+
+Thank you!
+Lubo
+
+> ---
+>  drivers/media/usb/usbtv/usbtv-core.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/media/usb/usbtv/usbtv-core.c b/drivers/media/usb/usbtv/usbtv-core.c
+> index 2f87ddfa469f..473fab81b602 100644
+> --- a/drivers/media/usb/usbtv/usbtv-core.c
+> +++ b/drivers/media/usb/usbtv/usbtv-core.c
+> @@ -91,6 +91,8 @@ static int usbtv_probe(struct usb_interface *intf,
+>  	return 0;
+>  
+>  usbtv_video_fail:
+> +	usb_set_intfdata(intf, NULL);
+> +	usb_put_dev(usbtv->udev);
+>  	kfree(usbtv);
+>  
+>  	return ret;
 
 
