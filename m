@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaEZOws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:52:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37677 "EHLO
+	id S1752703AbaEZOxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 10:53:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37681 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752462AbaEZOv4 (ORCPT
+	with ESMTP id S1750914AbaEZOvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:51:56 -0400
+	Mon, 26 May 2014 10:51:55 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
@@ -17,9 +17,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 7/7] ARM: berlin: enable the eSATA interface on the BG2Q DMP
-Date: Mon, 26 May 2014 16:51:48 +0200
-Message-Id: <1401115908-2742-8-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v5 5/7] Documentation: bindings: document the sub-nodes AHCI bindings
+Date: Mon, 26 May 2014 16:51:46 +0200
+Message-Id: <1401115908-2742-6-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401115908-2742-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1401115908-2742-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -30,30 +30,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BG2Q has an AHCI SATA controller with an eSATA interface. Enable it.
-Only enable the first port, the BG2Q DMP does not support the second one.
+The libahci now allows to use multiple PHYs and to represent each port
+as a sub-node. Add these bindings to the documentation.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ .../devicetree/bindings/ata/ahci-platform.txt      | 38 +++++++++++++++++++++-
+ 1 file changed, 37 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index 2da9c41e29d8..899b4e04fe12 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -26,3 +26,11 @@
- &uart0 {
- 	status = "okay";
- };
+diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+index 48b285ffa3a6..14089f94100d 100644
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@ -3,11 +3,16 @@
+ SATA nodes are defined to describe on-chip Serial ATA controllers.
+ Each SATA controller should have its own node.
+ 
++It is possible, but not required, to represent each port as a sub-node.
++It allows to enable each port independently when dealing with multiple
++PHYs.
 +
-+&sata0 {
-+	status = "okay";
-+};
+ Required properties:
+ - compatible        : compatible list, one of "snps,spear-ahci",
+                       "snps,exynos5440-ahci", "ibm,476gtr-ahci",
+                       "allwinner,sun4i-a10-ahci", "fsl,imx53-ahci"
+-                      "fsl,imx6q-ahci" or "snps,dwc-ahci"
++                      "fsl,imx6q-ahci", "snps,dwc-ahci" or
++                      "generic-ahci"
+ - interrupts        : <interrupt mapping for SATA IRQ>
+ - reg               : <registers mapping>
+ 
+@@ -15,11 +20,23 @@ Optional properties:
+ - dma-coherent      : Present if dma operations are coherent
+ - clocks            : a list of phandle + clock specifier pairs
+ - target-supply     : regulator for SATA target power
++- phys              : reference to the SATA PHY node
++- phy-names         : must be "sata-phy"
+ 
+ "fsl,imx53-ahci", "fsl,imx6q-ahci" required properties:
+ - clocks            : must contain the sata, sata_ref and ahb clocks
+ - clock-names       : must contain "ahb" for the ahb clock
+ 
++Required properties when using sub-nodes:
++- #address-cells    : number of cells to encode an address
++- #size-cells       : number of cells representing the size of an address
 +
-+&sata_phy {
-+	status = "okay";
-+};
++
++Sub-nodes required properties:
++- reg               : the port number
++- phys              : reference to the SATA PHY node
++
++
+ Examples:
+         sata@ffe08000 {
+ 		compatible = "snps,spear-ahci";
+@@ -34,3 +51,22 @@ Examples:
+ 		clocks = <&pll6 0>, <&ahb_gates 25>;
+ 		target-supply = <&reg_ahci_5v>;
+ 	};
++
++With sub-nodes:
++	sata@f7e90000 {
++		compatible = "generic-ahci";
++		reg = <0xe90000 0x1000>;
++		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		sata0: sata-port@0 {
++			reg = <0>;
++			phys = <&sata_phy 0>;
++		};
++
++		sata1: sata-port@1 {
++			reg = <1>;
++			phys = <&sata_phy 1>;
++		};
++	};
 -- 
 1.9.1
 
