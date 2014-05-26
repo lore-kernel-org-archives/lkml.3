@@ -1,114 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaEZLSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:18:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15711 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221AbaEZLSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:18:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,912,1392192000"; 
-   d="asc'?scan'208";a="545007125"
-Date: Mon, 26 May 2014 16:31:09 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Chris Ball <chris@printf.net>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Balaji T K <balajitk@ti.com>
-Subject: Re: linux-next: manual merge of the mmc tree with the slave-dma
- tree
-Message-ID: <20140526110109.GD21128@intel.com>
-References: <20140523152310.05323045@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l06SQqiZYCi8rTKz"
-Content-Disposition: inline
-In-Reply-To: <20140523152310.05323045@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751882AbaEZLYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:24:00 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:64282 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaEZLX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 07:23:59 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+In-Reply-To: <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>
+	<20140514100856.5198DC4153D@trevor.secretlab.ca>
+	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>
+	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
+	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>
+	<CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>
+	<20140520055026.E3A98C412DA@trevor.secretlab.ca>
+	<CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
+	<20140526104824.63F13C42129@trevor.secretlab.ca>
+	<CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>
+Date: Mon, 26 May 2014 12:23:48 +0100
+Message-Id: <20140526112348.907B7C421A5@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 26 May 2014 12:57:32 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Grant,
+> 
+> On Mon, May 26, 2014 at 12:48 PM, Grant Likely
+> <grant.likely@secretlab.ca> wrote:
+> > On Tue, 20 May 2014 09:38:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> >> On Tue, May 20, 2014 at 7:50 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> >> >> Why has the overlay system been designed for plugging and unpluging whole
+> >> >> overlays?
+> >> >> That means the kernel has to remember the full stack, causing issues with
+> >> >> e.g. kexec.
+> >> >
+> >> > Mostly so that drivers don't see any difference in the livetree data
+> >> > structure. It also means that userspace sees a single representation of
+> >> > the hardware at any given time.
+> >>
+> >> Sorry, I don't follow the argument about the "single representation of the
+> >> hardware".
+> >
+> > Er, s/of the hardware/of the tree/. Right now the overlay design
+> > modifies the live tree which at the same time modifies the tree
+> > representation in /sys/firmware/devicetree. If the design was changed to
+> > keep the overlay logically separate, then I would think we want to
+> > expose that information to usespace also. In fact, I think we would need
+> > to for usecases like kexec.
+> 
+> OK, so it does modify the real tree, and doesn't keep the actual overlays.
+> 
+> I was under the impression the overlay stack was also kept in memory, to allow
+> reversal, so there was a misunderstanding.
+> 
+> Hence for kexec, the tree in /sys/firmware/devicetree can just be passed
+> to the new kernel, as that's the current representation of the hardware?
 
---l06SQqiZYCi8rTKz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Heeheehee. We're back where we started. The original question is whether
+or not that is a valid approach. If the overlay represents something
+that can be hot plugged/unplugged, then passing it through to the second
+kernel would be the wrong thing to do. If it was a permenant addition,
+then it probably doesn't need to be removed.
 
-On Fri, May 23, 2014 at 03:23:10PM +1000, Stephen Rothwell wrote:
-> Hi Chris,
->=20
-> Today's linux-next merge of the mmc tree got a conflict in
-> include/linux/omap-dma.h between commit a8246fedacad ("dmaengine: omap:
-> hide filter_fn for built-in drivers") from the slave-dma tree and
-> commit ee526d515ad1 ("mmc: omap_hsmmc: split omap-dma header file")
-> from the mmc tree.
->=20
-> I fixed it up (I effectively applied the former commit to the new file)
-> and can carry the fix as necessary (no action is required).
-Looks fine to me
+We do actually keep the overlay info in memory for the purpose of
+removal exactly so we can support hot unbinding of devices and drivers
+that make use of overlays.
 
-Thanks
---=20
-~Vinod
+g.
 
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 23 May 2014 15:19:48 +1000
-> Subject: [PATCH] dmaengine: omap: fix for code movement
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  include/linux/omap-dmaengine.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/include/linux/omap-dmaengine.h b/include/linux/omap-dmaengin=
-e.h
-> index 2b0b6aa01922..8e6906c72e90 100644
-> --- a/include/linux/omap-dmaengine.h
-> +++ b/include/linux/omap-dmaengine.h
-> @@ -10,7 +10,7 @@
-> =20
->  struct dma_chan;
-> =20
-> -#if defined(CONFIG_DMA_OMAP) || defined(CONFIG_DMA_OMAP_MODULE)
-> +#if defined(CONFIG_DMA_OMAP) || (defined(CONFIG_DMA_OMAP_MODULE) && defi=
-ned(MODULE))
->  bool omap_dma_filter_fn(struct dma_chan *, void *);
->  #else
->  static inline bool omap_dma_filter_fn(struct dma_chan *c, void *d)
-> --=20
-> 2.0.0.rc4
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-
-
-
---=20
-
---l06SQqiZYCi8rTKz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTgx71AAoJEHwUBw8lI4NHQA4P/izzQLTgaH58JTgoGir90X04
-AfD/DL1LcESav/Q36bANprAb03QhwG6DQE4sMXmc7R+CNazPzRWfuBnpNRgNXhcF
-u/Eg9YldwdB9RNL0ZWp8ov+NVo5/LBUMhVmjf99GGoZNt2zVuS8wpHPf9bhbcQuL
-M/FUKaLxlm8ix3xX8rXZ21vb3+77xbJy1+FsgHSktpDSQOe1VT3Ql3OGiqwhTHv+
-11RSUmPgABPgBBUEEzaUShg8Io7YZzpWDKI2ZiQN6v/5fetKso2p2/SCUCfUbSGP
-7nqeITd7N1nx+B3NObHGV1uWb6CVBSAaQk1tcPXPz16pNjfbmGkSkWvcwqelWXXf
-g7X1xdtQKEIiGI50R6PQHw+zsn1yNz6DhNh8Npm6jFvImmwfsE6izREpypPm9Rrw
-k4VPTwZqXWk2zqmDxaIWdD8z0f2NsxauOtnRkR9ugZ5E5FxrIA0WF8HWBCVPfpJ7
-coLtqPUhPcqJ6LS/MtP8AfM6fJwROtfCme30oSPxFqGrgi3NZ1je1cMouDTQ7FOe
-gZY8Wv3zZSvDyZlCnzrqNQNwuyci3lTxF7uGJJWfzIv7gEfLGy4uhUV7tjbLo+tn
-NzdqQS2flB7Kt4E0dVufTYmICv/YoCrmefIqbq8iWr5SuNaWr1RtHS6BlY5rSeIu
-VmqqhoW0jYQmtxrfpqy1
-=XfRf
------END PGP SIGNATURE-----
-
---l06SQqiZYCi8rTKz--
