@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaEZErx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 00:47:53 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:34768 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaEZErv (ORCPT
+	id S1751518AbaEZExW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 00:53:22 -0400
+Received: from blu004-omc3s9.hotmail.com ([65.55.116.84]:52250 "EHLO
+	BLU004-OMC3S9.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaEZExW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 00:47:51 -0400
+	Mon, 26 May 2014 00:53:22 -0400
+X-TMN: [SYvnsA4aayVIY+OsNCpGd24EIzoFqGjg]
+X-Originating-Email: [draj187@hotmail.com]
+Message-ID: <BLU185-W503311A4AA6A171F22ED2AEC3B0@phx.gbl>
+From: Deepa Raj <draj187@hotmail.com>
+To: "tj@kernel.org" <tj@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: CMWQ urgent questions
+Date: Mon, 26 May 2014 04:53:21 +0000
+Importance: Normal
+In-Reply-To: <BLU185-W3219733704E18B9573206FEC3B0@phx.gbl>
+References: <BLU185-W3219733704E18B9573206FEC3B0@phx.gbl>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140525184808.GP10768@lukather>
-References: <1400831485-28576-1-git-send-email-wens@csie.org>
- <1400831485-28576-4-git-send-email-wens@csie.org> <20140525184808.GP10768@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Mon, 26 May 2014 12:47:30 +0800
-X-Google-Sender-Auth: eRA_Jfz4NMlgsRffZuuhsps4xDg
-Message-ID: <CAGb2v643UmK6GfuDVfywVUeo_g7FpdZC_7SgeY-UMZ_k_-2N9Q@mail.gmail.com>
-Subject: Re: [PATCH 03/22] clk: sunxi: add "pll6" to sun6i protected clock list
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Content-Type: text/plain; charset=UTF-8
+X-OriginalArrivalTime: 26 May 2014 04:53:21.0518 (UTC) FILETIME=[6B2B00E0:01CF789E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 2:48 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Fri, May 23, 2014 at 03:51:06PM +0800, Chen-Yu Tsai wrote:
->> PLL6 is used by some important but undocumented module, most likely
->> memory related, such as mbus or the actual memory controller. As we
->> do not have a driver for that, add pll6 to the list of protected
->> clocks, so that it won't be disabled and leave us with a non-responsive
->> system.
->
-> What issue have you seen?
 
-Completely unresponsive after PLL6 is gated (on the A23).
+Hi Tejun,
 
-> The system actually works pretty great on the A31.
+You are the implementor of CMWQ workqueues and I am working on device drivers. In this new workqueues, worker threads are created like:
 
-Does it work when there aren't any other PLL6 consumers?
-Maybe the boot0 on A31 and A23 setup some DRAM-related modules differently.
+kworker/u4:0 
+kworker/0:0 
 
-If the A31 works without protecting PLL6, I'll add a separate list
-for the A23.
+OK, with the help of ftrace, we are able to know on which cpu id, it is created. Can we read not from u4:0 or 0:0, the cpuid?
 
+As per code, for high priority work queues H is appended.
 
-Thanks,
-ChenYu
+The questions are as follows:
+
+1) what does u4:0 means, does it means this is created from user side?, does it give cpu id on which it is working? I am going to understand the meaning of u4:0. I guess you the best person to explain it.
+
+2) Suppose workqueues are created from device driver init functions, When the user space process (through the ioctl calls) schedule the work, can we know which process scheduled the work on workqueues. 
+
+Waiting for your help and appreciate your help on this.
+
+With Regards,
+D.Raj 		 	   		  
