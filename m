@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaEZVza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 17:55:30 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:36875
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751575AbaEZVz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 17:55:28 -0400
-Date: Mon, 26 May 2014 14:52:47 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
-References: <20140521073457.GD31687@pengutronix.de>
- <9956925.Qsz2bH3rDg@vostro.rjw.lan>
- <CAKohpomam0qKdkMMMRDOfWN9QnZ3DzCviV=RuZ5f_7JbmYNDNw@mail.gmail.com>
- <9956935.0oj56vcaUh@vostro.rjw.lan>
+	id S1752142AbaEZV5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 17:57:53 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39342 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaEZV5u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 17:57:50 -0400
+Date: Mon, 26 May 2014 22:57:44 +0100
+From: Daniel Walter <dwalter@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: richard@nod.at, dwalter@google.com
+Subject: [PATCH 00/12] Remove obsolete strict_strto calls
+Message-ID: <20140526215744.GB25779@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9956935.0oj56vcaUh@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <2827f20b-b489-4eb0-8ec9-9db957e28788@BL2FFO11FD008.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(377424004)(24454002)(51704005)(189002)(199002)(377454003)(70736001)(19580405001)(50986999)(92726001)(85202002)(83322001)(74502001)(85182001)(46102001)(54356999)(31696002)(53416003)(19580395003)(44976005)(23676002)(81342001)(86362001)(76176999)(104016001)(83072002)(83506001)(33646001)(74662001)(87936001)(74316001)(64706001)(102836001)(77982001)(50466002)(79102001)(99396002)(47776003)(81542001)(4396001)(21056001)(85852003)(76482001)(20776003)(80022001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB038;H:xsj-gw1;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Forefront-PRVS: 02234DBFF6
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-26 at 01:47PM +0200, Rafael J. Wysocki wrote:
-> On Monday, May 26, 2014 04:37:13 PM Viresh Kumar wrote:
-> > On 26 May 2014 16:52, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > > I agree as far as the 64-bit thing goes, but is switching to Hz really
-> > > necessary?
-> > 
-> > Don't really know that.. It seems that there will always be problems with
-> > close enough frequencies whenever rounding is done.
-> 
-> Well, rounding errors are a problem, but question is if that is enough of
-> a problem to justify expanding the storage size twice.  Also, that'd be
-> a performance hit on 32-bit systems.
-> 
-> > More can be elaborated by Soren.
-> 
-> OK
+From: Daniel Walter <dwalter@google.com>
 
-I'd say it's probably not worth switching. As you and I said, rounding
-issues are likely to happen no matter what. In this particular case,
-switching would not remove the need for the patch I proposed to allow
-for rounding errors. The error margin could be reduced, but that's it.
-I think it would be nice if CCF, OPP and cpufreq would use the same
-resolution and types, since it would remove the need for all these
-conversions that are going on in cpufreq drivers, but looking at the
-wide usage of cpufreq and the potential drawbacks Rafael pointed at:
-nice-to-have is probably not enough of a justification.
+Replace all calls to strict_strto* functions with appropriate
+calls to kstrto*.
+Remove definition of strict_strto* functions
 
-	Sören
+All patches apply against current linux git tree
+
+Daniel Walter (12):
+  [arch/tile] replace strict_strto* call with kstrto*
+  [arch/arm/omap2] replace strict_strto* with kstrto*
+  [arch/arm/mach-pxa] replace strict_strto call with kstrto
+  [arch/arm/mach-s3c24xx] replace strict_strto* with kstrto*
+  [arch/arm/mach-w90x900] replace obsolete strict_strto
+  [arch/mips/alchemy] replace obsolete strict_strto
+  [arch/mips] replace obsolete strict_strto calls
+  [arch/powerpc] replace obsolete strict_strto* calls
+  [arch/x86] replace strict_strto calls
+  [drivers/scsi] replace strict_strto calls
+  [net/sunrpc] replace strict_strto calls
+  [include/linux] remove strict_strto* definitions
+
+ arch/arm/mach-omap2/board-omap3touchbook.c |  2 +-
+ arch/arm/mach-omap2/mux.c                  | 22 ++++++----------------
+ arch/arm/mach-pxa/balloon3.c               |  2 +-
+ arch/arm/mach-pxa/viper.c                  |  2 +-
+ arch/arm/mach-s3c24xx/mach-jive.c          |  2 +-
+ arch/arm/mach-w90x900/cpu.c                |  3 ++-
+ arch/mips/alchemy/board-xxs1500.c          |  2 +-
+ arch/mips/alchemy/devboards/pm.c           |  4 ++--
+ arch/mips/pci/ops-tx4927.c                 |  9 ++++++---
+ arch/mips/txx9/generic/setup.c             |  4 ++--
+ arch/powerpc/kernel/setup_64.c             |  6 +++---
+ arch/powerpc/kernel/vio.c                  |  2 +-
+ arch/powerpc/platforms/pseries/dlpar.c     |  4 ++--
+ arch/powerpc/platforms/pseries/mobility.c  |  2 +-
+ arch/tile/kernel/setup.c                   |  7 ++-----
+ arch/tile/kernel/signal.c                  |  7 +++----
+ arch/tile/kernel/traps.c                   |  5 ++---
+ arch/tile/mm/init.c                        |  2 +-
+ arch/x86/kernel/cpu/intel_cacheinfo.c      |  4 ++--
+ arch/x86/kernel/cpu/mcheck/mce.c           |  6 +++---
+ arch/x86/kernel/cpu/mcheck/mce_amd.c       |  4 ++--
+ arch/x86/kvm/mmu_audit.c                   |  2 +-
+ arch/x86/platform/uv/tlb_uv.c              |  2 +-
+ drivers/scsi/pmcraid.c                     |  4 ++--
+ drivers/scsi/scsi_sysfs.c                  |  4 ++--
+ include/linux/kernel.h                     |  4 ----
+ net/sunrpc/addr.c                          | 16 ++++++----------
+ net/sunrpc/auth.c                          |  2 +-
+ net/sunrpc/xprtsock.c                      |  4 ++--
+ 29 files changed, 60 insertions(+), 79 deletions(-)
+
+-- 
+1.9.3
 
