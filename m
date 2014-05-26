@@ -1,90 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389AbaEZLL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:11:29 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62388 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274AbaEZLL1 (ORCPT
+	id S1752065AbaEZLO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:14:58 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8965 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaEZLO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:11:27 -0400
-Message-ID: <53832157.2020502@gmail.com>
-Date: Mon, 26 May 2014 13:11:19 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 26 May 2014 07:14:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 26 May 2014 04:08:15 -0700
+Date: Mon, 26 May 2014 14:14:53 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Mike Turquette" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] clk: flatten clk tree in debugfs
+Message-ID: <20140526111453.GE5961@tbergstrom-lnx.Nvidia.com>
+References: <1400842772-4862-1-git-send-email-pdeschrijver@nvidia.com>
+ <537FCAA0.6080106@codeaurora.org>
 MIME-Version: 1.0
-To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
-Subject: Re: [PATCH v11 0/3] Exynos 5410 support
-References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
-In-Reply-To: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <537FCAA0.6080106@codeaurora.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 26.05.2014 05:23, Tarek Dakhran wrote:
-> The series of patches represent support of Exynos 5410 SoC
+On Sat, May 24, 2014 at 12:24:32AM +0200, Saravana Kannan wrote:
+> On 05/23/2014 03:59 AM, Peter De Schrijver wrote:
+> > This patch flattens the clk tree in CCF debugfs. Instead of representing the
+> > clocks and their hierarchy as a directory structure under
+> > /sys/kernel/debug/clk, each clock gets a single directory directly under
+> > /sys/kernel/debug/clk.
+> >
+> > While this may seem strange, here's way I think this is the right thing to do:
+> >
+> > 1) a directory structure cannot be 'snapshotted' atomically, therefore it's
+> >     not in general possible to get a consistent view of the clocktree, because
+> >     clocks can be reparented at any time. This was solved by adding clk_dump
+> >     and clk_summary, which do guarantee an atomic snapshot of the tree.
+> >     Therefore I think the directory structure doesn't add any value.
+> >
+> > 2) When writing userspace programs which use the files in the clock
+> >     directories (eg. for testing purposes), it's impossible to know for sure
+> >     where a certain clock will be, because it might have been reparented by the
+> >     time you figured out the path from clk_dump. This makes writing such
+> >     programs more difficult than it should be.
+> >
+> > So because the directory structure doesn't give any information we don't
+> > already provide by other means and it makes certain usecases more difficult
+> > than the should be, I think we should move to a flat directory containing
+> > one subdir per clock.
 > 
-> The Exynos 5410 is the first Samsung SoC based on big.LITTLE architecture
-> 
-> Patches add new platform description, support of clock controller and device
-> tree for Exynos 5410.
-> 
-> Has been build on Samsung Linux Kernel
->   (branch: for-next, commit: 97eae6c Merge branch 'v3.16-next/multiplatform' into for-next)
-> 
-> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
-> 		    2) Exynos 5410 reference board (multi_v7_defconfig)
-> 		    3) Odroid-XU board (exynos_defconfig)
-> 		    4) Odroid-XU board (multi_v7_defconfig)
-> 
-> I hope this is clean and would be applied.
-> 
-> Tarek.
-> 
-> Tarek Dakhran (3):
->   ARM: EXYNOS: Add support for EXYNOS5410 SoC
->   clk: exynos5410: register clocks using common clock framework
->   ARM: dts: Add initial device tree support for EXYNOS5410
-> 
->  .../devicetree/bindings/clock/exynos5410-clock.txt |   45 +++++
->  arch/arm/boot/dts/Makefile                         |    1 +
->  arch/arm/boot/dts/exynos5410-smdk5410.dts          |   82 ++++++++
->  arch/arm/boot/dts/exynos5410.dtsi                  |  206 +++++++++++++++++++
->  arch/arm/mach-exynos/Kconfig                       |    5 +
->  arch/arm/mach-exynos/common.h                      |   12 +-
->  drivers/clk/samsung/Makefile                       |    1 +
->  drivers/clk/samsung/clk-exynos5410.c               |  209 ++++++++++++++++++++
->  include/dt-bindings/clock/exynos5410.h             |   33 ++++
->  9 files changed, 592 insertions(+), 2 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
->  create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
->  create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
->  create mode 100644 drivers/clk/samsung/clk-exynos5410.c
->  create mode 100644 include/dt-bindings/clock/exynos5410.h
+> Completely agree and a huge ACK to this idea.
 > 
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Thanks.
 
-Best regards,
-Tomasz
+> >
+> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> > ---
+> >   drivers/clk/clk.c |   54 +++-------------------------------------------------
+> >   1 files changed, 4 insertions(+), 50 deletions(-)
+> >
+> > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> > index dff0373..53c6b4f 100644
+> > --- a/drivers/clk/clk.c
+> > +++ b/drivers/clk/clk.c
+> > @@ -306,7 +306,7 @@ static int clk_debug_create_subtree(struct clk *clk, struct dentry *pdentry)
+> >   		goto out;
+> >
+> >   	hlist_for_each_entry(child, &clk->children, child_node)
+> > -		clk_debug_create_subtree(child, clk->dentry);
+> > +		clk_debug_create_subtree(child, pdentry);
+> >
+> >   	ret = 0;
+> >   out:
+> > @@ -326,29 +326,20 @@ out:
+> >    */
+> >   static int clk_debug_register(struct clk *clk)
+> >   {
+> > -	struct clk *parent;
+> >   	struct dentry *pdentry;
+> >   	int ret = 0;
+> >
+> >   	if (!inited)
+> >   		goto out;
+> >
+> > -	parent = clk->parent;
+> > -
+> >   	/*
+> >   	 * Check to see if a clk is a root clk.  Also check that it is
+> >   	 * safe to add this clk to debugfs
+> >   	 */
+> > -	if (!parent)
+> > -		if (clk->flags & CLK_IS_ROOT)
+> > -			pdentry = rootdir;
+> > -		else
+> > -			pdentry = orphandir;
+> > +	if (clk->flags & CLK_IS_ROOT)
+> > +		pdentry = rootdir;
+> >   	else
+> > -		if (parent->dentry)
+> > -			pdentry = parent->dentry;
+> > -		else
+> > -			goto out;
+> > +		pdentry = orphandir;
+> 
+> I'm confused by this code. Shouldn't pdentry always be the same? Do we 
+> need a dir for orphans? Also, I'm not sure the code is actually right? 
+
+Indeed. This code is most likely wrong... I don't have a strong opinion
+if we need an orphan dir or if we can just have a file to list orphaned
+clocks. I would still like to be able to see if there are orphaned clocks.
+You could argue that the same race exists for the orphan dir. It is possible
+for the parent to be registered while you're traversing the orphan dir and
+cause a clock to move around. In practice this seems rather unlikely to happen
+to me?
+
+> Looks like you are putting everything but the root into orphandir?
+> 
+
+Yes...
+
+Cheers,
+
+Peter.
