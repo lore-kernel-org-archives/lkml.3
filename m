@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaEZLGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:06:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36483 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700AbaEZLGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:06:44 -0400
-Date: Mon, 26 May 2014 13:06:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] x86, MCE: Flesh out when to panic comment
-Message-ID: <20140526110634.GG25732@pd.tnic>
-References: <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
- <20140521214319.GF25130@pd.tnic>
- <537D1E8B.1010505@zytor.com>
- <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
- <20140521215411.GI25130@pd.tnic>
- <537D21F2.8030702@zytor.com>
- <20140521221121.GL25130@pd.tnic>
- <537D2522.80702@zytor.com>
- <20140526101859.GD25732@pd.tnic>
- <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
+	id S1752122AbaEZLHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:07:18 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:47995 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaEZLHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 07:07:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <9956925.Qsz2bH3rDg@vostro.rjw.lan>
+References: <20140521073457.GD31687@pengutronix.de>
+	<00f65d1c-a375-40e7-b30a-cd8cb3ca87fc@BN1BFFO11FD020.protection.gbl>
+	<CAKohpomb+h6ZNDgJ8AwJ_J9DjMB7AP_v-cp8coG3CACo5Wt4vQ@mail.gmail.com>
+	<9956925.Qsz2bH3rDg@vostro.rjw.lan>
+Date: Mon, 26 May 2014 16:37:13 +0530
+Message-ID: <CAKohpomam0qKdkMMMRDOfWN9QnZ3DzCviV=RuZ5f_7JbmYNDNw@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 12:51:10PM +0200, Jiri Kosina wrote:
-> I think the comment is still not explaining the big part of what the
-> discussion was about -- i.e. if it was in kernel context, we always
-> panic.
+On 26 May 2014 16:52, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> I agree as far as the 64-bit thing goes, but is switching to Hz really
+> necessary?
 
-I thought the pointer to mce_severity was enough? People should open an
-editor and look at the function and at its gory insanity. :-P
+Don't really know that.. It seems that there will always be problems with
+close enough frequencies whenever rounding is done.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+More can be elaborated by Soren.
