@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaEZPMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:12:45 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:53803 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaEZPMo (ORCPT
+	id S1752555AbaEZPO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:14:26 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59351 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaEZPOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:12:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: iop13xx: fix msi support with sparse IRQ
-Date: Mon, 26 May 2014 17:12:10 +0200
-Message-ID: <12285212.fBJyVfk69p@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+	Mon, 26 May 2014 11:14:24 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53835A40.8050902@roeck-us.net>
+Date: Mon, 26 May 2014 08:14:08 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:fyurViAzxsLcgItJbqJclaOnfSlOKsex/W+BybRaSNT
- j0tSDU0ak+GXQFG2y52ckvIgu9ulTT/86YxEqLfnYSjV7ewP/j
- 9/s1U8u2dgqaB7WVeGkOyV0uRRevMwPUyTK7aJQr/2RKzIn9IX
- 8gASYHNeYb3no4fGYfRbAiwdseKZYEQksxY09m150vJbvoNh09
- WwAa43T1lJzdKc/PBmmnSXaWbbzAvHiJTOI4kOb9p6ACD9D/6j
- J1DJoZYDyDjKHPNocRK0rg0SALw15WSE8XciOMSdhX2SJb+A7j
- c1wF1v1j171ei/s3wPHJ+WmJU0aCWMeLBfIb3y5bdGcr9QhPXe
- GdBb4s/0AYiqH4AZidIc=
+To: Sebastian Reichel <sre@ring0.de>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+References: <E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com> <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com> <20140516105814.3EA3FC403C2@trevor.secretlab.ca> <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com> <20140520055026.E3A98C412DA@trevor.secretlab.ca> <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com> <20140526104824.63F13C42129@trevor.secretlab.ca> <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com> <20140526112348.907B7C421A5@trevor.secretlab.ca> <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com> <20140526150942.GA26787@earth.universe>
+In-Reply-To: <20140526150942.GA26787@earth.universe>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-patch 37ebbcff7837 ("arm: iop13xx: Use sparse irqs for MSI") moved
-iop13xx over to sparse IRQ support, but this broke the build for the
-msi.c file, which now has to include mach/irqs.h itself.
+On 05/26/2014 08:09 AM, Sebastian Reichel wrote:
+> Hi,
+>
+> On Mon, May 26, 2014 at 02:55:37PM +0300, Pantelis Antoniou wrote:
+>> On May 26, 2014, at 2:23 PM, Grant Likely wrote:
+>>> On Mon, 26 May 2014 12:57:32 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>> Heeheehee. We're back where we started. The original question is whether
+>>> or not that is a valid approach. If the overlay represents something
+>>> that can be hot plugged/unplugged, then passing it through to the second
+>>> kernel would be the wrong thing to do. If it was a permenant addition,
+>>> then it probably doesn't need to be removed.
+>>>
+>>> We do actually keep the overlay info in memory for the purpose of
+>>> removal exactly so we can support hot unbinding of devices and drivers
+>>> that make use of overlays.
+>>
+>> We can support either method. I am not feeling any wiser about which one should be
+>> the default TBH, so what about exporting a property and let the platform
+>> figure out which is more appropriate?
+>
+> What about supporting "negative" overlays (so an overlay, that
+> removes DT entries)? That way one could reverse apply an overlay.
+> All the dependency stuff would basically be the users problem.  The
+> kernel only checks if it can apply an overlay (and return some error
+> code if it can't). This this code is needed anyway to check the
+> input from userspace.
+>
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>
+Does that mean that I would need to describe such a negative overlay
+for each overlay to be able to get it removed ?
 
-diff --git a/arch/arm/mach-iop13xx/msi.c b/arch/arm/mach-iop13xx/msi.c
-index 655072d..e7730cf 100644
---- a/arch/arm/mach-iop13xx/msi.c
-+++ b/arch/arm/mach-iop13xx/msi.c
-@@ -23,6 +23,7 @@
- #include <linux/msi.h>
- #include <asm/mach/irq.h>
- #include <asm/irq.h>
-+#include <mach/irqs.h>
- 
- /* IMIPR0 CP6 R8 Page 1
-  */
+This would introduce an endless source of problems with bad "reverse"
+overlay descriptions. Sure, that would "be the users problem",
+but I don't think that would make it better.
+
+Guenter
 
