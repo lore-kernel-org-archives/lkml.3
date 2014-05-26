@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaEZLoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:44:16 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:47939 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaEZLoO (ORCPT
+	id S1752156AbaEZLpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:45:19 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:48120 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaEZLpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:44:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1405191403280.969@eggly.anvils>
-References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com>
-	<alpine.LSU.2.11.1405132118330.4401@eggly.anvils>
-	<537396A2.9090609@cybernetics.com>
-	<alpine.LSU.2.11.1405141456420.2268@eggly.anvils>
-	<CANq1E4QgSbD9G70H7W4QeXbZ77_Kn1wV7edwzN4k4NjQJS=36A@mail.gmail.com>
-	<20140519160942.GD3427@quack.suse.cz>
-	<alpine.LSU.2.11.1405191403280.969@eggly.anvils>
-Date: Mon, 26 May 2014 13:44:13 +0200
-Message-ID: <CANq1E4TDDzG+HtBz261_nid3kVRG_jwcWHizzkdZCZZE3BaLgQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Jan Kara <jack@suse.cz>, Tony Battersby <tonyb@cybernetics.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Christoph Lameter <clameter@sgi.com>, Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 May 2014 07:45:17 -0400
+X-Nat-Received: from [202.181.97.72]:24791 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1401104713.5618
+To: Motohiro.Kosaki@us.fujitsu.com, david@fromorbit.com, riel@redhat.com
+Cc: kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        hch@infradead.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] mm/vmscan: Do not block forever atshrink_inactive_list().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20140520004449.GE18954@dastard>
+	<20140519225915.3370328d.akpm@linux-foundation.org>
+	<20140520063024.GH18954@dastard>
+	<201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
+	<6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
+In-Reply-To: <6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
+Message-Id: <201405262045.CDG95893.HLFFOSFMQOVOJt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 26 May 2014 20:45:11 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 26052014 #8026966, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Tetsuo Handa wrote:
+> Dave, if you are OK with this updated patch, please let me know commit ID of your patch.
 
-(CC migrate.c committers)
+I overlooked that too_many_isolated() in mm/vmscan.c already has
 
-On Tue, May 20, 2014 at 12:11 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Mon, 19 May 2014, Jan Kara wrote:
->> On Mon 19-05-14 13:44:25, David Herrmann wrote:
->> > On Thu, May 15, 2014 at 12:35 AM, Hugh Dickins <hughd@google.com> wrote:
->> > > The aspect which really worries me is this: the maintenance burden.
->> > > This approach would add some peculiar new code, introducing a rare
->> > > special case: which we might get right today, but will very easily
->> > > forget tomorrow when making some other changes to mm.  If we compile
->> > > a list of danger areas in mm, this would surely belong on that list.
->> >
->> > I tried doing the page-replacement in the last 4 days, but honestly,
->> > it's far more complex than I thought. So if no-one more experienced
->
-> To be honest, I'm quite glad to hear that: it is still a solution worth
-> considering, but I'd rather continue the search for a better solution.
+  if (current_is_kswapd())
+    return 0;
 
-What if we set VM_IO for memory-mappings if a file supports sealing?
-That might be a hack and quite restrictive, but we could also add a
-VM_DONTPIN flag that just prevents any page-pinning like GUP (which is
-also a side-effect of VM_IO). This is basically what we do to protect
-PCI BARs from that race during hotplug (well, VM_PFNMAP ist what
-protects those, but the code is the same). If we mention in the
-man-page that memfd-objects don't support direct-IO, we'd be fine, I
-think. Not sure if that hack is better than the page-replacement,
-though. It'd be definitely much simpler.
+lines. Therefore, it turned out that my patch is irrelevant to XFS issue.
+Does patch shown below make sense?
 
-Regarding page-replacement, I tried using migrate_page(), however,
-this obviously fails in page_freeze_refs() due to the elevated
-ref-count and we cannot account for those, as they might vanish
-asynchronously. Now I wonder whether we could just add a new mode
-MIGRATE_PHASE_OUT that avoids freezing the page and forces the copy.
-Existing refs would still operate on the old page, but any new access
-gets the new page. This way, we could collect pages with elevated
-ref-counts in shmem similar to do_move_page_to_node_array() and then
-call migrate_pages(). Now migrate_pages() takes good care to prevent
-any new refs during migration. try_to_unmap(TTU_MIGRATION) marks PTEs
-as 'in-migration', so accesses are delayed. Page-faults wait on the
-page-lock and retry due to mapping==NULL. lru is disabled beforehand.
-Therefore, there cannot be any racing page-lookups as they all stall
-on the migration. Moreover, page_freeze_refs() fails only if the page
-is pinned by independent users (usually some form of I/O).
-Question is what those additional ref-counts might be. Given that
-shmem 'owns' its pages, none of these external references should pass
-those refs around. All they use it for is I/O. Therefore, we shouldn't
-even need an additional try_to_unmap() _after_ MIGRATE_PHASE_OUT as we
-expect those external refs to never pass page-refs around. If that's a
-valid assumption (and I haven't found any offenders so far), we should
-be good with migrate_pages(MIGRATE_PHASE_OUT) as I described.
+Regards.
+----------
+>From e133aadd65df3d8622efced3443888ed3e60327b Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 26 May 2014 20:37:12 +0900
+Subject: [PATCH] mm/vmscan: Do not throttle when hibernation_mode != 0.
 
-Comments?
+In shrink_inactive_list(), we do not insert delay at
 
-While skimming over migrate.c I noticed two odd behaviors:
-1) migration_entry_wait() is used to wait on a migration to finish,
-before accessing PTE entries. However, we call get_page() there, which
-increases the ref-count of the old page and causes page_freeze_refs()
-to fail. There's no way we can know how many tasks wait on a migration
-entry when calling page_freeze_refs(). I have no idea how that's
-supposed to work? Why don't we store the new page in the migration-swp
-entry so any lookups stall on the new page? We don't care for
-ref-counts on that page and if the migration fails, new->mapping is
-set to NULL and any lookup is retried. remove_migration_pte() can
-restore the old page correctly.
-2) remove_migration_pte() calls get_page(new) before writing the PTE.
-But who releases the ref of the old page?
+  if (!sc->hibernation_mode && !current_is_kswapd())
+    wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
 
-Thanks
-David
+if sc->hibernation_mode != 0.
+Follow the same reason, we should not insert delay at
+
+  while (unlikely(too_many_isolated(zone, file, sc))) {
+    congestion_wait(BLK_RW_ASYNC, HZ/10);
+
+    /* We are about to die and free our memory. Return now. */
+    if (fatal_signal_pending(current))
+      return SWAP_CLUSTER_MAX;
+  }
+
+if sc->hibernation_mode != 0.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ mm/vmscan.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 32c661d..89c42ca 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1362,6 +1362,9 @@ static int too_many_isolated(struct zone *zone, int file,
+ 	if (current_is_kswapd())
+ 		return 0;
+ 
++	if (sc->hibernation_mode)
++		return 0;
++
+ 	if (!global_reclaim(sc))
+ 		return 0;
+ 
+-- 
+1.7.1
