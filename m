@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaEZMtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 08:49:12 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64416 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751670AbaEZMtJ (ORCPT
+	id S1752331AbaEZMt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 08:49:59 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:54906 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751985AbaEZMt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 08:49:09 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] Tables: Restore old behavor to favor 32-bit FADT addresses.
-Date: Mon, 26 May 2014 15:06:12 +0200
-Message-ID: <4631514.kRXiOV1YTi@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <6018e562465c35d11cf98f181baedf3b8483e812.1399970899.git.lv.zheng@intel.com>
-References: <38907770.bupFXhytsS@vostro.rjw.lan> <6018e562465c35d11cf98f181baedf3b8483e812.1399970899.git.lv.zheng@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 26 May 2014 08:49:57 -0400
+Message-ID: <1401108595.6068.5.camel@x220>
+Subject: Re: [GIT PULL] qcom SoC changes for v3.16
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
+        linus.walleij@linaro.org, iivanov@mm-sol.com,
+        srinivas.kandagatla@linaro.org
+Date: Mon, 26 May 2014 14:49:55 +0200
+In-Reply-To: <alpine.DEB.2.00.1405231339340.15680@galak-ubuntu.qualcomm.com>
+References: <alpine.DEB.2.00.1405231339340.15680@galak-ubuntu.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 May 2014 12:49:55.0044 (UTC) FILETIME=[FE3CD240:01CF78E0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lv,
+On Fri, 2014-05-23 at 13:42 -0500, Kumar Gala wrote:
+> Ivan T. Ivanov (1):
+>        ARM: debug: qcom: make UART address selection configuration option
 
-There was a merge conflict with the new ACPICA material queued up for 3.16
-related to this.
+This one just landed in linux-next (next-20140526).
 
-Can you please have a look at the linux-next branch in my tree and see if
-the ACPICA material in there is in a good shape?
+It removed the Kconfig options DEBUG_MSM_UART1, DEBUG_MSM_UART3, and
+DEBUG_MSM_UART3. It did not touch these references to their macros:
+    arch/arm/mach-msm/io.c:60:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
+    arch/arm/mach-msm/io.c:61:                defined(CONFIG_DEBUG_MSM_UART3)
+    arch/arm/mach-msm/io.c:79:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
+    arch/arm/mach-msm/io.c:80:                defined(CONFIG_DEBUG_MSM_UART3)
 
-Rafael
+Is a patch to fix this queued somewhere?
 
 
-On Tuesday, May 13, 2014 04:50:30 PM Lv Zheng wrote:
-> We need to find a smarter way to switch to 64-bit FADT addresses according
-> to the bug report.  This patch reverts Linux to the original behavior.
-> 
-> Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=74021
-> Reported-by: Oswald Buddenhagen <ossi@kde.org>
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Tested-by: Oswald Buddenhagen <ossi@kde.org>
-> Cc: <stable@vger.kernel.org> # 3.14.x: 0249ed24: ACPICA: Add option to favor 32-bit FADT addresses
-> ---
->  include/acpi/acpixf.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-> index 4e3044c..b66b6a8 100644
-> --- a/include/acpi/acpixf.h
-> +++ b/include/acpi/acpixf.h
-> @@ -190,7 +190,7 @@ ACPI_INIT_GLOBAL(u8, acpi_gbl_do_not_use_xsdt, FALSE);
->   * some machines have been found to have a corrupted non-zero 64-bit
->   * address. Default is FALSE, do not favor the 32-bit addresses.
->   */
-> -ACPI_INIT_GLOBAL(u8, acpi_gbl_use32_bit_fadt_addresses, FALSE);
-> +ACPI_INIT_GLOBAL(u8, acpi_gbl_use32_bit_fadt_addresses, TRUE);
->  
->  /*
->   * Optionally truncate I/O addresses to 16 bits. Provides compatibility
-> 
+Paul Bolle
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
