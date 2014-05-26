@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaEZWKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 18:10:49 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:37321 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980AbaEZWKs (ORCPT
+	id S1752215AbaEZWMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 18:12:36 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:63466 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaEZWMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 18:10:48 -0400
-Date: Mon, 26 May 2014 23:10:43 +0100
+	Mon, 26 May 2014 18:12:35 -0400
+Date: Mon, 26 May 2014 23:12:30 +0100
 From: Daniel Walter <dwalter@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: ralf@linux-mips.org, richard@nod.at
-Subject: [PATCH 07/12] [arch/mips] Remove obsolete strict_strto calls
-Message-ID: <20140526221043.GI25779@google.com>
+Cc: benh@kernel.crashing.org, richard@nod.at
+Subject: [PATCH 08/12] [arch/powerpc] Remove obsolete strict_strto calls
+Message-ID: <20140526221230.GJ25779@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,60 +22,82 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Walter <dwalter@google.com>
-Subject: [PATCH 07/12] [arch/mips] replace obsolete strict_strto calls
+Subject: [PATCH 08/12] [arch/powerpc] replace obsolete strict_strto* calls
 
-Replace obsolete strict_strto call with more appropriate calls
-to kstrto*
+Replace strict_strto calls with more appropriate kstrto calls
 
 Signed-off-by: Daniel Walter <dwalter@google.com>
 ---
- arch/mips/pci/ops-tx4927.c     | 9 ++++++---
- arch/mips/txx9/generic/setup.c | 4 ++--
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ arch/powerpc/kernel/setup_64.c            | 6 +++---
+ arch/powerpc/kernel/vio.c                 | 2 +-
+ arch/powerpc/platforms/pseries/dlpar.c    | 4 ++--
+ arch/powerpc/platforms/pseries/mobility.c | 2 +-
+ 4 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/mips/pci/ops-tx4927.c b/arch/mips/pci/ops-tx4927.c
-index 3d5df51..0e046d8 100644
---- a/arch/mips/pci/ops-tx4927.c
-+++ b/arch/mips/pci/ops-tx4927.c
-@@ -202,17 +202,20 @@ char *tx4927_pcibios_setup(char *str)
- 	unsigned long val;
+diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
+index fbe2437..acf2853 100644
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -148,13 +148,13 @@ static void check_smt_enabled(void)
+ 		else if (!strcmp(smt_enabled_cmdline, "off"))
+ 			smt_enabled_at_boot = 0;
+ 		else {
+-			long smt;
++			int smt;
+ 			int rc;
  
- 	if (!strncmp(str, "trdyto=", 7)) {
--		if (strict_strtoul(str + 7, 0, &val) == 0)
-+		u8 val = 0;
-+		if (kstrtou8(str + 7, 0, &val) == 0)
- 			tx4927_pci_opts.trdyto = val;
- 		return NULL;
- 	}
- 	if (!strncmp(str, "retryto=", 8)) {
--		if (strict_strtoul(str + 8, 0, &val) == 0)
-+		u8 val = 0;
-+		if (kstrtou8(str + 8, 0, &val) == 0)
- 			tx4927_pci_opts.retryto = val;
- 		return NULL;
- 	}
- 	if (!strncmp(str, "gbwc=", 5)) {
--		if (strict_strtoul(str + 5, 0, &val) == 0)
-+		u16 val;
-+		if (kstrtou16(str + 5, 0, &val) == 0)
- 			tx4927_pci_opts.gbwc = val;
- 		return NULL;
- 	}
-diff --git a/arch/mips/txx9/generic/setup.c b/arch/mips/txx9/generic/setup.c
-index 2b0b83c..dd2cf25 100644
---- a/arch/mips/txx9/generic/setup.c
-+++ b/arch/mips/txx9/generic/setup.c
-@@ -309,8 +309,8 @@ static void __init preprocess_cmdline(void)
- 			txx9_board_vec = find_board_byname(str + 6);
- 			continue;
- 		} else if (strncmp(str, "masterclk=", 10) == 0) {
--			unsigned long val;
--			if (strict_strtoul(str + 10, 10, &val) == 0)
-+			unsigned int val;
-+			if (kstrtouint(str + 10, 10, &val) == 0)
- 				txx9_master_clock = val;
- 			continue;
- 		} else if (strcmp(str, "icdisable") == 0) {
+-			rc = strict_strtol(smt_enabled_cmdline, 10, &smt);
++			rc = kstrtoint(smt_enabled_cmdline, 10, &smt);
+ 			if (!rc)
+ 				smt_enabled_at_boot =
+-					min(threads_per_core, (int)smt);
++					min(threads_per_core, smt);
+ 		}
+ 	} else {
+ 		dn = of_find_node_by_path("/options");
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index 904c661..5bfdab9 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -977,7 +977,7 @@ static ssize_t viodev_cmo_desired_set(struct device *dev,
+ 	size_t new_desired;
+ 	int ret;
+ 
+-	ret = strict_strtoul(buf, 10, &new_desired);
++	ret = kstrtoul(buf, 10, &new_desired);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/arch/powerpc/platforms/pseries/dlpar.c b/arch/powerpc/platforms/pseries/dlpar.c
+index 022b38e..abc6892 100644
+--- a/arch/powerpc/platforms/pseries/dlpar.c
++++ b/arch/powerpc/platforms/pseries/dlpar.c
+@@ -399,10 +399,10 @@ out:
+ static ssize_t dlpar_cpu_probe(const char *buf, size_t count)
+ {
+ 	struct device_node *dn, *parent;
+-	unsigned long drc_index;
++	u32 drc_index;
+ 	int rc;
+ 
+-	rc = strict_strtoul(buf, 0, &drc_index);
++	rc = kstrtou32(buf, 0, &drc_index);
+ 	if (rc)
+ 		return -EINVAL;
+ 
+diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
+index bde7eba..0694ac6 100644
+--- a/arch/powerpc/platforms/pseries/mobility.c
++++ b/arch/powerpc/platforms/pseries/mobility.c
+@@ -319,7 +319,7 @@ static ssize_t migrate_store(struct class *class, struct class_attribute *attr,
+ 	u64 streamid;
+ 	int rc;
+ 
+-	rc = strict_strtoull(buf, 0, &streamid);
++	rc = kstrtou64(buf, 0, &streamid);
+ 	if (rc)
+ 		return rc;
+ 
 -- 
 1.9.3
 
