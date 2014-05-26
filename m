@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaEZP37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:29:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35549 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128AbaEZP34 (ORCPT
+	id S1753260AbaEZP3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:29:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33421 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029AbaEZP3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:29:56 -0400
-Message-Id: <20140526152107.962265143@infradead.org>
+	Mon, 26 May 2014 11:29:50 -0400
+Message-Id: <20140526152108.018672523@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 26 May 2014 16:56:08 +0200
+Date: Mon, 26 May 2014 16:56:09 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -19,12 +19,14 @@ Cc: Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
         Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
         Hal Rosenstock <hal.rosenstock@gmail.com>,
         Mike Marciniszyn <infinipath@intel.com>
-Subject: [RFC][PATCH 3/5] mm,ib,umem: Use VM_PINNED
+Subject: [RFC][PATCH 4/5] mm,ib,ipath: Use VM_PINNED
 References: <20140526145605.016140154@infradead.org>
-Content-Disposition: inline; filename=peterz-mm-pinned-3.patch
+Content-Disposition: inline; filename=peterz-mm-pinned-4.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+XXX: got lost, need the start vaddr in the release paths, help?
 
 Use the mm_mpin() call to prepare the vm for a 'persistent'
 get_user_pages() call.
@@ -34,174 +36,155 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Hugh Dickins <hughd@google.com>
 Cc: Mel Gorman <mgorman@suse.de>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: Mike Marciniszyn <infinipath@intel.com> 
+Cc: Roland Dreier <roland@kernel.org> 
+Cc: Sean Hefty <sean.hefty@intel.com> 
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com> 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- drivers/infiniband/core/umem.c |   51 ++++++++++++++++-------------------------
- include/rdma/ib_umem.h         |    3 +-
- 2 files changed, 23 insertions(+), 31 deletions(-)
+ drivers/infiniband/hw/ipath/ipath_file_ops.c   |    6 ++---
+ drivers/infiniband/hw/ipath/ipath_kernel.h     |    4 +--
+ drivers/infiniband/hw/ipath/ipath_user_pages.c |   28 +++++++++++--------------
+ 3 files changed, 18 insertions(+), 20 deletions(-)
 
---- a/drivers/infiniband/core/umem.c
-+++ b/drivers/infiniband/core/umem.c
-@@ -81,15 +81,12 @@ struct ib_umem *ib_umem_get(struct ib_uc
- 	struct ib_umem *umem;
- 	struct page **page_list;
- 	struct vm_area_struct **vma_list;
--	unsigned long locked;
+--- a/drivers/infiniband/hw/ipath/ipath_file_ops.c
++++ b/drivers/infiniband/hw/ipath/ipath_file_ops.c
+@@ -456,7 +456,7 @@ static int ipath_tid_update(struct ipath
+ 				ipath_stats.sps_pageunlocks++;
+ 			}
+ 		}
+-		ipath_release_user_pages(pagep, cnt);
++		ipath_release_user_pages(pagep, /* vaddr */, cnt);
+ 	} else {
+ 		/*
+ 		 * Copy the updated array, with ipath_tid's filled in, back
+@@ -572,7 +572,7 @@ static int ipath_tid_free(struct ipath_p
+ 			pci_unmap_page(dd->pcidev,
+ 				dd->ipath_physshadow[porttid + tid],
+ 				PAGE_SIZE, PCI_DMA_FROMDEVICE);
+-			ipath_release_user_pages(&p, 1);
++			ipath_release_user_pages(&p, /* vaddr */, 1);
+ 			ipath_stats.sps_pageunlocks++;
+ 		} else
+ 			ipath_dbg("Unused tid %u, ignoring\n", tid);
+@@ -2025,7 +2025,7 @@ static void unlock_expected_tids(struct
+ 		dd->ipath_pageshadow[i] = NULL;
+ 		pci_unmap_page(dd->pcidev, dd->ipath_physshadow[i],
+ 			PAGE_SIZE, PCI_DMA_FROMDEVICE);
+-		ipath_release_user_pages_on_close(&ps, 1);
++		ipath_release_user_pages_on_close(&ps, /* vaddr */, 1);
+ 		cnt++;
+ 		ipath_stats.sps_pageunlocks++;
+ 	}
+--- a/drivers/infiniband/hw/ipath/ipath_kernel.h
++++ b/drivers/infiniband/hw/ipath/ipath_kernel.h
+@@ -1082,8 +1082,8 @@ static inline void ipath_sdma_desc_unres
+ #define IPATH_DFLT_RCVHDRSIZE 9
+ 
+ int ipath_get_user_pages(unsigned long, size_t, struct page **);
+-void ipath_release_user_pages(struct page **, size_t);
+-void ipath_release_user_pages_on_close(struct page **, size_t);
++void ipath_release_user_pages(struct page **, unsigned long, size_t);
++void ipath_release_user_pages_on_close(struct page **, unsigned long, size_t);
+ int ipath_eeprom_read(struct ipath_devdata *, u8, void *, int);
+ int ipath_eeprom_write(struct ipath_devdata *, u8, const void *, int);
+ int ipath_tempsense_read(struct ipath_devdata *, u8 regnum);
+--- a/drivers/infiniband/hw/ipath/ipath_user_pages.c
++++ b/drivers/infiniband/hw/ipath/ipath_user_pages.c
+@@ -39,7 +39,7 @@
+ #include "ipath_kernel.h"
+ 
+ static void __ipath_release_user_pages(struct page **p, size_t num_pages,
+-				   int dirty)
++				       int dirty)
+ {
+ 	size_t i;
+ 
+@@ -56,16 +56,12 @@ static void __ipath_release_user_pages(s
+ static int __ipath_get_user_pages(unsigned long start_page, size_t num_pages,
+ 				  struct page **p, struct vm_area_struct **vma)
+ {
 -	unsigned long lock_limit;
- 	unsigned long cur_base;
- 	unsigned long npages;
+ 	size_t got;
  	int ret;
- 	int i;
- 	DEFINE_DMA_ATTRS(attrs);
- 	struct scatterlist *sg, *sg_list_start;
--	int need_release = 0;
  
- 	if (dmasync)
- 		dma_set_attr(DMA_ATTR_WRITE_BARRIER, &attrs);
-@@ -135,26 +132,23 @@ struct ib_umem *ib_umem_get(struct ib_uc
- 
- 	down_write(&current->mm->mmap_sem);
- 
--	locked     = npages + current->mm->pinned_vm;
 -	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
 -
--	if ((locked > lock_limit) && !capable(CAP_IPC_LOCK)) {
+-	if (num_pages > lock_limit) {
 -		ret = -ENOMEM;
--		goto out;
--	}
--
- 	cur_base = addr & PAGE_MASK;
-+	umem->start_addr = cur_base;
-+	umem->nr_pages = npages;
- 
- 	if (npages == 0) {
- 		ret = -EINVAL;
--		goto out;
-+		goto err;
- 	}
- 
-+	ret = mm_mpin(umem->start_addr, npages * PAGE_SIZE);
++	ret = mm_mpin(start_page, num_pages * PAGE_SIZE);
 +	if (ret)
-+		goto err;
-+
- 	ret = sg_alloc_table(&umem->sg_head, npages, GFP_KERNEL);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
+ 		goto bail;
+-	}
  
--	need_release = 1;
- 	sg_list_start = umem->sg_head.sgl;
- 
- 	while (npages) {
-@@ -164,7 +158,7 @@ struct ib_umem *ib_umem_get(struct ib_uc
- 				     1, !umem->writable, page_list, vma_list);
- 
+ 	ipath_cdbg(VERBOSE, "pin %lx pages from vaddr %lx\n",
+ 		   (unsigned long) num_pages, start_page);
+@@ -78,14 +74,12 @@ static int __ipath_get_user_pages(unsign
  		if (ret < 0)
--			goto out;
-+			goto err_release;
- 
- 		umem->npages += ret;
- 		cur_base += ret * PAGE_SIZE;
-@@ -189,25 +183,26 @@ struct ib_umem *ib_umem_get(struct ib_uc
- 
- 	if (umem->nmap <= 0) {
- 		ret = -ENOMEM;
--		goto out;
-+		goto err_release;
+ 			goto bail_release;
  	}
- 
+-
+-	current->mm->pinned_vm += num_pages;
+-
  	ret = 0;
+ 	goto bail;
  
--out:
--	if (ret < 0) {
--		if (need_release)
--			__ib_umem_release(context->device, umem, 0);
--		kfree(umem);
--	} else
--		current->mm->pinned_vm = locked;
--
-+unlock:
- 	up_write(&current->mm->mmap_sem);
- 	if (vma_list)
- 		free_page((unsigned long) vma_list);
- 	free_page((unsigned long) page_list);
- 
- 	return ret < 0 ? ERR_PTR(ret) : umem;
-+
-+err_release:
-+	__ib_umem_release(context->device, umem, 0);
-+err_unpin:
-+	mm_munpin(umem->start_addr, umem->nr_pages * PAGE_SIZE);
-+err:
-+	kfree(umem);
-+	goto unlock;
+ bail_release:
+ 	__ipath_release_user_pages(p, got, 0);
++	mm_munpin(start_page, num_pages * PAGE_SIZE);
+ bail:
+ 	return ret;
  }
- EXPORT_SYMBOL(ib_umem_get);
+@@ -172,13 +166,13 @@ int ipath_get_user_pages(unsigned long s
+ 	return ret;
+ }
  
-@@ -216,7 +211,7 @@ static void ib_umem_account(struct work_
- 	struct ib_umem *umem = container_of(work, struct ib_umem, work);
- 
- 	down_write(&umem->mm->mmap_sem);
--	umem->mm->pinned_vm -= umem->diff;
-+	mm_munpin(umem->start_addr, umem->nr_pages * PAGE_SIZE);
- 	up_write(&umem->mm->mmap_sem);
- 	mmput(umem->mm);
- 	kfree(umem);
-@@ -230,7 +225,6 @@ void ib_umem_release(struct ib_umem *ume
+-void ipath_release_user_pages(struct page **p, size_t num_pages)
++void ipath_release_user_pages(struct page **p, unsigned long start_page,
++			      size_t num_pages)
  {
- 	struct ib_ucontext *context = umem->context;
- 	struct mm_struct *mm;
--	unsigned long diff;
+ 	down_write(&current->mm->mmap_sem);
  
- 	__ib_umem_release(umem->context->device, umem, 1);
- 
-@@ -240,8 +234,6 @@ void ib_umem_release(struct ib_umem *ume
- 		return;
- 	}
- 
--	diff = PAGE_ALIGN(umem->length + umem->offset) >> PAGE_SHIFT;
+ 	__ipath_release_user_pages(p, num_pages, 1);
 -
- 	/*
- 	 * We may be called with the mm's mmap_sem already held.  This
- 	 * can happen when a userspace munmap() is the call that drops
-@@ -254,7 +246,6 @@ void ib_umem_release(struct ib_umem *ume
- 		if (!down_write_trylock(&mm->mmap_sem)) {
- 			INIT_WORK(&umem->work, ib_umem_account);
- 			umem->mm   = mm;
--			umem->diff = diff;
+-	current->mm->pinned_vm -= num_pages;
++	mm_munpin(start_page, num_pages * PAGE_SIZE);
  
- 			queue_work(ib_wq, &umem->work);
- 			return;
-@@ -262,7 +253,7 @@ void ib_umem_release(struct ib_umem *ume
- 	} else
- 		down_write(&mm->mmap_sem);
+ 	up_write(&current->mm->mmap_sem);
+ }
+@@ -186,6 +180,7 @@ void ipath_release_user_pages(struct pag
+ struct ipath_user_pages_work {
+ 	struct work_struct work;
+ 	struct mm_struct *mm;
++	unsigned long start_page;
+ 	unsigned long num_pages;
+ };
  
--	current->mm->pinned_vm -= diff;
-+	mm_munpin(umem->start_addr, umem->nr_pages * PAGE_SIZE);
- 	up_write(&mm->mmap_sem);
- 	mmput(mm);
- 	kfree(umem);
---- a/include/rdma/ib_umem.h
-+++ b/include/rdma/ib_umem.h
-@@ -41,6 +41,8 @@ struct ib_ucontext;
+@@ -195,13 +190,15 @@ static void user_pages_account(struct wo
+ 		container_of(_work, struct ipath_user_pages_work, work);
  
- struct ib_umem {
- 	struct ib_ucontext     *context;
-+	unsigned long		start_addr;
-+	unsigned long		nr_pages;
- 	size_t			length;
- 	int			offset;
- 	int			page_size;
-@@ -48,7 +50,6 @@ struct ib_umem {
- 	int                     hugetlb;
- 	struct work_struct	work;
- 	struct mm_struct       *mm;
--	unsigned long		diff;
- 	struct sg_table sg_head;
- 	int             nmap;
- 	int             npages;
+ 	down_write(&work->mm->mmap_sem);
+-	work->mm->pinned_vm -= work->num_pages;
++	mm_munpin(work->start_page, work->num_pages * PAGE_SIZE);
+ 	up_write(&work->mm->mmap_sem);
+ 	mmput(work->mm);
+ 	kfree(work);
+ }
+ 
+-void ipath_release_user_pages_on_close(struct page **p, size_t num_pages)
++void ipath_release_user_pages_on_close(struct page **p,
++				       unsigned long start_page,
++				       size_t num_pages)
+ {
+ 	struct ipath_user_pages_work *work;
+ 	struct mm_struct *mm;
+@@ -218,6 +215,7 @@ void ipath_release_user_pages_on_close(s
+ 
+ 	INIT_WORK(&work->work, user_pages_account);
+ 	work->mm = mm;
++	work->start_page = start_page;
+ 	work->num_pages = num_pages;
+ 
+ 	queue_work(ib_wq, &work->work);
 
 
