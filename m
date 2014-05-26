@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaEZORV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:17:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4777 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803AbaEZORU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:17:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,913,1392192000"; 
-   d="scan'208";a="517865394"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Jeff Smith <jsmith.lkml@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Kenny Simpson <theonetruekenny@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <CAAih0Nige+Cjoh6c=718P2R4BV5=RczuGh17voVgZEc_hyz16Q@mail.gmail.com>
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
- <20140519130114.GA3140@dhcp22.suse.cz>
- <20140519143540.BE9F6E009B@blue.fi.intel.com>
- <20140519143837.GA5228@infradead.org>
- <CAAih0NjpHKc11JfG3MOnvisXesg-LoaS0Cx1rOA5ggDEHNfY6g@mail.gmail.com>
- <20140526094240.B5508E009B@blue.fi.intel.com>
- <CAAih0Nght-5k6mp-_jc+GipxPfxPYdCEabH_8M2QMkM_B5FPWw@mail.gmail.com>
- <53834310.8060808@redhat.com>
- <CAAih0NhTXOb+Hj+u+0QLrADxyOYc-EwHDCx5+1Fq7wiJsaY=_Q@mail.gmail.com>
- <20140526134718.0AAC7E009B@blue.fi.intel.com>
- <CAAih0Nige+Cjoh6c=718P2R4BV5=RczuGh17voVgZEc_hyz16Q@mail.gmail.com>
-Subject: Re: remap_file_pages() use
+	id S1752298AbaEZOT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 10:19:27 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52869 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaEZOT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 10:19:26 -0400
+Message-ID: <1401113960.23186.41.camel@marge.simpson.net>
+Subject: Re: balance storm
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Libo Chen <libo.chen@huawei.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
+        peterz@infradead.org
+Date: Mon, 26 May 2014 16:19:20 +0200
+In-Reply-To: <538330B7.5070503@huawei.com>
+References: <5382AF2E.1040407@huawei.com>
+	 <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20140526141655.295DDE009B@blue.fi.intel.com>
-Date: Mon, 26 May 2014 17:16:55 +0300 (EEST)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Smith wrote:
-> I've got no real issues at this point, but could you perhaps elaborate
-> a bit on the rough order of magnitude of "long" time
+On Mon, 2014-05-26 at 20:16 +0800, Libo Chen wrote: 
+> On 2014/5/26 13:11, Mike Galbraith wrote:
 
-We have never-break-ABI policy in kernel. In practice it means we don't
-remove an interface if somebody could notice that it disappears.
+> > Your synthetic test is the absolute worst case scenario.  There has to
+> > be work between wakeups for select_idle_sibling() to have any chance
+> > whatsoever of turning in a win.  At 0 work, it becomes 100% overhead.
+> 
+> not synthetic, it is a real problem in our product. under no load, waste
+> much cpu time.
 
-Most likely it will go though intermediate step with separate kernel
-config option, like uselib(2) recently.
+What happens in your product if you apply the commit I pointed out?
 
-Don't worry. Just convert your code to avoid remap_file_pages() where it's
-possible.
+> >> so I think 15% cpu usage and migration event are too high, how to fixed?
+> > 
+> > You can't for free, low latency wakeup can be worth one hell of a lot.
+> > 
+> > You could do a decayed hit/miss or such to shut the thing off when the
+> > price is just too high.  Restricting migrations per unit time per task
+> > also helps cut the cost, but hurts tasks that could have gotten to the
+> > CPU quicker, and started your next bit of work.  Anything you do there
+> > is going to be a rob Peter to pay Paul thing.
+> > 
+> 
+> I had tried to change sched_migration_cost and sched_nr_migrate in /proc,
+> but no use.  any other  suggestion?
+> 
+> I still think this is a problem to schedular.  it is better to directly solve
+> this issue instead of a workaroud
 
-> and what cases would be slower?
+I didn't say it wasn't a problem, it is.  I said whatever you do will be
+a tradeoff.
 
-With emulation each remap_file_pages() will usually create one or two
-additional kernel structure which represents part of virtual address space
-of the process. Kernel often needs to lookup that structure by virtual
-address and this operation can be slower with high number of structures.
+-Mike
 
-I've tried to test how bad it would be in near-worst case: 4G mapped in
-reverse page order. It creates 1 million structures. On my machine, fault
-in of all this memory is ~1.9 times slower with emulation comparing to
-original remap_file_pages(2). In practice, nobody will notice, I believe.
-
--- 
- Kirill A. Shutemov
