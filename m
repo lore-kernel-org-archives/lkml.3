@@ -1,120 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaEZPB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:01:59 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:51980 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaEZPB6 (ORCPT
+	id S1752592AbaEZPE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:04:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:64088 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaEZPE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:01:58 -0400
+	Mon, 26 May 2014 11:04:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Jean Delvare <jdelvare@suse.de>, Alexandre Courbot <gnurou@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] gpio: pch: include linux/slab.h
+Date: Mon, 26 May 2014 17:04:24 +0200
+Message-ID: <8665687.jWqf6bo4lM@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <CACiqTEPUn_ZD6ut_hMnpCH_CwmR+GgLTG3GQqjmXh3rQ7PNO6A@mail.gmail.com>
-References: <CACiqTEObccUuhyCcr8HZ0qZunxwdtkPLNYsp9xJRG6H6hxGo7Q@mail.gmail.com>
-	<CACiqTEPUn_ZD6ut_hMnpCH_CwmR+GgLTG3GQqjmXh3rQ7PNO6A@mail.gmail.com>
-Date: Mon, 26 May 2014 18:01:57 +0300
-Message-ID: <CACiqTEMGpa7xbOxeB8U69atx2VNSXyPcqWnx0+1D0FA6f7-w6g@mail.gmail.com>
-Subject: Re: 3.13-1 dm cache possible race condition
-From: roma1390 <roma1390@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Morgan Mears <Morgan.Mears@netapp.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:njbDZkAw8HzK1L/5/86Z9jpwlmwmYDOUMsXhitzjesD
+ MGvkjmd6tU9fADnPrY9O3Hyh1uoEL+BhypJUNSJ8AzD3Tjt9C+
+ 6GZuIss7tmSvaLcoJL3GDEE75NUwUAT9C9XC2hDmELlGyygKd8
+ ElkBMZ40N4pk1oUS8Tef7c1cjpif2Rli2XRP3NwxUM4r9V5Ogc
+ HYXpCUihrKqZdGKcu5ZIm9y3nMevYMWvZh4FJK4g389TurrM5N
+ RMZUuXTxcKGAnx/5XGna/YeHFQX6rpCepZ/RfBVVUJZxpkcAba
+ 1KAwD97X66TwTsSYHytluEl5KsN50QMbpj3ETZxw8z9pdo/qpN
+ acYH8ojGzytnjRBa8QgM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again,
+The gpio-pch driver was recently enabled for compile-tests,
+which revealed that it is missing an include for linux/slab.h,
+which on ARM is not implied by any of the other headers.
 
-Is there need any additional information? Or this feature is not ready
-for production?
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
+diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+index 83a1563..d6eac9b 100644
+--- a/drivers/gpio/gpio-pch.c
++++ b/drivers/gpio/gpio-pch.c
+@@ -20,6 +20,7 @@
+ #include <linux/gpio.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
++#include <linux/slab.h>
+ 
+ #define PCH_EDGE_FALLING	0
+ #define PCH_EDGE_RISING		BIT(0)
 
-On Mon, May 19, 2014 at 11:31 PM, roma1390 <roma1390@gmail.com> wrote:
-> Hello again.
->
-> Tried this on latest head: 14186fea0cb06bc43181ce239efe0df6f1af260a
->
-> Getting same error. If there is needed some additional information,
-> please contact.
->
-> On Sun, May 18, 2014 at 6:35 PM, roma1390 <roma1390@gmail.com> wrote:
->> I think that somehow is got broken cache->nr_dirty
->>
->> # dmsetup status foo0
->> 0 32768 cache 7/4096 1728240 256 1675650 0 0 64 64 4294967295 1
->> writeback 2 migration_threshold 2048 4 random_threshold 4
->> sequential_threshold 512
->>
->>
->> See: 4294967295 this is -1 as is not OK.
->>
->>
->> Kernel: Debian stock 3.13-1-amd64
->>
->> Actions taken:
->>
->>  modprobe brd
->>  BLOCKS=$[`blockdev --getsize64 /dev/ram0`/512]
->>  METADATA_DEV=/dev/ram0
->>  CACHE_DEV=/dev/ram1
->>  DATA_DEV=/dev/ram2
->>  dmsetup create foo0 --table "0 $BLOCKS cache $METADATA_DEV $CACHE_DEV
->> $DATA_DEV 512 1 writeback default 0"
->>
->> Test:
->> one terminal window:
->>   while true; do dd if=/dev/zero of=/dev/mapper/foo0 bs=512; done
->> second window:
->>   while sleep .1; do dmsetup status foo0; done
->>
->>
->> after some time from 0 i get to 4294967295, which is think is not
->> expected value.
->>
->>
->> More info:
->> device just created:
->> 0 32768 cache 10/4096 1728259 256 1675650 0 0 0 64 0 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> after some (~20) writes:
->> 0 32768 cache 10/4096 1790456 256 1737543 0 0 0 64 0 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> started full speed test, after 2 sec:
->> 0 32768 cache 10/4096 2475934 256 2417479 0 0 0 64 0 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> 0 32768 cache 10/4096 2485872 256 2428545 0 0 0 64 5 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> 0 32768 cache 10/4096 2495964 256 2437959 0 0 0 64 0 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> 0 32768 cache 10/4096 2506447 256 2447365 0 0 0 64 20 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> 0 32768 cache 10/4096 2515948 256 2458439 0 0 0 64 0 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> 0 32768 cache 10/4096 2526687 256 2466631 0 0 0 64 0 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> after ~10sec:
->> 0 32768 cache 10/4096 2667754 256 2609991 0 0 0 64 0 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> 0 32768 cache 10/4096 2678571 256 2618183 0 0 0 64 4294967295 1
->> writeback 2 migration_threshold 2048 4 random_threshold 4
->> sequential_threshold 512
->> 0 32768 cache 10/4096 2687846 256 2630471 0 0 0 64 4294967295 1
->> writeback 2 migration_threshold 2048 4 random_threshold 4
->> sequential_threshold 512
->> 0 32768 cache 10/4096 2698349 256 2638663 0 0 0 64 4294967295 1
->> writeback 2 migration_threshold 2048 4 random_threshold 4
->> sequential_threshold 512
->> 0 32768 cache 10/4096 2708082 256 2648514 0 0 0 64 5 1 writeback 2
->> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
->> 0 32768 cache 10/4096 2717700 256 2659143 0 0 0 64 4294967295 1
->> writeback 2 migration_threshold 2048 4 random_threshold 4
->> sequential_threshold 512
->> 0 32768 cache 10/4096 2728596 256 2667335 0 0 0 64 4294967295 1
->> writeback 2 migration_threshold 2048 4 random_threshold 4
->> sequential_threshold 512
->> 0 32768 cache 10/4096 2737453 256 2679623 0 0 0 64 4294967295 1
->> writeback 2 migration_threshold 2048 4 random_threshold 4
->> sequential_threshold 512
->> ^C
