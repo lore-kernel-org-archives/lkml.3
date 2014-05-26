@@ -1,77 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaEZO6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:58:12 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:50652 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752386AbaEZO6L (ORCPT
+	id S1752780AbaEZO6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 10:58:43 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37829 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752309AbaEZO6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:58:11 -0400
-Message-ID: <1401116287.6068.15.camel@x220>
-Subject: Re: [PATCH] ARM: msm: Update the references to DEBUG_MSM_UARTx
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: galak@codeaurora.org, iivanov@mm-sol.com, arm@kernel.org,
-        khilman@linaro.org, arnd@arndb.de, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olof@lixom.net, davidb@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
-        linus.walleij@linaro.org, srinivas.kandagatla@linaro.org
-Date: Mon, 26 May 2014 16:58:07 +0200
-In-Reply-To: <1401112733-23649-1-git-send-email-gdjakov@mm-sol.com>
-References: <1401108595.6068.5.camel@x220>
-	 <1401112733-23649-1-git-send-email-gdjakov@mm-sol.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 May 2014 14:58:08.0461 (UTC) FILETIME=[E7DF17D0:01CF78F2]
-X-RcptDomain: vger.kernel.org
+	Mon, 26 May 2014 10:58:41 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 2/5] regulator: axp20x: prepare support for multiple AXP chip families
+Date: Mon, 26 May 2014 16:58:09 +0200
+Message-Id: <1401116292-24066-3-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401116292-24066-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1401116292-24066-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Georgi,
+Rework the AXP20X_ macros to support the several chip families, so that
+each family can define it's own set of regulators, and regulator matches.
 
-On Mon, 2014-05-26 at 16:58 +0300, Georgi Djakov wrote:
-> The Kconfig options DEBUG_MSM_UART1, DEBUG_MSM_UART2 and DEBUG_MSM_UART3
-> are removed, but they are still referenced in arch/arm/mach-msm/io.c
-> Fix this by updating the reference to the new Kconfig option.
-> 
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> ---
->  arch/arm/mach-msm/io.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-> index 34e0947..b042dca 100644
-> --- a/arch/arm/mach-msm/io.c
-> +++ b/arch/arm/mach-msm/io.c
-> @@ -57,8 +57,7 @@ static struct map_desc msm_io_desc[] __initdata = {
->  		.length =   MSM_SHARED_RAM_SIZE,
->  		.type =     MT_DEVICE,
->  	},
-> -#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-> -		defined(CONFIG_DEBUG_MSM_UART3)
-> +#if defined(CONFIG_DEBUG_MSM_UART)
->  	{
->  		/* Must be last: virtual and pfn filled in by debug_ll_addr() */
->  		.length = SZ_4K,
-> @@ -76,8 +75,7 @@ void __init msm_map_common_io(void)
->  	 * pages are peripheral interface or not.
->  	 */
->  	asm("mcr p15, 0, %0, c15, c2, 4" : : "r" (0));
-> -#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-> -		defined(CONFIG_DEBUG_MSM_UART3)
-> +#if defined(CONFIG_DEBUG_MSM_UART)
->  #ifdef CONFIG_MMU
->  	debug_ll_addr(&msm_io_desc[size - 1].pfn,
->  		      &msm_io_desc[size - 1].virtual);
+Pass a match table to the axp20x_regulator_parse_dt function instead of
+statically using the axp20x match table.
 
-Should I now redo https://lkml.org/lkml/2014/5/15/249 by making the
-(outdated) checks in arch/arm/mach-msm/board-trout.c and
-arch/arm/mach-msm/board-trout-gpio.c also use CONFIG_DEBUG_MSM_UART?
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/regulator/axp20x-regulator.c | 74 +++++++++++++++++++-----------------
+ 1 file changed, 39 insertions(+), 35 deletions(-)
 
-
-Paul Bolle
+diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
+index 61ae4d4..5a59982 100644
+--- a/drivers/regulator/axp20x-regulator.c
++++ b/drivers/regulator/axp20x-regulator.c
+@@ -32,13 +32,13 @@
+ 
+ #define AXP20X_FREQ_DCDC_MASK		0x0f
+ 
+-#define AXP20X_DESC_IO(_id, _supply, _min, _max, _step, _vreg, _vmask, _ereg,   \
+-		       _emask, _enable_val, _disable_val)			\
+-	[AXP20X_##_id] = {							\
++#define AXP_DESC_IO(_family, _id, _supply, _min, _max, _step, _vreg, _vmask,	\
++		    _ereg, _emask, _enable_val, _disable_val)			\
++	[_family##_##_id] = {							\
+ 		.name		= #_id,						\
+ 		.supply_name	= (_supply),					\
+ 		.type		= REGULATOR_VOLTAGE,				\
+-		.id		= AXP20X_##_id,					\
++		.id		= _family##_##_id,				\
+ 		.n_voltages	= (((_max) - (_min)) / (_step) + 1),		\
+ 		.owner		= THIS_MODULE,					\
+ 		.min_uV		= (_min) * 1000,				\
+@@ -52,13 +52,13 @@
+ 		.ops		= &axp20x_ops,					\
+ 	}
+ 
+-#define AXP20X_DESC(_id, _supply, _min, _max, _step, _vreg, _vmask, _ereg,	\
+-		    _emask) 							\
+-	[AXP20X_##_id] = {							\
++#define AXP_DESC(_family, _id, _supply, _min, _max, _step, _vreg, _vmask, 	\
++		 _ereg, _emask) 						\
++	[_family##_##_id] = {							\
+ 		.name		= #_id,						\
+ 		.supply_name	= (_supply),					\
+ 		.type		= REGULATOR_VOLTAGE,				\
+-		.id		= AXP20X_##_id,					\
++		.id		= _family##_##_id,				\
+ 		.n_voltages	= (((_max) - (_min)) / (_step) + 1),		\
+ 		.owner		= THIS_MODULE,					\
+ 		.min_uV		= (_min) * 1000,				\
+@@ -70,24 +70,25 @@
+ 		.ops		= &axp20x_ops,					\
+ 	}
+ 
+-#define AXP20X_DESC_FIXED(_id, _supply, _volt)					\
+-	[AXP20X_##_id] = {							\
++#define AXP_DESC_FIXED(_family, _id, _supply, _volt)				\
++	[_family##_##_id] = {							\
+ 		.name		= #_id,						\
+ 		.supply_name	= (_supply),					\
+ 		.type		= REGULATOR_VOLTAGE,				\
+-		.id		= AXP20X_##_id,					\
++		.id		= _family##_##_id,				\
+ 		.n_voltages	= 1,						\
+ 		.owner		= THIS_MODULE,					\
+ 		.min_uV		= (_volt) * 1000,				\
+ 		.ops		= &axp20x_ops_fixed				\
+ 	}
+ 
+-#define AXP20X_DESC_TABLE(_id, _supply, _table, _vreg, _vmask, _ereg, _emask)	\
+-	[AXP20X_##_id] = {							\
++#define AXP_DESC_TABLE(_family, _id, _supply, _table, _vreg, _vmask, _ereg,	\
++		       _emask)							\
++	[_family##_##_id] = {							\
+ 		.name		= #_id,						\
+ 		.supply_name	= (_supply),					\
+ 		.type		= REGULATOR_VOLTAGE,				\
+-		.id		= AXP20X_##_id,					\
++		.id		= _family##_##_id,				\
+ 		.n_voltages	= ARRAY_SIZE(_table),				\
+ 		.owner		= THIS_MODULE,					\
+ 		.vsel_reg	= (_vreg),					\
+@@ -126,36 +127,36 @@ static struct regulator_ops axp20x_ops = {
+ };
+ 
+ static const struct regulator_desc axp20x_regulators[] = {
+-	AXP20X_DESC(DCDC2, "vin2", 700, 2275, 25, AXP20X_DCDC2_V_OUT, 0x3f,
++	AXP_DESC(AXP20X, DCDC2, "vin2", 700, 2275, 25, AXP20X_DCDC2_V_OUT, 0x3f,
+ 		    AXP20X_PWR_OUT_CTRL, 0x10),
+-	AXP20X_DESC(DCDC3, "vin3", 700, 3500, 25, AXP20X_DCDC3_V_OUT, 0x7f,
++	AXP_DESC(AXP20X, DCDC3, "vin3", 700, 3500, 25, AXP20X_DCDC3_V_OUT, 0x7f,
+ 		    AXP20X_PWR_OUT_CTRL, 0x02),
+-	AXP20X_DESC_FIXED(LDO1, "acin", 1300),
+-	AXP20X_DESC(LDO2, "ldo24in", 1800, 3300, 100, AXP20X_LDO24_V_OUT, 0xf0,
++	AXP_DESC_FIXED(AXP20X, LDO1, "acin", 1300),
++	AXP_DESC(AXP20X, LDO2, "ldo24in", 1800, 3300, 100, AXP20X_LDO24_V_OUT, 0xf0,
+ 		    AXP20X_PWR_OUT_CTRL, 0x04),
+-	AXP20X_DESC(LDO3, "ldo3in", 700, 3500, 25, AXP20X_LDO3_V_OUT, 0x7f,
++	AXP_DESC(AXP20X, LDO3, "ldo3in", 700, 3500, 25, AXP20X_LDO3_V_OUT, 0x7f,
+ 		    AXP20X_PWR_OUT_CTRL, 0x40),
+-	AXP20X_DESC_TABLE(LDO4, "ldo24in", axp20x_ldo4_data, AXP20X_LDO24_V_OUT, 0x0f,
++	AXP_DESC_TABLE(AXP20X, LDO4, "ldo24in", axp20x_ldo4_data, AXP20X_LDO24_V_OUT, 0x0f,
+ 			  AXP20X_PWR_OUT_CTRL, 0x08),
+-	AXP20X_DESC_IO(LDO5, "ldo5in", 1800, 3300, 100, AXP20X_LDO5_V_OUT, 0xf0,
++	AXP_DESC_IO(AXP20X, LDO5, "ldo5in", 1800, 3300, 100, AXP20X_LDO5_V_OUT, 0xf0,
+ 		       AXP20X_GPIO0_CTRL, 0x07, AXP20X_IO_ENABLED,
+ 		       AXP20X_IO_DISABLED),
+ };
+ 
+-#define AXP_MATCH(_name, _id) \
+-	[AXP20X_##_id] = { \
++#define AXP_MATCH(_family, _name, _id) \
++	[_family##_##_id] = { \
+ 		.name		= #_name, \
+-		.driver_data	= (void *) &axp20x_regulators[AXP20X_##_id], \
++		.driver_data	= (void *) &axp20x_regulators[_family##_##_id], \
+ 	}
+ 
+ static struct of_regulator_match axp20x_matches[] = {
+-	AXP_MATCH(dcdc2, DCDC2),
+-	AXP_MATCH(dcdc3, DCDC3),
+-	AXP_MATCH(ldo1, LDO1),
+-	AXP_MATCH(ldo2, LDO2),
+-	AXP_MATCH(ldo3, LDO3),
+-	AXP_MATCH(ldo4, LDO4),
+-	AXP_MATCH(ldo5, LDO5),
++	AXP_MATCH(AXP20X, dcdc2, DCDC2),
++	AXP_MATCH(AXP20X, dcdc3, DCDC3),
++	AXP_MATCH(AXP20X, ldo1, LDO1),
++	AXP_MATCH(AXP20X, ldo2, LDO2),
++	AXP_MATCH(AXP20X, ldo3, LDO3),
++	AXP_MATCH(AXP20X, ldo4, LDO4),
++	AXP_MATCH(AXP20X, ldo5, LDO5),
+ };
+ 
+ static int axp20x_set_dcdc_freq(struct platform_device *pdev, u32 dcdcfreq)
+@@ -178,7 +179,9 @@ static int axp20x_set_dcdc_freq(struct platform_device *pdev, u32 dcdcfreq)
+ 				  AXP20X_FREQ_DCDC_MASK, dcdcfreq);
+ }
+ 
+-static int axp20x_regulator_parse_dt(struct platform_device *pdev)
++static int axp20x_regulator_parse_dt(struct platform_device *pdev,
++				     struct of_regulator_match *matches,
++				     int nmatches)
+ {
+ 	struct device_node *np, *regulators;
+ 	int ret;
+@@ -192,8 +195,8 @@ static int axp20x_regulator_parse_dt(struct platform_device *pdev)
+ 	if (!regulators) {
+ 		dev_warn(&pdev->dev, "regulators node not found\n");
+ 	} else {
+-		ret = of_regulator_match(&pdev->dev, regulators, axp20x_matches,
+-					 ARRAY_SIZE(axp20x_matches));
++		ret = of_regulator_match(&pdev->dev, regulators, matches,
++					 nmatches);
+ 		if (ret < 0) {
+ 			dev_err(&pdev->dev, "Error parsing regulator init data: %d\n", ret);
+ 			return ret;
+@@ -237,7 +240,8 @@ static int axp20x_regulator_probe(struct platform_device *pdev)
+ 	int ret, i;
+ 	u32 workmode;
+ 
+-	ret = axp20x_regulator_parse_dt(pdev);
++	ret = axp20x_regulator_parse_dt(pdev, axp20x_matches,
++					ARRAY_SIZE(axp20x_matches));
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+1.8.3.2
 
