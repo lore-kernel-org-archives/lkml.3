@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaEZKHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:07:21 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48320 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaEZKHR (ORCPT
+	id S1752221AbaEZKHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:07:09 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39915 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaEZKHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:07:17 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-78-538312539d39
+	Mon, 26 May 2014 06:07:02 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-c3-5383124446b6
 From: Heesub Shin <heesub.shin@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -18,37 +18,38 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Daeseok Youn <daeseok.youn@gmail.com>,
         Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>
-Subject: [PATCH 9/9] staging: ion: optimize struct ion_system_heap
-Date: Mon, 26 May 2014 19:05:01 +0900
-Message-id: <1401098701-24049-9-git-send-email-heesub.shin@samsung.com>
+Subject: [PATCH 3/9] staging: ion: use compound pages on high order pages for
+ system heap
+Date: Mon, 26 May 2014 19:04:55 +0900
+Message-id: <1401098701-24049-3-git-send-email-heesub.shin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
 References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t8zPd1goeZgg6X3dC3e/73PZrF94zdW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t8zbV0XoeZgg3+/RS3e/73PZrF94zdW
 	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
 	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8ARxWWTkpqTWZZapG+X
-	wJVxoKmDpeATf8WKA3/ZGhhX8nYxcnJICJhIrOy9yQJhi0lcuLeerYuRi0NIYBmjxLn75xhh
-	ii4vvMUOkZjOKLF+xi+oqnYmicU7DgBVcXCwCWhLHNoWDNIgImAs0X92FlgDs8AcZokpWy8w
-	gSSEBZwktjbfYwWxWQRUJZb2HAHbwCvgLnF09QFWiG1yEiePTQazOQU8JCY+mQN2nhBQze2N
-	D8EWSwhcY5dY+2kiM8QgAYlvkw+xgBwhISArsekAM8QcSYmDK26wTGAUXsDIsIpRNLUguaA4
-	Kb3ISK84Mbe4NC9dLzk/dxMjJGb6djDePGB9iDEZaNxEZinR5HxgzOWVxBsamxlZmJqYGhuZ
-	W5qRJqwkzrvoYVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYOicCMlCtWfPq2IbO/7M1k
-	Xh82i9lw08JTP38enfOzO7X7z9YVHUnPX+8If7qWe1LIX6cFCprWt6ysxM035IUrlyjw2mjZ
-	/Fn8L3z7ri9z5SwPfevclaMf8SNzsd/0wtW31p84x/P8qpeXWZW76iLrrHnx8lyqWgZFfziK
-	Z0k+8FryY1nYPA8lluKMREMt5qLiRACApTKMrwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQd1goeZgg08bNS3e/73PZrF94zdW
-	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
-	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8AR1cBok5GamJJapJCa
-	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
-	DtOE0BA3XQuYxghd35AguB4jAzSQsI4x40BTB0vBJ/6KFQf+sjUwruTtYuTkkBAwkbi88BY7
-	hC0mceHeerYuRi4OIYHpjBLrZ/yCctqZJBbvOMDYxcjBwSagLXFoWzBIg4iAsUT/2VnsIDXM
-	AnOYJaZsvcAEkhAWcJLY2nyPFcRmEVCVWNpzhBHE5hVwlzi6+gArxDY5iZPHJoPZnAIeEhOf
-	zGEBsYWAam5vfMg2gZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgiHwmtYNxZYPF
-	IUYBDkYlHt4D3k3BQqyJZcWVuYcYJTiYlUR4tTibg4V4UxIrq1KL8uOLSnNSiw8xJgNdNZFZ
-	SjQ5H5gs8kriDY1NzIwsjcyMTcyNjUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBcd9u
-	i4JvX8TP6NzvrDzYLXcgbaMyXxLLxozfko72Ztbz571gzO8omZvHdW6vc+HBXU6vFuene8/4
-	lGC4dQWHtF2O3BWhGQpsir9DTq3vSD88O1alfCZTROKXNbfuN4hUqQT2Oj9weW3A5L+1/INx
-	Xe0ESQtB8djJ0jozavdmOSoqfOPIlEtWYinOSDTUYi4qTgQAcyNYlgwDAAA=
+	wJWxY2Evc0ELX8WTBVvYGxibeLoYOTkkBEwkZh65wghhi0lcuLeerYuRi0NIYBmjxNO+U4ww
+	RZ3/trFAJKYzSuxYtBiqqp1J4tv6W0AOBwebgLbEoW3BIA0iAsYS/WdnsYPUMAvMYZaYsvUC
+	E0hCWCBa4uj3x+wgNouAqsSb7W+YQHp5Bdwl2pYWQiyTkzh5bDIriM0p4CEx8ckcFhBbCKjk
+	9saHbBA119glNvzKhRgjIPFt8iEWkDESArISmw4wQ5RIShxccYNlAqPwAkaGVYyiqQXJBcVJ
+	6UVGesWJucWleel6yfm5mxgh8dK3g/HmAetDjMlA4yYyS4km5wPjLa8k3tDYzMjC1MTU2Mjc
+	0ow0YSVx3kUPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MEZfje8p6OB037B3ZuQ0U//r
+	0urVBrPFY+cpyEpJ12Tce7Hr/iWNR5PTMp47G3Pc/nJf/9LpaIfqOc+nfJbrumqd9nB2zmWW
+	SvVkS02hqPd/Yy61TZ+//s3tWz8EHggx7i15of7l/Z9Qq/m9ut3vnA6c9peXDyuUfsyyZ8XR
+	sPYzDnHzd39+06XEUpyRaKjFXFScCADlncKorQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQV0XoeZggykdghbv/95ns9i+8Rur
+	xctDmhYHP9xnsdhz5he7RfPi9WwWB2cvYbI481vX4vKuOWwWa+dvY7O4MbnQ4nTHIlYHHo9t
+	u7exelzu62XyuLfvMIvHzll32T3uXNvD5rF/7hp2j74tqxg9Pm+SC+CIamC0yUhNTEktUkjN
+	S85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6VkmhLDGnFCgUkFhcrKRv
+	h2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsWNhL3NBC1/FkwVb2BsYm3i6GDk5JARMJDr/bWOB
+	sMUkLtxbz9bFyMUhJDCdUWLHosVQTjuTxLf1t4AcDg42AW2JQ9uCQRpEBIwl+s/OYgepYRaY
+	wywxZesFJpCEsEC0xNHvj9lBbBYBVYk3298wgfTyCrhLtC0thFgmJ3Hy2GRWEJtTwENi4pM5
+	YEcIAZXc3viQbQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwfH4THoH46oGi0OM
+	AhyMSjy8B7ybgoVYE8uKK3MPMUpwMCuJ8GpxNgcL8aYkVlalFuXHF5XmpBYfYkwGOmois5Ro
+	cj4wVeSVxBsam5gZWRqZGZuYGxuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+Mc30mh
+	5vKnzu36wVxyPCXeLGDhvxylf2l1i+d6GO/0O7Hv0iJbA+Yjil8DF++vPj11bXx1f9Chyefj
+	z22bekOUa4VZa77xMWXGG9NyxNoEWaT+Gzbe9rq4YINK1InLTBFxUlaiVa9aH88UN31UrRQ+
+	89Cv7fUHqjesObq/7kystsLM/Lhu9jwlluKMREMt5qLiRAC+Bu64CwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,60 +57,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct ion_system_heap has an array for storing pointers to page pools
-and it is allocated separately from the containing structure. There is
-no point in allocating those two small objects individually, bothering
-slab allocator. Using a variable length array simplifies code lines and
-reduces overhead to the slab.
+Using compound pages relieves burden on tracking the meta information
+which are currently stored in page_info.
 
 Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
 ---
- drivers/staging/android/ion/ion_system_heap.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/staging/android/ion/ion_page_pool.c   | 4 +++-
+ drivers/staging/android/ion/ion_system_heap.c | 2 +-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
+index 1684780..0141b3b 100644
+--- a/drivers/staging/android/ion/ion_page_pool.c
++++ b/drivers/staging/android/ion/ion_page_pool.c
+@@ -112,6 +112,8 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page)
+ {
+ 	int ret;
+ 
++	BUG_ON(pool->order != compound_order(page));
++
+ 	ret = ion_page_pool_add(pool, page);
+ 	if (ret)
+ 		ion_page_pool_free_pages(pool, page);
+@@ -167,7 +169,7 @@ struct ion_page_pool *ion_page_pool_create(gfp_t gfp_mask, unsigned int order)
+ 	pool->low_count = 0;
+ 	INIT_LIST_HEAD(&pool->low_items);
+ 	INIT_LIST_HEAD(&pool->high_items);
+-	pool->gfp_mask = gfp_mask;
++	pool->gfp_mask = gfp_mask | __GFP_COMP;
+ 	pool->order = order;
+ 	mutex_init(&pool->mutex);
+ 	plist_node_init(&pool->list, order);
 diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index d78d589e..690d866 100644
+index b554751..48e6a58 100644
 --- a/drivers/staging/android/ion/ion_system_heap.c
 +++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -48,7 +48,7 @@ static inline unsigned int order_to_size(int order)
+@@ -72,7 +72,7 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
  
- struct ion_system_heap {
- 	struct ion_heap heap;
--	struct ion_page_pool **pools;
-+	struct ion_page_pool *pools[0];
- };
- 
- static struct page *alloc_buffer_page(struct ion_system_heap *heap,
-@@ -259,16 +259,15 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
- 	struct ion_system_heap *heap;
- 	int i;
- 
--	heap = kzalloc(sizeof(struct ion_system_heap), GFP_KERNEL);
-+	heap = kzalloc(sizeof(struct ion_system_heap) +
-+			sizeof(struct ion_page_pool *) * num_orders,
-+			GFP_KERNEL);
- 	if (!heap)
- 		return ERR_PTR(-ENOMEM);
- 	heap->heap.ops = &system_heap_ops;
- 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
- 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
--	heap->pools = kzalloc(sizeof(struct ion_page_pool *) * num_orders,
--			      GFP_KERNEL);
--	if (!heap->pools)
--		goto free_heap;
-+
- 	for (i = 0; i < num_orders; i++) {
- 		struct ion_page_pool *pool;
- 		gfp_t gfp_flags = low_order_gfp_flags;
-@@ -287,8 +286,6 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
- destroy_pools:
- 	while (i--)
- 		ion_page_pool_destroy(heap->pools[i]);
--	kfree(heap->pools);
--free_heap:
- 	kfree(heap);
- 	return ERR_PTR(-ENOMEM);
- }
+ 		if (order > 4)
+ 			gfp_flags = high_order_gfp_flags;
+-		page = alloc_pages(gfp_flags, order);
++		page = alloc_pages(gfp_flags | __GFP_COMP, order);
+ 		if (!page)
+ 			return NULL;
+ 		ion_pages_sync_for_device(NULL, page, PAGE_SIZE << order,
 -- 
 1.9.1
 
