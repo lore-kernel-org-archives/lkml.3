@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaEZQ5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 12:57:39 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:52404 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaEZQ5h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 12:57:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401110850-3552-2-git-send-email-tixxdz@opendz.org>
-References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org> <1401110850-3552-2-git-send-email-tixxdz@opendz.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 26 May 2014 09:57:16 -0700
-Message-ID: <CALCETrUte7WRMi23+rp+XbgAoOcw=TPZe02YEuZRZyVroj+mfQ@mail.gmail.com>
-Subject: Re: [PATCH 1/9] procfs: use flags to deny or allow access to /proc/<pid>/$entry
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751993AbaEZQ5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 12:57:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43464 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaEZQ5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 12:57:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,914,1392192000"; 
+   d="scan'208";a="545122309"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH 01/15] x86/xsaves: Detect xsaves/xrstors feature
+Date: Mon, 26 May 2014 10:01:08 -0700
+Message-Id: <1401123682-5384-2-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
+References: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> Add the deny or allow flags, so we can perform proper permission checks
-> and set the result accordingly. These flags are needed in case we have
-> to cache the result of permission checks that are done during ->open()
-> time. Later during ->read(), we can decide to allow or deny the read().
->
-> The pid entries that need these flags are:
-> /proc/<pid>/stat
-> /proc/<pid>/wchan
-> /proc/<pid>/maps  (will be handled in next patches).
->
-> These files are world readable, userspace depend on that. To prevent
-> ASLR leaks and to avoid breaking userspace, we follow this scheme:
->
-> a) Perform permission checks during ->open()
-> b) Cache the result of a) and return success
-> c) Recheck the cached result during ->read()
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Why is (c) needed?
+Detect the xsaves feature in processor extended state enumberation sub-leaf
+(eax=0x0d, ecx=1):
+Bit 03: Supports xsaves/xrstors and IA32_XSS if set
 
->
->  /*
-> + * Flags used to deny or allow current to access /proc/<pid>/$entry
-> + * after proper permission checks.
-> + */
-> +enum {
-> +       PID_ENTRY_DENY  = 0,    /* Deny access */
-> +       PID_ENTRY_ALLOW = 1,    /* Allow access */
-> +};
+The IA32_XSS MSR (index DA0H) contains a state-component bitmap that specifies
+the state components that software has enabled xsaves and xrstors to manage.
+If the bit corresponding to a state component is clear in XCR0 | IA32_XSS,
+xsaves and xrstors will not operate on that state component, regardless of
+the value of the instruction mask.
 
-I think this would be less alarming if this were:
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/include/asm/cpufeature.h     | 2 ++
+ arch/x86/include/uapi/asm/msr-index.h | 2 ++
+ arch/x86/kernel/cpu/scattered.c       | 1 +
+ 3 files changed, 5 insertions(+)
 
-#define PID_ENTRY_DENY ((void *)1UL)
-#define PID_ENTRY_ALLOW ((void *)2UL)
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index e265ff9..efede2e 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -186,6 +186,7 @@
+ #define X86_FEATURE_DTHERM	(7*32+ 7) /* Digital Thermal Sensor */
+ #define X86_FEATURE_HW_PSTATE	(7*32+ 8) /* AMD HW-PState */
+ #define X86_FEATURE_PROC_FEEDBACK (7*32+ 9) /* AMD ProcFeedbackInterface */
++#define X86_FEATURE_XSAVES	(7*32+13) /* xsaves/xrstors/xss */
+ 
+ /* Virtualization flags: Linux defined, word 8 */
+ #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+@@ -328,6 +329,7 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_x2apic		boot_cpu_has(X86_FEATURE_X2APIC)
+ #define cpu_has_xsave		boot_cpu_has(X86_FEATURE_XSAVE)
+ #define cpu_has_xsaveopt	boot_cpu_has(X86_FEATURE_XSAVEOPT)
++#define cpu_has_xsaves		boot_cpu_has(X86_FEATURE_XSAVES)
+ #define cpu_has_osxsave		boot_cpu_has(X86_FEATURE_OSXSAVE)
+ #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
+ #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index fcf2b3a..ce04632 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -311,6 +311,8 @@
+ #define MSR_IA32_UCODE_WRITE		0x00000079
+ #define MSR_IA32_UCODE_REV		0x0000008b
+ 
++#define MSR_IA32_XSS			0x00000da0
++
+ #define MSR_IA32_PERF_STATUS		0x00000198
+ #define MSR_IA32_PERF_CTL		0x00000199
+ #define MSR_AMD_PSTATE_DEF_BASE		0xc0010064
+diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+index b6f794a..8b29ea2 100644
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -39,6 +39,7 @@ void init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
+ 		{ X86_FEATURE_XSAVEOPT,		CR_EAX,	0, 0x0000000d, 1 },
++		{ X86_FEATURE_XSAVES,		CR_EAX,	3, 0x0000000d, 1 },
+ 		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
+ 		{ X86_FEATURE_CPB,		CR_EDX, 9, 0x80000007, 0 },
+ 		{ X86_FEATURE_PROC_FEEDBACK,	CR_EDX,11, 0x80000007, 0 },
+-- 
+1.8.1.2
 
-Also, I don't like DENY and ALLOW.  It's not denying and allowing.
-How about PID_ENTRY_OPENER_MAY_PTRACE and
-PID_ENTRY_OPENER_MAY_NOT_PTRACE?
-
---Andy
