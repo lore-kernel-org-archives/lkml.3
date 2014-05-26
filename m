@@ -1,100 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaEZSNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:13:42 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:44176 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaEZSNk (ORCPT
+	id S1751938AbaEZSOi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:14:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47354 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaEZSOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:13:40 -0400
+	Mon, 26 May 2014 14:14:37 -0400
+Date: Mon, 26 May 2014 20:14:24 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/3] driver core/platform: don't leak memory allocated
+ for dma_mask
+Message-ID: <20140526181424.GN20155@pengutronix.de>
+References: <1401122483-31603-1-git-send-email-emilgoode@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140526052320.GA12890@core.coreip.homeip.net>
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
-	<1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>
-	<20130718171744.GC32381@polaris.bitmath.org>
-	<20130916022533.GA6468@core.coreip.homeip.net>
-	<537E09D6.7050604@itdev.co.uk>
-	<CAPDwgkP5KjP6PcZBeYTMPuewO4exyUFfCX8rhzmgDO65ti=3Mg@mail.gmail.com>
-	<20140526052320.GA12890@core.coreip.homeip.net>
-Date: Mon, 26 May 2014 14:13:39 -0400
-X-Google-Sender-Auth: 6cHi6p_MF40Wk8Y4gnVnnePrfjc
-Message-ID: <CAPDwgkM8+5_r1_-QBY2=KG_i-L06vVBatw1k-KakjoSc01D9WQ@mail.gmail.com>
-Subject: Re: [PATCH 20/51] Input: atmel_mxt_ts - Set default irqflags when
- there is no pdata
-From: Yufeng Shen <miletus@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Benson Leung <bleung@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401122483-31603-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 1:23 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
->
-> On Fri, May 23, 2014 at 12:37:46PM -0400, Yufeng Shen wrote:
-> > On Thu, May 22, 2014 at 10:29 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
-> > >
-> > > Dmitry Torokhov wrote:
-> > > > On Thu, Jul 18, 2013 at 07:17:44PM +0200, rydberg@euromail.se wrote:
-> > > >>> From: Yufeng Shen <miletus@chromium.org>
-> > > >>> This is the preparation for supporting the code path when there is
-> > > >>> platform data provided and still boot the device into a sane state
-> > > >>> with backup NVRAM config.
-> > > >>>
-> > > >>> Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
-> > > >>> provided.
-> > > >
-> > > > I think if there is no platform data we should use 0 as IRQ falgs and
-> > > > assume that IRQ line is properly configured by the board code or via
-> > > > device tree.
-> > >
-> > > Beson/Yufeng - do you still have a requirement to probe without platform
-> > > data or device tree? I'm just merging in some changes to add device tree
-> > > support, and it would simplify things a bit if I can drop this patch.
-> >
-> >
-> > It has been working for quite a while for boards/devices that don't
-> > provide platform
-> > data. If we drop the default IRQ flags, sure we can add code for each
-> > board to configure
-> > the IRQ separately, but that's just adding extra work. Is there strong
-> > reason why we
-> > should not do the default setting in the driver if it is not already
-> > configured in platform
-> > data ?
->
->
-> I am not saying that board code needs to add platform data. I am saying
-> that the board code needs to set up interrupt properly (via
-> irq_set_irq_type() or similar) and then the driver can use 0 as irqflags
-> argument in request_irq() in absence of DT/platform data.
->
-> Thanks.
->
+On Mon, May 26, 2014 at 06:41:21PM +0200, Emil Goode wrote:
+> From: Yann Droneaud <ydroneaud@opteya.com>
+> 
+> Since commit 01dcc60a7cb8, platform_device_register_full() is
+> available to allocate and register a platform device.
+> 
+> If a dma_mask is provided as part of platform_device_info,
+> platform_device_register_full() allocate memory for a u64 using
+> kmalloc().
+> 
+> A comment in the code state that "[t]his memory isn't freed when the
+> device is put".
+> 
+> It's never a good thing to leak memory, but there's only very few
+> users of platform_device_info's dma_mask, and those are mostly
+> "static" devices that are not going to be plugged/unplugged often.
+> 
+> So memory leak is not really an issue, but allocating 8 bytes through
+> kmalloc() seems overkill.
+> 
+> To address this issue, this patch adds dma_mask to struct platform_object
+> and when using platform_device_alloc() or platform_device_register_full()
+> the .dma_mask pointer of struct device is assigned the address of this new
+> dma_mask member of struct platform_object.  And since it's within struct
+> platform_object, dma_mask won't be leaked anymore when struct platform_device
+> get released.
+> 
+> No more memory leak, no small allocation and a slight reduction in code
+> size.
+> 
+> Built on Debian jessie, using GCC 4.8, for ARM and x86_64 architectures,
+> the size of the object file and the data structure layout are updated
+> as follows, produced with commands:
+> 
+> $ size drivers/base/platform.o
+> $ pahole drivers/base/platform.o \
+> 	--recursive		 \
+> 	--class_name device,pdev_archdata,platform_device,platform_object
+> 
+> -- size+pahole_3.15-rc6_ARM
+> ++ size+pahole_3.15-rc6_ARM+
+> @@ -2,7 +2,7 @@
+>     text	   data	    bss	    dec	    hex	filename
+> -   6530	   1008	      8	   7546	   1d7a	drivers/base/platform.o
+> +   6482	   1008	      8	   7498	   1d4a	drivers/base/platform.o
+> 
+> @@ -93,8 +93,13 @@ struct platform_object {
+>  	/* --- cacheline 12 boundary (768 bytes) was 40 bytes ago --- */
+>  	char                       name[1];            /*   808     1 */
+> 
+> -	/* size: 816, cachelines: 13, members: 2 */
+> -	/* padding: 7 */
+> +	/* XXX 7 bytes hole, try to pack */
+> 
+> +	u64                        dma_mask;           /*   816     8 */
+> 
+> +	/* size: 824, cachelines: 13, members: 3 */
+> +	/* sum members: 817, holes: 1, sum holes: 7 */
+>  	/* paddings: 1, sum paddings: 4 */
+> -	/* last cacheline: 48 bytes */
+> +	/* last cacheline: 56 bytes */
+>  };
+> 
+> -- size+pahole_3.15-rc6_x86_64
+> ++ size+pahole_3.15-rc6_x86_64+
+> @@ -2,7 +2,7 @@
+>     text	   data	    bss	    dec	    hex	filename
+> -   8570	   5032	   3424	  17026	   4282	drivers/base/platform.o
+> +   8509	   5032	   3408	  16949	   4235	drivers/base/platform.o
+> 
+> @@ -95,7 +95,11 @@ struct platform_object {
+>  	/* --- cacheline 22 boundary (1408 bytes) was 32 bytes ago --- */
+>  	char                       name[1];             /*  1440     1 */
+> 
+> -	/* size: 1448, cachelines: 23, members: 2 */
+> -	/* padding: 7 */
+> -	/* last cacheline: 40 bytes */
+> +	/* XXX 7 bytes hole, try to pack */
+> 
+> +	u64                        dma_mask;            /*  1448     8 */
+> 
+> +	/* size: 1456, cachelines: 23, members: 3 */
+> +	/* sum members: 1449, holes: 1, sum holes: 7 */
+> +	/* last cacheline: 48 bytes */
+>  };
+> 
+> Changes from v4 [1]:
+> - Split v4 of the patch into two separate patches.
+> - Generated new object file size and data structure layout info.
+> - Updated the changelog message.
+> 
+> Changes from v3 [2]:
+> - fixed commit message so that git am doesn't fail.
+> 
+> Changes from v2 [3]:
+> - move 'dma_mask' to platform_object so that it's always
+>   allocated and won't leak on release; remove all previously
+>   added support functions.
+> - use C99 flexible array member for 'name' to remove padding
+>   at the end of platform_object.
+> 
+> Changes from v1 [4]:
+> - remove unneeded kfree() from error path
+> - add reference to author/commit adding allocation of dmamask
+> 
+> Changes from v0 [5]:
+> - small rewrite to squeeze the patch to a bare minimal
+> 
+> [1] http://lkml.kernel.org/r/1390817152-30898-1-git-send-email-ydroneaud@opteya.com
+>     https://patchwork.kernel.org/patch/3541871/
+> 
+> [2] http://lkml.kernel.org/r/1390771138-28348-1-git-send-email-ydroneaud@opteya.com
+>     https://patchwork.kernel.org/patch/3540081/
+> 
+> [3] http://lkml.kernel.org/r/1389683909-17495-1-git-send-email-ydroneaud@opteya.com
+>     https://patchwork.kernel.org/patch/3484411/
+> 
+> [4] http://lkml.kernel.org/r/1389649085-7365-1-git-send-email-ydroneaud@opteya.com
+>     https://patchwork.kernel.org/patch/3480961/
+> 
+> [5] http://lkml.kernel.org/r/1386886207-2735-1-git-send-email-ydroneaud@opteya.com
+> 
+> Cc: Yann Droneaud <ydroneaud@opteya.com>
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+> [Emil: split v4 of the patch in two and updated changelog]
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+> Hello Greg,
+> 
+> The first two patches in the series are created from v4 of the
+> original patch, since I have not changed how the code works I think
+> it is correct to keep the original author and Signed-off-by line.
+> 
+> Best regards,
+> 
+> Emil Goode
+> 
+>  drivers/base/platform.c |   13 +++++--------
+>  1 file changed, 5 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 9e9227e..dd1fa07 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -166,6 +166,7 @@ EXPORT_SYMBOL_GPL(platform_add_devices);
+>  struct platform_object {
+>  	struct platform_device pdev;
+>  	char name[1];
+> +	u64 dma_mask;
+This is broken. .name is used as flexible array, so .name and dma_mask
+overlap.
 
-So my argument is mainly based on that the existing code is working (boards
-that do not have platform data are relying on the driver to set the
-default irq),
-and change the default value would need extra work to setup the irq, say as you
-suggested through irq_set_irq_type(). I am no expert in irq so it could be true
-that your suggested way is indeed better. I am in favor of keeping
-this patch is only
-because it requires no extra change for existing code that are using it.
+Uwe
 
-
-
-> --
-> Dmitry
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
