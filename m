@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577AbaEZHce (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:32:34 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:34677 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751231AbaEZHcd (ORCPT
+	id S1751693AbaEZHew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:34:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53699 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbaEZHev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:32:33 -0400
-Message-ID: <5382EDEC.9040503@st.com>
-Date: Mon, 26 May 2014 09:31:56 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 26 May 2014 03:34:51 -0400
+Message-ID: <5382EE60.3000808@ti.com>
+Date: Mon, 26 May 2014 10:33:52 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, Fabio Estevam <festevam@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: divider: Fix table round up function
-References: <1399481332-9550-1-git-send-email-maxime.coquelin@st.com> <20140523213915.23136.16939@quantum>
-In-Reply-To: <20140523213915.23136.16939@quantum>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Tony Lindgren <tony@atomide.com>
+CC: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "Gupta, Pekon" <pekon@ti.com>, Robert Nelson <robertcnelson@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, <dwmw2@infradead.org>,
+        <nsekhar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [RFC PATCH 00/16] OMAP: GPMC: Restructure OMAP GPMC driver (NAND)
+ : DT binding change proposal
+References: <1400671264-10702-1-git-send-email-rogerq@ti.com> <20140521160818.GA1150@arch.cereza> <537DB17A.6060608@ti.com> <CABxcv=nbgGhVN+XYO8s=mYOpoLU9-kWuEqc+FLMaSbWS7BJNyQ@mail.gmail.com> <20140522144600.GA1785@arch.cereza> <537F03C8.3070101@ti.com> <20140523145354.GE2321@atomide.com>
+In-Reply-To: <20140523145354.GE2321@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-25_03:2014-05-23,2014-05-25,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/23/2014 05:53 PM, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [140523 01:17]:
+>> On 05/22/2014 05:46 PM, Ezequiel Garcia wrote:
+>>> On 22 May 01:51 PM, Javier Martinez Canillas wrote:
+>>>> On Thu, May 22, 2014 at 10:12 AM, Roger Quadros <rogerq@ti.com> wrote:
+>>>>>> On 21 May 02:20 PM, Roger Quadros wrote:
+>>>>>> While I agree that the GPMC driver is a bit messy, I'm not sure it's possible
+>>>>>> to go through such a complete devicetree binding re-design (breaking backwards
+>>>>>> compatibility) now that the binding is already in production.
+>>>>>
+>>>>> Why not? especially if the existing bindings are poorly dones. Is anyone using these
+>>>>> bindings burning the DT into ROM and can't change it when they update the kernel?
+>>>>>
+>>>>
+>>>> While I do agree that your DT bindings are much better than the
+>>>> current ones, there is a policy that DT bindings are an external API
+>>>> and once are released with a kernel are set in stone and can't be
+>>>> changed.
+>>>>
+>>>
+>>> Exactly. The DT binding is considered an ABI. Thus, invariant across kernel
+>>> versions. Users can't be coherced into a DTB update after a kernel update.
+>>>
+>>> That said, I don't really care if you break compatilibity in this case.
+>>> Rather, I'm suggesting that you make sure this change is going to be accepted
+>>> upstream, before doing any more work. The DT maintainers are reluctant to do
+>>> so.
+>>
+>> Appreciate your concern.
+>>
+>> Would be really nice if you can review patches 1-12. They have nothing to do with DT changes.
+>> Thanks.
+> 
+> I'm mostly concerned about keeping things working. I think the
+> only way we can keep things working is to keep support for
+> the old binding around in addition to the new one. That way
+> we can update devices one at a time.
 
+Good to hear that you are not keen on keeping the old bindings forever. I understand
+that we need to keep things working during the transition. I'll think of something to
+maintain backward compatibility while supporting the new binding.
 
-On 05/23/2014 11:39 PM, Mike Turquette wrote:
-> Quoting Maxime COQUELIN (2014-05-07 09:48:52)
->> Commit 1d9fe6b97 ("clk: divider: Fix best div calculation for power-of-two and
->> table dividers") introduces a regression in its _table_round_up function.
->>
->> When the divider passed to this function is greater than the max divider
->> available in the table, this function returns table's max divider.
->> Problem is that it causes an infinite loop in clk_divider_bestdiv() because
->> _next_div() will never return a value greater than maxdiv.
->>
->> Instead of returning table's max divider, this patch returns INT_MAX.
->>
->> Reported-by: Fabio Estevam <festevam@gmail.com>
->> Reported-by: Shawn Guo <shawn.guo@freescale.com>
->> Tested-by: Fabio Estevam <festevam@gmail.com>
->> Cc: Mike Turquette <mike.turquette@linaro.org>
->> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
->
-> Pulled into clk-fixes for -rc7.
-
-Thanks Mike.
-
-Regards,
-Maxime
-
->
-> Regards,
-> Mike
->
->> ---
->>   drivers/clk/clk-divider.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
->> index b3c8396..cf9114a 100644
->> --- a/drivers/clk/clk-divider.c
->> +++ b/drivers/clk/clk-divider.c
->> @@ -158,7 +158,7 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
->>   static int _round_up_table(const struct clk_div_table *table, int div)
->>   {
->>          const struct clk_div_table *clkt;
->> -       int up = _get_table_maxdiv(table);
->> +       int up = INT_MAX;
->>
->>          for (clkt = table; clkt->div; clkt++) {
->>                  if (clkt->div == div)
->> --
->> 1.9.1
->>
+cheers,
+-roger
