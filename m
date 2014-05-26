@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359AbaEZWmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 18:42:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50538 "EHLO mx2.suse.de"
+	id S1751998AbaEZWwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 18:52:25 -0400
+Received: from smtp2.spsu.edu ([168.28.176.204]:40354 "EHLO smtp2.spsu.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406AbaEZWmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 18:42:08 -0400
-Date: Tue, 27 May 2014 00:42:02 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benoit Taine <benoit.taine@lip6.fr>
-cc: David Herrmann <dh.herrmann@googlemail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 16/18] HID: uhid: Use kmemdup instead of kmalloc +
- memcpy
-In-Reply-To: <1401117687-28911-17-git-send-email-benoit.taine@lip6.fr>
-Message-ID: <alpine.LNX.2.00.1405270041480.28869@pobox.suse.cz>
-References: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr> <1401117687-28911-17-git-send-email-benoit.taine@lip6.fr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751266AbaEZWwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 18:52:23 -0400
+X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 18:52:23 EDT
+Date: Mon, 26 May 2014 18:41:47 -0400 (EDT)
+From: Michael Lutin <mlutin@spsu.edu>
+Message-ID: <912737599.7316096.1401144107609.JavaMail.root@zstore2.spsu.edu>
+Subject: Do You Need Loan?
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [101.62.227.52]
+X-Mailer: Zimbra 7.1.4_GA_2568 (zclient/7.1.4_GA_2568)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 May 2014, Benoit Taine wrote:
+Do you need a loan to set up your own private business or to pay off
+your bills? apply now via Email henrymark001@blumail.org apply with
 
-> This issue was reported by coccicheck using the semantic patch 
-> at scripts/coccinelle/api/memdup.cocci
-> 
-> Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+Name:
+Country:
+Amount Needed:
+Loan Duration:
+Mobile Number#:
 
-Applied, thanks Benoit.
+NOTE: THAT ALL INFORMATION MUST BE SENT TO: henrymark001@blumail.org
 
--- 
-Jiri Kosina
-SUSE Labs
+ HENRY MARK LOAN FIRM NEW DELHI INDIA
