@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbaEZRvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:51:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33798 "EHLO mail.skyhub.de"
+	id S1751940AbaEZRw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 13:52:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24624 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202AbaEZRvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:51:49 -0400
-Date: Mon, 26 May 2014 19:51:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] x86, MCE: Flesh out when to panic comment
-Message-ID: <20140526175138.GB26531@pd.tnic>
-References: <537D1E8B.1010505@zytor.com>
- <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
- <20140521215411.GI25130@pd.tnic>
- <537D21F2.8030702@zytor.com>
- <20140521221121.GL25130@pd.tnic>
- <537D2522.80702@zytor.com>
- <20140526101859.GD25732@pd.tnic>
- <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
- <20140526110634.GG25732@pd.tnic>
- <CALCETrVEZ3+YMP8GvmkY=scYzHuR_1sTZRFf+4rEj-4ac17PTw@mail.gmail.com>
+	id S1751466AbaEZRw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 13:52:58 -0400
+Date: Mon, 26 May 2014 19:52:26 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 10/26] perf ui/browser: Add support to accumulated hist
+ stat
+Message-ID: <20140526175226.GD2763@krava.brq.redhat.com>
+References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+ <1400839463-21933-11-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrVEZ3+YMP8GvmkY=scYzHuR_1sTZRFf+4rEj-4ac17PTw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400839463-21933-11-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 09:47:38AM -0700, Andy Lutomirski wrote:
-> It may be worth at least pointing out that mce_severity looks at
-> whether we faulted from kernel context. I missed that the first time
-> around because mce_severity doesn't take a pt_regs pointer.
+On Fri, May 23, 2014 at 07:04:07PM +0900, Namhyung Kim wrote:
+> Print accumulated stat of a hist entry if requested.
+> 
+> Tested-by: Arun Sharma <asharma@fb.com>
+> Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
+> Acked-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/ui/browsers/hists.c | 26 +++++++++++++++++++++++++-
+>  1 file changed, 25 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> index 1c331b934ffc..1de7428a9771 100644
+> --- a/tools/perf/ui/browsers/hists.c
+> +++ b/tools/perf/ui/browsers/hists.c
+> @@ -632,7 +632,6 @@ static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
+>  	ret = scnprintf(hpp->buf, hpp->size, fmt, percent);
+>  	slsmg_printf("%s", hpp->buf);
+>  
+> -	advance_hpp(hpp, ret);
+>  	return ret;
 
-Right, but next time we talk about a different aspect which isn't
-commented on in the handler, we'd have to add to it again, until we've
-rewritten the whole function in pseudo code.
+Whats the purpose of this one..? does not fit to what's in changelog 
 
-I think simply pointing to the function which decides the fate of the
-machine based on the MCE severity is enough - people can then go and
-stare at it, albeit with some struggle.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+thanks,
+jirka
