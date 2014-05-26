@@ -1,70 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaEZNbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:31:43 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43100 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418AbaEZNbm (ORCPT
+	id S1752414AbaEZNdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:33:37 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:48848 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaEZNdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:31:42 -0400
-Date: Mon, 26 May 2014 14:31:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Wenkai Du <wenkai.du@intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Christian Engelmayer <cengelma@gmx.at>, alsa-devel@alsa-project.org
-Message-ID: <20140526133114.GA22111@sirena.org.uk>
-References: <20140522184355.GA8301@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dhwE6X0TwXvg345s"
-Content-Disposition: inline
-In-Reply-To: <20140522184355.GA8301@www.outflux.net>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.165.144
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: Intel: avoid format string leak to thread name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 26 May 2014 09:33:36 -0400
+X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 09:33:35 EDT
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 4/9] procfs: improve /proc/<pid>/wchan protection
+Date: Mon, 26 May 2014 14:27:25 +0100
+Message-Id: <1401110850-3552-5-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert wchan from an INF entry to a REG one. This way we can perform
+and cache the permission checks during ->open().
 
---dhwE6X0TwXvg345s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The checks are only cached, since /proc/<pid>/wchan is world readable,
+and it needs permissions only when returning an address, returning the
+symbol name is not subject to permission checks, so do not change this.
 
-On Thu, May 22, 2014 at 11:43:55AM -0700, Kees Cook wrote:
-> This makes sure a format string can never get processed into the worker
-> thread name from the device name.
+With this logic userspace should continue to work without any problem,
+only cases where users are trying to play tricks or something
+sophisticated is trying to use privileged programs to disclose sensitive
+data will notice.
 
-Applied, thanks.
+Suggested-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+ fs/proc/base.c | 55 +++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 49 insertions(+), 6 deletions(-)
 
---dhwE6X0TwXvg345s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index efe2a11..ef35544 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -273,21 +273,64 @@ static int proc_pid_auxv(struct task_struct *task, char *buffer)
+  * Provides a wchan file via kallsyms in a proper one-value-per-file format.
+  * Returns the resolved symbol.  If that fails, simply return the address.
+  */
+-static int proc_pid_wchan(struct task_struct *task, char *buffer)
++static int wchan_open(struct inode *inode, struct file *filp)
++{
++	/* we only cache the result for wchan entry */
++	if (pid_entry_access(filp, PTRACE_MODE_READ))
++		filp->private_data = (void *)(unsigned long)PID_ENTRY_DENY;
++	else
++		filp->private_data = (void *)(unsigned long)PID_ENTRY_ALLOW;
++
++	return 0;
++}
++
++static int proc_pid_wchan(char *buffer,
++			  struct task_struct *task, int permitted)
+ {
+ 	unsigned long wchan;
+ 	char symname[KSYM_NAME_LEN];
+ 
+ 	wchan = get_wchan(task);
+ 
+-	if (lookup_symbol_name(wchan, symname) < 0)
+-		if (!ptrace_may_access(task, PTRACE_MODE_READ))
++	if (lookup_symbol_name(wchan, symname) < 0) {
++		if (!permitted)
++			return 0;
++
++		/* Update only if access was granted during ->open */
++		if (!mutex_lock_killable(&task->signal->cred_guard_mutex)) {
++			permitted = ptrace_may_access(task, PTRACE_MODE_READ);
++			mutex_unlock(&task->signal->cred_guard_mutex);
++		}
++
++		if (!permitted)
+ 			return 0;
+ 		else
+ 			return sprintf(buffer, "%lu", wchan);
+-	else
++	} else
+ 		return sprintf(buffer, "%s", symname);
+ }
++
++static ssize_t wchan_read(struct file *file, char __user *buf,
++			  size_t count, loff_t *ppos)
++{
++	ssize_t length;
++	unsigned long page = 0UL;
++
++	length = pid_entry_read(file, &page, proc_pid_wchan);
++	if (length >= 0) {
++		length = proc_read_from_buffer(buf, count, ppos,
++					       (char *)page, length);
++		free_page(page);
++	}
++
++	return length;
++}
++
++static const struct file_operations proc_pid_wchan_operations = {
++	.open   = wchan_open,
++	.read   = wchan_read,
++	.llseek = generic_file_llseek,
++};
+ #endif /* CONFIG_KALLSYMS */
+ 
+ static int lock_trace(struct task_struct *task)
+@@ -2631,7 +2674,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	DIR("attr",       S_IRUGO|S_IXUGO, proc_attr_dir_inode_operations, proc_attr_dir_operations),
+ #endif
+ #ifdef CONFIG_KALLSYMS
+-	INF("wchan",      S_IRUGO, proc_pid_wchan),
++	REG("wchan",      S_IRUGO, proc_pid_wchan_operations),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+ 	ONE("stack",      S_IRUSR, proc_pid_stack),
+@@ -2967,7 +3010,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	DIR("attr",      S_IRUGO|S_IXUGO, proc_attr_dir_inode_operations, proc_attr_dir_operations),
+ #endif
+ #ifdef CONFIG_KALLSYMS
+-	INF("wchan",     S_IRUGO, proc_pid_wchan),
++	REG("wchan",     S_IRUGO, proc_pid_wchan_operations),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+ 	ONE("stack",      S_IRUSR, proc_pid_stack),
+-- 
+1.7.11.7
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTg0IfAAoJELSic+t+oim9Z3MP/jpW8Yw9AwV/GIPYJ/7t/wPG
-4cZC1mBU4b3QSjm81qGCiACnHW9hFOM6Aht5m5s56CEEyb6FZZegttOBMChcTF7n
-f7AoyIaPc5BFqtpWlwQab8DU2WfMXJwc98iD3Rtxvdt79OdcB8rOKpI3CaWQzRZ1
-ssPYkyyvR5+rcVgKVNkHUT1QH3BTLAYUHsXRSub45JpglmC9MU/dZXX6x2z8tZp8
-rxQRUoIZIR1+rtbjmvdVPLxZ+CcjmUsRMD8Xk5aP+HocsUQd81LhrkGHzdVSEMpR
-QwX+wxGCC5ou7IWI/hWtvY+XJ6gsYV+ksaH12UWntnHnX3SWSfUgEAaRmXtSi6kP
-fkqzApKbY9rmaEfDVEFriJcMIYKIa8I2Bs9eQTknPRDC+7avVEZQG5gzztY5EGpC
-mRUjgpHZ2XBhRGR8NXk/6LMuGWkueqFJssZ5QfR72cgsoxfK4Q25dYWg5pdcRwL+
-rWvpa/J3Zbj11U3OICHgZ9IU/c9uQWkM/hONBnaBWBDBi+1hxJD4lDBG3TZ0SN1M
-FGtohDW1uL2bEINKkZn3s9wNye2N/+Y8/qw29+RhSUaymdmoUzP6EZEIgBJU5C2C
-kM3037EjyUOpFoV0Rg/+wnrNqoDmpt2UuIS1igpwHnKyHkCPcO1jBzbOk8FsLmmz
-Cd3f8G2pUPZX8/f7Ceum
-=noHH
------END PGP SIGNATURE-----
-
---dhwE6X0TwXvg345s--
