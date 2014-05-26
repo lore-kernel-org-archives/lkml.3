@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaEZMF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 08:05:29 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:42182 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656AbaEZMF2 (ORCPT
+	id S1752017AbaEZMRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 08:17:12 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:12465 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaEZMRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 08:05:28 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] spi: core: Ignore unsupported spi-[tr]x-bus-width property values
-Date: Mon, 26 May 2014 14:05:25 +0200
-Message-Id: <1401105925-16528-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 26 May 2014 08:17:11 -0400
+Message-ID: <538330B7.5070503@huawei.com>
+Date: Mon, 26 May 2014 20:16:55 +0800
+From: Libo Chen <libo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: <tglx@linutronix.de>, <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, "Li Zefan" <lizefan@huawei.com>,
+        <peterz@infradead.org>
+Subject: Re: balance storm
+References: <5382AF2E.1040407@huawei.com> <1401081082.5339.41.camel@marge.simpson.net>
+In-Reply-To: <1401081082.5339.41.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rejecting unsupported values of spi-tx-bus-width and spi-rx-bus-width
-may break compatibility with future DTs. Just ignore them, falling back
-to Single SPI Transfers.
+On 2014/5/26 13:11, Mike Galbraith wrote:
+> On Mon, 2014-05-26 at 11:04 +0800, Libo Chen wrote: 
+>> hi,
+>>     my box has 16 cpu (E5-2658,8 core, 2 thread per core), i did a test on
+>> 3.4.24stable, startup 50 same process, every process is sample:
+>>
+>>  	#include <unistd.h>
+>>
+>>  	int main()
+>>  	{
+>>           	for (;;)
+>>           	{
+>>                   	unsigned int i = 0;
+>>                  	 while (i< 100){
+>>                      	 i++;
+>>                   	}
+>>                   	usleep(100);
+>>           	}
+>>
+>>          	 return 0;
+>>   	}
+>>
+>> the result is process uses 15% cpu time, perf tool shows 70w migrations in 5 second.
+> 
+> See e0a79f52 sched: Fix select_idle_sibling() bouncing cow syndrome
+> 
+> That commit will fix expensive as hell bouncing for most real loads, but
+> it won't fix your test.  Doing nothing but wake, select_idle_sibling()
+> will be traversing all cores/siblings mightily, taking L2 misses as it
+> traverses, bouncing wakees that do _nothing_ when an idle CPU is found.
+> 
+> Your synthetic test is the absolute worst case scenario.  There has to
+> be work between wakeups for select_idle_sibling() to have any chance
+> whatsoever of turning in a win.  At 0 work, it becomes 100% overhead.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
-I thought I sent this before, but I can't find any evidence
+not synthetic, it is a real problem in our product. under no load, waste
+much cpu time.
 
- drivers/spi/spi.c | 18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+> 
+>> I guess task migration takes up a lot of cpu, so i did another test. use taskset tool to bind
+>> a task to a fixed cpu. Results in line with expectations, cpu usage is down to 5%.
+>>
+>> other test:
+>> - 3.15upstream has the same problem with 3.4.24.
+>> - suse sp2 has low cpu usage about 5%.
+> 
+> SLE11-SP2 has a patch which fixes that behavior, but of course at the
+> expense of other load types.  A trade.  It also throttles nohz, which
+> can have substantial cost when cross CPU scheduling.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 074f55f5d5ec..d4f9670b51bc 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1270,11 +1270,10 @@ static void of_register_spi_devices(struct spi_master *master)
- 				spi->mode |= SPI_TX_QUAD;
- 				break;
- 			default:
--				dev_err(&master->dev,
--					"spi-tx-bus-width %d not supported\n",
--					value);
--				spi_dev_put(spi);
--				continue;
-+				dev_warn(&master->dev,
-+					 "spi-tx-bus-width %d not supported\n",
-+					 value);
-+				break;
- 			}
- 		}
- 
-@@ -1289,11 +1288,10 @@ static void of_register_spi_devices(struct spi_master *master)
- 				spi->mode |= SPI_RX_QUAD;
- 				break;
- 			default:
--				dev_err(&master->dev,
--					"spi-rx-bus-width %d not supported\n",
--					value);
--				spi_dev_put(spi);
--				continue;
-+				dev_warn(&master->dev,
-+					 "spi-rx-bus-width %d not supported\n",
-+					 value);
-+				break;
- 			}
- 		}
- 
--- 
-1.9.1
+which patch ?
+
+> 
+>> so I think 15% cpu usage and migration event are too high, how to fixed?
+> 
+> You can't for free, low latency wakeup can be worth one hell of a lot.
+> 
+> You could do a decayed hit/miss or such to shut the thing off when the
+> price is just too high.  Restricting migrations per unit time per task
+> also helps cut the cost, but hurts tasks that could have gotten to the
+> CPU quicker, and started your next bit of work.  Anything you do there
+> is going to be a rob Peter to pay Paul thing.
+> 
+
+I had tried to change sched_migration_cost and sched_nr_migrate in /proc,
+but no use.  any other  suggestion?
+
+I still think this is a problem to schedular.  it is better to directly solve
+this issue instead of a workaroud
+
+
+thanks,
+Libo
+
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
 
