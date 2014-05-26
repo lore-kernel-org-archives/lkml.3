@@ -1,113 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaEZVcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 17:32:18 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:45899 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaEZVcQ (ORCPT
+	id S1752095AbaEZVcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 17:32:35 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:62832 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932AbaEZVcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 17:32:16 -0400
-Date: Tue, 27 May 2014 03:02:07 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr, Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH] display7seg: Introduce the use of the managed version of
- kzalloc
-Message-ID: <20140526213207.GA1815@himangi-Dell>
+	Mon, 26 May 2014 17:32:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:157d:c57e:23b4:6c1a:bac4]
+In-Reply-To: <1397475725-5036-2-git-send-email-peter.ujfalusi@ti.com>
+References: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
+	<1397475725-5036-2-git-send-email-peter.ujfalusi@ti.com>
+Date: Mon, 26 May 2014 14:32:30 -0700
+Message-ID: <CAOesGMg43jT6D_ot2tKfRXXgAgwqs5Pu_tAFKc35yxLAczrzGQ@mail.gmail.com>
+Subject: Re: [PATCH v3 01/10] platform_data: edma: Be precise with the paRAM struct
+From: Olof Johansson <olof@lixom.net>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>, Sekhar Nori <nsekhar@ti.com>,
+        Joel Fernandes <joelf@ti.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves data allocated using kzalloc to managed data allocated
-using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions. The header file is added to make the devm function explicitly
-available.
+Hi,
 
-The following Coccinelle semantic patch was used for making a part of
-the change:
+On Mon, Apr 14, 2014 at 4:41 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> The edmacc_param struct should follow the layout of the paRAM area in the
+> HW. Be explicit on the size of the fields (u32) and also mark the struct
+> as packed to avoid any padding on non 32bit architectures.
+>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Acked-by: Joel Fernandes <joelf@ti.com>
+> ---
+>  include/linux/platform_data/edma.h | 18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+>
+> diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
+> index f50821cb64be..923f8a3e4ce0 100644
+> --- a/include/linux/platform_data/edma.h
+> +++ b/include/linux/platform_data/edma.h
+> @@ -43,15 +43,15 @@
+>
+>  /* PaRAM slots are laid out like this */
+>  struct edmacc_param {
+> -       unsigned int opt;
+> -       unsigned int src;
+> -       unsigned int a_b_cnt;
+> -       unsigned int dst;
+> -       unsigned int src_dst_bidx;
+> -       unsigned int link_bcntrld;
+> -       unsigned int src_dst_cidx;
+> -       unsigned int ccnt;
+> -};
+> +       u32 opt;
+> +       u32 src;
+> +       u32 a_b_cnt;
+> +       u32 dst;
+> +       u32 src_dst_bidx;
+> +       u32 link_bcntrld;
+> +       u32 src_dst_cidx;
+> +       u32 ccnt;
+> +} __packed;
+>
+>  /* fields in edmacc_param.opt */
+>  #define SAM            BIT(0)
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
+I came across this patch when I was looking at a pull request from
+Sekhar for EDMA cleanups, and it made me look closer at the contents
+of this file.
 
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
+The include/linux/platform_data/ directory is meant to hold
+platform_data definitions for drivers, and nothing more.
+platform_data/edma.h also contains a whole bunch of interface
+definitions for the driver. They do not belong there, and should be
+moved to a different include file.
 
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
+That also includes the above struct, because as far as I can tell it's
+a runtime state structure, not something that is passed in with
+platform data.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
----
-Not compile tested due to incompatible architecture.
+Can someone please clean this up? Thanks.
 
- drivers/sbus/char/display7seg.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
-index 7c71e7b..b48899c 100644
---- a/drivers/sbus/char/display7seg.c
-+++ b/drivers/sbus/char/display7seg.c
-@@ -4,6 +4,7 @@
-  * Copyright (c) 2000 Eric Brower (ebrower@usa.net)
-  */
- 
-+#include <linux/device.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/fs.h>
-@@ -180,7 +181,7 @@ static int d7s_probe(struct platform_device *op)
- 	if (d7s_device)
- 		goto out;
- 
--	p = kzalloc(sizeof(*p), GFP_KERNEL);
-+	p = devm_kzalloc(&op->dev, sizeof(*p), GFP_KERNEL);
- 	err = -ENOMEM;
- 	if (!p)
- 		goto out;
-@@ -231,7 +232,6 @@ out_iounmap:
- 	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
- 
- out_free:
--	kfree(p);
- 	goto out;
- }
- 
-@@ -251,7 +251,6 @@ static int d7s_remove(struct platform_device *op)
- 
- 	misc_deregister(&d7s_miscdev);
- 	of_iounmap(&op->resource[0], p->regs, sizeof(u8));
--	kfree(p);
- 
- 	return 0;
- }
--- 
-1.9.1
-
+-Olof
