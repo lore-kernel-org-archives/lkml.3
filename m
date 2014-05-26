@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaEZV0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 17:26:10 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:56575 "EHLO
+	id S1752100AbaEZV0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 17:26:49 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:56577 "EHLO
 	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751443AbaEZV0I (ORCPT
+	with ESMTP id S1751534AbaEZV0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 17:26:08 -0400
-Date: Mon, 26 May 2014 23:26:06 +0200
+	Mon, 26 May 2014 17:26:47 -0400
+Date: Mon, 26 May 2014 23:26:46 +0200
 From: Wim Van Sebroeck <wim@iguana.be>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] watchdog: w83627hf_wdt: Add early_disable module parameter
-Message-ID: <20140526212606.GA23827@spo001.leaseweb.com>
-References: <1396722457-8275-1-git-send-email-linux@roeck-us.net>
+Subject: Re: [PATCH v3 2/2] watchdog: Remove drivers for W83697HF and W83697UG
+Message-ID: <20140526212646.GB23827@spo001.leaseweb.com>
+References: <1396722457-8275-1-git-send-email-linux@roeck-us.net> <1396722457-8275-2-git-send-email-linux@roeck-us.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396722457-8275-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1396722457-8275-2-git-send-email-linux@roeck-us.net>
 User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +25,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Guenter,
 
-> Add early_disable module parameter to match functionality previously
-> available in the w83697hf_wdt driver.
+> Since both chips are now supported by the w83627hf watchdog driver,
+> the chip specific drivers are no longer needed and can be removed.
 > 
 > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->  drivers/watchdog/w83627hf_wdt.c |   15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
+> v3: rebase to latest upstream kernel
+> v2: resend, no change to v1
 > 
-> diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
-> index b1da0c1..7165704 100644
-> --- a/drivers/watchdog/w83627hf_wdt.c
-> +++ b/drivers/watchdog/w83627hf_wdt.c
-> @@ -64,6 +64,10 @@ MODULE_PARM_DESC(nowayout,
->  		"Watchdog cannot be stopped once started (default="
->  				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
->  
-> +static int early_disable;
-> +module_param(early_disable, int, 0);
-> +MODULE_PARM_DESC(early_disable, "Disable watchdog at boot time (default=0)");
-> +
->  /*
->   *	Kernel methods.
->   */
-> @@ -208,9 +212,14 @@ static int w83627hf_init(struct watchdog_device *wdog, enum chips chip)
->  
->  	t = superio_inb(cr_wdt_timeout);
->  	if (t != 0) {
-> -		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
-> -			wdog->timeout);
-> -		superio_outb(cr_wdt_timeout, wdog->timeout);
-> +		if (early_disable) {
-> +			pr_warn("Stopping previously enabled watchdog until userland kicks in\n");
-> +			superio_outb(cr_wdt_timeout, 0);
-> +		} else {
-> +			pr_info("Watchdog already running. Resetting timeout to %d sec\n",
-> +				wdog->timeout);
-> +			superio_outb(cr_wdt_timeout, wdog->timeout);
-> +		}
->  	}
->  
->  	/* set second mode & disable keyboard turning off watchdog */
+>  drivers/watchdog/Kconfig        |   30 ---
+>  drivers/watchdog/Makefile       |    2 -
+>  drivers/watchdog/w83697hf_wdt.c |  460 ---------------------------------------
+>  drivers/watchdog/w83697ug_wdt.c |  397 ---------------------------------
+>  4 files changed, 889 deletions(-)
+>  delete mode 100644 drivers/watchdog/w83697hf_wdt.c
+>  delete mode 100644 drivers/watchdog/w83697ug_wdt.c
+> 
 
 Has been added to linux-watchdog-next.
 
