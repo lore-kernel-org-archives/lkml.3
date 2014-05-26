@@ -1,193 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaEZJWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 05:22:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58436 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaEZJWA (ORCPT
+	id S1752170AbaEZJXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 05:23:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37239 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbaEZJXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 05:22:00 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <zonque@gmail.com>,
-        <b-liu@ti.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v6 5/5] usb: musb: dsps: Add the sw_babble_control() and Enable for newer silicon
-Date: Mon, 26 May 2014 14:50:12 +0530
-Message-ID: <1401096012-6895-6-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
-References: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 26 May 2014 05:23:07 -0400
+Message-ID: <1401096095.4829.16.camel@weser.hi.pengutronix.de>
+Subject: Re: [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>
+Cc: Alex Courbot <acourbot@nvidia.com>, Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 26 May 2014 11:21:35 +0200
+In-Reply-To: <5382E324.5090108@nvidia.com>
+References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
+	 <1400493433.8467.24.camel@weser.hi.pengutronix.de>
+	 <5379D7A0.3050509@nvidia.com>
+	 <1400494582.8467.28.camel@weser.hi.pengutronix.de>
+	 <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
+	 <1400837055.4921.4.camel@weser.hi.pengutronix.de>
+	 <537F1853.7050800@nvidia.com>
+	 <1400839186.4921.17.camel@weser.hi.pengutronix.de>
+	 <537F5DED.8050702@nvidia.com> <5382E324.5090108@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sw_babble_control() logic to differentiate between transient
-babble and real babble condition. Also add the SW babble control
-register definitions.
+Am Montag, den 26.05.2014, 09:45 +0300 schrieb Terje Bergström:
+> On 23.05.2014 17:40, Alex Courbot wrote:
+> > On 05/23/2014 06:59 PM, Lucas Stach wrote:
+> > So after checking with more knowledgeable people, it turns out this is 
+> > the expected behavior on ARM and BAR regions should be mapped uncached 
+> > on GK20A. All the more reasons to avoid using the BAR at all.
+> 
+> This is actually specific to Tegra.
+> 
+> >> You may want to make yourself aware of all the quirks required for
+> >> sharing memory between the GPU and CPU on an ARM host. I think there are
+> >> far more involved than what you see now and writing an replacement for
+> >> TTM will not be an easy task.
+> >>
+> >> Doing away with the concept of two memory areas will not get you to a
+> >> single unified address space. You would have to deal with things like
+> >> not being able to change the caching state of pages in the systems
+> >> lowmem yourself. You will still have to deal with remapping pages that
+> >> aren't currently visible to the CPU (ok this is not an issue on Jetson
+> >> right now as it only has 2GB of RAM), because it's in systems highmem,
+> >> or even in a different LPAE area.
+> >>
+> >> You really want to be sure you are aware of all the consequences of
+> >> this, before considering this task.
+> > 
+> > Yep, that's why I am seeking advice here. My first hope is that with a 
+> > few tweaks we will be able to keep using TTM and the current nouveau_bo 
+> > implementation. But unless I missed something this is not going to be easy.
+> > 
+> > We can also use something like the patch I originally sent to make it 
+> > work, although not with good performance, on GK20A. Not very graceful, 
+> > but it will allow applications to run.
+> > 
+> > In the long run though, we will want to achieve better performance, and 
+> > it seems like a BO implementation targeted at UMA devices would also be 
+> > beneficial to quite a few desktop GPUs. So as tricky as it may be I'm 
+> > interested in gathering thoughts and why not giving it a first try with 
+> > GK20A, even if it imposes some limitations like having buffers in lowmem 
+> > in a first time (we can probably live with this one for a short while, 
+> > and 64 bits will also be coming to the rescue :))
+> 
+> I don't think lowmem or LPAE is any problem, if the memory manager is
+> designed with that in mind. Vast majority of the buffers kernel
+> allocates do not need to be touched in kernel space.
+> 
+> Actually I can't think of any buffers that we allocate on behalf of user
+> space that would need to be permanently mapped also to kernel. In case
+> or relocs only push buffer needs to be temporarily mapped to kernel.
+> 
+> Ultimately even relocs are not necessary if we expose GPU virtual
+> addresses directly to user space. But that's another topic.
+> 
+Nouveau already exposes constant virtual addresses to userspace and
+skips the pushbuf patching when the presumed offset from userspace is
+the same as what the kernel thinks it should be.
 
-Babble control register logic is implemented in the latest
-revision of AM335x.
+The problem with lowmem on ARM is that you can't unmap those pages from
+the kernel cached mapping. So if you alloc a page, give it to userspace
+and userspace decides to map the page WC you just produced a conflicting
+mapping, which may yield undefined results on ARMv7. You may think this
+is not a problem as you are not touching the kernel cached mapping, but
+in fact it is. The CPUs prefetcher can still access this mapping.
 
-Find whether we are running on newer silicon. The babble control
-register reads 0x4 by default in newer silicon as opposed to 0
-in old versions of AM335x. Based on this enable the sw babble
-control logic.
+Although it won't wander over a page boundary for automatic prefetching
+it may still do this when explicitly instructed to do so by code, which
+may happen for example if your page happens to be near a kernel list,
+where the list traversal code includes explicit prefetch instructions.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/usb/musb/musb_dsps.c | 89 +++++++++++++++++++++++++++++++++++++++++---
- drivers/usb/musb/musb_regs.h |  7 ++++
- 2 files changed, 90 insertions(+), 6 deletions(-)
+Regards,
+Lucas
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index f6f3087..01543a9 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -136,6 +136,7 @@ struct dsps_glue {
- 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
- 	struct timer_list timer;	/* otg_workaround timer */
- 	unsigned long last_timer;    /* last timer data for each instance */
-+	bool sw_babble_enabled;
- 
- 	struct dsps_context context;
- 	struct debugfs_regset32 regset;
-@@ -469,6 +470,19 @@ static int dsps_musb_init(struct musb *musb)
- 	val &= ~(1 << wrp->otg_disable);
- 	dsps_writel(musb->ctrl_base, wrp->phy_utmi, val);
- 
-+	/*
-+	 *  Check whether the dsps version has babble control enabled.
-+	 * In latest silicon revision the babble control logic is enabled.
-+	 * If MUSB_BABBLE_CTL returns 0x4 then we have the babble control
-+	 * logic enabled.
-+	 */
-+	val = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
-+	if (val == MUSB_BABBLE_RCV_DISABLE) {
-+		glue->sw_babble_enabled = true;
-+		val |= MUSB_BABBLE_SW_SESSION_CTRL;
-+		dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, val);
-+	}
-+
- 	ret = dsps_musb_dbg_init(musb, glue);
- 	if (ret)
- 		return ret;
-@@ -536,19 +550,82 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
- 	return 0;
- }
- 
-+static bool  sw_babble_control(struct musb *musb)
-+{
-+	u8 babble_ctl;
-+	bool session_restart =  false;
-+
-+	babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
-+	dev_dbg(musb->controller, "babble: MUSB_BABBLE_CTL value %x\n",
-+		babble_ctl);
-+	/*
-+	 * check line monitor flag to check whether babble is
-+	 * due to noise
-+	 */
-+	dev_dbg(musb->controller, "STUCK_J is %s\n",
-+		babble_ctl & MUSB_BABBLE_STUCK_J ? "set" : "reset");
-+
-+	if (babble_ctl & MUSB_BABBLE_STUCK_J) {
-+		int timeout = 10;
-+
-+		/*
-+		 * babble is due to noise, then set transmit idle (d7 bit)
-+		 * to resume normal operation
-+		 */
-+		babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
-+		babble_ctl |= MUSB_BABBLE_FORCE_TXIDLE;
-+		dsps_writeb(musb->mregs, MUSB_BABBLE_CTL, babble_ctl);
-+
-+		/* wait till line monitor flag cleared */
-+		dev_dbg(musb->controller, "Set TXIDLE, wait J to clear\n");
-+		do {
-+			babble_ctl = dsps_readb(musb->mregs, MUSB_BABBLE_CTL);
-+			udelay(1);
-+		} while ((babble_ctl & MUSB_BABBLE_STUCK_J) && timeout--);
-+
-+		/* check whether stuck_at_j bit cleared */
-+		if (babble_ctl & MUSB_BABBLE_STUCK_J) {
-+			/*
-+			 * real babble condition has occurred
-+			 * restart the controller to start the
-+			 * session again
-+			 */
-+			dev_dbg(musb->controller, "J not cleared, misc (%x)\n",
-+				babble_ctl);
-+			session_restart = true;
-+		}
-+	} else {
-+		session_restart = true;
-+	}
-+
-+	return session_restart;
-+}
-+
- static int dsps_musb_reset(struct musb *musb)
- {
- 	struct device *dev = musb->controller;
- 	struct dsps_glue *glue = dev_get_drvdata(dev->parent);
- 	const struct dsps_musb_wrapper *wrp = glue->wrp;
-+	int session_restart = 0;
- 
--	dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
--	usleep_range(100, 200);
--	usb_phy_shutdown(musb->xceiv);
--	usleep_range(100, 200);
--	usb_phy_init(musb->xceiv);
-+	if (glue->sw_babble_enabled)
-+		session_restart = sw_babble_control(musb);
-+	/*
-+	 * In case of new silicon version babble condition can be recovered
-+	 * without resetting the MUSB. But for older silicon versions, MUSB
-+	 * reset is needed
-+	 */
-+	if (session_restart || !glue->sw_babble_enabled) {
-+		dev_info(musb->controller, "Restarting MUSB to recover from Babble\n");
-+		dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
-+		usleep_range(100, 200);
-+		usb_phy_shutdown(musb->xceiv);
-+		usleep_range(100, 200);
-+		usb_phy_init(musb->xceiv);
-+		session_restart = 1;
-+	}
- 
--	return 0;
-+	return !session_restart;
- }
- 
- static struct musb_platform_ops dsps_ops = {
-diff --git a/drivers/usb/musb/musb_regs.h b/drivers/usb/musb/musb_regs.h
-index 03f2655..b9bcda5 100644
---- a/drivers/usb/musb/musb_regs.h
-+++ b/drivers/usb/musb/musb_regs.h
-@@ -72,6 +72,12 @@
- #define MUSB_DEVCTL_HR		0x02
- #define MUSB_DEVCTL_SESSION	0x01
- 
-+/* BABBLE_CTL */
-+#define MUSB_BABBLE_FORCE_TXIDLE	0x80
-+#define MUSB_BABBLE_SW_SESSION_CTRL	0x40
-+#define MUSB_BABBLE_STUCK_J		0x20
-+#define MUSB_BABBLE_RCV_DISABLE		0x04
-+
- /* MUSB ULPI VBUSCONTROL */
- #define MUSB_ULPI_USE_EXTVBUS	0x01
- #define MUSB_ULPI_USE_EXTVBUSIND 0x02
-@@ -246,6 +252,7 @@
-  */
- 
- #define MUSB_DEVCTL		0x60	/* 8 bit */
-+#define MUSB_BABBLE_CTL		0x61	/* 8 bit */
- 
- /* These are always controlled through the INDEX register */
- #define MUSB_TXFIFOSZ		0x62	/* 8-bit (see masks) */
 -- 
-1.8.3.1
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
