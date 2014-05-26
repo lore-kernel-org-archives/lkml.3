@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaEZKHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:07:06 -0400
+	id S1752430AbaEZKIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:08:42 -0400
 Received: from mailout3.samsung.com ([203.254.224.33]:36762 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaEZKHD (ORCPT
+	with ESMTP id S1752110AbaEZKHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:07:03 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-14-538312450735
+	Mon, 26 May 2014 06:07:06 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-85-538312481181
 From: Heesub Shin <heesub.shin@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -18,37 +18,37 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Daeseok Youn <daeseok.youn@gmail.com>,
         Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>
-Subject: [PATCH 4/9] staging: ion: remove struct ion_page_pool_item
-Date: Mon, 26 May 2014 19:04:56 +0900
-Message-id: <1401098701-24049-4-git-send-email-heesub.shin@samsung.com>
+Subject: [PATCH 6/9] staging: ion: remove struct page_info
+Date: Mon, 26 May 2014 19:04:58 +0900
+Message-id: <1401098701-24049-6-git-send-email-heesub.shin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
 References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t8zLV1XoeZgg/2PuC3e/73PZrF94zdW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t8zbV0PoeZgg+U/pCze/73PZrF94zdW
 	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
 	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8ARxWWTkpqTWZZapG+X
-	wJVxs/k0c8FnoYrHy/6xNDA+4e9i5OSQEDCReP1pIwuELSZx4d56ti5GLg4hgWWMEjf3zGaH
-	Kfq3dgs7RGI6o8T5ltmsEE47k8S39beAWjg42AS0JQ5tCwZpEBEwlug/OwusgVlgDrPElK0X
-	mEBqhAWcJU7MTQGpYRFQlfj/8gcbiM0r4C5x/MFJqCvkJE4em8wKYnMKeEhMfDIHLC4EVHN7
-	40Ow6yQErrFLtL7/yA4xSEDi2+RDLCDzJQRkJTYdYIaYIylxcMUNlgmMwgsYGVYxiqYWJBcU
-	J6UXGeoVJ+YWl+al6yXn525ihERM7w7G2wesDzEmA42byCwlmpwPjLi8knhDYzMjC1MTU2Mj
-	c0sz0oSVxHmTHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDU5/rCL2+96bM358dVNn5F
-	OYz7chtuKOn90ZI7by0gs236m18TmjT85mx/tzGxs+NWxkkb9QPy8wXb5vivNX5hPMMy0i1o
-	YoLHF1elawydZa/kveYJPOipcHq1XEg/LjlbyvhiyKUX69fJ/Bc+Jq//+6gDh8Gh3Vk/3oib
-	/GKINmvXbdBZfV+JpTgj0VCLuag4EQCMBB1brgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQV1XoeZggy8L2S3e/73PZrF94zdW
+	wJXR13GEuWCWXMWsh0fYGhi3S3QxcnJICJhITH13kw3CFpO4cG89kM3FISSwjFHi4ur7rDBF
+	b1puskIkpjNKfNzTzw7htDNJPF7VyNTFyMHBJqAtcWhbMEiDiICxRP/ZWWA1zAJzmCWmbL3A
+	BJIQFrCS6NvZCGazCKhKHLh1mx3E5hVwlzjYtgJqm5zEyWOTwWxOAQ+JiU/msIDYQkA1tzc+
+	BDtPQuASu8SrZytZIQYJSHybfIgF5AgJAVmJTQeYIeZIShxccYNlAqPwAkaGVYyiqQXJBcVJ
+	6UWmesWJucWleel6yfm5mxghMTNxB+P9A9aHGJOBxk1klhJNzgfGXF5JvKGxmZGFqYmpsZG5
+	pRlpwkrivOmPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MEY2/pVJWzSxuu7oiRXVOiv3
+	VeotSlbMtYnbZ+S4ZYPemyP5ui1Hn+1+ESvmmXzxNtOjLZ/Dgm7xdKW9Ysoq45h65I7CErGf
+	WjnXJd1ybP9I7TN5F+ivGLShTLDqR/hWjZ6v1y6o2wrN/hPl/cg26e6hSRfqHJrbbB9U9rxb
+	bHN95wvbCzMc9imxFGckGmoxFxUnAgB+fgWGrwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQV0PoeZgg6k7xCze/73PZrF94zdW
 	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
 	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8AR1cBok5GamJJapJCa
 	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
-	DtOE0BA3XQuYxghd35AguB4jAzSQsI4x42bzaeaCz0IVj5f9Y2lgfMLfxcjJISFgIvFv7RZ2
-	CFtM4sK99WxdjFwcQgLTGSXOt8xmhXDamSS+rb8FlOHgYBPQlji0LRikQUTAWKL/7Cx2kBpm
-	gTnMElO2XmACqREWcJY4MTcFpIZFQFXi/8sfbCA2r4C7xPEHJ1kglslJnDw2mRXE5hTwkJj4
-	ZA5YXAio5vbGh2wTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiOx2fSOxhXNVgc
-	YhTgYFTi4T3g3RQsxJpYVlyZe4hRgoNZSYRXi7M5WIg3JbGyKrUoP76oNCe1+BBjMtBVE5ml
-	RJPzgakiryTe0NjEzMjSyMzYxNzYmDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYuzy5
-	5b9obJpwo+6Ic7B7W88RwcNVe1tafjztfHz4UcVLW5NJXbaFGrvkJta6p7RL+6ntEfm0u28v
-	R+gMsagAL84JOSFzww/d41owKfXY9adzCnlj+/bcP3Z+/eUSrltTKgM2bc2ek2iTe7xmv+S/
-	ebWHDLRWH1a5oP7BcI/r3AeTfp3denGLqxJLcUaioRZzUXEiACCgbMsLAwAA
+	DtOE0BA3XQuYxghd35AguB4jAzSQsI4xo6/jCHPBLLmKWQ+PsDUwbpfoYuTkkBAwkXjTcpMV
+	whaTuHBvPVsXIxeHkMB0RomPe/rZIZx2JonHqxqZuhg5ONgEtCUObQsGaRARMJboPzsLrIZZ
+	YA6zxJStF5hAEsICVhJ9OxvBbBYBVYkDt26zg9i8Au4SB9tWQG2Tkzh5bDKYzSngITHxyRwW
+	EFsIqOb2xodsExh5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjshnUjsYVzZYHGIU
+	4GBU4uE94N0ULMSaWFZcmXuIUYKDWUmEV4uzOViINyWxsiq1KD++qDQntfgQYzLQVROZpUST
+	84HJIq8k3tDYxMzI0sjM2MTc2Jg0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGHukLltq
+	VQSsv5vUzTnlkur6KIulos4rZy1Ivf+8dMPy3QxlngJBCcf5pTPfOou2qRxMsb+77RzDg8rW
+	3G9BL2O4rrV71dw9Jc15ZQ9nX60L1/SUDclSB7t+RavX78ndZap0tezbr4ZjYb1SPFdvTl6U
+	tyvHgT3xWNWb3YaLf52+sOXzicvB5UosxRmJhlrMRcWJAFq8SawMAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,79 +56,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the order information is held on struct page itself, we do not
-need to use extra data structure. This commit reduces unnecessary slab
-usage for allocating small objects.
+ION system heap uses a temporary list holding meta data on pages
+allocated to build scatter/gather table. Now that the pages are compound
+pages, we do not need to introduce a new data type redundantly.
 
 Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
 ---
- drivers/staging/android/ion/ion_page_pool.c | 27 +++++----------------------
- 1 file changed, 5 insertions(+), 22 deletions(-)
+ drivers/staging/android/ion/ion_system_heap.c | 47 +++++++++------------------
+ 1 file changed, 15 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index 0141b3b..c1cea42b 100644
---- a/drivers/staging/android/ion/ion_page_pool.c
-+++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -23,11 +23,6 @@
- #include <linux/slab.h>
- #include "ion_priv.h"
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index 73a2e67..f0ae210 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -51,11 +51,6 @@ struct ion_system_heap {
+ 	struct ion_page_pool **pools;
+ };
  
--struct ion_page_pool_item {
+-struct page_info {
 -	struct page *page;
 -	struct list_head list;
 -};
 -
- static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
- {
- 	struct page *page = alloc_pages(pool->gfp_mask, pool->order);
-@@ -47,19 +42,12 @@ static void ion_page_pool_free_pages(struct ion_page_pool *pool,
+ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
+ 				      struct ion_buffer *buffer,
+ 				      unsigned long order)
+@@ -96,19 +91,14 @@ static void free_buffer_page(struct ion_system_heap *heap,
+ }
  
- static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
- {
--	struct ion_page_pool_item *item;
--
--	item = kmalloc(sizeof(struct ion_page_pool_item), GFP_KERNEL);
--	if (!item)
--		return -ENOMEM;
--
- 	mutex_lock(&pool->mutex);
--	item->page = page;
- 	if (PageHighMem(page)) {
--		list_add_tail(&item->list, &pool->high_items);
-+		list_add_tail(&page->lru, &pool->high_items);
- 		pool->high_count++;
- 	} else {
--		list_add_tail(&item->list, &pool->low_items);
-+		list_add_tail(&page->lru, &pool->low_items);
- 		pool->low_count++;
- 	}
- 	mutex_unlock(&pool->mutex);
-@@ -68,24 +56,19 @@ static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
  
- static struct page *ion_page_pool_remove(struct ion_page_pool *pool, bool high)
+-static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+-						 struct ion_buffer *buffer,
+-						 unsigned long size,
+-						 unsigned int max_order)
++static struct page *alloc_largest_available(struct ion_system_heap *heap,
++					    struct ion_buffer *buffer,
++					    unsigned long size,
++					    unsigned int max_order)
  {
--	struct ion_page_pool_item *item;
  	struct page *page;
+-	struct page_info *info;
+ 	int i;
  
- 	if (high) {
- 		BUG_ON(!pool->high_count);
--		item = list_first_entry(&pool->high_items,
--					struct ion_page_pool_item, list);
-+		page = list_first_entry(&pool->high_items, struct page, lru);
- 		pool->high_count--;
- 	} else {
- 		BUG_ON(!pool->low_count);
--		item = list_first_entry(&pool->low_items,
--					struct ion_page_pool_item, list);
-+		page = list_first_entry(&pool->low_items, struct page, lru);
- 		pool->low_count--;
+-	info = kmalloc(sizeof(struct page_info), GFP_KERNEL);
+-	if (!info)
+-		return NULL;
+-
+ 	for (i = 0; i < num_orders; i++) {
+ 		if (size < order_to_size(orders[i]))
+ 			continue;
+@@ -119,10 +109,8 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+ 		if (!page)
+ 			continue;
+ 
+-		info->page = page;
+-		return info;
++		return page;
+ 	}
+-	kfree(info);
+ 
+ 	return NULL;
+ }
+@@ -138,7 +126,7 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
+ 	struct sg_table *table;
+ 	struct scatterlist *sg;
+ 	struct list_head pages;
+-	struct page_info *info, *tmp_info;
++	struct page *page, *tmp_page;
+ 	int i = 0;
+ 	unsigned long size_remaining = PAGE_ALIGN(size);
+ 	unsigned int max_order = orders[0];
+@@ -151,13 +139,13 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
+ 
+ 	INIT_LIST_HEAD(&pages);
+ 	while (size_remaining > 0) {
+-		info = alloc_largest_available(sys_heap, buffer, size_remaining,
++		page = alloc_largest_available(sys_heap, buffer, size_remaining,
+ 						max_order);
+-		if (!info)
++		if (!page)
+ 			goto free_pages;
+-		list_add_tail(&info->list, &pages);
+-		size_remaining -= PAGE_SIZE << compound_order(info->page);
+-		max_order = compound_order(info->page);
++		list_add_tail(&page->lru, &pages);
++		size_remaining -= PAGE_SIZE << compound_order(page);
++		max_order = compound_order(page);
+ 		i++;
+ 	}
+ 	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
+@@ -168,12 +156,10 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
+ 		goto free_table;
+ 
+ 	sg = table->sgl;
+-	list_for_each_entry_safe(info, tmp_info, &pages, list) {
+-		struct page *page = info->page;
++	list_for_each_entry_safe(page, tmp_page, &pages, lru) {
+ 		sg_set_page(sg, page, PAGE_SIZE << compound_order(page), 0);
+ 		sg = sg_next(sg);
+-		list_del(&info->list);
+-		kfree(info);
++		list_del(&page->lru);
  	}
  
--	list_del(&item->list);
--	page = item->page;
--	kfree(item);
-+	list_del(&page->lru);
- 	return page;
+ 	buffer->priv_virt = table;
+@@ -182,11 +168,8 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
+ free_table:
+ 	kfree(table);
+ free_pages:
+-	list_for_each_entry_safe(info, tmp_info, &pages, list) {
+-		free_buffer_page(sys_heap, buffer, info->page,
+-						compound_order(info->page));
+-		kfree(info);
+-	}
++	list_for_each_entry_safe(page, tmp_page, &pages, lru)
++		free_buffer_page(sys_heap, buffer, page, compound_order(page));
+ 	return -ENOMEM;
  }
  
 -- 
