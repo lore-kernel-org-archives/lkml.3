@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaEZKnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:43:00 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60713 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751537AbaEZKm7 (ORCPT
+	id S1751886AbaEZKsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:48:33 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:38980 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616AbaEZKsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:42:59 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3][update] PM / sleep: Introduce command line argument for sleep state enumeration
-Date: Mon, 26 May 2014 13:00:02 +0200
-Message-ID: <2276224.JN17nYXlNX@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5382FBD2.3070908@linux.vnet.ibm.com>
-References: <1817539.9KW2IGGbDV@vostro.rjw.lan> <1579932.qSkFQPvI6f@vostro.rjw.lan> <5382FBD2.3070908@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 26 May 2014 06:48:31 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+In-Reply-To: <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>
+	<20140514100856.5198DC4153D@trevor.secretlab.ca>
+	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>
+	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
+	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>
+	<CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>
+	<20140520055026.E3A98C412DA@trevor.secretlab.ca>
+	<CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
+Date: Mon, 26 May 2014 11:48:24 +0100
+Message-Id: <20140526104824.63F13C42129@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 26, 2014 02:01:14 PM Srivatsa S. Bhat wrote:
-> On 05/23/2014 06:33 PM, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > On some systems the platform doesn't support neither
-> > PM_SUSPEND_MEM nor PM_SUSPEND_STANDBY, so PM_SUSPEND_FREEZE is the
-> > only available system sleep state.  However, some user space frameworks
-> > only use the "mem" and (sometimes) "standby" sleep state labels, so
-> > the users of those systems need to modify user space in order to be
-> > able to use system suspend at all and that is not always possible.
+On Tue, 20 May 2014 09:38:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Grant,
+> 
+> On Tue, May 20, 2014 at 7:50 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> >> Why has the overlay system been designed for plugging and unpluging whole
+> >> overlays?
+> >> That means the kernel has to remember the full stack, causing issues with
+> >> e.g. kexec.
 > >
+> > Mostly so that drivers don't see any difference in the livetree data
+> > structure. It also means that userspace sees a single representation of
+> > the hardware at any given time.
 > 
-> So, is this going to be a temporary solution until all the user-space
-> frameworks have been fixed? I certainly hope so, because this clearly looks
-> like a bug (or a lack of feature) in user-space to me... in the sense that
-> those user-space frameworks don't have support for (i.e., don't know how to
-> deal with) freeze-only systems yet.
+> Sorry, I don't follow the argument about the "single representation of the
+> hardware".
+
+Er, s/of the hardware/of the tree/. Right now the overlay design
+modifies the live tree which at the same time modifies the tree
+representation in /sys/firmware/devicetree. If the design was changed to
+keep the overlay logically separate, then I would think we want to
+expose that information to usespace also. In fact, I think we would need
+to for usecases like kexec.
+
 > 
-> The more elegant long term solution would have been to teach the kernel to
-> export *truly* relative names such as SUSPEND_DEEP, SUSPEND_SHALLOW,
-> and SUSPEND_LIGHT or something like that (of course, we can debate on what
-> naming would suit best).
-
-I agree and that's a logical next step, so I have a plan to rename the kernel
-symbols corresponding to each state so that they reflect the code more closely
-(for example, the current PM_SUSPEND_MEM and PM_SUSPEND_STANDBY depend on the
-platform to support them, but that is not clear from the symbol naming, and on
-many platforms _MEM doesn't mean "suspend-to-RAM" anyway).
-
-The strings in the interface are a somewhat different matter, because user
-space already depends on them (which is the source of the problem here), so we
-may need to keep them or at least respond to them as expected when written to
-/sys/power/state.
-
-I personally think that we should use "sleep", "snooze" and "pause" to reflect
-the "sleep depth".  And possibly "hibernate" instead of "disk".
-
-> But this patch continues to keep the names 'SUSPEND_MEM' ("mem") etc., which
-> still implies that we are doing Suspend-to-RAM, because the name itself betrays
-> that info. So IMHO it doesn't really match what the command-line-switch
-> 'relative_sleep_states' says.
+> >> Why not allowing the addition of removal of subtrees of the full device
+> >> tree?
+> >
+> > Overlays is more than just a subtree. A single overlay can make
+> > manipulations of multiple subtrees that should be handled as logically
+> > atomic.
 > 
-> But I understand that this is a quick hack to make existing user-space work
-> with systems that support only the freeze state. However, for the reasons
-> mentioned above, I hope that this is a temporary solution and we can remove
-> or enhance this once all those user-space frameworks have been fixed.
+> Sure, it's more complicated due to the atomicity of multiple changes.
+> 
+> >> This is similar to other hotpluggable subsystems (which are not necessarily
+> >> DT-based), like PCI Express. That way the kernel can pass a
+> >> DT-representation of the actual current device tree to a kexec'ed kernel.
+> >
+> > I'm not following you argument. Hardware hotplug systems like PCIe don't
+> > manipulate the firmware data. The kernel detects the new device and
+> > populates the Linux device model directly. Firmware provided data (ACPI
+> > or FDT) isn't involved.
+> 
+> I mean the kernel doesn't remember the exact order in a stack, to reverse
+> operations. E.g. I can add hotplug a PCIe bridge with multiple devices
+> behind it, and unplug a single device later. It's still one subtree, though.
 
-Well, it is supposed to be temporary, but I'm not sure if we can count on all
-user space to be fixed in any reasonable time frame (think about Android, for
-example).
+The problem comes when one overlay adds a node or configuration that is
+depended on by the second overlay, but there isn't a direct reference by
+the second overlay into the first.
 
-Rafael
+g.
 
