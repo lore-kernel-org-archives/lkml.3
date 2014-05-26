@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaEZLFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:05:30 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59868 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751705AbaEZLF3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:05:29 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Uwe =?ISO-8859-1?Q?Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clk: Introduce 'clk_round_rate_nearest()'
-Date: Mon, 26 May 2014 13:22:32 +0200
-Message-ID: <9956925.Qsz2bH3rDg@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpomb+h6ZNDgJ8AwJ_J9DjMB7AP_v-cp8coG3CACo5Wt4vQ@mail.gmail.com>
-References: <20140521073457.GD31687@pengutronix.de> <00f65d1c-a375-40e7-b30a-cd8cb3ca87fc@BN1BFFO11FD020.protection.gbl> <CAKohpomb+h6ZNDgJ8AwJ_J9DjMB7AP_v-cp8coG3CACo5Wt4vQ@mail.gmail.com>
+	id S1752037AbaEZLGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:06:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36483 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700AbaEZLGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 07:06:44 -0400
+Date: Mon, 26 May 2014 13:06:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] x86, MCE: Flesh out when to panic comment
+Message-ID: <20140526110634.GG25732@pd.tnic>
+References: <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
+ <20140521214319.GF25130@pd.tnic>
+ <537D1E8B.1010505@zytor.com>
+ <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
+ <20140521215411.GI25130@pd.tnic>
+ <537D21F2.8030702@zytor.com>
+ <20140521221121.GL25130@pd.tnic>
+ <537D2522.80702@zytor.com>
+ <20140526101859.GD25732@pd.tnic>
+ <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 26, 2014 11:59:09 AM Viresh Kumar wrote:
-> On 23 May 2014 21:44, Sören Brinkmann <soren.brinkmann@xilinx.com> wrote:
-> > Viresh: Could you imagine something similar for cpufreq? You suggested
-> > migrating to Hz resolution. I guess that would ideally mean to follow
-> > the CCF to a 64-bit type for frequencies and increasing the resolution.
-> > I have a messy patch migrating cpufreq and OPP to Hz and unsigned long
-> > that works on Zynq. But cpufreq has so many users that it would become
-> > quite an undertaking.
-> > And we'd need some new/amended OPP DT binding.
-> 
-> If we are going to migrate to Hz from KHz, I think we must consider the
-> 64 bit stuff right now, otherwise it will bite us later.
-> 
-> @Rafael: What do you think?
+On Mon, May 26, 2014 at 12:51:10PM +0200, Jiri Kosina wrote:
+> I think the comment is still not explaining the big part of what the
+> discussion was about -- i.e. if it was in kernel context, we always
+> panic.
 
-I agree as far as the 64-bit thing goes, but is switching to Hz really
-necessary?
+I thought the pointer to mce_severity was enough? People should open an
+editor and look at the function and at its gory insanity. :-P
 
-Rafael
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
