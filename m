@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaEZRtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:49:25 -0400
-Received: from 1wt.eu ([62.212.114.60]:36040 "EHLO 1wt.eu"
+	id S1751777AbaEZRvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 13:51:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33798 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628AbaEZRtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:49:24 -0400
-Date: Mon, 26 May 2014 19:49:17 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Joe Perches <joe@perches.com>
-Cc: Dominique van den Broeck <domdevlin@free.fr>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging: panel: (coding style) Matching braces
-Message-ID: <20140526174917.GK13929@1wt.eu>
-References: <1400674201-9560-1-git-send-email-domdevlin@free.fr> <20140526142827.GG13929@1wt.eu> <1401125290.519.18.camel@joe-AO725>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751202AbaEZRvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 13:51:49 -0400
+Date: Mon, 26 May 2014 19:51:38 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] x86, MCE: Flesh out when to panic comment
+Message-ID: <20140526175138.GB26531@pd.tnic>
+References: <537D1E8B.1010505@zytor.com>
+ <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
+ <20140521215411.GI25130@pd.tnic>
+ <537D21F2.8030702@zytor.com>
+ <20140521221121.GL25130@pd.tnic>
+ <537D2522.80702@zytor.com>
+ <20140526101859.GD25732@pd.tnic>
+ <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
+ <20140526110634.GG25732@pd.tnic>
+ <CALCETrVEZ3+YMP8GvmkY=scYzHuR_1sTZRFf+4rEj-4ac17PTw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1401125290.519.18.camel@joe-AO725>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <CALCETrVEZ3+YMP8GvmkY=scYzHuR_1sTZRFf+4rEj-4ac17PTw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 10:28:10AM -0700, Joe Perches wrote:
-> On Mon, 2014-05-26 at 16:28 +0200, Willy Tarreau wrote:
-> > I believe that most of the kernel code prefers the two-line format resluting
-> > in this instead :
-> > 
-> > 		}
-> > 		else if (*esc >= 'A' && *esc <= 'Z') {
-> > 			value |= (*esc - 'A' + 10) << shift;
-> > 		}
-> > 		else if (*esc >= 'a' && *esc <= 'z') {
-> > 			value |= (*esc - 'a' + 10) << shift;
-> > 		}
-> > 		else {
-> 
-> grep shows what kernel style is most used.
-> 
-> Your form:
-> 	}
-> 	else if (...) {
-> 
-> (This shows 3 lines per instance)
-> $ grep-2.5.4 -rP --include=*.[ch] '}\n[ \t]*else if.*{\n' * | wc -l
-> 909
-> 
-> Generally used form:
-> 	} else if (...) {
-> 
-> (mostly shows 2 lines per instance)
-> $ grep-2.5.4 -rP --include=*.[ch] '} else if.*{\n' * | wc -l
-> 31653
-> 
-> That's ~50:1 preference for "} else if (...) {"
+On Mon, May 26, 2014 at 09:47:38AM -0700, Andy Lutomirski wrote:
+> It may be worth at least pointing out that mce_severity looks at
+> whether we faulted from kernel context. I missed that the first time
+> around because mce_severity doesn't take a pt_regs pointer.
 
-Ah indeed, I wouldn't have thought that. Thanks for correcting me, Joe!
+Right, but next time we talk about a different aspect which isn't
+commented on in the handler, we'd have to add to it again, until we've
+rewritten the whole function in pseudo code.
 
-Willy
+I think simply pointing to the function which decides the fate of the
+machine based on the MCE severity is enough - people can then go and
+stare at it, albeit with some struggle.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
