@@ -1,75 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaEZPBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:01:13 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43270 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbaEZPBM (ORCPT
+	id S1752761AbaEZPB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:01:59 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:51980 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaEZPB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:01:12 -0400
-Date: Mon, 26 May 2014 16:00:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: linux-omap@vger.kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        lee.jones@linaro.org
-Message-ID: <20140526150052.GP22111@sirena.org.uk>
-References: <1401098197-647-1-git-send-email-j-keerthy@ti.com>
- <1401098197-647-6-git-send-email-j-keerthy@ti.com>
+	Mon, 26 May 2014 11:01:58 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="F+XLDYyeDCF2A2Dn"
-Content-Disposition: inline
-In-Reply-To: <1401098197-647-6-git-send-email-j-keerthy@ti.com>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.248.185
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/5] regulator: tps65917: Add Regulator driver for
- tps65917 PMIC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CACiqTEPUn_ZD6ut_hMnpCH_CwmR+GgLTG3GQqjmXh3rQ7PNO6A@mail.gmail.com>
+References: <CACiqTEObccUuhyCcr8HZ0qZunxwdtkPLNYsp9xJRG6H6hxGo7Q@mail.gmail.com>
+	<CACiqTEPUn_ZD6ut_hMnpCH_CwmR+GgLTG3GQqjmXh3rQ7PNO6A@mail.gmail.com>
+Date: Mon, 26 May 2014 18:01:57 +0300
+Message-ID: <CACiqTEMGpa7xbOxeB8U69atx2VNSXyPcqWnx0+1D0FA6f7-w6g@mail.gmail.com>
+Subject: Re: 3.13-1 dm cache possible race condition
+From: roma1390 <roma1390@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Morgan Mears <Morgan.Mears@netapp.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello again,
 
---F+XLDYyeDCF2A2Dn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Is there need any additional information? Or this feature is not ready
+for production?
 
-On Mon, May 26, 2014 at 03:26:37PM +0530, Keerthy wrote:
-> This patch adds support for TPS65917 PMIC regulators.
->=20
-> The regulators set consists of 5 SMPSs and 5 LDOs. The output
-> voltages are configurable and are meant to supply power to the
-> main processor and other components.
 
-This appears to look *very* like the Palmas driver, should it not be
-sharing code with that?  If it were just data tables it'd be less of a
-concern but there's quite a bit of actual code here.
-
---F+XLDYyeDCF2A2Dn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTg1cgAAoJELSic+t+oim9gJ8P/1eaPzxLm+nLLyS3uRty7y2X
-VL9Wrdqi8s1PhwfrRB1CQ0SMe2CRnKxNBp1hbZmgN7grZA6vOK2QSFUoaEyGU0+K
-0njx32XyAJndD6S/jEM0u5j55CqbFYDKwP1qeh3k39x1YBvVZR7ICsswxbYC1Iel
-Q667celyq81GvQgatm+Pi1qvSp31J1o2fH6xbILmDZ3P+3eD//Ti92oC4qhQVBNI
-7EhYC/NycsU1gxnnkxe1bpQkvBLaDDlO5njw7+nzO0R9jG36CI2g1CzsCRVUq5eC
-6JopYH0LcC38xhsnJWcLXiOz67iWTCrB9QVuqWmQ61IgFWZ+O7bChmv3gQuV1njj
-pbG/zp2dKK1F03GtxTk+aaYknokRLiCuX9GPogv1erztKcXPtHDUfTWCwYHoqd1F
-f+sC99QCbZhmG2wpMNQ7zScBwXrOypHeLxptK5J0nr4kqi8V1CJykkzQA/wiCfB9
-+sPfYeHHUi002LUau+uL8cimtRObvLKLslA/jpTlT0nn6TLDBtCqlTsFdHHnLSRJ
-X1fVOlG17h/ZED0lV7d3rwXVJogywVBnWvJ6CFa0ke8Q+BB74gWlElYTvY2JRG1m
-ZBHyr540LKfyztVP9DgLuuMA1f81GF55l/mx684j6BfIODQepgvPdPJzymn+/58N
-8MOLYzced923r/HSEgw5
-=lygs
------END PGP SIGNATURE-----
-
---F+XLDYyeDCF2A2Dn--
+On Mon, May 19, 2014 at 11:31 PM, roma1390 <roma1390@gmail.com> wrote:
+> Hello again.
+>
+> Tried this on latest head: 14186fea0cb06bc43181ce239efe0df6f1af260a
+>
+> Getting same error. If there is needed some additional information,
+> please contact.
+>
+> On Sun, May 18, 2014 at 6:35 PM, roma1390 <roma1390@gmail.com> wrote:
+>> I think that somehow is got broken cache->nr_dirty
+>>
+>> # dmsetup status foo0
+>> 0 32768 cache 7/4096 1728240 256 1675650 0 0 64 64 4294967295 1
+>> writeback 2 migration_threshold 2048 4 random_threshold 4
+>> sequential_threshold 512
+>>
+>>
+>> See: 4294967295 this is -1 as is not OK.
+>>
+>>
+>> Kernel: Debian stock 3.13-1-amd64
+>>
+>> Actions taken:
+>>
+>>  modprobe brd
+>>  BLOCKS=$[`blockdev --getsize64 /dev/ram0`/512]
+>>  METADATA_DEV=/dev/ram0
+>>  CACHE_DEV=/dev/ram1
+>>  DATA_DEV=/dev/ram2
+>>  dmsetup create foo0 --table "0 $BLOCKS cache $METADATA_DEV $CACHE_DEV
+>> $DATA_DEV 512 1 writeback default 0"
+>>
+>> Test:
+>> one terminal window:
+>>   while true; do dd if=/dev/zero of=/dev/mapper/foo0 bs=512; done
+>> second window:
+>>   while sleep .1; do dmsetup status foo0; done
+>>
+>>
+>> after some time from 0 i get to 4294967295, which is think is not
+>> expected value.
+>>
+>>
+>> More info:
+>> device just created:
+>> 0 32768 cache 10/4096 1728259 256 1675650 0 0 0 64 0 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> after some (~20) writes:
+>> 0 32768 cache 10/4096 1790456 256 1737543 0 0 0 64 0 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> started full speed test, after 2 sec:
+>> 0 32768 cache 10/4096 2475934 256 2417479 0 0 0 64 0 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> 0 32768 cache 10/4096 2485872 256 2428545 0 0 0 64 5 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> 0 32768 cache 10/4096 2495964 256 2437959 0 0 0 64 0 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> 0 32768 cache 10/4096 2506447 256 2447365 0 0 0 64 20 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> 0 32768 cache 10/4096 2515948 256 2458439 0 0 0 64 0 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> 0 32768 cache 10/4096 2526687 256 2466631 0 0 0 64 0 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> after ~10sec:
+>> 0 32768 cache 10/4096 2667754 256 2609991 0 0 0 64 0 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> 0 32768 cache 10/4096 2678571 256 2618183 0 0 0 64 4294967295 1
+>> writeback 2 migration_threshold 2048 4 random_threshold 4
+>> sequential_threshold 512
+>> 0 32768 cache 10/4096 2687846 256 2630471 0 0 0 64 4294967295 1
+>> writeback 2 migration_threshold 2048 4 random_threshold 4
+>> sequential_threshold 512
+>> 0 32768 cache 10/4096 2698349 256 2638663 0 0 0 64 4294967295 1
+>> writeback 2 migration_threshold 2048 4 random_threshold 4
+>> sequential_threshold 512
+>> 0 32768 cache 10/4096 2708082 256 2648514 0 0 0 64 5 1 writeback 2
+>> migration_threshold 2048 4 random_threshold 4 sequential_threshold 512
+>> 0 32768 cache 10/4096 2717700 256 2659143 0 0 0 64 4294967295 1
+>> writeback 2 migration_threshold 2048 4 random_threshold 4
+>> sequential_threshold 512
+>> 0 32768 cache 10/4096 2728596 256 2667335 0 0 0 64 4294967295 1
+>> writeback 2 migration_threshold 2048 4 random_threshold 4
+>> sequential_threshold 512
+>> 0 32768 cache 10/4096 2737453 256 2679623 0 0 0 64 4294967295 1
+>> writeback 2 migration_threshold 2048 4 random_threshold 4
+>> sequential_threshold 512
+>> ^C
