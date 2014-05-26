@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801AbaEZGbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 02:31:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49327 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512AbaEZGbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 02:31:43 -0400
-Message-ID: <5382DFE8.1080104@ti.com>
-Date: Mon, 26 May 2014 09:32:08 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751598AbaEZGor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 02:44:47 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:18415 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaEZGop (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 02:44:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 25 May 2014 23:38:04 -0700
+Message-ID: <5382E324.5090108@nvidia.com>
+Date: Mon, 26 May 2014 09:45:56 +0300
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, Nishanth Menon <nm@ti.com>,
-        =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Paul <paul@pwsan.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 0/3] ARM: OMAP5+: Support Duty Cycle Correction(DCC)
-References: <1400237160-25125-1-git-send-email-nm@ti.com> <20140523210720.23136.65858@quantum>
-In-Reply-To: <20140523210720.23136.65858@quantum>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Alex Courbot <acourbot@nvidia.com>, Lucas Stach <l.stach@pengutronix.de>
+CC: Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Ben Skeggs" <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
+References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
+		 <1400493433.8467.24.camel@weser.hi.pengutronix.de>
+		 <5379D7A0.3050509@nvidia.com>
+		 <1400494582.8467.28.camel@weser.hi.pengutronix.de>
+		 <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
+	 <1400837055.4921.4.camel@weser.hi.pengutronix.de>
+	 <537F1853.7050800@nvidia.com>
+ <1400839186.4921.17.camel@weser.hi.pengutronix.de>
+ <537F5DED.8050702@nvidia.com>
+In-Reply-To: <537F5DED.8050702@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2014 12:07 AM, Mike Turquette wrote:
-> Quoting Nishanth Menon (2014-05-16 03:45:57)
->> Hi,
->>
->> This patch series has been carried over in vendor kernel for quiet
->> few years now.
->>
->> Unfortunately, it was very recently re-discovered and upstream kernel
->> is noticed to be broken for OMAP5 1.5GHz - at least we are operating
->> DPLL at frequency higher than what it was intended to be when CPUFreq
->> is enabled. Thankfully, with nominal voltage(we dont use AVS yet in
->> upstream for the mentioned platforms) and margins in trimming, we
->> have so far not crashed - but I strongly suspect this might be some
->> boundary case survival.
->
-> DCC also exists in OMAP4. In some cases customers used it, in other
-> cases we just ran the PLL way out of spec and the mpu_clk would divide
-> by 2.
->
-> Is this broken for OMAP4 as well?
+On 23.05.2014 17:40, Alex Courbot wrote:
+> On 05/23/2014 06:59 PM, Lucas Stach wrote:
+> So after checking with more knowledgeable people, it turns out this is 
+> the expected behavior on ARM and BAR regions should be mapped uncached 
+> on GK20A. All the more reasons to avoid using the BAR at all.
 
-Yes, its broken. This series does not address the OMAP4 needs for it, 
-but can be expanded later by just defining a proper clock type with 
-OMAP4 specific DCC rate limits etc. for it. We would need properly 
-functioning DVFS for OMAP4 panda first though I guess... (support for 
-the TPS regulator.)
+This is actually specific to Tegra.
 
--Tero
+>> You may want to make yourself aware of all the quirks required for
+>> sharing memory between the GPU and CPU on an ARM host. I think there are
+>> far more involved than what you see now and writing an replacement for
+>> TTM will not be an easy task.
+>>
+>> Doing away with the concept of two memory areas will not get you to a
+>> single unified address space. You would have to deal with things like
+>> not being able to change the caching state of pages in the systems
+>> lowmem yourself. You will still have to deal with remapping pages that
+>> aren't currently visible to the CPU (ok this is not an issue on Jetson
+>> right now as it only has 2GB of RAM), because it's in systems highmem,
+>> or even in a different LPAE area.
+>>
+>> You really want to be sure you are aware of all the consequences of
+>> this, before considering this task.
+> 
+> Yep, that's why I am seeking advice here. My first hope is that with a 
+> few tweaks we will be able to keep using TTM and the current nouveau_bo 
+> implementation. But unless I missed something this is not going to be easy.
+> 
+> We can also use something like the patch I originally sent to make it 
+> work, although not with good performance, on GK20A. Not very graceful, 
+> but it will allow applications to run.
+> 
+> In the long run though, we will want to achieve better performance, and 
+> it seems like a BO implementation targeted at UMA devices would also be 
+> beneficial to quite a few desktop GPUs. So as tricky as it may be I'm 
+> interested in gathering thoughts and why not giving it a first try with 
+> GK20A, even if it imposes some limitations like having buffers in lowmem 
+> in a first time (we can probably live with this one for a short while, 
+> and 64 bits will also be coming to the rescue :))
 
->
-> Regards,
-> Mike
->
->>
->> Verified on the following impacted platforms using 3.15-rc4 based
->> vendor kernel.
->>
->> Before:
->> OMAP5432: http://slexy.org/view/s20cs0qQFg
->> DRA72x: http://slexy.org/view/s2TXtSa6mH (refused to lock)
->> DRA75x: http://slexy.org/view/s20AW8MU5c
->> After:
->> OMAP5432: http://slexy.org/view/s21iAfWxpu
->> DRA72x: http://slexy.org/view/s2hwsvGLmC (locks properly)
->> DRA75x: http://slexy.org/view/s21ehw8WQn
->>
->> Hopefully, we can get these into some kernel revision in some form.
->>
->> NOTE: Support for 4470(which is the only other platform requiring
->> DCC) is not present in upstream kernel and there are no plans to
->> support that SoC, even if it is added at a later point, support can be
->> extended as needed.
->>
->> Series based on v3.15-rc5 tag.
->> Also available on my tree:
->>          https://github.com/nmenon/linux-2.6-playground/
->>          branch:  push/clock/dcc
->>
->>          weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/clock/dcc
->>
->> Verification:
->> 3.15-rc4 based kernel - DRA75x-evm, 72x-evm, OMAP5uevm
->> 3.15-rc5 - OMAP5uEVM(only one supporting 1.5GHz atm)
->>
->> Andrii Tseglytskyi (1):
->>    ARM: OMAP5+: dpll: support Duty Cycle Correction(DCC)
->>
->> Nishanth Menon (2):
->>    clk: dpll: support OMAP5 MPU DPLL that need special handling for
->>      higher frequencies
->>    ARM: dts: OMAP5/DRA7: use omap5-mpu-dpll-clock capable of dealing
->>      with higher frequencies
->>
->>   .../devicetree/bindings/clock/ti/dpll.txt          |    1 +
->>   arch/arm/boot/dts/dra7xx-clocks.dtsi               |    2 +-
->>   arch/arm/boot/dts/omap54xx-clocks.dtsi             |    2 +-
->>   arch/arm/mach-omap2/dpll3xxx.c                     |    9 +++++++++
->>   drivers/clk/ti/dpll.c                              |   21 ++++++++++++++++++++
->>   include/linux/clk/ti.h                             |    4 ++++
->>   6 files changed, 37 insertions(+), 2 deletions(-)
->>
->> Regards,
->> Nishanth Menon
->> --
->> 1.7.9.5
->>
+I don't think lowmem or LPAE is any problem, if the memory manager is
+designed with that in mind. Vast majority of the buffers kernel
+allocates do not need to be touched in kernel space.
 
+Actually I can't think of any buffers that we allocate on behalf of user
+space that would need to be permanently mapped also to kernel. In case
+or relocs only push buffer needs to be temporarily mapped to kernel.
+
+Ultimately even relocs are not necessary if we expose GPU virtual
+addresses directly to user space. But that's another topic.
+
+Terje
