@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaEZTFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:05:16 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:56489 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751128AbaEZTFP (ORCPT
+	id S1752033AbaEZTJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:09:13 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:53262 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751487AbaEZTJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:05:15 -0400
-X-Greylist: delayed 969 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 15:05:14 EDT
-Date: Mon, 26 May 2014 20:49:04 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] watchdog: via_wdt: replace del_timer by del_timer_sync
-Message-ID: <20140526184904.GA21259@spo001.leaseweb.com>
-References: <1396360159-16244-1-git-send-email-Julia.Lawall@lip6.fr> <1396360159-16244-4-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 26 May 2014 15:09:11 -0400
+Message-ID: <1401131350.6068.20.camel@x220>
+Subject: [PATCH] staging: comedi: remove check for CONFIG_KMOD
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 26 May 2014 21:09:10 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396360159-16244-4-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 May 2014 19:09:10.0211 (UTC) FILETIME=[F95FC130:01CF7915]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+The comedi driver was added in v2.6.29. That's the same release that
+removed the Kconfig symbol KMOD. So the code behind a test for its
+macro has been hidden since it was in staging. Remove it.
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Use del_timer_sync to ensure that the timer is stopped on all CPUs before
-> the driver exits.
-> 
-> This change was suggested by Thomas Gleixner.
-> 
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r@
-> identifier i,t,ex;
-> @@
-> struct t i = { .remove = ex, };
-> 
-> @@
-> identifier r.ex;
-> @@
-> ex(...) {
->   <...
-> - del_timer
-> + del_timer_sync
->     (...)
->   ...>
-> }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> Not tested.
-> 
->  drivers/watchdog/via_wdt.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/watchdog/via_wdt.c b/drivers/watchdog/via_wdt.c
-> index d2cd9f0..56369c4 100644
-> --- a/drivers/watchdog/via_wdt.c
-> +++ b/drivers/watchdog/via_wdt.c
-> @@ -232,7 +232,7 @@ err_out_disable_device:
->  static void wdt_remove(struct pci_dev *pdev)
->  {
->  	watchdog_unregister_device(&wdt_dev);
-> -	del_timer(&timer);
-> +	del_timer_sync(&timer);
->  	iounmap(wdt_mem);
->  	release_mem_region(mmio, VIA_WDT_MMIO_LEN);
->  	release_resource(&wdt_res);
-> 
+Remove a useless assignment to "dev->in_request_module" too. That
+variable seems pointless anyhow, but that's a different issue.
 
-This was added 2 or 3 weeks ago to linux-watchdog-next.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested. Done on top of next-20140526.
 
-Kind regards,
-Wim.
+ drivers/staging/comedi/comedi_fops.c | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 012c8fd1aabb..70ad00c501ef 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -2351,14 +2351,6 @@ static int comedi_open(struct inode *inode, struct file *file)
+ 	if (capable(CAP_NET_ADMIN) && dev->in_request_module)
+ 		goto ok;
+ 
+-	dev->in_request_module = true;
+-
+-#ifdef CONFIG_KMOD
+-	mutex_unlock(&dev->mutex);
+-	request_module("char-major-%i-%i", COMEDI_MAJOR, dev->minor);
+-	mutex_lock(&dev->mutex);
+-#endif
+-
+ 	dev->in_request_module = false;
+ 
+ 	if (!dev->attached && !capable(CAP_NET_ADMIN)) {
+-- 
+1.9.0
 
