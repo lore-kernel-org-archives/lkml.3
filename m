@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaEZKwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:52:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39413 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637AbaEZKwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:52:43 -0400
-Date: Mon, 26 May 2014 12:52:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Roland Dreier <roland@kernel.org>
-cc: Or Gerlitz <or.gerlitz@gmail.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Amir Vadai <amirv@mellanox.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH v1 for-next 0/3] IB: Use GFP_NOIO calls in IPoIB connected
- mode TX path
-In-Reply-To: <CAL1RGDUoEFF=fR-e-fc1v0yHp8sxaidBnO_2iiAFThgZNvCcfQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1405261251520.12047@pobox.suse.cz>
-References: <1399810512-30774-1-git-send-email-ogerlitz@mellanox.com> <alpine.LNX.2.00.1405131338030.16459@pobox.suse.cz> <CAJZOPZJVxF6A-3s16feqoWCb5gOLTjyUmB3F+st1+1QWp+bJnQ@mail.gmail.com>
- <CAL1RGDUoEFF=fR-e-fc1v0yHp8sxaidBnO_2iiAFThgZNvCcfQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752106AbaEZKys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:54:48 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:58588 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666AbaEZKyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 06:54:47 -0400
+Date: Mon, 26 May 2014 06:54:43 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: remove the unneeded cpu_relax() in
+ __queue_work()
+Message-ID: <20140526105443.GA5555@mtj.dyndns.org>
+References: <1400748257-14165-1-git-send-email-laijs@cn.fujitsu.com>
+ <20140522134758.GA5065@htj.dyndns.org>
+ <CACvQF53Xs91KMdsYCsqM-NNJYtb+byajjc668aiM2vMFBv3JaA@mail.gmail.com>
+ <20140526042311.GA14432@htj.dyndns.org>
+ <5382D0DB.1000907@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5382D0DB.1000907@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014, Roland Dreier wrote:
-
-> > Roland, we're soon on -rc6 and there's no reason for this to miss
-> > 3.16, could you please comment whether you want it to go through your
-> > tree or net-next?
+On Mon, May 26, 2014 at 01:27:55PM +0800, Lai Jiangshan wrote:
+> changing pwq:
+> 	install pwq
+> 	lock(pool->lock)
+> 	put_pwq();
+> 	unlock(pool->lock)
 > 
-> I will pick it up.
+> __queue_work():
+> 	lock(pool->lock)
+> 	test ref and find it zero;
+> 	see the installation here;
+> 	it is guaranteed to get the installed pwq on the immediate next try.
+> 	unlock()
+> 	retry.
 
-Thanks Roland.
-
-Sorry for being a bit persistent, but another week has passed, -rc7 is out 
-and I still don't see it in your tree. Could you please clarify what is 
-the destiny of this patchset?
-
-Thanks,
+The fact that pool->lock locking happens to provide enough barrier for
+the above to work is an accidental implementation detail.  We
+theoretically can move refcnting out of pool->lock.  Nothing
+semantically guarantees that barrier to be there to interlock pwq
+qinstallation and the last put.  Removing that cpu_relax() doesn't buy
+us *ANYTHING* and removing that with rationale of making it go faster
+would easily win pointless micro optimization award of the year.  Just
+let it go.
 
 -- 
-Jiri Kosina
-SUSE Labs
+tejun
