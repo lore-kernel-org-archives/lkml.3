@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaEZTcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:32:45 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:10521 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751790AbaEZTco (ORCPT
+	id S1752085AbaEZTdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:33:54 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:51391 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603AbaEZTdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:32:44 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiwKAA+Wg1NbsG99/2dsb2JhbABZgweCRaheBAEBAQEBAQUBgzyUUIEVF3SCUxMcIxiBAiQTiEYB1H4XhVWIfYRHAQOZcgGLF4gQgzo7
-Date: Mon, 26 May 2014 21:32:42 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/1] drivers/tty/n_hdlc.c: replace kmalloc/memset by kzalloc
-Message-Id: <20140526213242.5e449ec5c4613ce6cb21862d@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 May 2014 15:33:53 -0400
+Date: Mon, 26 May 2014 21:33:50 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/5] irq_work: Split raised and lazy lists
+Message-ID: <20140526193347.GJ2066@localhost.localdomain>
+References: <1401028191-29756-1-git-send-email-fweisbec@gmail.com>
+ <1401028191-29756-2-git-send-email-fweisbec@gmail.com>
+ <20140526155944.GL30445@twins.programming.kicks-ass.net>
+ <20140526165312.GF2066@localhost.localdomain>
+ <20140526192633.GB5444@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526192633.GB5444@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 26, 2014 at 09:26:33PM +0200, Peter Zijlstra wrote:
+> On Mon, May 26, 2014 at 06:53:13PM +0200, Frederic Weisbecker wrote:
+> > On Mon, May 26, 2014 at 05:59:44PM +0200, Peter Zijlstra wrote:
+> > > On Sun, May 25, 2014 at 04:29:47PM +0200, Frederic Weisbecker wrote:
+> > > > An irq work can be handled from two places: from the tick if the work
+> > > > carries the "lazy" flag and the tick is periodic, or from a self IPI.
+> > > > 
+> > > > We merge all these works in a single list and we use some per cpu latch
+> > > > to avoid raising a self-IPI when one is already pending.
+> > > > 
+> > > > Now we could do away with this ugly latch if only the list was only made of
+> > > > non-lazy works. Just enqueueing a work on the empty list would be enough
+> > > > to know if we need to raise an IPI or not.
+> > > > 
+> > > > Also we are going to implement remote irq work queuing. Then the per CPU
+> > > > latch will need to become atomic in the global scope. That's too bad
+> > > > because, here as well, just enqueueing a work on an empty list of
+> > > > non-lazy works would be enough to know if we need to raise an IPI or not.
+> > > > 
+> > > > So lets take a way out of this: split the works in two distinct lists,
+> > > > one for the works that can be handled by the next tick and another
+> > > > one for those handled by the IPI. Just checking if the latter is empty
+> > > > when we queue a new work is enough to know if we need to raise an IPI.
+> > > 
+> > > That ^
+> > > 
+> > > >  bool irq_work_queue(struct irq_work *work)
+> > > >  {
+> > > > +	unsigned long flags;
+> > > > +
+> > > >  	/* Only queue if not already pending */
+> > > >  	if (!irq_work_claim(work))
+> > > >  		return false;
+> > > >  
+> > > > -	/* Queue the entry and raise the IPI if needed. */
+> > > > -	preempt_disable();
+> > > > +	/* Check dynticks safely */
+> > > > +	local_irq_save(flags);
+> > > 
+> > > Does not mention this ^
+> > > 
+> > > 'sup?
+> > 
+> > Because it's really just a technical detail.
+> > If we enqueue before checking for tick stopped, we can avoid disabling irqs
+> > because it's fine if we just raced with an irq in-between.
+> > 
+> > But now that we enqueue _after_, we can't afford an IRQ in between.
+> > 
+> > Should I update the comments maybe?
+> 
+> Well, yes because it was entirely non-obvious, but maybe we can write it
+> such that we can avoid the irq disable, because they're expensive.
+> 
+> How about something like:
+> 
+> 	if (work->flags & IRQ_WORK_LAZY) {
+> 		if (llist_add(&work->llnode, __get_cpu_var(lazy_list)) && 
+> 		    tick_nohz_tick_stopped())
+> 			arch_irq_work_raise();
+> 	} else {
+> 		if (llist_add(&work->llnode, __get_cpu_var(raise_list)))
+> 			arch_irq_work_raise();
+> 	}
+> 
+> That way we check it after the enqueue.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/tty/n_hdlc.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/tty/n_hdlc.c b/drivers/tty/n_hdlc.c
-index 1b2db9a..b8fcc47 100644
---- a/drivers/tty/n_hdlc.c
-+++ b/drivers/tty/n_hdlc.c
-@@ -848,13 +848,11 @@ static struct n_hdlc *n_hdlc_alloc(void)
- {
- 	struct n_hdlc_buf *buf;
- 	int i;
--	struct n_hdlc *n_hdlc = kmalloc(sizeof(*n_hdlc), GFP_KERNEL);
-+	struct n_hdlc *n_hdlc = kzalloc(sizeof(*n_hdlc), GFP_KERNEL);
- 
- 	if (!n_hdlc)
- 		return NULL;
- 
--	memset(n_hdlc, 0, sizeof(*n_hdlc));
--
- 	n_hdlc_buf_list_init(&n_hdlc->rx_free_buf_list);
- 	n_hdlc_buf_list_init(&n_hdlc->tx_free_buf_list);
- 	n_hdlc_buf_list_init(&n_hdlc->rx_buf_list);
--- 
-1.9.1
+Hmm, ok.
