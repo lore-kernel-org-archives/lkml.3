@@ -1,194 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaEZNpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:45:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52213 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122AbaEZNpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:45:44 -0400
-Date: Mon, 26 May 2014 15:45:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
-        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 4/7] acpi, apei, ghes: Factor out NMI error notification
- context.
-Message-ID: <20140526134533.GH25732@pd.tnic>
-References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org>
- <1397056476-9183-5-git-send-email-tomasz.nowicki@linaro.org>
- <20140513194125.GD8760@pd.tnic>
- <537F39D7.6090309@linaro.org>
- <20140523164824.GG21332@pd.tnic>
- <538340EE.7070408@linaro.org>
+	id S1752633AbaEZNqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:46:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37391 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752122AbaEZNqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 09:46:05 -0400
+Date: Mon, 26 May 2014 15:40:52 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Matthew Leach <matthew.leach@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Xiubo Li <Li.Xiubo@freescale.com>, "Yang,Wei" <Wei.Yang@windriver.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        khilman@linaro.org
+Subject: Re: [GIT PULL] clockevents: new material for 3.16
+Message-ID: <20140526134052.GA3790@lukather>
+References: <537F214C.8000700@linaro.org>
+ <20140526194512.032c6630@canb.auug.org.au>
+ <53830ED9.9060001@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
 Content-Disposition: inline
-In-Reply-To: <538340EE.7070408@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53830ED9.9060001@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 03:26:06PM +0200, Tomasz Nowicki wrote:
-> Now I do follow :) Nicely done, I have applied your patch and indeed
-> there are more arch dependencies for !X86.
 
-Not nicely enough, I guess :-)
+--Kj7319i9nmIyA2yE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-> index 86f9301..0f03ab6 100644
-> --- a/arch/x86/include/asm/nmi.h
-> +++ b/arch/x86/include/asm/nmi.h
-> @@ -54,7 +54,18 @@ struct nmiaction {
-> 
->  int __register_nmi_handler(unsigned int, struct nmiaction *);
-> 
-> -void unregister_nmi_handler(unsigned int, const char *);
-> +void unregister_nmi_handler(unsigned int type, const char *name);
-> +
-> +static inline int arch_apei_register_nmi(nmi_handler_t fn,
-> +					 const char *name)
-> +{
-> +	return register_nmi_handler(NMI_LOCAL, fn, 0, name);
-> +}
-> +
-> +static inline void arch_apei_unregister_nmi(const char *name)
-> +{
-> +	unregister_nmi_handler(NMI_LOCAL, name);
-> +}
+On Mon, May 26, 2014 at 11:52:25AM +0200, Daniel Lezcano wrote:
+> On 05/26/2014 11:45 AM, Stephen Rothwell wrote:
+> >Hi all,
+> >
+> >On Fri, 23 May 2014 12:22:04 +0200 Daniel Lezcano <daniel.lezcano@linaro=
+=2Eorg> wrote:
+> >>
+> >>        clocksource: sun5i: Add support for reset controller
+> >
+> >This commit caused a build failure on arm in linux-next today ...
 
-I'm guessing you've added those wrappers so that you don't have to
-export NMI_LOCAL?
+It's weird... of_reset_control_get has been merged in 3.15 by this
+commit fc0a5921561c71be2c334a335c1680f7930434d7 ("reset: Add
+of_reset_control_get"), and then the commit
+b424080a9e086e683ad5fdc624a7cf3c024e0c0f ("reset: Add optional resets
+and stubs") removed it, still in 3.15 (probably a mismerge).
 
->  void stop_nmi(void);
->  void restart_nmi(void);
-> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-> index 35a44d9..84c79af 100644
-> --- a/drivers/acpi/apei/ghes.c
-> +++ b/drivers/acpi/apei/ghes.c
-> @@ -47,13 +47,11 @@
->  #include <linux/genalloc.h>
->  #include <linux/pci.h>
->  #include <linux/aer.h>
-> +#include <linux/nmi.h>
-> 
->  #include <acpi/ghes.h>
->  #include <asm/apei.h>
->  #include <asm/tlbflush.h>
-> -#ifdef CONFIG_ACPI_APEI_NMI
-> -#include <asm/nmi.h>
-> -#endif
-> 
->  #include "apei-internal.h"
-> 
-> @@ -718,7 +716,6 @@ static int ghes_notify_sci(struct notifier_block *this,
->  	return ret;
->  }
-> 
-> -#ifdef CONFIG_ACPI_APEI_NMI
->  /*
->   * printk is not safe in NMI context.  So in NMI handler, we allocate
->   * required memory from lock-less memory allocator
-> @@ -817,7 +814,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct
-> pt_regs *regs)
->  {
->  	struct ghes *ghes, *ghes_global = NULL;
->  	int sev, sev_global = -1;
-> -	int ret = NMI_DONE;
-> +	int ret = APEI_NMI_DONE;
-> 
->  	BUG_ON(!IS_ENABLED(CONFIG_ACPI_APEI_NMI));
-> 
-> @@ -832,14 +829,14 @@ static int ghes_notify_nmi(unsigned int cmd, struct
-> pt_regs *regs)
->  			sev_global = sev;
->  			ghes_global = ghes;
->  		}
-> -		ret = NMI_HANDLED;
-> +		ret = APEI_NMI_HANDLED;
->  	}
-> 
-> -	if (ret == NMI_DONE)
-> +	if (ret == APEI_NMI_DONE)
->  		goto out;
-> 
->  	if (sev_global >= GHES_SEV_PANIC) {
-> -		oops_begin();
-> +		arch_apei_nmi_oops_begin();
->  		ghes_print_queued_estatus();
->  		__ghes_print_estatus(KERN_EMERG, ghes_global->generic,
->  				     ghes_global->estatus);
-> @@ -914,7 +911,7 @@ static int ghes_notify_init_nmi(struct ghes *ghes)
->  	ghes_estatus_pool_expand(len);
->  	mutex_lock(&ghes_list_mutex);
->  	if (list_empty(&ghes_nmi))
-> -		status = register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0, "ghes");
-> +		status = arch_apei_register_nmi(ghes_notify_nmi, "ghes");
->  	list_add_rcu(&ghes->list, &ghes_nmi);
->  	mutex_unlock(&ghes_list_mutex);
-> 
-> @@ -928,7 +925,7 @@ static void ghes_notify_remove_nmi(struct ghes *ghes)
->  	mutex_lock(&ghes_list_mutex);
->  	list_del_rcu(&ghes->list);
->  	if (list_empty(&ghes_nmi))
-> -		unregister_nmi_handler(NMI_LOCAL, "ghes");
-> +		arch_apei_unregister_nmi("ghes");
->  	mutex_unlock(&ghes_list_mutex);
->  	/*
->  	 * To synchronize with NMI handler, ghes can only be
-> @@ -941,17 +938,14 @@ static void ghes_notify_remove_nmi(struct ghes *ghes)
-> 
->  static void ghes_init_nmi(void)
->  {
-> +	if (!IS_ENABLED(CONFIG_ACPI_APEI_NMI))
-> +		return;
-> +
->  	init_irq_work(&ghes_proc_irq_work, ghes_proc_in_irq);
->  	ghes_notify_tab[ACPI_HEST_NOTIFY_NMI].init_call = ghes_notify_init_nmi;
->  	ghes_notify_tab[ACPI_HEST_NOTIFY_NMI].remove_call =
->  							ghes_notify_remove_nmi;
->  }
-> -#else
-> -static inline void ghes_init_nmi(void)
-> -{
-> -
-> -}
-> -#endif
-> 
->  static int ghes_notify_init_polled(struct ghes *ghes)
->  {
-> diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-> index 084b4c5..1aa351c 100644
-> --- a/include/linux/nmi.h
-> +++ b/include/linux/nmi.h
-> @@ -56,4 +56,19 @@ extern int proc_dowatchdog(struct ctl_table *, int ,
->  			   void __user *, size_t *, loff_t *);
->  #endif
-> 
-> +#define APEI_NMI_DONE		0
-> +#define APEI_NMI_HANDLED	1
-> +
-> +#ifdef CONFIG_ACPI_APEI_NMI
-> +#include <asm/nmi.h>
-> +#define arch_apei_nmi_oops_begin()	oops_begin()
-> +#else
-> +#define arch_apei_register_nmi(fn, n) ({		\
-> +	void __attribute__((unused)) *dummy = fn;	\
+Finally, Hans de Goede introduced it back in the following patch:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/246738.html
 
-Do we really need this dummy assignment? Wouldn't it be just fine to
-simply have:
+That should have shown up in one of 3.15-rc's according to:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/252317.html
 
-#define arch_apei_register_nmi(fn, n) ({ (-ENOSYS); })
+Philipp, what's going on?
 
-Just a nitpick, though; otherwise, this looks nicely abstracted.
+Maxime
 
-Thanks!
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
--- 
-Regards/Gruss,
-    Boris.
+--Kj7319i9nmIyA2yE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIbBAEBAgAGBQJTg0RjAAoJEBx+YmzsjxAgDwEP+LQG+L7w5dIgGf3b3MOyvm40
+vOyj0eRJ4540I5lNkp4Rz79YY9bWFiuR54Lze5N+fF6a/4qcXzcAEwT8pC3ExkKc
+3f0VYrBcVcL7QDDN8MczwVckvy8imguXqV/tgFm46oXvBOpCIgqnT/ZxBHiJximq
+YVpE0pTFEFHMIEYJwndBmhSRle/XZq+1CsVvTmMHU5iobvxpGYC1hICzYAi0JLtw
+liR7cWc3VrJlxCHuzNRt+D9Hv7ZT31BfoCXpwAEUTeY0/km8RoHNCCDFvwnfOG3q
+jXg8ON7YTLKBhJkalD07KWVnYMqOP4fEOvcUkUiQh11dHF7D98dPhmDPAtlMLzhs
+SD7tF2+u1+uhW1F9N+pSvclMqCMTArHpofifMDs3Doc8IRbuSYFUvpwNFKU5b3JG
+xzucC1GN5VOX+QsxGt9GLKduOiOICequKYerBPNN40VTqE1eZtA/kGMIZz/y/Ikh
+rNAV9WSq6wi4H3DbYtalKpVr9G490GkiNPr7CM7njhh8EFMcMcsNH4PRuWNdfYew
+Hjdc+qNAzxgiCwHak4y0NclI4A6Y1YVBLR3vct3iK09iMdy5wd5Ys8QN50Dd+teF
++YgSlnVDDq8ky/f6e8/g3rUv2Go2eZVvMZEanKkTCGS7+xXw0dvyCTHjWeIDPhRk
+Afmx1+MM8XBAFr4G1oM=
+=tI8y
+-----END PGP SIGNATURE-----
+
+--Kj7319i9nmIyA2yE--
