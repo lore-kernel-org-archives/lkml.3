@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaEZU0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 16:26:20 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33638 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaEZU0S (ORCPT
+	id S1752042AbaEZU1X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 16:27:23 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:38731 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaEZU1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 16:26:18 -0400
-Date: Mon, 26 May 2014 13:25:02 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] mm/process_vm_access: move into ipc/
-In-Reply-To: <CALYGNiNE2cdPaxw3f2y0-g2aRZZD1HbrBHpu-zf9Pdjb69kh3w@mail.gmail.com>
-Message-ID: <alpine.LSU.2.11.1405261314510.3748@eggly.anvils>
-References: <20140524135925.32597.45754.stgit@zurg> <alpine.LSU.2.11.1405261210140.3411@eggly.anvils> <CALYGNiNE2cdPaxw3f2y0-g2aRZZD1HbrBHpu-zf9Pdjb69kh3w@mail.gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 26 May 2014 16:27:20 -0400
+To: lgirdwood@gmail.com, broonie@kernel.org
+Subject: [PATCH] of_regulator: use of_property_read_{bool|u32}()
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+Date: Tue, 27 May 2014 00:27:19 +0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201405270027.20092.sergei.shtylyov@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 May 2014, Konstantin Khlebnikov wrote:
-> On Mon, May 26, 2014 at 11:16 PM, Hugh Dickins <hughd@google.com> wrote:
-> > On Sat, 24 May 2014, Konstantin Khlebnikov wrote:
-> >
-> >> "CROSS_MEMORY_ATTACH" and mm/process_vm_access.c seems misnamed and misplaced.
-> >> Actually it's a kind of IPC and it has no more relation to MM than sys_read().
-> >> This patch moves code into ipc/ and config option into init/Kconfig.
-> >>
-> >> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-> >
-> > I disagree, and SysV's ipc/ isn't where I would expect to find it.
-> > How about we just leave it where it is in mm?
-> 
-> Ok, how about moving only config option? It adds couple syscalls and
-> nothing more.
-> I don't think it should be in "Processor type and features".
-> All other options related to non-standard syscalls are in "General
-> setup' init/Kconfig.
+Use more compact of_property_read_{bool|u32}() calls instead of the
+of_{find|get}_property() calls in of_get_regulation_constraints() where
+possible (note that of_property_read_{bool|u32}() were already used to read
+some properties).
 
-That sounds reasonable to me.  I see you also snuck in a change
-to the prompt string: which indeed seems an improvement, but you
-ought to mention it in the comment, rather than hiding it in the move.
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-(I sometimes wonder if its help text ought to say "This CMA has
-absolutely nothing to do with the Contiguous Memory Allocator";
-but adding that might increase the confusion rather than reduce it,)
+---
+The patch is against Mark Brown's 'regulator.git' repo's 'for-next' branch.
 
-Hugh
+ drivers/regulator/of_regulator.c |   37 ++++++++++++++-----------------------
+ 1 file changed, 14 insertions(+), 23 deletions(-)
 
-> 
-> >> diff --git a/init/Kconfig b/init/Kconfig
-> >> index 9d3585b..d6ddb7a 100644
-> >> --- a/init/Kconfig
-> >> +++ b/init/Kconfig
-> >> @@ -261,6 +261,16 @@ config POSIX_MQUEUE_SYSCTL
-> >>       depends on SYSCTL
-> >>       default y
-> >>
-> >> +config CROSS_MEMORY_ATTACH
-> >> +     bool "Enable process_vm_readv/writev syscalls"
-> >> +     depends on MMU
-> >> +     default y
-> >> +     help
-> >> +       Enabling this option adds the system calls process_vm_readv and
-> >> +       process_vm_writev which allow a process with the correct privileges
-> >> +       to directly read from or write to to another process's address space.
-> >> +       See the man page for more details.
-> >> +
-> >> diff --git a/mm/Kconfig b/mm/Kconfig
-> >> index 1b5a95f..2ec35d7 100644
-> >> --- a/mm/Kconfig
-> >> +++ b/mm/Kconfig
-> >> @@ -430,16 +430,6 @@ choice
-> >>         benefit.
-> >>  endchoice
-> >>
-> >> -config CROSS_MEMORY_ATTACH
-> >> -     bool "Cross Memory Support"
-> >> -     depends on MMU
-> >> -     default y
-> >> -     help
-> >> -       Enabling this option adds the system calls process_vm_readv and
-> >> -       process_vm_writev which allow a process with the correct privileges
-> >> -       to directly read from or write to to another process's address space.
-> >> -       See the man page for more details.
-> >> -
-> >>  #
-> >>  # UP and nommu archs use km based percpu allocator
-> >>  #
+Index: regulator/drivers/regulator/of_regulator.c
+===================================================================
+--- regulator.orig/drivers/regulator/of_regulator.c
++++ regulator/drivers/regulator/of_regulator.c
+@@ -19,9 +19,7 @@
+ static void of_get_regulation_constraints(struct device_node *np,
+ 					struct regulator_init_data **init_data)
+ {
+-	const __be32 *min_uV, *max_uV, *uV_offset;
+-	const __be32 *min_uA, *max_uA, *ramp_delay;
+-	struct property *prop;
++	const __be32 *min_uV, *max_uV;
+ 	struct regulation_constraints *constraints = &(*init_data)->constraints;
+ 	int ret;
+ 	u32 pval;
+@@ -42,36 +40,29 @@ static void of_get_regulation_constraint
+ 	if (min_uV && max_uV && constraints->min_uV == constraints->max_uV)
+ 		constraints->apply_uV = true;
+ 
+-	uV_offset = of_get_property(np, "regulator-microvolt-offset", NULL);
+-	if (uV_offset)
+-		constraints->uV_offset = be32_to_cpu(*uV_offset);
+-	min_uA = of_get_property(np, "regulator-min-microamp", NULL);
+-	if (min_uA)
+-		constraints->min_uA = be32_to_cpu(*min_uA);
+-	max_uA = of_get_property(np, "regulator-max-microamp", NULL);
+-	if (max_uA)
+-		constraints->max_uA = be32_to_cpu(*max_uA);
++	if (!of_property_read_u32(np, "regulator-microvolt-offset", &pval))
++		constraints->uV_offset = pval;
++	if (!of_property_read_u32(np, "regulator-min-microamp", &pval))
++		constraints->min_uA = pval;
++	if (!of_property_read_u32(np, "regulator-max-microamp", &pval))
++		constraints->max_uA = pval;
+ 
+ 	/* Current change possible? */
+ 	if (constraints->min_uA != constraints->max_uA)
+ 		constraints->valid_ops_mask |= REGULATOR_CHANGE_CURRENT;
+ 
+-	if (of_find_property(np, "regulator-boot-on", NULL))
+-		constraints->boot_on = true;
+-
+-	if (of_find_property(np, "regulator-always-on", NULL))
+-		constraints->always_on = true;
+-	else /* status change should be possible if not always on. */
++	constraints->boot_on = of_property_read_bool(np, "regulator-boot-on");
++	constraints->always_on = of_property_read_bool(np, "regulator-always-on");
++	if (!constraints->always_on) /* status change should be possible. */
+ 		constraints->valid_ops_mask |= REGULATOR_CHANGE_STATUS;
+ 
+ 	if (of_property_read_bool(np, "regulator-allow-bypass"))
+ 		constraints->valid_ops_mask |= REGULATOR_CHANGE_BYPASS;
+ 
+-	prop = of_find_property(np, "regulator-ramp-delay", NULL);
+-	if (prop && prop->value) {
+-		ramp_delay = prop->value;
+-		if (*ramp_delay)
+-			constraints->ramp_delay = be32_to_cpu(*ramp_delay);
++	ret = of_property_read_u32(np, "regulator-ramp-delay", &pval);
++	if (!ret) {
++		if (pval)
++			constraints->ramp_delay = pval;
+ 		else
+ 			constraints->ramp_disable = true;
+ 	}
