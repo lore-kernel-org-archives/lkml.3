@@ -1,53 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867AbaEZRAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:00:15 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:59862 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494AbaEZRAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:00:11 -0400
-Message-ID: <53837317.9000203@linaro.org>
-Date: Mon, 26 May 2014 18:00:07 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3 03/13] mmc: mmci: Add Qualcomm Id to amba id table
-References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>	<1400849474-7177-1-git-send-email-srinivas.kandagatla@linaro.org> <CAPDyKFqfqhnCKA-dMqAfkhQ+cLLhN0vMtwTxB6t+MUju_04O-g@mail.gmail.com>
-In-Reply-To: <CAPDyKFqfqhnCKA-dMqAfkhQ+cLLhN0vMtwTxB6t+MUju_04O-g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752957AbaEZRAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 13:00:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43464 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751914AbaEZQ5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 12:57:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,914,1392192000"; 
+   d="scan'208";a="545122331"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH 07/15] x86/xsaves: Use xsaves/xrstors for saving and restoring xsave area
+Date: Mon, 26 May 2014 10:01:14 -0700
+Message-Id: <1401123682-5384-8-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
+References: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-On 26/05/14 10:10, Ulf Hansson wrote:
-> Hi Srinivas,
->
->>
->> +static struct variant_data variant_qcom = {
->> +       .fifosize               = 16 * 4,
->> +       .fifohalfsize           = 8 * 4,
->> +       .clkreg                 = MCI_CLK_ENABLE,
->> +       .datalength_bits        = 24,
->> +       .blksz_datactrl4        = true,
->
-> You get compile error here.
-yes, You are right, I will reorder this patch after the "mmc: mmci: Add 
-Qcom datactrl register variant"
+If xsaves is eanbled, use xsaves/xrstors for saving and restoring xstate.
+xsaves supports compacted format, init optimization, modified optimization,
+and supervisor states.
 
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/include/asm/xsave.h | 82 +++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 62 insertions(+), 20 deletions(-)
 
-Thanks,
-srini
->
-> Kind regards
-> Ulf Hansson
->
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index 76c2459..e538a0e 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -65,6 +65,68 @@ extern int init_fpu(struct task_struct *child);
+ 			_ASM_EXTABLE(1b, 3b)		\
+ 			: [err] "=r" (err)
+ 
++/*
++ * Save processor xstate to xsave area.
++ */
++static inline void xsave_state(struct xsave_struct *fx, u64 mask)
++{
++	u32 lmask = mask;
++	u32 hmask = mask >> 32;
++	int err = 0;
++
++	/*
++	 * If xsaves is enabled, xsaves replaces xsaveopt because
++	 * it supports compact format and supervisor states in addition to
++	 * modified optimization in xsaveopt.
++	 *
++	 * Otherwise, if xsaveopt is enabled, xsaveopt replaces xsave
++	 * because xsaveopt supports modified optimization which is not
++	 * supported by xsave.
++	 *
++	 * If none of xsaves and xsaveopt is enabled, use xsave.
++	 */
++	alternative_input_2(
++		"1:"XSAVE,
++		"1:"XSAVEOPT,
++		X86_FEATURE_XSAVEOPT,
++		"1:"XSAVES,
++		X86_FEATURE_XSAVES,
++		[fx] "D" (fx), "a" (lmask), "d" (hmask) :
++		"memory");
++	asm volatile("2:\n\t"
++		     xstate_fault
++		     : "0" (0)
++		     : "memory");
++}
++
++/*
++ * Restore processor xstate from xsave area.
++ */
++static inline int xrstor_state(struct xsave_struct *fx, u64 mask)
++{
++	int err = 0;
++	u32 lmask = mask;
++	u32 hmask = mask >> 32;
++
++	/*
++	 * Use xrstors to restore context if it is enabled. xrstors supports
++	 * compacted format of xsave area which is not supported by xrstor.
++	 */
++	alternative_input(
++		"1: " XRSTOR,
++		"1: " XRSTORS,
++		X86_FEATURE_XSAVES,
++		"D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
++		: "memory");
++
++	asm volatile("2:\n"
++		     xstate_fault
++		     : "0" (0)
++		     : "memory");
++
++	return err;
++}
++
+ static inline int fpu_xrstor_checking(struct xsave_struct *fx)
+ {
+ 	int err;
+@@ -130,26 +192,6 @@ static inline int xrestore_user(struct xsave_struct __user *buf, u64 mask)
+ 	return err;
+ }
+ 
+-static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
+-{
+-	u32 lmask = mask;
+-	u32 hmask = mask >> 32;
+-
+-	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
+-		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
+-		     :   "memory");
+-}
+-
+-static inline void xsave_state(struct xsave_struct *fx, u64 mask)
+-{
+-	u32 lmask = mask;
+-	u32 hmask = mask >> 32;
+-
+-	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x27\n\t"
+-		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
+-		     :   "memory");
+-}
+-
+ static inline void fpu_xsave(struct fpu *fpu)
+ {
+ 	/* This, however, we can work around by forcing the compiler to select
+-- 
+1.8.1.2
+
