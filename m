@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094AbaEZWQu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 18:16:50 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:51062 "EHLO
+	id S1753149AbaEZWRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 18:17:04 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:51110 "EHLO
 	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaEZWQq (ORCPT
+	with ESMTP id S1753101AbaEZWQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 18:16:46 -0400
+	Mon, 26 May 2014 18:16:58 -0400
 From: Alexander Holler <holler@ahsoftware.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
         Brian Norris <computersforpeace@gmail.com>,
         Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 22/27] mtd: nand: fsl_ifc: show device structure in sysfs
-Date: Tue, 27 May 2014 00:12:47 +0200
-Message-Id: <1401142372-14148-23-git-send-email-holler@ahsoftware.de>
+Subject: [PATCH 24/27] mtd: nand: mpc5121_nfc: show device structure in sysfs
+Date: Tue, 27 May 2014 00:12:49 +0200
+Message-Id: <1401142372-14148-25-git-send-email-holler@ahsoftware.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
 References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
@@ -27,32 +27,23 @@ the mtd-device by using a new inline function.
 
 Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 ---
- drivers/mtd/nand/fsl_ifc_nand.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/mtd/nand/mpc5121_nfc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
-index cb45d2f..c1aaccb 100644
---- a/drivers/mtd/nand/fsl_ifc_nand.c
-+++ b/drivers/mtd/nand/fsl_ifc_nand.c
-@@ -874,10 +874,6 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
- 	struct nand_ecclayout *layout;
- 	u32 csor, ver;
+diff --git a/drivers/mtd/nand/mpc5121_nfc.c b/drivers/mtd/nand/mpc5121_nfc.c
+index e78841a..3dd450c 100644
+--- a/drivers/mtd/nand/mpc5121_nfc.c
++++ b/drivers/mtd/nand/mpc5121_nfc.c
+@@ -657,8 +657,8 @@ static int mpc5121_nfc_probe(struct platform_device *op)
  
--	/* Fill in fsl_ifc_mtd structure */
--	priv->mtd.priv = chip;
--	priv->mtd.owner = THIS_MODULE;
--
- 	/* fill in nand_chip structure */
- 	/* set up function call table */
- 	if ((ioread32be(&ifc->cspr_cs[priv->bank].cspr)) & CSPR_PORT_SIZE_16)
-@@ -1099,6 +1095,7 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
- 		    IFC_NAND_EVTER_INTR_FTOERIR_EN |
- 		    IFC_NAND_EVTER_INTR_WPERIR_EN,
- 		    &ifc->ifc_nand.nand_evter_intr_en);
-+	mtd_setup_common_members(&priv->mtd, &priv->chip, dev);
- 	priv->mtd.name = kasprintf(GFP_KERNEL, "%llx.flash", (u64)res.start);
- 	if (!priv->mtd.name) {
- 		ret = -ENOMEM;
+ 	mtd = &prv->mtd;
+ 	chip = &prv->chip;
++	mtd_setup_common_members(mtd, chip, op);
+ 
+-	mtd->priv = chip;
+ 	chip->priv = prv;
+ 	prv->dev = dev;
+ 
 -- 
 1.8.3.2
 
