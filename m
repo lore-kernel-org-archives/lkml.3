@@ -1,38 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaEZRFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:05:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22301 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977AbaEZRFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:05:25 -0400
-Date: Mon, 26 May 2014 14:01:18 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jan.kiszka@siemens.com, kvm@vger.kernel.org,
-        gleb@kernel.org, avi.kivity@gmail.com
-Subject: Re: [PATCH v2 3/4] KVM: x86: check CS.DPL against RPL during task
- switch
-Message-ID: <20140526170118.GC30582@amt.cnet>
-References: <1400172691-27030-1-git-send-email-pbonzini@redhat.com>
- <1400172691-27030-4-git-send-email-pbonzini@redhat.com>
+	id S1752864AbaEZRGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 13:06:37 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:46193 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbaEZRGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 13:06:34 -0400
+Message-ID: <53837495.6030002@linaro.org>
+Date: Mon, 26 May 2014 18:06:29 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400172691-27030-4-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 07/13] mmc: mmci: add ddrmode mask to variant data
+References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>	<1400849515-7343-1-git-send-email-srinivas.kandagatla@linaro.org> <CAPDyKFpdDOepF6YzKnCZPggbA5F=ZjLmA9-6uTUxF7jeYtyiTw@mail.gmail.com>
+In-Reply-To: <CAPDyKFpdDOepF6YzKnCZPggbA5F=ZjLmA9-6uTUxF7jeYtyiTw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 06:51:30PM +0200, Paolo Bonzini wrote:
-> Table 7-1 of the SDM mentions a check that the code segment's
-> DPL must match the selector's RPL.  This was not done by KVM,
-> fix it.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Exception number is incorrect, however not introduced by this patchset.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+On 26/05/14 10:53, Ulf Hansson wrote:
+> On 23 May 2014 14:51,  <srinivas.kandagatla@linaro.org> wrote:
+>> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>>
+>> This patch adds ddrmode mask to variant structure giving more flexibility
+>> to the driver to support more SOCs which have different datactrl register
+>> layout.
+>>
+>> Without this patch datactrl register is updated with wrong ddrmode mask on non
+>> ST SOCs, resulting in card detection failures.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+>> ---
+>>   drivers/mmc/host/mmci.c | 8 +++++++-
+>>   1 file changed, 7 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+>> index 1385554..dec70d2 100644
+>> --- a/drivers/mmc/host/mmci.c
+>> +++ b/drivers/mmc/host/mmci.c
+>> @@ -59,6 +59,7 @@ static unsigned int fmax = 515633;
+>>    *               is asserted (likewise for RX)
+>>    * @sdio: variant supports SDIO
+>>    * @st_clkdiv: true if using a ST-specific clock divider algorithm
+>> + * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
+>>    * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
+>>    * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
+>>    *                  register
+>> @@ -76,6 +77,7 @@ struct variant_data {
+>>          unsigned int            datalength_bits;
+>>          unsigned int            fifosize;
+>>          unsigned int            fifohalfsize;
+>> +       unsigned int            datactrl_mask_ddrmode;
+>>          bool                    sdio;
+>>          bool                    st_clkdiv;
+>>          bool                    blksz_datactrl16;
+>> @@ -114,6 +116,7 @@ static struct variant_data variant_u300 = {
+>>          .fifosize               = 16 * 4,
+>>          .fifohalfsize           = 8 * 4,
+>>          .clkreg_enable          = MCI_ST_U300_HWFCEN,
+>> +       .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
+>>          .datalength_bits        = 16,
+>>          .sdio                   = true,
+>>          .pwrreg_powerup         = MCI_PWR_ON,
+>> @@ -126,6 +129,7 @@ static struct variant_data variant_nomadik = {
+>>          .fifosize               = 16 * 4,
+>>          .fifohalfsize           = 8 * 4,
+>>          .clkreg                 = MCI_CLK_ENABLE,
+>> +       .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
+>>          .datalength_bits        = 24,
+>>          .sdio                   = true,
+>>          .st_clkdiv              = true,
+>> @@ -140,6 +144,7 @@ static struct variant_data variant_ux500 = {
+>>          .fifohalfsize           = 8 * 4,
+>>          .clkreg                 = MCI_CLK_ENABLE,
+>>          .clkreg_enable          = MCI_ST_UX500_HWFCEN,
+>> +       .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
+>>          .datalength_bits        = 24,
+>>          .sdio                   = true,
+>>          .st_clkdiv              = true,
+>> @@ -155,6 +160,7 @@ static struct variant_data variant_ux500v2 = {
+>>          .fifohalfsize           = 8 * 4,
+>>          .clkreg                 = MCI_CLK_ENABLE,
+>>          .clkreg_enable          = MCI_ST_UX500_HWFCEN,
+>> +       .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
+>
+> Only the ux500v2 supports DDR mode, using the MCI_ST_DPSM_DDRMODE bit.
 
+Thanks for pointing this out, I was not sure which variants actually 
+used this bit, so just replicated what was there before this change.
+
+I will add this flag to only ux500v2 in next version.
+
+
+Thanks,
+srini
+>
+>>          .datalength_bits        = 24,
+>>          .sdio                   = true,
+>>          .st_clkdiv              = true,
+>> @@ -800,7 +806,7 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+>>                  }
+>>
+>>          if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
+>> -               datactrl |= MCI_ST_DPSM_DDRMODE;
+>> +               datactrl |= variant->datactrl_mask_ddrmode;
+>>
+>>          /*
+>>           * Attempt to use DMA operation mode, if this
+>> --
+>> 1.9.1
+>>
+>
+> Kind regards
+> Ulf Hansson
+>
