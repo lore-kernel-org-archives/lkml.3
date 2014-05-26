@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaEZSL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:11:26 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:45012 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaEZSLY (ORCPT
+	id S1751833AbaEZSNm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:13:42 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:44176 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaEZSNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:11:24 -0400
-Date: Mon, 26 May 2014 22:11:20 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Documenting execve() and EAGAIN
-Message-ID: <20140526181120.GB11145@cachalot>
-References: <537CEC90.7060000@gmail.com>
+	Mon, 26 May 2014 14:13:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <537CEC90.7060000@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140526052320.GA12890@core.coreip.homeip.net>
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+	<1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>
+	<20130718171744.GC32381@polaris.bitmath.org>
+	<20130916022533.GA6468@core.coreip.homeip.net>
+	<537E09D6.7050604@itdev.co.uk>
+	<CAPDwgkP5KjP6PcZBeYTMPuewO4exyUFfCX8rhzmgDO65ti=3Mg@mail.gmail.com>
+	<20140526052320.GA12890@core.coreip.homeip.net>
+Date: Mon, 26 May 2014 14:13:39 -0400
+X-Google-Sender-Auth: 6cHi6p_MF40Wk8Y4gnVnnePrfjc
+Message-ID: <CAPDwgkM8+5_r1_-QBY2=KG_i-L06vVBatw1k-KakjoSc01D9WQ@mail.gmail.com>
+Subject: Re: [PATCH 20/51] Input: atmel_mxt_ts - Set default irqflags when
+ there is no pdata
+From: Yufeng Shen <miletus@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Benson Leung <bleung@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Olof Johansson <olofj@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+On Mon, May 26, 2014 at 1:23 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>
+> On Fri, May 23, 2014 at 12:37:46PM -0400, Yufeng Shen wrote:
+> > On Thu, May 22, 2014 at 10:29 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
+> > >
+> > > Dmitry Torokhov wrote:
+> > > > On Thu, Jul 18, 2013 at 07:17:44PM +0200, rydberg@euromail.se wrote:
+> > > >>> From: Yufeng Shen <miletus@chromium.org>
+> > > >>> This is the preparation for supporting the code path when there is
+> > > >>> platform data provided and still boot the device into a sane state
+> > > >>> with backup NVRAM config.
+> > > >>>
+> > > >>> Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
+> > > >>> provided.
+> > > >
+> > > > I think if there is no platform data we should use 0 as IRQ falgs and
+> > > > assume that IRQ line is properly configured by the board code or via
+> > > > device tree.
+> > >
+> > > Beson/Yufeng - do you still have a requirement to probe without platform
+> > > data or device tree? I'm just merging in some changes to add device tree
+> > > support, and it would simplify things a bit if I can drop this patch.
+> >
+> >
+> > It has been working for quite a while for boards/devices that don't
+> > provide platform
+> > data. If we drop the default IRQ flags, sure we can add code for each
+> > board to configure
+> > the IRQ separately, but that's just adding extra work. Is there strong
+> > reason why we
+> > should not do the default setting in the driver if it is not already
+> > configured in platform
+> > data ?
+>
+>
+> I am not saying that board code needs to add platform data. I am saying
+> that the board code needs to set up interrupt properly (via
+> irq_set_irq_type() or similar) and then the driver can use 0 as irqflags
+> argument in request_irq() in absence of DT/platform data.
+>
+> Thanks.
+>
 
-On Wed, May 21, 2014 at 20:12 +0200, Michael Kerrisk (man-pages) wrote:
-> Vasily (and Motohiro),
-> 
-> Sometime ago, Motohiro raised a documentation bug
-> ( https://bugzilla.kernel.org/show_bug.cgi?id=42704 ) which 
-> relates to your commit 72fa59970f8698023045ab0713d66f3f4f96945c
-> ("move RLIMIT_NPROC check from set_user() to do_execve_common()")
-> 
-> I have attempted to document this, and I would like to ask you
-> (and Motohiro) if you would review the text proposed below for
-> the exceve(2) man page.
-> 
-> Thank you,
-> 
-> Michael
-> 
-> 
-> ERRORS
->        EAGAIN (since Linux 3.1)
->               Having  changed its real UID using one of the set*uid()
->               calls,  the  caller  was—and  is  now  still—above  its
->               RLIMIT_NPROC  resource limit (see setrlimit(2)).  For a
->               more detailed explanation of this error, see NOTES.
-> 
-> NOTES
->    execve() and EAGAIN
->        A more detailed explanation of the EAGAIN error that can occur
->        (since Linux 3.1) when calling execve() is as follows.
-> 
->        The EAGAIN error can occur when a preceding call to setuid(2),
->        setreuid(2), or setresuid(2) caused the real user  ID  of  the
->        process  to  change,  and  that  change  caused the process to
->        exceed its RLIMIT_NPROC resource limit (i.e.,  the  number  of
->        processes  belonging  to the new real UID exceeds the resource
->        limit).  In Linux 3.0 and earlier, this caused  the  set*uid()
->        call to fail.
-> 
->        Since  Linux 3.1, the scenario just described no longer causes
->        the set*uid() call to fail, because it too often led to  secu‐
->        rity  holes because buggy applications didn't check the return
->        status and assumed that—if the caller had root  privileges—the
->        call  would  always succeed.  Instead, the set*uid() calls now
->        successfully change real UID, but the kernel sets an  internal
->        flag,  named  PF_NPROC_EXCEEDED, to note that the RLIMIT_NPROC
->        resource limit has been exceeded.  If the  resource  limit  is
->        still exceeded at the time of a subsequent execve() call, that
->        call fails with the error EAGAIN.  This kernel  logic  ensures
->        that the RLIMIT_NPROC resource limit is still enforced for the
->        common privileged daemon workflow—namely, fork(2)+  set*uid()+
->        execve(2).
-> 
->        If  the  resource  limit was not still exceeded at the time of
->        the execve() call (because other processes belonging  to  this
->        real  UID  terminated  between  the  set*uid()  call  and  the
->        execve() call), then the execve() call succeeds and the kernel
->        clears  the  PF_NPROC_EXCEEDED process flag.  The flag is also
->        cleared if a subsequent call to fork(2) by this  process  suc‐
->        ceeds.
+So my argument is mainly based on that the existing code is working (boards
+that do not have platform data are relying on the driver to set the
+default irq),
+and change the default value would need extra work to setup the irq, say as you
+suggested through irq_set_irq_type(). I am no expert in irq so it could be true
+that your suggested way is indeed better. I am in favor of keeping
+this patch is only
+because it requires no extra change for existing code that are using it.
 
-Probably explicitly state that NPROC check on execve() is processed only
-in case of a previous set*uid() call?  If there was no previous
-set*uid() call the semantics of execve() checks are the same as before
-(IOW, RLIMIT_NPROC is ignored).
 
-The rest is fine.
 
-Thanks!
-
--- 
-Vasily Kulikov
-http://www.openwall.com - bringing security into open computing environments
+> --
+> Dmitry
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
