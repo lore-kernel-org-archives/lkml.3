@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900AbaEZS0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:26:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48752 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaEZS0r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:26:47 -0400
-Date: Mon, 26 May 2014 19:26:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140526182644.GP18016@ZenIV.linux.org.uk>
-References: <20140526093741.GA1765@lahna.fi.intel.com>
- <20140526135746.GM18016@ZenIV.linux.org.uk>
- <20140526142948.GA1685@lahna.fi.intel.com>
- <20140526152703.GN18016@ZenIV.linux.org.uk>
- <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+	id S1752027AbaEZS2X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:28:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967AbaEZS2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 14:28:21 -0400
+Date: Mon, 26 May 2014 20:27:43 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/26] perf tools: Introduce struct hist_entry_iter
+Message-ID: <20140526182743.GB9699@krava.brq.redhat.com>
+References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+ <1400839463-21933-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+In-Reply-To: <1400839463-21933-2-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 11:17:42AM -0700, Linus Torvalds wrote:
-> On Mon, May 26, 2014 at 8:27 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > That's the livelock.  OK.
-> 
-> Hmm. Is there any reason we don't have some exclusion around
-> "check_submounts_and_drop()"?
-> 
-> That would seem to be the simplest way to avoid any livelock: just
-> don't allow concurrent calls (we could make the lock per-filesystem or
-> whatever). This whole case should all be for just exceptional cases
-> anyway.
-> 
-> We already sleep in that thing (well, "cond_resched()"), so taking a
-> mutex should be fine.
+On Fri, May 23, 2014 at 07:03:58PM +0900, Namhyung Kim wrote:
 
-What makes you think that it's another check_submounts_and_drop()?
-And not, e.g., shrink_dcache_parent().  Or memory shrinkers.  Or
-some twit sitting in a subdirectory and doing stat(2) in a loop, for
-that matter...
+SNIP
 
-I really, really wonder WTF is causing that - we have spent 20-odd
-seconds spinning while dentries in there were being evicted by
-something.  That - on sysfs, where dentry_kill() should be non-blocking
-and very fast.  Something very fishy is going on and I'd really like
-to understand the use pattern we are seeing there.
+>  static int process_sample_event(struct perf_tool *tool,
+>  				union perf_event *event,
+>  				struct perf_sample *sample,
+> @@ -243,6 +84,9 @@ static int process_sample_event(struct perf_tool *tool,
+>  {
+>  	struct report *rep = container_of(tool, struct report, tool);
+>  	struct addr_location al;
+> +	struct hist_entry_iter iter = {
+> +		.hide_unresolved = rep->hide_unresolved,
+> +	};
+>  	int ret;
+>  
+>  	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+> @@ -257,22 +101,22 @@ static int process_sample_event(struct perf_tool *tool,
+>  	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+>  		return 0;
+>  
+> -	if (sort__mode == SORT_MODE__BRANCH) {
+> -		ret = report__add_branch_hist_entry(rep, &al, sample, evsel);
+> -		if (ret < 0)
+> -			pr_debug("problem adding lbr entry, skipping event\n");
+> -	} else if (rep->mem_mode == 1) {
+> -		ret = report__add_mem_hist_entry(rep, &al, sample, evsel);
+> -		if (ret < 0)
+> -			pr_debug("problem adding mem entry, skipping event\n");
+> -	} else {
+> -		if (al.map != NULL)
+> -			al.map->dso->hit = 1;
+> -
+> -		ret = report__add_hist_entry(rep, evsel, &al, sample);
+> -		if (ret < 0)
+> -			pr_debug("problem incrementing symbol period, skipping event\n");
+> -	}
+> +	if (sort__mode == SORT_MODE__BRANCH)
+> +		iter.ops = &hist_iter_branch;
+> +	else if (rep->mem_mode)
+> +		iter.ops = &hist_iter_mem;
+> +	else
+> +		iter.ops = &hist_iter_normal;
+> +
+> +	if (al.map != NULL)
+> +		al.map->dso->hit = 1;
+> +
+> +	rep->nr_entries++;
+
+hum, should we call report__inc_stats instead? aaand...
+
+> +
+> +	ret = hist_entry_iter__add(&iter, &al, evsel, sample, rep->max_stack);
+> +	if (ret < 0)
+> +		pr_debug("problem adding hist entry, skipping event\n");
+> +
+
+... in here? 
+
+>  	return ret;
+>  }
+
+
+jirka
