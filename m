@@ -1,103 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaEZSo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:44:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498AbaEZSo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:44:56 -0400
-Date: Mon, 26 May 2014 20:44:25 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/26] perf tools: Introduce struct hist_entry_iter
-Message-ID: <20140526184425.GC9699@krava.brq.redhat.com>
-References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
- <1400839463-21933-2-git-send-email-namhyung@kernel.org>
+	id S1752060AbaEZSpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:45:07 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:36561 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaEZSpC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 14:45:02 -0400
+Date: Mon, 26 May 2014 19:44:32 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 3/9] procfs: add proc_read_from_buffer() and
+ pid_entry_read() helpers
+Message-ID: <20140526184432.GA7403@dztty>
+References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+ <1401110850-3552-4-git-send-email-tixxdz@opendz.org>
+ <CALCETrU+O+p_EYao1k6y0t6JnJ+sV97zAGkn=enuJPEzpcW_Wg@mail.gmail.com>
+ <20140526174100.GB6380@dztty>
+ <CALCETrV12jeZagHBjFnEvJo9wu=sengNa0s2feK8Z-2mjqVWwg@mail.gmail.com>
+ <20140526182154.GA6887@dztty>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400839463-21933-2-git-send-email-namhyung@kernel.org>
+In-Reply-To: <20140526182154.GA6887@dztty>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 07:03:58PM +0900, Namhyung Kim wrote:
-> There're some duplicate code when adding hist entries.  They are
-> different in that some have branch info or mem info but generally do
-> same thing.  So introduce new struct hist_entry_iter and add callbacks
-> to customize each case in general way.
+On Mon, May 26, 2014 at 07:21:54PM +0100, Djalal Harouni wrote:
+> On Mon, May 26, 2014 at 10:59:10AM -0700, Andy Lutomirski wrote:
+> > On Mon, May 26, 2014 at 10:41 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > > On Mon, May 26, 2014 at 10:01:20AM -0700, Andy Lutomirski wrote:
+> > >> On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > >> > This patch is preparation, it adds a couple of helpers to read data and
+> > >> > to get the cached permission checks during that ->read().
+> > >> >
+> > >> > Currently INF entries share the same code, they do not implement
+> > >> > specific ->open(), only ->read() coupled with callback calls. Doing
+> > >> > permission checks during ->open() will not work and will only disturb
+> > >> > the INF entries that do not need permission checks. Yes not all the INF
+> > >> > entries need checks, the ones that need protections are listed below:
+> > >> > /proc/<pid>/wchan
+> > >> > /proc/<pid>/syscall
+> > >> > /proc/<pid>/{auxv,io}  (will be handled in next patches).
+> > >> >
+> > >> > So to have proper permission checks convert this INF entries to REG
+> > >> > entries and use their open() and read() handlers to implement these
+> > >> > checks. To achieve this we add the following helpers:
+> > >> >
+> > >> > * proc_read_from_buffer() a wrapper around simple_read_from_buffer(), it
+> > >> >   makes sure that count <= PROC_BLOCK_SIZE (3*1024)
+> > >> >
+> > >> > * pid_entry_read(): it will get a free page and pass it to the specific
+> > >> >   /proc/<pid>/$entry handler (callback). The handler is of the same
+> > >> >   types of the previous INF handlers, it will only receive an extra
+> > >> >   "permitted" argument that contains the cached permission check that
+> > >> >   was performed during ->open().
+> > >> >
+> > >> >   The handler is of type:
+> > >> >   typedef int (*proc_read_fn_t)(char *page,
+> > >> >                                struct task_struct *task, int permitted);
+> > >>
+> > >> [...]
+> > >>
+> > >> This strikes me as *way* too complicated.  Why not just change
+> > >> proc_info_file_operations to *always* cache may_ptrace on open?
+> > > Not all the INF entries need permission checks during open:
+> > > The one that need it:
+> > > /proc/<pid>/{wchan|syscall}  converted in this series.
+> > > /proc/<pid>/{auxv|io}  (will be converted in next series)
+> > >
+> > > The ones that do not need it:
+> > > /proc/<pid>/{limite|cmdline|shedstat|oom_score|...}
+> > >
+> > > There is no reason to do it for these entries, and if you do it you will
+> > > also have to passe the cached permission checks, so I don't think that
+> > > you want to modify all the INF handlers especially the ones that do not
+> > > need it to take an extra argument.
+> > 
+> > ...but you don't have to pass the checks, because nothing will care
+> > whether you passed them.
+> No one will use them, but what you suggest is passing a dummy value that
+> no one cares about!
 > 
-> The new perf_evsel__add_entry() function will look like:
+> You said in the first place that this is *way* too complicated, no IHMO
+> going and changing all the handlers to receive a dummy argument that no one
+> will use is more complicated. In this case you are just suggesting to
+> convert all the INF entries into REG ones. Andi take a look please!
 > 
->   iter->prepare_entry();
->   iter->add_single_entry();
+> The definition of INF can't get a 'struct file_operations', only the
+> REG, at the end what you suggest is change all the INF entries to REG
+> and do a ptrace check at open() that only a small subset of these
+> entries will use...
 > 
->   while (iter->next_entry())
->     iter->add_next_entry();
+> Try it and you will see how much code you will change.
 > 
->   iter->finish_entry();
+> While the current proposed change just introduce a new helper (new code)
+> and adds the cached permission argument!
 > 
-> This will help further work like the cumulative callchain patchset.
+> > > Then you will also modify this:
+> > > in file fs/proc/internal.h the:
+> > > union proc_op {
+> > >         ...
+> > >         int (*proc_read)(struct task_struct *task, char *page);
+> > >         ...
+> > >  }
+> > >
+> > > And then you will follow in all other places and handlers... and modify
+> > > the definition of INF entries... It's much more complicated...
+> > >
+> > 
+> > But the final result will be much less messy and have less duplicated
+> > code.  Your patch seems like it duplicates a bunch of code and I
+> > suspect that Al Viro will dislike it if he reads it.
+> Hmm, as I've said if we do that we need to convert all the INF entries
+> to REG ones, and remove the INF definition since it will be useless, then
+> convert all the handlers... And I can't consider it duplicate code,
+> since one is to handle non-sensitive entries and the other to handle
+> sensitive ones, perhaps write a new function that will get the small
+> duplicate instructions.
 > 
-> Tested-by: Arun Sharma <asharma@fb.com>
-> Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-> Acked-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-report.c     | 194 +++----------------------
->  tools/perf/tests/hists_filter.c |  18 +--
->  tools/perf/tests/hists_output.c |  11 +-
->  tools/perf/util/hist.c          | 303 ++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/hist.h          |  33 +++++
->  5 files changed, 371 insertions(+), 188 deletions(-)
 > 
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index bc0eec1ce4be..d224f5961faa 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -76,165 +76,6 @@ static int report__config(const char *var, const char *value, void *cb)
->  	return perf_default_config(var, value, cb);
->  }
->  
-> -static void report__inc_stats(struct report *rep, struct hist_entry *he)
-> -{
-> -	/*
-> -	 * The @he is either of a newly created one or an existing one
-> -	 * merging current sample.  We only want to count a new one so
-> -	 * checking ->nr_events being 1.
-> -	 */
-> -	if (he->stat.nr_events == 1)
-> -		rep->nr_entries++;
-> -
+> For Al Viro oh thank you :-), hope that he reads the patches first, then
+> if he thinks that converting all the INF entries into REG ones, and
+> doing ptrace check during ->open for files that do not need it is the
+> best solution, well I'll have just to follow and update the patches :-D
+If I did convert all the INF to REG, well I'm sure that no one will like
+the git diff stat in the first place, at least this way they will first
+look at the patches and judge :-)
 
-hm.. above is report specific counter update
 
-while below code is repeated for each iterator in finish_entry,
-maybe we should separated this and put below into a function
-called from generic part
+IIRC, Al Viro didn't like the f_cred in the first place since it touches
+the seq struct, he said that it does not belong there!
 
-> -	/*
-> -	 * Only counts number of samples at this stage as it's more
-> -	 * natural to do it here and non-sample events are also
-> -	 * counted in perf_session_deliver_event().  The dump_trace
-> -	 * requires this info is ready before going to the output tree.
-> -	 */
-> -	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
-> -	if (!he->filtered)
-> -		he->hists->stats.nr_non_filtered_samples++;
-> -}
+So the current code is much contained, it just touches
+/proc/<pid>/$entries, and I'll try to see if we can share some duplicate
+instructions into a single new function!
 
-jirka
+Note that the duplication you point, is in this case is used for
+sensitive files and non-sensitive files:
+
+the old proc_info_read() and the new pid_entry_read() patch 3/9
+the old proc_single_show() and the new pid_entry_show() patch 7/9
+
+I did this to avoid changing the handlers and what was explained in the
+previous email, Ahh and to reduce the git diff stat!
+
+I'm open to proposition!
+
+Thanks!
+
+> Thank you Andi!
+> 
+> 
+> > --Andy
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> -- 
+> Djalal Harouni
+> http://opendz.org
+
+-- 
+Djalal Harouni
+http://opendz.org
