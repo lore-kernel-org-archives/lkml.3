@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaEZPSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:18:35 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:59048 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaEZPS1 (ORCPT
+	id S1752854AbaEZPT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:19:27 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:55341 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaEZPSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:18:27 -0400
+	Mon, 26 May 2014 11:18:34 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v3 04/15] thunderbolt: Add tb_regs.h
-Date: Mon, 26 May 2014 17:18:01 +0200
-Message-Id: <1401117492-2870-5-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v3 14/15] thunderbolt: Read switch uid from EEPROM
+Date: Mon, 26 May 2014 17:18:11 +0200
+Message-Id: <1401117492-2870-15-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
 References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
@@ -22,262 +22,259 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every thunderbolt device consists (logically) of a switch with multiple
-ports. Every port contains up to four config regions (HOPS, PORT,
-SWITCH, COUNTERS) which are used to configure the device.
-
-The tb_regs.h file contains all known registers and capabilities from
-these config regions.
+Add eeprom access code and read the uid during switch initialization.
+The UID will be used to check device identity after suspend.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/tb.c      |   5 +
- drivers/thunderbolt/tb_regs.h | 213 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 218 insertions(+)
- create mode 100644 drivers/thunderbolt/tb_regs.h
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/eeprom.c | 189 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/switch.c |   5 ++
+ drivers/thunderbolt/tb.h     |   3 +
+ 4 files changed, 198 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/thunderbolt/eeprom.c
 
-diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index 6920979..164dea0 100644
---- a/drivers/thunderbolt/tb.c
-+++ b/drivers/thunderbolt/tb.c
-@@ -9,6 +9,7 @@
- #include <linux/delay.h>
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 0122ca6..5d1053c 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o
++thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o eeprom.o
  
- #include "tb.h"
-+#include "tb_regs.h"
- 
- /* hotplug handling */
- 
-@@ -100,6 +101,10 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
- {
- 	struct tb *tb;
- 
-+	BUILD_BUG_ON(sizeof(struct tb_regs_switch_header) != 5 * 4);
-+	BUILD_BUG_ON(sizeof(struct tb_regs_port_header) != 8 * 4);
-+	BUILD_BUG_ON(sizeof(struct tb_regs_hop) != 2 * 4);
-+
- 	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
- 	if (!tb)
- 		return NULL;
-diff --git a/drivers/thunderbolt/tb_regs.h b/drivers/thunderbolt/tb_regs.h
+diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
 new file mode 100644
-index 0000000..6577af7
+index 0000000..d1ae1e4
 --- /dev/null
-+++ b/drivers/thunderbolt/tb_regs.h
-@@ -0,0 +1,213 @@
++++ b/drivers/thunderbolt/eeprom.c
+@@ -0,0 +1,189 @@
 +/*
-+ * Thunderbolt Cactus Ridge driver - Port/Switch config area registers
-+ *
-+ * Every thunderbolt device consists (logically) of a switch with multiple
-+ * ports. Every port contains up to four config regions (HOPS, PORT, SWITCH,
-+ * COUNTERS) which are used to configure the device.
++ * Thunderbolt Cactus Ridge driver - eeprom access
 + *
 + * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
-+#ifndef _TB_REGS
-+#define _TB_REGS
++#include "tb.h"
 +
-+#include <linux/types.h>
-+
-+
-+#define TB_ROUTE_SHIFT 8  /* number of bits in a port entry of a route */
-+
-+
-+/*
-+ * TODO: should be 63? But we do not know how to receive frames larger than 256
-+ * bytes at the frame level. (header + checksum = 16, 60*4 = 240)
++/**
++ * tb_eeprom_ctl_write() - write control word
 + */
-+#define TB_MAX_CONFIG_RW_LENGTH 60
++static int tb_eeprom_ctl_write(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
++{
++	return tb_sw_write(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
++}
 +
-+enum tb_cap {
-+	TB_CAP_PHY		= 0x0001,
-+	TB_CAP_TIME1		= 0x0003,
-+	TB_CAP_PCIE		= 0x0004,
-+	TB_CAP_I2C		= 0x0005,
-+	TB_CAP_PLUG_EVENTS	= 0x0105, /* also EEPROM */
-+	TB_CAP_TIME2		= 0x0305,
-+	TB_CAL_IECS		= 0x0405,
-+	TB_CAP_LINK_CONTROLLER	= 0x0605, /* also IECS */
++/**
++ * tb_eeprom_ctl_write() - read control word
++ */
++static int tb_eeprom_ctl_read(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
++{
++	return tb_sw_read(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
++}
++
++enum tb_eeprom_transfer {
++	TB_EEPROM_IN,
++	TB_EEPROM_OUT,
 +};
 +
-+enum tb_port_state {
-+	TB_PORT_DISABLED	= 0, /* tb_cap_phy.disable == 1 */
-+	TB_PORT_CONNECTING	= 1, /* retry */
-+	TB_PORT_UP		= 2,
-+	TB_PORT_UNPLUGGED	= 7,
-+};
++/**
++ * tb_eeprom_active - enable rom access
++ *
++ * WARNING: Always disable access after usage. Otherwise the controller will
++ * fail to reprobe.
++ */
++static int tb_eeprom_active(struct tb_switch *sw, bool enable)
++{
++	struct tb_eeprom_ctl ctl;
++	int res = tb_eeprom_ctl_read(sw, &ctl);
++	if (res)
++		return res;
++	if (enable) {
++		ctl.access_high = 1;
++		res = tb_eeprom_ctl_write(sw, &ctl);
++		if (res)
++			return res;
++		ctl.access_low = 0;
++		return tb_eeprom_ctl_write(sw, &ctl);
++	} else {
++		ctl.access_low = 1;
++		res = tb_eeprom_ctl_write(sw, &ctl);
++		if (res)
++			return res;
++		ctl.access_high = 0;
++		return tb_eeprom_ctl_write(sw, &ctl);
++	}
++}
 +
-+/* capability headers */
++/**
++ * tb_eeprom_transfer - transfer one bit
++ *
++ * If TB_EEPROM_IN is passed, then the bit can be retrieved from ctl->data_in.
++ * IF TB_EEPROM_OUT is passed, then ctl->data_out will be written.
++ */
++static int tb_eeprom_transfer(struct tb_switch *sw, struct tb_eeprom_ctl *ctl,
++			      enum tb_eeprom_transfer direction)
++{
++	int res;
++	if (direction == TB_EEPROM_OUT) {
++		res = tb_eeprom_ctl_write(sw, ctl);
++		if (res)
++			return res;
++	}
++	ctl->clock = 1;
++	res = tb_eeprom_ctl_write(sw, ctl);
++	if (res)
++		return res;
++	if (direction == TB_EEPROM_IN) {
++		res = tb_eeprom_ctl_read(sw, ctl);
++		if (res)
++			return res;
++	}
++	ctl->clock = 0;
++	return tb_eeprom_ctl_write(sw, ctl);
++}
 +
-+struct tb_cap_basic {
-+	u8 next;
-+	/* enum tb_cap cap:8; prevent "narrower than values of its type" */
-+	u8 cap; /* if cap == 0x05 then we have a extended capability */
-+} __packed;
++/**
++ * tb_eeprom_out - write one byte to the bus
++ */
++static int tb_eeprom_out(struct tb_switch *sw, u8 val)
++{
++	struct tb_eeprom_ctl ctl;
++	int i;
++	int res = tb_eeprom_ctl_read(sw, &ctl);
++	if (res)
++		return res;
++	for (i = 0; i < 8; i++) {
++		ctl.data_out = val & 0x80;
++		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_OUT);
++		if (res)
++			return res;
++		val <<= 1;
++	}
++	return 0;
++}
 +
-+struct tb_cap_extended_short {
-+	u8 next; /* if next and length are zero then we have a long cap */
-+	enum tb_cap cap:16;
-+	u8 length;
-+} __packed;
++/**
++ * tb_eeprom_in - read one byte from the bus
++ */
++static int tb_eeprom_in(struct tb_switch *sw, u8 *val)
++{
++	struct tb_eeprom_ctl ctl;
++	int i;
++	int res = tb_eeprom_ctl_read(sw, &ctl);
++	if (res)
++		return res;
++	*val = 0;
++	for (i = 0; i < 8; i++) {
++		*val <<= 1;
++		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_IN);
++		if (res)
++			return res;
++		*val |= ctl.data_in;
++	}
++	return 0;
++}
 +
-+struct tb_cap_extended_long {
-+	u8 zero1;
-+	enum tb_cap cap:16;
-+	u8 zero2;
-+	u16 next;
-+	u16 length;
-+} __packed;
++/**
++ * tb_eeprom_read_n - read count bytes from offset into val
++ */
++static int tb_eeprom_read_n(struct tb_switch *sw, u16 offset, u8 *val,
++		size_t count)
++{
++	int i, res;
++	res = tb_eeprom_active(sw, true);
++	if (res)
++		return res;
++	res = tb_eeprom_out(sw, 3);
++	if (res)
++		return res;
++	res = tb_eeprom_out(sw, offset >> 8);
++	if (res)
++		return res;
++	res = tb_eeprom_out(sw, offset);
++	if (res)
++		return res;
++	for (i = 0; i < count; i++) {
++		res = tb_eeprom_in(sw, val + i);
++		if (res)
++			return res;
++	}
++	return tb_eeprom_active(sw, false);
++}
 +
-+/* capabilities */
++int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid)
++{
++	u8 data[9];
++	struct tb_cap_plug_events cap;
++	int res;
++	if (!sw->cap_plug_events) {
++		tb_sw_warn(sw, "no TB_CAP_PLUG_EVENTS, cannot read eeprom\n");
++		return -ENOSYS;
++	}
++	res = tb_sw_read(sw, &cap, TB_CFG_SWITCH, sw->cap_plug_events,
++			     sizeof(cap) / 4);
++	if (res)
++		return res;
++	if (!cap.eeprom_ctl.present || cap.eeprom_ctl.not_present) {
++		tb_sw_warn(sw, "no NVM\n");
++		return -ENOSYS;
++	}
 +
-+struct tb_cap_link_controller {
-+	struct tb_cap_extended_long cap_header;
-+	u32 count:4; /* number of link controllers */
-+	u32 unknown1:4;
-+	u32 base_offset:8; /*
-+			    * offset (into this capability) of the configuration
-+			    * area of the first link controller
-+			    */
-+	u32 length:12; /* link controller configuration area length */
-+	u32 unknown2:4; /* TODO check that length is correct */
-+} __packed;
++	if (cap.drom_offset > 0xffff) {
++		tb_sw_warn(sw, "drom offset is larger than 0xffff: %#x\n",
++				cap.drom_offset);
++		return -ENXIO;
++	}
 +
-+struct tb_cap_phy {
-+	struct tb_cap_basic cap_header;
-+	u32 unknown1:16;
-+	u32 unknown2:14;
-+	bool disable:1;
-+	u32 unknown3:11;
-+	enum tb_port_state state:4;
-+	u32 unknown4:2;
-+} __packed;
-+
-+struct tb_eeprom_ctl {
-+	bool clock:1; /* send pulse to transfer one bit */
-+	bool access_low:1; /* set to 0 before access */
-+	bool data_out:1; /* to eeprom */
-+	bool data_in:1; /* from eeprom */
-+	bool access_high:1; /* set to 1 before access */
-+	bool not_present:1; /* should be 0 */
-+	bool unknown1:1;
-+	bool present:1; /* should be 1 */
-+	u32 unknown2:24;
-+} __packed;
-+
-+struct tb_cap_plug_events {
-+	struct tb_cap_extended_short cap_header;
-+	u32 __unknown1:2;
-+	u32 plug_events:5;
-+	u32 __unknown2:25;
-+	u32 __unknown3;
-+	u32 __unknown4;
-+	struct tb_eeprom_ctl eeprom_ctl;
-+	u32 __unknown5[7];
-+	u32 drom_offset; /* 32 bit register, but eeprom addresses are 16 bit */
-+} __packed;
-+
-+/* device headers */
-+
-+/* Present on port 0 in TB_CFG_SWITCH at address zero. */
-+struct tb_regs_switch_header {
-+	/* DWORD 0 */
-+	u16 vendor_id;
-+	u16 device_id;
-+	/* DWORD 1 */
-+	u32 first_cap_offset:8;
-+	u32 upstream_port_number:6;
-+	u32 max_port_number:6;
-+	u32 depth:3;
-+	u32 __unknown1:1;
-+	u32 revision:8;
-+	/* DWORD 2 */
-+	u32 route_lo;
-+	/* DWORD 3 */
-+	u32 route_hi:31;
-+	bool enabled:1;
-+	/* DWORD 4 */
-+	u32 plug_events_delay:8; /*
-+				  * RW, pause between plug events in
-+				  * milliseconds. Writing 0x00 is interpreted
-+				  * as 255ms.
-+				  */
-+	u32 __unknown4:16;
-+	u32 thunderbolt_version:8;
-+} __packed;
-+
-+enum tb_port_type {
-+	TB_TYPE_INACTIVE	= 0x000000,
-+	TB_TYPE_PORT		= 0x000001,
-+	TB_TYPE_NHI		= 0x000002,
-+	/* TB_TYPE_ETHERNET	= 0x020000, lower order bits are not known */
-+	/* TB_TYPE_SATA		= 0x080000, lower order bits are not known */
-+	TB_TYPE_DP_HDMI_IN	= 0x0e0101,
-+	TB_TYPE_DP_HDMI_OUT	= 0x0e0102,
-+	TB_TYPE_PCIE_DOWN	= 0x100101,
-+	TB_TYPE_PCIE_UP		= 0x100102,
-+	/* TB_TYPE_USB		= 0x200000, lower order bits are not known */
-+};
-+
-+/* Present on every port in TB_CF_PORT at address zero. */
-+struct tb_regs_port_header {
-+	/* DWORD 0 */
-+	u16 vendor_id;
-+	u16 device_id;
-+	/* DWORD 1 */
-+	u32 first_cap_offset:8;
-+	u32 max_counters:11;
-+	u32 __unknown1:5;
-+	u32 revision:8;
-+	/* DWORD 2 */
-+	enum tb_port_type type:24;
-+	u32 thunderbolt_version:8;
-+	/* DWORD 3 */
-+	u32 __unknown2:20;
-+	u32 port_number:6;
-+	u32 __unknown3:6;
-+	/* DWORD 4 */
-+	u32 nfc_credits;
-+	/* DWORD 5 */
-+	u32 max_in_hop_id:11;
-+	u32 max_out_hop_id:11;
-+	u32 __unkown4:10;
-+	/* DWORD 6 */
-+	u32 __unknown5;
-+	/* DWORD 7 */
-+	u32 __unknown6;
-+
-+} __packed;
-+
-+/* Hop register from TB_CFG_HOPS. 8 byte per entry. */
-+struct tb_regs_hop {
-+	/* DWORD 0 */
-+	u32 next_hop:11; /*
-+			  * hop to take after sending the packet through
-+			  * out_port (on the incoming port of the next switch)
-+			  */
-+	u32 out_port:6; /* next port of the path (on the same switch) */
-+	u32 initial_credits:8;
-+	u32 unknown1:6; /* set to zero */
-+	bool enable:1;
-+
-+	/* DWORD 1 */
-+	u32 weight:4;
-+	u32 unknown2:4; /* set to zero */
-+	u32 priority:3;
-+	bool drop_packages:1;
-+	u32 counter:11; /* index into TB_CFG_COUNTERS on this port */
-+	bool counter_enable:1;
-+	bool ingress_fc:1;
-+	bool egress_fc:1;
-+	bool ingress_shared_buffer:1;
-+	bool egress_shared_buffer:1;
-+	u32 unknown3:4; /* set to zero */
-+} __packed;
++	/* read uid */
++	res = tb_eeprom_read_n(sw, cap.drom_offset, data, 9);
++	if (res)
++		return res;
++	/* TODO: check checksum in data[0] */
++	*uid = *(u64 *)(data+1);
++	return 0;
++}
 +
 +
-+#endif
++
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+index a6968cc..eef5f1c 100644
+--- a/drivers/thunderbolt/switch.c
++++ b/drivers/thunderbolt/switch.c
+@@ -370,6 +370,11 @@ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
+ 	}
+ 	sw->cap_plug_events = cap;
+ 
++	if (tb_eeprom_read_uid(sw, &sw->uid))
++		tb_sw_warn(sw, "could not read uid from eeprom\n");
++	else
++		tb_sw_info(sw, "uid: %#llx\n", sw->uid);
++
+ 	if (tb_plug_events_active(sw, true))
+ 		goto err;
+ 
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 508abc4..a89087f 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -19,6 +19,7 @@ struct tb_switch {
+ 	struct tb_regs_switch_header config;
+ 	struct tb_port *ports;
+ 	struct tb *tb;
++	u64 uid;
+ 	int cap_plug_events; /* offset, zero if not found */
+ 	bool is_unplugged; /* unplugged, will go away */
+ };
+@@ -231,6 +232,8 @@ int tb_path_activate(struct tb_path *path);
+ void tb_path_deactivate(struct tb_path *path);
+ bool tb_path_is_invalid(struct tb_path *path);
+ 
++int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid);
++
+ 
+ static inline int tb_route_length(u64 route)
+ {
 -- 
 1.9.3
 
