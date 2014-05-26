@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaEZI1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 04:27:25 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:37972 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaEZI1Y (ORCPT
+	id S1751678AbaEZIal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 04:30:41 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:40858 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaEZIaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 04:27:24 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-d5-5382fadffe1e
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Axel Lin <axel.lin@ingics.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH v2] regulator: s2mpa01: Use correct register for buck1 ramp
- delay
-Date: Mon, 26 May 2014 10:26:46 +0200
-Message-id: <1401092806-25664-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t/xa7r3fzUFG3RMNLM4Mucrs8XUh0/Y
-	LF6/MLT4dqWDyeLyrjlsFif/9DJaXFzxhcliwcZHjA4cHjtn3WX3aPtZ5rFpVSebx51re9g8
-	+rasYvT4vEkugC2KyyYlNSezLLVI3y6BK2Pmkj8sBU2cFcd3LmRrYDzI3sXIySEhYCLRd3Yn
-	G4QtJnHh3nogm4tDSGApo8TKAwtYIJw+Jon/39YwglSxCRhLbF6+BKxKRGAbo8S7T1fBEswC
-	2RLLL04Es4UFgiVeLZ4HtoJFQFVi17cuMJtXwF3ixodlUKvlJE4em8w6gZF7ASPDKkbR1NLk
-	guKk9FxDveLE3OLSvHS95PzcTYyQwPmyg3HxMatDjAIcjEo8vCeCmoKFWBPLiitzDzFKcDAr
-	ifA2fwAK8aYkVlalFuXHF5XmpBYfYmTi4JRqYLRlP75M6fuEsF+MO/uefrsxcVPa8uIAi9Xs
-	k7hdXzvZ+x5q/jGhs2qj5tUTng6Xeth5BIP3BDkwRk5e37b2x/Ipk7gCcor1Cy9KNy5l2zvT
-	2XaTgIYU07XgmtMdJu+DS6d1Fy9Tl5V49lb3rb3DzB26qpMuf8p0TtzFPN9x3vWSi4FT9jlx
-	iymxFGckGmoxFxUnAgAYm7X7+gEAAA==
+	Mon, 26 May 2014 04:30:39 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, dianders@chromium.org,
+        swarren@wwwdotorg.org
+Subject: [PATCH V2 0/2] ASoC: max98090/max98095: Add master clock handing
+Date: Mon, 26 May 2014 13:58:20 +0530
+Message-Id: <1401092902-20525-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the register for ramp delay of buck1 regulator. Buck1 and buck6
-share the field (offset 4) in ramp delay register S2MPA01_REG_RAMP2.
+These CODECs are used on Snow/Peach-pit boards and the master clock
+needs to be set at 24MHz.
 
-The driver used the same register and field for ramp delay of buck3 and
-buck1. This lead to updating of ramp delay of buck3 when setting buck1
-and actually the ramp delay of buck1 was never set.
+Adding support in respective codec drivers so that we can update the
+master clock frequency from sound card driver through set_sysclk.
 
-Cc: <stable@vger.kernel.org>
-Fixes: f18792714608 ("regulator: Add support for S2MPA01 regulator")
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
-Changes since v1:
-1. Adjust the patch to match datasheet of S2MPA01.
----
- drivers/regulator/s2mpa01.c | 1 -
- 1 file changed, 1 deletion(-)
+Changes for V2:
+1. Added PROBE_DEFER if clock driver has not yet been probed
+2. Moved clk_prepare_enable from .probe to .set_bias_level
+3. Moved clk_disable_unprepare from .remove to .set_bias_level
 
-diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-index f19a30f0fb42..a52cb1cec576 100644
---- a/drivers/regulator/s2mpa01.c
-+++ b/drivers/regulator/s2mpa01.c
-@@ -116,7 +116,6 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 			ramp_delay = s2mpa01->ramp_delay16;
- 
- 		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
--		ramp_reg = S2MPA01_REG_RAMP1;
- 		break;
- 	case S2MPA01_BUCK2:
- 		enable_shift = S2MPA01_BUCK2_RAMP_EN_SHIFT;
+Tushar Behera (2):
+  ASoC: max98090: Add master clock handling
+  ASoC: max98095: Add master clock handling
+
+ .../devicetree/bindings/sound/max98090.txt         |    6 +++++
+ .../devicetree/bindings/sound/max98095.txt         |    6 +++++
+ sound/soc/codecs/max98090.c                        |   23 +++++++++++++++++++
+ sound/soc/codecs/max98090.h                        |    1 +
+ sound/soc/codecs/max98095.c                        |   24 ++++++++++++++++++++
+ 5 files changed, 60 insertions(+)
+
 -- 
-1.9.1
+1.7.9.5
 
