@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaEZPZi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:25:38 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:57392 "EHLO isis.lip6.fr"
+	id S1753353AbaEZPZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:25:56 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:57395 "EHLO isis.lip6.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752933AbaEZPUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752930AbaEZPUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 May 2014 11:20:45 -0400
 X-pt: isis.lip6.fr
 From: Benoit Taine <benoit.taine@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: benoit.taine@lip6.fr, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/18] memstick: Use kmemdup instead of kmalloc + memcpy
-Date: Mon, 26 May 2014 17:21:12 +0200
-Message-Id: <1401117687-28911-4-git-send-email-benoit.taine@lip6.fr>
+To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Cc: benoit.taine@lip6.fr, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/18] USB: storage: ene_ub6250: Use kmemdup instead of kmalloc + memcpy
+Date: Mon, 26 May 2014 17:21:10 +0200
+Message-Id: <1401117687-28911-2-git-send-email-benoit.taine@lip6.fr>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
 References: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Mon, 26 May 2014 17:20:40 +0200 (CEST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Mon, 26 May 2014 17:20:41 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,25 +30,24 @@ Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
 ---
 Tested by compilation without errors.
 
- drivers/memstick/core/mspro_block.c |    3 +--
+ drivers/usb/storage/ene_ub6250.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
-index fc145d2..d52412d 100644
---- a/drivers/memstick/core/mspro_block.c
-+++ b/drivers/memstick/core/mspro_block.c
-@@ -1032,12 +1032,11 @@ static int mspro_block_read_attributes(struct memstick_dev *card)
+diff --git a/drivers/usb/storage/ene_ub6250.c b/drivers/usb/storage/ene_ub6250.c
+index 1bfc9a6..ef6efb5 100644
+--- a/drivers/usb/storage/ene_ub6250.c
++++ b/drivers/usb/storage/ene_ub6250.c
+@@ -1928,11 +1928,10 @@ static int ene_load_bincode(struct us_data *us, unsigned char flag)
+ 		usb_stor_dbg(us, "load firmware %s failed\n", fw_name);
+ 		goto nofw;
  	}
- 	msb->attr_group.name = "media_attributes";
+-	buf = kmalloc(sd_fw->size, GFP_KERNEL);
++	buf = kmemdup(sd_fw->data, sd_fw->size, GFP_KERNEL);
+ 	if (buf == NULL)
+ 		goto nofw;
  
--	buffer = kmalloc(attr_len, GFP_KERNEL);
-+	buffer = kmemdup((char *)attr, attr_len, GFP_KERNEL);
- 	if (!buffer) {
- 		rc = -ENOMEM;
- 		goto out_free_attr;
- 	}
--	memcpy(buffer, (char *)attr, attr_len);
- 
- 	for (cnt = 0; cnt < attr_count; ++cnt) {
- 		s_attr = kzalloc(sizeof(struct mspro_sys_attr), GFP_KERNEL);
+-	memcpy(buf, sd_fw->data, sd_fw->size);
+ 	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+ 	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+ 	bcb->DataTransferLength = sd_fw->size;
 
