@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaEZLzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:55:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47759 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaEZLzn convert rfc822-to-8bit (ORCPT
+	id S1752103AbaEZL7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:59:37 -0400
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:34889 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaEZL7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:55:43 -0400
-Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20140526112348.907B7C421A5@trevor.secretlab.ca>
-Date: Mon, 26 May 2014 14:55:37 +0300
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com>
-References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com> <1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com> <20140514100856.5198DC4153D@trevor.secretlab.ca> <E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com> <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com> <20140516105814.3EA3FC403C2@trevor.secretlab.ca> <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com> <20140520055026.E3A98C412DA@trevor.secretlab.ca> <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com> <20140526104824.63F13C42129@trevor.secretlab.ca> <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com> <20140526112348.907B7C421A5@trevor.secretlab.ca>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1085)
+	Mon, 26 May 2014 07:59:36 -0400
+X-Greylist: delayed 1179 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 07:59:36 EDT
+From: Philipp Kern <pkern@google.com>
+To: hpa@linux.intel.com
+Cc: Philipp Kern <pkern@google.com>, linux-kernel@vger.kernel.org,
+        "H. J. Lu" <hjl.tools@gmail.com>
+Subject: [PATCH] x32: Mask the syscall number before passing it to audit
+Date: Mon, 26 May 2014 13:31:38 +0200
+Message-Id: <1401103898-29554-1-git-send-email-pkern@google.com>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+audit_filter_syscall uses the syscall number to reference into a
+bitmask (e->rule.mask[word]). Not removing the x32 bit before passing
+the number to this architecture independent codepath will fail to
+lookup the proper audit bit. Furthermore it will cause an invalid memory
+access in the kernel if the out of bound location is not mapped:
 
-On May 26, 2014, at 2:23 PM, Grant Likely wrote:
+  BUG: unable to handle kernel paging request at ffff8800e5446630
+  IP: [<ffffffff810fcdd0>] audit_filter_syscall+0x90/0xf0
 
-> On Mon, 26 May 2014 12:57:32 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> Hi Grant,
->> 
->> On Mon, May 26, 2014 at 12:48 PM, Grant Likely
->> <grant.likely@secretlab.ca> wrote:
->>> On Tue, 20 May 2014 09:38:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>>> On Tue, May 20, 2014 at 7:50 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>>>>> Why has the overlay system been designed for plugging and unpluging whole
->>>>>> overlays?
->>>>>> That means the kernel has to remember the full stack, causing issues with
->>>>>> e.g. kexec.
->>>>> 
->>>>> Mostly so that drivers don't see any difference in the livetree data
->>>>> structure. It also means that userspace sees a single representation of
->>>>> the hardware at any given time.
->>>> 
->>>> Sorry, I don't follow the argument about the "single representation of the
->>>> hardware".
->>> 
->>> Er, s/of the hardware/of the tree/. Right now the overlay design
->>> modifies the live tree which at the same time modifies the tree
->>> representation in /sys/firmware/devicetree. If the design was changed to
->>> keep the overlay logically separate, then I would think we want to
->>> expose that information to usespace also. In fact, I think we would need
->>> to for usecases like kexec.
->> 
->> OK, so it does modify the real tree, and doesn't keep the actual overlays.
->> 
->> I was under the impression the overlay stack was also kept in memory, to allow
->> reversal, so there was a misunderstanding.
->> 
->> Hence for kexec, the tree in /sys/firmware/devicetree can just be passed
->> to the new kernel, as that's the current representation of the hardware?
-> 
-> Heeheehee. We're back where we started. The original question is whether
-> or not that is a valid approach. If the overlay represents something
-> that can be hot plugged/unplugged, then passing it through to the second
-> kernel would be the wrong thing to do. If it was a permenant addition,
-> then it probably doesn't need to be removed.
-> 
-> We do actually keep the overlay info in memory for the purpose of
-> removal exactly so we can support hot unbinding of devices and drivers
-> that make use of overlays.
-> 
+Cc: linux-kernel@vger.kernel.org
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Signed-off-by: Philipp Kern <pkern@google.com>
+---
+ arch/x86/kernel/entry_64.S | 3 +++
+ 1 file changed, 3 insertions(+)
 
-We can support either method. I am not feeling any wiser about which one should be
-the default TBH, so what about exporting a property and let the platform 
-figure out which is more appropriate?
-
-> g.
-> 
-
-Regards
-
--- Pantelis
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1e96c36..c9aaf60 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -699,6 +699,9 @@ auditsys:
+ 	movq %rsi,%rcx			/* 4th arg: 2nd syscall arg */
+ 	movq %rdi,%rdx			/* 3rd arg: 1st syscall arg */
+ 	movq %rax,%rsi			/* 2nd arg: syscall number */
++#if __SYSCALL_MASK != ~0
++	andl $__SYSCALL_MASK,%esi
++#endif
+ 	movl $AUDIT_ARCH_X86_64,%edi	/* 1st arg: audit arch */
+ 	call __audit_syscall_entry
+ 	LOAD_ARGS 0		/* reload call-clobbered registers */
+-- 
+1.9.1.423.g4596e3a
 
