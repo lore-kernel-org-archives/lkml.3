@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaEZO2h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:28:37 -0400
-Received: from 1wt.eu ([62.212.114.60]:36007 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212AbaEZO2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:28:35 -0400
-Date: Mon, 26 May 2014 16:28:28 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Dominique van den Broeck <domdevlin@free.fr>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging: panel: (coding style) Matching braces
-Message-ID: <20140526142827.GG13929@1wt.eu>
-References: <1400674201-9560-1-git-send-email-domdevlin@free.fr>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752485AbaEZO32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 10:29:28 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43202 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbaEZO31 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 10:29:27 -0400
+Date: Mon, 26 May 2014 15:29:09 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140526142909.GI22111@sirena.org.uk>
+References: <1401105925-16528-1-git-send-email-geert+renesas@glider.be>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1L8KfrJLwTPQW+5h"
 Content-Disposition: inline
-In-Reply-To: <1400674201-9560-1-git-send-email-domdevlin@free.fr>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <1401105925-16528-1-git-send-email-geert+renesas@glider.be>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.248.185
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: core: Ignore unsupported spi-[tr]x-bus-width
+ property values
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dominique,
 
-On Wed, May 21, 2014 at 02:09:59PM +0200, Dominique van den Broeck wrote:
-> Style-only modifications to comply with checkpatch.pl --strict --file. 
-> . Adds every missing brace in condition statements.
-> 
-> Signed-off-by: Dominique van den Broeck <domdevlin@free.fr>
-> ---
-> Apply on linux-next tree, above:
-> commit 4151fa6adc65da14673ece623bbb2acc6936f8be
-> "Add linux-next specific files for 20140516"
-> 
-> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> index 136671a..1ac5e25 100644
-> --- a/drivers/staging/panel/panel.c
-> +++ b/drivers/staging/panel/panel.c
-> @@ -711,10 +711,9 @@ static void pin_to_bits(int pin, unsigned char *d_val, unsigned char *c_val)
->  /* sleeps that many milliseconds with a reschedule */
->  static void long_sleep(int ms)
->  {
-> -
-> -	if (in_interrupt())
-> +	if (in_interrupt()) {
->  		mdelay(ms);
-> -	else {
-> +	} else {
+--1L8KfrJLwTPQW+5h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't want to be nit-picking, but since we're talking about style...
-for me these "} else {" statements are harder to parse than having them
-on two lines this way :
+On Mon, May 26, 2014 at 02:05:25PM +0200, Geert Uytterhoeven wrote:
+> Rejecting unsupported values of spi-tx-bus-width and spi-rx-bus-width
+> may break compatibility with future DTs. Just ignore them, falling back
+> to Single SPI Transfers.
 
-         }
-         else {
+Applied, thanks.
 
-That's especially more true with "else if" as below :
+--1L8KfrJLwTPQW+5h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-		} else if (*esc >= 'A' && *esc <= 'Z') {
-			value |= (*esc - 'A' + 10) << shift;
-		} else if (*esc >= 'a' && *esc <= 'z') {
-			value |= (*esc - 'a' + 10) << shift;
-		} else {
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-I believe that most of the kernel code prefers the two-line format resluting
-in this instead :
+iQIcBAEBAgAGBQJTg0+yAAoJELSic+t+oim9CSQP/AyAxAKzrVa2XCsaQjX90ol9
+xj4QjxCOceKwSvCIAM2Kyqe4g/BRM+3aS9xbsT3EIPNLDJHL04Bj4ISFInd8UIxt
+lH5uNPaHcc0VqpeA4IzJM9vUsjtexDS7JTHPxfAzp3+MUpU3hPyhIgsqshmXiojn
+BYrb60/NDkwGjvqd/2YYjhArQ2CfNOhTf6z1a4EIwcPtaNlXO3OYJ24NNrIQLHxi
+D+VVJaAairJ7QcSsA/FhzQK8h9lVuJtBMEJwANzW2AVpd1wtKoVaUMCM6H1azM0u
+nFvCGgOY9mBqw25LKypGMRsIy4TL/9BTtvx5AVn7sHYA98XzGDk+Xuq+HbqxCjvm
+vdHvFVSgBJPXft+sz3q3WZnQyW1tFerC2YEVXLRKH5Re7jsjookMv2BPL5NVu8iL
+IHsN128s7FEIAheXbWq977sd0rhAB2ESchc4D3SrZxyYoF5NrLL31+Zz/TCD80s0
+zJaDsIRQF9qZTNrbvhn/SxVZwXbM+3fXEIzJNDzZy6RqDMNUuWN3/1iVHiGnluD+
+cgRK70GErLX63BG8KSPsp7R5Vc595+3wgP8AbFbxtxc7Yxyf3g/3dpF2hhDAl25V
+1Qt6A71SJ1ApfM7J5fbXj2uerNP2gfT1OsFyH9VBVmkekhS1C1YdQDVewNDJzqiC
+sAYMI/ZeK3M7uQY8yE6H
+=CYcy
+-----END PGP SIGNATURE-----
 
-		}
-		else if (*esc >= 'A' && *esc <= 'Z') {
-			value |= (*esc - 'A' + 10) << shift;
-		}
-		else if (*esc >= 'a' && *esc <= 'z') {
-			value |= (*esc - 'a' + 10) << shift;
-		}
-		else {
-
-It's just a matter of taste I know, but for me they read easier, probably
-because the braces do not affect alignment and the lines appear exactly
-similar with or without the braces.
-
-Thanks,
-Willy
-
+--1L8KfrJLwTPQW+5h--
