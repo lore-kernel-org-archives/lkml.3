@@ -1,55 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaEZT0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:26:15 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58061 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaEZT0O (ORCPT
+	id S1751967AbaEZT0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:26:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34170 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850AbaEZT0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:26:14 -0400
-Date: Mon, 26 May 2014 21:26:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
+	Mon, 26 May 2014 15:26:39 -0400
+Date: Mon, 26 May 2014 21:26:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 3/5] irq_work: Implement remote queueing
-Message-ID: <20140526192608.GI2066@localhost.localdomain>
+Subject: Re: [PATCH 1/5] irq_work: Split raised and lazy lists
+Message-ID: <20140526192633.GB5444@laptop.programming.kicks-ass.net>
 References: <1401028191-29756-1-git-send-email-fweisbec@gmail.com>
- <1401028191-29756-4-git-send-email-fweisbec@gmail.com>
- <20140526160224.GM30445@twins.programming.kicks-ass.net>
- <20140526165039.GE2066@localhost.localdomain>
- <20140526191918.GA5444@laptop.programming.kicks-ass.net>
+ <1401028191-29756-2-git-send-email-fweisbec@gmail.com>
+ <20140526155944.GL30445@twins.programming.kicks-ass.net>
+ <20140526165312.GF2066@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140526191918.GA5444@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140526165312.GF2066@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 09:19:18PM +0200, Peter Zijlstra wrote:
-> On Mon, May 26, 2014 at 06:50:41PM +0200, Frederic Weisbecker wrote:
-> > On Mon, May 26, 2014 at 06:02:24PM +0200, Peter Zijlstra wrote:
-> > > On Sun, May 25, 2014 at 04:29:49PM +0200, Frederic Weisbecker wrote:
-> > > > +bool irq_work_queue_on(struct irq_work *work, int cpu)
-> > > > +{
-> > > > +	/* Only queue if not already pending */
-> > > > +	if (!irq_work_claim(work))
-> > > > +		return false;
-> > > > +
-> > > > +	/* All work should have been flushed before going offline */
-> > > > +	WARN_ON_ONCE(cpu_is_offline(cpu));
-> > > 	WARN_ON_ONCE(in_nmi());
+On Mon, May 26, 2014 at 06:53:13PM +0200, Frederic Weisbecker wrote:
+> On Mon, May 26, 2014 at 05:59:44PM +0200, Peter Zijlstra wrote:
+> > On Sun, May 25, 2014 at 04:29:47PM +0200, Frederic Weisbecker wrote:
+> > > An irq work can be handled from two places: from the tick if the work
+> > > carries the "lazy" flag and the tick is periodic, or from a self IPI.
+> > > 
+> > > We merge all these works in a single list and we use some per cpu latch
+> > > to avoid raising a self-IPI when one is already pending.
+> > > 
+> > > Now we could do away with this ugly latch if only the list was only made of
+> > > non-lazy works. Just enqueueing a work on the empty list would be enough
+> > > to know if we need to raise an IPI or not.
+> > > 
+> > > Also we are going to implement remote irq work queuing. Then the per CPU
+> > > latch will need to become atomic in the global scope. That's too bad
+> > > because, here as well, just enqueueing a work on an empty list of
+> > > non-lazy works would be enough to know if we need to raise an IPI or not.
+> > > 
+> > > So lets take a way out of this: split the works in two distinct lists,
+> > > one for the works that can be handled by the next tick and another
+> > > one for those handled by the IPI. Just checking if the latter is empty
+> > > when we queue a new work is enough to know if we need to raise an IPI.
 > > 
-> > But it's actually NMI safe, isn't it?
+> > That ^
+> > 
+> > >  bool irq_work_queue(struct irq_work *work)
+> > >  {
+> > > +	unsigned long flags;
+> > > +
+> > >  	/* Only queue if not already pending */
+> > >  	if (!irq_work_claim(work))
+> > >  		return false;
+> > >  
+> > > -	/* Queue the entry and raise the IPI if needed. */
+> > > -	preempt_disable();
+> > > +	/* Check dynticks safely */
+> > > +	local_irq_save(flags);
+> > 
+> > Does not mention this ^
+> > 
+> > 'sup?
 > 
-> Deja-vu:
+> Because it's really just a technical detail.
+> If we enqueue before checking for tick stopped, we can avoid disabling irqs
+> because it's fine if we just raced with an irq in-between.
 > 
->   lkml.kernel.org/r/20140514115406.GA11096@twins.programming.kicks-ass.net
+> But now that we enqueue _after_, we can't afford an IRQ in between.
+> 
+> Should I update the comments maybe?
 
-Doh!
+Well, yes because it was entirely non-obvious, but maybe we can write it
+such that we can avoid the irq disable, because they're expensive.
+
+How about something like:
+
+	if (work->flags & IRQ_WORK_LAZY) {
+		if (llist_add(&work->llnode, __get_cpu_var(lazy_list)) && 
+		    tick_nohz_tick_stopped())
+			arch_irq_work_raise();
+	} else {
+		if (llist_add(&work->llnode, __get_cpu_var(raise_list)))
+			arch_irq_work_raise();
+	}
+
+That way we check it after the enqueue.
