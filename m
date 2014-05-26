@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaEZPE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:04:29 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:64088 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaEZPE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:04:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jean Delvare <jdelvare@suse.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] gpio: pch: include linux/slab.h
-Date: Mon, 26 May 2014 17:04:24 +0200
-Message-ID: <8665687.jWqf6bo4lM@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:njbDZkAw8HzK1L/5/86Z9jpwlmwmYDOUMsXhitzjesD
- MGvkjmd6tU9fADnPrY9O3Hyh1uoEL+BhypJUNSJ8AzD3Tjt9C+
- 6GZuIss7tmSvaLcoJL3GDEE75NUwUAT9C9XC2hDmELlGyygKd8
- ElkBMZ40N4pk1oUS8Tef7c1cjpif2Rli2XRP3NwxUM4r9V5Ogc
- HYXpCUihrKqZdGKcu5ZIm9y3nMevYMWvZh4FJK4g389TurrM5N
- RMZUuXTxcKGAnx/5XGna/YeHFQX6rpCepZ/RfBVVUJZxpkcAba
- 1KAwD97X66TwTsSYHytluEl5KsN50QMbpj3ETZxw8z9pdo/qpN
- acYH8ojGzytnjRBa8QgM=
+	id S1752613AbaEZPFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:05:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:36020 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128AbaEZPFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 11:05:17 -0400
+Date: Mon, 26 May 2014 17:05:13 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Dominique van den Broeck <domdevlin@free.fr>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] staging: panel: (coding style) Matching braces
+Message-ID: <20140526150513.GJ13929@1wt.eu>
+References: <1400674201-9560-1-git-send-email-domdevlin@free.fr> <20140526142827.GG13929@1wt.eu> <1401115505.7240.11.camel@wisdom>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401115505.7240.11.camel@wisdom>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The gpio-pch driver was recently enabled for compile-tests,
-which revealed that it is missing an include for linux/slab.h,
-which on ARM is not implied by any of the other headers.
+On Mon, May 26, 2014 at 04:45:05PM +0200, Dominique van den Broeck wrote:
+> 
+> Hello Willy,
+> 
+> > I don't want to be nit-picking, but since we're talking about style...
+> > for me these "} else {" statements are harder to parse than having them
+> > on two lines this way :
+> > <...>
+> >
+> > It's just a matter of taste I know, but for me they read easier, probably
+> > because the braces do not affect alignment and the lines appear exactly
+> > similar with or without the braces.
+> 
+> I don't mind at all about this. 
+> 
+> Even if I'm into C code for quite a long time now, I'm still new in kernel
+> development (just completed the Eudyptula Challenge) and I thought it could
+> be both a harmless and useful way to start contributing and get used with it
+> to focus a bit on ./checkpatch.pl suggestions (which is the actual entity to
+> blame about it).
+> 
+> This is the reason why I submitted the patch but it's not a personal
+> preference. If you prefer these braces laid out the older way, I'll let
+> them as is next time. If there's another usages I should know about, just
+> let me know.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+You shouldn't bother too much about these style issues in fact. You'll
+ask 4 people, you'll get 4 different opinions and will end up with
+frustration depending on who will reply with just a "NAK", and sometimes
+your change will cause a regression because it's easy to to a mistake
+when just changing style.
 
-diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
-index 83a1563..d6eac9b 100644
---- a/drivers/gpio/gpio-pch.c
-+++ b/drivers/gpio/gpio-pch.c
-@@ -20,6 +20,7 @@
- #include <linux/gpio.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
-+#include <linux/slab.h>
- 
- #define PCH_EDGE_FALLING	0
- #define PCH_EDGE_RISING		BIT(0)
+The best thing to do in general if you want to slowly get into the kernel
+is to focus on features you're actually using and which do not work the
+optimal way. It's then easy to start by adding debugging code all over
+the drive, find where the functions are called from and progressively
+get an idea of what does what. Buying cheap small devices is a fun way
+to do this BTW :-)
+
+Willy
 
