@@ -1,47 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaEZJWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 05:22:13 -0400
-Received: from mx0.tedata.net.jo ([81.10.124.14]:55060 "EHLO
-	smtp.tedata.net.jo" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaEZJWL (ORCPT
+	id S1752087AbaEZJWB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 05:22:01 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58430 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaEZJV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 05:22:11 -0400
-X-Greylist: delayed 1502 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 05:22:10 EDT
-Message-ID: <138b52888580e35e4e10a99d6e3c87e0.squirrel@webmail.tedata.net.jo>
-Date: Mon, 26 May 2014 11:43:23 +0300
-Subject: Atualize a sua conta Unicamp Webmail
-From: "Unicamp E-mail do Administrador" <bitar@tedata.net.jo>
-Reply-To: department1@engineer.com
-User-Agent: SquirrelMail/1.4.19
+	Mon, 26 May 2014 05:21:57 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <zonque@gmail.com>,
+        <b-liu@ti.com>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH v6 4/5] usb: musb: core: Convert the musb_platform_reset to have a return value.
+Date: Mon, 26 May 2014 14:50:11 +0530
+Message-ID: <1401096012-6895-5-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
+References: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=uft-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caros assinantes válidos Unicamp,
+Currently musb_platform_reset() is only used by dsps.
+In case of BABBLE interrupt for other platforms the  musb_platform_reset()
+is a NOP. In such situations no need to re-initialize the endpoints.
+Also in the latest silicon revision of AM335x, we do have a babble recovery
+mechanism without resetting the IP block. In preperation to add that support
+its better to have a rest_done return for  musb_platform_reset().
 
-Esta mensagem é a partir da Unicamp Administrador E-mail Serviço de TI
-para todos nossos subscribers.You conta de e-mail são fornecer-nos a
-seguir informações para revalidar sua conta devido a spam e atualização
-Unicamp a versão de spam New mês.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/musb/musb_core.c | 10 ++++++----
+ drivers/usb/musb/musb_core.h | 10 ++++++----
+ drivers/usb/musb/musb_dsps.c |  3 ++-
+ 3 files changed, 14 insertions(+), 9 deletions(-)
 
-Aviso: A sua conta Email Unicamp será expirado depois de uma semana, se
-você não revalidar ou Unicamp datam sua conta. Por favor, co-operar com
-conosco para que possamos atendê-lo melhor, em contato com o
-administrador! ****
-
-Nome de usuário:
-Senha:
-Confirme sua senha:
-E-mail alternativo:
-
-Obrigado.
-Unicamp E-mail do Administrador
-
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index c0ce09f..b841ee0 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1753,9 +1753,11 @@ static void musb_irq_work(struct work_struct *data)
+ static void musb_recover_work(struct work_struct *data)
+ {
+ 	struct musb *musb = container_of(data, struct musb, recover_work.work);
+-	int status;
++	int status, ret;
+ 
+-	musb_platform_reset(musb);
++	ret  = musb_platform_reset(musb);
++	if (ret)
++		return;
+ 
+ 	usb_phy_vbus_off(musb->xceiv);
+ 	usleep_range(100, 200);
+@@ -1764,8 +1766,8 @@ static void musb_recover_work(struct work_struct *data)
+ 	usleep_range(100, 200);
+ 
+ 	/*
+-	 * When a babble condition occurs, the musb controller removes the
+-	 * session bit and the endpoint config is lost.
++	 * When a babble condition occurs, the musb controller
++	 * removes the session bit and the endpoint config is lost.
+ 	 */
+ 	if (musb->dyn_fifo)
+ 		status = ep_config_from_table(musb);
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index 9241025..414e57a 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -192,7 +192,7 @@ struct musb_platform_ops {
+ 
+ 	int	(*set_mode)(struct musb *musb, u8 mode);
+ 	void	(*try_idle)(struct musb *musb, unsigned long timeout);
+-	void	(*reset)(struct musb *musb);
++	int	(*reset)(struct musb *musb);
+ 
+ 	int	(*vbus_status)(struct musb *musb);
+ 	void	(*set_vbus)(struct musb *musb, int on);
+@@ -555,10 +555,12 @@ static inline void musb_platform_try_idle(struct musb *musb,
+ 		musb->ops->try_idle(musb, timeout);
+ }
+ 
+-static inline void musb_platform_reset(struct musb *musb)
++static inline int  musb_platform_reset(struct musb *musb)
+ {
+-	if (musb->ops->reset)
+-		musb->ops->reset(musb);
++	if (!musb->ops->reset)
++		return -EINVAL;
++
++	return musb->ops->reset(musb);
+ }
+ 
+ static inline int musb_platform_get_vbus_status(struct musb *musb)
+diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+index 74c4193..f6f3087 100644
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -536,7 +536,7 @@ static int dsps_musb_set_mode(struct musb *musb, u8 mode)
+ 	return 0;
+ }
+ 
+-static void dsps_musb_reset(struct musb *musb)
++static int dsps_musb_reset(struct musb *musb)
+ {
+ 	struct device *dev = musb->controller;
+ 	struct dsps_glue *glue = dev_get_drvdata(dev->parent);
+@@ -548,6 +548,7 @@ static void dsps_musb_reset(struct musb *musb)
+ 	usleep_range(100, 200);
+ 	usb_phy_init(musb->xceiv);
+ 
++	return 0;
+ }
+ 
+ static struct musb_platform_ops dsps_ops = {
+-- 
+1.8.3.1
 
