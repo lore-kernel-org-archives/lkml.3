@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaEZM55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 08:57:57 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:44378 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaEZM54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 08:57:56 -0400
+	id S1752327AbaEZM7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 08:59:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16434 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984AbaEZM7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 08:59:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,913,1392192000"; 
+   d="scan'208";a="436937989"
+Date: Mon, 26 May 2014 15:58:59 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        matthew.garrett@nebula.com, rafael.j.wysocki@intel.com,
+        dmitry.torokhov@gmail.com
+Subject: Re: [PATCH V7 08/11] ACPI: always register memory hotplug scan
+ handler even if CONFIG_X86_INTEL_LPSS is cleared
+Message-ID: <20140526125859.GG1765@lahna.fi.intel.com>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
+ <4177604.8JWRhYqtaS@vostro.rjw.lan>
+ <20140526115235.GD1765@lahna.fi.intel.com>
+ <2390763.sjfZLLMhWb@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1401056560-16893-1-git-send-email-kroosec@gmail.com>
-References: <1401056560-16893-1-git-send-email-kroosec@gmail.com>
-Date: Mon, 26 May 2014 08:57:55 -0400
-Message-ID: <CAECXXi5vDhnC4P9ixZy=9ZCkkLigv-kBvvD8O1kYyDGHEn5ZUg@mail.gmail.com>
-Subject: Re: [PATCHv2] nbd: Zero from and len fields in NBD_CMD_DISCONNECT.
-From: Paul Clements <paul.clements@us.sios.com>
-To: Hani Benhabiles <kroosec@gmail.com>
-Cc: "nbd-general@lists.sourceforge.net" 
-	<nbd-general@lists.sourceforge.net>,
-        kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2390763.sjfZLLMhWb@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 25, 2014 at 6:22 PM, Hani Benhabiles <kroosec@gmail.com> wrote:
-> Len field is already set to zero, but not the from field which is sent as
-> 0xfffffffffffffe00. This makes no sense, and may cause confuse server
-> implementations doing sanity checks (qemu-nbd is an example.)
->
-> Signed-off-by: Hani Benhabiles <hani@linux.com>
-> ---
->
-> Compared to v1:
-> * Zero the request structure instead of conditionally zeroing specific fields.
+On Mon, May 26, 2014 at 02:40:58PM +0200, Rafael J. Wysocki wrote:
+> On Monday, May 26, 2014 02:52:35 PM Mika Westerberg wrote:
+> > On Mon, May 26, 2014 at 01:53:39PM +0200, Rafael J. Wysocki wrote:
+> > > > I'm wondering whether it is worth the ugliness to get platform bus
+> > > > enumeration the default?
+> > > > 
+> > > > Since you already have the PNP whitelist, can't we just use that for PNP
+> > > > and keep these files as they are? In other words, don't make any kind of
+> > > > physical device by default and let the scan handlers to decide.
+> > > 
+> > > Well, that's tempting, but then we'd get one more whitelist pretty much without
+> > > any benefit, because we'd be still going to have the list in acpi_platform.c.
+> > > 
+> > > The purpose of the whole exercise is not to prevent PNP devices from being
+> > > created by default (which admittedly is a nice side effect), but to get rid
+> > > of the white list in acpi_platform.c - and in particular, to avoid the
+> > > necessity to add every ACPI-enumerated platform device to that list in the
+> > > future.
+> > 
+> > Yes, I understand but that list currently has only 5 entries. Are
+> > we expecting to have much more entries there in the future?
+> 
+> Yes, we are.  Pretty much anything that's DT-enumerable today may be
+> ACPI-enumerable in the future.  But you should know that. ;-)
 
-
-Yeah, this one looks good. Sorry for the confusion on the structs...
-
-
->  drivers/block/nbd.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-> index 3a70ea2..8e1df52 100644
-> --- a/drivers/block/nbd.c
-> +++ b/drivers/block/nbd.c
-> @@ -243,14 +243,11 @@ static int nbd_send_req(struct nbd_device *nbd, struct request *req)
->         struct nbd_request request;
->         unsigned long size = blk_rq_bytes(req);
->
-> +       memset(&request, 0, sizeof(request));
->         request.magic = htonl(NBD_REQUEST_MAGIC);
->         request.type = htonl(nbd_cmd(req));
->
-> -       if (nbd_cmd(req) == NBD_CMD_FLUSH) {
-> -               /* Other values are reserved for FLUSH requests.  */
-> -               request.from = 0;
-> -               request.len = 0;
-> -       } else {
-> +       if (nbd_cmd(req) != NBD_CMD_FLUSH && nbd_cmd(req) != NBD_CMD_DISC) {
->                 request.from = cpu_to_be64((u64)blk_rq_pos(req) << 9);
->                 request.len = htonl(size);
->         }
-> --
-> 1.8.3.2
->
+OK. Then I guess having platform enumeration the default makes sense and
+we just need to live with the ugly #ifdefs in acpi_lpss.c.
