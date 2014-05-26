@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaEZLJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:09:40 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52300 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaEZLJi (ORCPT
+	id S1752284AbaEZLJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:09:43 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:53343 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaEZLJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:09:38 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v7 1/2] smp: Print more useful debug info upon receiving IPI
- on an offline CPU
-To: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
-        hch@infradead.org
-Cc: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
-        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 26 May 2014 16:38:18 +0530
-Message-ID: <20140526110816.16203.1148.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140526110743.16203.18186.stgit@srivatsabhat.in.ibm.com>
-References: <20140526110743.16203.18186.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Mon, 26 May 2014 07:09:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052611-7014-0000-0000-000004F4B709
+In-Reply-To: <1401098728-2001-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+References: <1401098728-2001-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+Date: Mon, 26 May 2014 13:09:39 +0200
+Message-ID: <CAFLxGvxNu8dR5AYC6oar3-Jus3oBLZm10=BWcEe0wR+hRxz7eA@mail.gmail.com>
+Subject: Re: [PATCH] /proc/pid/status: show all sets of pid according to ns
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today the smp-call-function code just prints a warning if we get an IPI on
-an offline CPU. This info is sufficient to let us know that something went
-wrong, but often it is very hard to debug exactly who sent the IPI and why,
-from this info alone.
+On Mon, May 26, 2014 at 12:05 PM, Chen Hanxiao
+<chenhanxiao@cn.fujitsu.com> wrote:
+> We need a direct method of getting the pid inside containers.
+> If some issues occurred inside a container guest, host user
+> could not know which process is in trouble just by guest pid:
+> the users of container guest only knew the pid inside containers.
+> This will bring obstacle for trouble shooting.
+>
+> This patch expands fields of Tgid and Pid:
+> a) In init_pid_ns, nothing changed;
+>
+> b) In one pidns, they will tell the pid inside containers:
+> Tgid:   1628    9       3
+> Pid:    1628    9       3
+> ** process id is 1628 in level 0, 9 in level 1, 3 in level 2.
+>
+> c) If pidns is nested, it depends on which pidns are you in.
+> Tgid:   9       3
+> Pid:    9       3
+> ** Views from level 1 for Pid 1628 in host.
+>
+> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> ---
+>  fs/proc/array.c | 20 +++++++++++++-------
+>  1 file changed, 13 insertions(+), 7 deletions(-)
+>
+> diff --git a/fs/proc/array.c b/fs/proc/array.c
+> index 64db2bc..eef20dd 100644
+> --- a/fs/proc/array.c
+> +++ b/fs/proc/array.c
+> @@ -173,17 +173,23 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+>         cred = get_task_cred(p);
+>         seq_printf(m,
+>                 "State:\t%s\n"
+> -               "Tgid:\t%d\n"
+> -               "Ngid:\t%d\n"
+> -               "Pid:\t%d\n"
+> +               "Ngid:\t%d\n",
 
-In most cases, we get the warning about the IPI to an offline CPU, immediately
-after the CPU going offline comes out of the stop-machine phase and reenables
-interrupts. Since all online CPUs participate in stop-machine, the information
-regarding the sender of the IPI is already lost by the time we exit the
-stop-machine loop. So even if we dump the stack on each CPU at this point,
-we won't find anything useful since all of them will show the stack-trace of
-the stopper thread. So we need a better way to figure out who sent the IPI and
-why.
+You're changing the ordering of Tgid and Ngid here.
 
-To achieve this, when we detect an IPI targeted to an offline CPU, loop through
-the call-single-data linked list and print out the payload (i.e., the name
-of the function which was supposed to be executed by the target CPU). This
-would give us an insight as to who might have sent the IPI and help us debug
-this further.
+> +               get_task_state(p),
+> +               task_numa_group_id(p));
+> +       seq_puts(m, "Tgid:");
+> +       for (g = ns->level; g <= pid->level; g++)
+> +               seq_printf(m, "\t%d ",
+> +               task_tgid_nr_ns(p, pid->numbers[g].ns));
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+I like the idea but IMHO we should keep Tgid and Pid as is and better
+add two new fields to /proc/pid/status.
+What about NSpid and NSgid?
 
- kernel/smp.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+> +       seq_puts(m, "\nPid:");
+> +       for (g = ns->level; g <= pid->level; g++)
+> +               seq_printf(m, "\t%d ",
+> +               task_pid_nr_ns(p, pid->numbers[g].ns));
+> +       seq_putc(m, '\n');
+> +       seq_printf(m,
+>                 "PPid:\t%d\n"
+>                 "TracerPid:\t%d\n"
+>                 "Uid:\t%d\t%d\t%d\t%d\n"
+>                 "Gid:\t%d\t%d\t%d\t%d\n",
+> -               get_task_state(p),
+> -               task_tgid_nr_ns(p, ns),
+> -               task_numa_group_id(p),
+> -               pid_nr_ns(pid, ns),
+>                 ppid, tpid,
+>                 from_kuid_munged(user_ns, cred->uid),
+>                 from_kuid_munged(user_ns, cred->euid),
+> --
+> 1.9.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 06d574e..306f818 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -185,14 +185,26 @@ void generic_smp_call_function_single_interrupt(void)
- {
- 	struct llist_node *entry;
- 	struct call_single_data *csd, *csd_next;
-+	static bool warned;
-+
-+	entry = llist_del_all(&__get_cpu_var(call_single_queue));
-+	entry = llist_reverse_order(entry);
- 
- 	/*
- 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
- 	 */
--	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
-+	if (unlikely(!cpu_online(smp_processor_id()) && !warned)) {
-+		warned = true;
-+		WARN(1, "IPI on offline CPU %d\n", smp_processor_id());
- 
--	entry = llist_del_all(&__get_cpu_var(call_single_queue));
--	entry = llist_reverse_order(entry);
-+		/*
-+		 * We don't have to use the _safe() variant here
-+		 * because we are not invoking the IPI handlers yet.
-+		 */
-+		llist_for_each_entry(csd, entry, llist)
-+			pr_warn("IPI callback %pS sent to offline CPU\n",
-+				csd->func);
-+	}
- 
- 	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
- 		csd->func(csd->info);
 
+
+-- 
+Thanks,
+//richard
