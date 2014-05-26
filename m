@@ -1,148 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaEZIiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 04:38:21 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15440 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaEZIiT (ORCPT
+	id S1751993AbaEZIif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 04:38:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50229 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733AbaEZIic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 04:38:19 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-db-5382fd784021
-Message-id: <5382FD78.3060402@gmail.com>
-Date: Mon, 26 May 2014 17:38:16 +0900
-From: Jaehoon Chung <jh80.chung@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>
-Subject: Re: [PATCH 1/3] mmc: host: add slot argument to mmc_of_parse
-References: <1400840721-11050-1-git-send-email-jh80.chung@samsung.com>
- <1400840721-11050-2-git-send-email-jh80.chung@samsung.com>
- <20140526080916.GE12777@ldesroches-Latitude-E6320>
-In-reply-to: <20140526080916.GE12777@ldesroches-Latitude-E6320>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd2Kv03BBpMPmFpMuLyd0WL+kXOs
-	Fjd+tbFaXN41h83iyP9+RosZ5/cxWXy4f5HZov3vXjaL42vDHTg97lzbw+Zx49VCJo++LasY
-	PT5vkgtgieKySUnNySxLLdK3S+DKuHhhCnPBHpmKs28+sjYw/hfrYuTkkBAwkWh8vI0JwhaT
-	uHBvPVsXIxeHkMAiRomLt1pYQBJCAq8ZJSZvlgaxeQU0JPY8WMgMYrMIqEr8Pd7FDmKzCWhJ
-	/Fp+nxHEFhUIk3i6+Q8bRL2gxI/J98DmiAjsZ5K4vDsHxBYWcJU4dWspE8SyHYwS3Td2AQ3l
-	4OAUsJeYeyQMpIZZQEdif+s0NghbXmLzmrfMExj5ZyEZOwtJ2SwkZQsYmVcxiqYWJBcUJ6Xn
-	GuoVJ+YWl+al6yXn525iBAf1M6kdjCsbLA4xCnAwKvHwHvBuChZiTSwrrsw9xCjBwawkwtv8
-	ASjEm5JYWZValB9fVJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qB8XhD9sLO
-	C8valK8djdV3zp0k++HSzkv/ipkYc3I6K3ekbmWaELgk5MXFXJ/XWltT/q//cJVjQ8KTNdtd
-	yiKKNi7/9uWq3vbI7csV2y52HPvuWzTP+cWDNyV1LLExn+uTnmkv+XfyfLvhc+fKrlgz60dV
-	4WYbzC3z5j98Zx8UemebZdkh//fVOUosxRmJhlrMRcWJAMj4JK5mAgAA
+	Mon, 26 May 2014 04:38:32 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v2 2/3] regulator: ltc3589: Add DT binding documentation
+Date: Mon, 26 May 2014 10:38:15 +0200
+Message-Id: <1401093496-28474-2-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1401093496-28474-1-git-send-email-p.zabel@pengutronix.de>
+References: <1401093496-28474-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.120
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds the device tree binding documentation for Linear
+Technology LTC3589, LTC3589-1, and LTC3589-2 8-port regulators.
 
-On 05/26/2014 05:09 PM, Ludovic Desroches wrote:
-> On Fri, May 23, 2014 at 07:25:19PM +0900, Jaehoon Chung wrote:
->> From: Ludovic Desroches <ludovic.desroches@atmel.com>
->>
->> Some hosts manage several slots. In these case information such as the
->> bus width, chi detect and others are into the slot node. So we have to
-> 
-> /s/chi detect/chip detect
-Will fix.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+Changes since v1:
+ - Changed vendor prefix to lltc
+---
+ .../devicetree/bindings/regulator/ltc3589.txt      | 99 ++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/ltc3589.txt
 
-Tushar have suggested the rename mmc_of_parse_slot() instead of __mmc_of_parse().
-I'm not sure which name is better. How about?
-
-If never mind, i will change to mmc_of_parse_slot(), then send patch-v2.
-
-Best Regards,
-Jaehoon Chung
-> 
->> parse child node. If not NULL, slot node will be used instead of the
->> device node.
->>
->> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
->> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->> ---
->>  drivers/mmc/core/host.c  |   13 +++++++++----
->>  include/linux/mmc/host.h |   10 +++++++++-
->>  2 files changed, 18 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
->> index 95cceae..0f677b3 100644
->> --- a/drivers/mmc/core/host.c
->> +++ b/drivers/mmc/core/host.c
->> @@ -298,15 +298,17 @@ static inline void mmc_host_clk_sysfs_init(struct mmc_host *host)
->>  #endif
->>  
->>  /**
->> - *	mmc_of_parse() - parse host's device-tree node
->> + *	__mmc_of_parse() - parse host's device-tree node
->>   *	@host: host whose node should be parsed.
->> + *	@slot : some device provide several slots so the node to parse
->> + *		is not the host one.
->>   *
->>   * To keep the rest of the MMC subsystem unaware of whether DT has been
->>   * used to to instantiate and configure this host instance or not, we
->>   * parse the properties and set respective generic mmc-host flags and
->>   * parameters.
->>   */
->> -int mmc_of_parse(struct mmc_host *host)
->> +int __mmc_of_parse(struct mmc_host *host, struct device_node *slot)
->>  {
->>  	struct device_node *np;
->>  	u32 bus_width;
->> @@ -317,7 +319,10 @@ int mmc_of_parse(struct mmc_host *host)
->>  	if (!host->parent || !host->parent->of_node)
->>  		return 0;
->>  
->> -	np = host->parent->of_node;
->> +	if (slot)
->> +		np = slot;
->> +	else
->> +		np = host->parent->of_node;
->>  
->>  	/* "bus-width" is translated to MMC_CAP_*_BIT_DATA flags */
->>  	if (of_property_read_u32(np, "bus-width", &bus_width) < 0) {
->> @@ -459,7 +464,7 @@ out:
->>  	return ret;
->>  }
->>  
->> -EXPORT_SYMBOL(mmc_of_parse);
->> +EXPORT_SYMBOL(__mmc_of_parse);
->>  
->>  /**
->>   *	mmc_alloc_host - initialise the per-host structure.
->> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
->> index 7960424..c62af91 100644
->> --- a/include/linux/mmc/host.h
->> +++ b/include/linux/mmc/host.h
->> @@ -372,7 +372,15 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *);
->>  int mmc_add_host(struct mmc_host *);
->>  void mmc_remove_host(struct mmc_host *);
->>  void mmc_free_host(struct mmc_host *);
->> -int mmc_of_parse(struct mmc_host *host);
->> +int __mmc_of_parse(struct mmc_host *host, struct device_node *slot);
->> +/*
->> + * mmc_of_parse - parse host's device-tree node
->> + *	@host: host whose node should be parsed.
->> + */
->> +static inline int mmc_of_parse(struct mmc_host *host)
->> +{
->> +	return __mmc_of_parse(host, NULL);
->> +}
->>  
->>  static inline void *mmc_priv(struct mmc_host *host)
->>  {
->> -- 
->> 1.7.9.5
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/Documentation/devicetree/bindings/regulator/ltc3589.txt b/Documentation/devicetree/bindings/regulator/ltc3589.txt
+new file mode 100644
+index 0000000..8010530
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/ltc3589.txt
+@@ -0,0 +1,99 @@
++Linear Technology LTC3589, LTC3589-1, and LTC3589-2 8-output regulators
++
++Required properties:
++- compatible: "lltc,ltc3589", "lltc,ltc3589-1" or "lltc,ltc3589-2"
++- reg: I2C slave address
++
++Required child node:
++- regulators: Contains eight regulator child nodes sw1, sw2, sw3, bb-out,
++  ldo1, ldo2, ldo3, and ldo4, specifying the initialization data as
++  documented in Documentation/devicetree/bindings/regulator/regulator.txt.
++
++Each regulator is defined using the standard binding for regulators. The
++nodes for sw1, sw2, sw3, bb-out, ldo1, and ldo2 additionally need to specify
++the resistor values of their external feedback voltage dividers:
++
++Required properties (not on ldo3, ldo4):
++- lltc,fb-voltage-divider: An array of two integers containing the resistor
++  values R1 and R2 of the feedback voltage divider in ohms.
++
++Regulators sw1, sw2, sw3, and ldo2 can regulate the feedback reference from
++0.3625 V to 0.75 V in 12.5 mV steps. The output voltage thus ranges between
++0.3625 * (1 + R1/R2) V and 0.75 * (1 + R1/R2) V. Regulators bb-out and ldo1
++have a fixed 0.8 V reference and thus output 0.8 * (1 + R1/R2) V. The ldo3
++regulator is fixed to 1.8 V on LTC3589 and to 2.8 V on LTC3589-1,2. The ldo4
++regulator can output between 1.8 V and 3.3 V on LTC3589 and between 1.2 V
++and 3.2 V on LTC3589-1,2 in four steps. The ldo1 standby regulator can not
++be disabled and thus should have the regulator-always-on property set.
++
++Example:
++
++	ltc3589: pmic@34 {
++		compatible = "lltc,ltc3589-1";
++		reg = <0x34>;
++
++		regulators {
++			sw1_reg: sw1 {
++				regulator-min-microvolt = <591930>;
++				regulator-max-microvolt = <1224671>;
++				lltc,fb-voltage-divider = <100000 158000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw2_reg: sw2 {
++				regulator-min-microvolt = <704123>;
++				regulator-max-microvolt = <1456803>;
++				lltc,fb-voltage-divider = <180000 191000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw3_reg: sw3 {
++				regulator-min-microvolt = <1341250>;
++				regulator-max-microvolt = <2775000>;
++				lltc,fb-voltage-divider = <270000 100000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			bb_out_reg: bb-out {
++				regulator-min-microvolt = <3387341>;
++				regulator-max-microvolt = <3387341>;
++				lltc,fb-voltage-divider = <511000 158000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo1_reg: ldo1 {
++				regulator-min-microvolt = <1306329>;
++				regulator-max-microvolt = <1306329>;
++				lltc,fb-voltage-divider = <100000 158000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo2_reg: ldo2 {
++				regulator-min-microvolt = <704123>;
++				regulator-max-microvolt = <1456806>;
++				lltc,fb-voltage-divider = <180000 191000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo3_reg: ldo3 {
++				regulator-min-microvolt = <2800000>;
++				regulator-max-microvolt = <2800000>;
++				regulator-boot-on;
++			};
++
++			ldo4_reg: ldo4 {
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <3200000>;
++			};
++		};
++	};
+-- 
+2.0.0.rc2
 
