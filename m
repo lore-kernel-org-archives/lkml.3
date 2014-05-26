@@ -1,98 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaEZT0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:26:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34170 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaEZT0j (ORCPT
+	id S1752071AbaEZT1B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:27:01 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:63010 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751850AbaEZT1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:26:39 -0400
-Date: Mon, 26 May 2014 21:26:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/5] irq_work: Split raised and lazy lists
-Message-ID: <20140526192633.GB5444@laptop.programming.kicks-ass.net>
-References: <1401028191-29756-1-git-send-email-fweisbec@gmail.com>
- <1401028191-29756-2-git-send-email-fweisbec@gmail.com>
- <20140526155944.GL30445@twins.programming.kicks-ass.net>
- <20140526165312.GF2066@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140526165312.GF2066@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 26 May 2014 15:27:00 -0400
+Message-ID: <1401132417.6068.26.camel@x220>
+Subject: [PATCH] staging: lirc: remove checks for CONFIG_LIRC_SERIAL_NSLU2
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 26 May 2014 21:26:57 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 May 2014 19:26:58.0284 (UTC) FILETIME=[75FEC2C0:01CF7918]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 06:53:13PM +0200, Frederic Weisbecker wrote:
-> On Mon, May 26, 2014 at 05:59:44PM +0200, Peter Zijlstra wrote:
-> > On Sun, May 25, 2014 at 04:29:47PM +0200, Frederic Weisbecker wrote:
-> > > An irq work can be handled from two places: from the tick if the work
-> > > carries the "lazy" flag and the tick is periodic, or from a self IPI.
-> > > 
-> > > We merge all these works in a single list and we use some per cpu latch
-> > > to avoid raising a self-IPI when one is already pending.
-> > > 
-> > > Now we could do away with this ugly latch if only the list was only made of
-> > > non-lazy works. Just enqueueing a work on the empty list would be enough
-> > > to know if we need to raise an IPI or not.
-> > > 
-> > > Also we are going to implement remote irq work queuing. Then the per CPU
-> > > latch will need to become atomic in the global scope. That's too bad
-> > > because, here as well, just enqueueing a work on an empty list of
-> > > non-lazy works would be enough to know if we need to raise an IPI or not.
-> > > 
-> > > So lets take a way out of this: split the works in two distinct lists,
-> > > one for the works that can be handled by the next tick and another
-> > > one for those handled by the IPI. Just checking if the latter is empty
-> > > when we queue a new work is enough to know if we need to raise an IPI.
-> > 
-> > That ^
-> > 
-> > >  bool irq_work_queue(struct irq_work *work)
-> > >  {
-> > > +	unsigned long flags;
-> > > +
-> > >  	/* Only queue if not already pending */
-> > >  	if (!irq_work_claim(work))
-> > >  		return false;
-> > >  
-> > > -	/* Queue the entry and raise the IPI if needed. */
-> > > -	preempt_disable();
-> > > +	/* Check dynticks safely */
-> > > +	local_irq_save(flags);
-> > 
-> > Does not mention this ^
-> > 
-> > 'sup?
-> 
-> Because it's really just a technical detail.
-> If we enqueue before checking for tick stopped, we can avoid disabling irqs
-> because it's fine if we just raced with an irq in-between.
-> 
-> But now that we enqueue _after_, we can't afford an IRQ in between.
-> 
-> Should I update the comments maybe?
+When support for homebrew serial port receivers was added in v2.6.36 its
+code contained checks for CONFIG_LIRC_SERIAL_NSLU2. The related Kconfig
+symbol didn't exist then. It still doesn't exist now. Remove these checks.
 
-Well, yes because it was entirely non-obvious, but maybe we can write it
-such that we can avoid the irq disable, because they're expensive.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested. Done on top of next-20140526.
 
-How about something like:
+I left the "#define LIRC_NSLU2" line alone.
 
-	if (work->flags & IRQ_WORK_LAZY) {
-		if (llist_add(&work->llnode, __get_cpu_var(lazy_list)) && 
-		    tick_nohz_tick_stopped())
-			arch_irq_work_raise();
-	} else {
-		if (llist_add(&work->llnode, __get_cpu_var(raise_list)))
-			arch_irq_work_raise();
-	}
+ drivers/staging/media/lirc/lirc_serial.c | 81 --------------------------------
+ 1 file changed, 81 deletions(-)
 
-That way we check it after the enqueue.
+diff --git a/drivers/staging/media/lirc/lirc_serial.c b/drivers/staging/media/lirc/lirc_serial.c
+index dc5ba43116c7..efe561cd0935 100644
+--- a/drivers/staging/media/lirc/lirc_serial.c
++++ b/drivers/staging/media/lirc/lirc_serial.c
+@@ -73,9 +73,6 @@
+ #include <linux/fcntl.h>
+ #include <linux/spinlock.h>
+ 
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-#include <asm/hardware.h>
+-#endif
+ /* From Intel IXP42X Developer's Manual (#252480-005): */
+ /* ftp://download.intel.com/design/network/manuals/25248005.pdf */
+ #define UART_IE_IXP42X_UUE   0x40 /* IXP42X UART Unit enable */
+@@ -198,33 +195,6 @@ static struct lirc_serial hardware[] = {
+ 		.features    = LIRC_CAN_REC_MODE2
+ #endif
+ 	},
+-
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-	/*
+-	 * Modified Linksys Network Storage Link USB 2.0 (NSLU2):
+-	 * We receive on CTS of the 2nd serial port (R142,LHS), we
+-	 * transmit with a IR diode between GPIO[1] (green status LED),
+-	 * and ground (Matthias Goebl <matthias.goebl@goebl.net>).
+-	 * See also http://www.nslu2-linux.org for this device
+-	 */
+-	[LIRC_NSLU2] = {
+-		.lock = __SPIN_LOCK_UNLOCKED(hardware[LIRC_NSLU2].lock),
+-		.signal_pin        = UART_MSR_CTS,
+-		.signal_pin_change = UART_MSR_DCTS,
+-		.on  = (UART_MCR_RTS | UART_MCR_OUT2 | UART_MCR_DTR),
+-		.off = (UART_MCR_RTS | UART_MCR_OUT2),
+-		.send_pulse = send_pulse_homebrew,
+-		.send_space = send_space_homebrew,
+-#ifdef CONFIG_LIRC_SERIAL_TRANSMITTER
+-		.features    = (LIRC_CAN_SET_SEND_DUTY_CYCLE |
+-				LIRC_CAN_SET_SEND_CARRIER |
+-				LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2)
+-#else
+-		.features    = LIRC_CAN_REC_MODE2
+-#endif
+-	},
+-#endif
+-
+ };
+ 
+ #define RS_ISR_PASS_LIMIT 256
+@@ -315,16 +285,6 @@ static void soutp(int offset, u8 value)
+ 
+ static void on(void)
+ {
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-	/*
+-	 * On NSLU2, we put the transmit diode between the output of the green
+-	 * status LED and ground
+-	 */
+-	if (type == LIRC_NSLU2) {
+-		gpio_set_value(NSLU2_LED_GRN, 0);
+-		return;
+-	}
+-#endif
+ 	if (txsense)
+ 		soutp(UART_MCR, hardware[type].off);
+ 	else
+@@ -333,12 +293,6 @@ static void on(void)
+ 
+ static void off(void)
+ {
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-	if (type == LIRC_NSLU2) {
+-		gpio_set_value(NSLU2_LED_GRN, 1);
+-		return;
+-	}
+-#endif
+ 	if (txsense)
+ 		soutp(UART_MCR, hardware[type].on);
+ 	else
+@@ -793,20 +747,6 @@ static int hardware_init_port(void)
+ 	sinp(UART_IIR);
+ 	sinp(UART_MSR);
+ 
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-	if (type == LIRC_NSLU2) {
+-		/* Setup NSLU2 UART */
+-
+-		/* Enable UART */
+-		soutp(UART_IER, sinp(UART_IER) | UART_IE_IXP42X_UUE);
+-		/* Disable Receiver data Time out interrupt */
+-		soutp(UART_IER, sinp(UART_IER) & ~UART_IE_IXP42X_RTOIE);
+-		/* set out2 = interrupt unmask; off() doesn't set MCR
+-		   on NSLU2 */
+-		soutp(UART_MCR, UART_MCR_RTS|UART_MCR_OUT2);
+-	}
+-#endif
+-
+ 	/* Set line for power source */
+ 	off();
+ 
+@@ -842,16 +782,6 @@ static int lirc_serial_probe(struct platform_device *dev)
+ {
+ 	int i, nlow, nhigh, result;
+ 
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-	/* This GPIO is used for a LED on the NSLU2 */
+-	result = devm_gpio_request(dev, NSLU2_LED_GRN, "lirc-serial");
+-	if (result)
+-		return result;
+-	result = gpio_direction_output(NSLU2_LED_GRN, 0);
+-	if (result)
+-		return result;
+-#endif
+-
+ 	result = request_irq(irq, lirc_irq_handler,
+ 			     (share_irq ? IRQF_SHARED : 0),
+ 			     LIRC_DRIVER_NAME, (void *)&hardware);
+@@ -1217,14 +1147,6 @@ static int __init lirc_serial_init_module(void)
+ 		io = io ? io : 0x3f8;
+ 		irq = irq ? irq : 4;
+ 		break;
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-	case LIRC_NSLU2:
+-		io = io ? io : IRQ_IXP4XX_UART2;
+-		irq = irq ? irq : (IXP4XX_UART2_BASE_VIRT + REG_OFFSET);
+-		iommap = iommap ? iommap : IXP4XX_UART2_BASE_PHYS;
+-		ioshift = ioshift ? ioshift : 2;
+-		break;
+-#endif
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -1232,9 +1154,6 @@ static int __init lirc_serial_init_module(void)
+ 		switch (type) {
+ 		case LIRC_HOMEBREW:
+ 		case LIRC_IGOR:
+-#ifdef CONFIG_LIRC_SERIAL_NSLU2
+-		case LIRC_NSLU2:
+-#endif
+ 			hardware[type].features &=
+ 				~(LIRC_CAN_SET_SEND_DUTY_CYCLE|
+ 				  LIRC_CAN_SET_SEND_CARRIER);
+-- 
+1.9.0
+
