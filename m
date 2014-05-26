@@ -1,149 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678AbaEZSWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:22:04 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:45248 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaEZSWC (ORCPT
+	id S1751902AbaEZSYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:24:30 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50426 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680AbaEZSY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:22:02 -0400
-Date: Mon, 26 May 2014 19:21:54 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] procfs: add proc_read_from_buffer() and
- pid_entry_read() helpers
-Message-ID: <20140526182154.GA6887@dztty>
-References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
- <1401110850-3552-4-git-send-email-tixxdz@opendz.org>
- <CALCETrU+O+p_EYao1k6y0t6JnJ+sV97zAGkn=enuJPEzpcW_Wg@mail.gmail.com>
- <20140526174100.GB6380@dztty>
- <CALCETrV12jeZagHBjFnEvJo9wu=sengNa0s2feK8Z-2mjqVWwg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrV12jeZagHBjFnEvJo9wu=sengNa0s2feK8Z-2mjqVWwg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 May 2014 14:24:28 -0400
+Message-ID: <1401128657.24099.17.camel@localhost.localdomain>
+Subject: [PATCH 1/2] emac: add missing support of 10mbit in emac/rgmii
+From: Ivan Mikhaylov <ivan@ru.ibm.com>
+To: netdev@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alistair Popple <alistair@popple.id.au>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Date: Mon, 26 May 2014 22:24:17 +0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052618-9332-0000-0000-000000E764AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 10:59:10AM -0700, Andy Lutomirski wrote:
-> On Mon, May 26, 2014 at 10:41 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > On Mon, May 26, 2014 at 10:01:20AM -0700, Andy Lutomirski wrote:
-> >> On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >> > This patch is preparation, it adds a couple of helpers to read data and
-> >> > to get the cached permission checks during that ->read().
-> >> >
-> >> > Currently INF entries share the same code, they do not implement
-> >> > specific ->open(), only ->read() coupled with callback calls. Doing
-> >> > permission checks during ->open() will not work and will only disturb
-> >> > the INF entries that do not need permission checks. Yes not all the INF
-> >> > entries need checks, the ones that need protections are listed below:
-> >> > /proc/<pid>/wchan
-> >> > /proc/<pid>/syscall
-> >> > /proc/<pid>/{auxv,io}  (will be handled in next patches).
-> >> >
-> >> > So to have proper permission checks convert this INF entries to REG
-> >> > entries and use their open() and read() handlers to implement these
-> >> > checks. To achieve this we add the following helpers:
-> >> >
-> >> > * proc_read_from_buffer() a wrapper around simple_read_from_buffer(), it
-> >> >   makes sure that count <= PROC_BLOCK_SIZE (3*1024)
-> >> >
-> >> > * pid_entry_read(): it will get a free page and pass it to the specific
-> >> >   /proc/<pid>/$entry handler (callback). The handler is of the same
-> >> >   types of the previous INF handlers, it will only receive an extra
-> >> >   "permitted" argument that contains the cached permission check that
-> >> >   was performed during ->open().
-> >> >
-> >> >   The handler is of type:
-> >> >   typedef int (*proc_read_fn_t)(char *page,
-> >> >                                struct task_struct *task, int permitted);
-> >>
-> >> [...]
-> >>
-> >> This strikes me as *way* too complicated.  Why not just change
-> >> proc_info_file_operations to *always* cache may_ptrace on open?
-> > Not all the INF entries need permission checks during open:
-> > The one that need it:
-> > /proc/<pid>/{wchan|syscall}  converted in this series.
-> > /proc/<pid>/{auxv|io}  (will be converted in next series)
-> >
-> > The ones that do not need it:
-> > /proc/<pid>/{limite|cmdline|shedstat|oom_score|...}
-> >
-> > There is no reason to do it for these entries, and if you do it you will
-> > also have to passe the cached permission checks, so I don't think that
-> > you want to modify all the INF handlers especially the ones that do not
-> > need it to take an extra argument.
-> 
-> ...but you don't have to pass the checks, because nothing will care
-> whether you passed them.
-No one will use them, but what you suggest is passing a dummy value that
-no one cares about!
+In chips of emac/rgmii b'000' for 0/1 channel isn't suitable which
+resulted in non working network interface in this mode.
 
-You said in the first place that this is *way* too complicated, no IHMO
-going and changing all the handlers to receive a dummy argument that no one
-will use is more complicated. In this case you are just suggesting to
-convert all the INF entries into REG ones. Andi take a look please!
+Signed-off-by: Ivan Mikhaylov <ivan@ru.ibm.com>
 
-The definition of INF can't get a 'struct file_operations', only the
-REG, at the end what you suggest is change all the INF entries to REG
-and do a ptrace check at open() that only a small subset of these
-entries will use...
+---
+ drivers/net/ethernet/ibm/emac/rgmii.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Try it and you will see how much code you will change.
-
-While the current proposed change just introduce a new helper (new code)
-and adds the cached permission argument!
-
-> > Then you will also modify this:
-> > in file fs/proc/internal.h the:
-> > union proc_op {
-> >         ...
-> >         int (*proc_read)(struct task_struct *task, char *page);
-> >         ...
-> >  }
-> >
-> > And then you will follow in all other places and handlers... and modify
-> > the definition of INF entries... It's much more complicated...
-> >
-> 
-> But the final result will be much less messy and have less duplicated
-> code.  Your patch seems like it duplicates a bunch of code and I
-> suspect that Al Viro will dislike it if he reads it.
-Hmm, as I've said if we do that we need to convert all the INF entries
-to REG ones, and remove the INF definition since it will be useless, then
-convert all the handlers... And I can't consider it duplicate code,
-since one is to handle non-sensitive entries and the other to handle
-sensitive ones, perhaps write a new function that will get the small
-duplicate instructions.
-
-
-For Al Viro oh thank you :-), hope that he reads the patches first, then
-if he thinks that converting all the INF entries into REG ones, and
-doing ptrace check during ->open for files that do not need it is the
-best solution, well I'll have just to follow and update the patches :-D
-
-Thank you Andi!
-
-
-> --Andy
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/drivers/net/ethernet/ibm/emac/rgmii.c b/drivers/net/ethernet/ibm/emac/rgmii.c
+index 4fb2f96..a01182c 100644
+--- a/drivers/net/ethernet/ibm/emac/rgmii.c
++++ b/drivers/net/ethernet/ibm/emac/rgmii.c
+@@ -45,6 +45,7 @@
+ 
+ /* RGMIIx_SSR */
+ #define RGMII_SSR_MASK(idx)	(0x7 << ((idx) * 8))
++#define RGMII_SSR_10(idx)	(0x1 << ((idx) * 8))
+ #define RGMII_SSR_100(idx)	(0x2 << ((idx) * 8))
+ #define RGMII_SSR_1000(idx)	(0x4 << ((idx) * 8))
+ 
+@@ -139,6 +140,8 @@ void rgmii_set_speed(struct platform_device *ofdev, int input, int speed)
+ 		ssr |= RGMII_SSR_1000(input);
+ 	else if (speed == SPEED_100)
+ 		ssr |= RGMII_SSR_100(input);
++	else if (speed == SPEED_10)
++		ssr |= RGMII_SSR_10(input);
+ 
+ 	out_be32(&p->ssr, ssr);
+ 
 -- 
-Djalal Harouni
-http://opendz.org
+1.9.3
+
+
+
