@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaEZJnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 05:43:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12887 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599AbaEZJnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 05:43:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,911,1392192000"; 
-   d="scan'208";a="517756677"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Jeff Smith <jsmith.lkml@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Kenny Simpson <theonetruekenny@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <CAAih0NjpHKc11JfG3MOnvisXesg-LoaS0Cx1rOA5ggDEHNfY6g@mail.gmail.com>
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>
- <20140519130114.GA3140@dhcp22.suse.cz>
- <20140519143540.BE9F6E009B@blue.fi.intel.com>
- <20140519143837.GA5228@infradead.org>
- <CAAih0NjpHKc11JfG3MOnvisXesg-LoaS0Cx1rOA5ggDEHNfY6g@mail.gmail.com>
-Subject: Re: remap_file_pages() use
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140526094240.B5508E009B@blue.fi.intel.com>
-Date: Mon, 26 May 2014 12:42:40 +0300 (EEST)
+	id S1751951AbaEZJnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 05:43:37 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:32785 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827AbaEZJnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 05:43:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140525185101.GQ10768@lukather>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
+ <1400831485-28576-5-git-send-email-wens@csie.org> <20140525185101.GQ10768@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Mon, 26 May 2014 17:43:14 +0800
+X-Google-Sender-Auth: hI6uhbVJhCjFvmyIZACG6vDcyyE
+Message-ID: <CAGb2v64T6QYu1YNYMkd-R-=uK1XSR0-jKC5W6drK+9yHTrp6JQ@mail.gmail.com>
+Subject: Re: [PATCH 04/22] clk: sunxi: move "ahb_sdram" to protected clock list
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Smith wrote:
-> On Mon, May 19, 2014 at 9:38 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> > On Mon, May 19, 2014 at 05:35:40PM +0300, Kirill A. Shutemov wrote:
-> >> >From functional POV, emulation *should* be identical to original
-> >> remap_file_pages(), but slower. It would be nice, if you test it early.
-> >>
-> >> It's not clear yet how long emulation will be there.
-> >
-> > Stop right there.  We found out about two real life users of
-> > remap_file_pages() already, without even committing the patches to warn
-> > about using it to any tree.
-> >
-> > I think at this point the whole idea of removing the API should be dead
-> > on the floor, as we do not needlessly break userspace programs.
-> >
-> > If we can get rid of the ugly guts and provide a good enough emulation
-> > that the user won't cry I'd love to get rid of this cruft, but even
-> > that doesn't look certain yet.
-> 
-> Sorry for being late to the party, but I just noticed this proposal
-> via the LWN summary byline.
-> 
-> I wanted to comment that Kenny's use case is (I believe) quite
-> widespread. I've used the technique since ~2008, and I've come across
-> other people in subsequent jobs who independently developed the same
-> technique. Mirrored mapping is absolutely required by several
-> independent proprietary platforms I'm aware of, and remap_file_pages()
-> has historically been the only sane way to accomplish this. (i.e.,
-> shm_open(), mmap(NULL, 2^(n+1) pages), remap_file_pages() on 2nd
-> half).
+On Mon, May 26, 2014 at 2:51 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Fri, May 23, 2014 at 03:51:07PM +0800, Chen-Yu Tsai wrote:
+>> With sunxi_gates clocks registered with clkdev, we can use the
+>> protected clocks list to enable the "ahb_sdram" clock, instead
+>> of looking for it and adding CLK_IGNORE_UNUSED inline in the
+>> clock setup code.
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> ---
+>>  drivers/clk/sunxi/clk-sunxi.c | 10 ++++------
+>>  1 file changed, 4 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+>> index 3e33bc1..b2c6d12 100644
+>> --- a/drivers/clk/sunxi/clk-sunxi.c
+>> +++ b/drivers/clk/sunxi/clk-sunxi.c
+>> @@ -870,7 +870,6 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
+>>       int qty;
+>>       int i = 0;
+>>       int j = 0;
+>> -     int ignore;
+>>
+>>       reg = of_iomap(node, 0);
+>>
+>> @@ -891,15 +890,12 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
+>>               of_property_read_string_index(node, "clock-output-names",
+>>                                             j, &clk_name);
+>>
+>> -             /* No driver claims this clock, but it should remain gated */
+>> -             ignore = !strcmp("ahb_sdram", clk_name) ? CLK_IGNORE_UNUSED : 0;
+>> -
+>>               clk_data->clks[i] = clk_register_gate(NULL, clk_name,
+>> -                                                   clk_parent, ignore,
+>> +                                                   clk_parent, 0,
+>>                                                     reg + 4 * (i/32), i % 32,
+>>                                                     0, &clk_lock);
+>>               WARN_ON(IS_ERR(clk_data->clks[i]));
+>> -             clk_register_clkdev(clks[i], clk_name, NULL);
+>> +             clk_register_clkdev(clk_data->clks[i], clk_name, NULL);
+>
+> I'm fine with the change itself, but shouldn't this part of it be in
+> the patch that actually add this line?
+>
+> Looks broken to me otherwise.
 
-Em.. What's wrong with shm_open() + two mmap()s to cover both halfs?
+Brain fart on my part. I squashed a fixup for patch 2 into this one.
 
-fd = shm_open();
-addr1 = mmap(NULL, 2*SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-addr2 = mmap(addr1 + SIZE, PROT_READ|PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
 
-Is there a reason why it doens't work?
-
-> It may not be individuals who are involved in the kernel development
-> scene to any great extent, but I am sure that remap_file_pages() being
-> deprecated would seriously piss off a lot of individuals. The pattern
-> has even had a section in the Wikipedia article for quite some time:
-> http://en.wikipedia.org/wiki/Circular_buffer#Mirroring
-
-I believe remap_file_pages() is abused here. But it seems we will have to
-keep emulation in place for a long time.
-
-> 
-> It would be most preferable from a user standpoint to keep the
-> existing system intact, but failing that, a reservation API would need
-> to be created (possibly a MAP_RESERVE flag) that would set aside a
-> region that could only be subsequently mapped via explicit
-> address-requesting mmap() calls.
-
-I don't get this part.
-
--- 
- Kirill A. Shutemov
+Thanks
+ChenYu
