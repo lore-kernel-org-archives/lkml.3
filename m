@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaEZRCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:02:38 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:34554 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832AbaEZRCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:02:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401110850-3552-7-git-send-email-tixxdz@opendz.org>
-References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org> <1401110850-3552-7-git-send-email-tixxdz@opendz.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 26 May 2014 10:02:15 -0700
-Message-ID: <CALCETrU71gJ-cUL8YO8UeYdG65A0=z4BJQuga-hbd1WgeTFE+A@mail.gmail.com>
-Subject: Re: [PATCH 6/9] procfs: add pid_seq_private struct to handle /proc/<pid>/{stat|stack}
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751779AbaEZQ5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 12:57:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43464 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751388AbaEZQ5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 12:57:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,914,1392192000"; 
+   d="scan'208";a="545122305"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH 0/15] x86/xsaves: Optimize xstate context switch by xsaves/xrstors 
+Date: Mon, 26 May 2014 10:01:07 -0700
+Message-Id: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> This patch is preparation to handle sensitive ONE entries:
-> /proc/<pid>/stat
-> /proc/<pid>/stack
->
-> These files use sequence iterators and we want to keep that logic, and
-> their internal handler semantics.
->
-> The sequence iterators stock the inode in the seq_file->private field,
-> so in order to keep the semantic and to make the cached permission
-> checks available during ->read(), we add the 'pid_seq_private' struct
-> that contains both the inode and the cached permission. It will be the
-> one referenced in the seq_file->private.
->
-> This way the internal handlers of /proc/<pid>/{stat|stack} wont change.
->
-> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> ---
->  fs/proc/internal.h | 11 +++++++++++
->  1 file changed, 11 insertions(+)
->
-> diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-> index f5c452c..f28e4f01 100644
-> --- a/fs/proc/internal.h
-> +++ b/fs/proc/internal.h
-> @@ -78,6 +78,17 @@ struct proc_inode {
->         struct inode vfs_inode;
->  };
->
-> +/*
-> + * Struct used by some /proc/<pid>/$entries that use sequence
-> + * iterators.
-> + * This struct will be saved in seq_file->private so seq handlers
-> + * can access the inode and the cached permission checks of ->open().
-> + */
-> +struct pid_seq_private {
-> +       int permitted;
-> +       struct inode *inode;
-> +};
-> +
->  typedef int (*proc_read_fn_t)(char *page,
->                               struct task_struct *task, int permitted);
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-int opener_may_ptrace, please.
+With ever growing extended state registers (xstate) on x86 processors, kernel
+needs to cope with issue of growing memory space occupied by xstate. The xsave
+area is holding more and more xstate registers, growing from legacy FP and
+SSE to AVX, AVX2, AVX-512, MPX, and Intel PT.
+
+The recently introduced compacted format of xsave area saves xstates only
+for enabled states. This patch set saves the xsave area space per process
+in compacted format by xsaves/xrstors instructions.
+
+xsaves/xrstors also supports modified optimization which tracks modified
+xstates and only saves modified xstates to xsave area to improve saving
+performance.
+
+For more information about xsaves/xrstors instructions, please refer
+to latest Intel X86 SDM.
+
+
+Fenghua Yu (15):
+  x86/xsaves: Detect xsaves/xrstors feature
+  x86/xsaves: Add kernel parameter to disable xsaves/xrstors
+  x86/alternative: Add alternative_input_2
+  x86/xsaves: Change compacted format xsave area header
+  x86/xsaves: Define macros for xsave instructions
+  x86/xsaves: Define macro for handle xsave/xrstor fault
+  x86/xsaves: Use xsaves/xrstors for saving and restoring xsave area
+  x86/xsaves: Use xsaves/xrstors for context switch
+  x86/xsaves: Use xsave/xrstor for saving and restoring user space
+    context
+  x86/xsaves: Clear reserved bits in xsave header
+  x86/xsaves: Add xsaves and xrstors support for booting time
+  x86/xsaves: Save xstate to task's xsave area in __save_fpu during
+    booting time
+  x86/xsaves: Call booting time xsaves and xrstors in setup_init_fpu_buf
+  x86/xsaves: Enable xsaves/xrstors
+  Define kernel API to get address of each state in xsave area
+
+ Documentation/kernel-parameters.txt   |   9 ++
+ arch/x86/include/asm/alternative.h    |  13 ++
+ arch/x86/include/asm/cpufeature.h     |   2 +
+ arch/x86/include/asm/fpu-internal.h   |   9 +-
+ arch/x86/include/asm/processor.h      |   4 +-
+ arch/x86/include/asm/xsave.h          | 220 +++++++++++++++++++++++++---------
+ arch/x86/include/uapi/asm/msr-index.h |   2 +
+ arch/x86/kernel/cpu/common.c          |   8 ++
+ arch/x86/kernel/cpu/scattered.c       |   1 +
+ arch/x86/kernel/i387.c                |   2 +-
+ arch/x86/kernel/process.c             |   1 +
+ arch/x86/kernel/xsave.c               | 112 +++++++++++++++--
+ 12 files changed, 313 insertions(+), 70 deletions(-)
+
+-- 
+1.8.1.2
+
