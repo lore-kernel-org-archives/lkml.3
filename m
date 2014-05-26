@@ -1,100 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341AbaEZMjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 08:39:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44659 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaEZMjn (ORCPT
+	id S1752065AbaEZMq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 08:46:26 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54383 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751548AbaEZMqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 08:39:43 -0400
-Date: Mon, 26 May 2014 14:39:54 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Amir Vadai <amirv@mellanox.com>
-cc: Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Or Gerlitz <ogerlitz@mellanox.com>, idos@mellanox.com,
-        Yevgeny Petrilin <yevgenyp@mellanox.com>
-Subject: Re: Extend irq_set_affinity_notifier() to use a call chain
-In-Reply-To: <53832D28.1050207@mellanox.com>
-Message-ID: <alpine.DEB.2.02.1405261412110.21720@ionos.tec.linutronix.de>
-References: <5381DEDC.8050204@gmail.com> <alpine.DEB.2.02.1405261313570.21720@ionos.tec.linutronix.de> <53832472.7070000@gmail.com> <alpine.DEB.2.02.1405261327500.21720@ionos.tec.linutronix.de> <53832D28.1050207@mellanox.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 26 May 2014 08:46:24 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jin Yao <yao.jin@linux.intel.com>,
+        Li Aubrey <aubrey.li@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/4] ACPI / LPSS: custom power domain for LPSS
+Date: Mon, 26 May 2014 15:03:27 +0200
+Message-ID: <11413734.64aCNVobNb@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1400850909-12146-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <20140523130252.GH18308@xps8300> <1400850909-12146-1-git-send-email-heikki.krogerus@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 May 2014, Amir Vadai wrote:
-> On 5/26/2014 2:34 PM, Thomas Gleixner wrote:
-> > You are not describing what needs to be notified and why. Please
-> > explain the details of that and how the RFS (whatever that is) and the
-> > network driver are connected
-> The goal of RFS is to increase datacache hitrate by steering
-> kernel processing of packets in multi-queue devices to the CPU where the
-> application thread consuming the packet is running.
+On Friday, May 23, 2014 04:15:09 PM Heikki Krogerus wrote:
+> A power domain where we save the context of the additional
+> LPSS registers. We need to do this or all LPSS devices are
+> left in reset state when resuming from D3 on some Baytrails.
+> The devices with the fractional clock divider also have
+> zeros for N and M values after resuming unless they are
+> reset.
 > 
-> In order to select the right queue, the networking stack needs to have a
-> reverse map of IRQ affinty. This is the rmap that was added by Ben Hutchings
-> [1]. To keep the rmap updated, cpu_rmap registers on the affinity notify.
+> Li Aubrey found the root cause for the issue. The idea of
+> using power domain for LPSS came from Mika Westerberg.
 > 
-> This is the first affinity callback - it is located as a general library and
-> not under net/...
->
-> The motivation to the second irq affinity callback is:
-> When traffic starts, first packet fires an interrupt which starts the napi
-> polling on the cpu according the irq affinity.
-> If there is always packets to be consumed by the napi polling, no further
-> interrupts will be fired, and napi will consume all the packets from the cpu
-> it was started.
-> If the user changes the irq affinity, napi polling will continue to be done
-> from the original cpu.
-> Only when the traffic will pause, napi session will be finished, and when
-> traffic will resume, the new napi session will be done from the new cpu.
-> This is a problematic behavior, because from the user point of view, cpu
-> affinity can't be changed in a non-stop traffic scenario.
+> Reported-by: Jin Yao <yao.jin@linux.intel.com>
+> Suggested-by: Li Aubrey <aubrey.li@linux.intel.com>
+> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+
+Queued up for 3.16, but I needed to rebase it to take some other changes
+into account.  Can you please have a look and the bleeding-edge branch in
+my tree and see if everything looks good in there?
+
+> ---
+>  drivers/acpi/acpi_lpss.c | 152 ++++++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 145 insertions(+), 7 deletions(-)
 > 
-> To solve this, the network driver should be notified on irq affinity change
-> event, and restart the napi session. This could be done by closing the napi
-> session and arming the interrupts. Next packet arrives will trigger an
-> interrupt and napi will session will start, this time on the new CPU.
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index 69e29f4..7fe8b6d 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/platform_data/clk-lpss.h>
+>  #include <linux/pm_runtime.h>
+> +#include <linux/delay.h>
+>  
+>  #include "internal.h"
+>  
+> @@ -43,6 +44,8 @@ ACPI_MODULE_NAME("acpi_lpss");
+>  #define LPSS_TX_INT			0x20
+>  #define LPSS_TX_INT_MASK		BIT(1)
+>  
+> +#define LPSS_PRV_REG_COUNT		9
+> +
+>  struct lpss_shared_clock {
+>  	const char *name;
+>  	unsigned long rate;
+> @@ -58,6 +61,7 @@ struct lpss_device_desc {
+>  	unsigned int prv_offset;
+>  	size_t prv_size_override;
+>  	bool clk_gate;
+> +	bool save_ctx;
+>  	struct lpss_shared_clock *shared_clock;
+>  	void (*setup)(struct lpss_private_data *pdata);
+>  };
+> @@ -72,6 +76,7 @@ struct lpss_private_data {
+>  	resource_size_t mmio_size;
+>  	struct clk *clk;
+>  	const struct lpss_device_desc *dev_desc;
+> +	u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
+>  };
+>  
+>  static void lpss_uart_setup(struct lpss_private_data *pdata)
+> @@ -116,6 +121,7 @@ static struct lpss_shared_clock pwm_clock = {
+>  
+>  static struct lpss_device_desc byt_pwm_dev_desc = {
+>  	.clk_required = true,
+> +	.save_ctx = true,
+>  	.shared_clock = &pwm_clock,
+>  };
+>  
+> @@ -128,6 +134,7 @@ static struct lpss_device_desc byt_uart_dev_desc = {
+>  	.clk_required = true,
+>  	.prv_offset = 0x800,
+>  	.clk_gate = true,
+> +	.save_ctx = true,
+>  	.shared_clock = &uart_clock,
+>  	.setup = lpss_uart_setup,
+>  };
+> @@ -141,6 +148,7 @@ static struct lpss_device_desc byt_spi_dev_desc = {
+>  	.clk_required = true,
+>  	.prv_offset = 0x400,
+>  	.clk_gate = true,
+> +	.save_ctx = true,
+>  	.shared_clock = &spi_clock,
+>  };
+>  
+> @@ -156,6 +164,7 @@ static struct lpss_shared_clock i2c_clock = {
+>  static struct lpss_device_desc byt_i2c_dev_desc = {
+>  	.clk_required = true,
+>  	.prv_offset = 0x800,
+> +	.save_ctx = true,
+>  	.shared_clock = &i2c_clock,
+>  };
+>  
+> @@ -449,6 +458,121 @@ static void acpi_lpss_set_ltr(struct device *dev, s32 val)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_PM
+> +/**
+> + * acpi_lpss_save_ctx() - Save the private registers of LPSS device
+> + * @dev: LPSS device
+> + *
+> + * Most LPSS devices have private registers which may loose their context when
+> + * the device is powered down. acpi_lpss_save_ctx() saves those registers into
+> + * prv_reg_ctx array.
+> + */
+> +static void acpi_lpss_save_ctx(struct device *dev)
+> +{
+> +	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
+> +	unsigned int i;
+> +
+> +	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
+> +		pdata->prv_reg_ctx[i] = __lpss_reg_read(pdata, i * sizeof(u32));
+> +		dev_dbg(dev, "saving 0x%08x from LPSS reg at offset 0x%02lx\n",
+> +			pdata->prv_reg_ctx[i], i * sizeof(u32));
+> +	}
+> +}
+> +
+> +/**
+> + * acpi_lpss_restore_ctx() - Restore the private registers of LPSS device
+> + * @dev: LPSS device
+> + *
+> + * Restores the registers that were previously stored with acpi_lpss_save_ctx().
+> + */
+> +static void acpi_lpss_restore_ctx(struct device *dev)
+> +{
+> +	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
+> +	unsigned int i;
+> +
+> +	/*
+> +	 * The following delay is needed or the subsequent write operations may
+> +	 * fail. The LPSS devices are actually PCI devices and the PCI spec
+> +	 * expects 10ms delay before the device can be accessed after D3 to D0
+> +	 * transition.
+> +	 */
+> +	msleep(10);
+> +
+> +	for (i = 0; i < LPSS_PRV_REG_COUNT; i++) {
+> +		__lpss_reg_write(pdata->prv_reg_ctx[i], pdata, i * sizeof(u32));
+> +		dev_dbg(dev, "restoring 0x%08x to LPSS reg at offset 0x%02lx\n",
+> +			pdata->prv_reg_ctx[i], i * sizeof(u32));
+> +	}
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int acpi_lpss_suspend_late(struct device *dev)
+> +{
+> +	int ret = pm_generic_suspend_late(dev);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	acpi_lpss_save_ctx(dev);
+> +	return acpi_dev_suspend_late(dev);
+> +}
+> +
+> +static int acpi_lpss_restore_early(struct device *dev)
+> +{
+> +	int ret = acpi_dev_resume_early(dev);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	acpi_lpss_restore_ctx(dev);
+> +	return pm_generic_resume_early(dev);
+> +}
+> +#endif /* CONFIG_PM_SLEEP */
+> +
+> +#ifdef CONFIG_PM_RUNTIME
+> +static int acpi_lpss_runtime_suspend(struct device *dev)
+> +{
+> +	int ret = pm_generic_runtime_suspend(dev);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	acpi_lpss_save_ctx(dev);
+> +	return acpi_dev_runtime_suspend(dev);
+> +}
+> +
+> +static int acpi_lpss_runtime_resume(struct device *dev)
+> +{
+> +	int ret = acpi_dev_runtime_resume(dev);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	acpi_lpss_restore_ctx(dev);
+> +	return pm_generic_runtime_resume(dev);
+> +}
+> +#endif /* CONFIG_PM_RUNTIME */
+> +#endif /* CONFIG_PM */
+> +
+> +static struct dev_pm_domain acpi_lpss_pm_domain = {
+> +	.ops = {
+> +#ifdef CONFIG_PM_SLEEP
+> +		.suspend_late = acpi_lpss_suspend_late,
+> +		.restore_early = acpi_lpss_restore_early,
+> +		.prepare = acpi_subsys_prepare,
+> +		.suspend = acpi_subsys_suspend,
+> +		.resume_early = acpi_subsys_resume_early,
+> +		.freeze = acpi_subsys_freeze,
+> +		.poweroff = acpi_subsys_suspend,
+> +		.poweroff_late = acpi_subsys_suspend_late,
+> +#endif
+> +#ifdef CONFIG_PM_RUNTIME
+> +		.runtime_suspend = acpi_lpss_runtime_suspend,
+> +		.runtime_resume = acpi_lpss_runtime_resume,
+> +#endif
+> +	},
+> +};
+> +
+>  static int acpi_lpss_platform_notify(struct notifier_block *nb,
+>  				     unsigned long action, void *data)
+>  {
+> @@ -456,7 +580,6 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
+>  	struct lpss_private_data *pdata;
+>  	struct acpi_device *adev;
+>  	const struct acpi_device_id *id;
+> -	int ret = 0;
+>  
+>  	id = acpi_match_device(acpi_lpss_device_ids, &pdev->dev);
+>  	if (!id || !id->driver_data)
+> @@ -466,7 +589,7 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
+>  		return 0;
+>  
+>  	pdata = acpi_driver_data(adev);
+> -	if (!pdata || !pdata->mmio_base || !pdata->dev_desc->ltr_required)
+> +	if (!pdata || !pdata->mmio_base)
+>  		return 0;
+>  
+>  	if (pdata->mmio_size < pdata->dev_desc->prv_offset + LPSS_LTR_SIZE) {
+> @@ -474,12 +597,27 @@ static int acpi_lpss_platform_notify(struct notifier_block *nb,
+>  		return 0;
+>  	}
+>  
+> -	if (action == BUS_NOTIFY_ADD_DEVICE)
+> -		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
+> -	else if (action == BUS_NOTIFY_DEL_DEVICE)
+> -		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
+> +	switch (action) {
+> +	case BUS_NOTIFY_BOUND_DRIVER:
+> +		if (pdata->dev_desc->save_ctx)
+> +			pdev->dev.pm_domain = &acpi_lpss_pm_domain;
+> +		break;
+> +	case BUS_NOTIFY_UNBOUND_DRIVER:
+> +		if (pdata->dev_desc->save_ctx)
+> +			pdev->dev.pm_domain = NULL;
+> +		break;
+> +	case BUS_NOTIFY_ADD_DEVICE:
+> +		if (pdata->dev_desc->ltr_required)
+> +			return sysfs_create_group(&pdev->dev.kobj,
+> +						  &lpss_attr_group);
+> +	case BUS_NOTIFY_DEL_DEVICE:
+> +		if (pdata->dev_desc->ltr_required)
+> +			sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
+> +	default:
+> +		break;
+> +	}
+>  
+> -	return ret;
+> +	return 0;
+>  }
+>  
+>  static struct notifier_block acpi_lpss_nb = {
 > 
-> > and why this notification cannot be
-> > propagated inside the network stack itself.
-> 
-> To my understanding, those are two different consumers to the same event, one
-> is a general library to maintain a reverse irq affinity map, and the other is
-> networking specific, and maybe even a networking driver specific.
 
-The rmap _IS_ instantiated by the driver, and both the driver and the
-networking core know about it.
-
-So it's not completely different consumers. Just because it's a
-library does not mean it's disjunct from the code which uses it.
-
-Aside of the fact, that maintaining a per irq notifier chain is going
-to be ugly as hell due to life time and locking issues, it's just
-opening a can of worms. How do you make sure that the invocation order
-is correct? What are the dependency rules of the driver restarting the
-napi session versus updating the rmap?
-
-Even if you'd solve that and have a callback in the driver, then the
-callback never can restart the napi session directly. All it can do is
-set a flag which needs to be checked in the RX path, right?
-
-So what's the point of adding notifier call chain complexity, ordering
-problems etc., if you can simply note the fact that the affinity
-changed in the rmap itself and check that in the RX path?
-
-Thanks,
-
-	tglx
-
-
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
