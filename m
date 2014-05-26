@@ -1,194 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473AbaEZCwX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 May 2014 22:52:23 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:59823 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751027AbaEZCwW (ORCPT
+	id S1751501AbaEZCz2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 May 2014 22:55:28 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:35314 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170AbaEZCz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 May 2014 22:52:22 -0400
-Message-ID: <5382AC5E.8090704@marvell.com>
-Date: Mon, 26 May 2014 10:52:14 +0800
-From: FanWu <fwu@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Sun, 25 May 2014 22:55:27 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: [PATCH 2/9] perf, tools: Add --branch-history option to report v3
+References: <1400259938-3436-1-git-send-email-andi@firstfloor.org>
+	<1400259938-3436-3-git-send-email-andi@firstfloor.org>
+	<87bnuujhsl.fsf@sejong.aot.lge.com>
+	<20140523181113.GC29957@tassilo.jf.intel.com>
+Date: Mon, 26 May 2014 11:55:24 +0900
+In-Reply-To: <20140523181113.GC29957@tassilo.jf.intel.com> (Andi Kleen's
+	message of "Fri, 23 May 2014 11:11:13 -0700")
+Message-ID: <87y4xpi6zn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "tony@atomide.com" <tony@atomide.com>
-CC: "fwu@marvell.com" <fwu@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
-        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
-        Fangsuo Wu <fswu@marvell.com>, <wwang27@marvell.com>,
-        <jxiang@marvell.com>
-Subject: Re: [PATCH v3] pinctrl: to avoid duplicated calling enable_pinmux_setting
- for a pin
-References: <1401072217-3180-1-git-send-email-fwu@marvell.com>
-In-Reply-To: <1401072217-3180-1-git-send-email-fwu@marvell.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-25_03:2014-05-23,2014-05-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=9
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1405260041
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2014 10:43 AM, fwu@marvell.com wrote:
-> From: Fan Wu <fwu@marvell.com>
+On Fri, 23 May 2014 11:11:13 -0700, Andi Kleen wrote:
+>> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+>> > index 1a2d7fc..e6d8ed0 100644
+>> > --- a/tools/perf/builtin-report.c
+>> > +++ b/tools/perf/builtin-report.c
+>> > @@ -315,8 +315,9 @@ static int report__setup_sample_type(struct report *rep)
+>> >  			return -EINVAL;
+>> >  		}
+>> >  		if (symbol_conf.use_callchain) {
+>> > -			ui__error("Selected -g but no callchain data. Did "
+>> > -				    "you call 'perf record' without -g?\n");
+>> > +			ui__error("Selected -g or --branch-history but no "
+>> > +				  "callchain data. Did\n"
+>> 
+>> An unwanted newline in the message.
 >
-> What the patch did:
-> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
->    calling pinctrl_select_state
-> 2.Remove the HW disable operation in in pinmux_disable_setting function.
->
-> The reason why to do this is that:
-> 1.To avoid duplicated calling enable_setting operation without disabling
->    operation which will let Pin's desc->mux_usecount keep being added.
-> 2.The HW pin disable operation is not useful for most of the vendors' platform.
->    And this can be used to avoid the HW glitch after using the item 1#
->    modification.
->
-> In the following case, the issue can be reproduced:
-> 1)There is a driver need to switch Pin state dynamicly, E.g. b/t "sleep" and
-> "default" state
-> 2)The Pin setting configuration in DTS node may be like the following one:
-> component a {
-> 	pinctrl-names = "default", "sleep";
-> 	pinctrl-0 = <&a_grp_setting &c_grp_setting>;
-> 	pinctrl-1 = <&b_grp_setting &c_grp_setting>;
-> }
-> The "c_grp_setting" config node is totaly same, maybe like following one:
-> c_grp_setting: c_grp_setting {
-> 	pinctrl-single,pins = <GPIO48 AF6>;
-> 	MFP_DEFAULT;
-> }
-> 3)When switching the Pin state in the following official Pinctrl sequence:
-> 	pin = pinctrl_get();
-> 	state = pinctrl_lookup_state(wanted_state);
-> 	pinctrl_select_state(state);
-> 	pinctrl_put();
->
-> Test Result:
-> 1)The switch is completed as expectation, that is: component's
-> Pins configuration are changed according to the description in the
-> "wanted_state" group setting
-> 2)The "desc->mux_usecount" of corresponding Pins in "c_group" is added without being
-> decreased, because the "desc" is for each physical pin while the "setting" is
-> for each setting node in the DTS.
-> Thus, if the "c_grp_setting" in pinctrl-0 is not disabled ahead of enabling
-> "c_grp_setting" in pinctrl-1, the desc->mux_usecount will be kept added without
-> any chance to be decreased.
->
-> According to the comments in the original code, only the setting, in old state
-> but not in new state, will be "disable"(calling pinmux_disable_setting), which
-> is correct logic but not intact. We still need consider case that the setting
-> is in both old state and new state.
-> We can do this in the following two ways:
-> 1) Avoid "enable"(calling pinmux_enable_setting) the Same Pins setting repeatedly.
-> 2) "Disable"(calling pinmux_disable_setting) the "Same Pins setting", actually
-> two setting instance, ahead of enabling them.
->
-> Analysis:
-> 1.The solution 2# is better because it can avoid too much iteration.
-> 2.If we disable all of the setting in the old state and one/ones of the setting(s) is/are
-> existed in the new state, the Pin's mux function change may happen when
-> some SoC vendors defined the "pinctrl-single,function-off" in their DTS file.
-> old_setting=>disabled_setting=>new_setting.
-> 3.In the pinmux framework, when Pin state is switched, the setting in the old state should be
-> marked as "disabled".
->
-> Conclusion:
-> 1.To Remove the HW disabling operation to above the glitch mentioned above.
-> 2.Handle the issue mentioned above by disabling all of the settings in old
-> state and then enable the all of the settings in new state.
->
-> Signed-off-by: Fan Wu <fwu@marvell.com>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
->   drivers/pinctrl/core.c   |   24 +++++-------------------
->   drivers/pinctrl/pinmux.c |    4 ----
->   2 files changed, 5 insertions(+), 23 deletions(-)
->
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> index c0fe609..4445a67 100644
-> --- a/drivers/pinctrl/core.c
-> +++ b/drivers/pinctrl/core.c
-> @@ -989,29 +989,15 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
->
->   	if (p->state) {
->   		/*
-> -		 * The set of groups with a mux configuration in the old state
-> -		 * may not be identical to the set of groups with a mux setting
-> -		 * in the new state. While this might be unusual, it's entirely
-> -		 * possible for the "user"-supplied mapping table to be written
-> -		 * that way. For each group that was configured in the old state
-> -		 * but not in the new state, this code puts that group into a
-> -		 * safe/disabled state.
-> +		 * For each pinmux setting in the old state, forget SW's record
-> +		 * of mux owner for that pingroup. Any pingroups which are
-> +		 * still owned by the new state will be re-acquired by the call
-> +		 * to pinmux_enable_setting() in the loop below.
->   		 */
->   		list_for_each_entry(setting, &p->state->settings, node) {
-> -			bool found = false;
->   			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
->   				continue;
-> -			list_for_each_entry(setting2, &state->settings, node) {
-> -				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
-> -					continue;
-> -				if (setting2->data.mux.group ==
-> -						setting->data.mux.group) {
-> -					found = true;
-> -					break;
-> -				}
-> -			}
-> -			if (!found)
-> -				pinmux_disable_setting(setting);
-> +			pinmux_disable_setting(setting);
->   		}
->   	}
->
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-> index 9248ce4..c2c4aff 100644
-> --- a/drivers/pinctrl/pinmux.c
-> +++ b/drivers/pinctrl/pinmux.c
-> @@ -469,7 +469,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
->   {
->   	struct pinctrl_dev *pctldev = setting->pctldev;
->   	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
-> -	const struct pinmux_ops *ops = pctldev->desc->pmxops;
->   	int ret;
->   	const unsigned *pins;
->   	unsigned num_pins;
-> @@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
->   				 pins[i], desc->name, gname);
->   		}
->   	}
-> -
-> -	if (ops->disable)
-> -		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
->   }
->
->   #ifdef CONFIG_DEBUG_FS
->
+> It was intentional to make it fit onto a 80 column terminal
 
+Did you mean '\n' after the "Did" or line break after "but no"?  I meant
+the former is weird..  The 80 column rule (in the source code) is not
+applied to user messages AFAIK.  And ui__error() also needs to handle
+line breaks to fit the message on the screen in a dynamic manner.
 
-Dear Stephen,
+>> 
+>> 
+>> > +				  "you call 'perf record' without -g?\n");
+>> >  			return -1;
+>> >  		}
+>> >  	} else if (!rep->dont_use_callchains &&
+>> > @@ -631,6 +632,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+>> >  }
+>> >  
+>> >  static int
+>> > +parse_branch_call_mode(const struct option *opt __maybe_unused,
+>> > +		  const char *str __maybe_unused, int unset)
+>> > +{
+>> > +	int *branch_mode = opt->value;
+>> > +
+>> > +	*branch_mode = !unset;
+>> > +	return 0;
+>> > +}
+>> > +
+>> > +static int
+>> >  parse_percent_limit(const struct option *opt, const char *str,
+>> >  		    int unset __maybe_unused)
+>> >  {
+>> > @@ -645,7 +656,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>> >  	struct perf_session *session;
+>> >  	struct stat st;
+>> >  	bool has_br_stack = false;
+>> > -	int branch_mode = -1;
+>> > +	int branch_mode = -1, branch_call_mode = -1;
+>> >  	int ret = -1;
+>> >  	char callchain_default_opt[] = "fractal,0.5,callee";
+>> >  	const char * const report_usage[] = {
+>> > @@ -754,7 +765,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>> >  	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+>> >  		    "Show event group information together"),
+>> >  	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
+>> > -		    "use branch records for histogram filling", parse_branch_mode),
+>> > +		    "use branch records for per branch histogram filling",
+>> > +		    parse_branch_mode),
+>> > +	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
+>> > +		    "add last branch records to call history",
+>> > +		    parse_branch_call_mode),
+>> 
+>> Looks like it can be a boolean option, or at least can share
+>> parse_branch_mode() callback.
+>
+> No it can't. It's a tristate.
+>> 
+>> 
+>> >  	OPT_STRING(0, "objdump", &objdump_path, "path",
+>> >  		   "objdump binary to use for disassembly and annotations"),
+>> >  	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+>> > @@ -804,8 +819,16 @@ repeat:
+>> >  	has_br_stack = perf_header__has_feat(&session->header,
+>> >  					     HEADER_BRANCH_STACK);
+>> >  
+>> > -	if (branch_mode == -1 && has_br_stack)
+>> > +	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1)
+>> >  		sort__mode = SORT_MODE__BRANCH;
+>> > +	if (branch_call_mode != -1) {
+>> 
+>> s/-1/1/ ?
+>
+> -1 means not specified by the user.
 
-Great thanks for your suggestion about the inline comments in the patch.
-I have updated the part you mentioned and the patch title.
-Please help to review again.
+But what about --no-branch-history?
 
-Great to see that we almost get the goal of the long term discussion! :)
-
-After this patch is acknowledged by you Guys, I will submit the 
-following two patches for you to review:
-1.to remove the ops->disable registration in pinctrl-single
-2.to remove the ops->disable function phandle in pinmux struct.
-
-Great thanks for this !
-
+Thanks,
+Namhyung
