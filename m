@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbaEZLev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:34:51 -0400
-Received: from mail.eperm.de ([89.247.134.16]:45727 "EHLO mail.eperm.de"
+	id S1752456AbaEZLf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:35:26 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:55102 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751538AbaEZLeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:34:50 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: herbert@gondor.apana.org.au, aquini@redhat.com,
-        jeremy.wayne.powell@gmail.com, clemens@ladisch.de, pwalten@au1.ibm.com,
-        joe@perches.com
-Subject: [PATCH v8 3/7] DRBG kernel configuration options
-Date: Mon, 26 May 2014 13:27:51 +0200
-Message-ID: <4704108.b8hiloyfBi@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1672386.pGc00MSMM2@myon.chronox.de>
-References: <1672386.pGc00MSMM2@myon.chronox.de>
+	id S1752080AbaEZLfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 07:35:22 -0400
+Date: Mon, 26 May 2014 14:33:51 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: n-horiguchi@ah.jp.nec.co, linux-kernel@vger.kernel.org
+Cc: mm-commits@vger.kernel.org, xemul@parallels.com, riel@redhat.com,
+        mpm@selenic.com, mhocko@suse.cz, kosaki.motohiro@jp.fujitsu.com,
+        kirill.shutemov@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com,
+        hannes@cmpxchg.org, cpw@sgi.com, benh@kernel.crashing.org,
+        aneesh.kumar@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com
+Subject: Re: + pagewalk-update-page-table-walker-core.patch added to -mm tree
+Message-ID: <20140526113351.GA7762@node.dhcp.inet.fi>
+References: <52f955c0.7BhMyAjSaddn+QeR%akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52f955c0.7BhMyAjSaddn+QeR%akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The different DRBG types of CTR, Hash, HMAC can be enabled or disabled
-at compile time. At least one DRBG type shall be selected.
+On Mon, Feb 10, 2014 at 02:42:08PM -0800, akpm@linux-foundation.org wrote:
+> diff -puN include/linux/mm.h~pagewalk-update-page-table-walker-core include/linux/mm.h
+> --- a/include/linux/mm.h~pagewalk-update-page-table-walker-core
+> +++ a/include/linux/mm.h
+> @@ -1075,10 +1075,18 @@ void unmap_vmas(struct mmu_gather *tlb,
+>   * @pte_entry: if set, called for each non-empty PTE (4th-level) entry
+>   * @pte_hole: if set, called for each hole at all levels
+>   * @hugetlb_entry: if set, called for each hugetlb entry
+> - *		   *Caution*: The caller must hold mmap_sem() if @hugetlb_entry
+> - * 			      is used.
+> + * @test_walk: caller specific callback function to determine whether
+> + *             we walk over the current vma or not. A positive returned
+> + *             value means "do page table walk over the current vma,"
+> + *             and a negative one means "abort current page table walk
+> + *             right now." 0 means "skip the current vma."
 
-The default is the HMAC DRBG as its code base is smallest.
+This comment conflicts with comment for walk_page_test() and code itself:
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/Kconfig | 36 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 35 insertions(+), 1 deletion(-)
+> +/*
+> + * Decide whether we really walk over the current vma on [@start, @end)
+> + * or skip it. When we skip it, we set @walk->skip to 1.
+> + * The return value is used to control the page table walking to
+> + * continue (for zero) or not (for non-zero).
+> + *
+> + * Default check (only VM_PFNMAP check for now) is used when the caller
+> + * doesn't define test_walk() callback.
+> + */
+> +static int walk_page_test(unsigned long start, unsigned long end,
+> +			struct mm_walk *walk)
+> +{
+> +	struct vm_area_struct *vma = walk->vma;
+> +
+> +	if (walk->test_walk)
+> +		return walk->test_walk(start, end, walk);
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index ce4012a..c9c1cd9 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -23,7 +23,7 @@ comment "Crypto core or helper"
- 
- config CRYPTO_FIPS
- 	bool "FIPS 200 compliance"
--	depends on CRYPTO_ANSI_CPRNG && !CRYPTO_MANAGER_DISABLE_TESTS
-+	depends on (CRYPTO_ANSI_CPRNG || CRYTPO_DRBG) && !CRYPTO_MANAGER_DISABLE_TESTS
- 	help
- 	  This options enables the fips boot option which is
- 	  required if you want to system to operate in a FIPS 200
-@@ -1380,6 +1380,40 @@ config CRYPTO_ANSI_CPRNG
- 	  ANSI X9.31 A.2.4. Note that this option must be enabled if
- 	  CRYPTO_FIPS is selected
- 
-+menuconfig CRYTPO_DRBG
-+	tristate "NIST SP800-90A DRBG"
-+	depends on CRYPTO
-+	select CRYPTO_RNG
-+	help
-+	  NIST SP800-90A compliant DRBG. In the following submenu, one or
-+	  more of the DRBG types must be selected.
-+
-+if CRYTPO_DRBG
-+
-+config CRYPTO_DRBG_HMAC
-+	bool "Enable HMAC DRBG"
-+	default y
-+	depends on CRYTPO_DRBG
-+	select CRYPTO_HMAC
-+	help
-+	  Enable the HMAC DRBG variant as defined in NIST SP800-90A.
-+
-+config CRYPTO_DRBG_HASH
-+	bool "Enable Hash DRBG"
-+	depends on CRYTPO_DRBG
-+	select CRYPTO_HASH
-+	help
-+	  Enable the Hash DRBG variant as defined in NIST SP800-90A.
-+
-+config CRYPTO_DRBG_CTR
-+	bool "Enable CTR DRBG"
-+	depends on CRYTPO_DRBG
-+	select CRYPTO_AES
-+	help
-+	  Enable the CTR DRBG variant as defined in NIST SP800-90A.
-+
-+endif #CRYTPO_DRBG
-+
- config CRYPTO_USER_API
- 	tristate
- 
+...
+
+> +		} else { /* inside the found vma */
+> +			walk->vma = vma;
+> +			next = vma->vm_end;
+> +			err = walk_page_test(start, end, walk);
+> +			if (skip_lower_level_walking(walk))
+>  				continue;
+> -			}
+> -		}
+> -
+> -		if (pgd_none_or_clear_bad(pgd)) {
+> -			if (walk->pte_hole)
+> -				err = walk->pte_hole(addr, next, walk);
+>  			if (err)
+>  				break;
+> -			pgd++;
+> -			continue;
+
 -- 
-1.9.3
-
-
+ Kirill A. Shutemov
