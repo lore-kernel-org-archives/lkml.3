@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaEZO4R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 10:56:17 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43251 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459AbaEZO4P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 10:56:15 -0400
-Date: Mon, 26 May 2014 15:55:13 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Message-ID: <20140526145513.GN22111@sirena.org.uk>
-References: <1401093496-28474-1-git-send-email-p.zabel@pengutronix.de>
+	id S1752759AbaEZO5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 10:57:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752459AbaEZO47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 10:56:59 -0400
+Message-ID: <53835636.5050801@redhat.com>
+Date: Mon, 26 May 2014 16:56:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QiPs+vIMjk/XMT1Q"
-Content-Disposition: inline
-In-Reply-To: <1401093496-28474-1-git-send-email-p.zabel@pengutronix.de>
-X-Cookie: You are standing on my toes.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.248.185
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/3] of: Add vendor prefix for Linear Technology
- Corporation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, yang.z.zhang@intel.com, mtosatti@redhat.com,
+        stable@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] KVM: lapic: sync highest ISR to hardware apic on EOI
+References: <1400856713-18628-1-git-send-email-pbonzini@redhat.com> <20140526142848.GA27553@redhat.com>
+In-Reply-To: <20140526142848.GA27553@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 26/05/2014 16:28, Michael S. Tsirkin ha scritto:
+>>  static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+>>  {
+>> -	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
+>> +	struct kvm_vcpu *vcpu;
+>> +	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
+>> +		return;
+>> +
+>> +	vcpu = apic->vcpu;
+>> +
+>> +	/*
+>> +	 * We do get here for APIC virtualization enabled if the guest
+>> +	 * uses the Hyper-V APIC enlightenment.  In this case we may need
+>> +	 * to trigger a new interrupt delivery by writing the SVI field;
+>> +	 * on the other hand isr_count and highest_isr_cache are unused
+>> +	 * and must be left alone.
+>> +	 */
+>> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
+>> +		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
+>> +					       apic_find_highest_isr(apic));
+>
+> I note that an indirect call on data path is mostly unnecessary here:
+> 	static int vmx_vm_has_apicv(struct kvm *kvm)
+> 	{
+> 		return enable_apicv && irqchip_in_kernel(kvm);
+> 	}
+> is all it does, and irqchip_in_kernel also has an rmb within it, which
+> is somewhat expensive on x86: and there's no way to reach this code
+> with irqchip disabled, correct?
 
---QiPs+vIMjk/XMT1Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+smp_rmb is just a compiler barrier, it's not expensive.  The indirect 
+call is probably more expensive.
 
-On Mon, May 26, 2014 at 10:38:14AM +0200, Philipp Zabel wrote:
-> Add Linear Technology Corporation to the list of device tree vendor prefixes.
+That said, other places in the paths (kvm_cpu_has_injectable_intr, 
+kvm_cpu_get_interrupt) already call kvm_apic_vid_enabled, so this patch 
+doesn't introduce something new.
 
-Applied, thanks.
+> How about adding a bool flag in kvm_vcpu_arch, and testing that?
 
---QiPs+vIMjk/XMT1Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yes, that's possible.  It's also possible to test 
+kvm_x86_ops->hwapic_isr_update != NULL and zero the field in vmx.c's 
+hardware_setup.  Can you make a patch?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTg1XOAAoJELSic+t+oim9GksP/R6tO7Gr4fZdHHLE3f4+AvG3
-AC0C3hhKAxyDdYnviIu9Kmv0TNW3pjXETRRGRMXY7R2Knz4j5rd3NKoE3tdutxfW
-yFS4+aNHpnFcJ+7ClPGwOXRMSv+MqJu1paHpDIs0UdgaPeOtuhPucL2i0Nt/dloz
-ihMfNQnxqkAgpE9j6+6EOigZ3bM5eknrTjlCXXSack7yxIBTmxzle4g5bYsYDCxl
-DfiK6kPwOzV/irulynTPeNtwrTZex9tuwl0NMXDrkDRR+cSHCE7viPA6E+kljVvx
-R3Zlk2Z1quOcCW+V6zVIaWxd3CDmBJH1Q2OVUX/q0UXqFLcP+Zniz48blWrq1bPT
-noZEHnuRVx+qyCPitu/ZywIC/SgpK4Uv4kD5E8NOCSWqwsyD9eKJBMu/gcigqnmw
-fTc85qZVxIo+gCbsOTVJy40D1cNTs8npU0JXX6x4CPCmRFVFA7h7AxqKZTqhwvAV
-5O2Cho4+CCZ5x46715CB02eO6RCJaFJ3Vg4G51hDaWCOzl0hQLeMs3cnjgZ1ErKg
-tz3TPQ9rvnwYTKl2JPOffDPPxP6/YwhediamWH5L4jq+bnrAMLG5TNxMOE91wKeI
-RPs5OD0zPxUNbQsNzw7sRDGtdTxoSVRkjnLFzYGHv00880of8AQ40wcRm1bUNXpW
-Dd2wgNslmA7vzzbfcR9m
-=OWuI
------END PGP SIGNATURE-----
-
---QiPs+vIMjk/XMT1Q--
+Paolo
