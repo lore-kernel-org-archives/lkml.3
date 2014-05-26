@@ -1,119 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbaEZJXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 05:23:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37239 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaEZJXH (ORCPT
+	id S1752198AbaEZJXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 05:23:46 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58098 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800AbaEZJXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 05:23:07 -0400
-Message-ID: <1401096095.4829.16.camel@weser.hi.pengutronix.de>
-Subject: Re: [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: Alex Courbot <acourbot@nvidia.com>, Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 26 May 2014 11:21:35 +0200
-In-Reply-To: <5382E324.5090108@nvidia.com>
-References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
-	 <1400493433.8467.24.camel@weser.hi.pengutronix.de>
-	 <5379D7A0.3050509@nvidia.com>
-	 <1400494582.8467.28.camel@weser.hi.pengutronix.de>
-	 <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
-	 <1400837055.4921.4.camel@weser.hi.pengutronix.de>
-	 <537F1853.7050800@nvidia.com>
-	 <1400839186.4921.17.camel@weser.hi.pengutronix.de>
-	 <537F5DED.8050702@nvidia.com> <5382E324.5090108@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 26 May 2014 05:23:44 -0400
+Message-ID: <53830707.5020001@linux.vnet.ibm.com>
+Date: Mon, 26 May 2014 14:49:03 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 05/11] ARM: topology: use new cpu_power interface
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org> <1400860385-14555-6-git-send-email-vincent.guittot@linaro.org> <5381EE7C.9010809@linux.vnet.ibm.com> <CAKfTPtC_vXvf6gUtbrunn+-Zzk8-11AyKF3asjdH5=pejL69Lg@mail.gmail.com>
+In-Reply-To: <CAKfTPtC_vXvf6gUtbrunn+-Zzk8-11AyKF3asjdH5=pejL69Lg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052609-0928-0000-0000-00000237FAC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 26.05.2014, 09:45 +0300 schrieb Terje Bergström:
-> On 23.05.2014 17:40, Alex Courbot wrote:
-> > On 05/23/2014 06:59 PM, Lucas Stach wrote:
-> > So after checking with more knowledgeable people, it turns out this is 
-> > the expected behavior on ARM and BAR regions should be mapped uncached 
-> > on GK20A. All the more reasons to avoid using the BAR at all.
+On 05/26/2014 01:55 PM, Vincent Guittot wrote:
+> On 25 May 2014 15:22, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>> Hi Vincent,
+>>
+>> Why do we have two interfaces arch_scale_freq_power() and
+>> arch_scale_cpu_power()? Does it make sense to consolidate them now ?
+> Hi Preeti,
 > 
-> This is actually specific to Tegra.
-> 
-> >> You may want to make yourself aware of all the quirks required for
-> >> sharing memory between the GPU and CPU on an ARM host. I think there are
-> >> far more involved than what you see now and writing an replacement for
-> >> TTM will not be an easy task.
-> >>
-> >> Doing away with the concept of two memory areas will not get you to a
-> >> single unified address space. You would have to deal with things like
-> >> not being able to change the caching state of pages in the systems
-> >> lowmem yourself. You will still have to deal with remapping pages that
-> >> aren't currently visible to the CPU (ok this is not an issue on Jetson
-> >> right now as it only has 2GB of RAM), because it's in systems highmem,
-> >> or even in a different LPAE area.
-> >>
-> >> You really want to be sure you are aware of all the consequences of
-> >> this, before considering this task.
-> > 
-> > Yep, that's why I am seeking advice here. My first hope is that with a 
-> > few tweaks we will be able to keep using TTM and the current nouveau_bo 
-> > implementation. But unless I missed something this is not going to be easy.
-> > 
-> > We can also use something like the patch I originally sent to make it 
-> > work, although not with good performance, on GK20A. Not very graceful, 
-> > but it will allow applications to run.
-> > 
-> > In the long run though, we will want to achieve better performance, and 
-> > it seems like a BO implementation targeted at UMA devices would also be 
-> > beneficial to quite a few desktop GPUs. So as tricky as it may be I'm 
-> > interested in gathering thoughts and why not giving it a first try with 
-> > GK20A, even if it imposes some limitations like having buffers in lowmem 
-> > in a first time (we can probably live with this one for a short while, 
-> > and 64 bits will also be coming to the rescue :))
-> 
-> I don't think lowmem or LPAE is any problem, if the memory manager is
-> designed with that in mind. Vast majority of the buffers kernel
-> allocates do not need to be touched in kernel space.
-> 
-> Actually I can't think of any buffers that we allocate on behalf of user
-> space that would need to be permanently mapped also to kernel. In case
-> or relocs only push buffer needs to be temporarily mapped to kernel.
-> 
-> Ultimately even relocs are not necessary if we expose GPU virtual
-> addresses directly to user space. But that's another topic.
-> 
-Nouveau already exposes constant virtual addresses to userspace and
-skips the pushbuf patching when the presumed offset from userspace is
-the same as what the kernel thinks it should be.
+> They don't have the same purpose. arch_scale_cpu_power set the max
+> capacity of your CPU whereas arch_scale_freq_power can be used to give
+> the current capacity. ARM platform were using arch_scale_freq_power
+> because it was the only one available for non SMT system but this
+> induces some misunderstanding and some limitation in the
+> characterization of a CPUs. This consolidation is a necessary step so
+> we can now have the max capacity of a CPU and let
+> arch_scale_freq_power for other purpose (or even remove it if
+> useless).
 
-The problem with lowmem on ARM is that you can't unmap those pages from
-the kernel cached mapping. So if you alloc a page, give it to userspace
-and userspace decides to map the page WC you just produced a conflicting
-mapping, which may yield undefined results on ARMv7. You may think this
-is not a problem as you are not touching the kernel cached mapping, but
-in fact it is. The CPUs prefetcher can still access this mapping.
+Ah ok! Thanks :) This was insightful :)
 
-Although it won't wander over a page boundary for automatic prefetching
-it may still do this when explicitly instructed to do so by code, which
-may happen for example if your page happens to be near a kernel list,
-where the list traversal code includes explicit prefetch instructions.
-
-Regards,
-Lucas
-
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+Regards
+Preeti U Murthy
+> 
+> Regards,
+> Vincent
+> 
+>>
+>> Regards
+>> Preeti U Murthy
+>>
+>>
+>> On 05/23/2014 09:22 PM, Vincent Guittot wrote:
+>>> Use the new arch_scale_cpu_power in order to reflect the original capacity of
+>>> a CPU instead of arch_scale_freq_power which is more linked to a scaling of
+>>> the capacity linked to the frequency.
+>>>
+>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>>> ---
+>>>  arch/arm/kernel/topology.c | 4 ++--
+>>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+>>> index 71e1fec..6cc25a8 100644
+>>> --- a/arch/arm/kernel/topology.c
+>>> +++ b/arch/arm/kernel/topology.c
+>>> @@ -42,7 +42,7 @@
+>>>   */
+>>>  static DEFINE_PER_CPU(unsigned long, cpu_scale);
+>>>
+>>> -unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
+>>> +unsigned long arch_scale_cpu_power(struct sched_domain *sd, int cpu)
+>>>  {
+>>>       return per_cpu(cpu_scale, cpu);
+>>>  }
+>>> @@ -166,7 +166,7 @@ static void update_cpu_power(unsigned int cpu)
+>>>       set_power_scale(cpu, cpu_capacity(cpu) / middle_capacity);
+>>>
+>>>       printk(KERN_INFO "CPU%u: update cpu_power %lu\n",
+>>> -             cpu, arch_scale_freq_power(NULL, cpu));
+>>> +             cpu, arch_scale_cpu_power(NULL, cpu));
+>>>  }
+>>>
+>>>  #else
+>>>
+>>
+> 
 
