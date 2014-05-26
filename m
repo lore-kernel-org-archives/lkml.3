@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaEZRMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:12:45 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:58976 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbaEZRMo (ORCPT
+	id S1751711AbaEZRR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 13:17:58 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:46393 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaEZRR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:12:44 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, 1vier1@web.de,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH 7/6 v3] ipc/sem.c: add a printk_once for semctl(GETNCNT/GETZCNT)
-Date: Mon, 26 May 2014 19:12:36 +0200
-Message-Id: <1401124356-21174-1-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.9.0
+	Mon, 26 May 2014 13:17:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <53834578.9090305@mm-sol.com>
+References: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
+	<1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
+	<CABuKBe+B_Ga-w4aA4dApDTa26rCuhetRTJku27Madm+fHtDcLA@mail.gmail.com>
+	<53834578.9090305@mm-sol.com>
+Date: Mon, 26 May 2014 19:17:55 +0200
+Message-ID: <CABuKBeJXqSi=6XY5Fg7mg_daQ4D8ornS-kn7NDPktCtro7yNNw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] ARM: debug: qcom: add UART addresses to Kconfig help
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, sboyd@codeaurora.org,
+        rvaswani@codeaurora.org, davidb@codeaurora.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The actual Linux implementation for semctl(GETNCNT) and semctl(GETZCNT)
-always (since 0.99.10) reported a thread as sleeping on all semaphores
-that are listed in the semop() call.
-The documented behavior (both in the Linux man page and in the Single Unix
-Specification) is that a task should be reported on exactly one semaphore:
-The semaphore that caused the thread to got to sleep.
+2014-05-26 15:45 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
+> On 23.05.14, 19:39, Matthias Brugger wrote:
+>>
+>> 2014-05-23 17:12 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
+>>>
+>>> Add information about the APQ8084 debug UART physical and virtual
+>>> addresses in the DEBUG_QCOM_UARTDM Kconfig help section.
+>>> Requires: https://lkml.org/lkml/2014/4/14/312
+>>>
+>>> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+>>> ---
+>>>  arch/arm/Kconfig.debug |    1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>>> index 40ee328..e71723d 100644
+>>> --- a/arch/arm/Kconfig.debug
+>>> +++ b/arch/arm/Kconfig.debug
+>>> @@ -376,6 +376,7 @@ choice
+>>>                   their output to the serial port on Qualcomm devices.
+>>>
+>>>                   ARCH      DEBUG_UART_PHYS   DEBUG_UART_BASE
+>>> +                 APQ8084   0xf995e000        0xfa75e000
+>>>                   MSM8X60   0x19c40000        0xf0040000
+>>>                   MSM8960   0x16440000        0xf0040000
+>>>                   MSM8974   0xf991e000        0xfa71e000
+>>
+>>
+>> You don't have any uart defined in your dts. You should add them
+>> before any adding low level debug support.
+>> Otherwise there might be problems in booting a multi-platform kernel.
+>>
+>
+> Thanks for the comment! As the uart depends on clocks, i am adding it to the
+> dts as part of my global clock controller patchset [1].
+> In this patch i am just adding some information to the help section.
+> Do you see any problem with this?
 
-This patch adds a pr_info_once() that is triggered if a thread hits
-the relevant case.
+Are the patches for the clock controller applied already?
+If not, I would consider to add this patch to clock controller series.
 
-The code triggers slightly too often, otherwise it would be necessary to
-replicate the old code. As there are no known users of GETNCNT or GETZCNT,
-this is done to prevent unnecessary bloat.
+Cheers,
+Matthias
 
-The task that triggered is reported with name (tsk->comm) and pid.
+>
+> [1] https://lkml.org/lkml/2014/5/22/422
+>
+> Thanks,
+> Georgi
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Joe Perches <joe@perches.com>
----
- ipc/sem.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 71a3caf..a6c292d 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1000,6 +1000,17 @@ static int check_qop(struct sem_array *sma, int semnum, struct sem_queue *q,
- {
- 	struct sembuf *sop = q->blocking;
- 
-+	/*
-+	 * Linux always (since 0.99.10) reported a task as sleeping on all
-+	 * semaphores. This violates SUS, therefore it was changed to the
-+	 * standard compliant behavior.
-+	 * Give the administrators a chance to notice that an application
-+	 * might misbehave because it relies on the Linux behavior.
-+	 */
-+	pr_info_once("semctl(GETNCNT/GETZCNT) is since 3.16 Single Unix Specification compliant.\n"
-+			"The task %s (%d) triggered the difference, watch for misbehavior.\n",
-+			current->comm, task_pid_nr(current));
-+
- 	if (sop->sem_num != semnum)
- 		return 0;
- 
+
 -- 
-1.9.0
-
+motzblog.wordpress.com
