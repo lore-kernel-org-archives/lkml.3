@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaEZXnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 19:43:02 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49585 "EHLO
+	id S1751932AbaEZXsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 19:48:15 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57633 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498AbaEZXm7 (ORCPT
+	with ESMTP id S1751482AbaEZXsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 19:42:59 -0400
+	Mon, 26 May 2014 19:48:13 -0400
 X-Originating-IP: 108.223.40.66
-Message-ID: <5383D174.8070304@roeck-us.net>
-Date: Mon, 26 May 2014 16:42:44 -0700
+Message-ID: <5383D2AD.2050605@roeck-us.net>
+Date: Mon, 26 May 2014 16:47:57 -0700
 From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@kernel.org>,
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
         Grant Likely <grant.likely@secretlab.ca>
 CC: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
         Rob Herring <robherring2@gmail.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Matt Porter <matt.porter@linaro.org>,
@@ -36,57 +35,33 @@ CC: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Dan Malek <dan.malek@konsulko.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>
 Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-References: <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com> <20140516105814.3EA3FC403C2@trevor.secretlab.ca> <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com> <20140520055026.E3A98C412DA@trevor.secretlab.ca> <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com> <20140526104824.63F13C42129@trevor.secretlab.ca> <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com> <20140526112348.907B7C421A5@trevor.secretlab.ca> <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com> <20140526213303.C1C73C40E11@trevor.secretlab.ca> <20140526223630.GA32691@earth.universe>
-In-Reply-To: <20140526223630.GA32691@earth.universe>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com>	<1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com>	<20140514100856.5198DC4153D@trevor.secretlab.ca>	<E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com>	<CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>	<CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>	<20140520055026.E3A98C412DA@trevor.secretlab.ca>	<CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>	<20140526104824.63F13C42129@trevor.secretlab.ca>	<CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>	<20140526112348.907B7C421A5@trevor.secretlab.ca>	<A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com>	<20140526213303.C1C73C40E11@trevor.secretlab.ca> <CAMuHMdWoQd=EJ7ToWMrSq728HL7d7Ht1YmaNUO1EYZBU0eB1FQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdWoQd=EJ7ToWMrSq728HL7d7Ht1YmaNUO1EYZBU0eB1FQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2014 03:36 PM, Sebastian Reichel wrote:
-> Hi,
+On 05/26/2014 02:44 PM, Geert Uytterhoeven wrote:
+> Hi Grant,
 >
-> On Mon, May 26, 2014 at 10:33:03PM +0100, Grant Likely wrote:
+> On Mon, May 26, 2014 at 11:33 PM, Grant Likely
+> <grant.likely@secretlab.ca> wrote:
 >> After thinking about it more, I think it is very likely that removing
 >> all the overlays is the correct thing to do in the kexec use-case. When
 >> kexec-ing, it makes sense that we'd want the exact same behaviour from
 >> the kexec'ed kernel. That means we want the device drivers to do the
 >> same thing including loading whatever overlays they depend on.
->>
->> If the flattened tree was left applied, then the behaviour becomes
->> different.
->>
->> I say always remove the overlays unless explicitly told not to, but I'm
->> struggling to come up with use cases where keeping them applied is
->> desirable.
 >
-> I would assume, that I want them applied in most cases. DT describes
-> the hardware. If I kexec into a new kernel I change software, not
-> hardware.
->
-> Maybe I'm missing the main purpose of the feature. I currently see
-> two useful usecases for DT overlays:
->
-> 1. The dtb the kernel is booted with cannot be changed for some
->     reason, but the board has additional hardware attached (e.g.
->     the user added a sensor on the i2c bus)
-> 2. The hardware is changed on the fly (e.g. the user flashed the
->     FPGA part of a zynq processor), sensors on i2c bus, ...
->
-> In both cases the kernel should be booted with the additional
-> overlay information IMHO. Though for the second case it should
-> be possible to remove the "programmed" hardware information
-> somehow.
+> Are the device drivers loading the overlays?
+> That sounds a bit backwards to me.
 >
 
-3. Some hot-plug device or card is inserted or removed.
-
-I would argue that the kernel should _not_ be booted with the overlay in place.
-Otherwise the code handling overlays would have to have special handling
-for the restart case, which is much more complex than just to re-insert
-the overlay when it is determined that the device or card is still there.
+Depends on what you mean with 'device driver'. In our case we have a driver
+dedicated to handle card status. Quite similar to what the connector subsystem
+does but with significantly more functionality (including devicetree overlay
+management).
 
 Guenter
-
 
