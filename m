@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118AbaEZPVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:21:22 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:57194 "EHLO isis.lip6.fr"
+	id S1753140AbaEZPV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:21:28 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:57163 "EHLO isis.lip6.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085AbaEZPVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:21:16 -0400
+	id S1753085AbaEZPVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 11:21:25 -0400
 X-pt: isis.lip6.fr
 From: Benoit Taine <benoit.taine@lip6.fr>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: benoit.taine@lip6.fr, Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 9/18] staging: rtl8723au: Use kmemdup instead of kmalloc + memcpy
-Date: Mon, 26 May 2014 17:21:18 +0200
-Message-Id: <1401117687-28911-10-git-send-email-benoit.taine@lip6.fr>
+To: Hannes Reinecke <hare@suse.de>
+Cc: benoit.taine@lip6.fr, "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 12/18] aic7xxx: Use kmemdup instead of kmalloc + memcpy
+Date: Mon, 26 May 2014 17:21:21 +0200
+Message-Id: <1401117687-28911-13-git-send-email-benoit.taine@lip6.fr>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
 References: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
@@ -31,94 +30,42 @@ Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
 ---
 Tested by compilation without errors.
 
- drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c |    3 +--
- drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c |   16 ++++++----------
- 2 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/scsi/aic7xxx/aic79xx_core.c |    4 ++--
+ drivers/scsi/aic7xxx/aic7xxx_core.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-index e2d426a..f917edd 100644
---- a/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-+++ b/drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c
-@@ -339,12 +339,11 @@ int rtl8723a_FirmwareDownload(struct rtw_adapter *padapter)
- 		rtStatus = _FAIL;
- 		goto Exit;
- 	}
--	firmware_buf = kzalloc(fw->size, GFP_KERNEL);
-+	firmware_buf = kmemdup(fw->data, fw->size, GFP_KERNEL);
- 	if (!firmware_buf) {
- 		rtStatus = _FAIL;
- 		goto Exit;
- 	}
--	memcpy(firmware_buf, fw->data, fw->size);
- 	buf = firmware_buf;
- 	fw_size = fw->size;
- 	release_firmware(fw);
-diff --git a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-index 182f57c..735eb99 100644
---- a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-+++ b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-@@ -1426,14 +1426,13 @@ static int rtw_cfg80211_set_probe_req_wpsp2pie(struct rtw_adapter *padapter,
- 				pmlmepriv->wps_probe_req_ie = NULL;
- 			}
+diff --git a/drivers/scsi/aic7xxx/aic79xx_core.c b/drivers/scsi/aic7xxx/aic79xx_core.c
+index 0bcacf7..01353b1 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_core.c
++++ b/drivers/scsi/aic7xxx/aic79xx_core.c
+@@ -9494,10 +9494,10 @@ ahd_loadseq(struct ahd_softc *ahd)
+ 	if (cs_count != 0) {
  
--			pmlmepriv->wps_probe_req_ie =
--				kmalloc(wps_ielen, GFP_KERNEL);
-+			pmlmepriv->wps_probe_req_ie = kmemdup(wps_ie,
-+							wps_ielen, GFP_KERNEL);
- 			if (pmlmepriv->wps_probe_req_ie == NULL) {
- 				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
- 					  __func__, __LINE__);
- 				return -EINVAL;
- 			}
--			memcpy(pmlmepriv->wps_probe_req_ie, wps_ie, wps_ielen);
- 			pmlmepriv->wps_probe_req_ie_len = wps_ielen;
- 		}
+ 		cs_count *= sizeof(struct cs);
+-		ahd->critical_sections = kmalloc(cs_count, GFP_ATOMIC);
++		ahd->critical_sections = kmemdup(cs_table, cs_count,
++						 GFP_ATOMIC);
+ 		if (ahd->critical_sections == NULL)
+ 			panic("ahd_loadseq: Could not malloc");
+-		memcpy(ahd->critical_sections, cs_table, cs_count);
  	}
-@@ -1697,12 +1696,11 @@ static int rtw_cfg80211_set_wpa_ie(struct rtw_adapter *padapter, const u8 *pie,
- 		ret = -EINVAL;
- 		goto exit;
+ 	ahd_outb(ahd, SEQCTL0, PERRORDIS|FAILDIS|FASTMODE);
+ 
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_core.c b/drivers/scsi/aic7xxx/aic7xxx_core.c
+index 10172a3..f09337a 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_core.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_core.c
+@@ -6941,10 +6941,10 @@ ahc_loadseq(struct ahc_softc *ahc)
+ 	if (cs_count != 0) {
+ 
+ 		cs_count *= sizeof(struct cs);
+-		ahc->critical_sections = kmalloc(cs_count, GFP_ATOMIC);
++		ahc->critical_sections = kmemdup(cs_table, cs_count,
++						 GFP_ATOMIC);
+ 		if (ahc->critical_sections == NULL)
+ 			panic("ahc_loadseq: Could not malloc");
+-		memcpy(ahc->critical_sections, cs_table, cs_count);
  	}
--	buf = kzalloc(ielen, GFP_KERNEL);
-+	buf = kmemdup(pie, ielen, GFP_KERNEL);
- 	if (buf == NULL) {
- 		ret = -ENOMEM;
- 		goto exit;
- 	}
--	memcpy(buf, pie, ielen);
- 
- 	/* dump */
- 	DBG_8723A("set wpa_ie(length:%zu):\n", ielen);
-@@ -3178,14 +3176,13 @@ static int rtw_cfg80211_set_beacon_wpsp2pie(struct net_device *ndev, char *buf,
- 				pmlmepriv->wps_beacon_ie = NULL;
- 			}
- 
--			pmlmepriv->wps_beacon_ie =
--				kmalloc(wps_ielen, GFP_KERNEL);
-+			pmlmepriv->wps_beacon_ie = kmemdup(wps_ie, wps_ielen,
-+							   GFP_KERNEL);
- 			if (pmlmepriv->wps_beacon_ie == NULL) {
- 				DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
- 					  __func__, __LINE__);
- 				return -EINVAL;
- 			}
--			memcpy(pmlmepriv->wps_beacon_ie, wps_ie, wps_ielen);
- 			pmlmepriv->wps_beacon_ie_len = wps_ielen;
- 
- #ifdef CONFIG_8723AU_AP_MODE
-@@ -3270,14 +3267,13 @@ static int rtw_cfg80211_set_assoc_resp_wpsp2pie(struct net_device *net,
- 			pmlmepriv->wps_assoc_resp_ie = NULL;
- 		}
- 
--		pmlmepriv->wps_assoc_resp_ie = kmalloc(len, GFP_KERNEL);
-+		pmlmepriv->wps_assoc_resp_ie = kmemdup(buf, len, GFP_KERNEL);
- 		if (pmlmepriv->wps_assoc_resp_ie == NULL) {
- 			DBG_8723A("%s()-%d: kmalloc() ERROR!\n",
- 				  __func__, __LINE__);
- 			return -EINVAL;
- 
- 		}
--		memcpy(pmlmepriv->wps_assoc_resp_ie, buf, len);
- 		pmlmepriv->wps_assoc_resp_ie_len = len;
- 	}
+ 	ahc_outb(ahc, SEQCTL, PERRORDIS|FAILDIS|FASTMODE);
  
 
