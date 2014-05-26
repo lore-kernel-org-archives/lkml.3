@@ -1,63 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaEZQ6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 12:58:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38658 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751359AbaEZQ6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 12:58:03 -0400
-Message-ID: <53837298.5080705@free-electrons.com>
-Date: Mon, 26 May 2014 18:58:00 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v2 5/5] regulator: axp20x: resolve self dependency issue
-References: <1401116292-24066-1-git-send-email-boris.brezillon@free-electrons.com> <1401116292-24066-6-git-send-email-boris.brezillon@free-electrons.com> <20140526154356.GZ22111@sirena.org.uk>
-In-Reply-To: <20140526154356.GZ22111@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752620AbaEZQ66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 12:58:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:20669 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752019AbaEZQ56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 12:57:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,914,1392192000"; 
+   d="scan'208";a="545122353"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH 14/15] x86/xsaves: Enable xsaves/xrstors
+Date: Mon, 26 May 2014 10:01:21 -0700
+Message-Id: <1401123682-5384-15-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
+References: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-On 26/05/2014 17:43, Mark Brown wrote:
-> On Mon, May 26, 2014 at 04:58:12PM +0200, Boris BREZILLON wrote:
->> Some regulators might take their power supply from other regulators defined
->> by the same PMIC.
->>
->> Retry regulators registration until all regulators are registered or the
->> last iteration didn't manage to register any new regulator (which means
->> there's an external dependency missing and we can thus return
->> EPROBE_DEFER).
-> This is going to apply to most PMICs - we should factor this out into
-> the core rather than implementing it individual drivers.  It works
-> normally because typically the dependency is from DCDCs to LDOs and so
-> with common naming schemes alphabetic sorting saves us.
+If xsaves/xrstors is enabled, compacted format of xsave area will be used
+and less memory may be used for context switching per process. Modified
+optimization implemented in xsaves/xrstors improves performance of saving
+xstate as well.
 
-I'm not sure I get what you mean.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/kernel/xsave.c | 38 ++++++++++++++++++++++++++++++++------
+ 1 file changed, 32 insertions(+), 6 deletions(-)
 
-AFAIU, we could factorize it by the mean of an helper function (say
-devm_regulators_register), which would take a matches table and a
-regulator desc table and do pretty much what I'm doing in this patch.
-
-Is that what you had in mind ?
-
-Best Regards,
-
-Boris
-
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 8fa7c7d..2e9a77d 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/bootmem.h>
+ #include <linux/compat.h>
++#include <linux/cpu.h>
+ #include <asm/i387.h>
+ #include <asm/fpu-internal.h>
+ #include <asm/sigframe.h>
+@@ -24,7 +25,9 @@ u64 pcntxt_mask;
+ struct xsave_struct *init_xstate_buf;
+ 
+ static struct _fpx_sw_bytes fx_sw_reserved, fx_sw_reserved_ia32;
+-static unsigned int *xstate_offsets, *xstate_sizes, xstate_features;
++static unsigned int *xstate_offsets, *xstate_sizes;
++static unsigned int *xstate_comp_offsets, *xstate_comp_sizes;
++static unsigned int xstate_features;
+ 
+ /*
+  * If a processor implementation discern that a processor state component is
+@@ -283,7 +286,7 @@ sanitize_restored_xstate(struct task_struct *tsk,
+ 
+ 	if (use_xsave()) {
+ 		/* These bits must be zero. */
+-		xsave_hdr->reserved1[0] = xsave_hdr->reserved1[1] = 0;
++		memset(xsave_hdr->reserved, 0, 48);
+ 
+ 		/*
+ 		 * Init the state that is not present in the memory
+@@ -526,6 +529,30 @@ static int __init eager_fpu_setup(char *s)
+ }
+ __setup("eagerfpu=", eager_fpu_setup);
+ 
++
++/*
++ * Calculate total size of enabled xstates in XCR0/pcntxt_mask.
++ */
++static void __init init_xstate_size(void)
++{
++	unsigned int eax, ebx, ecx, edx;
++	int i;
++
++	if (!cpu_has_xsaves) {
++		cpuid_count(XSTATE_CPUID, 0, &eax, &ebx, &ecx, &edx);
++		xstate_size = ebx;
++		return;
++	}
++
++	xstate_size = FXSAVE_SIZE + XSAVE_HDR_SIZE;
++	for (i = 2; i < 64; i++) {
++		if (test_bit(i, (unsigned long *)&pcntxt_mask)) {
++			cpuid_count(XSTATE_CPUID, i, &eax, &ebx, &ecx, &edx);
++			xstate_size += eax;
++		}
++	}
++}
++
+ /*
+  * Enable and initialize the xsave feature.
+  */
+@@ -557,8 +584,7 @@ static void __init xstate_enable_boot_cpu(void)
+ 	/*
+ 	 * Recompute the context size for enabled features
+ 	 */
+-	cpuid_count(XSTATE_CPUID, 0, &eax, &ebx, &ecx, &edx);
+-	xstate_size = ebx;
++	init_xstate_size();
+ 
+ 	update_regset_xstate_info(xstate_size, pcntxt_mask);
+ 	prepare_fx_sw_frame();
+@@ -578,8 +604,8 @@ static void __init xstate_enable_boot_cpu(void)
+ 		}
+ 	}
+ 
+-	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x\n",
+-		pcntxt_mask, xstate_size);
++	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x using %s\n",
++		pcntxt_mask, xstate_size, cpu_has_xsaves ? "xsaves" : "xsave");
+ }
+ 
+ /*
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.8.1.2
 
