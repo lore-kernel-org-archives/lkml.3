@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaEZHQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:16:43 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:25204 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679AbaEZHQ2 (ORCPT
+	id S1751822AbaEZHSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:18:07 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52434 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaEZHSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:16:28 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-25-5382ea4ae4a6
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Cc: Libo Chen <clbchenlibo.chen@huawei.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RESEND PATCH 2/2] power: max8925: Use of_get_child_by_name
-Date: Mon, 26 May 2014 09:16:11 +0200
-Message-id: <1401088571-4407-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1401088571-4407-1-git-send-email-k.kozlowski@samsung.com>
-References: <1401088571-4407-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMJMWRmVeSWpSXmKPExsVy+t/xy7per5qCDT78FLQ4uFXTYvKtvWwW
-	k568Z7aYuHIys8XrF4YWl3fNYXNg85jQ/4nRY+esu+weLUfesnpsXqHl0bdlFaPH501yAWxR
-	XDYpqTmZZalF+nYJXBkn+q6yFmxgq+j+d525gXEzaxcjJ4eEgInEuTeToWwxiQv31rN1MXJx
-	CAksZZS4eOkFlNPHJHHj0Wd2kCo2AWOJzcuXsIHYIgKVEt9On2ABKWIWaGKUaHr7nxEkISzg
-	IjHh015mEJtFQFVi8cI1TCA2r4CbxO+Vr5gg1slJnDwGspqDg1PAXWLSLWeQsBBQye7mt0wT
-	GHkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJqK87GJceszrEKMDBqMTD+yKvKViI
-	NbGsuDL3EKMEB7OSCO+FXKAQb0piZVVqUX58UWlOavEhRiYOTqkGxo45eteUHFNPTGdjqjKc
-	nbW8y+/DgwwtqX6jr898vWXyyzfOOnbq1pO1EnV5/nPrzzuqe//plmZ7bs8YdGWfrAVrxqey
-	6XpWZuV9Ok5zeRlbhYP+ZEqralT0VL/7HPlhyloxkxyFph1sPNuaznFNOMWo9KHqUN/2i5ph
-	HtEcNyTWRodsnFGpxFKckWioxVxUnAgA7+qFSAYCAAA=
+	Mon, 26 May 2014 03:18:06 -0400
+X-AuditID: 85900ec0-d452db9000001514-e5-5382eaaa5e92
+Message-ID: <5382EAA9.1010003@hitachi.com>
+Date: Mon, 26 May 2014 16:18:01 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+Cc: Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Petr Mladek <pmladek@suse.cz>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>
+Subject: Re: Re: [RFC PATCH 1/2] printk: Add context information to the
+ header of /dev/kmsg
+References: <20140519102835.30455.10437.stgit@yunodevel>            <20140519102838.30455.86863.stgit@yunodevel> <11176.1400556970@turing-police.cc.vt.edu>
+In-Reply-To: <11176.1400556970@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of_get_child_by_name to obtain reference to charger node instead of
-of_find_node_by_name which can walk outside of the parent node.
+Hi,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/power/max8925_power.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+(2014/05/20 12:36), Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 19 May 2014 19:28:38 +0900, Yoshihiro YUNOMAE said:
+>
+>> The header information is changed as follows:
+>>     <prefix>,<seq#>,<timestamp>,<fragmented>,<PID>/<interrupt context>;<msg>
+>
+> Has this been tested with popular userspace that reads /dev/kmsg, to make
+> sure that it actually plays nice with a 5th field being added?  Yes, I know
 
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index 0cf237808d47..a6d45eef64dd 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -443,7 +443,7 @@ max8925_power_dt_init(struct platform_device *pdev)
- 	if (!nproot)
- 		return pdev->dev.platform_data;
- 
--	np = of_find_node_by_name(nproot, "charger");
-+	np = of_get_child_by_name(nproot, "charger");
- 	if (!np) {
- 		dev_err(&pdev->dev, "failed to find charger node\n");
- 		return NULL;
+I checked it for systemd-journald and rsyslog on the source code level,
+those tools don't handle new flag and field before ';' in the header of
+/dev/kmsg. Those tools use only log level, sequence#, and timestamp.
+So, even if we add these new flag and field for each message,
+those tools will be able to work.
+
+But, we'll fix this issue by other method if we found it in any
+subsystems except for the SCSI layer.
+(In the SCSI layer, we'll tackle this issue by using tracing feature.)
+
+Thank you,
+Yoshihiro YUNOMAE
+
 -- 
-1.9.1
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
 
