@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaEZV7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 17:59:38 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:60560 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaEZV7g (ORCPT
+	id S1752115AbaEZWDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 18:03:48 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:63307 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaEZWDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 17:59:36 -0400
-Date: Mon, 26 May 2014 22:59:32 +0100
+	Mon, 26 May 2014 18:03:45 -0400
+Date: Mon, 26 May 2014 23:03:40 +0100
 From: Daniel Walter <dwalter@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: cmetcalf@tilera.com, richard@nod.at
-Subject: [PATCH 01/12] [arch/tile] Remove obsolete strict_strto calls
-Message-ID: <20140526215932.GC25779@google.com>
+Cc: tony@atomide.com, richard@nod.at
+Subject: [PATCH 02/12] [arch/arm/omap2] Remove obsolete strict_strto calls
+Message-ID: <20140526220340.GD25779@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,91 +22,93 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Walter <dwalter@google.com>
-Subject: [PATCH 01/12] [arch/tile] replace strict_strto* call with kstrto*
+Subject: [PATCH 02/12] [arch/arm/omap2] replace strict_strto* with kstrto*
 
-remove obsolete calls to strict_strto* and replace them
-with kstrto* calls accordingly.
+Replace obsolete strict_strto call with kstrto calls.
+Simplify copy_from_user/strict_strto by using kstrto_from_user
 
 Signed-off-by: Daniel Walter <dwalter@google.com>
 ---
- arch/tile/kernel/setup.c  | 7 ++-----
- arch/tile/kernel/signal.c | 7 +++----
- arch/tile/kernel/traps.c  | 5 ++---
- arch/tile/mm/init.c       | 2 +-
- 4 files changed, 8 insertions(+), 13 deletions(-)
+ arch/arm/mach-omap2/board-omap3touchbook.c |  2 +-
+ arch/arm/mach-omap2/mux.c                  | 22 ++++++----------------
+ 2 files changed, 7 insertions(+), 17 deletions(-)
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 74c9172..9ff0074 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -228,13 +228,10 @@ early_param("isolnodes", setup_isolnodes);
- #if defined(CONFIG_PCI) && !defined(__tilegx__)
- static int __init setup_pci_reserve(char* str)
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index 7da48bc..70b904c 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -336,7 +336,7 @@ static int __init early_touchbook_revision(char *p)
+ 	if (!p)
+ 		return 0;
+ 
+-	return strict_strtoul(p, 10, &touchbook_revision);
++	return kstrtoul(p, 10, &touchbook_revision);
+ }
+ early_param("tbr", early_touchbook_revision);
+ 
+diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+index 48094b5..42f7109 100644
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -679,29 +679,19 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
+ 					 const char __user *user_buf,
+ 					 size_t count, loff_t *ppos)
  {
--	unsigned long mb;
--
--	if (str == NULL || strict_strtoul(str, 0, &mb) != 0 ||
--	    mb > 3 * 1024)
-+	if (str == NULL || kstrtouint(str, 0, &pci_reserve_mb) != 0 ||
-+	    pci_reserve_mb > 3 * 1024)
+-	char buf[OMAP_MUX_MAX_ARG_CHAR];
+ 	struct seq_file *seqf;
+ 	struct omap_mux *m;
+-	unsigned long val;
+-	int buf_size, ret;
++	u16 val;
++	int ret;
+ 	struct omap_mux_partition *partition;
+ 
+ 	if (count > OMAP_MUX_MAX_ARG_CHAR)
  		return -EINVAL;
  
--	pci_reserve_mb = mb;
- 	pr_info("Reserving %dMB for PCIE root complex mappings\n",
- 		pci_reserve_mb);
- 	return 0;
-diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
-index 2d1dbf3..d1d026f 100644
---- a/arch/tile/kernel/signal.c
-+++ b/arch/tile/kernel/signal.c
-@@ -321,14 +321,13 @@ int show_unhandled_signals = 1;
+-	memset(buf, 0, sizeof(buf));
+-	buf_size = min(count, sizeof(buf) - 1);
+-
+-	if (copy_from_user(buf, user_buf, buf_size))
+-		return -EFAULT;
+-
+-	ret = strict_strtoul(buf, 0x10, &val);
++	ret = kstrtou16_from_user(user_buf, count, 0x10, &val);
+ 	if (ret < 0)
+ 		return ret;
  
- static int __init crashinfo(char *str)
- {
--	unsigned long val;
- 	const char *word;
+-	if (val > 0xffff)
+-		return -EINVAL;
+-
+ 	seqf = file->private_data;
+ 	m = seqf->private;
  
- 	if (*str == '\0')
--		val = 2;
--	else if (*str != '=' || strict_strtoul(++str, 0, &val) != 0)
-+		show_unhandled_signals = 2;
-+	else if (*str != '=' || kstrtoint(++str, 0, &show_unhandled_signals) != 0)
- 		return 0;
--	show_unhandled_signals = val;
-+
- 	switch (show_unhandled_signals) {
- 	case 0:
- 		word = "No";
-diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
-index 6b603d5..f3ceb63 100644
---- a/arch/tile/kernel/traps.c
-+++ b/arch/tile/kernel/traps.c
-@@ -42,10 +42,9 @@ static int __init setup_unaligned_fixup(char *str)
- 	 * will still parse the instruction, then fire a SIGBUS with
- 	 * the correct address from inside the single_step code.
- 	 */
--	long val;
--	if (strict_strtol(str, 0, &val) != 0)
-+	if (kstrtoint(str, 0, &unaligned_fixup) != 0)
- 		return 0;
--	unaligned_fixup = val;
-+
- 	pr_info("Fixups for unaligned data accesses are %s\n",
- 	       unaligned_fixup >= 0 ?
- 	       (unaligned_fixup ? "enabled" : "disabled") :
-diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
-index 0fa1acf..df0e1c5 100644
---- a/arch/tile/mm/init.c
-+++ b/arch/tile/mm/init.c
-@@ -912,7 +912,7 @@ static long __write_once initfree = 1;
- static int __init set_initfree(char *str)
- {
- 	long val;
--	if (strict_strtol(str, 0, &val) == 0) {
-+	if (kstrtol(str, 0, &val) == 0) {
- 		initfree = val;
- 		pr_info("initfree: %s free init pages\n",
- 			initfree ? "will" : "won't");
+@@ -709,7 +699,7 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
+ 	if (!partition)
+ 		return -ENODEV;
+ 
+-	omap_mux_write(partition, (u16)val, m->reg_offset);
++	omap_mux_write(partition, val, m->reg_offset);
+ 	*ppos += count;
+ 
+ 	return count;
+@@ -915,14 +905,14 @@ static void __init omap_mux_set_cmdline_signals(void)
+ 
+ 	while ((token = strsep(&next_opt, ",")) != NULL) {
+ 		char *keyval, *name;
+-		unsigned long val;
++		u16 val;
+ 
+ 		keyval = token;
+ 		name = strsep(&keyval, "=");
+ 		if (name) {
+ 			int res;
+ 
+-			res = strict_strtoul(keyval, 0x10, &val);
++			res = kstrtou16(keyval, 0x10, &val);
+ 			if (res < 0)
+ 				continue;
+ 
 -- 
 1.9.3
 
