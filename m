@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaEZKHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:07:09 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:39915 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaEZKHC (ORCPT
+	id S1752190AbaEZKHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:07:06 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:36762 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaEZKHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:07:02 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-c3-5383124446b6
+	Mon, 26 May 2014 06:07:03 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-14-538312450735
 From: Heesub Shin <heesub.shin@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -18,38 +18,37 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Daeseok Youn <daeseok.youn@gmail.com>,
         Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>
-Subject: [PATCH 3/9] staging: ion: use compound pages on high order pages for
- system heap
-Date: Mon, 26 May 2014 19:04:55 +0900
-Message-id: <1401098701-24049-3-git-send-email-heesub.shin@samsung.com>
+Subject: [PATCH 4/9] staging: ion: remove struct ion_page_pool_item
+Date: Mon, 26 May 2014 19:04:56 +0900
+Message-id: <1401098701-24049-4-git-send-email-heesub.shin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
 References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t8zbV0XoeZgg3+/RS3e/73PZrF94zdW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t8zLV1XoeZgg/2PuC3e/73PZrF94zdW
 	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
 	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8ARxWWTkpqTWZZapG+X
-	wJWxY2Evc0ELX8WTBVvYGxibeLoYOTkkBEwkZh65wghhi0lcuLeerYuRi0NIYBmjxNO+U4ww
-	RZ3/trFAJKYzSuxYtBiqqp1J4tv6W0AOBwebgLbEoW3BIA0iAsYS/WdnsYPUMAvMYZaYsvUC
-	E0hCWCBa4uj3x+wgNouAqsSb7W+YQHp5Bdwl2pYWQiyTkzh5bDIriM0p4CEx8ckcFhBbCKjk
-	9saHbBA119glNvzKhRgjIPFt8iEWkDESArISmw4wQ5RIShxccYNlAqPwAkaGVYyiqQXJBcVJ
-	6UVGesWJucWleel6yfm5mxgh8dK3g/HmAetDjMlA4yYyS4km5wPjLa8k3tDYzMjC1MTU2Mjc
-	0ow0YSVx3kUPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MEZfje8p6OB037B3ZuQ0U//r
-	0urVBrPFY+cpyEpJ12Tce7Hr/iWNR5PTMp47G3Pc/nJf/9LpaIfqOc+nfJbrumqd9nB2zmWW
-	SvVkS02hqPd/Yy61TZ+//s3tWz8EHggx7i15of7l/Z9Qq/m9ut3vnA6c9peXDyuUfsyyZ8XR
-	sPYzDnHzd39+06XEUpyRaKjFXFScCADlncKorQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQV0XoeZggykdghbv/95ns9i+8Rur
-	xctDmhYHP9xnsdhz5he7RfPi9WwWB2cvYbI481vX4vKuOWwWa+dvY7O4MbnQ4nTHIlYHHo9t
-	u7exelzu62XyuLfvMIvHzll32T3uXNvD5rF/7hp2j74tqxg9Pm+SC+CIamC0yUhNTEktUkjN
-	S85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6VkmhLDGnFCgUkFhcrKRv
-	h2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsWNhL3NBC1/FkwVb2BsYm3i6GDk5JARMJDr/bWOB
-	sMUkLtxbz9bFyMUhJDCdUWLHosVQTjuTxLf1t4AcDg42AW2JQ9uCQRpEBIwl+s/OYgepYRaY
-	wywxZesFJpCEsEC0xNHvj9lBbBYBVYk3298wgfTyCrhLtC0thFgmJ3Hy2GRWEJtTwENi4pM5
-	YEcIAZXc3viQbQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwfH4THoH46oGi0OM
-	AhyMSjy8B7ybgoVYE8uKK3MPMUpwMCuJ8GpxNgcL8aYkVlalFuXHF5XmpBYfYkwGOmois5Ro
-	cj4wVeSVxBsam5gZWRqZGZuYGxuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+Mc30mh
-	5vKnzu36wVxyPCXeLGDhvxylf2l1i+d6GO/0O7Hv0iJbA+Yjil8DF++vPj11bXx1f9Chyefj
-	z22bekOUa4VZa77xMWXGG9NyxNoEWaT+Gzbe9rq4YINK1InLTBFxUlaiVa9aH88UN31UrRQ+
-	89Cv7fUHqjesObq/7kystsLM/Lhu9jwlluKMREMt5qLiRAC+Bu64CwMAAA==
+	wJVxs/k0c8FnoYrHy/6xNDA+4e9i5OSQEDCReP1pIwuELSZx4d56ti5GLg4hgWWMEjf3zGaH
+	Kfq3dgs7RGI6o8T5ltmsEE47k8S39beAWjg42AS0JQ5tCwZpEBEwlug/OwusgVlgDrPElK0X
+	mEBqhAWcJU7MTQGpYRFQlfj/8gcbiM0r4C5x/MFJqCvkJE4em8wKYnMKeEhMfDIHLC4EVHN7
+	40Ow6yQErrFLtL7/yA4xSEDi2+RDLCDzJQRkJTYdYIaYIylxcMUNlgmMwgsYGVYxiqYWJBcU
+	J6UXGeoVJ+YWl+al6yXn525ihERM7w7G2wesDzEmA42byCwlmpwPjLi8knhDYzMjC1MTU2Mj
+	c0sz0oSVxHmTHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDU5/rCL2+96bM358dVNn5F
+	OYz7chtuKOn90ZI7by0gs236m18TmjT85mx/tzGxs+NWxkkb9QPy8wXb5vivNX5hPMMy0i1o
+	YoLHF1elawydZa/kveYJPOipcHq1XEg/LjlbyvhiyKUX69fJ/Bc+Jq//+6gDh8Gh3Vk/3oib
+	/GKINmvXbdBZfV+JpTgj0VCLuag4EQCMBB1brgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQV1XoeZggy8L2S3e/73PZrF94zdW
+	i5eHNC0OfrjPYrHnzC92i+bF69ksDs5ewmRx5reuxeVdc9gs1s7fxmZxY3KhxemORawOPB7b
+	dm9j9bjc18vkcW/fYRaPnbPusnvcubaHzWP/3DXsHn1bVjF6fN4kF8AR1cBok5GamJJapJCa
+	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
+	DtOE0BA3XQuYxghd35AguB4jAzSQsI4x42bzaeaCz0IVj5f9Y2lgfMLfxcjJISFgIvFv7RZ2
+	CFtM4sK99WxdjFwcQgLTGSXOt8xmhXDamSS+rb8FlOHgYBPQlji0LRikQUTAWKL/7Cx2kBpm
+	gTnMElO2XmACqREWcJY4MTcFpIZFQFXi/8sfbCA2r4C7xPEHJ1kglslJnDw2mRXE5hTwkJj4
+	ZA5YXAio5vbGh2wTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiOx2fSOxhXNVgc
+	YhTgYFTi4T3g3RQsxJpYVlyZe4hRgoNZSYRXi7M5WIg3JbGyKrUoP76oNCe1+BBjMtBVE5ml
+	RJPzgakiryTe0NjEzMjSyMzYxNzYmDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYuzy5
+	5b9obJpwo+6Ic7B7W88RwcNVe1tafjztfHz4UcVLW5NJXbaFGrvkJta6p7RL+6ntEfm0u28v
+	R+gMsagAL84JOSFzww/d41owKfXY9adzCnlj+/bcP3Z+/eUSrltTKgM2bc2ek2iTe7xmv+S/
+	ebWHDLRWH1a5oP7BcI/r3AeTfp3denGLqxJLcUaioRZzUXEiACCgbMsLAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,50 +56,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using compound pages relieves burden on tracking the meta information
-which are currently stored in page_info.
+Now that the order information is held on struct page itself, we do not
+need to use extra data structure. This commit reduces unnecessary slab
+usage for allocating small objects.
 
 Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
 ---
- drivers/staging/android/ion/ion_page_pool.c   | 4 +++-
- drivers/staging/android/ion/ion_system_heap.c | 2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/android/ion/ion_page_pool.c | 27 +++++----------------------
+ 1 file changed, 5 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index 1684780..0141b3b 100644
+index 0141b3b..c1cea42b 100644
 --- a/drivers/staging/android/ion/ion_page_pool.c
 +++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -112,6 +112,8 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page)
+@@ -23,11 +23,6 @@
+ #include <linux/slab.h>
+ #include "ion_priv.h"
+ 
+-struct ion_page_pool_item {
+-	struct page *page;
+-	struct list_head list;
+-};
+-
+ static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
  {
- 	int ret;
+ 	struct page *page = alloc_pages(pool->gfp_mask, pool->order);
+@@ -47,19 +42,12 @@ static void ion_page_pool_free_pages(struct ion_page_pool *pool,
  
-+	BUG_ON(pool->order != compound_order(page));
-+
- 	ret = ion_page_pool_add(pool, page);
- 	if (ret)
- 		ion_page_pool_free_pages(pool, page);
-@@ -167,7 +169,7 @@ struct ion_page_pool *ion_page_pool_create(gfp_t gfp_mask, unsigned int order)
- 	pool->low_count = 0;
- 	INIT_LIST_HEAD(&pool->low_items);
- 	INIT_LIST_HEAD(&pool->high_items);
--	pool->gfp_mask = gfp_mask;
-+	pool->gfp_mask = gfp_mask | __GFP_COMP;
- 	pool->order = order;
- 	mutex_init(&pool->mutex);
- 	plist_node_init(&pool->list, order);
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index b554751..48e6a58 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -72,7 +72,7 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
+ static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
+ {
+-	struct ion_page_pool_item *item;
+-
+-	item = kmalloc(sizeof(struct ion_page_pool_item), GFP_KERNEL);
+-	if (!item)
+-		return -ENOMEM;
+-
+ 	mutex_lock(&pool->mutex);
+-	item->page = page;
+ 	if (PageHighMem(page)) {
+-		list_add_tail(&item->list, &pool->high_items);
++		list_add_tail(&page->lru, &pool->high_items);
+ 		pool->high_count++;
+ 	} else {
+-		list_add_tail(&item->list, &pool->low_items);
++		list_add_tail(&page->lru, &pool->low_items);
+ 		pool->low_count++;
+ 	}
+ 	mutex_unlock(&pool->mutex);
+@@ -68,24 +56,19 @@ static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
  
- 		if (order > 4)
- 			gfp_flags = high_order_gfp_flags;
--		page = alloc_pages(gfp_flags, order);
-+		page = alloc_pages(gfp_flags | __GFP_COMP, order);
- 		if (!page)
- 			return NULL;
- 		ion_pages_sync_for_device(NULL, page, PAGE_SIZE << order,
+ static struct page *ion_page_pool_remove(struct ion_page_pool *pool, bool high)
+ {
+-	struct ion_page_pool_item *item;
+ 	struct page *page;
+ 
+ 	if (high) {
+ 		BUG_ON(!pool->high_count);
+-		item = list_first_entry(&pool->high_items,
+-					struct ion_page_pool_item, list);
++		page = list_first_entry(&pool->high_items, struct page, lru);
+ 		pool->high_count--;
+ 	} else {
+ 		BUG_ON(!pool->low_count);
+-		item = list_first_entry(&pool->low_items,
+-					struct ion_page_pool_item, list);
++		page = list_first_entry(&pool->low_items, struct page, lru);
+ 		pool->low_count--;
+ 	}
+ 
+-	list_del(&item->list);
+-	page = item->page;
+-	kfree(item);
++	list_del(&page->lru);
+ 	return page;
+ }
+ 
 -- 
 1.9.1
 
