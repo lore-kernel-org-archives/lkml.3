@@ -1,93 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaEZPPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:15:05 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:40701 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaEZPPC convert rfc822-to-8bit (ORCPT
+	id S1752503AbaEZPSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:18:24 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:64279 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaEZPSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:15:02 -0400
-Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20140526150942.GA26787@earth.universe>
-Date: Mon, 26 May 2014 18:14:52 +0300
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D9B0A90F-F089-48B1-926C-87689889AF42@konsulko.com>
-References: <E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com> <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com> <20140516105814.3EA3FC403C2@trevor.secretlab.ca> <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com> <20140520055026.E3A98C412DA@trevor.secretlab.ca> <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com> <20140526104824.63F13C42129@trevor.secretlab.ca> <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com> <20140526112348.907B7C421A5@trevor.secretlab.ca> <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com> <20140526150942.GA26787@earth.universe>
-To: Sebastian Reichel <sre@ring0.de>
-X-Mailer: Apple Mail (2.1085)
+	Mon, 26 May 2014 11:18:22 -0400
+From: Andreas Noever <andreas.noever@gmail.com>
+To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org
+Cc: Andreas Noever <andreas.noever@gmail.com>
+Subject: [PATCH v3 00/15] Thunderbolt driver for Apple MacBooks 
+Date: Mon, 26 May 2014 17:17:57 +0200
+Message-Id: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+Hi
 
-On May 26, 2014, at 6:09 PM, Sebastian Reichel wrote:
+This is version 3 of my Thunderbolt driver for Apple hardware (see [1] for v2).
 
-> Hi,
-> 
-> On Mon, May 26, 2014 at 02:55:37PM +0300, Pantelis Antoniou wrote:
->> On May 26, 2014, at 2:23 PM, Grant Likely wrote:
->>> On Mon, 26 May 2014 12:57:32 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>> Heeheehee. We're back where we started. The original question is whether
->>> or not that is a valid approach. If the overlay represents something
->>> that can be hot plugged/unplugged, then passing it through to the second
->>> kernel would be the wrong thing to do. If it was a permenant addition,
->>> then it probably doesn't need to be removed.
->>> 
->>> We do actually keep the overlay info in memory for the purpose of
->>> removal exactly so we can support hot unbinding of devices and drivers
->>> that make use of overlays.
->> 
->> We can support either method. I am not feeling any wiser about which one should be
->> the default TBH, so what about exporting a property and let the platform 
->> figure out which is more appropriate?
-> 
-> What about supporting "negative" overlays (so an overlay, that
-> removes DT entries)? That way one could reverse apply an overlay.
-> All the dependency stuff would basically be the users problem.  The
-> kernel only checks if it can apply an overlay (and return some error
-> code if it can't). This this code is needed anyway to check the
-> input from userspace.
-> 
-> As a result the overlay handling would basically have the same
-> behaviour as diff and patch :)
-> 
+Changes since v2:
+ - Use pci quirks instead of changing the pcie port driver.
+ - Relax the DMI checks to run on all MacBooks with a Cactus Ridge chip (MBP
+   Mid 2012 - Early 2013, MBA Mid 2012 - Early 2014). I have tested the driver
+on my early 2013 MBP and have gotten reports of it working on a MBA mid 2013).
+ - Fix some typos.
 
-This is already supported; nodes and properties can be prefixed with a minus
-sign '-' and operate as expected :)
+Limitations & Notes:
+ - No chaining
+ - No Apple TB display (non TB displays work)
+ - Requires Matthew's acpi fixes [2]
+ - Hibernate only works if you resume with the same (or similar) devices as
+   during the initial boot. The memory layout reported by efi depends on
+whether TB devices are connected during boot and linux refuses to resumeif the
+total amount of memory differs. Suspend works fine.
+ - No device handoff. The driver will not properly resume a device that was
+   initially coldplugged. Unplug/replug works fine though.
 
-i.e. "-property;" removes a property and "-node { };" removes a node. 
+To ease testing a git repository based on 3.15-rc7 can be found at:
 
-> P.S.: Sorry if this has already been suggested. I have only read
-> mails from PATCHv4.
-> 
-> -- Sebastian
+	https://github.com/anoever/thunderbolt
 
-Regards
+The repository includes Matthew's patches.
 
--- Pantelis
+
+Would it be possible to get this into 3.16?
+
+Thanks, Andreas
+
+[1]: https://lkml.org/lkml/2014/4/10/681
+[2]: https://lkml.org/lkml/2014/3/11/619
+
+Andreas Noever (15):
+  thunderbolt: Add initial cactus ridge NHI support
+  thunderbolt: Add control channel interface
+  thunderbolt: Setup control channel
+  thunderbolt: Add tb_regs.h
+  thunderbolt: Initialize root switch and ports
+  thunderbolt: Add thunderbolt capability handling
+  thunderbolt: Enable plug events
+  thunderbolt: Scan for downstream switches
+  thunderbolt: Handle hotplug events
+  thunderbolt: Add path setup code.
+  thunderbolt: Add support for simple pci tunnels.
+  pci: Add pci_fixup_suspend_late quirk pass.
+  pci: Suspend/resume quirks for appel thunderbolt
+  thunderbolt: Read switch uid from EEPROM
+  thunderbolt: Add suspend/hibernate support
+
+ drivers/Kconfig                   |   2 +
+ drivers/Makefile                  |   1 +
+ drivers/pci/pci-driver.c          |  18 +-
+ drivers/pci/quirks.c              | 129 +++++++
+ drivers/thunderbolt/Kconfig       |  12 +
+ drivers/thunderbolt/Makefile      |   3 +
+ drivers/thunderbolt/cap.c         | 116 ++++++
+ drivers/thunderbolt/ctl.c         | 731 ++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/ctl.h         |  75 ++++
+ drivers/thunderbolt/eeprom.c      | 189 ++++++++++
+ drivers/thunderbolt/nhi.c         | 672 +++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/nhi.h         | 114 ++++++
+ drivers/thunderbolt/nhi_regs.h    | 101 ++++++
+ drivers/thunderbolt/path.c        | 215 +++++++++++
+ drivers/thunderbolt/switch.c      | 492 +++++++++++++++++++++++++
+ drivers/thunderbolt/tb.c          | 431 ++++++++++++++++++++++
+ drivers/thunderbolt/tb.h          | 266 ++++++++++++++
+ drivers/thunderbolt/tb_regs.h     | 213 +++++++++++
+ drivers/thunderbolt/tunnel_pci.c  | 232 ++++++++++++
+ drivers/thunderbolt/tunnel_pci.h  |  30 ++
+ include/asm-generic/vmlinux.lds.h |   3 +
+ include/linux/pci.h               |  12 +-
+ 22 files changed, 4052 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/thunderbolt/Kconfig
+ create mode 100644 drivers/thunderbolt/Makefile
+ create mode 100644 drivers/thunderbolt/cap.c
+ create mode 100644 drivers/thunderbolt/ctl.c
+ create mode 100644 drivers/thunderbolt/ctl.h
+ create mode 100644 drivers/thunderbolt/eeprom.c
+ create mode 100644 drivers/thunderbolt/nhi.c
+ create mode 100644 drivers/thunderbolt/nhi.h
+ create mode 100644 drivers/thunderbolt/nhi_regs.h
+ create mode 100644 drivers/thunderbolt/path.c
+ create mode 100644 drivers/thunderbolt/switch.c
+ create mode 100644 drivers/thunderbolt/tb.c
+ create mode 100644 drivers/thunderbolt/tb.h
+ create mode 100644 drivers/thunderbolt/tb_regs.h
+ create mode 100644 drivers/thunderbolt/tunnel_pci.c
+ create mode 100644 drivers/thunderbolt/tunnel_pci.h
+
+-- 
+1.9.3
 
