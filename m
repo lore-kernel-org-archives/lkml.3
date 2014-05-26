@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaEZSH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 14:07:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15982 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879AbaEZSH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 14:07:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,914,1392192000"; 
-   d="scan'208";a="545140612"
-Message-ID: <538382FA.8070601@intel.com>
-Date: Tue, 27 May 2014 02:07:54 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751637AbaEZSL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 14:11:26 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:45012 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaEZSLY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 14:11:24 -0400
+Date: Mon, 26 May 2014 22:11:20 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Documenting execve() and EAGAIN
+Message-ID: <20140526181120.GB11145@cachalot>
+References: <537CEC90.7060000@gmail.com>
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [staging: r8192ee] WARNING: CPU: 0 PID: 1 at net/mac80211/rate.c:43
- ieee80211_rate_control_register()
-References: <538355D5.7010006@intel.com> <538374E4.7010401@lwfinger.net>
-In-Reply-To: <538374E4.7010401@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <537CEC90.7060000@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 01:07 AM, Larry Finger wrote:
-> On 05/26/2014 09:55 AM, Jet Chen wrote:
-> 
-> Jet,
-> 
->> 0day kernel testing robot got the below dmesg and the first bad commit is
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git staging-next
->> commit 0629f3b8c33899140b48d5897259eab8ebae78ca
->> Author:     Larry Finger <Larry.Finger@lwfinger.net>
->> AuthorDate: Wed May 21 16:25:36 2014 -0500
->> Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> CommitDate: Fri May 23 11:33:56 2014 +0900
->>
->>      staging: r8192ee: Turn on build of the new driver
->>          In addition, this commit contains a TODO file for this driver
->>          Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
->>      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> The splat comes from the driver trying to register a rate-control algorithm that 
-> is already registered. That could happen because a driver is calling the 
-> registration routine twice, or because more than one driver is using the same 
-> routine name. As I think there is code to prevent the former, and I have never 
-> seen that splat here, I suspect that more than one driver has used the name. On 
-> my real hardware, I can only have one of these devices in the machine at a time.
-> 
-> Is if possible to test the attached patch to see if it fixes the problem? If 
-> not, could you get a listing of the loaded modules at the time of the splat? If 
-> this is not the fix, I will try to duplicate it here.
-> 
-> Thanks,
-> 
-> Larry
-> 
+Hi Michael,
 
-That patch fixes the problem.
+On Wed, May 21, 2014 at 20:12 +0200, Michael Kerrisk (man-pages) wrote:
+> Vasily (and Motohiro),
+> 
+> Sometime ago, Motohiro raised a documentation bug
+> ( https://bugzilla.kernel.org/show_bug.cgi?id=42704 ) which 
+> relates to your commit 72fa59970f8698023045ab0713d66f3f4f96945c
+> ("move RLIMIT_NPROC check from set_user() to do_execve_common()")
+> 
+> I have attempted to document this, and I would like to ask you
+> (and Motohiro) if you would review the text proposed below for
+> the exceve(2) man page.
+> 
+> Thank you,
+> 
+> Michael
+> 
+> 
+> ERRORS
+>        EAGAIN (since Linux 3.1)
+>               Having  changed its real UID using one of the set*uid()
+>               calls,  the  caller  was—and  is  now  still—above  its
+>               RLIMIT_NPROC  resource limit (see setrlimit(2)).  For a
+>               more detailed explanation of this error, see NOTES.
+> 
+> NOTES
+>    execve() and EAGAIN
+>        A more detailed explanation of the EAGAIN error that can occur
+>        (since Linux 3.1) when calling execve() is as follows.
+> 
+>        The EAGAIN error can occur when a preceding call to setuid(2),
+>        setreuid(2), or setresuid(2) caused the real user  ID  of  the
+>        process  to  change,  and  that  change  caused the process to
+>        exceed its RLIMIT_NPROC resource limit (i.e.,  the  number  of
+>        processes  belonging  to the new real UID exceeds the resource
+>        limit).  In Linux 3.0 and earlier, this caused  the  set*uid()
+>        call to fail.
+> 
+>        Since  Linux 3.1, the scenario just described no longer causes
+>        the set*uid() call to fail, because it too often led to  secu‐
+>        rity  holes because buggy applications didn't check the return
+>        status and assumed that—if the caller had root  privileges—the
+>        call  would  always succeed.  Instead, the set*uid() calls now
+>        successfully change real UID, but the kernel sets an  internal
+>        flag,  named  PF_NPROC_EXCEEDED, to note that the RLIMIT_NPROC
+>        resource limit has been exceeded.  If the  resource  limit  is
+>        still exceeded at the time of a subsequent execve() call, that
+>        call fails with the error EAGAIN.  This kernel  logic  ensures
+>        that the RLIMIT_NPROC resource limit is still enforced for the
+>        common privileged daemon workflow—namely, fork(2)+  set*uid()+
+>        execve(2).
+> 
+>        If  the  resource  limit was not still exceeded at the time of
+>        the execve() call (because other processes belonging  to  this
+>        real  UID  terminated  between  the  set*uid()  call  and  the
+>        execve() call), then the execve() call succeeds and the kernel
+>        clears  the  PF_NPROC_EXCEEDED process flag.  The flag is also
+>        cleared if a subsequent call to fork(2) by this  process  suc‐
+>        ceeds.
 
-Tested-by: Jet Chen <jet.chen@intel.com>
+Probably explicitly state that NPROC check on execve() is processed only
+in case of a previous set*uid() call?  If there was no previous
+set*uid() call the semantics of execve() checks are the same as before
+(IOW, RLIMIT_NPROC is ignored).
 
-Thanks,
-Jet
+The rest is fine.
+
+Thanks!
+
+-- 
+Vasily Kulikov
+http://www.openwall.com - bringing security into open computing environments
