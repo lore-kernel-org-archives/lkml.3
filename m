@@ -1,902 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbaEZTRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:17:39 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:58770 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaEZTRh (ORCPT
+	id S1752120AbaEZTSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:18:06 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:61969 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751680AbaEZTSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:17:37 -0400
-Date: Mon, 26 May 2014 12:16:20 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] mm/process_vm_access: move into ipc/
-In-Reply-To: <20140524135925.32597.45754.stgit@zurg>
-Message-ID: <alpine.LSU.2.11.1405261210140.3411@eggly.anvils>
-References: <20140524135925.32597.45754.stgit@zurg>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 26 May 2014 15:18:04 -0400
+Message-ID: <1401131881.6068.23.camel@x220>
+Subject: [PATCH] staging: ctx1e1: remove checks for three macros
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 26 May 2014 21:18:01 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 May 2014 19:18:01.0574 (UTC) FILETIME=[36175060:01CF7917]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 May 2014, Konstantin Khlebnikov wrote:
+When the ctx1e1 driver was added in v2.6.35 it contained checks for
+CONFIG_SBE_HDLC_V7, CONFIG_SBE_WAN256T3_HDLC_V7, and
+CONFIG_SBE_WAN256T3_NCOMM (and MODULE variants). The related Kconfig
+symbols didn't exist then. They still don't exist now. Remove these
+checks.
 
-> "CROSS_MEMORY_ATTACH" and mm/process_vm_access.c seems misnamed and misplaced.
-> Actually it's a kind of IPC and it has no more relation to MM than sys_read().
-> This patch moves code into ipc/ and config option into init/Kconfig.
-> 
-> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Do some related cleaning up and remove the unused V7() macro too.
 
-I disagree, and SysV's ipc/ isn't where I would expect to find it.
-How about we just leave it where it is in mm?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested. Done op top of next-20140526.
 
-Hugh
+ drivers/staging/cxt1e1/functions.c | 18 ------------------
+ drivers/staging/cxt1e1/linux.c     | 17 -----------------
+ drivers/staging/cxt1e1/musycc.c    | 30 ------------------------------
+ 3 files changed, 65 deletions(-)
 
-> ---
->  init/Kconfig            |   10 +
->  ipc/Makefile            |    1 
->  ipc/process_vm_access.c |  383 +++++++++++++++++++++++++++++++++++++++++++++++
->  mm/Kconfig              |   10 -
->  mm/Makefile             |    4 
->  mm/process_vm_access.c  |  383 -----------------------------------------------
->  6 files changed, 394 insertions(+), 397 deletions(-)
->  create mode 100644 ipc/process_vm_access.c
->  delete mode 100644 mm/process_vm_access.c
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 9d3585b..d6ddb7a 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -261,6 +261,16 @@ config POSIX_MQUEUE_SYSCTL
->  	depends on SYSCTL
->  	default y
->  
-> +config CROSS_MEMORY_ATTACH
-> +	bool "Enable process_vm_readv/writev syscalls"
-> +	depends on MMU
-> +	default y
-> +	help
-> +	  Enabling this option adds the system calls process_vm_readv and
-> +	  process_vm_writev which allow a process with the correct privileges
-> +	  to directly read from or write to to another process's address space.
-> +	  See the man page for more details.
-> +
->  config FHANDLE
->  	bool "open by fhandle syscalls"
->  	select EXPORTFS
-> diff --git a/ipc/Makefile b/ipc/Makefile
-> index 9075e17..6982d3e 100644
-> --- a/ipc/Makefile
-> +++ b/ipc/Makefile
-> @@ -9,4 +9,5 @@ obj_mq-$(CONFIG_COMPAT) += compat_mq.o
->  obj-$(CONFIG_POSIX_MQUEUE) += mqueue.o msgutil.o $(obj_mq-y)
->  obj-$(CONFIG_IPC_NS) += namespace.o
->  obj-$(CONFIG_POSIX_MQUEUE_SYSCTL) += mq_sysctl.o
-> +obj-$(CONFIG_CROSS_MEMORY_ATTACH) += process_vm_access.o
->  
-> diff --git a/ipc/process_vm_access.c b/ipc/process_vm_access.c
-> new file mode 100644
-> index 0000000..65aacea
-> --- /dev/null
-> +++ b/ipc/process_vm_access.c
-> @@ -0,0 +1,383 @@
-> +/*
-> + * linux/ipc/process_vm_access.c
-> + *
-> + * Copyright (C) 2010-2011 Christopher Yeoh <cyeoh@au1.ibm.com>, IBM Corp.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#include <linux/mm.h>
-> +#include <linux/uio.h>
-> +#include <linux/sched.h>
-> +#include <linux/highmem.h>
-> +#include <linux/ptrace.h>
-> +#include <linux/slab.h>
-> +#include <linux/syscalls.h>
-> +
-> +#ifdef CONFIG_COMPAT
-> +#include <linux/compat.h>
-> +#endif
-> +
-> +/**
-> + * process_vm_rw_pages - read/write pages from task specified
-> + * @pages: array of pointers to pages we want to copy
-> + * @start_offset: offset in page to start copying from/to
-> + * @len: number of bytes to copy
-> + * @iter: where to copy to/from locally
-> + * @vm_write: 0 means copy from, 1 means copy to
-> + * Returns 0 on success, error code otherwise
-> + */
-> +static int process_vm_rw_pages(struct page **pages,
-> +			       unsigned offset,
-> +			       size_t len,
-> +			       struct iov_iter *iter,
-> +			       int vm_write)
-> +{
-> +	/* Do the copy for each page */
-> +	while (len && iov_iter_count(iter)) {
-> +		struct page *page = *pages++;
-> +		size_t copy = PAGE_SIZE - offset;
-> +		size_t copied;
-> +
-> +		if (copy > len)
-> +			copy = len;
-> +
-> +		if (vm_write) {
-> +			if (copy > iov_iter_count(iter))
-> +				copy = iov_iter_count(iter);
-> +			copied = iov_iter_copy_from_user(page, iter,
-> +					offset, copy);
-> +			iov_iter_advance(iter, copied);
-> +			set_page_dirty_lock(page);
-> +		} else {
-> +			copied = copy_page_to_iter(page, offset, copy, iter);
-> +		}
-> +		len -= copied;
-> +		if (copied < copy && iov_iter_count(iter))
-> +			return -EFAULT;
-> +		offset = 0;
-> +	}
-> +	return 0;
-> +}
-> +
-> +/* Maximum number of pages kmalloc'd to hold struct page's during copy */
-> +#define PVM_MAX_KMALLOC_PAGES (PAGE_SIZE * 2)
-> +
-> +/**
-> + * process_vm_rw_single_vec - read/write pages from task specified
-> + * @addr: start memory address of target process
-> + * @len: size of area to copy to/from
-> + * @iter: where to copy to/from locally
-> + * @process_pages: struct pages area that can store at least
-> + *  nr_pages_to_copy struct page pointers
-> + * @mm: mm for task
-> + * @task: task to read/write from
-> + * @vm_write: 0 means copy from, 1 means copy to
-> + * Returns 0 on success or on failure error code
-> + */
-> +static int process_vm_rw_single_vec(unsigned long addr,
-> +				    unsigned long len,
-> +				    struct iov_iter *iter,
-> +				    struct page **process_pages,
-> +				    struct mm_struct *mm,
-> +				    struct task_struct *task,
-> +				    int vm_write)
-> +{
-> +	unsigned long pa = addr & PAGE_MASK;
-> +	unsigned long start_offset = addr - pa;
-> +	unsigned long nr_pages;
-> +	ssize_t rc = 0;
-> +	unsigned long max_pages_per_loop = PVM_MAX_KMALLOC_PAGES
-> +		/ sizeof(struct pages *);
-> +
-> +	/* Work out address and page range required */
-> +	if (len == 0)
-> +		return 0;
-> +	nr_pages = (addr + len - 1) / PAGE_SIZE - addr / PAGE_SIZE + 1;
-> +
-> +	while (!rc && nr_pages && iov_iter_count(iter)) {
-> +		int pages = min(nr_pages, max_pages_per_loop);
-> +		size_t bytes;
-> +
-> +		/* Get the pages we're interested in */
-> +		down_read(&mm->mmap_sem);
-> +		pages = get_user_pages(task, mm, pa, pages,
-> +				      vm_write, 0, process_pages, NULL);
-> +		up_read(&mm->mmap_sem);
-> +
-> +		if (pages <= 0)
-> +			return -EFAULT;
-> +
-> +		bytes = pages * PAGE_SIZE - start_offset;
-> +		if (bytes > len)
-> +			bytes = len;
-> +
-> +		rc = process_vm_rw_pages(process_pages,
-> +					 start_offset, bytes, iter,
-> +					 vm_write);
-> +		len -= bytes;
-> +		start_offset = 0;
-> +		nr_pages -= pages;
-> +		pa += pages * PAGE_SIZE;
-> +		while (pages)
-> +			put_page(process_pages[--pages]);
-> +	}
-> +
-> +	return rc;
-> +}
-> +
-> +/* Maximum number of entries for process pages array
-> +   which lives on stack */
-> +#define PVM_MAX_PP_ARRAY_COUNT 16
-> +
-> +/**
-> + * process_vm_rw_core - core of reading/writing pages from task specified
-> + * @pid: PID of process to read/write from/to
-> + * @iter: where to copy to/from locally
-> + * @rvec: iovec array specifying where to copy to/from in the other process
-> + * @riovcnt: size of rvec array
-> + * @flags: currently unused
-> + * @vm_write: 0 if reading from other process, 1 if writing to other process
-> + * Returns the number of bytes read/written or error code. May
-> + *  return less bytes than expected if an error occurs during the copying
-> + *  process.
-> + */
-> +static ssize_t process_vm_rw_core(pid_t pid, struct iov_iter *iter,
-> +				  const struct iovec *rvec,
-> +				  unsigned long riovcnt,
-> +				  unsigned long flags, int vm_write)
-> +{
-> +	struct task_struct *task;
-> +	struct page *pp_stack[PVM_MAX_PP_ARRAY_COUNT];
-> +	struct page **process_pages = pp_stack;
-> +	struct mm_struct *mm;
-> +	unsigned long i;
-> +	ssize_t rc = 0;
-> +	unsigned long nr_pages = 0;
-> +	unsigned long nr_pages_iov;
-> +	ssize_t iov_len;
-> +	size_t total_len = iov_iter_count(iter);
-> +
-> +	/*
-> +	 * Work out how many pages of struct pages we're going to need
-> +	 * when eventually calling get_user_pages
-> +	 */
-> +	for (i = 0; i < riovcnt; i++) {
-> +		iov_len = rvec[i].iov_len;
-> +		if (iov_len > 0) {
-> +			nr_pages_iov = ((unsigned long)rvec[i].iov_base
-> +					+ iov_len)
-> +				/ PAGE_SIZE - (unsigned long)rvec[i].iov_base
-> +				/ PAGE_SIZE + 1;
-> +			nr_pages = max(nr_pages, nr_pages_iov);
-> +		}
-> +	}
-> +
-> +	if (nr_pages == 0)
-> +		return 0;
-> +
-> +	if (nr_pages > PVM_MAX_PP_ARRAY_COUNT) {
-> +		/* For reliability don't try to kmalloc more than
-> +		   2 pages worth */
-> +		process_pages = kmalloc(min_t(size_t, PVM_MAX_KMALLOC_PAGES,
-> +					      sizeof(struct pages *)*nr_pages),
-> +					GFP_KERNEL);
-> +
-> +		if (!process_pages)
-> +			return -ENOMEM;
-> +	}
-> +
-> +	/* Get process information */
-> +	rcu_read_lock();
-> +	task = find_task_by_vpid(pid);
-> +	if (task)
-> +		get_task_struct(task);
-> +	rcu_read_unlock();
-> +	if (!task) {
-> +		rc = -ESRCH;
-> +		goto free_proc_pages;
-> +	}
-> +
-> +	mm = mm_access(task, PTRACE_MODE_ATTACH);
-> +	if (!mm || IS_ERR(mm)) {
-> +		rc = IS_ERR(mm) ? PTR_ERR(mm) : -ESRCH;
-> +		/*
-> +		 * Explicitly map EACCES to EPERM as EPERM is a more a
-> +		 * appropriate error code for process_vw_readv/writev
-> +		 */
-> +		if (rc == -EACCES)
-> +			rc = -EPERM;
-> +		goto put_task_struct;
-> +	}
-> +
-> +	for (i = 0; i < riovcnt && iov_iter_count(iter) && !rc; i++)
-> +		rc = process_vm_rw_single_vec(
-> +			(unsigned long)rvec[i].iov_base, rvec[i].iov_len,
-> +			iter, process_pages, mm, task, vm_write);
-> +
-> +	/* copied = space before - space after */
-> +	total_len -= iov_iter_count(iter);
-> +
-> +	/* If we have managed to copy any data at all then
-> +	   we return the number of bytes copied. Otherwise
-> +	   we return the error code */
-> +	if (total_len)
-> +		rc = total_len;
-> +
-> +	mmput(mm);
-> +
-> +put_task_struct:
-> +	put_task_struct(task);
-> +
-> +free_proc_pages:
-> +	if (process_pages != pp_stack)
-> +		kfree(process_pages);
-> +	return rc;
-> +}
-> +
-> +/**
-> + * process_vm_rw - check iovecs before calling core routine
-> + * @pid: PID of process to read/write from/to
-> + * @lvec: iovec array specifying where to copy to/from locally
-> + * @liovcnt: size of lvec array
-> + * @rvec: iovec array specifying where to copy to/from in the other process
-> + * @riovcnt: size of rvec array
-> + * @flags: currently unused
-> + * @vm_write: 0 if reading from other process, 1 if writing to other process
-> + * Returns the number of bytes read/written or error code. May
-> + *  return less bytes than expected if an error occurs during the copying
-> + *  process.
-> + */
-> +static ssize_t process_vm_rw(pid_t pid,
-> +			     const struct iovec __user *lvec,
-> +			     unsigned long liovcnt,
-> +			     const struct iovec __user *rvec,
-> +			     unsigned long riovcnt,
-> +			     unsigned long flags, int vm_write)
-> +{
-> +	struct iovec iovstack_l[UIO_FASTIOV];
-> +	struct iovec iovstack_r[UIO_FASTIOV];
-> +	struct iovec *iov_l = iovstack_l;
-> +	struct iovec *iov_r = iovstack_r;
-> +	struct iov_iter iter;
-> +	ssize_t rc;
-> +
-> +	if (flags != 0)
-> +		return -EINVAL;
-> +
-> +	/* Check iovecs */
-> +	if (vm_write)
-> +		rc = rw_copy_check_uvector(WRITE, lvec, liovcnt, UIO_FASTIOV,
-> +					   iovstack_l, &iov_l);
-> +	else
-> +		rc = rw_copy_check_uvector(READ, lvec, liovcnt, UIO_FASTIOV,
-> +					   iovstack_l, &iov_l);
-> +	if (rc <= 0)
-> +		goto free_iovecs;
-> +
-> +	iov_iter_init(&iter, iov_l, liovcnt, rc, 0);
-> +
-> +	rc = rw_copy_check_uvector(CHECK_IOVEC_ONLY, rvec, riovcnt, UIO_FASTIOV,
-> +				   iovstack_r, &iov_r);
-> +	if (rc <= 0)
-> +		goto free_iovecs;
-> +
-> +	rc = process_vm_rw_core(pid, &iter, iov_r, riovcnt, flags, vm_write);
-> +
-> +free_iovecs:
-> +	if (iov_r != iovstack_r)
-> +		kfree(iov_r);
-> +	if (iov_l != iovstack_l)
-> +		kfree(iov_l);
-> +
-> +	return rc;
-> +}
-> +
-> +SYSCALL_DEFINE6(process_vm_readv, pid_t, pid, const struct iovec __user *, lvec,
-> +		unsigned long, liovcnt, const struct iovec __user *, rvec,
-> +		unsigned long, riovcnt,	unsigned long, flags)
-> +{
-> +	return process_vm_rw(pid, lvec, liovcnt, rvec, riovcnt, flags, 0);
-> +}
-> +
-> +SYSCALL_DEFINE6(process_vm_writev, pid_t, pid,
-> +		const struct iovec __user *, lvec,
-> +		unsigned long, liovcnt, const struct iovec __user *, rvec,
-> +		unsigned long, riovcnt,	unsigned long, flags)
-> +{
-> +	return process_vm_rw(pid, lvec, liovcnt, rvec, riovcnt, flags, 1);
-> +}
-> +
-> +#ifdef CONFIG_COMPAT
-> +
-> +static ssize_t
-> +compat_process_vm_rw(compat_pid_t pid,
-> +		     const struct compat_iovec __user *lvec,
-> +		     unsigned long liovcnt,
-> +		     const struct compat_iovec __user *rvec,
-> +		     unsigned long riovcnt,
-> +		     unsigned long flags, int vm_write)
-> +{
-> +	struct iovec iovstack_l[UIO_FASTIOV];
-> +	struct iovec iovstack_r[UIO_FASTIOV];
-> +	struct iovec *iov_l = iovstack_l;
-> +	struct iovec *iov_r = iovstack_r;
-> +	struct iov_iter iter;
-> +	ssize_t rc = -EFAULT;
-> +
-> +	if (flags != 0)
-> +		return -EINVAL;
-> +
-> +	if (vm_write)
-> +		rc = compat_rw_copy_check_uvector(WRITE, lvec, liovcnt,
-> +						  UIO_FASTIOV, iovstack_l,
-> +						  &iov_l);
-> +	else
-> +		rc = compat_rw_copy_check_uvector(READ, lvec, liovcnt,
-> +						  UIO_FASTIOV, iovstack_l,
-> +						  &iov_l);
-> +	if (rc <= 0)
-> +		goto free_iovecs;
-> +	iov_iter_init(&iter, iov_l, liovcnt, rc, 0);
-> +	rc = compat_rw_copy_check_uvector(CHECK_IOVEC_ONLY, rvec, riovcnt,
-> +					  UIO_FASTIOV, iovstack_r,
-> +					  &iov_r);
-> +	if (rc <= 0)
-> +		goto free_iovecs;
-> +
-> +	rc = process_vm_rw_core(pid, &iter, iov_r, riovcnt, flags, vm_write);
-> +
-> +free_iovecs:
-> +	if (iov_r != iovstack_r)
-> +		kfree(iov_r);
-> +	if (iov_l != iovstack_l)
-> +		kfree(iov_l);
-> +	return rc;
-> +}
-> +
-> +COMPAT_SYSCALL_DEFINE6(process_vm_readv, compat_pid_t, pid,
-> +		       const struct compat_iovec __user *, lvec,
-> +		       compat_ulong_t, liovcnt,
-> +		       const struct compat_iovec __user *, rvec,
-> +		       compat_ulong_t, riovcnt,
-> +		       compat_ulong_t, flags)
-> +{
-> +	return compat_process_vm_rw(pid, lvec, liovcnt, rvec,
-> +				    riovcnt, flags, 0);
-> +}
-> +
-> +COMPAT_SYSCALL_DEFINE6(process_vm_writev, compat_pid_t, pid,
-> +		       const struct compat_iovec __user *, lvec,
-> +		       compat_ulong_t, liovcnt,
-> +		       const struct compat_iovec __user *, rvec,
-> +		       compat_ulong_t, riovcnt,
-> +		       compat_ulong_t, flags)
-> +{
-> +	return compat_process_vm_rw(pid, lvec, liovcnt, rvec,
-> +				    riovcnt, flags, 1);
-> +}
-> +
-> +#endif
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 1b5a95f..2ec35d7 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -430,16 +430,6 @@ choice
->  	  benefit.
->  endchoice
->  
-> -config CROSS_MEMORY_ATTACH
-> -	bool "Cross Memory Support"
-> -	depends on MMU
-> -	default y
-> -	help
-> -	  Enabling this option adds the system calls process_vm_readv and
-> -	  process_vm_writev which allow a process with the correct privileges
-> -	  to directly read from or write to to another process's address space.
-> -	  See the man page for more details.
-> -
->  #
->  # UP and nommu archs use km based percpu allocator
->  #
-> diff --git a/mm/Makefile b/mm/Makefile
-> index b484452..d624084 100644
-> --- a/mm/Makefile
-> +++ b/mm/Makefile
-> @@ -7,10 +7,6 @@ mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
->  			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
->  			   vmalloc.o pagewalk.o pgtable-generic.o
->  
-> -ifdef CONFIG_CROSS_MEMORY_ATTACH
-> -mmu-$(CONFIG_MMU)	+= process_vm_access.o
-> -endif
-> -
->  obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
->  			   maccess.o page_alloc.o page-writeback.o \
->  			   readahead.o swap.o truncate.o vmscan.o shmem.o \
-> diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
-> deleted file mode 100644
-> index 8505c92..0000000
-> --- a/mm/process_vm_access.c
-> +++ /dev/null
-> @@ -1,383 +0,0 @@
-> -/*
-> - * linux/mm/process_vm_access.c
-> - *
-> - * Copyright (C) 2010-2011 Christopher Yeoh <cyeoh@au1.ibm.com>, IBM Corp.
-> - *
-> - * This program is free software; you can redistribute it and/or
-> - * modify it under the terms of the GNU General Public License
-> - * as published by the Free Software Foundation; either version
-> - * 2 of the License, or (at your option) any later version.
-> - */
-> -
-> -#include <linux/mm.h>
-> -#include <linux/uio.h>
-> -#include <linux/sched.h>
-> -#include <linux/highmem.h>
-> -#include <linux/ptrace.h>
-> -#include <linux/slab.h>
-> -#include <linux/syscalls.h>
-> -
-> -#ifdef CONFIG_COMPAT
-> -#include <linux/compat.h>
-> -#endif
-> -
-> -/**
-> - * process_vm_rw_pages - read/write pages from task specified
-> - * @pages: array of pointers to pages we want to copy
-> - * @start_offset: offset in page to start copying from/to
-> - * @len: number of bytes to copy
-> - * @iter: where to copy to/from locally
-> - * @vm_write: 0 means copy from, 1 means copy to
-> - * Returns 0 on success, error code otherwise
-> - */
-> -static int process_vm_rw_pages(struct page **pages,
-> -			       unsigned offset,
-> -			       size_t len,
-> -			       struct iov_iter *iter,
-> -			       int vm_write)
-> -{
-> -	/* Do the copy for each page */
-> -	while (len && iov_iter_count(iter)) {
-> -		struct page *page = *pages++;
-> -		size_t copy = PAGE_SIZE - offset;
-> -		size_t copied;
-> -
-> -		if (copy > len)
-> -			copy = len;
-> -
-> -		if (vm_write) {
-> -			if (copy > iov_iter_count(iter))
-> -				copy = iov_iter_count(iter);
-> -			copied = iov_iter_copy_from_user(page, iter,
-> -					offset, copy);
-> -			iov_iter_advance(iter, copied);
-> -			set_page_dirty_lock(page);
-> -		} else {
-> -			copied = copy_page_to_iter(page, offset, copy, iter);
-> -		}
-> -		len -= copied;
-> -		if (copied < copy && iov_iter_count(iter))
-> -			return -EFAULT;
-> -		offset = 0;
-> -	}
-> -	return 0;
-> -}
-> -
-> -/* Maximum number of pages kmalloc'd to hold struct page's during copy */
-> -#define PVM_MAX_KMALLOC_PAGES (PAGE_SIZE * 2)
-> -
-> -/**
-> - * process_vm_rw_single_vec - read/write pages from task specified
-> - * @addr: start memory address of target process
-> - * @len: size of area to copy to/from
-> - * @iter: where to copy to/from locally
-> - * @process_pages: struct pages area that can store at least
-> - *  nr_pages_to_copy struct page pointers
-> - * @mm: mm for task
-> - * @task: task to read/write from
-> - * @vm_write: 0 means copy from, 1 means copy to
-> - * Returns 0 on success or on failure error code
-> - */
-> -static int process_vm_rw_single_vec(unsigned long addr,
-> -				    unsigned long len,
-> -				    struct iov_iter *iter,
-> -				    struct page **process_pages,
-> -				    struct mm_struct *mm,
-> -				    struct task_struct *task,
-> -				    int vm_write)
-> -{
-> -	unsigned long pa = addr & PAGE_MASK;
-> -	unsigned long start_offset = addr - pa;
-> -	unsigned long nr_pages;
-> -	ssize_t rc = 0;
-> -	unsigned long max_pages_per_loop = PVM_MAX_KMALLOC_PAGES
-> -		/ sizeof(struct pages *);
-> -
-> -	/* Work out address and page range required */
-> -	if (len == 0)
-> -		return 0;
-> -	nr_pages = (addr + len - 1) / PAGE_SIZE - addr / PAGE_SIZE + 1;
-> -
-> -	while (!rc && nr_pages && iov_iter_count(iter)) {
-> -		int pages = min(nr_pages, max_pages_per_loop);
-> -		size_t bytes;
-> -
-> -		/* Get the pages we're interested in */
-> -		down_read(&mm->mmap_sem);
-> -		pages = get_user_pages(task, mm, pa, pages,
-> -				      vm_write, 0, process_pages, NULL);
-> -		up_read(&mm->mmap_sem);
-> -
-> -		if (pages <= 0)
-> -			return -EFAULT;
-> -
-> -		bytes = pages * PAGE_SIZE - start_offset;
-> -		if (bytes > len)
-> -			bytes = len;
-> -
-> -		rc = process_vm_rw_pages(process_pages,
-> -					 start_offset, bytes, iter,
-> -					 vm_write);
-> -		len -= bytes;
-> -		start_offset = 0;
-> -		nr_pages -= pages;
-> -		pa += pages * PAGE_SIZE;
-> -		while (pages)
-> -			put_page(process_pages[--pages]);
-> -	}
-> -
-> -	return rc;
-> -}
-> -
-> -/* Maximum number of entries for process pages array
-> -   which lives on stack */
-> -#define PVM_MAX_PP_ARRAY_COUNT 16
-> -
-> -/**
-> - * process_vm_rw_core - core of reading/writing pages from task specified
-> - * @pid: PID of process to read/write from/to
-> - * @iter: where to copy to/from locally
-> - * @rvec: iovec array specifying where to copy to/from in the other process
-> - * @riovcnt: size of rvec array
-> - * @flags: currently unused
-> - * @vm_write: 0 if reading from other process, 1 if writing to other process
-> - * Returns the number of bytes read/written or error code. May
-> - *  return less bytes than expected if an error occurs during the copying
-> - *  process.
-> - */
-> -static ssize_t process_vm_rw_core(pid_t pid, struct iov_iter *iter,
-> -				  const struct iovec *rvec,
-> -				  unsigned long riovcnt,
-> -				  unsigned long flags, int vm_write)
-> -{
-> -	struct task_struct *task;
-> -	struct page *pp_stack[PVM_MAX_PP_ARRAY_COUNT];
-> -	struct page **process_pages = pp_stack;
-> -	struct mm_struct *mm;
-> -	unsigned long i;
-> -	ssize_t rc = 0;
-> -	unsigned long nr_pages = 0;
-> -	unsigned long nr_pages_iov;
-> -	ssize_t iov_len;
-> -	size_t total_len = iov_iter_count(iter);
-> -
-> -	/*
-> -	 * Work out how many pages of struct pages we're going to need
-> -	 * when eventually calling get_user_pages
-> -	 */
-> -	for (i = 0; i < riovcnt; i++) {
-> -		iov_len = rvec[i].iov_len;
-> -		if (iov_len > 0) {
-> -			nr_pages_iov = ((unsigned long)rvec[i].iov_base
-> -					+ iov_len)
-> -				/ PAGE_SIZE - (unsigned long)rvec[i].iov_base
-> -				/ PAGE_SIZE + 1;
-> -			nr_pages = max(nr_pages, nr_pages_iov);
-> -		}
-> -	}
-> -
-> -	if (nr_pages == 0)
-> -		return 0;
-> -
-> -	if (nr_pages > PVM_MAX_PP_ARRAY_COUNT) {
-> -		/* For reliability don't try to kmalloc more than
-> -		   2 pages worth */
-> -		process_pages = kmalloc(min_t(size_t, PVM_MAX_KMALLOC_PAGES,
-> -					      sizeof(struct pages *)*nr_pages),
-> -					GFP_KERNEL);
-> -
-> -		if (!process_pages)
-> -			return -ENOMEM;
-> -	}
-> -
-> -	/* Get process information */
-> -	rcu_read_lock();
-> -	task = find_task_by_vpid(pid);
-> -	if (task)
-> -		get_task_struct(task);
-> -	rcu_read_unlock();
-> -	if (!task) {
-> -		rc = -ESRCH;
-> -		goto free_proc_pages;
-> -	}
-> -
-> -	mm = mm_access(task, PTRACE_MODE_ATTACH);
-> -	if (!mm || IS_ERR(mm)) {
-> -		rc = IS_ERR(mm) ? PTR_ERR(mm) : -ESRCH;
-> -		/*
-> -		 * Explicitly map EACCES to EPERM as EPERM is a more a
-> -		 * appropriate error code for process_vw_readv/writev
-> -		 */
-> -		if (rc == -EACCES)
-> -			rc = -EPERM;
-> -		goto put_task_struct;
-> -	}
-> -
-> -	for (i = 0; i < riovcnt && iov_iter_count(iter) && !rc; i++)
-> -		rc = process_vm_rw_single_vec(
-> -			(unsigned long)rvec[i].iov_base, rvec[i].iov_len,
-> -			iter, process_pages, mm, task, vm_write);
-> -
-> -	/* copied = space before - space after */
-> -	total_len -= iov_iter_count(iter);
-> -
-> -	/* If we have managed to copy any data at all then
-> -	   we return the number of bytes copied. Otherwise
-> -	   we return the error code */
-> -	if (total_len)
-> -		rc = total_len;
-> -
-> -	mmput(mm);
-> -
-> -put_task_struct:
-> -	put_task_struct(task);
-> -
-> -free_proc_pages:
-> -	if (process_pages != pp_stack)
-> -		kfree(process_pages);
-> -	return rc;
-> -}
-> -
-> -/**
-> - * process_vm_rw - check iovecs before calling core routine
-> - * @pid: PID of process to read/write from/to
-> - * @lvec: iovec array specifying where to copy to/from locally
-> - * @liovcnt: size of lvec array
-> - * @rvec: iovec array specifying where to copy to/from in the other process
-> - * @riovcnt: size of rvec array
-> - * @flags: currently unused
-> - * @vm_write: 0 if reading from other process, 1 if writing to other process
-> - * Returns the number of bytes read/written or error code. May
-> - *  return less bytes than expected if an error occurs during the copying
-> - *  process.
-> - */
-> -static ssize_t process_vm_rw(pid_t pid,
-> -			     const struct iovec __user *lvec,
-> -			     unsigned long liovcnt,
-> -			     const struct iovec __user *rvec,
-> -			     unsigned long riovcnt,
-> -			     unsigned long flags, int vm_write)
-> -{
-> -	struct iovec iovstack_l[UIO_FASTIOV];
-> -	struct iovec iovstack_r[UIO_FASTIOV];
-> -	struct iovec *iov_l = iovstack_l;
-> -	struct iovec *iov_r = iovstack_r;
-> -	struct iov_iter iter;
-> -	ssize_t rc;
-> -
-> -	if (flags != 0)
-> -		return -EINVAL;
-> -
-> -	/* Check iovecs */
-> -	if (vm_write)
-> -		rc = rw_copy_check_uvector(WRITE, lvec, liovcnt, UIO_FASTIOV,
-> -					   iovstack_l, &iov_l);
-> -	else
-> -		rc = rw_copy_check_uvector(READ, lvec, liovcnt, UIO_FASTIOV,
-> -					   iovstack_l, &iov_l);
-> -	if (rc <= 0)
-> -		goto free_iovecs;
-> -
-> -	iov_iter_init(&iter, iov_l, liovcnt, rc, 0);
-> -
-> -	rc = rw_copy_check_uvector(CHECK_IOVEC_ONLY, rvec, riovcnt, UIO_FASTIOV,
-> -				   iovstack_r, &iov_r);
-> -	if (rc <= 0)
-> -		goto free_iovecs;
-> -
-> -	rc = process_vm_rw_core(pid, &iter, iov_r, riovcnt, flags, vm_write);
-> -
-> -free_iovecs:
-> -	if (iov_r != iovstack_r)
-> -		kfree(iov_r);
-> -	if (iov_l != iovstack_l)
-> -		kfree(iov_l);
-> -
-> -	return rc;
-> -}
-> -
-> -SYSCALL_DEFINE6(process_vm_readv, pid_t, pid, const struct iovec __user *, lvec,
-> -		unsigned long, liovcnt, const struct iovec __user *, rvec,
-> -		unsigned long, riovcnt,	unsigned long, flags)
-> -{
-> -	return process_vm_rw(pid, lvec, liovcnt, rvec, riovcnt, flags, 0);
-> -}
-> -
-> -SYSCALL_DEFINE6(process_vm_writev, pid_t, pid,
-> -		const struct iovec __user *, lvec,
-> -		unsigned long, liovcnt, const struct iovec __user *, rvec,
-> -		unsigned long, riovcnt,	unsigned long, flags)
-> -{
-> -	return process_vm_rw(pid, lvec, liovcnt, rvec, riovcnt, flags, 1);
-> -}
-> -
-> -#ifdef CONFIG_COMPAT
-> -
-> -static ssize_t
-> -compat_process_vm_rw(compat_pid_t pid,
-> -		     const struct compat_iovec __user *lvec,
-> -		     unsigned long liovcnt,
-> -		     const struct compat_iovec __user *rvec,
-> -		     unsigned long riovcnt,
-> -		     unsigned long flags, int vm_write)
-> -{
-> -	struct iovec iovstack_l[UIO_FASTIOV];
-> -	struct iovec iovstack_r[UIO_FASTIOV];
-> -	struct iovec *iov_l = iovstack_l;
-> -	struct iovec *iov_r = iovstack_r;
-> -	struct iov_iter iter;
-> -	ssize_t rc = -EFAULT;
-> -
-> -	if (flags != 0)
-> -		return -EINVAL;
-> -
-> -	if (vm_write)
-> -		rc = compat_rw_copy_check_uvector(WRITE, lvec, liovcnt,
-> -						  UIO_FASTIOV, iovstack_l,
-> -						  &iov_l);
-> -	else
-> -		rc = compat_rw_copy_check_uvector(READ, lvec, liovcnt,
-> -						  UIO_FASTIOV, iovstack_l,
-> -						  &iov_l);
-> -	if (rc <= 0)
-> -		goto free_iovecs;
-> -	iov_iter_init(&iter, iov_l, liovcnt, rc, 0);
-> -	rc = compat_rw_copy_check_uvector(CHECK_IOVEC_ONLY, rvec, riovcnt,
-> -					  UIO_FASTIOV, iovstack_r,
-> -					  &iov_r);
-> -	if (rc <= 0)
-> -		goto free_iovecs;
-> -
-> -	rc = process_vm_rw_core(pid, &iter, iov_r, riovcnt, flags, vm_write);
-> -
-> -free_iovecs:
-> -	if (iov_r != iovstack_r)
-> -		kfree(iov_r);
-> -	if (iov_l != iovstack_l)
-> -		kfree(iov_l);
-> -	return rc;
-> -}
-> -
-> -COMPAT_SYSCALL_DEFINE6(process_vm_readv, compat_pid_t, pid,
-> -		       const struct compat_iovec __user *, lvec,
-> -		       compat_ulong_t, liovcnt,
-> -		       const struct compat_iovec __user *, rvec,
-> -		       compat_ulong_t, riovcnt,
-> -		       compat_ulong_t, flags)
-> -{
-> -	return compat_process_vm_rw(pid, lvec, liovcnt, rvec,
-> -				    riovcnt, flags, 0);
-> -}
-> -
-> -COMPAT_SYSCALL_DEFINE6(process_vm_writev, compat_pid_t, pid,
-> -		       const struct compat_iovec __user *, lvec,
-> -		       compat_ulong_t, liovcnt,
-> -		       const struct compat_iovec __user *, rvec,
-> -		       compat_ulong_t, riovcnt,
-> -		       compat_ulong_t, flags)
-> -{
-> -	return compat_process_vm_rw(pid, lvec, liovcnt, rvec,
-> -				    riovcnt, flags, 1);
-> -}
-> -
-> -#endif
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+diff --git a/drivers/staging/cxt1e1/functions.c b/drivers/staging/cxt1e1/functions.c
+index ee9d39bbd251..65b6fc36edf6 100644
+--- a/drivers/staging/cxt1e1/functions.c
++++ b/drivers/staging/cxt1e1/functions.c
+@@ -24,24 +24,6 @@
+ #include "libsbew.h"
+ #include "pmcc4.h"
+ 
+-#if defined(CONFIG_SBE_HDLC_V7) || defined(CONFIG_SBE_WAN256T3_HDLC_V7) || \
+-defined(CONFIG_SBE_HDLC_V7_MODULE) || \
+-defined(CONFIG_SBE_WAN256T3_HDLC_V7_MODULE)
+-#define _v7_hdlc_  1
+-#else
+-#define _v7_hdlc_  0
+-#endif
+-
+-#if _v7_hdlc_
+-#define V7(x) (x ## _v7)
+-extern int  hdlc_netif_rx_v7(hdlc_device *, struct sk_buff *);
+-extern int  register_hdlc_device_v7(hdlc_device *);
+-extern int  unregister_hdlc_device_v7(hdlc_device *);
+-
+-#else
+-#define V7(x) x
+-#endif
+-
+ 
+ #ifndef USE_MAX_INT_DELAY
+ static int  dummy = 0;
+diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+index 4b4609db9f89..09f3d5ca75ac 100644
+--- a/drivers/staging/cxt1e1/linux.c
++++ b/drivers/staging/cxt1e1/linux.c
+@@ -83,23 +83,6 @@ int         musycc_start_xmit(ci_t *, int, void *);
+ extern ci_t *CI;
+ extern struct s_hdw_info hdw_info[];
+ 
+-#if defined(CONFIG_SBE_HDLC_V7) || defined(CONFIG_SBE_WAN256T3_HDLC_V7) || \
+-	defined(CONFIG_SBE_HDLC_V7_MODULE) || defined(CONFIG_SBE_WAN256T3_HDLC_V7_MODULE)
+-#define _v7_hdlc_  1
+-#else
+-#define _v7_hdlc_  0
+-#endif
+-
+-#if _v7_hdlc_
+-#define V7(x) (x ## _v7)
+-extern int  hdlc_netif_rx_v7(hdlc_device *, struct sk_buff *);
+-extern int  register_hdlc_device_v7(hdlc_device *);
+-extern int  unregister_hdlc_device_v7(hdlc_device *);
+-
+-#else
+-#define V7(x) x
+-#endif
+-
+ int         error_flag;         /* module load error reporting */
+ int         cxt1e1_log_level = LOG_ERROR;
+ static int  log_level_default = LOG_ERROR;
+diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
+index a87f80237f47..0bcbd8a3fc84 100644
+--- a/drivers/staging/cxt1e1/musycc.c
++++ b/drivers/staging/cxt1e1/musycc.c
+@@ -918,9 +918,6 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
+ 
+ 		md->data = 0;
+ 		if (md->mem_token) {
+-#ifdef CONFIG_SBE_WAN256T3_NCOMM
+-			int hdlcnum = 0;
+-#endif
+ 			/* upcount channel */
+ 			atomic_sub(OS_mem_token_tlen(md->mem_token),
+ 				   &ch->tx_pending);
+@@ -931,18 +928,6 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
+ 			if (!atomic_read(&pi->up->tx_pending))
+ 				wan256t3_led(pi->up, LED_TX, 0);
+ #endif
+-
+-#ifdef CONFIG_SBE_WAN256T3_NCOMM
+-			/* callback that our packet was sent */
+-			hdlcnum = (pi->portnum * 32 + gchan);
+-
+-			if (hdlcnum >= 228) {
+-				if (nciProcess_TX_complete)
+-					(*nciProcess_TX_complete) (hdlcnum,
+-							getuserbychan(gchan));
+-			}
+-#endif /* CONFIG_SBE_WAN256T3_NCOMM */
+-
+ 			OS_mem_token_free_irq(md->mem_token);
+ 			md->mem_token = NULL;
+ 		}
+@@ -1039,21 +1024,6 @@ musycc_bh_rx_eom(mpi_t *pi, int gchan)
+ 		m = md->mem_token;
+ 		error = (status >> 16) & 0xf;
+ 		if (error == 0) {
+-#ifdef CONFIG_SBE_WAN256T3_NCOMM
+-			int         hdlcnum = (pi->portnum * 32 + gchan);
+-
+-			/*
+-			 * if the packet number belongs to NCOMM, then send it to the TMS
+-			 * driver
+-			 */
+-			if (hdlcnum >= 228) {
+-				if (nciProcess_RX_packet)
+-					(*nciProcess_RX_packet)(hdlcnum,
+-								status & 0x3fff,
+-								m, ch->user);
+-			} else
+-#endif                              /*** CONFIG_SBE_WAN256T3_NCOMM ***/
+-
+ 			{
+ 				m2 = OS_mem_token_alloc(cxt1e1_max_mru);
+ 				if (m2) {
+-- 
+1.9.0
+
