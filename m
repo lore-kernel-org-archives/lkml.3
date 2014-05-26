@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaEZH4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:56:31 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:65446 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaEZH4a (ORCPT
+	id S1751833AbaEZH6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:58:52 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:51861 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaEZH6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:56:30 -0400
-Message-ID: <1401090987.5339.79.camel@marge.simpson.net>
-Subject: Re: balance storm
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>
-Date: Mon, 26 May 2014 09:56:27 +0200
-In-Reply-To: <5382AF2E.1040407@huawei.com>
-References: <5382AF2E.1040407@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 26 May 2014 03:58:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140523211221.23136.12584@quantum>
+References: <1395746185-16686-1-git-send-email-geert@linux-m68k.org>
+	<20140513001759.5943.52169@quantum>
+	<CAMuHMdWYTe8=jY3Y_jrZrRiHHMEhAuKHRRAzaC_Gvbi00dFY8A@mail.gmail.com>
+	<20140523211221.23136.12584@quantum>
+Date: Mon, 26 May 2014 09:58:49 +0200
+X-Google-Sender-Auth: r1fhC0Jy0w_yjQ34Tgrt5bkHf3A
+Message-ID: <CAMuHMdXifbBjCUsnyn=htsfqN7PR2Gy6tnVkOPYz-GWvFN98bA@mail.gmail.com>
+Subject: Re: [PATCH] clk: Neaten clk_summary output
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-26 at 11:04 +0800, Libo Chen wrote: 
-> hi,
->     my box has 16 cpu (E5-2658,8 core, 2 thread per core), i did a test on
-> 3.4.24stable, startup 50 same process, every process is sample:
-> 
->  	#include <unistd.h>
-> 
->  	int main()
->  	{
->           	for (;;)
->           	{
->                   	unsigned int i = 0;
->                  	 while (i< 100){
->                      	 i++;
->                   	}
->                   	usleep(100);
->           	}
-> 
->          	 return 0;
->   	}
-> 
-> the result is process uses 15% cpu time, perf tool shows 70w migrations in 5 second.
+Hi Mike,
 
-My 8 socket 64 core DL980 running 256 copies (3.14-rt5) munches ~4%/copy
-per top, and does roughly 1 sh*tload migrations, nano-work loop or not.
-Turn SD_SHARE_PKG_RESOURCES off at MC (not a noop here), and consumption
-drops to ~2%/copy, and migrations ('course) mostly go away.
+On Fri, May 23, 2014 at 11:12 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Geert Uytterhoeven (2014-05-23 00:14:41)
+>> On Tue, May 13, 2014 at 2:17 AM, Mike Turquette <mturquette@linaro.org> wrote:
+>> > Quoting Geert Uytterhoeven (2014-03-25 04:16:24)
+>> >> From: Geert Uytterhoeven <geert+renesas@glider.be>
+>> >>
+>> >>   - Limit ruler to 80 characters (was: 81),
+>> >>   - Widen rate column by 1 for nicer spacing,
+>> >>   - Right-align numbers and their column headers,
+>> >>   - Move a newline to reduce the number of seq_printf() calls,
+>> >>   - Use set_puts() for fixed strings.
+>>
+>> >> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>> >
+>> > Thanks for the fix. Taken into clk-next.
+>>
+>> I don't see it in clk-next, though?
+>
+> When I say "clk-next" I really mean my local/private branch. You'll see
+> it at the end of today when I push my next set of tested patches out to
+> my linaro mirror.
 
-vogelweide:/abuild/mike/:[0]# perf stat -a -e sched:sched_migrate_task -- sleep 5
+Thanks, I can see it now.
 
- Performance counter stats for 'system wide':
+Sorry for being so impatient.
 
-              3108      sched:sched_migrate_task                                    
+Gr{oetje,eeting}s,
 
-       5.001367910 seconds time elapsed
+                        Geert
 
-(turns SD_SHARE_PKG_RESOURCES back on)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-vogelweide:/abuild/mike/:[0]# perf stat -a -e sched:sched_migrate_task -- sleep 5
-
- Performance counter stats for 'system wide':
-
-           4182334      sched:sched_migrate_task                                    
-
-       5.001365023 seconds time elapsed
-
-vogelweide:/abuild/mike/:[0]# 
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
