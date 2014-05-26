@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaEZNfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 09:35:22 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:64998 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaEZNfV (ORCPT
+	id S1752555AbaEZNfi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 09:35:38 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:33079 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532AbaEZNfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 09:35:21 -0400
-Message-ID: <53834310.8060808@redhat.com>
-Date: Mon, 26 May 2014 15:35:12 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Jeff Smith <jsmith.lkml@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        Kenny Simpson <theonetruekenny@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+	Mon, 26 May 2014 09:35:37 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Kees Cook <keescook@chromium.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: remap_file_pages() use
-References: <CALN0BAu_ibgpVykHL-byKm_4X1Afr1R1LRC5ocYVzcqA_k=_9Q@mail.gmail.com>	<20140519130114.GA3140@dhcp22.suse.cz>	<20140519143540.BE9F6E009B@blue.fi.intel.com>	<20140519143837.GA5228@infradead.org>	<CAAih0NjpHKc11JfG3MOnvisXesg-LoaS0Cx1rOA5ggDEHNfY6g@mail.gmail.com>	<20140526094240.B5508E009B@blue.fi.intel.com> <CAAih0Nght-5k6mp-_jc+GipxPfxPYdCEabH_8M2QMkM_B5FPWw@mail.gmail.com>
-In-Reply-To: <CAAih0Nght-5k6mp-_jc+GipxPfxPYdCEabH_8M2QMkM_B5FPWw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 6/9] procfs: add pid_seq_private struct to handle /proc/<pid>/{stat|stack}
+Date: Mon, 26 May 2014 14:27:27 +0100
+Message-Id: <1401110850-3552-7-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 26/05/2014 15:24, Jeff Smith ha scritto:
-> Your addr2 mmap() call is a bit incorrect semantically and
-> syntactically (you skipped the length arg). The addr2 request will
-> fail because mmap() does not implicitly munmap() occupied virtual
-> address space.
+This patch is preparation to handle sensitive ONE entries:
+/proc/<pid>/stat
+/proc/<pid>/stack
 
-With MAP_FIXED it does.  It is in the man page.
+These files use sequence iterators and we want to keep that logic, and
+their internal handler semantics.
 
-Paolo
+The sequence iterators stock the inode in the seq_file->private field,
+so in order to keep the semantic and to make the cached permission
+checks available during ->read(), we add the 'pid_seq_private' struct
+that contains both the inode and the cached permission. It will be the
+one referenced in the seq_file->private.
 
-> Even if you did that, the following still has a race
-> condition between the addr2 request and another thread grabbing the
-> same virtual space, which nothing short of a lock on all threads'
-> mmap()-ing logic can protect:
+This way the internal handlers of /proc/<pid>/{stat|stack} wont change.
+
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+ fs/proc/internal.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index f5c452c..f28e4f01 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -78,6 +78,17 @@ struct proc_inode {
+ 	struct inode vfs_inode;
+ };
+ 
++/*
++ * Struct used by some /proc/<pid>/$entries that use sequence
++ * iterators.
++ * This struct will be saved in seq_file->private so seq handlers
++ * can access the inode and the cached permission checks of ->open().
++ */
++struct pid_seq_private {
++	int permitted;
++	struct inode *inode;
++};
++
+ typedef int (*proc_read_fn_t)(char *page,
+ 			      struct task_struct *task, int permitted);
+ 
+-- 
+1.7.11.7
 
