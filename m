@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaEZPVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:21:40 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:57113 "EHLO isis.lip6.fr"
+	id S1753189AbaEZPW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:22:26 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:57180 "EHLO isis.lip6.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120AbaEZPVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:21:36 -0400
+	id S1753094AbaEZPVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 11:21:21 -0400
 X-pt: isis.lip6.fr
 From: Benoit Taine <benoit.taine@lip6.fr>
-To: qla2xxx-upstream@qlogic.com
-Cc: benoit.taine@lip6.fr, "James E.J. Bottomley" <JBottomley@parallels.com>,
+To: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+Cc: benoit.taine@lip6.fr, iscsi-driver@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org
-Subject: [PATCH 7/18] qla2xxx: Use kmemdup instead of kmalloc + memcpy
-Date: Mon, 26 May 2014 17:21:16 +0200
-Message-Id: <1401117687-28911-8-git-send-email-benoit.taine@lip6.fr>
+Subject: [PATCH 4/18] qla4xxx: Use kmemdup instead of kmalloc + memcpy
+Date: Mon, 26 May 2014 17:21:13 +0200
+Message-Id: <1401117687-28911-5-git-send-email-benoit.taine@lip6.fr>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
 References: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
@@ -30,28 +31,29 @@ Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
 ---
 Tested by compilation without errors.
 
- drivers/scsi/qla2xxx/qla_mbx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/scsi/qla4xxx/ql4_os.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_mbx.c b/drivers/scsi/qla2xxx/qla_mbx.c
-index 7f39e36..1c33a77 100644
---- a/drivers/scsi/qla2xxx/qla_mbx.c
-+++ b/drivers/scsi/qla2xxx/qla_mbx.c
-@@ -1319,7 +1319,7 @@ qla2x00_get_node_name_list(scsi_qla_host_t *vha, void **out_data, int *out_len)
+diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
+index 9eef7d4..3202063 100644
+--- a/drivers/scsi/qla4xxx/ql4_os.c
++++ b/drivers/scsi/qla4xxx/ql4_os.c
+@@ -3565,14 +3565,13 @@ static int qla4xxx_copy_from_fwddb_param(struct iscsi_bus_flash_session *sess,
+ 	if (test_bit(OPT_IPV6_DEVICE, &options)) {
+ 		conn->ipv6_traffic_class = fw_ddb_entry->ipv4_tos;
  
- 		left = 0;
- 
--		list = kzalloc(dma_size, GFP_KERNEL);
-+		list = kmemdup(pmap, dma_size, GFP_KERNEL);
- 		if (!list) {
- 			ql_log(ql_log_warn, vha, 0x1140,
- 			    "%s(%ld): failed to allocate node names list "
-@@ -1328,7 +1328,6 @@ qla2x00_get_node_name_list(scsi_qla_host_t *vha, void **out_data, int *out_len)
- 			goto out_free;
+-		conn->link_local_ipv6_addr = kzalloc(IPv6_ADDR_LEN, GFP_KERNEL);
++		conn->link_local_ipv6_addr = kmemdup(
++					fw_ddb_entry->link_local_ipv6_addr,
++					IPv6_ADDR_LEN, GFP_KERNEL);
+ 		if (!conn->link_local_ipv6_addr) {
+ 			rc = -ENOMEM;
+ 			goto exit_copy;
  		}
- 
--		memcpy(list, pmap, dma_size);
- restart:
- 		dma_free_coherent(&ha->pdev->dev, dma_size, pmap, pmap_dma);
+-
+-		memcpy(conn->link_local_ipv6_addr,
+-		       fw_ddb_entry->link_local_ipv6_addr, IPv6_ADDR_LEN);
+ 	} else {
+ 		conn->ipv4_tos = fw_ddb_entry->ipv4_tos;
  	}
 
