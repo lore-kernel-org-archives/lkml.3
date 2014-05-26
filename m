@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaEZP2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 11:28:19 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:42669 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaEZPS3 (ORCPT
+	id S1753430AbaEZP2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 11:28:40 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:49739 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657AbaEZPS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 11:18:29 -0400
+	Mon, 26 May 2014 11:18:28 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v3 07/15] thunderbolt: Enable plug events
-Date: Mon, 26 May 2014 17:18:04 +0200
-Message-Id: <1401117492-2870-8-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v3 06/15] thunderbolt: Add thunderbolt capability handling
+Date: Mon, 26 May 2014 17:18:03 +0200
+Message-Id: <1401117492-2870-7-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
 References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
@@ -22,106 +22,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt switches have a plug events capability. This patch adds the
-tb_plug_events_active method and uses it to activate plug events during
-switch allocation.
+Thunderbolt config areas contain capability lists similar to those found
+on pci devices. This patch introduces a tb_find_cap utility method to
+search for capabilities.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/switch.c | 46 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.h     |  1 +
- 2 files changed, 47 insertions(+)
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/cap.c    | 116 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.h     |   2 +
+ 3 files changed, 119 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/thunderbolt/cap.c
 
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index e89121f..21457cc 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -99,6 +99,39 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
- }
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 4ac18d9..617b314 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o tb.o switch.o
++thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
  
- /**
-+ * tb_plug_events_active() - enable/disable plug events on a switch
+diff --git a/drivers/thunderbolt/cap.c b/drivers/thunderbolt/cap.c
+new file mode 100644
+index 0000000..a7b47e7
+--- /dev/null
++++ b/drivers/thunderbolt/cap.c
+@@ -0,0 +1,116 @@
++/*
++ * Thunderbolt Cactus Ridge driver - capabilities lookup
 + *
-+ * Also configures a sane plug_events_delay of 255ms.
-+ *
-+ * Return: Returns 0 on success or an error code on failure.
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
 + */
-+static int tb_plug_events_active(struct tb_switch *sw, bool active)
++
++#include <linux/slab.h>
++#include <linux/errno.h>
++
++#include "tb.h"
++
++
++struct tb_cap_any {
++	union {
++		struct tb_cap_basic basic;
++		struct tb_cap_extended_short extended_short;
++		struct tb_cap_extended_long extended_long;
++	};
++} __packed;
++
++static bool tb_cap_is_basic(struct tb_cap_any *cap)
 +{
-+	u32 data;
-+	int res;
-+
-+	sw->config.plug_events_delay = 0xff;
-+	res = tb_sw_write(sw, ((u32 *) &sw->config) + 4, TB_CFG_SWITCH, 4, 1);
-+	if (res)
-+		return res;
-+
-+	res = tb_sw_read(sw, &data, TB_CFG_SWITCH, sw->cap_plug_events + 1, 1);
-+	if (res)
-+		return res;
-+
-+	if (active) {
-+		data = data & 0xFFFFFF83;
-+		if (sw->config.device_id == 0x1547)
-+			data |= 4;
-+	} else {
-+		data = data | 0x7c;
-+	}
-+	return tb_sw_write(sw, &data, TB_CFG_SWITCH,
-+			   sw->cap_plug_events + 1, 1);
++	/* basic.cap is u8. This checks only the lower 8 bit of cap. */
++	return cap->basic.cap != 5;
 +}
 +
++static bool tb_cap_is_long(struct tb_cap_any *cap)
++{
++	return !tb_cap_is_basic(cap)
++	       && cap->extended_short.next == 0
++	       && cap->extended_short.length == 0;
++}
++
++static enum tb_cap tb_cap(struct tb_cap_any *cap)
++{
++	if (tb_cap_is_basic(cap))
++		return cap->basic.cap;
++	else
++		/* extended_short/long have cap at the same offset. */
++		return cap->extended_short.cap;
++}
++
++static u32 tb_cap_next(struct tb_cap_any *cap, u32 offset)
++{
++	int next;
++	if (offset == 1) {
++		/*
++		 * The first pointer is part of the switch header and always
++		 * a simple pointer.
++		 */
++		next = cap->basic.next;
++	} else {
++		/*
++		 * Somehow Intel decided to use 3 different types of capability
++		 * headers. It is not like anyone could have predicted that
++		 * single byte offsets are not enough...
++		 */
++		if (tb_cap_is_basic(cap))
++			next = cap->basic.next;
++		else if (!tb_cap_is_long(cap))
++			next = cap->extended_short.next;
++		else
++			next = cap->extended_long.next;
++	}
++	/*
++	 * "Hey, we could terminate some capability lists with a null offset
++	 *  and others with a pointer to the last element." - "Great idea!"
++	 */
++	if (next == offset)
++		return 0;
++	return next;
++}
 +
 +/**
-  * tb_switch_free() - free a tb_switch and all downstream switches
-  */
- void tb_switch_free(struct tb_switch *sw)
-@@ -113,6 +146,8 @@ void tb_switch_free(struct tb_switch *sw)
- 		sw->ports[i].remote = NULL;
- 	}
- 
-+	tb_plug_events_active(sw, false);
-+
- 	kfree(sw->ports);
- 	kfree(sw);
- }
-@@ -125,6 +160,7 @@ void tb_switch_free(struct tb_switch *sw)
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
- {
- 	int i;
-+	int cap;
- 	struct tb_switch *sw;
- 	int upstream_port = tb_cfg_get_upstream_port(tb->ctl, route);
- 	if (upstream_port < 0)
-@@ -177,6 +213,16 @@ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
- 
- 	/* TODO: I2C, IECS, EEPROM, link controller */
- 
-+	cap = tb_find_cap(&sw->ports[0], TB_CFG_SWITCH, TB_CAP_PLUG_EVENTS);
-+	if (cap < 0) {
-+		tb_sw_warn(sw, "cannot find TB_CAP_PLUG_EVENTS aborting\n");
-+		goto err;
++ * tb_find_cap() - find a capability
++ *
++ * Return: Returns a positive offset if the capability was found and 0 if not.
++ * Returns an error code on failure.
++ */
++int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap)
++{
++	u32 offset = 1;
++	struct tb_cap_any header;
++	int res;
++	int retries = 10;
++	while (retries--) {
++		res = tb_port_read(port, &header, space, offset, 1);
++		if (res) {
++			/* Intel needs some help with linked lists. */
++			if (space == TB_CFG_PORT && offset == 0xa
++			    && port->config.type == TB_TYPE_DP_HDMI_OUT) {
++				offset = 0x39;
++				continue;
++			}
++			return res;
++		}
++		if (offset != 1) {
++			if (tb_cap(&header) == cap)
++				return offset;
++			if (tb_cap_is_long(&header)) {
++				/* tb_cap_extended_long is 2 dwords */
++				res = tb_port_read(port, &header, space,
++						   offset, 2);
++				if (res)
++					return res;
++			}
++		}
++		offset = tb_cap_next(&header, offset);
++		if (!offset)
++			return 0;
 +	}
-+	sw->cap_plug_events = cap;
-+
-+	if (tb_plug_events_active(sw, true))
-+		goto err;
-+
- 	return sw;
- err:
- 	kfree(sw->ports);
++	tb_port_WARN(port,
++		     "run out of retries while looking for cap %#x in config space %d, last offset: %#x\n",
++		     cap, space, offset);
++	return -EIO;
++}
 diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 38e4c23..af123c4 100644
+index 389dbb4..38e4c23 100644
 --- a/drivers/thunderbolt/tb.h
 +++ b/drivers/thunderbolt/tb.h
-@@ -19,6 +19,7 @@ struct tb_switch {
- 	struct tb_regs_switch_header config;
- 	struct tb_port *ports;
- 	struct tb *tb;
-+	int cap_plug_events; /* offset, zero if not found */
- };
+@@ -159,6 +159,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
+ void tb_switch_free(struct tb_switch *sw);
  
- /**
++int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
++
+ 
+ static inline int tb_route_length(u64 route)
+ {
 -- 
 1.9.3
 
