@@ -1,111 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaEZLIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 07:08:41 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:53516 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaEZLIj convert rfc822-to-8bit (ORCPT
+	id S1752210AbaEZLJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 07:09:34 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34478 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778AbaEZLJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 07:08:39 -0400
-Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>
-Date: Mon, 26 May 2014 14:08:32 +0300
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BA47464B-B724-4D41-8D82-1A8880E310E9@konsulko.com>
-References: <1396615441-29630-1-git-send-email-pantelis.antoniou@konsulko.com> <1396615441-29630-3-git-send-email-pantelis.antoniou@konsulko.com> <20140514100856.5198DC4153D@trevor.secretlab.ca> <E204285C-D6CD-4518-A94F-26BF0570C1B1@konsulko.com> <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com> <20140516105814.3EA3FC403C2@trevor.secretlab.ca> <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com> <20140520055026.E3A98C412DA@trevor.secretlab.ca> <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com> <20140526104824.63F13C42129@trevor.secretlab.ca> <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-X-Mailer: Apple Mail (2.1085)
+	Mon, 26 May 2014 07:09:32 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v7 0/2] CPU hotplug: Fix the long-standing "IPI to offline
+ CPU" issue
+To: peterz@infradead.org, tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org, fweisbec@gmail.com,
+        hch@infradead.org
+Cc: mgorman@suse.de, riel@redhat.com, bp@suse.de, rostedt@goodmis.org,
+        mgalbraith@suse.de, ego@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        oleg@redhat.com, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 26 May 2014 16:38:06 +0530
+Message-ID: <20140526110743.16203.18186.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052611-9574-0000-0000-00000DD01738
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
 
-On May 26, 2014, at 1:57 PM, Geert Uytterhoeven wrote:
+Hi,
 
-> Hi Grant,
-> 
-> On Mon, May 26, 2014 at 12:48 PM, Grant Likely
-> <grant.likely@secretlab.ca> wrote:
->> On Tue, 20 May 2014 09:38:49 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>> On Tue, May 20, 2014 at 7:50 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>>>> Why has the overlay system been designed for plugging and unpluging whole
->>>>> overlays?
->>>>> That means the kernel has to remember the full stack, causing issues with
->>>>> e.g. kexec.
->>>> 
->>>> Mostly so that drivers don't see any difference in the livetree data
->>>> structure. It also means that userspace sees a single representation of
->>>> the hardware at any given time.
->>> 
->>> Sorry, I don't follow the argument about the "single representation of the
->>> hardware".
->> 
->> Er, s/of the hardware/of the tree/. Right now the overlay design
->> modifies the live tree which at the same time modifies the tree
->> representation in /sys/firmware/devicetree. If the design was changed to
->> keep the overlay logically separate, then I would think we want to
->> expose that information to usespace also. In fact, I think we would need
->> to for usecases like kexec.
-> 
-> OK, so it does modify the real tree, and doesn't keep the actual overlays.
-> 
+There is a long-standing problem related to CPU hotplug which causes IPIs to
+be delivered to offline CPUs, and the smp-call-function IPI handler code
+prints out a warning whenever this is detected. Every once in a while this
+(usually harmless) warning gets reported on LKML, but so far it has not been
+completely fixed. Usually the solution involves finding out the IPI sender
+and fixing it by adding appropriate synchronization with CPU hotplug.
 
-It modifies the actual tree, and it keeps a log of each modification made to the
-tree so that it will be able to revert the changes made.
+However, while going through one such internal bug reports, I found that
+there is a significant bug in the receiver side itself (more specifically,
+in stop-machine) that can lead to this problem even when the sender code
+is perfectly fine. This patchset handles that scenario to ensure that a
+CPU doesn't go offline with callbacks still pending.
 
-> I was under the impression the overlay stack was also kept in memory, to allow
-> reversal, so there was a misunderstanding.
-> 
+Patch 1 adds some additional debug code to the smp-call-function framework,
+to help debug such issues easily.
 
-Yep.
+Patch 2 adds a mechanism to flush any pending smp-call-function callbacks
+queued on the CPU going offline (including those callbacks for which the
+IPIs from the source CPUs might not have arrived in time at the outgoing CPU).
+This ensures that a CPU never goes offline with work still pending. Also,
+the warning condition in smp-call-function IPI handler code is modified to
+trigger only if an IPI is received on an offline CPU *and* it still has
+pending callbacks to execute, since that's the only remaining buggy scenario
+after applying this patch.
 
-> Hence for kexec, the tree in /sys/firmware/devicetree can just be passed
-> to the new kernel, as that's the current representation of the hardware?
-> 
 
-Exactly.
+In fact, I debugged the problem by using Patch 1, and found that the
+payload of the IPI was always the block layer's trigger_softirq() function.
+But I was not able to find anything wrong with the block layer code. That's
+when I started looking at the stop-machine code and realized that there is
+a race-window which makes the IPI _receiver_ the culprit, not the sender.
+Patch 2 handles this scenario and hence this should put an end to most of
+the hard-to-debug IPI-to-offline-CPU issues.
 
-> Gr{oetje,eeting}s,
-> 
->                        Geert
-> 
 
-Regards
 
--- Pantelis
+Changes in v7:
+* Modified the warning condition in smp-call-function IPI handler code, such
+  that it triggers only if an offline CPU got an IPI *and* it still had pending
+  callbacks to execute.
+* Completely dropped the patch that modified the stop-machine code to
+  introduce additional states to order the disabling of interrupts on various
+  CPUs. This strict ordering is not necessary any more after the first change.
+  Thanks to Frederic Weisbecker for suggesting this enhancement.
 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Changes in v6:
+Modified Patch 3 to flush the pending callbacks from CPU_DYING notifier
+instead of stop-machine directly, so that only the CPU hotplug path will
+run this code, instead of everybody who uses stop-machine. Suggested by
+Peter Zijlstra.
+
+Changes in v5:
+Added Patch 3 to flush out any pending smp-call-function callbacks on the
+outgoing CPU, as suggested by Frederic Weisbecker.
+
+Changes in v4:
+Rewrote a comment in Patch 2 and reorganized the code for better readability.
+
+Changes in v3:
+Rewrote patch 2 and split the MULTI_STOP_DISABLE_IRQ state into two:
+MULTI_STOP_DISABLE_IRQ_INACTIVE and MULTI_STOP_DISABLE_IRQ_ACTIVE, and
+used this framework to ensure that the CPU going offline always disables
+its interrupts last. Suggested by Tejun Heo.
+
+v1 and v2:
+https://lkml.org/lkml/2014/5/6/474
+
+
+ Srivatsa S. Bhat (2):
+      smp: Print more useful debug info upon receiving IPI on an offline CPU
+      CPU hotplug, smp: Flush any pending IPI callbacks before CPU offline
+
+
+ kernel/smp.c |   68 +++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 60 insertions(+), 8 deletions(-)
+
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
