@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaEZJ5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 05:57:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52840 "EHLO mail.skyhub.de"
+	id S1752083AbaEZJ6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 05:58:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60955 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750914AbaEZJ5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 05:57:41 -0400
-Date: Mon, 26 May 2014 11:57:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: tthayer@altera.com
-Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, dinguyen@altera.com, dougthompson@xmission.com,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tthayer.linux@gmail.com
-Subject: Re: [PATCHv5 3/3] edac: altera: Add EDAC support for Altera SoC
- SDRAM Controller
-Message-ID: <20140526095730.GC25732@pd.tnic>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
- <1400169891-29546-4-git-send-email-tthayer@altera.com>
+	id S1750914AbaEZJ6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 05:58:03 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <lee.jones@linaro.org>, Keerthy <j-keerthy@ti.com>
+Subject: [PATCH 0/5] tps65917: Add support for for TPS65917 PMIC 
+Date: Mon, 26 May 2014 15:26:32 +0530
+Message-ID: <1401098197-647-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1400169891-29546-4-git-send-email-tthayer@altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 15, 2014 at 11:04:51AM -0500, tthayer@altera.com wrote:
-> From: Thor Thayer <tthayer@altera.com>
-> 
-> v2: Use the SDRAM controller registers to calculate memory size
->     instead of the Device Tree. Update To & Cc list. Add maintainer
->     information.
-> 
-> v3: EDAC driver cleanup based on comments from Mailing list.
-> 
-> v4: Panic on DBE. Add macro around inject-error reads to prevent
->     them from being optimized out. Remove of_match_ptr since this
->     will always use Device Tree.
-> 
-> v5: Addition of printk to trigger function to ensure read vars
->     are not optimized out.
+The TPS65917 chip is a power management IC for Portable Navigation Systems
+and Tablet Computing devices. It contains the following components:
 
-Yeah, you could turn those vX: messages into a real commit message -
-much better than none at all :-)
+ - Regulators.
+ - GPADC.
+ - Over Temperature warning and Shut down.
 
-Other than that, the edac bits look ok. I'll wait out until you guys've
-sorted the devicetree issues so ping me when it is ready to pick up.
+This patch series adds support for TPS65917 mfd device. At this time only
+the regulator functionality is made available.
 
-Thanks.
+The closest drivers are PALMAS series drivers. Hence adapted palmas mfd
+driver to support the tps65917 PMIC.
+
+The register set for SMPSs and LDOs are changed and the ramp delay support
+is also changed. Bit-field defenitions are changed.
+Hence based on the PALMAS drivers and created a new driver
+for regulator with code changes as required.
+
+The patches are boot tested on DRA72-EVM.
+
+Keerthy (5):
+  mfd: Add DT bindings for tps65917 PMIC
+  Regulators: Add TPS65917 Bindings
+  mfd: palmas: Add tps65917 specific definitions and enums 
+  mfd: palmas: Add tps65917 support
+  regulator: tps65917: Add Regulator driver for tps65917 PMIC
+
+ Documentation/devicetree/bindings/mfd/palmas.txt   |    2 +
+ .../bindings/regulator/tps65917-pmic.txt           |   67 ++
+ drivers/mfd/palmas.c                               |  177 ++++-
+ drivers/regulator/Kconfig                          |   12 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/tps65917-regulator.c             |  825 ++++++++++++++++++++
+ include/linux/mfd/palmas.h                         |  793 +++++++++++++++++++
+ 7 files changed, 1872 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/tps65917-pmic.txt
+ create mode 100644 drivers/regulator/tps65917-regulator.c
 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
