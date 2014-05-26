@@ -1,114 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaEZKOn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 06:14:43 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:54868 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaEZKOm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 06:14:42 -0400
+	id S1751984AbaEZKTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 06:19:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52111 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691AbaEZKTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 06:19:10 -0400
+Date: Mon, 26 May 2014 12:18:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>
+Subject: [PATCH] x86, MCE: Flesh out when to panic comment
+Message-ID: <20140526101859.GD25732@pd.tnic>
+References: <20140521163315.GJ21205@pd.tnic>
+ <alpine.LNX.2.00.1405212323190.12047@pobox.suse.cz>
+ <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
+ <20140521214319.GF25130@pd.tnic>
+ <537D1E8B.1010505@zytor.com>
+ <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
+ <20140521215411.GI25130@pd.tnic>
+ <537D21F2.8030702@zytor.com>
+ <20140521221121.GL25130@pd.tnic>
+ <537D2522.80702@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <5383065E.9030601@linux.vnet.ibm.com>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-2-git-send-email-vincent.guittot@linaro.org>
- <5381C70E.3030605@linux.vnet.ibm.com> <CAKfTPtDBZyrJJpUHPZcG9Jf4egneyqQ7TR3QXiR0Wff8ZBkHAw@mail.gmail.com>
- <5383065E.9030601@linux.vnet.ibm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 26 May 2014 12:14:22 +0200
-Message-ID: <CAKfTPtAQHR7aBs8yPuvMn-L_u=qVyNh1aabL4CFPW1JW103eFQ@mail.gmail.com>
-Subject: Re: [PATCH v2 01/11] sched: fix imbalance flag reset
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <537D2522.80702@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 May 2014 11:16, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> On 05/26/2014 01:19 PM, Vincent Guittot wrote:
->> On 25 May 2014 12:33, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->>> Hi Vincent,
->>>
->>> On 05/23/2014 09:22 PM, Vincent Guittot wrote:
->>>> The imbalance flag can stay set whereas there is no imbalance.
->>>>
->>>> Let assume that we have 3 tasks that run on a dual cores /dual cluster system.
->>>> We will have some idle load balance which are triggered during tick.
->>>> Unfortunately, the tick is also used to queue background work so we can reach
->>>> the situation where short work has been queued on a CPU which already runs a
->>>> task. The load balance will detect this imbalance (2 tasks on 1 CPU and an idle
->>>> CPU) and will try to pull the waiting task on the idle CPU. The waiting task is
->>>> a worker thread that is pinned on a CPU so an imbalance due to pinned task is
->>>> detected and the imbalance flag is set.
->>>> Then, we will not be able to clear the flag because we have at most 1 task on
->>>> each CPU but the imbalance flag will trig to useless active load balance
->>>> between the idle CPU and the busy CPU.
->>>
->>> Why do we do active balancing today when there is at-most 1 task on the
->>> busiest cpu? Shouldn't we be skipping load balancing altogether? If we
->>> do active balancing when the number of tasks = 1, it will lead to a ping
->>> pong right?
->>
->> That's the purpose of the patch to prevent this useless active load
->> balance. When the imbalance flag is set, an active load balance is
->> triggered whatever the load balance is because of pinned tasks that
->> prevents a balance state.
->
-> No I mean this:
->
-> sched:Do not continue load balancing when the busiest cpu has one
-> running task
+On Wed, May 21, 2014 at 03:13:54PM -0700, H. Peter Anvin wrote:
+> Seems like a comment would be in order, though.
 
-But you can have situation where you have to migrate the task even if
-the busiest CPU has only 1 task. The use of imbalance flag is one
-example. You can also be in a situation where the busiest group has
-too much load compared to the local group and the busiest CPU even
-with 1 task (at this instant) has been selected to move task away from
-the busiest group
+---
+From: Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, MCE: Flesh out when to panic comment
 
-Vincent
+Recent discussion (link below) showed that it is not really clear what
+appropriate recovery actions we're taking when in a machine check
+exception. Flesh out the comment which was explaining that with more
+detail.
 
->
-> From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->
->
-> ---
->  kernel/sched/fair.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c9617b7..b175333 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6626,6 +6626,8 @@ more_balance:
->                         }
->                         goto out_balanced;
->                 }
-> +       } else {
-> +               goto out;
->         }
->
->         if (!ld_moved) {
->
->
-> }
->
-> Regards
-> Preeti U Murthy
->>
->> Vincent
->>
->>>
->>> Regards
->>> Preeti U Murthy
->>>
->>
->
+Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/CALCETrXudJ8BkNF_M-r4O40XLN%2BPnZ5TOZw0P7N4kqo3qngzyg@mail.gmail.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68317c80de7f..9f070339b09f 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1151,10 +1151,14 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		no_way_out = worst >= MCE_PANIC_SEVERITY;
+ 
+ 	/*
+-	 * At insane "tolerant" levels we take no action. Otherwise
+-	 * we only die if we have no other choice. For less serious
+-	 * issues we try to recover, or limit damage to the current
+-	 * process.
++	 * At insane "tolerant" levels we take no action. Otherwise we only die
++	 * if we have no other choice. Which means, we're definitely going to
++	 * panic on unrecoverable, uncontainable errors which would otherwise
++	 * influence machine state and/or cause any type of corruption. The
++	 * decision what do to is done by mce_severity().
++	 *
++	 * For less serious issues we try to recover, or limit damage to the
++	 * current process.
+ 	 */
+ 	if (cfg->tolerant < 3) {
+ 		if (no_way_out)
+-- 
+1.9.0
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
