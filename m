@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaEZEkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 00:40:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52576 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaEZEkw convert rfc822-to-8bit (ORCPT
+	id S1751525AbaEZErx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 00:47:53 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:34768 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaEZErv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 00:40:52 -0400
-Date: Mon, 26 May 2014 00:40:45 -0400 (EDT)
-Message-Id: <20140526.004045.1779020170437806699.davem@davemloft.net>
-To: joe@perches.com
-Cc: manuel.schoelling@gmx.de, kevin.curtis@farsite.co.uk,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] wan: time_before()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1401040732.22191.8.camel@joe-AO725>
-References: <1401039163-10727-1-git-send-email-manuel.schoelling@gmx.de>
-	<1401040732.22191.8.camel@joe-AO725>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 25 May 2014 21:40:51 -0700 (PDT)
+	Mon, 26 May 2014 00:47:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140525184808.GP10768@lukather>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
+ <1400831485-28576-4-git-send-email-wens@csie.org> <20140525184808.GP10768@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Mon, 26 May 2014 12:47:30 +0800
+X-Google-Sender-Auth: eRA_Jfz4NMlgsRffZuuhsps4xDg
+Message-ID: <CAGb2v643UmK6GfuDVfywVUeo_g7FpdZC_7SgeY-UMZ_k_-2N9Q@mail.gmail.com>
+Subject: Re: [PATCH 03/22] clk: sunxi: add "pll6" to sun6i protected clock list
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sun, 25 May 2014 10:58:52 -0700
+On Mon, May 26, 2014 at 2:48 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Fri, May 23, 2014 at 03:51:06PM +0800, Chen-Yu Tsai wrote:
+>> PLL6 is used by some important but undocumented module, most likely
+>> memory related, such as mbus or the actual memory controller. As we
+>> do not have a driver for that, add pll6 to the list of protected
+>> clocks, so that it won't be disabled and leave us with a non-responsive
+>> system.
+>
+> What issue have you seen?
 
-> On Sun, 2014-05-25 at 19:32 +0200, Manuel Schölling wrote:
->> To be future-proof and for better readability the time comparisons are
->> modified to use time_before() instead of plain, error-prone math.
-> 
-> Sensible change, but it seems these should be
-> udelay(some_constant) instead of a a rather
-> variable time wait based on a system/config
-> defined jiffies.
+Completely unresponsive after PLL6 is gated (on the A23).
 
-Agreed, this code probably wants udelay(10) or something like
-that.
+> The system actually works pretty great on the A31.
+
+Does it work when there aren't any other PLL6 consumers?
+Maybe the boot0 on A31 and A23 setup some DRAM-related modules differently.
+
+If the A31 works without protecting PLL6, I'll add a separate list
+for the A23.
+
+
+Thanks,
+ChenYu
