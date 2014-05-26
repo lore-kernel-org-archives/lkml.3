@@ -1,153 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaEZHDC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 03:03:02 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:35969 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaEZHC7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 03:02:59 -0400
-Date: Mon, 26 May 2014 09:03:01 +0200
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-CC: Ulf Hansson <ulf.hansson@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Chris Ball <chris@printf.net>
-Subject: Re: [PATCH RFC] mmc: add slot argument to mmc_of_parse
-Message-ID: <20140526070301.GA12777@ldesroches-Latitude-E6320>
-Mail-Followup-To: Jaehoon Chung <jh80.chung@samsung.com>,
-	Ulf Hansson <ulf.hansson@linaro.org>,
-	linux-mmc <linux-mmc@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	Chris Ball <chris@printf.net>
-References: <1399457217-22846-1-git-send-email-ludovic.desroches@atmel.com>
- <CAPDyKFqeunnWmguTH89byNc5Yy+CBY4avMeeon3ZSfNMmGJa9Q@mail.gmail.com>
- <537ED0AE.7040901@samsung.com>
+	id S1751628AbaEZHGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 03:06:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58217 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855AbaEZHGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 03:06:48 -0400
+Message-ID: <5382E7FF.7070600@ti.com>
+Date: Mon, 26 May 2014 10:06:39 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <537ED0AE.7040901@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nishanth Menon <nm@ti.com>
+CC: <mturquette@linaro.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <ldewangan@nvidia.com>,
+        <linux-doc@vger.kernel.org>, <robh+dt@kernel.org>
+Subject: Re: [PATCH v2 0/2] clk: Support for Palmas clk32kg and clk32kgaudio
+ clocks
+References: <1399382685-14781-1-git-send-email-peter.ujfalusi@ti.com> <20140506133136.GA11626@kahuna>
+In-Reply-To: <20140506133136.GA11626@kahuna>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Mike,
 
-Sorry I was on vacation, I'll send a cleaner patch updating other drivers
-this week.
+On 05/06/2014 04:31 PM, Nishanth Menon wrote:
+> On 16:24-20140506, Peter Ujfalusi wrote:
+>> Hi,
+>>
+>> Changes since v1:
+>> - binding documentation and driver has been separated based on Nishanth Menon's
+>>   comment
 
-Regards
+Could you take a look at this series please? I really hoped that it would make
+it to 3.16...
 
-Ludovic
+Thanks,
+Péter
 
-On Fri, May 23, 2014 at 01:38:06PM +0900, Jaehoon Chung wrote:
-> Hi, All.
+>>
+>> v1 of the driver can be found:
+>> https://lkml.org/lkml/2014/4/3/104
+>>
+>> Palmas class of devices can provide 32K clock(s) to be used by other devices
+>> on the board. Depending on the actual device the provided clocks can be:
+>> CLK32K_KG and CLK32K_KGAUDIO
+>> or only one:
+>> CLK32K_KG (TPS659039 for example)
+>>
+>> Use separate compatible flags for the two 32K clock.
+>> A system which needs or have only one of the 32k clock from
+>> Palmas will need to add node(s) for each clock as separate section
+>> in the dts file.
+>> The two compatible property is:
+>> "ti,palmas-clk32kg" for clk32kg clock
+>> "ti,palmas-clk32kgaudio" for clk32kgaudio clock
+>>
+>> Apart from the register control of the clocks - which is done via
+>> the clock API there is a posibility to enable the external sleep
+>> control. In this way the clock can be enabled/disabled on demand by the
+>> user of the clock.
+>>
+>> Regards,
+>> Peter
+>> ---
+>> Peter Ujfalusi (2):
+>>   dt/bindings: Binding documentation for Palmas clk32kg and clk32kgaudio
+>>     clocks
+>>   clk: Add driver for Palmas clk32kg and clk32kgaudio clocks
+>>
+>>  .../bindings/clock/clk-palmas-clk32kg-clocks.txt   |  35 +++
+>>  drivers/clk/Kconfig                                |   7 +
+>>  drivers/clk/Makefile                               |   1 +
+>>  drivers/clk/clk-palmas.c                           | 307 +++++++++++++++++++++
+>>  include/dt-bindings/mfd/palmas.h                   |  18 ++
+>>  5 files changed, 368 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/clock/clk-palmas-clk32kg-clocks.txt
+>>  create mode 100644 drivers/clk/clk-palmas.c
+>>  create mode 100644 include/dt-bindings/mfd/palmas.h
+>>
+>> -- 
+>> 1.9.2
+>>
 > 
-> This patch is working on progress?
-> I want to merge this patch for fixing dw-mmc controller problem.
-> 
-> If this patch didn't work on progress, i will send the patch based-on this patch.
-> 
-> Best Regards,
-> Jaehoon Chung
-> 
-> On 05/14/2014 06:53 PM, Ulf Hansson wrote:
-> > On 7 May 2014 12:06, Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
-> >> Some hosts manage several slots. In these case information such as the bus
-> >> width, chip detect and others are into the slot node. So we have to parse
-> >> child nodes. If not NULL, slot node will be used instead of the device
-> >> node.
-> >>
-> >> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> >> ---
-> >>
-> >> Hi,
-> >>
-> >> Since this patch is only a RFC, I have not yet updated drivers using this
-> >> function.
-> >>
-> >> I would like to use mmc_of_parse to reduce code duplication. My issue is that
-> >> atmel mci is a bit different from others mci host since it can provide
-> >> several slots, so it allocates several mmc hosts. By the way, it is not the
-> >> only one.
-> >>
-> >> When calling mmc_alloc_host, host->parent is set to &pdev->dev. mmc_of_parse
-> >> uses host->parent->of_node but in my case settings are in the slot nodes so in
-> >> the child nodes. That's why I would like to have a way to tell which node I
-> >> want to use.
-> > 
-> > Seems reasonable, thanks for working on this!
-> > 
-> >>
-> >>
-> >> Regards
-> >>
-> >> Ludovic
-> >>
-> >>
-> >>
-> >>  drivers/mmc/core/host.c |    9 +++++++--
-> >>  1 file changed, 7 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> >> index fdea825..ed6cea5 100644
-> >> --- a/drivers/mmc/core/host.c
-> >> +++ b/drivers/mmc/core/host.c
-> >> @@ -300,13 +300,15 @@ static inline void mmc_host_clk_sysfs_init(struct mmc_host *host)
-> >>  /**
-> >>   *     mmc_of_parse() - parse host's device-tree node
-> >>   *     @host: host whose node should be parsed.
-> >> + *     @slot: some devices provide several slots so the node to parse
-> >> + *     is not the host one.
-> >>   *
-> >>   * To keep the rest of the MMC subsystem unaware of whether DT has been
-> >>   * used to to instantiate and configure this host instance or not, we
-> >>   * parse the properties and set respective generic mmc-host flags and
-> >>   * parameters.
-> >>   */
-> >> -int mmc_of_parse(struct mmc_host *host)
-> >> +int mmc_of_parse(struct mmc_host *host, struct device_node *slot)
-> >>  {
-> >>         struct device_node *np;
-> >>         u32 bus_width;
-> >> @@ -317,7 +319,10 @@ int mmc_of_parse(struct mmc_host *host)
-> >>         if (!host->parent || !host->parent->of_node)
-> >>                 return 0;
-> >>
-> >> -       np = host->parent->of_node;
-> >> +       if (slot)
-> >> +               np = slot;
-> >> +       else
-> >> +               np = host->parent->of_node;
-> >>
-> >>         /* "bus-width" is translated to MMC_CAP_*_BIT_DATA flags */
-> >>         if (of_property_read_u32(np, "bus-width", &bus_width) < 0) {
-> >> --
-> >> 1.7.9.5
-> >>
-> > 
-> > How about adding a new API, __mmc_of_parse((struct mmc_host *host,
-> > struct device_node *slot)
-> > Then let the old API mmc_of_parse() remain as is, but let it call the
-> > new API with slot == NULL.
-> > 
-> > Atmel can then use the new API, but the other drivers can remain as is.
-> > 
-> > Kind regards
-> > Ulf Hansson
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Series:
+> Reviewed-by: Nishanth Menon <nm@ti.com>
+
+
