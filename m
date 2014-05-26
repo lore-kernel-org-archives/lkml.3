@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaEZQGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 12:06:20 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:52883 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058AbaEZQGR (ORCPT
+	id S1753120AbaEZQG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 12:06:26 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:38164 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091AbaEZQGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 12:06:17 -0400
+	Mon, 26 May 2014 12:06:23 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 04/24] staging: rtl8188eu: Remove unused function rtl8188eu_ps_func()
-Date: Mon, 26 May 2014 21:35:19 +0530
-Message-Id: <1401120339-23667-4-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 05/24] staging: rtl8188eu: Remove unused function ODM_MacStatusQuery()
+Date: Mon, 26 May 2014 21:35:20 +0530
+Message-Id: <1401120339-23667-5-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401120339-23667-1-git-send-email-navin.patidar@gmail.com>
 References: <1401120339-23667-1-git-send-email-navin.patidar@gmail.com>
@@ -23,26 +23,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/usb_halinit.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/staging/rtl8188eu/hal/odm_HWConfig.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/hal/usb_halinit.c b/drivers/staging/rtl8188eu/hal/usb_halinit.c
-index 9020129..141f85a 100644
---- a/drivers/staging/rtl8188eu/hal/usb_halinit.c
-+++ b/drivers/staging/rtl8188eu/hal/usb_halinit.c
-@@ -2226,12 +2226,6 @@ static void rtl8188eu_init_default_value(struct adapter *adapt)
- 		haldata->odmpriv.RFCalibrateInfo.ThermalValue_HP[i] = 0;
+diff --git a/drivers/staging/rtl8188eu/hal/odm_HWConfig.c b/drivers/staging/rtl8188eu/hal/odm_HWConfig.c
+index a755df3..0145a11 100644
+--- a/drivers/staging/rtl8188eu/hal/odm_HWConfig.c
++++ b/drivers/staging/rtl8188eu/hal/odm_HWConfig.c
+@@ -436,14 +436,6 @@ void ODM_PhyStatusQuery(struct odm_dm_struct *dm_odm,
+ 	ODM_PhyStatusQuery_92CSeries(dm_odm, pPhyInfo, pPhyStatus, pPktinfo);
  }
  
--static u8 rtl8188eu_ps_func(struct adapter *Adapter, enum hal_intf_ps_func efunc_id, u8 *val)
+-/*  For future use. */
+-void ODM_MacStatusQuery(struct odm_dm_struct *dm_odm, u8 *mac_stat,
+-			u8 macid, bool pkt_match_bssid,
+-			bool pkttoself, bool pkt_beacon)
 -{
--	u8 bResult = true;
--	return bResult;
+-	/*  2011/10/19 Driver team will handle in the future. */
 -}
 -
- void rtl8188eu_set_hal_ops(struct adapter *adapt)
- {
- 	struct hal_ops	*halfunc = &adapt->HalFunc;
+ enum HAL_STATUS ODM_ConfigRFWithHeaderFile(struct odm_dm_struct *dm_odm,
+ 					   enum rf_radio_path content,
+ 					   enum rf_radio_path rfpath)
 -- 
 1.7.10.4
 
