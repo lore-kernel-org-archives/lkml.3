@@ -1,127 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaEZThB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 15:37:01 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:52612 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaEZTg7 (ORCPT
+	id S1752083AbaEZTh3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 15:37:29 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:45694 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbaEZTh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 15:36:59 -0400
-Date: Mon, 26 May 2014 12:35:48 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Davidlohr Bueso <davidlohr@hp.com>
-cc: akpm@linux-foundation.org, mingo@kernel.org, peterz@infradead.org,
-        riel@redhat.com, mgorman@suse.de, aswin@hp.com, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] mm/rmap: share the i_mmap_rwsem
-In-Reply-To: <1400816006-3083-5-git-send-email-davidlohr@hp.com>
-Message-ID: <alpine.LSU.2.11.1405261216460.3411@eggly.anvils>
-References: <1400816006-3083-1-git-send-email-davidlohr@hp.com> <1400816006-3083-5-git-send-email-davidlohr@hp.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 26 May 2014 15:37:28 -0400
+Message-ID: <538397F5.6010002@amacapital.net>
+Date: Mon, 26 May 2014 12:37:25 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Asit K Mallick <asit.k.mallick@intel.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH 0/15] x86/xsaves: Optimize xstate context switch by xsaves/xrstors
+References: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1401123682-5384-1-git-send-email-fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014, Davidlohr Bueso wrote:
-
-> Similarly to rmap_walk_anon() and collect_procs_anon(),
-> there is opportunity to share the lock in rmap_walk_file()
-> and collect_procs_file() for file backed pages.
-
-And lots of other places, no?  I welcome i_mmap_rwsem, but I think
-you're approaching it wrongly to separate this off from 2/5, then
-follow anon_vma for the places that can be converted to lock_read().
-
-If you go back through 2/5 and study the context of each, I think
-you'll find most make no modification to the tree, and can well
-use the lock_read() rather than the lock_write().
-
-I could be wrong, but I don't think there are any hidden gotchas.
-There certainly are in the anon_vma case (where THP makes special
-use of the anon_vma lock), and used to be in the i_mmap_lock case
-(when invalidation had to be single-threaded across cond_rescheds),
-but I think i_mmap_rwsem should be straightforward.
-
-Sure, it's safe to use the lock_write() variant, but please don't
-prefer it to lock_read() without good reason.
-
-Hugh
-
+On 05/26/2014 10:01 AM, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  include/linux/fs.h  | 10 ++++++++++
->  mm/memory-failure.c |  4 ++--
->  mm/rmap.c           |  4 ++--
->  3 files changed, 14 insertions(+), 4 deletions(-)
+> With ever growing extended state registers (xstate) on x86 processors, kernel
+> needs to cope with issue of growing memory space occupied by xstate. The xsave
+> area is holding more and more xstate registers, growing from legacy FP and
+> SSE to AVX, AVX2, AVX-512, MPX, and Intel PT.
 > 
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 60a1d7d..4c2c228 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -467,6 +467,16 @@ static inline void i_mmap_unlock_write(struct address_space *mapping)
->  	up_write(&mapping->i_mmap_rwsem);
->  }
->  
-> +static inline void i_mmap_lock_read(struct address_space *mapping)
-> +{
-> +	down_read(&mapping->i_mmap_rwsem);
-> +}
-> +
-> +static inline void i_mmap_unlock_read(struct address_space *mapping)
-> +{
-> +	up_read(&mapping->i_mmap_rwsem);
-> +}
-> +
->  /*
->   * Might pages of this file be mapped into userspace?
->   */
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 1389a28..acbcd8e 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -434,7 +434,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
->  	struct task_struct *tsk;
->  	struct address_space *mapping = page->mapping;
->  
-> -	i_mmap_lock_write(mapping);
-> +	i_mmap_lock_read(mapping);
->  	read_lock(&tasklist_lock);
->  	for_each_process(tsk) {
->  		pgoff_t pgoff = page_pgoff(page);
-> @@ -456,7 +456,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
->  		}
->  	}
->  	read_unlock(&tasklist_lock);
-> -	i_mmap_unlock_write(mapping);
-> +	i_mmap_unlock_read(mapping);
->  }
->  
->  /*
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 9a56e4f..5841dcb 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1685,7 +1685,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
->  
->  	if (!mapping)
->  		return ret;
-> -	i_mmap_lock_write(mapping);
-> +	i_mmap_lock_read(mapping);
->  	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
->  		unsigned long address = vma_address(page, vma);
->  
-> @@ -1708,7 +1708,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
->  	ret = rwc->file_nonlinear(page, mapping, rwc->arg);
->  
->  done:
-> -	i_mmap_unlock_write(mapping);
-> +	i_mmap_unlock_read(mapping);
->  	return ret;
->  }
->  
-> -- 
-> 1.8.1.4
+> The recently introduced compacted format of xsave area saves xstates only
+> for enabled states. This patch set saves the xsave area space per process
+> in compacted format by xsaves/xrstors instructions.
+
+Are we going to want to encourage userspace to do something like
+sticking vzeroupper right before each syscall to make any
+xsaves/xrestores faster?
+
+--Andy
+
