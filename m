@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbaEZJWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 05:22:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59731 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037AbaEZJVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 05:21:54 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <zonque@gmail.com>,
-        <b-liu@ti.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v6 3/5] usb: musb: dsps: Call usb_phy(_shutdown/_init) during musb_platform_reset()
-Date: Mon, 26 May 2014 14:50:10 +0530
-Message-ID: <1401096012-6895-4-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
-References: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
+	id S1752131AbaEZJWN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 05:22:13 -0400
+Received: from mx0.tedata.net.jo ([81.10.124.14]:55060 "EHLO
+	smtp.tedata.net.jo" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbaEZJWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 05:22:11 -0400
+X-Greylist: delayed 1502 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 May 2014 05:22:10 EDT
+Message-ID: <138b52888580e35e4e10a99d6e3c87e0.squirrel@webmail.tedata.net.jo>
+Date: Mon, 26 May 2014 11:43:23 +0300
+Subject: Atualize a sua conta Unicamp Webmail
+From: "Unicamp E-mail do Administrador" <bitar@tedata.net.jo>
+Reply-To: department1@engineer.com
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;charset=uft-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For DSPS platform usb_phy_vbus(_off/_on) are NOPs.
-So during musb_platform_reset() call usb_phy(_shutdown/_init)
+Caros assinantes válidos Unicamp,
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/usb/musb/musb_dsps.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Esta mensagem é a partir da Unicamp Administrador E-mail Serviço de TI
+para todos nossos subscribers.You conta de e-mail são fornecer-nos a
+seguir informações para revalidar sua conta devido a spam e atualização
+Unicamp a versão de spam New mês.
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 51beb13..74c4193 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -543,7 +543,11 @@ static void dsps_musb_reset(struct musb *musb)
- 	const struct dsps_musb_wrapper *wrp = glue->wrp;
- 
- 	dsps_writel(musb->ctrl_base, wrp->control, (1 << wrp->reset));
--	udelay(100);
-+	usleep_range(100, 200);
-+	usb_phy_shutdown(musb->xceiv);
-+	usleep_range(100, 200);
-+	usb_phy_init(musb->xceiv);
-+
- }
- 
- static struct musb_platform_ops dsps_ops = {
--- 
-1.8.3.1
+Aviso: A sua conta Email Unicamp será expirado depois de uma semana, se
+você não revalidar ou Unicamp datam sua conta. Por favor, co-operar com
+conosco para que possamos atendê-lo melhor, em contato com o
+administrador! ****
+
+Nome de usuário:
+Senha:
+Confirme sua senha:
+E-mail alternativo:
+
+Obrigado.
+Unicamp E-mail do Administrador
+
 
