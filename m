@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbaEZRR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 13:17:58 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:46393 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaEZRR4 (ORCPT
+	id S1752097AbaEZRVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 13:21:11 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:35142 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947AbaEZRVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 13:17:56 -0400
+	Mon, 26 May 2014 13:21:09 -0400
+Date: Mon, 26 May 2014 18:21:01 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 1/9] procfs: use flags to deny or allow access to
+ /proc/<pid>/$entry
+Message-ID: <20140526172101.GA6380@dztty>
+References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+ <1401110850-3552-2-git-send-email-tixxdz@opendz.org>
+ <CALCETrUte7WRMi23+rp+XbgAoOcw=TPZe02YEuZRZyVroj+mfQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53834578.9090305@mm-sol.com>
-References: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
-	<1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
-	<CABuKBe+B_Ga-w4aA4dApDTa26rCuhetRTJku27Madm+fHtDcLA@mail.gmail.com>
-	<53834578.9090305@mm-sol.com>
-Date: Mon, 26 May 2014 19:17:55 +0200
-Message-ID: <CABuKBeJXqSi=6XY5Fg7mg_daQ4D8ornS-kn7NDPktCtro7yNNw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: debug: qcom: add UART addresses to Kconfig help
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, sboyd@codeaurora.org,
-        rvaswani@codeaurora.org, davidb@codeaurora.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUte7WRMi23+rp+XbgAoOcw=TPZe02YEuZRZyVroj+mfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-26 15:45 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
-> On 23.05.14, 19:39, Matthias Brugger wrote:
->>
->> 2014-05-23 17:12 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
->>>
->>> Add information about the APQ8084 debug UART physical and virtual
->>> addresses in the DEBUG_QCOM_UARTDM Kconfig help section.
->>> Requires: https://lkml.org/lkml/2014/4/14/312
->>>
->>> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
->>> ---
->>>  arch/arm/Kconfig.debug |    1 +
->>>  1 file changed, 1 insertion(+)
->>>
->>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
->>> index 40ee328..e71723d 100644
->>> --- a/arch/arm/Kconfig.debug
->>> +++ b/arch/arm/Kconfig.debug
->>> @@ -376,6 +376,7 @@ choice
->>>                   their output to the serial port on Qualcomm devices.
->>>
->>>                   ARCH      DEBUG_UART_PHYS   DEBUG_UART_BASE
->>> +                 APQ8084   0xf995e000        0xfa75e000
->>>                   MSM8X60   0x19c40000        0xf0040000
->>>                   MSM8960   0x16440000        0xf0040000
->>>                   MSM8974   0xf991e000        0xfa71e000
->>
->>
->> You don't have any uart defined in your dts. You should add them
->> before any adding low level debug support.
->> Otherwise there might be problems in booting a multi-platform kernel.
->>
->
-> Thanks for the comment! As the uart depends on clocks, i am adding it to the
-> dts as part of my global clock controller patchset [1].
-> In this patch i am just adding some information to the help section.
-> Do you see any problem with this?
+On Mon, May 26, 2014 at 09:57:16AM -0700, Andy Lutomirski wrote:
+> On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > Add the deny or allow flags, so we can perform proper permission checks
+> > and set the result accordingly. These flags are needed in case we have
+> > to cache the result of permission checks that are done during ->open()
+> > time. Later during ->read(), we can decide to allow or deny the read().
+> >
+> > The pid entries that need these flags are:
+> > /proc/<pid>/stat
+> > /proc/<pid>/wchan
+> > /proc/<pid>/maps  (will be handled in next patches).
+> >
+> > These files are world readable, userspace depend on that. To prevent
+> > ASLR leaks and to avoid breaking userspace, we follow this scheme:
+> >
+> > a) Perform permission checks during ->open()
+> > b) Cache the result of a) and return success
+> > c) Recheck the cached result during ->read()
+> 
+> Why is (c) needed?
+In order to not break these entries, some of them are world readable.
 
-Are the patches for the clock controller applied already?
-If not, I would consider to add this patch to clock controller series.
-
-Cheers,
-Matthias
-
->
-> [1] https://lkml.org/lkml/2014/5/22/422
->
-> Thanks,
-> Georgi
+So we perform the re-check that *single* cached integer, in order to
+allow access for the non-sensitive, and block or pad with zeros the
+sensitive.
 
 
+> >
+> >  /*
+> > + * Flags used to deny or allow current to access /proc/<pid>/$entry
+> > + * after proper permission checks.
+> > + */
+> > +enum {
+> > +       PID_ENTRY_DENY  = 0,    /* Deny access */
+> > +       PID_ENTRY_ALLOW = 1,    /* Allow access */
+> > +};
+> 
+> I think this would be less alarming if this were:
+> 
+> #define PID_ENTRY_DENY ((void *)1UL)
+> #define PID_ENTRY_ALLOW ((void *)2UL)
+Hmm,
+
+I would like to keep it enum, enum is type-safe and I want to follow the
+semantics of /proc/pid/stat and others:
+
+check the patches and you will see that by making the variable 1 or 0 it
+follows what's currently done, and IMHO 0 or 1 is more intuitive in this
+case!
+
+> Also, I don't like DENY and ALLOW.  It's not denying and allowing.
+> How about PID_ENTRY_OPENER_MAY_PTRACE and
+> PID_ENTRY_OPENER_MAY_NOT_PTRACE?
+Hm, Ok I'll perhaps change this! will see what other thinks!
+
+Thank you!
+
+> --Andy
 
 -- 
-motzblog.wordpress.com
+Djalal Harouni
+http://opendz.org
