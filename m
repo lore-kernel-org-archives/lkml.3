@@ -1,111 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033AbaE0Uf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:35:56 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13920 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751711AbaE0Ufx (ORCPT
+	id S1752356AbaE0Uhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 16:37:55 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59478 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaE0Uhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 16:35:53 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+s/570Wq0dpVZSXYs4Z37F
-Date: Tue, 27 May 2014 13:35:44 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
-Message-ID: <20140527203543.GB32336@atomide.com>
-References: <1399739870-13526-1-git-send-email-sre@kernel.org>
- <1399739870-13526-10-git-send-email-sre@kernel.org>
- <20140514215503.GM27426@atomide.com>
- <20140520003538.GD15793@atomide.com>
- <20140521182513.GA26285@earth.universe>
- <20140521184319.GL17417@atomide.com>
- <20140521194527.GM17417@atomide.com>
- <20140521215055.GA26362@earth.universe>
- <20140521220807.GB14520@atomide.com>
- <20140522000558.GC29118@earth.universe>
+	Tue, 27 May 2014 16:37:53 -0400
+Message-ID: <5384F79C.6000204@gmail.com>
+Date: Tue, 27 May 2014 22:37:48 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140522000558.GC29118@earth.universe>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Tarek Dakhran <t.dakhran@gmail.com>, Kevin Hilman <khilman@linaro.org>
+CC: Tarek Dakhran <t.dakhran@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v11 0/3] Exynos 5410 support
+References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>	<7hr43f9mmn.fsf@paris.lan>	<7hd2ez9kvr.fsf@paris.lan> <CANhyOUcGTbbQLxYWsAZG00ENSDa4pj+MP2i7Rx=PfyqN1CY6WQ@mail.gmail.com>
+In-Reply-To: <CANhyOUcGTbbQLxYWsAZG00ENSDa4pj+MP2i7Rx=PfyqN1CY6WQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@kernel.org> [140521 17:06]:
-> On Wed, May 21, 2014 at 03:08:07PM -0700, Tony Lindgren wrote:
-> > * Sebastian Reichel <sre@kernel.org> [140521 14:51]:
-> > > 
-> > > Feel free to add Tested-by/Acked-By to the hwmod patch.
-> > 
-> > OK thanks for testing.
+On 27.05.2014 22:17, Tarek Dakhran wrote:
+> Hi,
 > 
-> You are welcome.
+> On Tue, May 27, 2014 at 9:44 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>> Kevin Hilman <khilman@linaro.org> writes:
+>>
+>>> Tarek Dakhran <t.dakhran@samsung.com> writes:
+>>>
+>>>> The series of patches represent support of Exynos 5410 SoC
+>>>>
+>>>> The Exynos 5410 is the first Samsung SoC based on big.LITTLE architecture
+>>>>
+>>>> Patches add new platform description, support of clock controller and device
+>>>> tree for Exynos 5410.
+>>>>
+>>>> Has been build on Samsung Linux Kernel
+>>>>   (branch: for-next, commit: 97eae6c Merge branch 'v3.16-next/multiplatform' into for-next)
+>>>>
+>>>> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
+>>>>                  2) Exynos 5410 reference board (multi_v7_defconfig)
+>>>>                  3) Odroid-XU board (exynos_defconfig)
+>>>>                  4) Odroid-XU board (multi_v7_defconfig)
+>>>
+>>> Tested-by: Kevin Hilman <khilman@linaro.org>
+>>>
+>>> FYI, I boot tested this on an odroid-xu (exynos_defconfig and
+>>> multi_v7_defconfig.)
+>>
+>> Oops, I may have spoke to soon.  There seem to be some problems with
+>> multi_v7_defconfig.
+>>
+>> Applying this series directly on the commit mentioned above and testing,
+>> it works just fine using multi_v7_defconfig.
 > 
-> > I'll apply your dts changes as soon as I have an ack from Paul on
-> > the hwmod changes. Probably best to queue them together to avoid
-> > PM breaking.
+> Thank you for testing.
 > 
-> Ok. Sounds legit.
+>> However, if I directly test the current contents of the samsung for-next
+>> branch (where this series has been merged) it no longer boots on the
+>> odroid-xu.
+>> A quick diff shows that there are some other changes to
+>> multi_v7_defconfig in the samsung/for-next branch that may be causing
+>> problems here.
+> 
+> Yes. Right you are. There is no ARCH_EXYNOS defined in multi_v7_defconfig
+> at current state (branch: for-next commit: ca610da Merge branch
+> 'v3.16-next/dt-samsung-3' into for-next).
+> So booting kernel on 5410 SoC is not possible with multi_v7_defconfig.
+> Please use exynos_defconfig.
 
-Based on chatting with Paul it seems that we most likely don't have
-bits for sysc_flags for SYSC_HAS_EMUFREE or SYSS_HAS_RESET_STATUS
-either. So applying the updated patch below, and the SSI dts changes
-into omap-for-v3.16/dt-v2.
+I wonder if this patch isn't maybe the missing part:
 
-I'm keeping your previous ack Sebastian as the the idlemodes did
-not change from the previous version, hopefully that's OK with you.
+http://thread.gmane.org/gmane.linux.kernel.samsung-soc/32414
 
-Regards,
+Olof asked Kukjin to separate it from his pull requests, so it can be
+applied directly to ARM SoC tree to avoid conflicts.
 
-Tony
-
-8< ------------------
-From: Tony Lindgren <tony@atomide.com>
-Date: Wed, 21 May 2014 12:31:35 -0700
-Subject: [PATCH] ARM: OMAP2+: Fix ssi hwmod entry to allow idling
-
-The current entry prevents system from idling if
-the hwmod is defined in the .dts file so let's
-change the idlemodes.
-
-Note that we probably don't have SYSC_HAS_EMUFREE
-or SYSS_HAS_RESET_STATUS either. If we do, those
-can be added later on.
-
-Acked-by: Sebastian Reichel <sre@kernel.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -3689,12 +3689,9 @@ static struct omap_hwmod_class_sysconfig omap34xx_ssi_sysc = {
- 	.rev_offs	= 0x0000,
- 	.sysc_offs	= 0x0010,
- 	.syss_offs	= 0x0014,
--	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_EMUFREE |
--			   SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE |
--			   SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
--	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
--			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
--			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-+	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_MIDLEMODE |
-+			   SYSC_HAS_SIDLEMODE | SYSC_HAS_SOFTRESET),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
- 	.sysc_fields	= &omap_hwmod_sysc_type1,
- };
- 
+Best regards,
+Tomasz
