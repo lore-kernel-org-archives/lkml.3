@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378AbaE0JNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:13:40 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:48490 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036AbaE0JNi (ORCPT
+	id S1752471AbaE0JPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:15:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36797 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751684AbaE0JPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:13:38 -0400
-Date: Tue, 27 May 2014 13:13:35 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, kirill.shutemov@linux.intel.com
-Subject: [linux-next] splice call weird results
-Message-ID: <20140527091335.GC20436@moon>
+	Tue, 27 May 2014 05:15:05 -0400
+Date: Tue, 27 May 2014 11:13:37 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexander Bersenev <bay@hackerdom.ru>
+Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
+        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v8 3/3] ARM: sunxi: Add IR controller support in DT on A20
+Message-ID: <20140527091337.GJ4730@lukather>
+References: <1401056805-2218-1-git-send-email-bay@hackerdom.ru>
+ <1401056805-2218-4-git-send-email-bay@hackerdom.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q59ABw34pTSIagmi"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401056805-2218-4-git-send-email-bay@hackerdom.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi! While been trying to run criu on linux-next (due to recent Kirill's patch related
-to /proc/pid/clear_refs with THP enabled) I noticed that it fails dumping programs when
-moves data from memory pages into an image file. So I wrote pretty idiotic test and
-run it on current fedora 20 kernel and then on linux-next.
 
-fedora-20 output
-----------------
-[cyrill@moon criu] ~/pipe 
-Opened pipe-test.SQBcJa
-vmspliced 8192 bytes
-spliced 4096 bytes
+--Q59ABw34pTSIagmi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-linux-next
-----------
-[root@fc criu]# ~/pipe
-Opened pipe-test.9nZSW7
-vmspliced 8192 bytes
-spliced 8192 bytes
+On Mon, May 26, 2014 at 04:26:45AM +0600, Alexander Bersenev wrote:
+> This patch adds IR controller in A20 Device-Tree:
+> - Two IR devices found in A20 user manual
+> - Pins for two devices
+> - One IR device physically found on Cubieboard 2
+> - One IR device physically found on Cubietruck
+>=20
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+> ---
+>  arch/arm/boot/dts/sun7i-a20-cubieboard2.dts |  6 ++++++
+>  arch/arm/boot/dts/sun7i-a20-cubietruck.dts  |  6 ++++++
+>  arch/arm/boot/dts/sun7i-a20.dtsi            | 32 +++++++++++++++++++++++=
+++++++
 
-In test I fill pipe with 8K data then splice 4K of it into a file (the test
-is below). Is it intended, or I did some silly mistake?
----
-#define _GNU_SOURCE
+I told you numerous times already that I wanted this patch to be split
+into at least three of them:
+  - One to add the device to the DTSI.
+  - One to add the pins
+  - and one to enable the devices in the DTS.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
+Please address this comment.
 
-#include <sys/uio.h>
+Maxime
 
-#define ARRAY_SIZE(x)	(sizeof(x)/sizeof(x[0]))
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-static char buf[8 << 20];
+--Q59ABw34pTSIagmi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-int main(int argc, char *argv[])
-{
-	char *tmpname, t[64] = "pipe-test.XXXXXX";
-	int _pipe[2], fd, ret = 0;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-	struct iovec iov[] = {
-		[0] = {
-			.iov_base	= &buf[0],
-			.iov_len	= 4096,
-		},
+iQIcBAEBAgAGBQJThFdBAAoJEBx+YmzsjxAgVEQP/0SS2UMHhFf2Ma96RSvUCMja
+IGjon+ErnFINm9OO7MD53SqSQikxg+wQv/gvJHo+ib2lHxJkj40MhzobSML1oE2+
+hcJ3Wknbc3aPZHLJvYl+z0IcA603/CZcdbpH0WP0npB4tNGKpnONHtMBJdDjPmYp
+vr01GEg/WMFW6359FY5nVusZbFBUR1aaXxA9fEUQveUGswbnXyIrT3m7j4QV0wqy
+EJIflTVFpY2g+LaW8jOCAU1nC5zRB2nOUAWPhNXfmUDIwJS3elNBQ188hC6VlMNI
+IyXV3yxa7qSVO38JdZ4vwInLdnNeQyuJpwS8e5VFjx6tJA7qpzo0zMArmpy44Lwg
+RRgZYj6GWw8ABgLwxc8oSWOSaCPVwFFT7+poF7mRb9dLxvzzKGL7/hv3GloKiSEu
+vB75kiu45oPH0rwbZlfGBVULTS4U+cyI1qq16RqRjM05+jlD0RX80nbHnw5k5CXx
+jG7B6nPbS/YQcYntMIDvLrCLQHLGqY8NPR/TxB7CWMP4g6iu/1w+sgNaekiuv6/b
+IQxHnyQytsxoeeBqg7Is6kvRM3p1CooJRoppJm3ZSepVgGOGvNpa0rHfS+DhzGHV
+V+jLb6eiv5klWN2Z/12pF7MZPmlRVV1nQSYka3tKoMG2PVh/3AmuPU5Qhx8vRUvy
+owDjGElsC1Zl7Uk/uRg/
+=TAtz
+-----END PGP SIGNATURE-----
 
-		[1] = {
-			.iov_base	= &buf[4096],
-			.iov_len	= 4096,
-		},
-	};
-
-	if (pipe(_pipe)) {
-		perror("Can't create pipe");
-		exit(1);
-	}
-
-	memset(buf, 0x1, sizeof(buf));
-	tmpname = mktemp(t);
-
-	fd = open(tmpname, O_RDWR | O_CREAT | O_TRUNC);
-	if (fd < 0) {
-		perror("Can't open temp file");
-		close(_pipe[0]);
-		close(_pipe[1]);
-		exit(1);
-	}
-	printf("Opened %s\n", tmpname);
-
-	ret = vmsplice(_pipe[1], iov, ARRAY_SIZE(iov), SPLICE_F_GIFT);
-	printf("vmspliced %li bytes\n", (long)ret);
-
-	ret = splice(_pipe[0], NULL, fd, NULL, iov[0].iov_len, SPLICE_F_MOVE);
-	printf("spliced %li bytes\n", (long)ret);
-
-out:
-	close(_pipe[0]);
-	close(_pipe[1]);
-	close(fd);
-	unlink(tmpname);
-	return ret;
-}
+--Q59ABw34pTSIagmi--
