@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaE0LPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:15:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49715 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaE0LPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:15:09 -0400
-Message-ID: <53847F39.2010503@ti.com>
-Date: Tue, 27 May 2014 15:04:09 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752225AbaE0LQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:16:23 -0400
+Received: from smtprelay06.ispgateway.de ([80.67.31.102]:34481 "EHLO
+	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778AbaE0LQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 07:16:22 -0400
+X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 May 2014 07:16:21 EDT
+Date: Tue, 27 May 2014 13:10:03 +0200
+From: Bernhard Walle <bernhard@bwalle.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org
+Subject: Regression in hyperv network driver in 3.14
+Message-ID: <20140527111003.GA2214@kepler.fritz.box>
+Mail-Followup-To: Haiyang Zhang <haiyangz@microsoft.com>,
+	"K. Y. Srinivasan" <kys@microsoft.com>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <jacob.jun.pan@linux.intel.com>, <bin.yang@intel.com>
-Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com> <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com> <538459E8.6010701@ti.com> <20140527084615.GC1801@lahna.fi.intel.com>
-In-Reply-To: <20140527084615.GC1801@lahna.fi.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Df-Sender: MTIyNzgwNg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mika,
+Hello,
 
-On 05/27/2014 11:46 AM, Mika Westerberg wrote:
-> On Tue, May 27, 2014 at 12:24:56PM +0300, Grygorii Strashko wrote:
->>>> +
->>>> +       if (retval) {
->>>> +               dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
->>>> +               goto out;
->>>> +       }
->>>> +
->>>> +       retval = gpiochip_add(&cg->chip);
->>>> +       if (retval) {
->>>> +               dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
->>>> +               goto out_free_irq;
->>>> +       }
->>
->> As to my mind, It'll be better to setup IRQ as last probing step and
->> free it as the first step of driver removing.
-> 
-> When gpiochip_add() is called the chip is exported to outside world. At
-> that point anyone can start requesting GPIOs and setup GPIO based
-> interrupts. How does that work if you setup the IRQ after you call
-> gpiochip_add()?
-> 
+using a 3.14 kernel in a Linux VM running on HyperV (Windows Server 2008
+R2) we get following error:
 
-It's difficult for me to imagine case when GPIO will be accessed
-until GPIO driver's probe is finished.
+   hv_netvsc: hv_netvsc channel opened successfully
+   hv_netvsc vmbus_0_9 (unregistered net_device): Unable to complete receive buffer initialization with NetVsp - status 2
+   hv_netvsc vmbus_0_9 (unregistered net_device): unable to connect to NetVSP - -22
+   hv_netvsc vmbus_0_9 (unregistered net_device): unable to add netvsc device (ret -22)
+   hv_netvsc: probe of vmbus_0_9 failed with error -22
 
-Regarding remove()/suspend() routines, It's like an axiom for me:
-- always disable irq
-- always stop all works/threads created by driver
-- do everything else
-(It's proved by dozens hours of debugging).
+Bisecting the problem shows that commit
+b679ef73edc251f6d200a7dd2396e9fef9e36fc3 is responsible. Reverting it
+fixes the issue. Even only changing NETVSC_RECEIVE_BUFFER_SIZE to 2M
+fixes the issue!
 
-Anyway, above is just my opinion :)
-So, It's up to you, because it's your code :)
+The virtual machine has 2 GiB of memory and 4 CPUs.
 
-Also FYI, I did fast analysis of GPIO drivers - funny statistic below:
-- 16 drivers setup IRQs BEFORE calling gpiochip_add();
-- 22 drivers setup IRQs AFTER calling gpiochip_add();
+Can I provide more information to track down the problem?
 
-Best regards,
--grygorii
+
+Regards,
+Bernhard
+
