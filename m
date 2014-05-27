@@ -1,249 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaE0QEn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:04:43 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:47404 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaE0QEm (ORCPT
+	id S1752888AbaE0QMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:12:08 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25514 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751777AbaE0QMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:04:42 -0400
-Date: Tue, 27 May 2014 17:04:30 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v3 2/4] mfd: intel_soc_pmic: I2C interface
-Message-ID: <20140527160430.GC4227@lee--X1>
-References: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
- <1401163576-14872-3-git-send-email-lejun.zhu@linux.intel.com>
+	Tue, 27 May 2014 12:12:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+gqXa1AHQu4bV3vmK2jiFybh34xiI8dJQ=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 15589580FA6
+Date: Tue, 27 May 2014 12:11:44 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: mvebu: split SolidRun CuBox into variants
+Message-ID: <20140527161143.GS8664@titan.lakedaemon.net>
+References: <1401140009-31505-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401163576-14872-3-git-send-email-lejun.zhu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The Intel SoC PMIC devices are connected to the CPU via the I2C interface. This patch provides support of the related I2C operations.
-
-Please only use 72 chars for your commit log.
-
-> v2:
-> - Use regmap instead of creating our own I2C read/write callbacks.
-> v3:
-> - Use gpiod interface instead of gpio numbers.
-> - Remove redundant I2C IDs.
-> - Use managed allocations.
-
-This shouldn't be in the commit log.
-
-> Signed-off-by: Yang, Bin <bin.yang@intel.com>
-> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
-> ---
-
-The change log information above should really be below the "---"
-above.
-
-Then we usually put another "---" below.
-
->  drivers/mfd/intel_soc_pmic_i2c.c | 150 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 150 insertions(+)
->  create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
+On Mon, May 26, 2014 at 11:33:29PM +0200, Sebastian Hesselbarth wrote:
+> As Mainlining effort for SolidRun CuBox has been carried out on the
+> Engineering Sample, the board DTS was reflecting this. Actually,
+> SolidRun CuBox comes in three different variants: Engineering Sample (ES),
+> production with 1GB RAM (1G), and production with 2GB RAM (2G).
 > 
-> diff --git a/drivers/mfd/intel_soc_pmic_i2c.c b/drivers/mfd/intel_soc_pmic_i2c.c
+> Therefore, we split the current dove-cubox.dts into a common board include
+> and one board dts for each of the above variants.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/Makefile                         |  4 +++-
+>  arch/arm/boot/dts/dove-cubox-1g.dts                | 17 ++++++++++++++++
+>  arch/arm/boot/dts/dove-cubox-2g.dts                | 17 ++++++++++++++++
+>  arch/arm/boot/dts/dove-cubox-es.dts                | 23 ++++++++++++++++++++++
+>  .../boot/dts/{dove-cubox.dts => dove-cubox.dtsi}   | 17 ----------------
+>  5 files changed, 60 insertions(+), 18 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/dove-cubox-1g.dts
+>  create mode 100644 arch/arm/boot/dts/dove-cubox-2g.dts
+>  create mode 100644 arch/arm/boot/dts/dove-cubox-es.dts
+>  rename arch/arm/boot/dts/{dove-cubox.dts => dove-cubox.dtsi} (86%)
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 35c146f31e46..40a008539c0c 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -404,7 +404,9 @@ dtb-$(CONFIG_MACH_ARMADA_XP) += \
+>  	armada-xp-matrix.dtb \
+>  	armada-xp-openblocks-ax3-4.dtb
+>  dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
+> -	dove-cubox.dtb \
+> +	dove-cubox-1g.dtb \
+> +	dove-cubox-2g.dtb \
+> +	dove-cubox-es.dtb \
+>  	dove-d2plug.dtb \
+>  	dove-d3plug.dtb \
+>  	dove-dove-db.dtb
+> diff --git a/arch/arm/boot/dts/dove-cubox-1g.dts b/arch/arm/boot/dts/dove-cubox-1g.dts
 > new file mode 100644
-> index 0000000..3b107d7
+> index 000000000000..eebd3f7ca7e6
 > --- /dev/null
-> +++ b/drivers/mfd/intel_soc_pmic_i2c.c
-> @@ -0,0 +1,150 @@
-> +/*
-> + * intel_soc_pmic_i2c.c - Intel SoC PMIC MFD Driver
-> + *
-> + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version
-> + * 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author: Yang, Bin <bin.yang@intel.com>
-> + */
+> +++ b/arch/arm/boot/dts/dove-cubox-1g.dts
+> @@ -0,0 +1,17 @@
+> +/dts-v1/;
 > +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/delay.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/err.h>
-> +#include <linux/i2c.h>
-> +#include <linux/irq.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/acpi.h>
-> +#include <linux/version.h>
-> +#include <linux/gpio/consumer.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/intel_soc_pmic.h>
-> +#include "intel_soc_pmic_core.h"
-
-Please review these, as they are not all in use.
-
-> +static struct intel_soc_pmic *pmic_i2c;
-
-I'm not really comfortable seeing global structures such as these.
-Tuck it away in a driver data structure somewhere.
-
-> +static void pmic_shutdown(struct i2c_client *client)
-> +{
-> +	disable_irq(pmic_i2c->irq);
-> +	return;
-> +}
+> +#include "dove-cubox.dtsi"
 > +
-> +static int pmic_suspend(struct device *dev)
-> +{
-> +	disable_irq(pmic_i2c->irq);
-> +	return 0;
-> +}
+> +/ {
+> +	model = "SolidRun CuBox (1G)";
+> +	compatible = "solidrun,cubox-1g", "solidrun,cubox", "marvell,dove";
 > +
-> +static int pmic_resume(struct device *dev)
-> +{
-> +	enable_irq(pmic_i2c->irq);
-> +	return 0;
-> +}
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x00000000 0x40000000>;
+> +	};
 > +
-> +static const struct dev_pm_ops pmic_pm_ops = {
-> +	SET_SYSTEM_SLEEP_PM_OPS(pmic_suspend, pmic_resume)
+> +	chosen {
+> +		bootargs = "console=ttyS0,115200n8 earlyprintk";
+> +	};
 > +};
-
-Place all of these below remove().
-
-Use SIMPLE_DEV_PM_OPS instead of SET_SYSTEM_SLEEP_PM_OPS.
-
-> +static int pmic_i2c_probe(struct i2c_client *i2c,
-
-pmic_* is very generic.  Even intel_pmic_* is generic.  Are Intel only
-ever going to make PMICs which can be supported by this driver?
-
-> +			  const struct i2c_device_id *id)
-> +{
-> +	struct gpio_desc *desc;
-> +	struct device *dev = &i2c->dev;
-> +	int irq = i2c->irq;
+> diff --git a/arch/arm/boot/dts/dove-cubox-2g.dts b/arch/arm/boot/dts/dove-cubox-2g.dts
+> new file mode 100644
+> index 000000000000..513b6a68eba3
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/dove-cubox-2g.dts
+> @@ -0,0 +1,17 @@
+> +/dts-v1/;
 > +
-> +	if (pmic_i2c != NULL) {
-
-if (pmic_i2c)
-
-> +		dev_err(dev, "PMIC already exists.\n");
-> +		return -EBUSY;
-> +	}
+> +#include "dove-cubox.dtsi"
 > +
-> +	desc = devm_gpiod_get_index(dev, KBUILD_MODNAME, 0);
-> +	if (IS_ERR(desc)) {
-> +		dev_dbg(dev, "Not using GPIO as interrupt.\n");
-> +	} else {
-> +		irq = gpiod_to_irq(desc);
-> +		if (irq < 0) {
-> +			dev_warn(dev, "Can't get irq: %d\n", irq);
-> +			irq = i2c->irq;
-> +		}
-> +	}
+> +/ {
+> +	model = "SolidRun CuBox (2G)";
+> +	compatible = "solidrun,cubox-2g", "solidrun,cubox", "marvell,dove";
 > +
-> +	pmic_i2c = devm_kzalloc(dev, sizeof(*pmic_i2c), GFP_KERNEL);
-> +	pmic_i2c->config = (struct intel_soc_pmic_config *)id->driver_data;
-> +	pmic_i2c->dev = dev;
-> +	pmic_i2c->regmap = devm_regmap_init_i2c(i2c,
-> +						pmic_i2c->config->regmap_cfg);
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x00000000 0x80000000>;
 
-Neater if you break the line at the '='.
+Do you anticipate any other differences between the 1G and the 2G?
+Otherwise, I'm inclined to just have a "solidrun,cubox".  The bootloader
+should be setting the amount of RAM at boottime anyway.
 
-> +	pmic_i2c->irq = irq;
+> +	};
 > +
-> +	return intel_pmic_add(pmic_i2c);
-> +}
-> +
-> +static int pmic_i2c_remove(struct i2c_client *i2c)
-> +{
-> +	int ret;
-> +	
-> +	if (pmic_i2c == NULL)
-
-if (!pmic_i2c)
-
-> +		return -ENODEV;
-> +
-> +	ret = intel_pmic_remove(pmic_i2c);
-> +
-> +	pmic_i2c = NULL;
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct i2c_device_id pmic_i2c_id[] = {
-> +	{ "INT33FD:00", (kernel_ulong_t)&crystal_cove_pmic},
-
-This name looks odd to me.
-
-> +	{ }
+> +	chosen {
+> +		bootargs = "console=ttyS0,115200n8 earlyprintk";
+> +	};
 > +};
-> +MODULE_DEVICE_TABLE(i2c, pmic_i2c_id);
+> diff --git a/arch/arm/boot/dts/dove-cubox-es.dts b/arch/arm/boot/dts/dove-cubox-es.dts
+> new file mode 100644
+> index 000000000000..5fc17ce34c98
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/dove-cubox-es.dts
+> @@ -0,0 +1,23 @@
+> +/dts-v1/;
 > +
-> +static struct acpi_device_id pmic_acpi_match[] = {
-> +	{ "INT33FD", (kernel_ulong_t)&crystal_cove_pmic},
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(acpi, pmic_acpi_match);
+> +#include "dove-cubox.dtsi"
 > +
-> +static struct i2c_driver pmic_i2c_driver = {
-> +	.driver = {
-> +		.name = "intel_soc_pmic_i2c",
-> +		.owner = THIS_MODULE,
-> +		.pm = &pmic_pm_ops,
-> +		.acpi_match_table = ACPI_PTR(pmic_acpi_match),
-> +	},
-> +	.probe = pmic_i2c_probe,
-> +	.remove = pmic_i2c_remove,
-> +	.id_table = pmic_i2c_id,
-> +	.shutdown = pmic_shutdown,
-> +};
+> +/ {
+> +	model = "SolidRun CuBox (ES)";
 
-Remove from here -------->
+"Engineering Sample" ?
 
-> +static int __init pmic_i2c_init(void)
-> +{
-> +	int ret;
-> +
-> +	ret = i2c_add_driver(&pmic_i2c_driver);
-> +	if (ret != 0)
-> +		pr_err("Failed to register pmic I2C driver: %d\n", ret);
-> +
-> +	return ret;
-> +}
-> +module_init(pmic_i2c_init);
-> +
-> +static void __exit pmic_i2c_exit(void)
-> +{
-> +	i2c_del_driver(&pmic_i2c_driver);
-> +}
-> +module_exit(pmic_i2c_exit);
+thx,
 
-To here --------->
-
-And replace with:
-
-module_i2c_driver(pmic_i2c_driver);
-
-> +MODULE_DESCRIPTION("I2C driver for Intel SoC PMIC");
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jason.
