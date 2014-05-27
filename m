@@ -1,131 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaE0IgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:36:01 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50249 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658AbaE0Ifz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:35:55 -0400
-Message-ID: <538459E8.6010701@ti.com>
-Date: Tue, 27 May 2014 12:24:56 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752043AbaE0IfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:35:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41778 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751617AbaE0IfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:35:05 -0400
+Date: Tue, 27 May 2014 10:30:21 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: Re: [PATCH 17/22] mfd: sun6i-prcm: Add support for Allwinner A23 PRCM
+Message-ID: <20140527083021.GE4730@lukather>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
+ <1400831485-28576-18-git-send-email-wens@csie.org>
+ <20140525191434.GX10768@lukather>
+ <CAGb2v66cV_nRpHhrtDUYzncO5wimx+vRBW6BFcU0Kz=bKkNs+g@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>,
-        "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <jacob.jun.pan@linux.intel.com>, <bin.yang@intel.com>
-Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com> <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
-In-Reply-To: <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gDGSpKKIBgtShtf+"
+Content-Disposition: inline
+In-Reply-To: <CAGb2v66cV_nRpHhrtDUYzncO5wimx+vRBW6BFcU0Kz=bKkNs+g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lejun,
 
-On 05/27/2014 08:38 AM, Alexandre Courbot wrote:
-> On Fri, May 23, 2014 at 11:00 AM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
->> Devices based on Intel SoC products such as Baytrail have a Power
->> Management IC. In the PMIC there are subsystems for voltage regulation,
->> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
->> Crystal Cove.
->>
->> This patch adds support for the GPIO function in Crystal Cove.
-> 
-> A few minor comments below in case you make another version, but
-> overall looks pretty good to me.
-> 
-> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-> 
->>
->> v2:
->> - Use IRQ chip helper to provide irqdomain.
->> - Implement .remove and can now build as a module.
->> - Various fix for unreadable or ugly code pieces.
->> v3:
->> - More fix in irq_handler and probe.
->> v4:
->> - Minor fix of one return statement.
->>
->> Signed-off-by: Yang, Bin <bin.yang@intel.com>
->> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
->> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> ---
+--gDGSpKKIBgtShtf+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
+On Mon, May 26, 2014 at 12:36:38PM +0800, Chen-Yu Tsai wrote:
+> On Mon, May 26, 2014 at 3:14 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Fri, May 23, 2014 at 03:51:20PM +0800, Chen-Yu Tsai wrote:
+> >> The Allwinner A23 SoC has a PRCM unit like the previous A31 SoC.
+> >> The differences are the AR100 clock can no longer be modified,
+> >> and the APB0 clock has different divisors.
+> >>
+> >> This patch adds a compatible with a modified subdevice list for
+> >> the A23.
+> >>
+> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> >> ---
+> >>  .../devicetree/bindings/mfd/sun6i-prcm.txt         |  2 +-
+> >>  drivers/mfd/sun6i-prcm.c                           | 30 +++++++++++++=
++++++++++
+> >>  2 files changed, 31 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt b/Do=
+cumentation/devicetree/bindings/mfd/sun6i-prcm.txt
+> >> index 1f5a31f..03c5a55 100644
+> >> --- a/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+> >> +++ b/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+> >> @@ -4,7 +4,7 @@ PRCM is an MFD device exposing several Power Managemen=
+t related devices
+> >>  (like clks and reset controllers).
+> >>
+> >>  Required properties:
+> >> - - compatible: "allwinner,sun6i-a31-prcm"
+> >> + - compatible: "allwinner,sun6i-a31-prcm" or "allwinner,sun8i-a23-prc=
+m"
+> >>   - reg: The PRCM registers range
+> >>
+> >>  The prcm node may contain several subdevices definitions:
+> >> diff --git a/drivers/mfd/sun6i-prcm.c b/drivers/mfd/sun6i-prcm.c
+> >> index 718fc4d..c96bb6c 100644
+> >> --- a/drivers/mfd/sun6i-prcm.c
+> >> +++ b/drivers/mfd/sun6i-prcm.c
+> >> @@ -76,16 +76,46 @@ static const struct mfd_cell sun6i_a31_prcm_subdev=
+s[] =3D {
+> >>       },
+> >>  };
+> >>
+> >> +static const struct mfd_cell sun8i_a23_prcm_subdevs[] =3D {
+> >> +     {
+> >> +             .name =3D "sun6i-a31-apb0-clk",
+> >> +             .of_compatible =3D "allwinner,sun8i-a23-apb0-clk",
+> >> +             .num_resources =3D ARRAY_SIZE(sun6i_a31_apb0_clk_res),
+> >> +             .resources =3D sun6i_a31_apb0_clk_res,
+> >> +     },
+> >> +     {
+> >> +             .name =3D "sun6i-a31-apb0-gates-clk",
+> >> +             .of_compatible =3D "allwinner,sun6i-a31-apb0-gates-clk",
+> >> +             .num_resources =3D ARRAY_SIZE(sun6i_a31_apb0_gates_clk_r=
+es),
+> >> +             .resources =3D sun6i_a31_apb0_gates_clk_res,
+> >> +     },
+> >
+> > Did I just have a brainfart, or didn't you just introduced an
+> > sun8i-a23-apb0-gates-clk driver?
+>=20
+> My bad, I missed this one. The one in the DT is correct.
+> It actually works, so I'm a bit confused here.
+> Which one does the driver core actually use?
 
->> +}
->> +
->> +static int crystalcove_gpio_probe(struct platform_device *pdev)
->> +{
->> +       int irq = platform_get_irq(pdev, 0);
+Actually, it will use both, and will match the of_compatible string
+try to match it against the mfd-sub-nodes compatibles. If nothing
+matches, it won't fill the dev.of_node field.
 
-Pls note, that platform_get_irq() may return error code.
+>=20
+> > And there's no ar100 and ahb0 clocks ?
+>=20
+> The ahb0 is a fixed-factor (1:1) clock. There are no controls for it.
+> The ar100 clock on the A23 has no controls either, so fixed-factor
+> clock again.
 
->> +       struct crystalcove_gpio *cg;
->> +       int retval;
->> +       struct device *dev = pdev->dev.parent;
->> +
->> +       cg = devm_kzalloc(&pdev->dev, sizeof(*cg), GFP_KERNEL);
->> +       if (!cg)
->> +               return -ENOMEM;
->> +
->> +       mutex_init(&cg->buslock);
->> +       cg->chip.label = KBUILD_MODNAME;
->> +       cg->chip.direction_input = crystalcove_gpio_direction_input;
->> +       cg->chip.direction_output = crystalcove_gpio_direction_output;
->> +       cg->chip.get = crystalcove_gpio_get;
->> +       cg->chip.set = crystalcove_gpio_set;
->> +       cg->chip.base = -1;
->> +       cg->chip.ngpio = NUM_GPIO;
->> +       cg->chip.can_sleep = true;
->> +       cg->chip.dev = dev;
->> +       cg->chip.dbg_show = crystalcove_gpio_dbg_show;
->> +
->> +       gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
->> +                            handle_simple_irq, IRQ_TYPE_NONE);
->> +
->> +       retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
->> +                                     IRQF_ONESHOT, KBUILD_MODNAME, cg);
-> 
-> Can't you use devm_request_threaded_irq() here?
+Ack.
 
-devm_gpiochip_add? ;)
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-> 
->> +
->> +       if (retval) {
->> +               dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
->> +               goto out;
->> +       }
->> +
->> +       retval = gpiochip_add(&cg->chip);
->> +       if (retval) {
->> +               dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
->> +               goto out_free_irq;
->> +       }
+--gDGSpKKIBgtShtf+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-As to my mind, It'll be better to setup IRQ as last probing step and
-free it as the first step of driver removing.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
->> +
->> +       platform_set_drvdata(pdev, cg);
->> +
->> +       return 0;
->> +
->> +out_free_irq:
->> +       free_irq(irq, cg);
->> +out:
->> +       return retval;
->> +}
+iQIcBAEBAgAGBQJThE0dAAoJEBx+YmzsjxAg38EP/035jkjbn8xrfVMZTORgZYE1
+rU9ATQ7Z6mMqajcZ7Ut+RnKJtBcPnQvG6AtHnj4B/WUn1ho6blt3/5MJ8mEJCslR
+hZv/4ZpQUeRwUh186RIl3A1/AGvsSC0q9mAoXcLMm4gwTk5GcUEc8ojhYwmYFIu1
+Ws67Uf/5eKC58d53XZUPP0h1PyI6EvBzjFPL1XnbVRlD9gEN+gmt4MAWF3ZJMrIv
+OyT+j0YoftiE7/DI9mzTDEeRbenqGFKVeyYbB0rsuuQA7GtENQa5Jj6klJxYbtl+
+lMt2/3QohxB8zue5F3gD+1d9hW9p/Mqqhsc5yAqISw8IrnE1gY2q6tUhqElwe0eR
+7ef7h1avfXeYfiNR3FCgO0jhIWhz9B9kK8zwOgj34Pe0WB4bdBPLy2MOsn5WAz7F
+HLd1goDCmefpFWJyAaaDl8pvv+nogn//ZdsDGXb0CQdhrsWlRxqDs1HcTuJn1Gp5
+qdtnbPsVdaJu7J3aXC8vElimGg+KBF7ckCl0JDe0PW4Psp6ppN+riXWuLDxi/QcP
+E20egYnNxecDn/UpgoU15X5hWSpzgaRjiqYrwKTOMVJrnVEd0+tGYqEUFVKXDNsD
+YXeFB2CQV+LhTcsyZUqXiYIZnFve3aj0XanFVEQnNV+fCqf5XTpZyBykepx2A3/n
+r20ywd4ETfW546zevAOP
+=2LgE
+-----END PGP SIGNATURE-----
 
-Best regards,
--grygorii
-
+--gDGSpKKIBgtShtf+--
