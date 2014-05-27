@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302AbaE0Sal (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:30:41 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54275 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbaE0Sak (ORCPT
+	id S1752959AbaE0SgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:36:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34996 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520AbaE0SgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:30:40 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Fabian Frederick <fabf@skynet.be>, Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] fix busted pr_info conversion in kernel/workqueue.c
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+	Tue, 27 May 2014 14:36:11 -0400
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: Heesub Shin <heesub.shin@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/9] staging: ion: remove struct page_info
+References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
+	<1401098701-24049-6-git-send-email-heesub.shin@samsung.com>
+Date: Tue, 27 May 2014 11:36:07 -0700
+In-Reply-To: <1401098701-24049-6-git-send-email-heesub.shin@samsung.com>
+	(Heesub Shin's message of "Mon, 26 May 2014 19:04:58 +0900")
+Message-ID: <vnkw61kr5aso.fsf@mitchelh-linux.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <14250.1401215339.1@turing-police.cc.vt.edu>
-Date: Tue, 27 May 2014 14:28:59 -0400
-Message-ID: <14251.1401215339@turing-police.cc.vt.edu>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resend - first attempt ate the To: line)
+On Mon, May 26 2014 at 03:04:58 AM, Heesub Shin <heesub.shin@samsung.com> wrote:
+> ION system heap uses a temporary list holding meta data on pages
+> allocated to build scatter/gather table. Now that the pages are compound
+> pages, we do not need to introduce a new data type redundantly.
+>
+> Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+> ---
+>  drivers/staging/android/ion/ion_system_heap.c | 47 +++++++++------------------
+>  1 file changed, 15 insertions(+), 32 deletions(-)
+>
+> diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+> index 73a2e67..f0ae210 100644
+> --- a/drivers/staging/android/ion/ion_system_heap.c
+> +++ b/drivers/staging/android/ion/ion_system_heap.c
+> @@ -51,11 +51,6 @@ struct ion_system_heap {
+>  	struct ion_page_pool **pools;
+>  };
+>  
+> -struct page_info {
+> -	struct page *page;
+> -	struct list_head list;
+> -};
+> -
+>  static struct page *alloc_buffer_page(struct ion_system_heap *heap,
+>  				      struct ion_buffer *buffer,
+>  				      unsigned long order)
+> @@ -96,19 +91,14 @@ static void free_buffer_page(struct ion_system_heap *heap,
+>  }
+>  
+>  
+> -static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+> -						 struct ion_buffer *buffer,
+> -						 unsigned long size,
+> -						 unsigned int max_order)
+> +static struct page *alloc_largest_available(struct ion_system_heap *heap,
+> +					    struct ion_buffer *buffer,
+> +					    unsigned long size,
+> +					    unsigned int max_order)
 
-commit 2d916033a318d7e763eb099c69600d5dcd1ccb6b
-Author: Fabian Frederick <fabf@skynet.be>
-Date:   Mon May 12 13:59:35 2014 -0400
-
-    kernel/workqueue.c: pr_warning/pr_warn & printk/pr_info
-
-This commit did an incorrect printk->pr_info conversion. If we were
-converting to pr_info() we should lose the log_level parameter. The problem is
-that this is called (indirectly) by show_regs_print_info(), which is called
-with various log_levels (from _INFO clear to _EMERG). So we leave it as
-a printk() call so the desired log_level is applied.
-
-Not a full revert, as the other half of the patch is correct.
-
-Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-
---- linux-next/kernel/workqueue.c.dist	2014-05-26 11:18:40.155380772 -0400
-+++ linux-next/kernel/workqueue.c	2014-05-27 12:07:51.464678172 -0400
-@@ -4440,7 +4440,7 @@ void print_worker_info(const char *log_l
- 		probe_kernel_read(desc, worker->desc, sizeof(desc) - 1);
- 
- 	if (fn || name[0] || desc[0]) {
--		pr_info("%sWorkqueue: %s %pf", log_lvl, name, fn);
-+		printk("%sWorkqueue: %s %pf", log_lvl, name, fn);
- 		if (desc[0])
- 			pr_cont(" (%s)", desc);
- 		pr_cont("\n");
+Was this whitespace-only change intentional?
 
 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
