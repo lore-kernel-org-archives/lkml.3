@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaE0Fwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 01:52:39 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15192 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639AbaE0Fwg (ORCPT
+	id S1753027AbaE0Fwv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 01:52:51 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:62933 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993AbaE0Fws convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 01:52:36 -0400
-Message-ID: <53842806.1020307@huawei.com>
-Date: Tue, 27 May 2014 13:52:06 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 27 May 2014 01:52:48 -0400
 MIME-Version: 1.0
-To: Yong Zhang <yong.zhang@windriver.com>
-CC: <ralf@linux-mips.org>, <huawei.libin@huawei.com>,
-        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>
-Subject: Re: [PATCH V2] MIPS: change type of asid_cache to unsigned long
-References: <1400650563-1033-1-git-send-email-yong.zhang@windriver.com> <5384119E.7010606@huawei.com> <20140527045038.GB16193@pek-yzhang-d1> <53841D88.3040306@huawei.com> <20140527052307.GA16493@pek-yzhang-d1>
-In-Reply-To: <20140527052307.GA16493@pek-yzhang-d1>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140526090623.77186cdf@canb.auug.org.au>
+References: <1400965544-20092-1-git-send-email-vincent.stehle@laposte.net>
+	<CANq1E4QdGeHeuCu9LvPkbGZX5C+ax4fWVqq4kJ5wMUBx5uWZrQ@mail.gmail.com>
+	<20140525225435.GZ3693@n2100.arm.linux.org.uk>
+	<20140526090623.77186cdf@canb.auug.org.au>
+Date: Tue, 27 May 2014 15:52:46 +1000
+Message-ID: <CAPM=9twkXSA2uyVPfdz=qbpM5H96tHHaD8HnTf7YGpB0QX1WZw@mail.gmail.com>
+Subject: Re: [PATCH linux-next] DRM: Armada: update dma_buf_export use
+From: Dave Airlie <airlied@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        =?UTF-8?Q?Vincent_Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/27 13:23, Yong Zhang wrote:
-> On Tue, May 27, 2014 at 01:07:20PM +0800, Li Zefan wrote:
->> On 2014/5/27 12:50, Yong Zhang wrote:
->>> BTW, I realy don't care who credits the patch and Ralf said that
->>> he will applied the one which moves the place of udelay_val.
->>>
->>> Anyway, if your company pays you more money if you contribute to
->>> the community, just take it and talk about it with Ralf ;-)
->>>
+On 26 May 2014 09:06, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> On Sun, 25 May 2014 23:54:35 +0100 Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 >>
->> We don't do contribution for money, and I don't think you do,
->> but crediting properly is one of the reason that our kernel
->> community keeps prosperous for so many years, and that's one
->> of the reason we introduced Reported-by and Tested-by tags.
-> 
-> I'll reply this email for the last time.
-> 
-> To me your action is just like Reported-by, but I admit that
-> you also do analysis. If you don't the way change it to whatever
-> you want.
-> 
+>> On Sun, May 25, 2014 at 02:08:48PM +0200, David Herrmann wrote:
+>> >
+>> > On Sat, May 24, 2014 at 11:05 PM, Vincent Stehlé
+>> > <vincent.stehle@laposte.net> wrote:
+>> > > The dma_buf_export function was updated in commit 4bcec44ffaf9 'dma-buf: use
+>> > > reservation objects' to take a reservation object parameter; update Armada
+>> > > export method accordingly.
+>> > >
+>> > > This fixes the following compilation error:
+>> > >
+>> > >   drivers/gpu/drm/armada/armada_gem.c: In function ‘armada_gem_prime_export’:
+>> > >   drivers/gpu/drm/armada/armada_gem.c:544:16: error: macro "dma_buf_export" requires 5 arguments, but only 4 given
+>> > >
+>> > > Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+>> > > Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+>> > > Cc: David Airlie <airlied@linux.ie>
+>> > > Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>> > > Cc: Sumit Semwal <sumit.semwal@linaro.org>
+>> >
+>> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+>>
+>> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+>>
+>> Airlied, can you merge this please?  Thanks.
+>
+> Except that commit 4bcec44ffaf9 'dma-buf: use reservation objects'
+> comes from the dma-buf tree, so Sumit needs to add this commit to his
+> tree.
+>
 
-Sorry if I sounded offensive. I want Li Bin to get the credit,
-because he's supposed to, and I want him to be encouraged in
-contributing to the mainline kernel.
+Then we should cc him.
 
-The decision is on Ralf, whether to accept your patch or let
-us send our fix with detailed changelog.
-
+Dave.
