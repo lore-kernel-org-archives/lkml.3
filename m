@@ -1,225 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208AbaE0TMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 15:12:20 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:41491 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbaE0TMS (ORCPT
+	id S1753325AbaE0TNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:13:45 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:20557 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752047AbaE0TNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 15:12:18 -0400
+	Tue, 27 May 2014 15:13:43 -0400
+Date: Tue, 27 May 2014 15:13:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing: Don't account for cpu idle time with irqsoff
+ tracers
+Message-ID: <20140527151341.4411f910@gandalf.local.home>
+In-Reply-To: <1400527847-28359-1-git-send-email-sboyd@codeaurora.org>
+References: <1400527847-28359-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140527071157.GC20695@pengutronix.de>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
-	<1400169891-29546-2-git-send-email-tthayer@altera.com>
-	<20140516075344.GF949@pengutronix.de>
-	<CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
-	<20140519191206.GH949@pengutronix.de>
-	<CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
-	<CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
-	<20140520144446.GJ949@pengutronix.de>
-	<CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
-	<20140527071157.GC20695@pengutronix.de>
-Date: Tue, 27 May 2014 14:12:17 -0500
-Message-ID: <CANk1AXTMHuWeaxn_hVi+AH=aXbbSNov=894YmSYfvfvpWM+eSg@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
-From: Alan Tull <delicious.quinoa@gmail.com>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: Thor Thayer <tthayer.linux@gmail.com>, Thor Thayer <tthayer@altera.com>,
-        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
-        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
-        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Alan Tull <atull@altera.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 2:11 AM, Steffen Trumtrar
-<s.trumtrar@pengutronix.de> wrote:
-> On Wed, May 21, 2014 at 10:38:34AM -0500, Thor Thayer wrote:
->> On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
->> <s.trumtrar@pengutronix.de> wrote:
->> > Hi!
->> >
->> > On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
->> >> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
->> >>
->> >> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->> >> >>> >> new file mode 100644
->> >> >>> >> index 0000000..8f8746b
->> >> >>> >> --- /dev/null
->> >> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
->> >> >>> >> @@ -0,0 +1,11 @@
->> >> >>> >> +Altera SOCFPGA SDRAM Controller
->> >> >>> >> +
->> >> >>> >> +Required properties:
->> >> >>> >> +- compatible : "altr,sdr-ctl";
->> >> >>> >> +- reg : Should contain 1 register ranges(address and length)
->> >> >>> >> +
->> >> >>> >> +Example:
->> >> >>> >> +     sdrctl@ffc25000 {
->> >> >>> >> +             compatible = "altr,sdr-ctl";
->> >> >>> >> +             reg = <0xffc25000 0x1000>;
->> >> >>> >> +     };
->> >> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
->> >> >>> >> index df43702..6ce912e 100644
->> >> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
->> >> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
->> >> >>> >> @@ -676,6 +676,11 @@
->> >> >>> >>                       clocks = <&l4_sp_clk>;
->> >> >>> >>               };
->> >> >>> >>
->> >> >>> >> +             sdrctl@ffc25000 {
->> >> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
->> >> >>> >                                                    ^^^^^^^^^^
->> >> >>> >
->> >> >>> > Get rid of that, too, please.
->> >> >>>
->> >> >>> Hi Steffan,
->> >> >>>
->> >> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
->> >> >>> that has the ECC enable bitfield also includes the DRAM configuration
->> >> >>> bitfields that other drivers will want to access (specifically the
->> >> >>> FPGA bridge needs this information). Since this register will be
->> >> >>> shared between drivers,  syscon seems like the best solution.
->> >> >>>
->> >> >>
->> >> >> Hm, from looking at the documentation of the ctrlcfg I can't really
->> >> >> understand which bits you would need for the FPGA brigde and why.
->> >>
->> >> Hi Steffen,
->> >>
->> >> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
->> >> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
->> >> allows an FPGA port to come out of reset (enables that port).  Has no
->> >> other effect on SDRAM configuration.
->> >>
->> >> >> That all sounds like stuff you would want to set for the specific
->> >> >> RAM you are dealing with on a specific board.
->> >> >> What bridge are you talking about? The SDRAM bridge?
->> >>
->> >> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
->> >> register the only register in the sdr that the bridge driver needs.
->> >>
->> >
->> > So, what I suggested down ...
->> >
->> >> >>
->> >> >> I can see the problem with the ECC enable, though.
->> >> >>
->> >> >> Regards,
->> >> >> Steffen
->> >> >>
->> >> >
->> >> >>> >                 sdrctl@ffc25000 {
->> >> >>> >                         compatible = "altr,sdr-ctl";
->> >> >>> >                         reg = <0xffc25000 0x1000>;
->> >> >>> >                         ranges;
->> >> >>> >
->> >> >>> >                         edac@ffc2502c {
->> >> >>> >                                 compatible = "altr,sdram-edac";
->> >> >>> >                                 reg = <0xffc2502c 0x50>;
->> >> >>> >                                 interrupts = <0 39 4>;
->> >> >>> >                         };
->> >> >>> >                 };
->> >> >>> >
->> >> >>> > Then we can later add:
->> >> >>> >
->> >> >>> >                         sdr-ports: ports@ffc2507c {
->> >> >>> >                                 #reset-cells = <1>;
->> >> >>> >                                 compatible = "altr,sdr-ports";
->> >> >>> >                                 reg = <0xffc2507c 0x10>;
->> >> >>> >                                 clocks = <&ddr_dqs_clk>;
->> >> >>> >                                 ...
->> >> >>> >                         };
->> >>
->> >
->> > ... here should work. No?! Just a simple driver that registers with the
->> > reset-framework. I would add 0x7c to that driver and than that driver could
->> > "configure" the port and let it out of reset.
->> >
->> > I have done the same thing for the other 3 bridges, but am not finished yet.
->> > Especially the GPV-stuff needs to at least be able to be added later if not now.
->> >
->
-> Hi Thor!
->
->> I'm not clear on how the EDAC driver will interact with the registers
->> allocated to the SDRAM controller. If the group of registers from
->> 0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
->> controller, how does the EDAC driver cleanly access that single
->> register inside this range?
->>
->
-> The compatible in the example is wrong. I didn't mean to map the whole address space
-> to some driver.
-> I think for the configuration register syscon is the right approach. It is a
-> bag of bits that don't necessitate an own driver, so syscon is perfect.
->
-> So, let me change my proposal to
->
->         sdr-ctl: sdram@ffc25000 {
->                 compatible = "altr,sdr-ctl", "syscon";
->                 reg = <0xffc25000 0x1>;
->         };
->
->         edac: edac@ffc2502c {
->                 compatible = "altr,sdram-edac";
->                 reg = <0xffc2502c 0x50>;
->                 interrupts = <0 39 4>;
->                 config = <&sdr-ctl>;
->                 ...
->         };
->
->         sdr-ports: ports@ffc2507c {
->                 compatible = "altr,sdr-ports";
->                 reg = <0xffc2507c 0x10>;
->                 clocks = <&ddr_dqs_clk>;
->                 ...
->         };
->
-> Maybe we can just skip the outer node that combines all the others.
-> So, if we do it like that, you can still use syscon, but only for the register
-> that needs it. And the EDAC definitely needs access to the config register, so
-> all is good.
->
->> Is the solution that I don't use request_region() (and therefore not
->> request exclusive access) when setting up the SDRAM controller?
->>
->> If you could point me to your drivers for the other bridges that you
->> reference, your code may answer my question.
->>
->
-> The other bridges don't need access to any SDRAM controller registers and
-> I haven't even started to implement the GPV-stuff with the lw2hps-bridge :-(
->
-> Regards,
-> Steffen
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
-OK now I understand.  For register offset 0x0, that's all stuff set up
-in the bootloader.  We won't be touching that register except for the
-EDAC.  So syscon isn't needed here.
+Hey! I was able to get to this.
 
-Each driver that uses some sdr registers can specify which registers
-it uses in the device tree.  So far we don't have any cases of two
-drivers that share a register.
+On Mon, 19 May 2014 12:30:47 -0700
+Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-The ECC driver will need two ranges: offset 0x00 and 0x38 through 0x50.
-The fpga bridges just needs offset 0x80.
+> The idle loop calls stop_critical_timings() in an attempt to stop
+> the irqsoff tracer from tracing a cpu's idle time. Unfortunately,
+> stop_critical_timings() doesn't do much besides stop the tracer
+> until the point that another irqsoff event happens. This typically
+> happens right after in rcu_idle_enter() or later on in the cpuidle
+> driver when we take a spinlock to notify the clockevent framework
+> about timers that lose state during deep idle (FEAT_C3_STOP).
+> This leads to worthless irqsoff traces that show a large amount
+> of time spent in idle:
+> 
+>  # tracer: irqsoff
+>  #
+>  # irqsoff latency trace v1.1.5 on 3.15.0-rc4-00002-geffda86cfdaa-dirty
+>  # --------------------------------------------------------------------
+>  # latency: 3997988 us, #88/88, CPU#1 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:4)
+>  #    -----------------
+>  #    | task: swapper/1-0 (uid:0 nice:0 policy:0 rt_prio:0)
+>  #    -----------------
+>  #  => started at: rcu_idle_enter
+>  #  => ended at:   cpuidle_enter_state
+>  #
+>  #
+>  #                  _------=> CPU#
+>  #                 / _-----=> irqs-off
+>  #                | / _----=> need-resched
+>  #                || / _---=> hardirq/softirq
+>  #                ||| / _--=> preempt-depth
+>  #                |||| /     delay
+>  #  cmd     pid   ||||| time  |   caller
+>  #     \   /      |||||  \    |   /
+>    <idle>-0       1d..1    2us+: trace_hardirqs_off <-rcu_idle_enter
+>    <idle>-0       1d..2    7us+: rcu_eqs_enter_common.isra.48 <-rcu_idle_enter
+>    <idle>-0       1d..2   12us+: cpuidle_enabled <-cpu_startup_entry
+>    <idle>-0       1d..2   17us+: cpuidle_select <-cpu_startup_entry
+>    <idle>-0       1d..2   21us+: menu_select <-cpuidle_select
+>    <idle>-0       1d..2   26us+: pm_qos_request <-menu_select
+>    <idle>-0       1d..2   30us+: tick_nohz_get_sleep_length <-menu_select
+>    <idle>-0       1d..2   34us+: ns_to_timespec <-menu_select
+>    <idle>-0       1d..2   39us+: nr_iowait_cpu <-menu_select
+>    <idle>-0       1d..2   46us+: this_cpu_load <-menu_select
+>    <idle>-0       1d..2   50us+: nr_iowait_cpu <-menu_select
+>    <idle>-0       1d..2   55us+: clockevents_notify <-cpu_startup_entry
+>    <idle>-0       1d..2   59us+: _raw_spin_lock_irqsave <-clockevents_notify
+>    <idle>-0       1d..2   64us+: preempt_count_add <-_raw_spin_lock_irqsave
+>    <idle>-0       1d..3   69us+: do_raw_spin_lock <-_raw_spin_lock_irqsave
+>    <idle>-0       1d..3   74us+: tick_broadcast_oneshot_control <-clockevents_notify
+>    <idle>-0       1d..3   78us+: _raw_spin_lock_irqsave <-tick_broadcast_oneshot_control
+>    <idle>-0       1d..3   83us+: preempt_count_add <-_raw_spin_lock_irqsave
+>    <idle>-0       1d..4   88us+: do_raw_spin_lock <-_raw_spin_lock_irqsave
+>    <idle>-0       1d..4   93us+: clockevents_set_mode <-tick_broadcast_oneshot_control
+>    <idle>-0       1d..4   97us+: arch_timer_set_mode_virt <-clockevents_set_mode
+>    <idle>-0       1d..4  102us+: broadcast_needs_cpu <-tick_broadcast_oneshot_control
+>    <idle>-0       1d..4  106us+: _raw_spin_unlock_irqrestore <-tick_broadcast_oneshot_control
+>    <idle>-0       1d..4  110us+: do_raw_spin_unlock <-_raw_spin_unlock_irqrestore
+>    <idle>-0       1d..4  115us+: preempt_count_sub <-_raw_spin_unlock_irqrestore
+>    <idle>-0       1d..3  120us+: _raw_spin_unlock_irqrestore <-clockevents_notify
+>    <idle>-0       1d..3  124us+: do_raw_spin_unlock <-_raw_spin_unlock_irqrestore
+>    <idle>-0       1d..3  129us+: preempt_count_sub <-_raw_spin_unlock_irqrestore
+>    <idle>-0       1d..2  133us+: cpuidle_enter <-cpu_startup_entry
+>    <idle>-0       1d..2  137us+: cpuidle_enter_state <-cpuidle_enter
+>    <idle>-0       1d..2  141us+: ktime_get <-cpuidle_enter_state
+>    <idle>-0       1d..2  148us+: arch_counter_read <-ktime_get
+>    <idle>-0       1d..2  153us+: cpu_enter_idle <-cpuidle_enter_state
+>    <idle>-0       1d..2  157us+: cpu_pm_enter <-cpu_enter_idle
+>    <idle>-0       1d..2  161us+: _raw_read_lock <-cpu_pm_enter
+>    <idle>-0       1d..2  165us+: preempt_count_add <-_raw_read_lock
+>    <idle>-0       1d..3  170us+: do_raw_read_lock <-_raw_read_lock
+>    <idle>-0       1d..3  175us+: cpu_pm_notify <-cpu_pm_enter
+>    <idle>-0       1d..3  179us+: __raw_notifier_call_chain <-cpu_pm_notify
+>    <idle>-0       1d..3  183us+: notifier_call_chain <-__raw_notifier_call_chain
+>    <idle>-0       1d..3  187us+: gic_notifier <-notifier_call_chain
+>    <idle>-0       1d..3  192us+: arch_timer_cpu_pm_notify <-notifier_call_chain
+>    <idle>-0       1d..3  197us+: vfp_cpu_pm_notifier <-notifier_call_chain
+>    <idle>-0       1d..3  201us+: dbg_cpu_pm_notify <-notifier_call_chain
+>    <idle>-0       1d..3  206us+: _raw_read_unlock <-cpu_pm_enter
+>    <idle>-0       1d..3  210us+: do_raw_read_unlock <-_raw_read_unlock
+>    <idle>-0       1d..3  214us!: preempt_count_sub <-_raw_read_unlock
+>    <idle>-0       1d..2 3997820us+: cpu_pm_exit <-cpu_enter_idle
+>    <idle>-0       1d..2 3997824us+: _raw_read_lock <-cpu_pm_exit
+>    <idle>-0       1d..2 3997828us+: preempt_count_add <-_raw_read_lock
+>    <idle>-0       1d..3 3997833us+: do_raw_read_lock <-_raw_read_lock
+>    <idle>-0       1d..3 3997838us+: cpu_pm_notify <-cpu_pm_exit
+>    <idle>-0       1d..3 3997842us+: __raw_notifier_call_chain <-cpu_pm_notify
+>    <idle>-0       1d..3 3997846us+: notifier_call_chain <-__raw_notifier_call_chain
+>    <idle>-0       1d..3 3997850us+: gic_notifier <-notifier_call_chain
+>    <idle>-0       1d..3 3997856us+: arch_timer_cpu_pm_notify <-notifier_call_chain
+>    <idle>-0       1d..3 3997860us+: vfp_cpu_pm_notifier <-notifier_call_chain
+>    <idle>-0       1d..3 3997865us+: vfp_enable <-vfp_cpu_pm_notifier
+>    <idle>-0       1d..3 3997869us+: dbg_cpu_pm_notify <-notifier_call_chain
+>    <idle>-0       1d..3 3997873us+: reset_ctrl_regs <-dbg_cpu_pm_notify
+>    <idle>-0       1d..3 3997877us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997882us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997886us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997890us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997894us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997898us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997902us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997906us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997910us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997915us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997919us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997923us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997927us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997931us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997936us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997940us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997944us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997948us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997952us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997956us+: write_wb_reg <-reset_ctrl_regs
+>    <idle>-0       1d..3 3997960us+: _raw_read_unlock <-cpu_pm_exit
+>    <idle>-0       1d..3 3997965us+: do_raw_read_unlock <-_raw_read_unlock
+>    <idle>-0       1d..3 3997969us+: preempt_count_sub <-_raw_read_unlock
+>    <idle>-0       1d..2 3997973us+: ktime_get <-cpuidle_enter_state
+>    <idle>-0       1d..2 3997980us+: arch_counter_read <-ktime_get
+>    <idle>-0       1d..1 3997985us+: trace_hardirqs_on <-cpuidle_enter_state
+>    <idle>-0       1d..1 3997994us+: time_hardirqs_on <-cpuidle_enter_state
+>    <idle>-0       1d..1 3998053us : <stack trace>
+>   => time_hardirqs_on
+>   => trace_hardirqs_on_caller
+>   => trace_hardirqs_on
+>   => cpuidle_enter_state
+>   => cpuidle_enter
+>   => cpu_startup_entry
+>   => secondary_start_kernel
+> 
+> Let's make stop_critical_timings() actually stop the tracer until
+> start_critical_timings() is called. This way we don't have to
+> worry about adding more stop_critical_timings() calls deep down
+> in cpuidle drivers or later on in the idle loop.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+> 
+>  kernel/trace/trace_irqsoff.c | 20 ++++++++++++++------
+>  1 file changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+> index 8ff02cbb892f..ea5f5d484150 100644
+> --- a/kernel/trace/trace_irqsoff.c
+> +++ b/kernel/trace/trace_irqsoff.c
+> @@ -367,6 +367,8 @@ out:
+>  	__trace_function(tr, CALLER_ADDR0, parent_ip, flags, pc);
+>  }
+>  
+> +static DEFINE_PER_CPU(bool, timings_stopped);
+> +
+>  static inline void
+>  start_critical_timing(unsigned long ip, unsigned long parent_ip)
+>  {
+> @@ -375,11 +377,12 @@ start_critical_timing(unsigned long ip, unsigned long parent_ip)
+>  	struct trace_array_cpu *data;
+>  	unsigned long flags;
+>  
+> -	if (!tracer_enabled || !tracing_is_enabled())
+> -		return;
+> -
+>  	cpu = raw_smp_processor_id();
+>  
+> +	if (!tracer_enabled || !tracing_is_enabled() ||
+> +			per_cpu(timings_stopped, cpu))
+> +		return;
 
-Thanks for your feedback!
+Micro optimization. As this gets called even when not tracing, the
+tracer_enabled is what determines if tracing is enabled or not. Can you
+keep the first condition the same, and just add your check to the one
+below:
 
-Alan
+if (per_cpu(timings_stop, cpu) || per_cpu(tracing_cpu, cpu))
+	return;
+
+> +
+>  	if (per_cpu(tracing_cpu, cpu))
+>  		return;
+>  
+> @@ -418,7 +421,8 @@ stop_critical_timing(unsigned long ip, unsigned long parent_ip)
+>  	else
+>  		return;
+>  
+> -	if (!tracer_enabled || !tracing_is_enabled())
+> +	if (!tracer_enabled || !tracing_is_enabled() ||
+> +			per_cpu(timings_stopped, cpu))
+>  		return;
+>  
+>  	data = per_cpu_ptr(tr->trace_buffer.data, cpu);
+> @@ -439,15 +443,19 @@ stop_critical_timing(unsigned long ip, unsigned long parent_ip)
+>  /* start and stop critical timings used to for stoppage (in idle) */
+>  void start_critical_timings(void)
+>  {
+> -	if (preempt_trace() || irq_trace())
+> +	if (preempt_trace() || irq_trace()) {
+> +		per_cpu(timings_stopped, raw_smp_processor_id()) = false;
+>  		start_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(start_critical_timings);
+>  
+>  void stop_critical_timings(void)
+>  {
+> -	if (preempt_trace() || irq_trace())
+> +	if (preempt_trace() || irq_trace()) {
+>  		stop_critical_timing(CALLER_ADDR0, CALLER_ADDR1);
+> +		per_cpu(timings_stopped, raw_smp_processor_id()) = true;
+> +	}
+
+Hmm, I think this is racy. If we enter idle with tracing enabled it
+will set timings_stopped to true for this cpu. But if we disable
+tracing while in idle, it will not turn it off.
+
+Well, this isn't really true, because once we enable tracing the
+trace_type that is used to check preempt_trace() and irq_trace() stays
+set even when tracing isn't enabled. But this may change soon and that
+can make this a problem.
+
+I don't see any reason the setting of timings_stopped can't be set
+unconditionally in these functions.
+
+-- Steve
+
+
+>  }
+>  EXPORT_SYMBOL_GPL(stop_critical_timings);
+>  
+
