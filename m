@@ -1,90 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaE0TuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 15:50:09 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44709 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849AbaE0TuH (ORCPT
+	id S1753415AbaE0TwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:52:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47682 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713AbaE0TwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 15:50:07 -0400
-Date: Tue, 27 May 2014 20:49:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org
-Message-ID: <20140527194932.GD12304@sirena.org.uk>
-References: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 27 May 2014 15:52:03 -0400
+Date: Tue, 27 May 2014 21:51:17 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Thor Thayer <tthayer.linux@gmail.com>
+Cc: Alan Tull <delicious.quinoa@gmail.com>, Thor Thayer <tthayer@altera.com>,
+        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
+        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
+        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Alan Tull <atull@altera.com>
+Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+Message-ID: <20140527195117.GC13172@pengutronix.de>
+References: <1400169891-29546-2-git-send-email-tthayer@altera.com>
+ <20140516075344.GF949@pengutronix.de>
+ <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
+ <20140519191206.GH949@pengutronix.de>
+ <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
+ <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
+ <20140520144446.GJ949@pengutronix.de>
+ <CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
+ <20140527071157.GC20695@pengutronix.de>
+ <CAF03EBeLcObeajAgQQ4-h529f0ExNLB_RXCWMgktw4-D=K4d5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wHCRs67tfc1XsEk1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 0/6] mfd: axp20x: add AXP221 PMIC support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAF03EBeLcObeajAgQQ4-h529f0ExNLB_RXCWMgktw4-D=K4d5g@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 21:42:39 up 34 days, 13:14, 35 users,  load average: 0,01, 0,08,
+ 0,12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 27, 2014 at 01:00:32PM -0500, Thor Thayer wrote:
+> On Tue, May 27, 2014 at 2:11 AM, Steffen Trumtrar
+> <s.trumtrar@pengutronix.de> wrote:
+> > On Wed, May 21, 2014 at 10:38:34AM -0500, Thor Thayer wrote:
+> >> On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
+> >> <s.trumtrar@pengutronix.de> wrote:
+> >> > Hi!
+> >> >
+> >> > On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
+> >> >> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
+> >> >>
+> >> >> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> >> >> >>> >> new file mode 100644
+> >> >> >>> >> index 0000000..8f8746b
+> >> >> >>> >> --- /dev/null
+> >> >> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> >> >> >>> >> @@ -0,0 +1,11 @@
+> >> >> >>> >> +Altera SOCFPGA SDRAM Controller
+> >> >> >>> >> +
+> >> >> >>> >> +Required properties:
+> >> >> >>> >> +- compatible : "altr,sdr-ctl";
+> >> >> >>> >> +- reg : Should contain 1 register ranges(address and length)
+> >> >> >>> >> +
+> >> >> >>> >> +Example:
+> >> >> >>> >> +     sdrctl@ffc25000 {
+> >> >> >>> >> +             compatible = "altr,sdr-ctl";
+> >> >> >>> >> +             reg = <0xffc25000 0x1000>;
+> >> >> >>> >> +     };
+> >> >> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> >> >> >>> >> index df43702..6ce912e 100644
+> >> >> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
+> >> >> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> >> >> >>> >> @@ -676,6 +676,11 @@
+> >> >> >>> >>                       clocks = <&l4_sp_clk>;
+> >> >> >>> >>               };
+> >> >> >>> >>
+> >> >> >>> >> +             sdrctl@ffc25000 {
+> >> >> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
+> >> >> >>> >                                                    ^^^^^^^^^^
+> >> >> >>> >
+> >> >> >>> > Get rid of that, too, please.
+> >> >> >>>
+> >> >> >>> Hi Steffan,
+> >> >> >>>
+> >> >> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
+> >> >> >>> that has the ECC enable bitfield also includes the DRAM configuration
+> >> >> >>> bitfields that other drivers will want to access (specifically the
+> >> >> >>> FPGA bridge needs this information). Since this register will be
+> >> >> >>> shared between drivers,  syscon seems like the best solution.
+> >> >> >>>
+> >> >> >>
+> >> >> >> Hm, from looking at the documentation of the ctrlcfg I can't really
+> >> >> >> understand which bits you would need for the FPGA brigde and why.
+> >> >>
+> >> >> Hi Steffen,
+> >> >>
+> >> >> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
+> >> >> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
+> >> >> allows an FPGA port to come out of reset (enables that port).  Has no
+> >> >> other effect on SDRAM configuration.
+> >> >>
+> >> >> >> That all sounds like stuff you would want to set for the specific
+> >> >> >> RAM you are dealing with on a specific board.
+> >> >> >> What bridge are you talking about? The SDRAM bridge?
+> >> >>
+> >> >> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
+> >> >> register the only register in the sdr that the bridge driver needs.
+> >> >>
+> >> >
+> >> > So, what I suggested down ...
+> >> >
+> >> >> >>
+> >> >> >> I can see the problem with the ECC enable, though.
+> >> >> >>
+> >> >> >> Regards,
+> >> >> >> Steffen
+> >> >> >>
+> >> >> >
+> >> >> >>> >                 sdrctl@ffc25000 {
+> >> >> >>> >                         compatible = "altr,sdr-ctl";
+> >> >> >>> >                         reg = <0xffc25000 0x1000>;
+> >> >> >>> >                         ranges;
+> >> >> >>> >
+> >> >> >>> >                         edac@ffc2502c {
+> >> >> >>> >                                 compatible = "altr,sdram-edac";
+> >> >> >>> >                                 reg = <0xffc2502c 0x50>;
+> >> >> >>> >                                 interrupts = <0 39 4>;
+> >> >> >>> >                         };
+> >> >> >>> >                 };
+> >> >> >>> >
+> >> >> >>> > Then we can later add:
+> >> >> >>> >
+> >> >> >>> >                         sdr-ports: ports@ffc2507c {
+> >> >> >>> >                                 #reset-cells = <1>;
+> >> >> >>> >                                 compatible = "altr,sdr-ports";
+> >> >> >>> >                                 reg = <0xffc2507c 0x10>;
+> >> >> >>> >                                 clocks = <&ddr_dqs_clk>;
+> >> >> >>> >                                 ...
+> >> >> >>> >                         };
+> >> >>
+> >> >
+> >> > ... here should work. No?! Just a simple driver that registers with the
+> >> > reset-framework. I would add 0x7c to that driver and than that driver could
+> >> > "configure" the port and let it out of reset.
+> >> >
+> >> > I have done the same thing for the other 3 bridges, but am not finished yet.
+> >> > Especially the GPV-stuff needs to at least be able to be added later if not now.
+> >> >
+> >
+> > Hi Thor!
+> >
+> >> I'm not clear on how the EDAC driver will interact with the registers
+> >> allocated to the SDRAM controller. If the group of registers from
+> >> 0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
+> >> controller, how does the EDAC driver cleanly access that single
+> >> register inside this range?
+> >>
+> >
+> > The compatible in the example is wrong. I didn't mean to map the whole address space
+> > to some driver.
+> > I think for the configuration register syscon is the right approach. It is a
+> > bag of bits that don't necessitate an own driver, so syscon is perfect.
+> >
+> > So, let me change my proposal to
+> >
+> >         sdr-ctl: sdram@ffc25000 {
+> >                 compatible = "altr,sdr-ctl", "syscon";
+> >                 reg = <0xffc25000 0x1>;
+> >         };
+> >
+> >         edac: edac@ffc2502c {
+> >                 compatible = "altr,sdram-edac";
+> >                 reg = <0xffc2502c 0x50>;
+> >                 interrupts = <0 39 4>;
+> >                 config = <&sdr-ctl>;
+> >                 ...
+> >         };
+> >
+> >         sdr-ports: ports@ffc2507c {
+> >                 compatible = "altr,sdr-ports";
+> >                 reg = <0xffc2507c 0x10>;
+> >                 clocks = <&ddr_dqs_clk>;
+> >                 ...
+> >         };
+> >
+> > Maybe we can just skip the outer node that combines all the others.
+> > So, if we do it like that, you can still use syscon, but only for the register
+> > that needs it. And the EDAC definitely needs access to the config register, so
+> > all is good.
+> >
+> >> Is the solution that I don't use request_region() (and therefore not
+> >> request exclusive access) when setting up the SDRAM controller?
+> >>
+> >> If you could point me to your drivers for the other bridges that you
+> >> reference, your code may answer my question.
+> >>
+> >
+> > The other bridges don't need access to any SDRAM controller registers and
+> > I haven't even started to implement the GPV-stuff with the lw2hps-bridge :-(
+> >
+> > Regards,
+> > Steffen
+> >
+> > --
+> > Pengutronix e.K.                           |                             |
+> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> 
+> Thank you for your help on this, Steffen. It is good to have your
+> insight. I'll implement the changes and resubmit shortly.
+> 
 
---wHCRs67tfc1XsEk1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Very good. I'm happy that we could come to a conclusion we are all okay with.
+(Unless someone else shows up and rains on your parade ;-))
 
-On Tue, May 27, 2014 at 11:38:49AM +0200, Boris BREZILLON wrote:
+Regards,
+Steffen
 
-> I'm still waiting for inputs regarding the ipsout regulator representation:
-
-If you've got questions you need an answer to urgently it's possibly
-best to highlight them outside of a series like this doing that helps
-make it more obvious.
-
->  * The ipsout regulator is currently represented as a fixed regulator
->    providing a 5v output, and this is not exactly the case.
->    AFAIU (here's is the datasheet traduction if you want to check [1]), the
->    ipsout output is a multiplexer that choose among vbus (5V), acin (12V
->    which is then converted to 5V) and the battery power supply (3,5 -> 4,2 V).
->    This means the output voltage of ipsout vary between 3,5V and 5V.
->    How can we express this kind of muxer in the regulator framework (is there
->    already something available ?) ?
->    Note that the power supply selection is automatic, though we could force
->    one power supply, but then we loose the ability to unplug one power supply
->    without impacting the system.
-
-This sounds like it may as well just be represented as an unregulated
-supply - it's just the system root supply really.  Nothing can rely on
-the voltage anyway as it's going to vary randomly depending on what the
-user does power wise and typically it'd only be used as a supply for
-things that don't care about the specific voltage.
-
---wHCRs67tfc1XsEk1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThOxJAAoJELSic+t+oim9f8YP/jozDw/mw5l5NMErcDOjKNoX
-8PaR+IsIx2JZau9pTLHEoMs7gbI+YElEoXwFYA8Rcv+mjZBsRczx2zMwaoGxIq6f
-BgxldGuBZBR4NnhisziD0TiAuR3ib6uu4KVenzeeRc1MCfLPQl9tipwRu4CksvYX
-7DlNZLMpVo0KKkcgr6TBO7Z4CuRyPzWoc2Pa8C74CValzwYAcjF+WxXgoBWhG5J9
-pEoc1ySMUvEvI8CfS8pxr8LCg/wjb0SnJTG1f1LOe6QnX0UFBxq7F9QSlJt+U3Dd
-Ju9VOMAYFezacVuekNJgbaeJe4j8pVs8KiilMHDvfS5pbeBTDvAwdo1iizG+iCrN
-8axVF/Lqs81xmmofgX047+8tmG3hO9WrAnd0FXnXEj4cps4FWFQLExJlrLo188cS
-0h1Ym5tqxXTdlI4rzBji5BtfnCBHbCAvx42PvopajgfBWegyv4hMjBHTFcgvL0Nj
-fwjC2FokeLa8jcrSmVmVd6OUPv4qsCRIfGbcvvgCEjTh2vp0MtAALNbqoEADvzcn
-SWW4uvHPuM2XQpe2nCtf/kgxQEQmhcbnqt6Ywa50PcTmwOowEU7AjqtDuapKJYjX
-o1Iy/APhVcbp2KCPAuCqg/IPn2QWUdhTbNNAz9TCRfmJTbXK8IgAyloFuBo/aTX/
-2TBmxhEN/u7wH54CiEFF
-=Rzn1
------END PGP SIGNATURE-----
-
---wHCRs67tfc1XsEk1--
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
