@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaE0NUS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:20:18 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59667 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941AbaE0NUO (ORCPT
+	id S1752357AbaE0NVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:21:49 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:51331 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947AbaE0NVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:20:14 -0400
-Message-ID: <1401196807.5134.132.camel@marge.simpson.net>
-Subject: Re: balance storm
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
-        peterz@infradead.org
-Date: Tue, 27 May 2014 15:20:07 +0200
-In-Reply-To: <53848A2C.5010209@huawei.com>
-References: <5382AF2E.1040407@huawei.com>
-	 <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com>
-	 <1401113960.23186.41.camel@marge.simpson.net> <53844510.1040502@huawei.com>
-	 <1401184553.5134.115.camel@marge.simpson.net> <53848A2C.5010209@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 27 May 2014 09:21:48 -0400
+Message-ID: <53849167.1000309@mvista.com>
+Date: Tue, 27 May 2014 08:21:43 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: minyard@acm.org, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: Set hardirq tracing to on when idling
+References: <1401045323-7116-1-git-send-email-minyard@acm.org> <4559339.apo3Fd10HK@wuerfel>
+In-Reply-To: <4559339.apo3Fd10HK@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-27 at 20:50 +0800, Libo Chen wrote:
+On 05/26/2014 04:26 AM, Arnd Bergmann wrote:
+> On Sunday 25 May 2014 14:15:23 minyard@acm.org wrote:
+>> From: Corey Minyard <cminyard@mvista.com>
+>>
+>> The CPU will go to idle with interrupts off, but the interrupts
+>> will wake up the idle.  This was causing very long irqsoff trace
+>> values because, basically, the whole idle time was traces with
+>> irqs off, even though they weren't really off.  Rework the idle
+>> code to turn hardirq tracing to on befor calling idle.
+>>
+>> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+>> ---
+>>  arch/arm/kernel/process.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> I'm not sure this is correct for all ARM boards, but it fixes the
+>> issue for the Vexpress board I have.  No more 4 second irqsoff
+>> times.
+> If this patch is correct for ARM, I wonder if it should be done
+> in architecture independent code instead. Do you see the same
+> thing on x86? If not, do you know what's different?
 
-> in my box:
-> 
-> perf top -g --sort=symbol
-> 
-> Events: 3K cycles
->  73.27%  [k] read_hpet
->   4.30%  [k] _raw_spin_lock_irqsave
->   1.88%  [k] __schedule
->   1.00%  [k] idle_cpu
->   0.91%  [k] native_write_msr_safe
->   0.68%  [k] select_task_rq_fair
->   0.51%  [k] module_get_kallsym
->   0.49%  [.] sem_post
->   0.44%  [.] main
->   0.41%  [k] menu_select
->   0.39%  [k] _raw_spin_lock
->   0.38%  [k] __switch_to
->   0.33%  [k] _raw_spin_lock_irq
->   0.32%  [k] format_decode
->   0.29%  [.] usleep
->   0.28%  [.] symbols__insert
->   0.27%  [k] tick_nohz_stop_sched_tick
->   0.27%  [k] update_stats_wait_end
->   0.26%  [k] apic_timer_interrupt
->   0.25%  [k] enqueue_entity
->   0.25%  [k] sched_clock_local
->   0.24%  [k] _raw_spin_unlock_irqrestore
->   0.24%  [k] select_idle_sibling
+MIPS doesn't idle with IRQs disabled.
 
-read_hpet?  Are you booting box notsc or something?  Migration cost is
-the least of your worries.
+x86 calls trace_cpu_idle_rcuidle, but it doesn't re-enable interrupts at
+the end of the idle routine.  Adding those trace calls to ARM doesn't
+seem to make any difference, though.
 
--Mike
+> It seems like the right thing to do, I just don't understand
+> why nobody hit this before.
 
+Yeah, I'm a little confused by that, too.  The RT guys use ARM
+extensively, why haven't they seen this?  Of course, if you run your RT
+tests under heavy load, you won't see this since you will never go idle.
+
+-corey
