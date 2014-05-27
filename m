@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaE0JCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:02:48 -0400
-Received: from mail-we0-f201.google.com ([74.125.82.201]:45872 "EHLO
+	id S1752160AbaE0JCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:02:46 -0400
+Received: from mail-we0-f201.google.com ([74.125.82.201]:53175 "EHLO
 	mail-we0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036AbaE0JC0 (ORCPT
+	with ESMTP id S1752038AbaE0JC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 May 2014 05:02:26 -0400
 From: David Drysdale <drysdale@google.com>
@@ -16,9 +16,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
         x86@kernel.org, linux-arch@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCHv4 1/3] syscalls,x86: implement execveat() system call
-Date: Tue, 27 May 2014 10:02:08 +0100
-Message-Id: <1401181330-11997-2-git-send-email-drysdale@google.com>
+Subject: [PATCHv4 2/3] syscalls,x86: add selftest for execveat(2)
+Date: Tue, 27 May 2014 10:02:09 +0100
+Message-Id: <1401181330-11997-3-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1401181330-11997-1-git-send-email-drysdale@google.com>
 References: <1401181330-11997-1-git-send-email-drysdale@google.com>
@@ -26,528 +26,336 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds execveat(2) for x86, and is derived from Meredydd
-Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
-
-The primary aim of adding an execveat syscall is to allow an
-implementation of fexecve(3) that does not rely on the /proc
-filesystem.  The current glibc version of fexecve(3) is implemented
-via /proc, which causes problems in sandboxed or otherwise restricted
-environments.
-
-Given the desire for a /proc-free fexecve() implementation, HPA
-suggested (https://lkml.org/lkml/2006/7/11/556) that an execveat(2)
-syscall would be an appropriate generalization.
-
-Also, having a new syscall means that it can take a flags argument
-without back-compatibility concerns.  The current implementation just
-defines the AT_SYMLINK_NOFOLLOW flag, but other flags could be added
-in future -- for example, flags for new namespaces (as suggested at
-https://lkml.org/lkml/2006/7/11/474).
-
-Related history:
- - https://lkml.org/lkml/2006/12/27/123 is an example of someone
-   realizing that fexecve() is likely to fail in a chroot environment.
- - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=514043 covered
-   documenting the /proc requirement of fexecve(3) in its manpage, to
-   "prevent other people from wasting their time".
- - https://bugzilla.kernel.org/show_bug.cgi?id=74481 documented that
-   it's not possible to fexecve() a file descriptor for a script with
-   close-on-exec set (which is possible with the implementation here).
- - https://bugzilla.redhat.com/show_bug.cgi?id=241609 described a
-   problem where a process that did setuid() could not fexecve()
-   because it no longer had access to /proc/self/fd; this has since
-   been fixed.
-
-This patch in particular (of 3 = 2 kernel + 1 man-pages):
-
-Adds the new system execveat(2) syscall. execveat() is to execve() as
-openat() is to open(): it takes a file descriptor that refers to a
-directory, and resolves the filename relative to that.
-
-In addition, if the filename is NULL, execveat() executes the file
-to which the file descriptor refers. This replicates the functionality
-of fexecve(), which is a system call in other UNIXen, but in Linux
-glibc it depends on /proc being mounted.
-
-Only x86-64, i386 and x32 ABIs are supported in this patch.
-
-Based on patches by Meredydd Luff <meredydd@senatehouse.org>
-
 Signed-off-by: David Drysdale <drysdale@google.com>
 ---
- arch/x86/ia32/audit.c             |   1 +
- arch/x86/ia32/ia32entry.S         |   1 +
- arch/x86/kernel/audit_64.c        |   1 +
- arch/x86/kernel/entry_64.S        |  28 +++++++
- arch/x86/syscalls/syscall_32.tbl  |   1 +
- arch/x86/syscalls/syscall_64.tbl  |   2 +
- arch/x86/um/sys_call_table_64.c   |   1 +
- fs/exec.c                         | 153 ++++++++++++++++++++++++++++++++------
- include/linux/compat.h            |   3 +
- include/linux/sched.h             |   4 +
- include/linux/syscalls.h          |   4 +
- include/uapi/asm-generic/unistd.h |   4 +-
- kernel/sys_ni.c                   |   3 +
- lib/audit.c                       |   3 +
- 14 files changed, 186 insertions(+), 23 deletions(-)
+ tools/testing/selftests/Makefile        |   1 +
+ tools/testing/selftests/exec/.gitignore |   6 +
+ tools/testing/selftests/exec/Makefile   |  32 ++++
+ tools/testing/selftests/exec/execveat.c | 251 ++++++++++++++++++++++++++++++++
+ 4 files changed, 290 insertions(+)
+ create mode 100644 tools/testing/selftests/exec/.gitignore
+ create mode 100644 tools/testing/selftests/exec/Makefile
+ create mode 100644 tools/testing/selftests/exec/execveat.c
 
-diff --git a/arch/x86/ia32/audit.c b/arch/x86/ia32/audit.c
-index 5d7b381da692..2eccc8932ae6 100644
---- a/arch/x86/ia32/audit.c
-+++ b/arch/x86/ia32/audit.c
-@@ -35,6 +35,7 @@ int ia32_classify_syscall(unsigned syscall)
- 	case __NR_socketcall:
- 		return 4;
- 	case __NR_execve:
-+	case __NR_execveat:
- 		return 5;
- 	default:
- 		return 1;
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 4299eb05023c..2516c09743e0 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -464,6 +464,7 @@ GLOBAL(\label)
- 	PTREGSCALL stub32_rt_sigreturn, sys32_rt_sigreturn
- 	PTREGSCALL stub32_sigreturn, sys32_sigreturn
- 	PTREGSCALL stub32_execve, compat_sys_execve
-+	PTREGSCALL stub32_execveat, compat_sys_execveat
- 	PTREGSCALL stub32_fork, sys_fork
- 	PTREGSCALL stub32_vfork, sys_vfork
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 32487ed18354..26b7e6410fcd 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -10,6 +10,7 @@ TARGETS += timers
+ TARGETS += vm
+ TARGETS += powerpc
+ TARGETS += user
++TARGETS += exec
 
-diff --git a/arch/x86/kernel/audit_64.c b/arch/x86/kernel/audit_64.c
-index 06d3e5a14d9d..f3672508b249 100644
---- a/arch/x86/kernel/audit_64.c
-+++ b/arch/x86/kernel/audit_64.c
-@@ -50,6 +50,7 @@ int audit_classify_syscall(int abi, unsigned syscall)
- 	case __NR_openat:
- 		return 3;
- 	case __NR_execve:
-+	case __NR_execveat:
- 		return 5;
- 	default:
- 		return 0;
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1e96c3628bf2..f9a6c2fdda15 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -872,6 +872,20 @@ ENTRY(stub_execve)
- 	CFI_ENDPROC
- END(stub_execve)
-
-+ENTRY(stub_execveat)
-+	CFI_STARTPROC
-+	addq $8, %rsp
-+	PARTIAL_FRAME 0
-+	SAVE_REST
-+	FIXUP_TOP_OF_STACK %r11
-+	call sys_execveat
-+	RESTORE_TOP_OF_STACK %r11
-+	movq %rax,RAX(%rsp)
-+	RESTORE_REST
-+	jmp int_ret_from_sys_call
-+	CFI_ENDPROC
-+END(stub_execveat)
+ all:
+ 	for TARGET in $(TARGETS); do \
+diff --git a/tools/testing/selftests/exec/.gitignore b/tools/testing/selftests/exec/.gitignore
+new file mode 100644
+index 000000000000..349a786899a7
+--- /dev/null
++++ b/tools/testing/selftests/exec/.gitignore
+@@ -0,0 +1,6 @@
++subdir*
++script*
++execveat
++execveat.symlink
++execveat.moved
++execveat.ephemeral
+diff --git a/tools/testing/selftests/exec/Makefile b/tools/testing/selftests/exec/Makefile
+new file mode 100644
+index 000000000000..55771ed05dda
+--- /dev/null
++++ b/tools/testing/selftests/exec/Makefile
+@@ -0,0 +1,32 @@
++CC = $(CROSS_COMPILE)gcc
++CFLAGS = -Wall
++BINARIES = execveat
++DEPS = execveat.symlink script execveat.ephemeral script.ephemeral subdir subdir.ephemeral subdir.ephemeral/script
++all: $(BINARIES) $(DEPS)
 +
- /*
-  * sigreturn is special because it needs to restore all registers on return.
-  * This cannot be done with SYSRET, so use the IRET return path instead.
-@@ -917,6 +931,20 @@ ENTRY(stub_x32_execve)
- 	CFI_ENDPROC
- END(stub_x32_execve)
-
-+ENTRY(stub_x32_execveat)
-+	CFI_STARTPROC
-+	addq $8, %rsp
-+	PARTIAL_FRAME 0
-+	SAVE_REST
-+	FIXUP_TOP_OF_STACK %r11
-+	call compat_sys_execveat
-+	RESTORE_TOP_OF_STACK %r11
-+	movq %rax,RAX(%rsp)
-+	RESTORE_REST
-+	jmp int_ret_from_sys_call
-+	CFI_ENDPROC
-+END(stub_x32_execveat)
++subdir:
++	mkdir -p $@
++subdir.ephemeral:
++	mkdir -p $@
++subdir.ephemeral/script: | subdir.ephemeral
++	echo '#!/bin/sh' > $@
++	echo 'exit $$*' >> $@
++	chmod +x $@
++script:
++	echo '#!/bin/sh' > $@
++	echo 'exit $$*' >> $@
++	chmod +x $@
++script.ephemeral: script
++	cp $< $@
++execveat.symlink: execveat
++	ln -s -f $< $@
++execveat.ephemeral: execveat
++	cp $< $@
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
 +
- #endif
-
- /*
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index 96bc506ac6de..2ab0712a0e7c 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -359,3 +359,4 @@
- 350	i386	finit_module		sys_finit_module
- 351	i386	sched_setattr		sys_sched_setattr
- 352	i386	sched_getattr		sys_sched_getattr
-+353	i386	execveat		sys_execveat			stub32_execveat
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index a12bddc7ccea..2e4058c14b4f 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -322,6 +322,7 @@
- 313	common	finit_module		sys_finit_module
- 314	common	sched_setattr		sys_sched_setattr
- 315	common	sched_getattr		sys_sched_getattr
-+316	64	execveat		stub_execveat
-
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-@@ -358,3 +359,4 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	execveat		stub_x32_execveat
-diff --git a/arch/x86/um/sys_call_table_64.c b/arch/x86/um/sys_call_table_64.c
-index f2f0723070ca..20c3649d0691 100644
---- a/arch/x86/um/sys_call_table_64.c
-+++ b/arch/x86/um/sys_call_table_64.c
-@@ -31,6 +31,7 @@
- #define stub_fork sys_fork
- #define stub_vfork sys_vfork
- #define stub_execve sys_execve
-+#define stub_execveat sys_execveat
- #define stub_rt_sigreturn sys_rt_sigreturn
-
- #define __SYSCALL_COMMON(nr, sym, compat) __SYSCALL_64(nr, sym, compat)
-diff --git a/fs/exec.c b/fs/exec.c
-index 3d78fccdd723..a8676ce571ce 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -748,7 +748,22 @@ EXPORT_SYMBOL(setup_arg_pages);
-
- #endif /* CONFIG_MMU */
-
--static struct file *do_open_exec(struct filename *name)
++run_tests: all
++	./execveat
++
++clean:
++	rm -rf $(BINARIES) $(DEPS) subdir.moved execveat.moved
+diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
+new file mode 100644
+index 000000000000..f67862fa3f38
+--- /dev/null
++++ b/tools/testing/selftests/exec/execveat.c
+@@ -0,0 +1,251 @@
 +/*
-+ * Perform the extra checks that open_exec() needs over and above a normal
-+ * open.
++ * Copyright (c) 2014 Google, Inc.
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Selftests for execveat(2).
 + */
-+static int check_exec_and_deny_write(struct file *file)
++
++#define _GNU_SOURCE  /* to get O_PATH */
++#include <sys/types.h>
++#include <sys/wait.h>
++#include <sys/syscall.h>
++#include <sys/stat.h>
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <limits.h>
++#include <stdlib.h>
++
++static char *envp[] = { "IN_TEST=yes", NULL };
++static char *argv[] = { "execveat", "99", NULL };
++
++static int execveat_(int fd, const char *path, char **argv, char **envp,
++		     int flags)
 +{
-+	if (!S_ISREG(file_inode(file)->i_mode))
-+		return -EACCES;
-+
-+	if (file->f_path.mnt->mnt_flags & MNT_NOEXEC)
-+		return -EACCES;
-+
-+	return deny_write_access(file);
-+}
-+
-+static struct file *do_open_execat(int fd, struct filename *name, int flags)
- {
- 	struct file *file;
- 	int err;
-@@ -758,24 +773,42 @@ static struct file *do_open_exec(struct filename *name)
- 		.intent = LOOKUP_OPEN,
- 		.lookup_flags = LOOKUP_FOLLOW,
- 	};
-+	static const struct open_flags open_exec_nofollow_flags = {
-+		.open_flag = O_LARGEFILE | O_RDONLY | __FMODE_EXEC,
-+		.acc_mode = MAY_EXEC | MAY_OPEN,
-+		.intent = LOOKUP_OPEN,
-+		.lookup_flags = 0,
-+	};
-
--	file = do_filp_open(AT_FDCWD, name, &open_exec_flags);
--	if (IS_ERR(file))
--		goto out;
--
--	err = -EACCES;
--	if (!S_ISREG(file_inode(file)->i_mode))
--		goto exit;
-+	if (flags & ~AT_SYMLINK_NOFOLLOW)
-+		return ERR_PTR(-EINVAL);
-
--	if (file->f_path.mnt->mnt_flags & MNT_NOEXEC)
--		goto exit;
-+	if (name) {
-+		const struct open_flags *oflags = ((flags & AT_SYMLINK_NOFOLLOW)
-+						   ? &open_exec_nofollow_flags
-+						   : &open_exec_flags);
-
--	fsnotify_open(file);
-+		file = do_filp_open(fd, name, oflags);
-+		if (IS_ERR(file))
-+			goto out;
-+	} else {
-+		file = fget(fd);
-+		if (!file)
-+			return ERR_PTR(-EBADF);
-+
-+		err = inode_permission(file->f_path.dentry->d_inode,
-+				open_exec_flags.acc_mode);
-+		if (err)
-+			goto exit;
-+	}
-
--	err = deny_write_access(file);
-+	err = check_exec_and_deny_write(file);
- 	if (err)
- 		goto exit;
-
-+	if (name)
-+		fsnotify_open(file);
-+
- out:
- 	return file;
-
-@@ -787,7 +820,7 @@ exit:
- struct file *open_exec(const char *name)
- {
- 	struct filename tmp = { .name = name };
--	return do_open_exec(&tmp);
-+	return do_open_execat(AT_FDCWD, &tmp, 0);
- }
- EXPORT_SYMBOL(open_exec);
-
-@@ -1437,10 +1470,12 @@ static int exec_binprm(struct linux_binprm *bprm)
- /*
-  * sys_execve() executes a new program.
-  */
--static int do_execve_common(struct filename *filename,
--				struct user_arg_ptr argv,
--				struct user_arg_ptr envp)
-+static int do_execveat_common(int fd, struct filename *filename,
-+			      struct user_arg_ptr argv,
-+			      struct user_arg_ptr envp,
-+			      int flags)
- {
-+	char *pathbuf = NULL;
- 	struct linux_binprm *bprm;
- 	struct file *file;
- 	struct files_struct *displaced;
-@@ -1481,7 +1516,7 @@ static int do_execve_common(struct filename *filename,
- 	check_unsafe_exec(bprm);
- 	current->in_execve = 1;
-
--	file = do_open_exec(filename);
-+	file = do_open_execat(fd, filename, flags);
- 	retval = PTR_ERR(file);
- 	if (IS_ERR(file))
- 		goto out_unmark;
-@@ -1489,7 +1524,21 @@ static int do_execve_common(struct filename *filename,
- 	sched_exec();
-
- 	bprm->file = file;
--	bprm->filename = bprm->interp = filename->name;
-+	if (filename && fd == AT_FDCWD) {
-+		bprm->filename = filename->name;
-+	} else {
-+		pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
-+		if (!pathbuf) {
-+			retval = -ENOMEM;
-+			goto out_unmark;
-+		}
-+		bprm->filename = d_path(&file->f_path, pathbuf, PATH_MAX);
-+		if (IS_ERR(bprm->filename)) {
-+			retval = PTR_ERR(bprm->filename);
-+			goto out_unmark;
-+		}
-+	}
-+	bprm->interp = bprm->filename;
-
- 	retval = bprm_mm_init(bprm);
- 	if (retval)
-@@ -1530,7 +1579,8 @@ static int do_execve_common(struct filename *filename,
- 	acct_update_integrals(current);
- 	task_numa_free(current);
- 	free_bprm(bprm);
--	putname(filename);
-+	if (filename)
-+		putname(filename);
- 	if (displaced)
- 		put_files_struct(displaced);
- 	return retval;
-@@ -1547,12 +1597,14 @@ out_unmark:
-
- out_free:
- 	free_bprm(bprm);
-+	kfree(pathbuf);
-
- out_files:
- 	if (displaced)
- 		reset_files_struct(displaced);
- out_ret:
--	putname(filename);
-+	if (filename)
-+		putname(filename);
- 	return retval;
- }
-
-@@ -1562,7 +1614,17 @@ int do_execve(struct filename *filename,
- {
- 	struct user_arg_ptr argv = { .ptr.native = __argv };
- 	struct user_arg_ptr envp = { .ptr.native = __envp };
--	return do_execve_common(filename, argv, envp);
-+	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
-+}
-+
-+int do_execveat(int fd, struct filename *filename,
-+		const char __user *const __user *__argv,
-+		const char __user *const __user *__envp,
-+		int flags)
-+{
-+	struct user_arg_ptr argv = { .ptr.native = __argv };
-+	struct user_arg_ptr envp = { .ptr.native = __envp };
-+	return do_execveat_common(fd, filename, argv, envp, flags);
- }
-
- #ifdef CONFIG_COMPAT
-@@ -1578,7 +1640,23 @@ static int compat_do_execve(struct filename *filename,
- 		.is_compat = true,
- 		.ptr.compat = __envp,
- 	};
--	return do_execve_common(filename, argv, envp);
-+	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
-+}
-+
-+static int compat_do_execveat(int fd, struct filename *filename,
-+			      const compat_uptr_t __user *__argv,
-+			      const compat_uptr_t __user *__envp,
-+			      int flags)
-+{
-+	struct user_arg_ptr argv = {
-+		.is_compat = true,
-+		.ptr.compat = __argv,
-+	};
-+	struct user_arg_ptr envp = {
-+		.is_compat = true,
-+		.ptr.compat = __envp,
-+	};
-+	return do_execveat_common(fd, filename, argv, envp, flags);
- }
- #endif
-
-@@ -1618,6 +1696,22 @@ SYSCALL_DEFINE3(execve,
- {
- 	return do_execve(getname(filename), argv, envp);
- }
-+
-+SYSCALL_DEFINE5(execveat,
-+		int, fd, const char __user *, filename,
-+		const char __user *const __user *, argv,
-+		const char __user *const __user *, envp,
-+		int, flags)
-+{
-+	struct filename *path = NULL;
-+	if (filename) {
-+		path = getname(filename);
-+		if (IS_ERR(path))
-+			return PTR_ERR(path);
-+	}
-+	return do_execveat(fd, path, argv, envp, flags);
-+}
-+
- #ifdef CONFIG_COMPAT
- asmlinkage long compat_sys_execve(const char __user * filename,
- 	const compat_uptr_t __user * argv,
-@@ -1625,4 +1719,19 @@ asmlinkage long compat_sys_execve(const char __user * filename,
- {
- 	return compat_do_execve(getname(filename), argv, envp);
- }
-+
-+asmlinkage long compat_sys_execveat(int fd,
-+	const char __user *filename,
-+	const compat_uptr_t __user *argv,
-+	const compat_uptr_t __user *envp,
-+	int flags)
-+{
-+	struct filename *path = NULL;
-+	if (filename) {
-+		path = getname(filename);
-+		if (IS_ERR(path))
-+			return PTR_ERR(path);
-+	}
-+	return compat_do_execveat(fd, path, argv, envp, flags);
-+}
- #endif
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 3f448c65511b..e875a5d97e08 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -341,6 +341,9 @@ asmlinkage long compat_sys_lseek(unsigned int, compat_off_t, unsigned int);
-
- asmlinkage long compat_sys_execve(const char __user *filename, const compat_uptr_t __user *argv,
- 		     const compat_uptr_t __user *envp);
-+asmlinkage long compat_sys_execveat(int dfd, const char __user *filename,
-+		     const compat_uptr_t __user *argv,
-+		     const compat_uptr_t __user *envp, int flags);
-
- asmlinkage long compat_sys_select(int n, compat_ulong_t __user *inp,
- 		compat_ulong_t __user *outp, compat_ulong_t __user *exp,
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index a781dec1cd0b..92601818b4fb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2315,6 +2315,10 @@ extern int disallow_signal(int);
- extern int do_execve(struct filename *,
- 		     const char __user * const __user *,
- 		     const char __user * const __user *);
-+extern int do_execveat(int, struct filename *,
-+		       const char __user * const __user *,
-+		       const char __user * const __user *,
-+		       int);
- extern long do_fork(unsigned long, unsigned long, unsigned long, int __user *, int __user *);
- struct task_struct *fork_idle(int);
- extern pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index a747a77ea584..309a810cf39d 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -855,4 +855,8 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
- asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
- 			 unsigned long idx1, unsigned long idx2);
- asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
-+asmlinkage long sys_execveat(int dfd, const char __user *filename,
-+			const char __user *const __user *argv,
-+			const char __user *const __user *envp, int flags);
-+
- #endif
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index dde8041f40d2..4231bca3f95e 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -696,9 +696,11 @@ __SYSCALL(__NR_finit_module, sys_finit_module)
- __SYSCALL(__NR_sched_setattr, sys_sched_setattr)
- #define __NR_sched_getattr 275
- __SYSCALL(__NR_sched_getattr, sys_sched_getattr)
-+#define __NR_execveat 276
-+__SC_COMP(__NR_execveat, sys_execveat, compat_sys_execveat)
-
- #undef __NR_syscalls
--#define __NR_syscalls 276
-+#define __NR_syscalls 277
-
- /*
-  * All syscalls below here should go away really,
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 7078052284fd..5ea7b8ab9e63 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -209,3 +209,6 @@ cond_syscall(compat_sys_open_by_handle_at);
-
- /* compare kernel pointers */
- cond_syscall(sys_kcmp);
-+
-+/* execveat */
-+cond_syscall(sys_execveat);
-diff --git a/lib/audit.c b/lib/audit.c
-index 76bbed4a20e5..712456ed5960 100644
---- a/lib/audit.c
-+++ b/lib/audit.c
-@@ -48,6 +48,9 @@ int audit_classify_syscall(int abi, unsigned syscall)
- 	case __NR_socketcall:
- 		return 4;
- #endif
 +#ifdef __NR_execveat
-+	case __NR_execveat:
++	return syscall(__NR_execveat, fd, path, argv, envp, flags);
++#else
++	errno = -ENOSYS;
++	return -1;
 +#endif
- 	case __NR_execve:
- 		return 5;
- 	default:
++}
++
++#define check_execveat_fail(fd, path, flags, errno)	\
++	_check_execveat_fail(fd, path, flags, errno, #errno)
++static int _check_execveat_fail(int fd, const char *path, int flags,
++				int expected_errno, const char *errno_str)
++{
++	errno = 0;
++	printf("Check failure of execveat(%d, '%s', %d) with %s... ",
++		fd, path?:"(null)", flags, errno_str);
++	int rc = execveat_(fd, path, argv, envp, flags);
++	if (rc > 0) {
++		printf("[FAIL] (unexpected success from execveat(2))\n");
++		return 1;
++	}
++	if (errno != expected_errno) {
++		printf("[FAIL] (expected errno %d (%s) not %d (%s)\n",
++			expected_errno, strerror(expected_errno),
++			errno, strerror(errno));
++		return 1;
++	}
++	printf("[OK]\n");
++	return 0;
++}
++
++static int check_execveat_invoked_rc(int fd, const char *path, int flags,
++				     int expected_rc)
++{
++	int status;
++	int rc;
++	pid_t child;
++	printf("Check success of execveat(%d, '%s', %d)... ",
++		fd, path?:"(null)", flags);
++	child = fork();
++	if (child < 0) {
++		printf("[FAIL] (fork() failed)\n");
++		return 1;
++	}
++	if (child == 0) {
++		/* Child: do execveat(). */
++		rc = execveat_(fd, path, argv, envp, flags);
++		printf("[FAIL]: execveat() failed, rc=%d errno=%d (%s)\n",
++			rc, errno, strerror(errno));
++		exit(1);  /* should not reach here */
++	}
++	/* Parent: wait for & check child's exit status. */
++	rc = waitpid(child, &status, 0);
++	if (rc != child) {
++		printf("[FAIL] (waitpid(%d,...) returned %d)\n", child, rc);
++		return 1;
++	}
++	if (!WIFEXITED(status)) {
++		printf("[FAIL] (child %d did not exit cleanly, status=%08x)\n",
++			child, status);
++		return 1;
++	}
++	if (WEXITSTATUS(status) != expected_rc) {
++		printf("[FAIL] (child %d exited with %d not %d)\n",
++			child, WEXITSTATUS(status), expected_rc);
++		return 1;
++	}
++	printf("[OK]\n");
++	return 0;
++}
++
++static int check_execveat(int fd, const char *path, int flags)
++{
++	return check_execveat_invoked_rc(fd, path, flags, 99);
++}
++
++static char *concat(const char *left, const char *right)
++{
++	char *result = malloc(strlen(left) + strlen(right) + 1);
++	strcpy(result, left);
++	strcat(result, right);
++	return result;
++}
++
++static int open_or_die(const char *filename, int flags)
++{
++	int fd = open(filename, flags);
++	if (fd < 0) {
++		printf("Failed to open '%s'; "
++			"check prerequisites are available\n", filename);
++		exit(1);
++	}
++	return fd;
++}
++
++static int run_tests(void)
++{
++	int fail = 0;
++	char *fullname = realpath("execveat", NULL);
++	char *fullname_script = realpath("script", NULL);
++	char *fullname_symlink = concat(fullname, ".symlink");
++	int subdir_dfd = open_or_die("subdir", O_DIRECTORY|O_RDONLY);
++	int subdir_dfd_ephemeral = open_or_die("subdir.ephemeral",
++					       O_DIRECTORY|O_RDONLY);
++	int dot_dfd = open_or_die(".", O_DIRECTORY|O_RDONLY);
++	int dot_dfd_path = open_or_die(".", O_DIRECTORY|O_RDONLY|O_PATH);
++	int fd = open_or_die("execveat", O_RDONLY);
++	int fd_path = open_or_die("execveat", O_RDONLY|O_PATH);
++	int fd_symlink = open_or_die("execveat.symlink", O_RDONLY);
++	int fd_script = open_or_die("script", O_RDONLY);
++	int fd_ephemeral = open_or_die("execveat.ephemeral", O_RDONLY);
++	int fd_script_ephemeral = open_or_die("script.ephemeral", O_RDONLY);
++
++	/* Normal executable file: */
++	/*   dfd + path */
++	fail |= check_execveat(subdir_dfd, "../execveat", 0);
++	fail |= check_execveat(dot_dfd, "execveat", 0);
++	fail |= check_execveat(dot_dfd_path, "execveat", 0);
++	/*   absolute path */
++	fail |= check_execveat(AT_FDCWD, fullname, 0);
++	/*   absolute path with nonsense dfd */
++	fail |= check_execveat(99, fullname, 0);
++	/*   fd + no path */
++	fail |= check_execveat(fd, NULL, 0);
++
++	/* Mess with executable file that's already open: */
++	/*   fd + no path to a file that's been renamed */
++	rename("execveat.ephemeral", "execveat.moved");
++	fail |= check_execveat(fd_ephemeral, NULL, 0);
++	/*   fd + no path to a file that's been deleted */
++	unlink("execveat.moved"); /* remove the file now fd open */
++	fail |= check_execveat(fd_ephemeral, NULL, 0);
++
++	/* Symlink to executable file: */
++	/*   dfd + path */
++	fail |= check_execveat(dot_dfd, "execveat.symlink", 0);
++	fail |= check_execveat(dot_dfd_path, "execveat.symlink", 0);
++	/*   absolute path */
++	fail |= check_execveat(AT_FDCWD, fullname_symlink, 0);
++	/*   fd + no path, even with AT_SYMLINK_NOFOLLOW (already followed) */
++	fail |= check_execveat(fd_symlink, NULL, 0);
++	fail |= check_execveat(fd_symlink, NULL, AT_SYMLINK_NOFOLLOW);
++
++	/* Symlink fails when AT_SYMLINK_NOFOLLOW set: */
++	/*   dfd + path */
++	fail |= check_execveat_fail(dot_dfd, "execveat.symlink",
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++	fail |= check_execveat_fail(dot_dfd_path, "execveat.symlink",
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++	/*   absolute path */
++	fail |= check_execveat_fail(AT_FDCWD, fullname_symlink,
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++
++	/* Shell script wrapping executable file: */
++	/*   dfd + path */
++	fail |= check_execveat(subdir_dfd, "../script", 0);
++	fail |= check_execveat(dot_dfd, "script", 0);
++	fail |= check_execveat(dot_dfd_path, "script", 0);
++	/*   absolute path */
++	fail |= check_execveat(AT_FDCWD, fullname_script, 0);
++	/*   fd + no path */
++	fail |= check_execveat(fd_script, NULL, 0);
++	fail |= check_execveat(fd_script, NULL, AT_SYMLINK_NOFOLLOW);
++
++	/* Mess with script file that's already open: */
++	/*   fd + no path to a file that's been renamed */
++	rename("script.ephemeral", "script.moved");
++	fail |= check_execveat(fd_script_ephemeral, NULL, 0);
++	/*   fd + no path to a file that's been deleted */
++	unlink("script.moved"); /* remove the file while fd open */
++	/* Shell attempts to load the deleted file but fails => rc=127 */
++	fail |= check_execveat_invoked_rc(fd_script_ephemeral, NULL, 0, 127);
++
++	/* Rename a subdirectory in the path: */
++	rename("subdir.ephemeral", "subdir.moved");
++	fail |= check_execveat(subdir_dfd_ephemeral, "../script", 0);
++	fail |= check_execveat(subdir_dfd_ephemeral, "script", 0);
++	/* Remove the subdir and its contents */
++	unlink("subdir.moved/script");
++	unlink("subdir.moved");
++	/* Shell loads via deleted subdir OK because name starts with .. */
++	fail |= check_execveat(subdir_dfd_ephemeral, "../script", 0);
++	fail |= check_execveat_fail(subdir_dfd_ephemeral, "script", 0, ENOENT);
++
++	/* Flag values other than AT_SYMLINK_NOFOLLOW => EINVAL */
++	fail |= check_execveat_fail(dot_dfd, "execveat", 0xFFFF, EINVAL);
++	/* Invalid path => ENOENT */
++	fail |= check_execveat_fail(dot_dfd, "no-such-file", 0, ENOENT);
++	fail |= check_execveat_fail(dot_dfd_path, "no-such-file", 0, ENOENT);
++	fail |= check_execveat_fail(AT_FDCWD, "no-such-file", 0, ENOENT);
++	/* Attempt to execute directory => EACCES */
++	fail |= check_execveat_fail(dot_dfd, NULL, 0, EACCES);
++	/* Attempt to execute non-executable => EACCES */
++	fail |= check_execveat_fail(dot_dfd, "Makefile", 0, EACCES);
++	/* Attempt to execute file opened with O_PATH => EBADF */
++	fail |= check_execveat_fail(dot_dfd_path, NULL, 0, EBADF);
++	fail |= check_execveat_fail(fd_path, NULL, 0, EBADF);
++	/* Attempt to execute nonsense FD => EBADF */
++	fail |= check_execveat_fail(99, NULL, 0, EBADF);
++	fail |= check_execveat_fail(99, "execveat", 0, EBADF);
++	/* Attempt to execute relative to non-directory => ENOTDIR */
++	fail |= check_execveat_fail(fd, "execveat", 0, ENOTDIR);
++
++	return fail ? -1 : 0;
++}
++
++int main(int argc, char **argv)
++{
++	if (argc >= 2) {
++		/* If we are invoked with an argument, exit immediately. */
++		/* Check expected environment transferred. */
++		if (strcmp(getenv("IN_TEST"), "yes") != 0) {
++			printf("[FAIL] (no IN_TEST=yes in env)\n");
++			return 1;
++		}
++
++		/* Use the argument as an exit code. */
++		int rc = atoi(argv[1]);
++		fflush(stdout);
++		return rc;
++	} else {
++		return run_tests();
++	}
++}
 --
 1.9.1.423.g4596e3a
 
