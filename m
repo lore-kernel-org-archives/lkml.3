@@ -1,119 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaE0GYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:24:39 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:10735 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaE0GYh (ORCPT
+	id S1752013AbaE0GZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:25:06 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:51265 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967AbaE0GZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:24:37 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-95-53842fa2d8ee
-Date: Tue, 27 May 2014 15:23:07 +0900
-From: Changman Lee <cm224.lee@samsung.com>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid overflow when large directory
- feathure is enabled
-Message-id: <20140527062307.GB4886@cm224.lee>
-References: <00f601cf7948$1263a480$372aed80$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-In-reply-to: <00f601cf7948$1263a480$372aed80$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t8zA91F+i3BBh8vsln8b/rIZnF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXRt/RRqaC
-	fuGK1eenMzcwnuHvYuTkkBAwkWibcZsVwhaTuHBvPVsXIxeHkMAyRomjfRdZYIre9e1ngUgs
-	YpToW/4JyvnJKHHzzTdGkCoWAVWJWwvvs4HYbAJaEu2n14J1iwgoSfyav4gVpIFZYAKjxP9F
-	78ESwgLxEmvOXmXuYuTg4BXQlTg9OQ4kLCRgKTHryX5mEJtXQFDix+R7YOXMQDPX7zzOBGFL
-	Szz6O4MdxOYUsJJ48+46mC0qoCIx5eQ2sBckBHaxS7y8dJcN4jgBiW+TD7GA7JIQkJXYdIAZ
-	4jNJiYMrbrBMYBSbhWTdLCTrZiFZt4CReRWjaGpBckFxUnqRkV5xYm5xaV66XnJ+7iZGSDz1
-	7WC8ecD6EGMy0MqJzFKiyfnAeMwriTc0NjOyMDUxNTYytzQjTVhJnHfRw6QgIYH0xJLU7NTU
-	gtSi+KLSnNTiQ4xMHJxSDYxMjM82dbrYXLSw3Krt9CYlneGZZoXlcf4/kUUvnlwyj3kovNux
-	6sfnb/EPDutrL3tgM/d92KyoptZouX1FYoc5Mtj2fY7wVDe+eXn/rpiWg0bXFYpcXLxe/+rw
-	2p+/brpEEt+T/41cx62sflx+/+o8z+cgbhsR7XO/PP3MdnSEvd9Y/fjUb3MlluKMREMt5qLi
-	RABeA8KWvQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xgO4i/ZZgg/cnmCz+N31ks7i+6y+T
-	xaVF7hZ79p5ksbi8aw6bA6vH7gWfmTz6tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMaPvaCNTQb9wxerz05kbGM/wdzFyckgImEi869vPAmGLSVy4t56t
-	i5GLQ0hgEaNE3/JPLBDOT0aJm2++MYJUsQioStxaeJ8NxGYT0JJoP70WrFtEQEni1/xFrCAN
-	zAITGCX+L3oPlhAWiJdYc/YqcxcjBwevgK7E6clxIGEhAUuJWU/2M4PYvAKCEj8m3wMrZwaa
-	uX7ncSYIW1ri0d8Z7CA2p4CVxJt318FsUQEViSknt7FNYBSYhaR9FpL2WUjaFzAyr2IUTS1I
-	LihOSs810itOzC0uzUvXS87P3cQIjtZn0jsYVzVYHGIU4GBU4uGd4NscLMSaWFZcmXuIUYKD
-	WUmEN5apJViINyWxsiq1KD++qDQntfgQYzIwNCYyS4km5wMTSV5JvKGxiZmRpZGZhZGJuTlp
-	wkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MCqruB2aw+Zrv3lZyn8ByY/3kqsuRxadKM5c
-	39smMJdPZXXmq5lP6o2C7lawrpA6XtyWfD9oZtbFTplpMk6ZC1Y/YH3ndbnj6EmuSV+Lz69a
-	I/HgzkbzPe1OLMeu3nOftzR78cL6kmu/uEMWSQXOzxOa+XQJT21XTN7CPSFrxXUnR3R6Ltpp
-	FqHEUpyRaKjFXFScCAAuy4spGgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 27 May 2014 02:25:03 -0400
+Message-ID: <53842FB1.7090909@linux.vnet.ibm.com>
+Date: Tue, 27 May 2014 11:54:49 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, riel@redhat.com,
+        mgorman@suse.de, ak@linux.intel.com, peterz@infradead.org,
+        mingo@kernel.org, dave.hansen@intel.com
+Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
+ for powerpc
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com> <537479E7.90806@linux.vnet.ibm.com> <alpine.LSU.2.11.1405151026540.4664@eggly.anvils> <87wqdik4n5.fsf@rustcorp.com.au> <53797511.1050409@linux.vnet.ibm.com> <alpine.LSU.2.11.1405191531150.1317@eggly.anvils> <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org> <20140520004429.E660AE009B@blue.fi.intel.com> <87oaythsvk.fsf@rustcorp.com.au> <20140520102738.7F096E009B@blue.fi.intel.com>
+In-Reply-To: <20140520102738.7F096E009B@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052706-2674-0000-0000-00000017C196
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Chao
-Good catch. Please, modify Documentation/filesytems/f2fs.txt
-
-On Tue, May 27, 2014 at 09:06:52AM +0800, Chao Yu wrote:
-> When large directory feathure is enable, We have one case which could cause
-> overflow in dir_buckets() as following:
-> special case: level + dir_level >= 32 and level < MAX_DIR_HASH_DEPTH / 2.
+On Tuesday 20 May 2014 03:57 PM, Kirill A. Shutemov wrote:
+> Rusty Russell wrote:
+>> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
+>>> Andrew Morton wrote:
+>>>> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
+>>>>
+>>>>> Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
+>>>>> the order of the fault-around size in bytes, and fault_around_pages()
+>>>>> use 1UL << (fault_around_order - PAGE_SHIFT)
+>>>>
+>>>> Yes.  And shame on me for missing it (this time!) at review.
+>>>>
+>>>> There's still time to fix this.  Patches, please.
+>>>
+>>> Here it is. Made at 3.30 AM, build tested only.
+>>
+>> Prefer on top of Maddy's patch which makes it always a variable, rather
+>> than CONFIG_DEBUG_FS.  It's got enough hair as it is.
 > 
-> Here we define MAX_DIR_BUCKETS to limit the return value when the condition
-> could trigger potential overflow.
+> Something like this?
 > 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Date: Tue, 20 May 2014 13:02:03 +0300
+> Subject: [PATCH] mm: nominate faultaround area in bytes rather then page order
+> 
+> There are evidences that faultaround feature is less relevant on
+> architectures with page size bigger then 4k. Which makes sense since
+> page fault overhead per byte of mapped area should be less there.
+> 
+> Let's rework the feature to specify faultaround area in bytes instead of
+> page order. It's 64 kilobytes for now.
+> 
+> The patch effectively disables faultaround on architectures with
+> page size >= 64k (like ppc64).
+> 
+> It's possible that some other size of faultaround area is relevant for a
+> platform. We can expose `fault_around_bytes' variable to arch-specific
+> code once such platforms will be found.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 > ---
->  fs/f2fs/dir.c           |    4 ++--
->  include/linux/f2fs_fs.h |    3 +++
->  2 files changed, 5 insertions(+), 2 deletions(-)
+>  mm/memory.c | 62 +++++++++++++++++++++++--------------------------------------
+>  1 file changed, 23 insertions(+), 39 deletions(-)
 > 
-> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> index c3f1485..966acb0 100644
-> --- a/fs/f2fs/dir.c
-> +++ b/fs/f2fs/dir.c
-> @@ -23,10 +23,10 @@ static unsigned long dir_blocks(struct inode *inode)
->  
->  static unsigned int dir_buckets(unsigned int level, int dir_level)
->  {
-> -	if (level < MAX_DIR_HASH_DEPTH / 2)
-> +	if (level + dir_level < MAX_DIR_HASH_DEPTH / 2)
->  		return 1 << (level + dir_level);
->  	else
-> -		return 1 << ((MAX_DIR_HASH_DEPTH / 2 + dir_level) - 1);
-> +		return MAX_DIR_BUCKETS;
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 037b812a9531..252b319e8cdf 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3402,63 +3402,47 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+>  	update_mmu_cache(vma, address, pte);
 >  }
->  
->  static unsigned int bucket_blocks(unsigned int level)
-> diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
-> index 8c03f71..ba6f312 100644
-> --- a/include/linux/f2fs_fs.h
-> +++ b/include/linux/f2fs_fs.h
-> @@ -394,6 +394,9 @@ typedef __le32	f2fs_hash_t;
->  /* MAX level for dir lookup */
->  #define MAX_DIR_HASH_DEPTH	63
->  
-> +/* MAX buckets in one level of dir */
-> +#define MAX_DIR_BUCKETS		(1 << ((MAX_DIR_HASH_DEPTH / 2) - 1))
+> 
+> -#define FAULT_AROUND_ORDER 4
+> +static unsigned long fault_around_bytes = 65536;
 > +
->  #define SIZE_OF_DIR_ENTRY	11	/* by byte */
->  #define SIZE_OF_DENTRY_BITMAP	((NR_DENTRY_IN_BLOCK + BITS_PER_BYTE - 1) / \
->  					BITS_PER_BYTE)
-> -- 
-> 1.7.10.4
+> +static inline unsigned long fault_around_pages(void)
+> +{
+> +	return rounddown_pow_of_two(fault_around_bytes) / PAGE_SIZE;
+> +}
+> +
+> +static inline unsigned long fault_around_mask(void)
+> +{
+> +	return ~(rounddown_pow_of_two(fault_around_bytes) - 1) & PAGE_MASK;
+> +}
 > 
+> -#ifdef CONFIG_DEBUG_FS
+> -static unsigned int fault_around_order = FAULT_AROUND_ORDER;
 > 
+> -static int fault_around_order_get(void *data, u64 *val)
+> +#ifdef CONFIG_DEBUG_FS
+> +static int fault_around_bytes_get(void *data, u64 *val)
+>  {
+> -	*val = fault_around_order;
+> +	*val = fault_around_bytes;
+>  	return 0;
+>  }
 > 
-> ------------------------------------------------------------------------------
-> The best possible search technologies are now affordable for all companies.
-> Download your FREE open source Enterprise Search Engine today!
-> Our experts will assist you in its installation for $59/mo, no commitment.
-> Test it for FREE on our Cloud platform anytime!
-> http://pubads.g.doubleclick.net/gampad/clk?id=145328191&iu=/4140/ostg.clktrk
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+> -static int fault_around_order_set(void *data, u64 val)
+> +static int fault_around_bytes_set(void *data, u64 val)
+>  {
+
+Kindly ignore the question if not relevant. Even though we need root
+access to alter the value, will we be fine with
+negative value?.
+
+Regards
+Maddy
+
+> -	BUILD_BUG_ON((1UL << FAULT_AROUND_ORDER) > PTRS_PER_PTE);
+> -	if (1UL << val > PTRS_PER_PTE)
+> +	if (val / PAGE_SIZE > PTRS_PER_PTE)
+>  		return -EINVAL;
+> -	fault_around_order = val;
+> +	fault_around_bytes = val;
+>  	return 0;
+>  }
+> -DEFINE_SIMPLE_ATTRIBUTE(fault_around_order_fops,
+> -		fault_around_order_get, fault_around_order_set, "%llu\n");
+> +DEFINE_SIMPLE_ATTRIBUTE(fault_around_bytes_fops,
+> +		fault_around_bytes_get, fault_around_bytes_set, "%llu\n");
+> 
+>  static int __init fault_around_debugfs(void)
+>  {
+>  	void *ret;
+> 
+> -	ret = debugfs_create_file("fault_around_order",	0644, NULL, NULL,
+> -			&fault_around_order_fops);
+> +	ret = debugfs_create_file("fault_around_bytes", 0644, NULL, NULL,
+> +			&fault_around_bytes_fops);
+>  	if (!ret)
+> -		pr_warn("Failed to create fault_around_order in debugfs");
+> +		pr_warn("Failed to create fault_around_bytes in debugfs");
+>  	return 0;
+>  }
+>  late_initcall(fault_around_debugfs);
+> -
+> -static inline unsigned long fault_around_pages(void)
+> -{
+> -	return 1UL << fault_around_order;
+> -}
+> -
+> -static inline unsigned long fault_around_mask(void)
+> -{
+> -	return ~((1UL << (PAGE_SHIFT + fault_around_order)) - 1);
+> -}
+> -#else
+> -static inline unsigned long fault_around_pages(void)
+> -{
+> -	unsigned long nr_pages;
+> -
+> -	nr_pages = 1UL << FAULT_AROUND_ORDER;
+> -	BUILD_BUG_ON(nr_pages > PTRS_PER_PTE);
+> -	return nr_pages;
+> -}
+> -
+> -static inline unsigned long fault_around_mask(void)
+> -{
+> -	return ~((1UL << (PAGE_SHIFT + FAULT_AROUND_ORDER)) - 1);
+> -}
+>  #endif
+> 
+>  static void do_fault_around(struct vm_area_struct *vma, unsigned long address,
+> @@ -3515,7 +3499,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	 * if page by the offset is not ready to be mapped (cold cache or
+>  	 * something).
+>  	 */
+> -	if (vma->vm_ops->map_pages) {
+> +	if (vma->vm_ops->map_pages && fault_around_pages() > 1) {
+>  		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+>  		do_fault_around(vma, address, pte, pgoff, flags);
+>  		if (!pte_same(*pte, orig_pte))
+> 
+
