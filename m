@@ -1,44 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaE0Q0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:26:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32994 "EHLO mx1.redhat.com"
+	id S1752538AbaE0Q3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:29:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43306 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250AbaE0Q0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:26:16 -0400
-Date: Tue, 27 May 2014 12:26:12 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Jens Axboe <axboe@kernel.dk>
-cc: Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>
-Subject: Re: [PATCH] block: flush queued bios when the process blocks
-In-Reply-To: <5384B26D.1000703@kernel.dk>
-Message-ID: <alpine.LRH.2.02.1405271222150.8745@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1405271059190.27492@file01.intranet.prod.int.rdu2.redhat.com> <5384AA79.4010206@kernel.dk> <alpine.LRH.2.02.1405271120390.31404@file01.intranet.prod.int.rdu2.redhat.com> <5384B26D.1000703@kernel.dk>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751594AbaE0Q3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 12:29:06 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: jolsa@redhat.com
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        eranian@google.com, Andi Kleen <andi@firstfloor.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 6/7] perf: Add support to dynamically get cacheline size
+Date: Tue, 27 May 2014 12:28:06 -0400
+Message-Id: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
+References: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Jens Axboe wrote:
+Different arches may have different cacheline sizes.  Look it up and set
+a global variable for reference.
 
-> On 2014-05-27 09:23, Mikulas Patocka wrote:
-> 
-> > The patch adds bio list flushing to the scheduler just besides plug
-> > flushsing.
-> 
-> ... which is exactly why I'm commenting. It'd be great to avoid yet one more
-> scheduler hook for this sort of thing.
-> 
-> -- 
-> Jens Axboe
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-One could create something like schedule notifier chain, but I'm not sure 
-if it is worth the complexity because of just two users. If more users 
-come in the future, it could be generalized.
+---
+V2: change to be global and setup in perf.c
+    use filename__read_int for setup
+---
+ tools/perf/perf.c        |  5 +++++
+ tools/perf/util/cpumap.c | 27 +++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h |  3 +++
+ tools/perf/util/sort.c   |  1 +
+ tools/perf/util/util.c   |  1 +
+ tools/perf/util/util.h   |  1 +
+ 6 files changed, 38 insertions(+)
 
-Mikulas
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 431798a..dabf08b 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -13,6 +13,7 @@
+ #include "util/quote.h"
+ #include "util/run-command.h"
+ #include "util/parse-events.h"
++#include "util/cpumap.h"
+ #include <api/fs/debugfs.h>
+ #include <pthread.h>
+ 
+@@ -459,6 +460,10 @@ int main(int argc, const char **argv)
+ 	/* The page_size is placed in util object. */
+ 	page_size = sysconf(_SC_PAGE_SIZE);
+ 
++	/* The cacheline_size is placed in util objet */
++	if (cpu__setup_cacheline_size() < 0) 
++		goto out;
++
+ 	cmd = perf_extract_argv0_path(argv[0]);
+ 	if (!cmd)
+ 		cmd = "perf-help";
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index c4e55b7..1029982 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -477,3 +477,30 @@ int cpu__setup_cpunode_map(void)
+ 	closedir(dir1);
+ 	return 0;
+ }
++
++int cpu__setup_cacheline_size(void)
++{
++	const char *mnt;
++	char path[PATH_MAX];
++	int n, size;
++	
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		return -1;
++
++	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
++	if (n == PATH_MAX) {
++		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
++		return -1;
++	}
++
++	if (filename__read_int(path, &size)) {
++		pr_err("Can not read cacheline size\n");
++		return -1;
++	}
++
++	cacheline_size = size;
++
++	return 0;
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 61a6548..507d7fd 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -5,6 +5,7 @@
+ #include <stdbool.h>
+ 
+ #include "perf.h"
++#include "util/util.h"
+ #include "util/debug.h"
+ 
+ struct cpu_map {
+@@ -81,4 +82,6 @@ static inline int cpu__get_node(int cpu)
+ 	return cpunode_map[cpu];
+ }
+ 
++int cpu__setup_cacheline_size(void);
++
+ #endif /* __PERF_CPUMAP_H */
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 635cd8f..6e06567 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -2,6 +2,7 @@
+ #include "hist.h"
+ #include "comm.h"
+ #include "symbol.h"
++#include "cpumap.h"
+ 
+ regex_t		parent_regex;
+ const char	default_parent_pattern[] = "^sys_|^do_page_fault";
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 7fff6be..95aefa7 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -17,6 +17,7 @@
+  * XXX We need to find a better place for these things...
+  */
+ unsigned int page_size;
++int cacheline_size;
+ 
+ bool test_attr__enabled;
+ 
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index b03da44..6686436 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -304,6 +304,7 @@ char *rtrim(char *s);
+ void dump_stack(void);
+ 
+ extern unsigned int page_size;
++extern int cacheline_size;
+ 
+ void get_term_dimensions(struct winsize *ws);
+ 
+-- 
+1.7.11.7
+
