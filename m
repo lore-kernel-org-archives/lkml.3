@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaE0ADY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 20:03:24 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:54253 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbaE0ADX (ORCPT
+	id S1752454AbaE0AEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 20:04:06 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:49697 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150AbaE0AED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 20:03:23 -0400
-Message-ID: <5383D647.9020508@gmail.com>
-Date: Tue, 27 May 2014 08:03:19 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 26 May 2014 20:04:03 -0400
 MIME-Version: 1.0
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] arch: unicore32: ksyms: export additional find_first_*()
- to avoid compiling failure
-References: <5383D5F5.2000303@gmail.com>
-In-Reply-To: <5383D5F5.2000303@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <3104462.ta2PpIfF9J@vostro.rjw.lan>
+References: <cover.1400736536.git.viresh.kumar@linaro.org>
+	<6379a5109bf6b4875cc1656b025f9b8186bbb91a.1400736536.git.viresh.kumar@linaro.org>
+	<3104462.ta2PpIfF9J@vostro.rjw.lan>
+Date: Tue, 27 May 2014 05:34:01 +0530
+Message-ID: <CAKohponagSjOVbn-C64yh7=py9kE0m2VGbdquo_1+UzbPFsJ+w@mail.gmail.com>
+Subject: Re: [PATCH V3 4/8] driver/core: cpu: initialize opp table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some modules need find_first_bit() and find_first_zero_bit(), so export
-them.
+On 27 May 2014 05:02, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> Do you actually use cpu anywere in this function for anything other than
+> just accessing cpu->dev?  If not, why not to pass cpu->dev to it and
+> move it somewhere in the OPP core?
 
-The related error (with allmodconfig under unicore32):
+We are also using it for cpu->dev_id, but that's not so important. This
+routine wouldn't have existed if you wouldn't have asked for it. It is
+just a wrapper over of_init_opp_table, which also has a dummy
+implementation when its not supported.
 
-    MODPOST 4039 modules
-  ERROR: "find_first_bit" [sound/soc/codecs/snd-soc-uda1380.ko] undefined!
-  ERROR: "find_first_zero_bit" [net/sctp/sctp.ko] undefined!
-  ...
+So, it might not be worth enough for any other code to use it. :)
+And so I added it here.
 
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/unicore32/kernel/ksyms.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/unicore32/kernel/ksyms.c b/arch/unicore32/kernel/ksyms.c
-index e78911a..0323528 100644
---- a/arch/unicore32/kernel/ksyms.c
-+++ b/arch/unicore32/kernel/ksyms.c
-@@ -23,6 +23,8 @@
- 
- #include "ksyms.h"
- 
-+EXPORT_SYMBOL(find_first_bit);
-+EXPORT_SYMBOL(find_first_zero_bit);
- EXPORT_SYMBOL(find_next_zero_bit);
- EXPORT_SYMBOL(find_next_bit);
- 
--- 
-1.9.2.459.g68773ac
+Let me know how/where do you want it and I will resend it quickly.
