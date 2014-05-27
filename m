@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaE0BD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 21:03:59 -0400
-Received: from smtprelay0040.hostedemail.com ([216.40.44.40]:57175 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751766AbaE0BD6 (ORCPT
+	id S1752585AbaE0BFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 21:05:33 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49734 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450AbaE0BFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 21:03:58 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:8985:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sofa12_5c9c73b08e903
-X-Filterd-Recvd-Size: 1071
-Message-ID: <1401152635.519.42.camel@joe-AO725>
-Subject: Re: [PATCH 0/4] get_maintainer script cleanups
-From: Joe Perches <joe@perches.com>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Mon, 26 May 2014 18:03:55 -0700
-In-Reply-To: <1401152449.519.41.camel@joe-AO725>
-References: <20140526203309.782169359@networkplumber.org>
-	 <1401152449.519.41.camel@joe-AO725>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 26 May 2014 21:05:30 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 06/14] perf tools: Cache dso data file descriptor
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+	<1400174615-2121-7-git-send-email-jolsa@kernel.org>
+Date: Tue, 27 May 2014 10:05:28 +0900
+In-Reply-To: <1400174615-2121-7-git-send-email-jolsa@kernel.org> (Jiri Olsa's
+	message of "Thu, 15 May 2014 19:23:27 +0200")
+Message-ID: <87tx8chvzb.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-26 at 18:00 -0700, Joe Perches wrote:
-> On Mon, 2014-05-26 at 13:33 -0700, Stephen Hemminger wrote:
-> > Some simple perl hacking changes.
-> I think the first one breaks the code too.
+Hi Jiri,
 
-https://lkml.org/lkml/2010/3/10/50
+On Thu, 15 May 2014 19:23:27 +0200, Jiri Olsa wrote:
+
+[SNIP]
+> +static void data_close(void)
+> +{
+> +	bool cache_fd = may_cache_fd();
+> +
+> +	if (!cache_fd)
+> +		close_first_dso();
+> +}
+
+Why do you do this at close()?  As long as there's no attempt to open a
+new file, we can keep existing fd, no?
+
+> +
+> +void dso__data_close(struct dso *dso)
+> +{
+> +	if (dso->data.fd >= 0)
+> +		data_close();
+> +}
+
+Hmm.. it's confusing dso__data_close(dso) closes an other dso rather
+than the given dso.  And this dso__data_close() is not paired with any
+_open() also these close calls make me confusing which one to use. ;-p
 
 
+Thanks
+Namhyung
