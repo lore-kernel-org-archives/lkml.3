@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaE0NmH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:42:07 -0400
-Received: from verein.lst.de ([213.95.11.211]:59876 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047AbaE0NmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:42:02 -0400
-Date: Tue, 27 May 2014 15:41:56 +0200
-From: Torsten Duwe <duwe@lst.de>
+	id S1752518AbaE0NmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:42:24 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:58007 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367AbaE0NmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 09:42:22 -0400
+Date: Tue, 27 May 2014 14:42:18 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
 To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Kees Cook <keescook@chromium.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH v5 00/03]: hwrng: an in-kernel rngd
-Message-ID: <20140527134156.GA14099@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de> <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com> <20140415085126.GA17327@lst.de> <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com>
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 1/9] procfs: use flags to deny or allow access to
+ /proc/<pid>/$entry
+Message-ID: <20140527134218.GB3148@dztty>
+References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+ <1401110850-3552-2-git-send-email-tixxdz@opendz.org>
+ <CALCETrUte7WRMi23+rp+XbgAoOcw=TPZe02YEuZRZyVroj+mfQ@mail.gmail.com>
+ <20140526172101.GA6380@dztty>
+ <CALCETrU=Jy-urWRcRnRyUNKgJFKykcQP6Diy35R3Uf=7fw_wqw@mail.gmail.com>
+ <20140526191353.GB6887@dztty>
+ <CALCETrU1xjXvwtuYyqGhDgch7cZgP_LWLNDC8b8oeEtwJ0UNmg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <CALCETrU1xjXvwtuYyqGhDgch7cZgP_LWLNDC8b8oeEtwJ0UNmg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 09:53:53AM -0700, Andy Lutomirski wrote:
-> On Tue, Apr 15, 2014 at 1:51 AM, Torsten Duwe <duwe@lst.de> wrote:
-> > You're right. Would anyone object to call it "quality", as in RX signal quality?
-> > In context of a random source that is pretty accurate, I'd say. Other opinions?
+On Mon, May 26, 2014 at 12:17:48PM -0700, Andy Lutomirski wrote:
+> On Mon, May 26, 2014 at 12:13 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Mon, May 26, 2014 at 11:06:40AM -0700, Andy Lutomirski wrote:
+> >> On Mon, May 26, 2014 at 10:21 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> > I would like to keep it enum, enum is type-safe and I want to follow the
+> >> > semantics of /proc/pid/stat and others:
+> >>
+> >> It's not type-safe the way you're doing it, though.
+> > Can you please shed some light Andy, thank you in advance!
 > 
-> I'm okay with "quality", although I'm still partial to "entropy_per_1000bits".
+> You're casting these things back and forth.  If you were storing enum
+> values in an enum-typed variable, great, but you're not.
+Ok I see your point! Yes, but AFAIK in this case it's perfectly safe!
 
-So, since there were no other comments, here's v5 with aforementioned change.
-Default is still "off". Patch 02/03 de-fuzzed for 3.15.
+We don't use large values, the one used here can be represented as an
+int, and later we cast them to unsigned long to make sure that we are
+using the correct value and the correct size of a pointer.
 
-	Torsten
+GCC is able to warn in this case of any appropriate cast:
+-Wpointer-to-int-cast ...
 
+And from Documentation/CodingStyle:
+"Enums are preferred when defining several related constants."
+
+Perhaps I'm missing something!
+
+> --Andy
+
+-- 
+Djalal Harouni
+http://opendz.org
