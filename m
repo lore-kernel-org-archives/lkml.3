@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaE0Lxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:53:39 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:62269 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441AbaE0Lxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:53:36 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
-        pavel@ucw.cz, len.brown@intel.com, sudeep.holla@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V4 8/8] cpufreq: exynos5440: don't initialize opp table
-Date: Tue, 27 May 2014 17:20:57 +0530
-Message-Id: <dc7793cebdf57d7b1201255a4594ae7316772327.1401191054.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <cover.1401191054.git.viresh.kumar@linaro.org>
-References: <cover.1401191054.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1401191054.git.viresh.kumar@linaro.org>
-References: <cover.1401191054.git.viresh.kumar@linaro.org>
+	id S1752126AbaE0L7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:59:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751678AbaE0L7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 07:59:10 -0400
+Date: Tue, 27 May 2014 13:58:59 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        m.lombardi85@gmail.com
+Subject: Re: [PATCH V3] bio: modify __bio_add_page() to accept pages that
+ don't start a new segment
+Message-ID: <20140527115859.GA30458@dhcp-27-189.brq.redhat.com>
+References: <1398952615-22034-1-git-send-email-mlombard@redhat.com>
+ <CACVXFVNSZ7+MxW8-SiLXUFW6pGJ7b-OQzf8-KLzcXyE7BvhbbA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNSZ7+MxW8-SiLXUFW6pGJ7b-OQzf8-KLzcXyE7BvhbbA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPU OPP tables are already initialized by CPU core and we don't need to
-reinitialize them from exynos5440's driver.
+On Tue, May 27, 2014 at 06:15:45PM +0800, Ming Lei wrote:
+> 
+> If the page can be merged to last segment, it should have been
+> covered by code in branch of 'if (bio->bi_vcnt > 0) ...', shouldn't it?
+> 
+> Or maybe it is better to make that code cover your case since
+> looks your case is similar with that one according to your commit
+> log.
+>
 
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/exynos5440-cpufreq.c | 6 ------
- 1 file changed, 6 deletions(-)
+I realized that maybe you mean this branch:
 
-diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-index f33f25b..72a4206 100644
---- a/drivers/cpufreq/exynos5440-cpufreq.c
-+++ b/drivers/cpufreq/exynos5440-cpufreq.c
-@@ -360,12 +360,6 @@ static int exynos_cpufreq_probe(struct platform_device *pdev)
- 		goto err_put_node;
- 	}
- 
--	ret = of_init_opp_table(dvfs_info->dev);
--	if (ret) {
--		dev_err(dvfs_info->dev, "failed to init OPP table: %d\n", ret);
--		goto err_put_node;
--	}
--
- 	ret = dev_pm_opp_init_cpufreq_table(dvfs_info->dev,
- 					    &dvfs_info->freq_table);
- 	if (ret) {
--- 
-2.0.0.rc2
+if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
 
+right?
+In this case the branch is not even reached in the original code because
+the function returned an error way before executing it (line 760)
+
+There was already a patchset trying to modify the code in a different way than mine:
+
+https://groups.google.com/forum/#!msg/linux.kernel/3IanUpBVhFQ/3Xbg3yLRFp4J
+
+but it has been ignored and in my opinion it takes a more
+complicated approach.
+
+Regards,
+Maurizio Lombardi
