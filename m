@@ -1,35 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaE0JRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:17:30 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:54942 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250AbaE0JR2 (ORCPT
+	id S1752202AbaE0JSs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:18:48 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:47136 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940AbaE0JSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:17:28 -0400
-Date: Tue, 27 May 2014 11:17:17 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-arch@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        John Crispin <blogic@openwrt.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH 16/27] mips: Use common bits from generic tlb.h
-Message-ID: <20140527091717.GI20055@linux-mips.org>
-References: <1400093999-18703-1-git-send-email-richard@nod.at>
- <1400093999-18703-17-git-send-email-richard@nod.at>
+	Tue, 27 May 2014 05:18:42 -0400
+Date: Tue, 27 May 2014 10:18:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: vexpress: refine dependencies for new code
+Message-ID: <20140527091836.GE5875@lee--X1>
+References: <6862654.ZzBrnrRESe@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1400093999-18703-17-git-send-email-richard@nod.at>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <6862654.ZzBrnrRESe@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 08:59:48PM +0200, Richard Weinberger wrote:
+> The versatile express changes for 3.16 introduced a number of
+> build regressions for randconfig kernels by not tracking dependencies
+> between the components right.
+> 
+> This patch tries to rectify that:
+> 
+> * the mach-vexpress code cannot link without the syscfg driver,
+>   which in turn needs MFD_VEXPRESS_SYSREG
+> * various drivers call devm_regmap_init_vexpress_config(), which
+>   has to be exported so it can be used by loadable modules
+> * the configuration bus uses OF DT helper functions that are not
+>   available to platforms disable CONFIG_OF
+> * The sysreg driver exports GPIOs through gpiolib, which can
+>   be disabled on some platforms.
+> * The clocksource code cannot be built on platforms that don't
+>   use modern timekeeping but rely on gettimeoffset.
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+Where's the diff?
 
-  Ralf
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+[...]
+
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+
+For the MFD part:
+
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
+This patch has a high chance of creating conflicts.  Can someone apply
+this to a branch, tag it and sent out a pull-request to the other
+maintainers please?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
