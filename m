@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaE0NoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:44:07 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:10792
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752097AbaE0NoE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:44:04 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Bernhard Walle <bernhard@bwalle.de>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Regression in hyperv network driver in 3.14
-Thread-Topic: Regression in hyperv network driver in 3.14
-Thread-Index: AQHPeZw4JYywpuXdR0qHVYHBXHThyJtUb4mw
-Date: Tue, 27 May 2014 13:43:46 +0000
-Message-ID: <25b90b45e3284715ab0ab00cb812a99f@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <20140527111003.GA2214@kepler.fritz.box>
-In-Reply-To: <20140527111003.GA2214@kepler.fritz.box>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:402:e80d:87dd:40a8:a05b]
-x-forefront-prvs: 02243C58C6
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(199002)(189002)(13464003)(51704005)(377454003)(101416001)(99286001)(99396002)(46102001)(77982001)(2656002)(74316001)(79102001)(77096999)(87936001)(21056001)(86362001)(33646001)(80022001)(19580405001)(54356999)(74502001)(1511001)(83322001)(64706001)(92566001)(81542001)(20776003)(50986999)(76482001)(86612001)(74662001)(76176999)(19580395003)(83072002)(4396001)(31966008)(76576001)(81342001)(85852003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=kys@microsoft.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752639AbaE0Nog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:44:36 -0400
+Received: from verein.lst.de ([213.95.11.211]:59902 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752141AbaE0Nof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 09:44:35 -0400
+Date: Tue, 27 May 2014 15:44:30 +0200
+From: Torsten Duwe <duwe@lst.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Subject: [Patch 01/03]: provide an injection point for pure hardware
+	randomness
+Message-ID: <20140527134430.GB14099@lst.de>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de> <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com> <20140415085126.GA17327@lst.de> <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com> <20140527134156.GA14099@lst.de>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527134156.GA14099@lst.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds an interface to the random pool for feeding entropy in-kernel.
+It may serve as a destination for dedicated HWRNGs.
 
-> -----Original Message-----
-> From: Bernhard Walle [mailto:bernhard@bwalle.de]
-> Sent: Tuesday, May 27, 2014 4:10 AM
-> To: Haiyang Zhang
-> Cc: KY Srinivasan; linux-kernel@vger.kernel.org
-> Subject: Regression in hyperv network driver in 3.14
-> 
-> Hello,
-> 
-> using a 3.14 kernel in a Linux VM running on HyperV (Windows Server 2008
-> R2) we get following error:
-> 
->    hv_netvsc: hv_netvsc channel opened successfully
->    hv_netvsc vmbus_0_9 (unregistered net_device): Unable to complete
-> receive buffer initialization with NetVsp - status 2
->    hv_netvsc vmbus_0_9 (unregistered net_device): unable to connect to
-> NetVSP - -22
->    hv_netvsc vmbus_0_9 (unregistered net_device): unable to add netvsc
-> device (ret -22)
->    hv_netvsc: probe of vmbus_0_9 failed with error -22
-> 
-> Bisecting the problem shows that commit
-> b679ef73edc251f6d200a7dd2396e9fef9e36fc3 is responsible. Reverting it
-> fixes the issue. Even only changing NETVSC_RECEIVE_BUFFER_SIZE to 2M
-> fixes the issue!
-> 
-> The virtual machine has 2 GiB of memory and 4 CPUs.
-> 
-> Can I provide more information to track down the problem?
+It resembles -- and could be merged with -- the ioctl(RNDADDENTROPY) code, plus 
+a sleep condition for eager writers.
 
-This bug has been fixed upstream. The issue is with regards to the older hosts (ws2008 r2) not
-Being able to handle the larger receive buffer currently used.
+Signed-off-by: Torsten Duwe <duwe@suse.de>
 
-K. Y
-> 
-> 
-> Regards,
-> Bernhard
+---
+ include/linux/hw_random.h |    2 ++
+ drivers/char/random.c     |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
 
+--- a/include/linux/hw_random.h
++++ b/include/linux/hw_random.h
+@@ -47,5 +47,7 @@ struct hwrng {
+ extern int hwrng_register(struct hwrng *rng);
+ /** Unregister a Hardware Random Number Generator driver. */
+ extern void hwrng_unregister(struct hwrng *rng);
++/** Feed random bits into the pool. */
++extern void add_hwgenerator_randomness(const char *buffer, size_t count, size_t entropy);
+ 
+ #endif /* LINUX_HWRANDOM_H_ */
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -250,6 +250,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/mm.h>
+ #include <linux/spinlock.h>
++#include <linux/kthread.h>
+ #include <linux/percpu.h>
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+@@ -1347,3 +1347,25 @@ randomize_range(unsigned long start, uns
+ 		return 0;
+ 	return PAGE_ALIGN(get_random_int() % range + start);
+ }
++
++/* Interface for in-kernel drivers of true hardware RNGs.
++ * Those devices may produce endless random bits and will be throttled
++ * when our pool is full.
++ */
++void add_hwgenerator_randomness(const char *buffer, size_t count,
++				 size_t entropy)
++{
++	struct entropy_store *poolp = &input_pool;
++
++	/* Suspend writing if we're above the trickle threshold.
++	 * We'll be woken up again once below random_write_wakeup_thresh,
++	 * or when the calling thread is about to terminate.
++	 */
++	wait_event_interruptible(random_write_wait, kthread_should_stop() ||
++				 input_pool.entropy_count
++					 <= random_write_wakeup_thresh);
++	mix_pool_bytes(poolp, buffer, count, NULL);
++	credit_entropy_bits(poolp, entropy);
++}
++EXPORT_SYMBOL_GPL(add_hwgenerator_randomness);
++
