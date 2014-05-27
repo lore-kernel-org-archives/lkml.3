@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaE0EDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 00:03:31 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:64728 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaE0EDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 00:03:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140526194347.GB2271@dhcp-27-189.brq.redhat.com>
-References: <20140526194347.GB2271@dhcp-27-189.brq.redhat.com>
-Date: Tue, 27 May 2014 12:03:29 +0800
-Message-ID: <CACVXFVOaF-EOioE38sy9=2f-+rKECJnzUCSHrL-VZJi1Ycj_wA@mail.gmail.com>
-Subject: Re: [jet.chen@intel.com: [bio] kernel BUG at drivers/block/virtio_blk.c:166!]
-From: Ming Lei <tom.leiming@gmail.com>
-To: Maurizio Lombardi <mlombard@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, jet.chen@intel.com,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752623AbaE0EGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 00:06:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9131 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142AbaE0EGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 00:06:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,916,1392192000"; 
+   d="scan'208";a="437158833"
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+To: lee.jones@linaro.org, broonie@kernel.org, sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
+        bin.yang@intel.com, lejun.zhu@linux.intel.com
+Subject: [PATCH v3 0/4] mfd: Intel SoC Power Management IC
+Date: Tue, 27 May 2014 12:06:12 +0800
+Message-Id: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 3:43 AM, Maurizio Lombardi <mlombard@redhat.com> wrote:
-> Hi Jens,
->
-> looks like that commit 3979ef4dcf3d1de55a560a3a4016c30a835df44d ("bio-modify-__bio_add_page-to-accept-pages-that-dont-start-a-new-segment-v3")
-> introduces a regression, as reported by Jet Chan.
->
-> Do you have any idea about the possible problem with this patch?
->
-> it is the one that performs a recount of the segments in case of failure in __bio_add_page()
->
-> http://www.spinics.net/lists/mm-commits/msg103684.html
->
-> I would not be surprised if the bug was introduced by fceb38f36f, because it
-> contained a mystake that commit 3979ef4dcf supposedly fixed.
-> But learning that commit 3979ef4dcf is introducing a regression leaves
-> me quite puzzled.
+Devices based on Intel SoC products such as Baytrail have a Power Management IC. In the PMIC there are subsystems for voltage regulation, A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called Crystal Cove.
 
->From code of __blk_recalc_rq_segments(), looks it
-won't check if recounted physical segment number is
-bigger than queue_max_segments(), so wondering if
-blk_recount_segments() can always decrease
-physical segment number.
+This series contains common code for these PMICs, and device specific support for Crystal Cove.
 
-Thanks,
---
-Ming Lei
+v2:
+- Use regmap instead of creating our own I2C read/write callbacks.
+- Add one missing EXPORT_SYMBOL.
+- Remove some duplicate code and put them into pmic_regmap_load_from_hw.
+v3:
+- Use regmap-irq and remove lots of duplicate code.
+- Remove 2 unused APIs.
+- Some other cleanup.
+
+Zhu, Lejun (4):
+  mfd: intel_soc_pmic: Core driver
+  mfd: intel_soc_pmic: I2C interface
+  mfd: intel_soc_pmic: Crystal Cove support
+  mfd: intel_soc_pmic: Build files
+
+ drivers/mfd/Kconfig                |  12 +++
+ drivers/mfd/Makefile               |   3 +
+ drivers/mfd/intel_soc_pmic_core.c  | 212 +++++++++++++++++++++++++++++++++++++
+ drivers/mfd/intel_soc_pmic_core.h  |  44 ++++++++
+ drivers/mfd/intel_soc_pmic_crc.c   | 175 ++++++++++++++++++++++++++++++
+ drivers/mfd/intel_soc_pmic_i2c.c   | 150 ++++++++++++++++++++++++++
+ include/linux/mfd/intel_soc_pmic.h |  27 +++++
+ 7 files changed, 623 insertions(+)
+ create mode 100644 drivers/mfd/intel_soc_pmic_core.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_core.h
+ create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
+ create mode 100644 include/linux/mfd/intel_soc_pmic.h
+
+-- 
+1.8.3.2
+
