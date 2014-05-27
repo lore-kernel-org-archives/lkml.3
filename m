@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaE0DOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 23:14:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49527 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaE0DOT (ORCPT
+	id S1752601AbaE0DRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 23:17:13 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39723 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaE0DRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 23:14:19 -0400
-Date: Tue, 27 May 2014 04:14:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140527031415.GS18016@ZenIV.linux.org.uk>
-References: <20140526093741.GA1765@lahna.fi.intel.com>
- <20140526135746.GM18016@ZenIV.linux.org.uk>
- <20140526142948.GA1685@lahna.fi.intel.com>
- <20140526152703.GN18016@ZenIV.linux.org.uk>
- <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
- <20140526182644.GP18016@ZenIV.linux.org.uk>
- <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
- <20140527014054.GR18016@ZenIV.linux.org.uk>
+	Mon, 26 May 2014 23:17:10 -0400
+Message-ID: <53840368.4030004@linux.vnet.ibm.com>
+Date: Tue, 27 May 2014 08:45:52 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140527014054.GR18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: viresh.kumar@linaro.org, svaidy@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: governor: Be friendly towards latency-sensitive
+ bursty workloads
+References: <20140526205337.1100.55275.stgit@srivatsabhat.in.ibm.com> <2902116.OdbNv5KQzQ@vostro.rjw.lan>
+In-Reply-To: <2902116.OdbNv5KQzQ@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052703-1396-0000-0000-000004EA1D59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 02:40:54AM +0100, Al Viro wrote:
-> It looks plausible, but I doubt that serializing check_submounts_and_drop()
-> will suffice - shrink_dcache_parent() is just as unpleasant and it *is*
-> triggered in the same situations.  Moreover, the lack of loop in memory
-> shrinkers doesn't help - we might get shrink_dentry_list() from one of
-> those and loops that keep calling d_walk() from check_submounts_and_drop()
-> or shrink_dcache_parent()...
+On 05/27/2014 04:57 AM, Rafael J. Wysocki wrote:
+> Hi Srivatsa,
 > 
-> > Anyway, I'd like Mika to test the stupid "let's serialize the dentry
-> > shrinking in check_submounts_and_drop()" to see if his problem goes
-> > away. I agree that it's not the _proper_ fix, but we're damn late in
-> > the rc series..
+> On Tuesday, May 27, 2014 02:23:38 AM Srivatsa S. Bhat wrote:
+>> Cpufreq governors like the ondemand governor calculate the load on the CPU
+>> periodically by employing deferrable timers. A deferrable timer won't fire
+>> if the CPU is completely idle (and there are no other timers to be run), in
+>> order to avoid unnecessary wakeups and thus save CPU power.
+>>
+>> However, the load calculation logic is agnostic to all this, and this can
+>> lead to the problem described below.
 > 
-> That we are...  FWIW, if the nastiness matches the description above,
-> the right place to do something probably would be when those two
-> suckers get positive return value from d_walk() along with an empty
-> shrink list.  I wonder if we should do down_read() in shrink_dentry_list()
-> and down_write();up_write() in that case in shrink_dcache_parent() and
-> check_submounts_and_drop().  How about the following?
+> This is subtle enough that I need some more time to chew on it, but since the
+> merge window is coming, I'm not sure when that's going to happen honestly.
+>
 
-As the matter of fact, let's try this instead - retry the same sucker
-immediately in case if trylocks fail.  Comments?
+Sure, I completely understand. Please take your time, no hurry!
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 42ae01e..d58d4cc 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -798,6 +798,7 @@ static void shrink_dentry_list(struct list_head *list)
- 
- 	while (!list_empty(list)) {
- 		dentry = list_entry(list->prev, struct dentry, d_lru);
-+again:
- 		spin_lock(&dentry->d_lock);
- 		/*
- 		 * The dispose list is isolated and dentries are not accounted
-@@ -830,7 +831,8 @@ static void shrink_dentry_list(struct list_head *list)
- 			 */
- 			d_shrink_add(dentry, list);
- 			spin_unlock(&dentry->d_lock);
--			continue;
-+			cpu_relax();
-+			goto again;
- 		}
- 		/*
- 		 * We need to prune ancestors too. This is necessary to prevent
+Thank you very much!
+
+Regards,
+Srivatsa S. Bhat
+
