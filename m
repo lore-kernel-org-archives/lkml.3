@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaE0NN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:13:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37654 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbaE0NN1 (ORCPT
+	id S1752363AbaE0NNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:13:55 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:59508 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaE0NNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:13:27 -0400
-Date: Tue, 27 May 2014 15:13:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, tglx@linutronix.de,
-        mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: balance storm
-Message-ID: <20140527131325.GF5444@laptop.programming.kicks-ass.net>
-References: <5382AF2E.1040407@huawei.com>
- <1401090987.5339.79.camel@marge.simpson.net>
- <53832A36.5020205@huawei.com>
- <20140527094802.GN30445@twins.programming.kicks-ass.net>
- <53848B38.5090408@huawei.com>
+	Tue, 27 May 2014 09:13:54 -0400
+Message-ID: <53848F7C.6020508@linaro.org>
+Date: Tue, 27 May 2014 14:13:32 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53848B38.5090408@huawei.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: Russell King <linux@arm.linux.org.uk>, Paul Bolle <pebolle@tiscali.nl>,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH v5 3/5] ARM: Conceal DEBUG_LL_UART_NONE from unsupported
+ platforms
+References: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org> <1400857819-7975-4-git-send-email-daniel.thompson@linaro.org> <5013253.K6sZTxep7b@wuerfel> <6624276.NBS809VbNB@wuerfel>
+In-Reply-To: <6624276.NBS809VbNB@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 08:55:20PM +0800, Libo Chen wrote:
-> On 2014/5/27 17:48, Peter Zijlstra wrote:
+On 26/05/14 14:39, Arnd Bergmann wrote:
+>>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>>> index eab8ecb..4c8d7db 100644
+>>> --- a/arch/arm/Kconfig.debug
+>>> +++ b/arch/arm/Kconfig.debug
+>>> @@ -842,7 +842,18 @@ choice
+>>>  
+>>>       config DEBUG_LL_UART_NONE
+>>>               bool "No low-level debugging UART"
+>>> -             depends on !ARCH_MULTIPLATFORM
+>>> +             depends on ARCH_AT91 || \
+>>> +                     ARCH_CLPS711X || \
+>>> +                     ARCH_FOOTBRIDGE || \
+>>> +                     ARCH_KS8695 || \
+>>> +                     ARCH_NETX || \
+>>> +                     ARCH_OMAP1 || \
+>>> +                     ARCH_SA1100 || \
+>>> +                     ARCH_S3C24XX || \
+>>> +                     ARCH_S3C64XX || \
+>>> +                     ARCH_S5P64X0 || \
+>>> +                     ARCH_S5PC100 || \
+>>> +                     ARCH_S5PV210
+>>>               help
+>>>                 Say Y here if your platform doesn't provide a UART option
+>>>                 above. This relies on your platform choosing the right UART
+>>
+>> ARCH_S3C24XX has been moved over in linux-next to use debug/s3c24xx.S.
+>> A few others will likely move soon (AT91, CLPS711x, S5PV210), as the
+>> platforms get moved to ARCH_MULTIPLATFORM.
 
-> > In any case, I'm not sure what the 'regression' report is against, as
-> > there's only a single kernel version mentioned: 3.4, and that's almost a
+The list in my patch came from:
 
-> upstream has the same problem, I have mentioned before.
+sundance$ find arch/arm -name "debug-macro.S"
+arch/arm/mach-at91/include/mach/debug-macro.S
+arch/arm/mach-clps711x/include/mach/debug-macro.S
+arch/arm/mach-footbridge/include/mach/debug-macro.S
+arch/arm/mach-ks8695/include/mach/debug-macro.S
+arch/arm/mach-netx/include/mach/debug-macro.S
+arch/arm/mach-omap1/include/mach/debug-macro.S
+arch/arm/mach-s3c64xx/include/mach/debug-macro.S
+arch/arm/mach-s5p64x0/include/mach/debug-macro.S
+arch/arm/mach-s5pc100/include/mach/debug-macro.S
+arch/arm/mach-s5pv210/include/mach/debug-macro.S
+arch/arm/mach-sa1100/include/mach/debug-macro.S
 
-Not on anything that landed in my inbox I think, but that's not the
-point. For a regression report you need _2_ kernel versions, one with
-and one without the 'problem'.
+In other words this patch lists of all platforms where
+DEBUG_LL_UART_NONE should not result in failure to compile the kernel.
 
-Providing one (or two) that have a problem doesn't qualify.
+This list doesn't seem to have changed in linux-next.
 
-In any case, I didn't see the original email, but I got the impression
-that it was complaining about 'new' behaviour from the bits I did see as
-quoted.
+>> As an alternative to your patch, we could decide to move the remaining
+>> files as well.
+> 
+> Follow-up: I also noticed that AT91, CLPS711X, FOOTBRIDGE and all the SAMSUNG
+> platforms already have an entry in the list, so DEBUG_LL_UART_NONE is redundant
+> for them. The below change should be enough.
+> 
+> For AT91 this is actually better because the old AT91X40 support doesn't
+> have working DEBUG_LL support. This gets handled correctly by 
+> AT91_DEBUG_LL_DBGU0/AT91_DEBUG_LL_DBGU1, but not DEBUG_LL_UART_NONE.
+
+I'm very happy to update my patch to follow this one. However since it
+will render the corresponding debug-macro.S unreachable by KBuild I like
+to nuke the file as well. Good idea?
+
+
+Daniel.
+
+
