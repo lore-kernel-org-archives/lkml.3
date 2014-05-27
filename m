@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaE0GNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:13:48 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:36694 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751474AbaE0GNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:13:44 -0400
-Message-ID: <1401171176.856.50.camel@iivanov-dev>
-Subject: Re: [GIT PULL] qcom SoC changes for v3.16
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Kumar Gala <galak@codeaurora.org>,
-        arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
-        linus.walleij@linaro.org, srinivas.kandagatla@linaro.org
-Date: Tue, 27 May 2014 09:12:56 +0300
-In-Reply-To: <538345F0.40605@mm-sol.com>
-References: <alpine.DEB.2.00.1405231339340.15680@galak-ubuntu.qualcomm.com>
-	 <1401108595.6068.5.camel@x220> <538345F0.40605@mm-sol.com>
+	id S1751882AbaE0GON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:14:13 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:32888 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaE0GOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 02:14:12 -0400
+Message-ID: <1401171246.11231.5.camel@phoenix>
+Subject: [PATCH] regulator: pfuze100: Remove *regulators[] from struct
+ pfuze_chip
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 27 May 2014 14:14:06 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-26 at 16:47 +0300, Georgi Djakov wrote:
-> On 05/26/2014 03:49 PM, Paul Bolle wrote:
-> > On Fri, 2014-05-23 at 13:42 -0500, Kumar Gala wrote:
-> >> Ivan T. Ivanov (1):
-> >>         ARM: debug: qcom: make UART address selection configuration option
-> >
-> > This one just landed in linux-next (next-20140526).
-> >
-> > It removed the Kconfig options DEBUG_MSM_UART1, DEBUG_MSM_UART3, and
-> > DEBUG_MSM_UART3. It did not touch these references to their macros:
-> >      arch/arm/mach-msm/io.c:60:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-> >      arch/arm/mach-msm/io.c:61:                defined(CONFIG_DEBUG_MSM_UART3)
-> >      arch/arm/mach-msm/io.c:79:#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-> >      arch/arm/mach-msm/io.c:80:                defined(CONFIG_DEBUG_MSM_UART3)
-> >
-> > Is a patch to fix this queued somewhere?
-> >
-> 
-> Not yet, but I'll send one in a minute.
+This driver is using devm_regulator_register() so we don't need to save the
+pointer for cleanup.
 
-Right, I have missed this. Thanks.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/pfuze100-regulator.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-Ivan
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index 930eb13..c12cbdf32 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -69,7 +69,6 @@ struct pfuze_chip {
+ 	struct regmap *regmap;
+ 	struct device *dev;
+ 	struct pfuze_regulator regulator_descs[PFUZE100_MAX_REGULATOR];
+-	struct regulator_dev *regulators[PFUZE100_MAX_REGULATOR];
+ };
+ 
+ static const int pfuze100_swbst[] = {
+@@ -411,6 +410,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 	struct pfuze_regulator_platform_data *pdata =
+ 	    dev_get_platdata(&client->dev);
+ 	struct regulator_config config = { };
++	struct regulator_dev *rdev;
+ 	int i, ret;
+ 	const struct of_device_id *match;
+ 	u32 regulator_num;
+@@ -508,12 +508,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 		config.of_node = match_of_node(i);
+ 		config.ena_gpio = -EINVAL;
+ 
+-		pfuze_chip->regulators[i] =
+-			devm_regulator_register(&client->dev, desc, &config);
+-		if (IS_ERR(pfuze_chip->regulators[i])) {
++		rdev = devm_regulator_register(&client->dev, desc, &config);
++		if (IS_ERR(rdev)) {
+ 			dev_err(&client->dev, "register regulator%s failed\n",
+ 				pfuze_regulators[i].desc.name);
+-			return PTR_ERR(pfuze_chip->regulators[i]);
++			return PTR_ERR(rdev);
+ 		}
+ 	}
+ 
+-- 
+1.8.3.2
+
+
 
