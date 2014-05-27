@@ -1,196 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaE0UK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:10:56 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:59430 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525AbaE0UJw (ORCPT
+	id S1753755AbaE0ULL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 16:11:11 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:61711 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585AbaE0ULI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 16:09:52 -0400
-From: Chaitanya Hazarey <c@24.io>
-To: gregkh@linuxfoundation.org, andrea.merello@gmail.com,
-        linville@tuxdriver.com, burzalodowa@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, c@24.io
-Subject: [PATCH 4/6] Staging: rtl8192u: r8180_93cx6.c & r8192U_wx.c fix checkpatch.pl errors and warnings
-Date: Tue, 27 May 2014 13:09:48 -0700
-Message-Id: <1401221390-10655-4-git-send-email-c@24.io>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401221390-10655-1-git-send-email-c@24.io>
-References: <1401221390-10655-1-git-send-email-c@24.io>
+	Tue, 27 May 2014 16:11:08 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Sebastian Reichel <sre@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+In-Reply-To: <9CF30A1A-5EB6-401E-A0D5-453CB99B4A83@konsulko.com>
+References: <CAMuHMdUWfQ=2xPhNsS36mT6nv-CfR3_1exZ+5qYgdkjbBntrWg@mail.gmail.com>
+	<20140516105814.3EA3FC403C2@trevor.secretlab.ca>
+	<CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com>
+	<20140520055026.E3A98C412DA@trevor.secretlab.ca>
+	<CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
+	<20140526104824.63F13C42129@trevor.secretlab.ca>
+	<CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>
+	<20140526112348.907B7C421A5@trevor.secretlab.ca>
+	<A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com>
+	<20140526213303.C1C73C40E11@trevor.secretlab.ca>
+	<20140526223630.GA32691@earth.universe> <5383D174.8070304@roeck-us.net>
+	<20140527121236.3B818C40A5A@trevor.secretlab.ca>
+	<9CF30A1A-5EB6-401E-A0D5-453CB99B4A83@konsulko.com>
+Date: Tue, 27 May 2014 21:11:02 +0100
+Message-Id: <20140527201102.BE7F4C40BD2@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleaned up dead code, added curly {} braces where needed
-	and fixed the following:
+On Tue, 27 May 2014 15:24:35 +0300, Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
+> Hi Grant,
+> 
+> On May 27, 2014, at 3:12 PM, Grant Likely wrote:
+> 
+> > On Mon, 26 May 2014 16:42:44 -0700, Guenter Roeck <linux@roeck-us.net> wrote:
+> >> On 05/26/2014 03:36 PM, Sebastian Reichel wrote:
+> >>> Hi,
+> >>> 
+> >>> On Mon, May 26, 2014 at 10:33:03PM +0100, Grant Likely wrote:
+> >>>> After thinking about it more, I think it is very likely that removing
+> >>>> all the overlays is the correct thing to do in the kexec use-case. When
+> >>>> kexec-ing, it makes sense that we'd want the exact same behaviour from
+> >>>> the kexec'ed kernel. That means we want the device drivers to do the
+> >>>> same thing including loading whatever overlays they depend on.
+> >>>> 
+> >>>> If the flattened tree was left applied, then the behaviour becomes
+> >>>> different.
+> >>>> 
+> >>>> I say always remove the overlays unless explicitly told not to, but I'm
+> >>>> struggling to come up with use cases where keeping them applied is
+> >>>> desirable.
+> >>> 
+> >>> I would assume, that I want them applied in most cases. DT describes
+> >>> the hardware. If I kexec into a new kernel I change software, not
+> >>> hardware.
+> >>> 
+> >>> Maybe I'm missing the main purpose of the feature. I currently see
+> >>> two useful usecases for DT overlays:
+> >>> 
+> >>> 1. The dtb the kernel is booted with cannot be changed for some
+> >>>    reason, but the board has additional hardware attached (e.g.
+> >>>    the user added a sensor on the i2c bus)
+> >>> 2. The hardware is changed on the fly (e.g. the user flashed the
+> >>>    FPGA part of a zynq processor), sensors on i2c bus, ...
+> >>> 
+> >>> In both cases the kernel should be booted with the additional
+> >>> overlay information IMHO. Though for the second case it should
+> >>> be possible to remove the "programmed" hardware information
+> >>> somehow.
+> >>> 
+> >> 
+> >> 3. Some hot-plug device or card is inserted or removed.
+> >> 
+> >> I would argue that the kernel should _not_ be booted with the overlay in place.
+> >> Otherwise the code handling overlays would have to have special handling
+> >> for the restart case, which is much more complex than just to re-insert
+> >> the overlay when it is determined that the device or card is still there.
+> > 
+> > Exactly.
+> > 
+> 
+> Looks like we are levitating to the 'remove overlays on kexec' approach.
+> Is that correct?
 
-ERROR: do not use C99 // comments
-ERROR: else should follow close brace '}'
-ERROR: space required after that ',' (ctx:VxV)
-ERROR: space required before the open brace '{'
-ERROR: spaces required around that '=' (ctx:WxV)
-ERROR: space required after that close brace '}'
-ERROR: spaces required around that '=' (ctx:VxW)
-ERROR: spaces required around that '=' (ctx:VxV)
-ERROR: spaces required around that '<' (ctx:VxV)
-ERROR: spaces required around that '!=' (ctx:WxV)
-ERROR: spaces required around that '==' (ctx:VxV)
-ERROR: spaces required around that '!=' (ctx:VxV)
-ERROR: spaces required around that '&&' (ctx:VxV)
-ERROR: trailing statements should be on next line
-ERROR: space prohibited before that '--' (ctx:WxO)
-ERROR: need consistent spacing around '|' (ctx:VxW)
-ERROR: need consistent spacing around '*' (ctx:WxV)
-ERROR: space required before the open parenthesis '('
-ERROR: that open brace { should be on the previous line
-ERROR: space prohibited after that open parenthesis '('
-ERROR: space prohibited before that close parenthesis ')'
+Yes. What form that takes is yet to be decided. Kexec traditionally has
+worked by userspace extracting the device tree from /proc/device-tree,
+getting a kernel image into memory, and then doing the kexec call. It
+wouldn't be very friendly to have kexec force all the overlays to be
+removed while the kernel is still running.
 
-WARNING: missing space after struct definition
-WARNING: Missing a blank line after declarations
-WARNING: please, no spaces at the start of a line
-WARNING: suspect code indent for conditional statements (16, 16)
-WARNING: __func__ should be used instead of gcc specific __FUNCTION__
+We could solve this by making kexec use the original dtb blob instead of
+the livetree. Otherwise we'd need an interface for userspace to extract
+the original tree, or have the information to unwind the overlays. Not
+exactly simple.
 
-Signed-off-by: Chaitanya Hazarey <c@24.io>
----
- drivers/staging/rtl8192u/r8192U_wx.c |   63 +++++++++++++++++-----------------
- 1 file changed, 31 insertions(+), 32 deletions(-)
-
-diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index 7f8a3e0..6b48c08 100644
---- a/drivers/staging/rtl8192u/r8192U_wx.c
-+++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -252,16 +252,16 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	/* ~5 Mb/s real (802.11b) */
- 	range->throughput = 5 * 1000 * 1000;
- 
--	// TODO: Not used in 802.11b?
--//	range->min_nwid;	/* Minimal NWID we are able to set */
--	// TODO: Not used in 802.11b?
--//	range->max_nwid;	/* Maximal NWID we are able to set */
-+	/* TODO: Not used in 802.11b? */
-+/*	range->min_nwid; */	/* Minimal NWID we are able to set */
-+	/* TODO: Not used in 802.11b? */
-+/*	range->max_nwid; */	/* Maximal NWID we are able to set */
- 
- 	/* Old Frequency (backward compat - moved lower ) */
--//	range->old_num_channels;
--//	range->old_num_frequency;
--//	range->old_freq[6]; /* Filler to keep "version" at the same offset */
--	if(priv->rf_set_sens != NULL)
-+/*	range->old_num_channels; */
-+/*	range->old_num_frequency; */
-+/*	range->old_freq[6]; */ /* Filler to keep "version" at the same offset */
-+	if (priv->rf_set_sens != NULL)
- 		range->sensitivity = priv->max_sens;	/* signal level threshold range */
- 
- 	range->max_qual.qual = 100;
-@@ -284,7 +284,7 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	range->min_frag = MIN_FRAG_THRESHOLD;
- 	range->max_frag = MAX_FRAG_THRESHOLD;
- 
--	range->min_pmp=0;
-+	range->min_pmp = 0;
- 	range->max_pmp = 5000000;
- 	range->min_pmt = 0;
- 	range->max_pmt = 65535*1000;
-@@ -295,30 +295,30 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	range->we_version_compiled = WIRELESS_EXT;
- 	range->we_version_source = 16;
- 
--//	range->retry_capa;	/* What retry options are supported */
--//	range->retry_flags;	/* How to decode max/min retry limit */
--//	range->r_time_flags;	/* How to decode max/min retry life */
--//	range->min_retry;	/* Minimal number of retries */
--//	range->max_retry;	/* Maximal number of retries */
--//	range->min_r_time;	/* Minimal retry lifetime */
--//	range->max_r_time;	/* Maximal retry lifetime */
-+/*	range->retry_capa; */	/* What retry options are supported */
-+/*	range->retry_flags; */	/* How to decode max/min retry limit */
-+/*	range->r_time_flags; */	/* How to decode max/min retry life */
-+/*	range->min_retry; */	/* Minimal number of retries */
-+/*	range->max_retry; */	/* Maximal number of retries */
-+/*	range->min_r_time; */	/* Minimal retry lifetime */
-+/*	range->max_r_time; */	/* Maximal retry lifetime */
- 
- 
- 	for (i = 0, val = 0; i < 14; i++) {
- 
--		// Include only legal frequencies for some countries
-+		/* Include only legal frequencies for some countries */
- 		if ((GET_DOT11D_INFO(priv->ieee80211)->channel_map)[i+1]) {
- 			range->freq[val].i = i + 1;
- 			range->freq[val].m = ieee80211_wlan_frequencies[i] * 100000;
- 			range->freq[val].e = 1;
- 			val++;
- 		} else {
--			// FIXME: do we need to set anything for channels
--			// we don't use ?
-+			/* FIXME: do we need to set anything for channels */
-+			/* we don't use ? */
- 		}
- 
- 		if (val == IW_MAX_FREQUENCIES)
--		break;
-+			break;
- 	}
- 	range->num_frequency = val;
- 	range->num_channels = val;
-@@ -336,30 +336,28 @@ static int r8192_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
- 	struct ieee80211_device *ieee = priv->ieee80211;
- 	int ret = 0;
- 
--	if(!priv->up) return -ENETDOWN;
-+	if (!priv->up)
-+		return -ENETDOWN;
- 
- 	if (priv->ieee80211->LinkDetectInfo.bBusyTraffic == true)
- 		return -EAGAIN;
--	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)
--	{
-+	if (wrqu->data.flags & IW_SCAN_THIS_ESSID) {
- 		struct iw_scan_req *req = (struct iw_scan_req *)b;
--		if (req->essid_len)
--		{
--			//printk("==**&*&*&**===>scan set ssid:%s\n", req->essid);
-+		if (req->essid_len) {
- 			ieee->current_network.ssid_len = req->essid_len;
- 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
--			//printk("=====>network ssid:%s\n", ieee->current_network.ssid);
- 		}
- 	}
- 
- 	down(&priv->wx_sem);
--	if(priv->ieee80211->state != IEEE80211_LINKED){
-+	if (priv->ieee80211->state != IEEE80211_LINKED) {
- 		priv->ieee80211->scanning = 0;
- 		ieee80211_softmac_scan_syncro(priv->ieee80211);
- 		ret = 0;
-+	} else {
-+		ret = ieee80211_wx_set_scan(priv->ieee80211, a, wrqu, b);
- 	}
--	else
--	ret = ieee80211_wx_set_scan(priv->ieee80211,a,wrqu,b);
-+
- 	up(&priv->wx_sem);
- 	return ret;
- }
-@@ -372,11 +370,12 @@ static int r8192_wx_get_scan(struct net_device *dev, struct iw_request_info *a,
- 	int ret;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 
--	if(!priv->up) return -ENETDOWN;
-+	if (!priv->up)
-+		return -ENETDOWN;
- 
- 	down(&priv->wx_sem);
- 
--	ret = ieee80211_wx_get_scan(priv->ieee80211,a,wrqu,b);
-+	ret = ieee80211_wx_get_scan(priv->ieee80211, a, wrqu, b);
- 
- 	up(&priv->wx_sem);
- 
--- 
-1.7.9.5
+g.
 
