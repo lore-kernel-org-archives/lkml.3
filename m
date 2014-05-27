@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaE0QtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:49:19 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:57960 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaE0QtS (ORCPT
+	id S1752258AbaE0Qzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:55:52 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:51059 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbaE0Qzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:49:18 -0400
-Date: Tue, 27 May 2014 17:49:11 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v3 4/4] mfd: intel_soc_pmic: Build files
-Message-ID: <20140527164911.GE4227@lee--X1>
-References: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
- <1401163576-14872-5-git-send-email-lejun.zhu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401163576-14872-5-git-send-email-lejun.zhu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 May 2014 12:55:51 -0400
+Message-ID: <1401209749.5367.245.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: [PATCH] mm/zswap : NUMA aware allocation for zswap_dstmem
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Date: Tue, 27 May 2014 09:55:49 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Devices based on Intel SoC products such as Baytrail have a Power Management IC. This patch adds Intel SoC PMIC support to the build files.
-> 
-> v2:
-> - Add select REGMAP_I2C.
-> v3:
-> - Add select REGMAP_IRQ.
+From: Eric Dumazet <edumazet@google.com>
 
-Please fix this, same as before.
+zswap_dstmem is a percpu block of memory, which should
+be allocated using kmalloc_node(), to get better NUMA
+locality.
 
-> Signed-off-by: Yang, Bin <bin.yang@intel.com>
-> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
-> ---
->  drivers/mfd/Kconfig  | 12 ++++++++++++
->  drivers/mfd/Makefile |  3 +++
->  2 files changed, 15 insertions(+)
+Without it, all the blocks are allocated from a single node.
 
-Patch looks okay:
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+---
+ mm/zswap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+diff --git a/mm/zswap.c b/mm/zswap.c
+index aeaef0fb5624..008388fe7b0f 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -347,7 +347,7 @@ static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
+ 			return NOTIFY_BAD;
+ 		}
+ 		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
+-		dst = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
++		dst = kmalloc_node(PAGE_SIZE * 2, GFP_KERNEL, cpu_to_node(cpu));
+ 		if (!dst) {
+ 			pr_err("can't allocate compressor buffer\n");
+ 			crypto_free_comp(tfm);
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
