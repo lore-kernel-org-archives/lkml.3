@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106AbaE0UEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:04:16 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:52289 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaE0UEO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 16:04:14 -0400
+	id S1753598AbaE0UFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 16:05:24 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33403 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751981AbaE0UFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 16:05:23 -0400
+Date: Tue, 27 May 2014 16:05:16 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/9] mm: memcontrol: rewrite charge API
+Message-ID: <20140527200516.GE2878@cmpxchg.org>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-9-git-send-email-hannes@cmpxchg.org>
+ <20140523145413.GF22135@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <5384E83B.1030209@gmx.de>
-References: <CAAih0NjG4gC-7fkD5vOvF0CQks+DhqVZLeycsju-8RMVP6dbBw@mail.gmail.com>
-	<5384E83B.1030209@gmx.de>
-Date: Tue, 27 May 2014 15:04:13 -0500
-Message-ID: <CAAih0NiGsXJcbZZgFKM4ttcmr6r3=Jr2iEuhPYu9QaJZ8zOHag@mail.gmail.com>
-Subject: Re: inotify_rm_watch() user-space safety requirements?
-From: Jeff Smith <jsmith.lkml@gmail.com>
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: linux-kernel@vger.kernel.org,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        linux-man <linux-man@vger.kernel.org>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>, Jan Kara <jack@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140523145413.GF22135@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heinrich,
+On Fri, May 23, 2014 at 04:54:13PM +0200, Michal Hocko wrote:
+> On Wed 30-04-14 16:25:42, Johannes Weiner wrote:
+> > The memcg charge API charges pages before they are rmapped - i.e. have
+> > an actual "type" - and so every callsite needs its own set of charge
+> > and uncharge functions to know what type is being operated on.
+> > 
+> > Rewrite the charge API to provide a generic set of try_charge(),
+> > commit_charge() and cancel_charge() transaction operations, much like
+> > what's currently done for swap-in:
+> > 
+> >   mem_cgroup_try_charge() attempts to reserve a charge, reclaiming
+> >   pages from the memcg if necessary.
+> > 
+> >   mem_cgroup_commit_charge() commits the page to the charge once it
+> >   has a valid page->mapping and PageAnon() reliably tells the type.
+> > 
+> >   mem_cgroup_cancel_charge() aborts the transaction.
+> > 
+> > As pages need to be committed after rmap is established but before
+> > they are added to the LRU, page_add_new_anon_rmap() must stop doing
+> > LRU additions again.  Factor lru_cache_add_active_or_unevictable().
+> > 
+> > The order of functions in mm/memcontrol.c is entirely random, so this
+> > new charge interface is implemented at the end of the file, where all
+> > new or cleaned up, and documented code should go from now on.
+> 
+> I would prefer moving them after refactoring because the reviewing is
+> really harder this way. If such moving is needed at all.
 
-Thanks for looking into this. I've never encountered the aliasing via
-wraparound or otherwise, but I've tried to code against unexpected
-descriptor reuse anyway through more flexible workarounds. From a user
-standpoint, denser descriptor reassignment would be preferable to
-facilitate simple dense linear mappings of cache objects, but it's
-easy to see why things were designed as they were given the queue
-entry persistence. Getting current behavior accurately documented is
-my first hope, and fixing any gotcha cases my second, but being able
-to have inotify_add_watch/read look and feel more like
-open/epoll_ctl(EPOLL_CTL_ADD))/epoll_wait would be my ultimate wish.
-The asynchronous-feeling handle removal is not a great interface in
-general to deal with.
+I find it incredibly cumbersome to work with this code because of the
+ordering.  Sure, you use the search function of the editor, but you
+don't even know whether to look above or below, half of the hits are
+forward declarations etc.  Crappy code attracts more crappy code, so I
+feel strongly that we clean this up and raise the bar for the future.
 
-Best regards,
-Jeff
+As to the ordering: I chose this way because this really is a
+fundamental rewrite, and I figured it would be *easier* to read if you
+have the entire relevant code show up in the diff.  I.e. try_charge()
+is fully included, right next to its API entry function.
 
-On Tue, May 27, 2014 at 2:32 PM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
-> On 27.05.2014 19:25, Jeff Smith wrote:
->>
->> inotify's behavior concerning events from removed watches (they do
->> happen) and watch descriptor reuse (beyond my knowledge) is currently
->> undocumented.
->>
->> Although it mimics a standard multiplexing interface in most regards,
->> writing a robust user-space handler is comparatively more complex due
->> to the atypical delivery of "stale" wd events preceding an IN_IGNORE
->> event and a lack of guarantees about how quickly a wd can be reused
->> via inotify_add_watch(). Not being familiar with inotify/fsnotify
->> internals, it's not trivially obvious to me how the fsnotify_group
->> management is being done. Up to the present, I've maintained queues of
->> "dead" wd wrappers (or at least a counter) to filter stale events, but
->> I am clueless whether or not this is overkill.
->>
->> If removed descriptors are reserved until the IN_IGNORE event is
->> drained from the read queue, could that be formally guaranteed? If
->> it's not, is it functionality that could ever reasonably be expected
->> to be added, short of some other form of new (optional?)
->> queue-filter-on-rm functionality? It's my experience that the
->> asynchronous handling of watch removals is a cost that seldom serves
->> much user benefit.
->>
->> Regards,
->> Jeff
->
-> Hello Jeff,
->
-> I tried to dive a bit into the code. This is what I understand:
->
-> Function inotify_ignored_and_remove_idr is called after the mark has been
-> removed. This function puts an IN_IGNORED event onto the inotify queue and
-> removes the watch descriptor from the list of used watch descriptors using
-> function idr_remove.
->
-> With a test program I could receive the IN_IGNORED event. This behavior is
-> currently not documented in the manpages (inotify.7 and inotify_rm_watch.2).
->
-> When inotify_add_watch is called it uses function idr_alloc_cyclic to assign
-> a watch descriptor ID. This function starts looking for an unused id
-> starting with the id after the last assigned watch descriptor.
->
-> This implies that in most cases inotify_add_watch will return a watch
-> descriptor different to the one released by a prior call to
-> inotify_rm_watch. But there is no guarantee.
->
-> I consider this a bug.
->
-> I CCed the maintainers of the inotify interface hoping that they can provide
-> a better solution.
->
-> Until such a solution is provided I suggest you use the following
-> workaround. After calling inotify_rm_watch read from the inotify file
-> descriptor until you reach the matching IN_IGNORED event.
->
-> Only thereafter you can safely call inotify_add_watch again.
->
-> Best regards
->
-> Heinrich Schuchardt
->
+If this doesn't work for you - the reviewer - I'm happy to change it
+around and move the code separately.
+
+> size is saying the code is slightly bigger:
+>    text    data     bss     dec     hex filename
+>  487977   84898   45984  618859   9716b mm/built-in.o.7
+>  488276   84898   45984  619158   97296 mm/built-in.o.8
+> 
+> No biggie though.
+> 
+> It is true it get's rid of ~80LOC in memcontrol.c but it adds some more
+> outside of memcg. Most of the charging paths didn't get any easier, they
+> already know the type and they have to make sure they even commit the
+> charge now.
+> 
+> But maybe it is just me feeling that now that we have
+> mem_cgroup_charge_{anon,file,swapin} the API doesn't look so insane
+> anymore and so I am not tempted to change it that much.
+
+I should have been a little clearer in the changelog: this is mainly
+to make sure we never commit pages before their rmapping is
+established so that not only charging, but also uncharging can be
+drastically simplified.
+
+You already noticed that when looking at the next patch, but I'll make
+sure to mention it here as well.
