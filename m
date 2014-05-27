@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaE0PIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:08:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42589 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751737AbaE0PIx (ORCPT
+	id S1752449AbaE0POO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:14:14 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:44218 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751737AbaE0PON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:08:53 -0400
-Date: Tue, 27 May 2014 11:08:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lugovskoy@dev.rtsoft.ru>
-Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
- on ULI hw
-In-Reply-To: <1401166602-26379-1-git-send-email-nyushchenko@dev.rtsoft.ru>
-Message-ID: <Pine.LNX.4.44L0.1405271055240.1372-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
+	Tue, 27 May 2014 11:14:13 -0400
+Date: Tue, 27 May 2014 10:14:10 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Mike Marciniszyn <infinipath@intel.com>
+Subject: Re: [RFC][PATCH 0/5] VM_PINNED
+In-Reply-To: <20140527144655.GC19143@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1405271011100.14466@gentwo.org>
+References: <20140526145605.016140154@infradead.org> <CALYGNiMG1NVBUS4TJrYJMr92yWGZHSdGUdCGtBJDHoUMMhE+Wg@mail.gmail.com> <20140526203232.GC5444@laptop.programming.kicks-ass.net> <CALYGNiO8FNKjtETQMRSqgiArjfQ9nRAALUg9GGdNYbpKru=Sjw@mail.gmail.com>
+ <20140527102909.GO30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405270929550.13999@gentwo.org> <20140527144655.GC19143@laptop.programming.kicks-ass.net>
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Nikita Yushchenko wrote:
+On Tue, 27 May 2014, Peter Zijlstra wrote:
 
-> This access causes hang on Freescale P2020DS board (that has OHCI
-> provided by ULI 1533 chip).
+> Well, like with IB, they start out as normal userspace pages, and will
+> be from ZONE_MOVABLE.
 
-Which access, the read or the write?
-
-> Since preserving OHCI_FMINTERVAL was originally done only for NVIDIA
-> hardware and only later (in c6187597) was turned unconditional, and
-
-Correction: Preserving OHCI_FMINTERVAL was originally done for all 
-controllers that needed to be reset.  It just so happened that NVIDIA 
-was the only one that got reset.  In c6187597 the reset became 
-unconditional, so fminterval was preserved for all hardware.
-
-> c6187597 commit message again mentions only NVIDIA, I think it should be
-> safe to disable preserving OHCI_FMINTERVAL if device vendor is ULI.
-> 
-> Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-
-It looks like you haven't read ohci_shutdown() and ohci_run() in 
-drivers/usb/host/ohci-hcd.c.  They both access the fminterval register, 
-and this patch doesn't change them.
-
-So I don't see why this patch should make any difference to the 
-system's operation.
-
-Alan Stern
-
+Well we could change that now I think. If the VMA has VM_PINNED set
+pages then do not allocate from ZONE_MOVABLE.
