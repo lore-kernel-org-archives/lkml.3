@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaE0R2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:28:19 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:41816 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbaE0R2P (ORCPT
+	id S1753139AbaE0R23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:28:29 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:54628 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108AbaE0R2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:28:15 -0400
-Message-ID: <5384CB29.1090204@gmail.com>
-Date: Tue, 27 May 2014 19:28:09 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: dts: mvebu: split SolidRun CuBox into variants
-References: <1401140009-31505-1-git-send-email-sebastian.hesselbarth@gmail.com> <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com> <20140527161143.GS8664@titan.lakedaemon.net>
-In-Reply-To: <20140527161143.GS8664@titan.lakedaemon.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 27 May 2014 13:28:25 -0400
+From: Lv Zheng <zetalog@gmail.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <zetalog@gmail.com>, Lv Zheng <lv.zheng@intel.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Oswald Buddenhagen <ossi@kde.org>
+Subject: [RFC PATCH 3/6] ACPI: sleep: Update acpi_set_firmware_waking_vector() invocations to favor 32-bit firmware waking vector.
+Date: Wed, 28 May 2014 01:28:06 +0800
+Message-Id: <a77ef53a18f1b6d1823531f4f9cc60e280ba5f52.1401210685.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1401210684.git.lv.zheng@intel.com>
+References: <38907770.bupFXhytsS@vostro.rjw.lan> <cover.1401210684.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 06:11 PM, Jason Cooper wrote:
-> On Mon, May 26, 2014 at 11:33:29PM +0200, Sebastian Hesselbarth wrote:
->> As Mainlining effort for SolidRun CuBox has been carried out on the
->> Engineering Sample, the board DTS was reflecting this. Actually,
->> SolidRun CuBox comes in three different variants: Engineering Sample (ES),
->> production with 1GB RAM (1G), and production with 2GB RAM (2G).
->>
->> Therefore, we split the current dove-cubox.dts into a common board include
->> and one board dts for each of the above variants.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
-[...]
->> ---
->>  arch/arm/boot/dts/Makefile                         |  4 +++-
->>  arch/arm/boot/dts/dove-cubox-1g.dts                | 17 ++++++++++++++++
->>  arch/arm/boot/dts/dove-cubox-2g.dts                | 17 ++++++++++++++++
->>  arch/arm/boot/dts/dove-cubox-es.dts                | 23 ++++++++++++++++++++++
->>  .../boot/dts/{dove-cubox.dts => dove-cubox.dtsi}   | 17 ----------------
->>  5 files changed, 60 insertions(+), 18 deletions(-)
->>  create mode 100644 arch/arm/boot/dts/dove-cubox-1g.dts
->>  create mode 100644 arch/arm/boot/dts/dove-cubox-2g.dts
->>  create mode 100644 arch/arm/boot/dts/dove-cubox-es.dts
->>  rename arch/arm/boot/dts/{dove-cubox.dts => dove-cubox.dtsi} (86%)
->>
-[...]
->> diff --git a/arch/arm/boot/dts/dove-cubox-2g.dts b/arch/arm/boot/dts/dove-cubox-2g.dts
->> new file mode 100644
->> index 000000000000..513b6a68eba3
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/dove-cubox-2g.dts
->> @@ -0,0 +1,17 @@
->> +/dts-v1/;
->> +
->> +#include "dove-cubox.dtsi"
->> +
->> +/ {
->> +	model = "SolidRun CuBox (2G)";
->> +	compatible = "solidrun,cubox-2g", "solidrun,cubox", "marvell,dove";
->> +
->> +	memory {
->> +		device_type = "memory";
->> +		reg = <0x00000000 0x80000000>;
-> 
-> Do you anticipate any other differences between the 1G and the 2G?
-> Otherwise, I'm inclined to just have a "solidrun,cubox".  The bootloader
-> should be setting the amount of RAM at boottime anyway.
+From: Lv Zheng <lv.zheng@intel.com>
 
-Given the minor differences between ES and production, instead of
+This patch updates acpi_set_firmware_waking_vector() invocations in order
+to keep 32-bit firmware waking vector favor for Linux.
 
-dove-cubox-common.dtsi
-+--> dove-cubox.dts (production)
-+--> dove-cubos-es.dts (engineering sample)
+64-bit firmware waking vector has never been enabled by Linux.  The
+(acpi_physical_address)0 for 64-bit address can be used to force ACPICA to
+set only 32-bit firmware waking vector for Linux.
 
-we could also just have an "overlay" for the ES like
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Cc: Oswald Buddenhagen <ossi@kde.org>
+---
+ arch/ia64/include/asm/acpi.h |    1 +
+ arch/x86/include/asm/acpi.h  |    3 ++-
+ drivers/acpi/sleep.c         |    8 ++++++--
+ 3 files changed, 9 insertions(+), 3 deletions(-)
 
-dove-cubox.dts (production)
-+--> dove-cubox-es.dts (engineering sample)
+diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
+index 75dc59a..45e45ec 100644
+--- a/arch/ia64/include/asm/acpi.h
++++ b/arch/ia64/include/asm/acpi.h
+@@ -75,6 +75,7 @@ int acpi_gsi_to_irq (u32 gsi, unsigned int *irq);
+ extern int acpi_suspend_lowlevel(void);
+ 
+ extern unsigned long acpi_wakeup_address;
++#define acpi_wakeup_address64	((acpi_physical_address)0)
+ 
+ /*
+  * Record the cpei override flag and current logical cpu. This is
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index e06225e..46a7dd8 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -71,7 +71,8 @@ static inline void acpi_disable_pci(void)
+ extern int (*acpi_suspend_lowlevel)(void);
+ 
+ /* Physical address to resume after wakeup */
+-#define acpi_wakeup_address ((unsigned long)(real_mode_header->wakeup_start))
++#define acpi_wakeup_address	((acpi_physical_address)(real_mode_header->wakeup_start))
++#define acpi_wakeup_address64	((acpi_physical_address)(0))
+ 
+ /*
+  * Check if the CPU can handle C2 and deeper
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index c11e379..5ca7ab0 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -23,6 +23,8 @@
+ #include "internal.h"
+ #include "sleep.h"
+ 
++#define ACPI_NO_WAKING_VECTOR		((acpi_physical_address)0)
++
+ static u8 sleep_states[ACPI_S_STATE_COUNT];
+ 
+ static void acpi_sleep_tts_switch(u32 acpi_state)
+@@ -59,7 +61,8 @@ static int acpi_sleep_prepare(u32 acpi_state)
+ 	if (acpi_state == ACPI_STATE_S3) {
+ 		if (!acpi_wakeup_address)
+ 			return -EFAULT;
+-		acpi_set_firmware_waking_vector(acpi_wakeup_address);
++		acpi_set_firmware_waking_vector(acpi_wakeup_address,
++						acpi_wakeup_address64);
+ 
+ 	}
+ 	ACPI_FLUSH_CPU_CACHE();
+@@ -403,7 +406,8 @@ static void acpi_pm_finish(void)
+ 	acpi_leave_sleep_state(acpi_state);
+ 
+ 	/* reset firmware waking vector */
+-	acpi_set_firmware_waking_vector((acpi_physical_address) 0);
++	acpi_set_firmware_waking_vector(ACPI_NO_WAKING_VECTOR,
++					ACPI_NO_WAKING_VECTOR);
+ 
+ 	acpi_target_sleep_state = ACPI_STATE_S0;
+ 
+-- 
+1.7.10
 
-It is not used commonly until now, maybe just a matter of taste.
-
-Is there any version you prefer?
-
-Sebastian
