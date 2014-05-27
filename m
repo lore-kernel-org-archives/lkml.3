@@ -1,111 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716AbaE0WTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:19:39 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:34261 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697AbaE0WTh (ORCPT
+	id S1753205AbaE0WVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:21:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53001 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544AbaE0WVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:19:37 -0400
+	Tue, 27 May 2014 18:21:41 -0400
+Message-ID: <53850FF3.8050107@codeaurora.org>
+Date: Tue, 27 May 2014 15:21:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
-References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 27 May 2014 15:19:15 -0700
-Message-ID: <CALCETrUZO42qk7GFcNOT8+aMRXvPLiAUOv6FH33Fx6o1XrNVxg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/2] Loop device psuedo filesystem
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Michael H. Warfield" <mhw@wittsend.com>, Marian Marinov <mm@1h.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Michael J Coss <michael.coss@alcatel-lucent.com>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Minyard <cminyard@mvista.com>,
+        Stanislav Meduna <stano@meduna.org>
+Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with irqsoff
+ tracers
+References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org> <17051981.niWmA6MIgX@wuerfel> <20140527174847.7b405b5c@gandalf.local.home>
+In-Reply-To: <20140527174847.7b405b5c@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 2:58 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> I'm posting these patches in response to the ongoing discussion of loop
-> devices in containers at [1].
+On 05/27/14 14:48, Steven Rostedt wrote:
+> On Tue, 27 May 2014 22:11:25 +0200
+> Arnd Bergmann <arnd@arndb.de> wrote:
 >
-> The patches implement a psuedo filesystem for loop devices, which will
-> allow use of loop devices in containters using standard utilities. Under
-> normal use a loopfs mount will initially contain a single device node
-> for loop-control which can be used to request and release loop devices.
-> Any devices allocated via this node will automatically appear in that
-> loopfs mount (and in devtmpfs) but not in any other loopfs mounts.
-> CAP_SYS_ADMIN in the userns of the process which performed the mount is
-> allowed to perform privileged loop ioctls on these devices.
+>> On Tuesday 27 May 2014 13:08:04 Stephen Boyd wrote:
+>>> @@ -380,7 +382,7 @@ start_critical_timing(unsigned long ip, unsigned long parent_ip)
+>>>  
+>>>         cpu = raw_smp_processor_id();
+>>>  
+>>> -       if (per_cpu(tracing_cpu, cpu))
+>>> +       if (per_cpu(timings_stopped, cpu) || per_cpu(tracing_cpu, cpu))
+>>>                 return;
+>>>  
+>>>         data = per_cpu_ptr(tr->trace_buffer.data, cpu);
+>>>
+>> Where exactly do you see other code calling here while
+>> per_cpu(timings_stopped) is set? Would it be possible to just
+>> change that call site?
+> Arnd brings up a good point. 
+
+Hrm.. still not getting Arnd's mails.
+
+> If we disable irqs off tracing completely,
+> we may be missing places in the idle path that disable interrupts for
+> long periods of time. We may want to move the stop down further.
 >
-> Alternately loopfs can be mounted with the hostmount option, intended
-> for mounting /dev/loop in the host. This is the default mount for any
-> devices not created via loop-control in a loopfs mount (e.g. devices
-> created during driver init, devices created via /dev/loop-control, etc).
-> This is only available to system-wide CAP_SYS_ADMIN.
+> The way it works (IIRC), and why tracing can start again is that it can
+> nest. Perhaps we need to stop it further down if we can't move it
+> completely.
 >
-> I still have some testing to do on these patches, but they work at
-> minimum for simple use cases. It's possible to use an unmodified losetup
-> if it's new enough to know about loop-control, with a couple of caveats:
->
->  * /dev/loop-control must be symlinked to /dev/loop/loop-control
->  * In some cases losetup attempts to use /dev/loopN when the device node
->    is at /dev/loop/N. For example, 'losetup -f disk.img' fails.
->
-> Device nodes for loop partitions are not created in loopfs. These
-> devices are created by the generic block layer, and the loop driver has
-> no way of knowing when they are created, so some kind of hook into the
-> driver will be needed to support this.
 
-This is entertaining and a bit terrifying :)
+I'm not sure how much deeper it can go and I'm afraid it will become a
+game of whack-a-mole. I already see two places that disable and reenable
+irqs after stop_critical_timings() is called (first in rcu_idle_enter()
+and second in clockevents_notify()). Should rcu_idle_enter() move to
+raw_local_irq_save()? It looks like that path calls rcu_sched_qs() and
+on tiny RCU that again needs the raw_ treatement. We can probably call
+stop_critical_timings() after rcu_idle_enter() to fix this.
 
-ISTM that what you've done is to create a way for per-userns devices
-to live in a special filesystem and for userns containers to
-instantiate those devices by offloading all the hard work to the
-kernel.
+What about clockevents_notify? __raw_spin_lock_irqsave() should probably
+use raw_local_irqsave().
 
-What if we generalized this?
+If we go the raw route, do we even need stop/start_critical_timings()?
+Can't we just use raw accessors in the idle paths
+(tick_nohz_idle_{enter,exit}(), cpuidle_enter(), etc.) and get rid of
+the stop/start stuff completely? I admit this patch is pretty much a big
+sledge hammer that tries to make things simple, but if there is some
+benefit to the raw accessors I'm willing to send patches to fix all the
+call sites.
 
-For example, we could add a concept of ephemeral devices.  An
-ephemeral device is a device that can be referenced by an inode with a
-guarantee that the inode will *never* accidentally point to a
-different device [1].  Then we add a concept of the userns that owns a
-struct device.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-To make this safe, we'll need to make sure that old host udev will not
-see non-init-userns devices, ever.  This is easy enough to do, but
-doing it elegantly might take some design work.
-
-To make this useful, we'll need a way for things inside user
-namespaces to create the device nodes.  I can imagine at least three
-ways to make this work.
-
-a) Allow mknod on a tmpfs created by a particular userns to succeed if
-the targetting struct device is owned by that userns or a child and if
-the caller is ns_capable(CAP_MKNOD).
-b) Create a new filesystem that has some special ioctl or whatever to do it.
-c) Have real per-user-ns devtmpfs.
-
-Now, to get loop working in a userns, we need a way for the userns (or
-the host!) to create a new loop-control device owned by that userns
-and we need to tweak the loop driver to make the created loop devices
-be owned by the userns.
-
-(Note: I'm deliberately ignoring the fact that just doing this for
-loop seems to be almost entirely useless right now: you still can't
-mount the things.)
-
-Thoughts?
-
-
-[1]  For example, there could be a special set of device numbers that
-are not reused until reboot.  Ephemeral device nodes point to these
-devices by number.  Alternatively, the inodes could keep references to
-the struct device.
