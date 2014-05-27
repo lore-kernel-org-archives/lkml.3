@@ -1,117 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaE0Cmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 22:42:40 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:46011 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaE0Cmi convert rfc822-to-8bit (ORCPT
+	id S1752533AbaE0CoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 22:44:12 -0400
+Received: from romulus.wittsend.com ([130.205.32.3]:55022 "EHLO
+	romulus.wittsend.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaE0CoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 22:42:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACP_E++Kh467jPAWOngBxCyc+tscKgnRDBH+i324a6DQQDV1Nw@mail.gmail.com>
-References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
- <1400493433.8467.24.camel@weser.hi.pengutronix.de> <5379D7A0.3050509@nvidia.com>
- <1400494582.8467.28.camel@weser.hi.pengutronix.de> <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
- <1400837055.4921.4.camel@weser.hi.pengutronix.de> <537F1853.7050800@nvidia.com>
- <1400839186.4921.17.camel@weser.hi.pengutronix.de> <537F5DED.8050702@nvidia.com>
- <5382E324.5090108@nvidia.com> <1401096095.4829.16.camel@weser.hi.pengutronix.de>
- <CAAVeFuKfPKZy81ZO9Wbdtv6gzsCzEF=iJbqOVKPecPqZSnMVUQ@mail.gmail.com> <CACP_E++Kh467jPAWOngBxCyc+tscKgnRDBH+i324a6DQQDV1Nw@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 27 May 2014 11:42:16 +0900
-Message-ID: <CAAVeFuJNXH+EN6XekdfKnEzbz8n=LFSQBpKKbiOgsQ3cRyXrtw@mail.gmail.com>
-Subject: Re: [Nouveau] [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
-To: =?UTF-8?Q?St=C3=A9phane_Marchesin?= <stephane.marchesin@gmail.com>
-Cc: Lucas Stach <l.stach@pengutronix.de>,
-        =?UTF-8?Q?Terje_Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 May 2014 22:44:09 -0400
+Message-ID: <1401158362.7572.138.camel@canyon.ip6.wittsend.com>
+Subject: Re: [lxc-devel] [RFC PATCH 11/11] loop: Allow priveleged operations
+ for root in the namespace which owns a device
+From: "Michael H. Warfield" <mhw@WittsEnd.com>
+Reply-To: mhw@WittsEnd.com
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Michael H.Warfield" <mhw@WittsEnd.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Marian Marinov <mm@1h.com>, Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 26 May 2014 22:39:22 -0400
+In-Reply-To: <20140527013634.GA3524@mail.hallyn.com>
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+	 <1400103299-144589-12-git-send-email-seth.forshee@canonical.com>
+	 <537EE129.1020603@1h.com> <20140526091614.GA13666@ubuntu-mba51>
+	 <1401118325.7572.82.camel@canyon.ip6.wittsend.com>
+	 <20140527013634.GA3524@mail.hallyn.com>
+Organization: Thaumaturgy & Speculums Technology
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-pXpgdNorLKyAfXhH9rg6"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+X-WittsEnd-MailScanner-Information: Please contact the ISP for more information
+X-WittsEnd-MailScanner-ID: s4R2dNMA028766
+X-WittsEnd-MailScanner: Found to be clean
+X-WittsEnd-MailScanner-From: mhw@wittsend.com
+X-WittsEnd-MailScanner-Watermark: 1401763170.63373@FLkMklkL6gzJGxzat8FWrw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 10:07 AM, Stéphane Marchesin
-<stephane.marchesin@gmail.com> wrote:
-> On Mon, May 26, 2014 at 5:02 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
->> On Mon, May 26, 2014 at 6:21 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
->>> Am Montag, den 26.05.2014, 09:45 +0300 schrieb Terje Bergström:
->>>> On 23.05.2014 17:40, Alex Courbot wrote:
->>>> > On 05/23/2014 06:59 PM, Lucas Stach wrote:
->>>> > So after checking with more knowledgeable people, it turns out this is
->>>> > the expected behavior on ARM and BAR regions should be mapped uncached
->>>> > on GK20A. All the more reasons to avoid using the BAR at all.
->>>>
->>>> This is actually specific to Tegra.
->>>>
->>>> >> You may want to make yourself aware of all the quirks required for
->>>> >> sharing memory between the GPU and CPU on an ARM host. I think there are
->>>> >> far more involved than what you see now and writing an replacement for
->>>> >> TTM will not be an easy task.
->>>> >>
->>>> >> Doing away with the concept of two memory areas will not get you to a
->>>> >> single unified address space. You would have to deal with things like
->>>> >> not being able to change the caching state of pages in the systems
->>>> >> lowmem yourself. You will still have to deal with remapping pages that
->>>> >> aren't currently visible to the CPU (ok this is not an issue on Jetson
->>>> >> right now as it only has 2GB of RAM), because it's in systems highmem,
->>>> >> or even in a different LPAE area.
->>>> >>
->>>> >> You really want to be sure you are aware of all the consequences of
->>>> >> this, before considering this task.
->>>> >
->>>> > Yep, that's why I am seeking advice here. My first hope is that with a
->>>> > few tweaks we will be able to keep using TTM and the current nouveau_bo
->>>> > implementation. But unless I missed something this is not going to be easy.
->>>> >
->>>> > We can also use something like the patch I originally sent to make it
->>>> > work, although not with good performance, on GK20A. Not very graceful,
->>>> > but it will allow applications to run.
->>>> >
->>>> > In the long run though, we will want to achieve better performance, and
->>>> > it seems like a BO implementation targeted at UMA devices would also be
->>>> > beneficial to quite a few desktop GPUs. So as tricky as it may be I'm
->>>> > interested in gathering thoughts and why not giving it a first try with
->>>> > GK20A, even if it imposes some limitations like having buffers in lowmem
->>>> > in a first time (we can probably live with this one for a short while,
->>>> > and 64 bits will also be coming to the rescue :))
->>>>
->>>> I don't think lowmem or LPAE is any problem, if the memory manager is
->>>> designed with that in mind. Vast majority of the buffers kernel
->>>> allocates do not need to be touched in kernel space.
->>>>
->>>> Actually I can't think of any buffers that we allocate on behalf of user
->>>> space that would need to be permanently mapped also to kernel. In case
->>>> or relocs only push buffer needs to be temporarily mapped to kernel.
->>>>
->>>> Ultimately even relocs are not necessary if we expose GPU virtual
->>>> addresses directly to user space. But that's another topic.
->>>>
->>> Nouveau already exposes constant virtual addresses to userspace and
->>> skips the pushbuf patching when the presumed offset from userspace is
->>> the same as what the kernel thinks it should be.
->>>
->>> The problem with lowmem on ARM is that you can't unmap those pages from
->>> the kernel cached mapping. So if you alloc a page, give it to userspace
->>> and userspace decides to map the page WC you just produced a conflicting
->>> mapping, which may yield undefined results on ARMv7. You may think this
->>> is not a problem as you are not touching the kernel cached mapping, but
->>> in fact it is. The CPUs prefetcher can still access this mapping.
->>
->> Why would this memory be mapped into the kernel?
->
-> On ARM the kernel keeps a linear mapping of lowmem using sections
-> (ARM's version of huge pages). This is always cached, and because the
-> sections are not 4k, it's a pain to remove parts of it. See
-> arch/arm/mm/mmu.c
 
-Ah, are we talking about the directly-mapped low memory region
-starting at PAGE_OFFSET? Ok, it makes sense now, thanks.
+--=-pXpgdNorLKyAfXhH9rg6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-But it seems to me that such different mappings can also happen in
-many other scenarios as well, don't they? How is the issue handled in
-these cases?
+On Tue, 2014-05-27 at 03:36 +0200, Serge E. Hallyn wrote:
+> Quoting Michael H. Warfield (mhw@WittsEnd.com):
+> > On Mon, 2014-05-26 at 11:16 +0200, Seth Forshee wrote:
+> > > On Fri, May 23, 2014 at 08:48:25AM +0300, Marian Marinov wrote:
+> > > > -----BEGIN PGP SIGNED MESSAGE-----
+> > > > Hash: SHA1
+> > > >=20
+> > > > One question about this patch.
+> > > >=20
+> > > > Why don't you use the devices cgroup check if the root user in that=
+ namespace is allowed to use this device?
+> > > >=20
+> > > > This way you can be sure that the root in that namespace can not ac=
+cess devices to which the host system did not gave
+> > > > him access to.
+> >=20
+> > > That might be possible, but I don't want to require something on the
+> > > host to whitelist the device for the container. Then loop would need =
+to
+> > > automatically add the device to devices.allow, which doesn't seem
+> > > desirable to me. But I'm not entirely opposed to the idea if others
+> > > think this is a better way to go.
+> >=20
+> > I don't see any safe way to avoid it.  The host has to be in control of
+> > what devices can and can not be accessed by the container.
+
+> Disagree.  loop%d is meaningless until it is attached to a file.  So
+> whether a container can use loop2 vs loop9 is meaningless.  The point
+> of Seth's loopfs as I understood it is that the container simply gets a
+> unique (not visible to host or any other containers) set of loop devices
+> which it can attach to files which it owns.  So long as the host can't
+> see the container's loop devices (i.e. so it unwittently mounts it when
+> looking for a particular UUID for /var), it won't get fooled by them.
+
+> So in this case *if* we can do it, a purely namespaced approach - meaning
+> that we restrict visibility of a particular loopdev to one container - is
+> perfect. =20
+
+And in that "*if" is a cloud that says "then a miracle occurs" and that
+miracle needs a lot more detail.  How that translates into what is and
+is not visible and what can be mimiced in a container becomes important
+(to say nothing of notifying its udev).  I think this loopfs thing is
+the answer for the loop device case, we just need to clear up those
+details and exorcise the devils we find in them.  The loop devices are
+unique while they strangely seem to work with minimal leakage already
+(all meta data at this time).
+
+Seth remarked that, maybe, he's not paranoid enough.  You know that I'm
+a well trained professional paranoid and I accept if people think I'm
+overly paranoid (is that even possible?).  Even paranoids have enemies
+and just because you're paranoid it doesn't mean they're not out to get
+you.  While I admit that total isolation is virtually (excuse the pun)
+impossible that doesn't mean I don't strive to maximize the isolation
+and analyze the possibilities and consequences of compromise.
+
+As I stated, "I don't see any way to avoid it".  I would love to be
+proven wrong.  It would permit my life to be so much more easy.  But how
+can we allow this without the host in control of it and directing things
+to the containers?  A container may request something and the host can
+grant it but the container should not be capable of demanding a device
+over and above the control of the host.  How do we define the rules that
+say what a container can do and what it cannot do without it involving
+knowledge in the host (whitelisting as Seth call's it) of what is and is
+not allowed in the container?
+
+We already have the problem that the container devices.allow and
+devices.deny are major and minor based, which we know is fundamentally
+flawed in a udev environment.  We specify major:minor in the
+configuration files as if they are cast in cement (which they are in all
+common cases) but they are not in the general case.  Greg K-H hammers on
+this frequently.
+
+The loop devices are unique and deserve a unique solution, I'll agree.
+But I'm also comfortable that the host should have rules and procedures
+to whitelist hard devices and loop devices and manage their transfer
+and/or sharing into the containers.
+
+Regards,
+Mike
+--=20
+Michael H. Warfield (AI4NB) | (770) 978-7061 |  mhw@WittsEnd.com
+   /\/\|=3Dmhw=3D|\/\/          | (678) 463-0932 |  http://www.wittsend.com=
+/mhw/
+   NIC whois: MHW9          | An optimist believes we live in the best of a=
+ll
+ PGP Key: 0x674627FF        | possible worlds.  A pessimist is sure of it!
+
+
+--=-pXpgdNorLKyAfXhH9rg6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQEVAwUAU4P62sDrlnVnRif/AQiYjwf+PfWJZBO7GpcUX2RVsrgoOowIGaOyqrUO
+J+rVo41UsQNigubnOxl2crTk/aGYHBf4mRns9IVqHoOxlWfd6SLIkv6Sn6aWMXFu
+M3tS+FqP0zDA9colXRVphvN4z+LnynYWe34aNuR6f90x94OX1qBclZng5cg3UhI3
+NdjAX7Q9iYWHmyHZ39Ml2OMfK4yaWce0JdN9pWG+3XJO0MSANDfaUbLLCOw4AIdn
+sC8dBcyWm1mVf3Ab5zeR2fFG1X6w8LP0BxtSqgR3klsQsXyB9o72HfFSlJn2NRYw
+1vhtIRpuzkvU5aRm9dggOx2Rkv8Tqt7DZhZGlbWxrz5jD/wOt4aoGQ==
+=RmAS
+-----END PGP SIGNATURE-----
+
+--=-pXpgdNorLKyAfXhH9rg6--
+
