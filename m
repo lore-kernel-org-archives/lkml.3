@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaE0LQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:16:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50483 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273AbaE0LQe (ORCPT
+	id S1752357AbaE0LSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:18:17 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:39021 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaE0LSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:16:34 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of: mdio: fix compile warning in
- of_mdiobus_register_phy()
-To: Christian Engelmayer <cengelma@gmx.at>, netdev@vger.kernel.org
-Cc: s.hauer@pengutronix.de, f.fainelli@gmail.com, robh+dt@kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christian Engelmayer <cengelma@gmx.at>
-In-Reply-To: <1400880835-29537-1-git-send-email-cengelma@gmx.at>
-References: <1400880835-29537-1-git-send-email-cengelma@gmx.at>
-Date: Tue, 27 May 2014 12:16:28 +0100
-Message-Id: <20140527111628.A11E1C4156C@trevor.secretlab.ca>
+	Tue, 27 May 2014 07:18:13 -0400
+Date: Tue, 27 May 2014 12:18:06 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 6/9] procfs: add pid_seq_private struct to handle
+ /proc/<pid>/{stat|stack}
+Message-ID: <20140527111806.GA3148@dztty>
+References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+ <1401110850-3552-7-git-send-email-tixxdz@opendz.org>
+ <CALCETrU71gJ-cUL8YO8UeYdG65A0=z4BJQuga-hbd1WgeTFE+A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrU71gJ-cUL8YO8UeYdG65A0=z4BJQuga-hbd1WgeTFE+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 May 2014 23:33:55 +0200, Christian Engelmayer <cengelma@gmx.at> wrote:
-> Commit de906af1 (net: phy: make of_set_phy_supported work with genphy driver)
-> removed the last user of variable 'max_speed' in function
-> of_mdiobus_register_phy(), leading to compile warning "unused variable
-> ‘max_speed’ [-Wunused-variable]". Thus remove it.
+On Mon, May 26, 2014 at 10:02:15AM -0700, Andy Lutomirski wrote:
+> On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > This patch is preparation to handle sensitive ONE entries:
+> > /proc/<pid>/stat
+> > /proc/<pid>/stack
+> >
+> > These files use sequence iterators and we want to keep that logic, and
+> > their internal handler semantics.
+> >
+> > The sequence iterators stock the inode in the seq_file->private field,
+> > so in order to keep the semantic and to make the cached permission
+> > checks available during ->read(), we add the 'pid_seq_private' struct
+> > that contains both the inode and the cached permission. It will be the
+> > one referenced in the seq_file->private.
+> >
+> > This way the internal handlers of /proc/<pid>/{stat|stack} wont change.
+> >
+> > Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> > ---
+> >  fs/proc/internal.h | 11 +++++++++++
+> >  1 file changed, 11 insertions(+)
+> >
+> > diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+> > index f5c452c..f28e4f01 100644
+> > --- a/fs/proc/internal.h
+> > +++ b/fs/proc/internal.h
+> > @@ -78,6 +78,17 @@ struct proc_inode {
+> >         struct inode vfs_inode;
+> >  };
+> >
+> > +/*
+> > + * Struct used by some /proc/<pid>/$entries that use sequence
+> > + * iterators.
+> > + * This struct will be saved in seq_file->private so seq handlers
+> > + * can access the inode and the cached permission checks of ->open().
+> > + */
+> > +struct pid_seq_private {
+> > +       int permitted;
+> > +       struct inode *inode;
+> > +};
+> > +
+> >  typedef int (*proc_read_fn_t)(char *page,
+> >                               struct task_struct *task, int permitted);
 > 
-> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
-> ---
-> Compile tested. Applies against branch master in tree
-> git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
+> int opener_may_ptrace, please.
+Ok, I'll change it in v2.
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
+Thanks
 
-g.
-
-> ---
->  drivers/of/of_mdio.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index b857094..7c6e277 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -46,7 +46,6 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
->  	struct phy_device *phy;
->  	bool is_c45;
->  	int rc;
-> -	u32 max_speed = 0;
->  	u32 phy_id;
->  
->  	is_c45 = of_device_is_compatible(child,
-> -- 
-> 1.9.1
-> 
-
+-- 
+Djalal Harouni
+http://opendz.org
