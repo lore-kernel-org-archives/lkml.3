@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaE0Nog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:44:36 -0400
-Received: from verein.lst.de ([213.95.11.211]:59902 "EHLO newverein.lst.de"
+	id S1752681AbaE0Np6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:45:58 -0400
+Received: from verein.lst.de ([213.95.11.211]:59920 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141AbaE0Nof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:44:35 -0400
-Date: Tue, 27 May 2014 15:44:30 +0200
+	id S1752141AbaE0Npy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 09:45:54 -0400
+Date: Tue, 27 May 2014 15:45:52 +0200
 From: Torsten Duwe <duwe@lst.de>
 To: Andy Lutomirski <luto@amacapital.net>
 Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
@@ -23,9 +23,8 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Joe Perches <joe@perches.com>
-Subject: [Patch 01/03]: provide an injection point for pure hardware
-	randomness
-Message-ID: <20140527134430.GB14099@lst.de>
+Subject: [Patch v5 02/03]: hwrng: create filler thread
+Message-ID: <20140527134552.GC14099@lst.de>
 References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de> <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com> <20140415085126.GA17327@lst.de> <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com> <20140527134156.GA14099@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -36,62 +35,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an interface to the random pool for feeding entropy in-kernel.
-It may serve as a destination for dedicated HWRNGs.
+This can be viewed as the in-kernel equivalent of hwrngd;
+like FUSE it is a good thing to have a mechanism in user land,
+but for some reasons (simplicity, secrecy, integrity, speed)
+it may be better to have it in kernel space.
 
-It resembles -- and could be merged with -- the ioctl(RNDADDENTROPY) code, plus 
-a sleep condition for eager writers.
+This patch creates a thread once a hwrng registers, and uses
+the previously established add_hwgenerator_randomness() to feed
+its data to the input pool as long as needed. A derating factor
+is used to bias the entropy estimation and to disable this
+mechanism entirely when set to zero.
 
 Signed-off-by: Torsten Duwe <duwe@suse.de>
 
 ---
- include/linux/hw_random.h |    2 ++
- drivers/char/random.c     |   23 +++++++++++++++++++++++
- 2 files changed, 25 insertions(+)
+ drivers/char/hw_random/core.c |   65 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 62 insertions(+), 3 deletions(-)
 
---- a/include/linux/hw_random.h
-+++ b/include/linux/hw_random.h
-@@ -47,5 +47,7 @@ struct hwrng {
- extern int hwrng_register(struct hwrng *rng);
- /** Unregister a Hardware Random Number Generator driver. */
- extern void hwrng_unregister(struct hwrng *rng);
-+/** Feed random bits into the pool. */
-+extern void add_hwgenerator_randomness(const char *buffer, size_t count, size_t entropy);
- 
- #endif /* LINUX_HWRANDOM_H_ */
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -250,6 +250,7 @@
- #include <linux/interrupt.h>
- #include <linux/mm.h>
- #include <linux/spinlock.h>
+--- linux/drivers/char/hw_random/core.c.orig
++++ linux/drivers/char/hw_random/core.c
+@@ -39,6 +39,7 @@
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+ #include <linux/miscdevice.h>
 +#include <linux/kthread.h>
- #include <linux/percpu.h>
- #include <linux/cryptohash.h>
- #include <linux/fips.h>
-@@ -1347,3 +1347,25 @@ randomize_range(unsigned long start, uns
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <linux/random.h>
+@@ -50,10 +51,18 @@
+ 
+ 
+ static struct hwrng *current_rng;
++static struct task_struct *hwrng_fill;
+ static LIST_HEAD(rng_list);
+ static DEFINE_MUTEX(rng_mutex);
+ static int data_avail;
+-static u8 *rng_buffer;
++static u8 *rng_buffer, *rng_fillbuf;
++static unsigned short current_quality = 700; /* an arbitrary 70% */
++
++module_param(current_quality, ushort, 0644);
++MODULE_PARM_DESC(current_quality,
++		 "current hwrng entropy estimation per mill");
++
++static void start_khwrngd(void);
+ 
+ static size_t rng_buffer_size(void)
+ {
+@@ -62,9 +71,18 @@ static size_t rng_buffer_size(void)
+ 
+ static inline int hwrng_init(struct hwrng *rng)
+ {
++	int err;
++
+ 	if (!rng->init)
  		return 0;
- 	return PAGE_ALIGN(get_random_int() % range + start);
+-	return rng->init(rng);
++	err = rng->init(rng);
++	if (err)
++		return err;
++
++	if (current_quality > 0 && !hwrng_fill)
++		start_khwrngd();
++
++	return 0;
  }
-+
-+/* Interface for in-kernel drivers of true hardware RNGs.
-+ * Those devices may produce endless random bits and will be throttled
-+ * when our pool is full.
-+ */
-+void add_hwgenerator_randomness(const char *buffer, size_t count,
-+				 size_t entropy)
+ 
+ static inline void hwrng_cleanup(struct hwrng *rng)
+@@ -300,6 +318,36 @@ err_misc_dereg:
+ 	goto out;
+ }
+ 
++static int hwrng_fillfn(void *unused)
 +{
-+	struct entropy_store *poolp = &input_pool;
++	long rc;
 +
-+	/* Suspend writing if we're above the trickle threshold.
-+	 * We'll be woken up again once below random_write_wakeup_thresh,
-+	 * or when the calling thread is about to terminate.
-+	 */
-+	wait_event_interruptible(random_write_wait, kthread_should_stop() ||
-+				 input_pool.entropy_count
-+					 <= random_write_wakeup_thresh);
-+	mix_pool_bytes(poolp, buffer, count, NULL);
-+	credit_entropy_bits(poolp, entropy);
++	while (!kthread_should_stop()) {
++		if (!current_rng)
++			break;
++		rc = rng_get_data(current_rng, rng_fillbuf,
++				  rng_buffer_size(), 1);
++		if (rc <= 0) {
++			pr_warn("hwrng: no data available\n");
++			msleep_interruptible(10000);
++			continue;
++		}
++		add_hwgenerator_randomness((void *)rng_fillbuf, rc,
++					   (rc*current_quality)>>10);
++	}
++	hwrng_fill = 0;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(add_hwgenerator_randomness);
 +
++static void start_khwrngd(void)
++{
++	hwrng_fill = kthread_run(hwrng_fillfn, NULL, "hwrng");
++	if (hwrng_fill == ERR_PTR(-ENOMEM)) {
++		pr_err("hwrng_fill thread creation failed");
++		hwrng_fill = NULL;
++	}
++}
++
+ int hwrng_register(struct hwrng *rng)
+ {
+ 	int err = -EINVAL;
+@@ -319,6 +367,13 @@ int hwrng_register(struct hwrng *rng)
+ 		if (!rng_buffer)
+ 			goto out_unlock;
+ 	}
++	if (!rng_fillbuf) {
++		rng_fillbuf = kmalloc(rng_buffer_size(), GFP_KERNEL);
++		if (!rng_fillbuf) {
++			kfree(rng_buffer);
++			goto out_unlock;
++		}
++	}
+ 
+ 	/* Must not register two RNGs with the same name. */
+ 	err = -EEXIST;
+@@ -373,8 +428,11 @@ void hwrng_unregister(struct hwrng *rng)
+ 				current_rng = NULL;
+ 		}
+ 	}
+-	if (list_empty(&rng_list))
++	if (list_empty(&rng_list)) {
+ 		unregister_miscdev();
++		if (hwrng_fill)
++			kthread_stop(hwrng_fill);
++	}
+ 
+ 	mutex_unlock(&rng_mutex);
+ }
+@@ -385,6 +443,7 @@ static void __exit hwrng_exit(void)
+ 	mutex_lock(&rng_mutex);
+ 	BUG_ON(current_rng);
+ 	kfree(rng_buffer);
++	kfree(rng_fillbuf);
+ 	mutex_unlock(&rng_mutex);
+ }
+ 
