@@ -1,126 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaE0SEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:04:25 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60333 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbaE0SEX (ORCPT
+	id S1752963AbaE0SEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:04:55 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:57943 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652AbaE0SEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:04:23 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH v2] coccinelle: Check for missing NULL terminators in of_device_id tables
-Date: Tue, 27 May 2014 11:04:18 -0700
-Message-Id: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	Tue, 27 May 2014 14:04:53 -0400
+Date: Tue, 27 May 2014 11:05:04 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] ARM: config: Update msm_defconfig
+Message-ID: <20140527180504.GC26141@quad.lixom.net>
+References: <1393467394-10907-1-git-send-email-sboyd@codeaurora.org>
+ <1393467394-10907-4-git-send-email-sboyd@codeaurora.org>
+ <20140227221458.GA5334@codeaurora.org>
+ <318973D9-95B5-4D53-B774-D4239FD9AECB@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <318973D9-95B5-4D53-B774-D4239FD9AECB@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Failure to terminate an of_device_id table can lead to confusing
-failures depending on where the compiler places the array. Add a
-check to make sure these tables are terminated. Thanks to Mitchel
-Humpherys for coming up with the pattern initially.
+On Thu, Feb 27, 2014 at 06:22:37PM -0600, Kumar Gala wrote:
+> 
+> On Feb 27, 2014, at 4:14 PM, David Brown <davidb@codeaurora.org> wrote:
+> 
+> > On Wed, Feb 26, 2014 at 06:16:34PM -0800, Stephen Boyd wrote:
+> >> Now that DT based platforms are split out of mach-msm into
+> >> mach-qcom, put back a non-DT based SoC into the msm_defconfig and
+> >> stop selecting unsupported drivers.
+> >> 
+> >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> >> ---
+> >> arch/arm/configs/msm_defconfig | 25 +++----------------------
+> >> 1 file changed, 3 insertions(+), 22 deletions(-)
+> > 
+> > Acked-by: David Brown <davidb@codeaurora.org>
+> > 
+> > Kumar, can you just pull this in with the other qcom changes from
+> > Sephen?
+> 
+> sure
 
-Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-Cc: Nicolas Palix <nicolas.palix@imag.fr>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- scripts/coccinelle/misc/of_table.cocci | 73 ++++++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
- create mode 100644 scripts/coccinelle/misc/of_table.cocci
+I didn't see 2/3 land in our tree through branches from you. Should I
+just apply it directly by now?
 
-diff --git a/scripts/coccinelle/misc/of_table.cocci b/scripts/coccinelle/misc/of_table.cocci
-new file mode 100644
-index 000000000000..838c74c418c9
---- /dev/null
-+++ b/scripts/coccinelle/misc/of_table.cocci
-@@ -0,0 +1,73 @@
-+/// Make sure of_device_id tables are NULL terminated
-+//
-+// Keywords: of_table
-+// Confidence: Medium
-+// Options: --include-headers
-+
-+virtual patch
-+virtual context
-+virtual org
-+virtual report
-+
-+@bad_of_table exists@
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+	}
-+};
-+
-+@depends on bad_of_table && context@
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+*	.var = E,
-+	}
-+};
-+
-+@depends on bad_of_table && patch@
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+-	}
-++	},
-++	{ }
-+};
-+
-+@r depends on bad_of_table exists@
-+position p1;
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+	}
-+	@p1
-+};
-+
-+@script:python depends on org@
-+p1 << r.p1;
-+arr << r.arr;
-+@@
-+
-+cocci.print_main(arr,p1)
-+
-+@script:python depends on report@
-+p1 << r.p1;
-+arr << r.arr;
-+@@
-+
-+msg = "%s is not NULL terminated at line %s" % (arr, p1[0].line)
-+coccilib.report.print_report(p1[0],msg)
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
 
+-Olof
