@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaE0FSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 01:18:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:41776 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751713AbaE0FSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 01:18:07 -0400
-Date: Tue, 27 May 2014 15:17:58 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Carlos Garcia <carlos@cgarcia.org>, Rajendra Nayak <rnayak@ti.com>
-Subject: linux-next: manual merge of the trivial tree with the arm-soc tree
-Message-ID: <20140527151758.00163ea0@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752776AbaE0FTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 01:19:24 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:61485 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713AbaE0FTW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 01:19:22 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/6822VvtULxHLZaIHam/ginR"; protocol="application/pgp-signature"
+In-Reply-To: <CAAVeFuJNXH+EN6XekdfKnEzbz8n=LFSQBpKKbiOgsQ3cRyXrtw@mail.gmail.com>
+References: <1400492771-9746-1-git-send-email-acourbot@nvidia.com>
+ <1400493433.8467.24.camel@weser.hi.pengutronix.de> <5379D7A0.3050509@nvidia.com>
+ <1400494582.8467.28.camel@weser.hi.pengutronix.de> <CAAVeFuLKTjaZPSxNSK3nEG+XK+mMmPDDq85qMF-EHp3bGwVJYA@mail.gmail.com>
+ <1400837055.4921.4.camel@weser.hi.pengutronix.de> <537F1853.7050800@nvidia.com>
+ <1400839186.4921.17.camel@weser.hi.pengutronix.de> <537F5DED.8050702@nvidia.com>
+ <5382E324.5090108@nvidia.com> <1401096095.4829.16.camel@weser.hi.pengutronix.de>
+ <CAAVeFuKfPKZy81ZO9Wbdtv6gzsCzEF=iJbqOVKPecPqZSnMVUQ@mail.gmail.com>
+ <CACP_E++Kh467jPAWOngBxCyc+tscKgnRDBH+i324a6DQQDV1Nw@mail.gmail.com> <CAAVeFuJNXH+EN6XekdfKnEzbz8n=LFSQBpKKbiOgsQ3cRyXrtw@mail.gmail.com>
+From: =?UTF-8?Q?St=C3=A9phane_Marchesin?= <stephane.marchesin@gmail.com>
+Date: Mon, 26 May 2014 22:18:40 -0700
+Message-ID: <CACP_E++_ZoOXLU042Tv7yiYX+ayMeZLM74EodpYH-zmQVk5xYw@mail.gmail.com>
+Subject: Re: [Nouveau] [RFC] drm/nouveau: disable caching for VRAM BOs on ARM
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Lucas Stach <l.stach@pengutronix.de>,
+        =?UTF-8?Q?Terje_Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/6822VvtULxHLZaIHam/ginR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 26, 2014 at 7:42 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, May 27, 2014 at 10:07 AM, Stéphane Marchesin
+> <stephane.marchesin@gmail.com> wrote:
+>> On Mon, May 26, 2014 at 5:02 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>>> On Mon, May 26, 2014 at 6:21 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+>>>> Am Montag, den 26.05.2014, 09:45 +0300 schrieb Terje Bergström:
+>>>>> On 23.05.2014 17:40, Alex Courbot wrote:
+>>>>> > On 05/23/2014 06:59 PM, Lucas Stach wrote:
+>>>>> > So after checking with more knowledgeable people, it turns out this is
+>>>>> > the expected behavior on ARM and BAR regions should be mapped uncached
+>>>>> > on GK20A. All the more reasons to avoid using the BAR at all.
+>>>>>
+>>>>> This is actually specific to Tegra.
+>>>>>
+>>>>> >> You may want to make yourself aware of all the quirks required for
+>>>>> >> sharing memory between the GPU and CPU on an ARM host. I think there are
+>>>>> >> far more involved than what you see now and writing an replacement for
+>>>>> >> TTM will not be an easy task.
+>>>>> >>
+>>>>> >> Doing away with the concept of two memory areas will not get you to a
+>>>>> >> single unified address space. You would have to deal with things like
+>>>>> >> not being able to change the caching state of pages in the systems
+>>>>> >> lowmem yourself. You will still have to deal with remapping pages that
+>>>>> >> aren't currently visible to the CPU (ok this is not an issue on Jetson
+>>>>> >> right now as it only has 2GB of RAM), because it's in systems highmem,
+>>>>> >> or even in a different LPAE area.
+>>>>> >>
+>>>>> >> You really want to be sure you are aware of all the consequences of
+>>>>> >> this, before considering this task.
+>>>>> >
+>>>>> > Yep, that's why I am seeking advice here. My first hope is that with a
+>>>>> > few tweaks we will be able to keep using TTM and the current nouveau_bo
+>>>>> > implementation. But unless I missed something this is not going to be easy.
+>>>>> >
+>>>>> > We can also use something like the patch I originally sent to make it
+>>>>> > work, although not with good performance, on GK20A. Not very graceful,
+>>>>> > but it will allow applications to run.
+>>>>> >
+>>>>> > In the long run though, we will want to achieve better performance, and
+>>>>> > it seems like a BO implementation targeted at UMA devices would also be
+>>>>> > beneficial to quite a few desktop GPUs. So as tricky as it may be I'm
+>>>>> > interested in gathering thoughts and why not giving it a first try with
+>>>>> > GK20A, even if it imposes some limitations like having buffers in lowmem
+>>>>> > in a first time (we can probably live with this one for a short while,
+>>>>> > and 64 bits will also be coming to the rescue :))
+>>>>>
+>>>>> I don't think lowmem or LPAE is any problem, if the memory manager is
+>>>>> designed with that in mind. Vast majority of the buffers kernel
+>>>>> allocates do not need to be touched in kernel space.
+>>>>>
+>>>>> Actually I can't think of any buffers that we allocate on behalf of user
+>>>>> space that would need to be permanently mapped also to kernel. In case
+>>>>> or relocs only push buffer needs to be temporarily mapped to kernel.
+>>>>>
+>>>>> Ultimately even relocs are not necessary if we expose GPU virtual
+>>>>> addresses directly to user space. But that's another topic.
+>>>>>
+>>>> Nouveau already exposes constant virtual addresses to userspace and
+>>>> skips the pushbuf patching when the presumed offset from userspace is
+>>>> the same as what the kernel thinks it should be.
+>>>>
+>>>> The problem with lowmem on ARM is that you can't unmap those pages from
+>>>> the kernel cached mapping. So if you alloc a page, give it to userspace
+>>>> and userspace decides to map the page WC you just produced a conflicting
+>>>> mapping, which may yield undefined results on ARMv7. You may think this
+>>>> is not a problem as you are not touching the kernel cached mapping, but
+>>>> in fact it is. The CPUs prefetcher can still access this mapping.
+>>>
+>>> Why would this memory be mapped into the kernel?
+>>
+>> On ARM the kernel keeps a linear mapping of lowmem using sections
+>> (ARM's version of huge pages). This is always cached, and because the
+>> sections are not 4k, it's a pain to remove parts of it. See
+>> arch/arm/mm/mmu.c
+>
+> Ah, are we talking about the directly-mapped low memory region
+> starting at PAGE_OFFSET? Ok, it makes sense now, thanks.
+>
+> But it seems to me that such different mappings can also happen in
+> many other scenarios as well, don't they? How is the issue handled in
+> these cases?
 
-Hi Jiri,
+It depends. A lot of cache controllers actually implement a solution
+for that in hardware, in the cache controller. For example I think
+Tegra2 is one of those platforms. And then a lot of platforms just
+ignore the issue completely because it has very low probability.
 
-Today's linux-next merge of the trivial tree got a conflict in
-Documentation/devicetree/bindings/arm/omap/omap.txt between commit
-38b248db60e3 ("ARM: dts: Add support for DRA72x family of devices")
-from the arm-soc tree and commit c98be0c96db0 ("doc: spelling error
-changes") from the trivial tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc Documentation/devicetree/bindings/arm/omap/omap.txt
-index 189baba40cd6,aa71962352ff..000000000000
---- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-@@@ -126,11 -114,5 +126,11 @@@ Boards
-  - AM43x EPOS EVM
-    compatible =3D "ti,am43x-epos-evm", "ti,am4372", "ti,am43"
- =20
- -- DRA7 EVM:  Software Development Board for DRA7XX
- -  compatible =3D "ti,dra7-evm", "ti,dra7"
- +- AM437x GP EVM
- +  compatible =3D "ti,am437x-gp-evm", "ti,am4372", "ti,am43"
- +
-- - DRA742 EVM:  Software Developement Board for DRA742
-++- DRA742 EVM:  Software Development Board for DRA742
- +  compatible =3D "ti,dra7-evm", "ti,dra742", "ti,dra74", "ti,dra7"
- +
- +- DRA722 EVM: Software Development Board for DRA722
- +  compatible =3D "ti,dra72-evm", "ti,dra722", "ti,dra72", "ti,dra7"
-
---Sig_/6822VvtULxHLZaIHam/ginR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJThCANAAoJEMDTa8Ir7ZwVCtwP/1xFsjqLlcOGHpqJBz0o03e6
-n+zmZi+eEXxE0poUCi/Skj8y9WZIKt5weYAlM7mvzPz1IuYPpawlwx/RAhDL9zHa
-MHppFKzAKlyuHF5kid0lYs1jRzhivdreBRrdsqKJvbIIMQMJd3cRMCRrgGZ0Jb6U
-lVOr6zeI7OLuXwIHYCEw4u7P+mLnwK0HlCnn0iQZVoqLE/rl2QZPxJMo3mnJ6Wlz
-9pLhlYtia+0e1f1AzI7uCrx1KsjKyJ7fdrzqyFN6MuY0fe1VH67U4IzKX+MrgnYJ
-ZNR3yc2Nabku1FmbAn+TTDKkfYv4uie9Wdcstk4Y1JuSNeY8ApDpZUjhRSLqZCKJ
-dsNpeOUQ8+5U4jTfqygZIz1VsEfyHVf33UvWScE0lvCQ1Q3KSeeFkdUezprJ4pGH
-HXdGkbYjO+/mRpRxH0yNQ/LjW6VG1BaJ5u2P0QR0AHBlFMcQFELiV3Zs1FiOStkr
-ysGbiuYxBrijqmJz+OSZibmtN2v6oC6NnJLHSj2cvZ9VwFZMPEePPxVeQEPOEP4I
-Q7pMkS84YDXm2UITT/qgYQxAXUItyMEHhz1GG4j8IMrsT+uK00sbZgvQwZpCjZw3
-uGZJ099wT+QERhkuhUW/mP/GM4I7Bdq2kXpE1zaTQXobN+m2pf8m6bBR5KEyk69t
-E5EiUYki8+bttDJ1ct69
-=PUw2
------END PGP SIGNATURE-----
-
---Sig_/6822VvtULxHLZaIHam/ginR--
+Stéphane
