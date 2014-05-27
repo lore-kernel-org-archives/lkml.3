@@ -1,114 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaE0FEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 01:04:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55375 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaE0FEu (ORCPT
+	id S1752762AbaE0FHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 01:07:49 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:2992 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854AbaE0FHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 01:04:50 -0400
-Message-ID: <53841CED.9010800@infradead.org>
-Date: Mon, 26 May 2014 22:04:45 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 27 May 2014 01:07:47 -0400
+Message-ID: <53841D88.3040306@huawei.com>
+Date: Tue, 27 May 2014 13:07:20 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: werner <w.landgraf@ru.ru>, linux-kernel@vger.kernel.org
-CC: "T. Makphaibulchoke" <tmac@hp.com>,
-        Andreas Gruenbacher <a.gruenbacher@computer.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: 3.15-rc6  build / link failed  fs/built-in  mb_cache_entry problems
-References: <redirect-87012843@zbackend1.aha.ru>
-In-Reply-To: <redirect-87012843@zbackend1.aha.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Yong Zhang <yong.zhang@windriver.com>
+CC: <ralf@linux-mips.org>, <huawei.libin@huawei.com>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>,
+        Xinwei Hu <huxinwei@huawei.com>
+Subject: Re: [PATCH V2] MIPS: change type of asid_cache to unsigned long
+References: <1400650563-1033-1-git-send-email-yong.zhang@windriver.com> <5384119E.7010606@huawei.com> <20140527045038.GB16193@pek-yzhang-d1>
+In-Reply-To: <20140527045038.GB16193@pek-yzhang-d1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2014 11:17 AM, werner wrote:
-> building the kernel isnt successful,
+On 2014/5/27 12:50, Yong Zhang wrote:
+> BTW, I realy don't care who credits the patch and Ralf said that
+> he will applied the one which moves the place of udelay_val.
 > 
-> problem with _mbècache_entry_release and _get
-> 
-> see below
-> 
-> there are also other errors
-> 
-> 
-> The whole compiler list and config, see enclosed
-> 
+> Anyway, if your company pays you more money if you contribute to
+> the community, just take it and talk about it with Ralf ;-)
 > 
 
-First of all, my build using your kernel config file builds -- no errors,
-just plenty of warnings.  I am using gcc version 4.7.2.  What gcc version
-are you using?
+We don't do contribution for money, and I don't think you do,
+but crediting properly is one of the reason that our kernel
+community keeps prosperous for so many years, and that's one
+of the reason we introduced Reported-by and Tested-by tags.
 
-mbcache.c uses __builtin_log2().  Maybe your gcc version does not support
-that builtin function.
+> Thanks,
+> Yong
 
-@tmac:  can mbcache.c #include <linux/log2.h> and use ilog2(NR_BG_LOCKS)
-instead of using __builtin_log2(NR_BG_LOCKS) ?
-(ref. commit ID 1f3e55fe02d12213f87869768aa2b0bad3ba9a7d)
-
-
-> 
-> 
-> Since appr 3.10 ,  even if the kernels compile and build , on meanwhile 70% of the computers where I try to boot, the booting process crashs on different positions.
-
-Please use return/line feed every 70-72 characters instead of assuming that
-all email clients will display the text correctly.  They don't.
-
-> 
-> Currently, the quality is rather bad, similar as it was during the versions  2.6.30 ... 36 .
-> 
-> So it would be good, if the programmers would check everything more careful   (im not a programmer but only an user)
-> 
-> Enclosed is a compiling list, someone could see through this, and correct all problems, such as mismatches, undefined variables, etc
-> 
-> 
-> W.Landgraf
-> 
-> 
-> 
-> 
-> 
-> ..
-> 
-> fs/built-in.o: In function `__mb_cache_entry_release':
-> mbcache.c:(.text+0xa0d5f): undefined reference to `log2'
-> mbcache.c:(.text+0xa0d6b): undefined reference to `__fixunsdfsi'
-> mbcache.c:(.text+0xa0e22): undefined reference to `log2'
-> mbcache.c:(.text+0xa0e34): undefined reference to `__fixunsdfsi'
-> mbcache.c:(.text+0xa0f4e): undefined reference to `log2'
-> mbcache.c:(.text+0xa0f60): undefined reference to `__fixunsdfsi'
-> fs/built-in.o: In function `__mb_cache_entry_find':
-> mbcache.c:(.text+0xa107e): undefined reference to `log2'
-> mbcache.c:(.text+0xa108a): undefined reference to `__fixunsdfsi'
-> mbcache.c:(.text+0xa115c): undefined reference to `log2'
-> mbcache.c:(.text+0xa116e): undefined reference to `__fixunsdfsi'
-> mbcache.c:(.text+0xa11dc): undefined reference to `log2'
-> mbcache.c:(.text+0xa11e8): undefined reference to `__fixunsdfsi'
-> mbcache.c:(.text+0xa126e): undefined reference to `log2'
-> mbcache.c:(.text+0xa1280): undefined reference to `__fixunsdfsi'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3bdc): undefined reference to `log2'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3bf1): undefined reference to `__fixunsdfsi'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3d14): undefined reference to `log2'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3d26): undefined reference to `__fixunsdfsi'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3da7): undefined reference to `log2'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3db3): undefined reference to `__fixunsdfsi'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3e5e): undefined reference to `log2'
-> fs/built-in.o: In function `mb_cache_entry_get':
-> (.text+0xa3e70): undefined reference to `__fixunsdfsi'
-> make: [vmlinux] Error 1 (ignored)
-
-
-
--- 
-~Randy
