@@ -1,93 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbaE0Pi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:38:56 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44328 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287AbaE0Php (ORCPT
+	id S1752946AbaE0Pjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:39:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38381 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777AbaE0Pjm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:37:45 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 13/15] staging: rtl8188eu:Remove inline function rtw_netif_stop_queue()
-Date: Tue, 27 May 2014 21:05:53 +0530
-Message-Id: <1401204955-4093-13-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1401204955-4093-1-git-send-email-navin.patidar@gmail.com>
-References: <1401204955-4093-1-git-send-email-navin.patidar@gmail.com>
+	Tue, 27 May 2014 11:39:42 -0400
+Date: Tue, 27 May 2014 17:39:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 02/11] sched: remove a wake_affine condition
+Message-ID: <20140527153937.GE19143@laptop.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-3-git-send-email-vincent.guittot@linaro.org>
+ <20140527124848.GQ30445@twins.programming.kicks-ass.net>
+ <CAKfTPtAbnDdQ=C6oABtwUPr7ADhHo1qsdzt5GFsuVMncA9Q=Qw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAKfTPtAbnDdQ=C6oABtwUPr7ADhHo1qsdzt5GFsuVMncA9Q=Qw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/include/osdep_service.h |    5 -----
- drivers/staging/rtl8188eu/os_dep/os_intfs.c       |    4 ++--
- drivers/staging/rtl8188eu/os_dep/usb_intf.c       |    4 ++--
- 3 files changed, 4 insertions(+), 9 deletions(-)
+On Tue, May 27, 2014 at 05:19:02PM +0200, Vincent Guittot wrote:
+> On 27 May 2014 14:48, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, May 23, 2014 at 05:52:56PM +0200, Vincent Guittot wrote:
+> >> I have tried to understand the meaning of the condition :
+> >>  (this_load <= load &&
+> >>   this_load + target_load(prev_cpu, idx) <= tl_per_task)
+> >> but i failed to find a use case that can take advantage of it and i haven't
+> >> found description of it in the previous commits' log.
+> >
+> > commit 2dd73a4f09beacadde827a032cf15fd8b1fa3d48
+> >
+> >     int try_to_wake_up():
+> >
+> >     in this function the value SCHED_LOAD_BALANCE is used to represent the load
+> >     contribution of a single task in various calculations in the code that
+> >     decides which CPU to put the waking task on.  While this would be a valid
+> >     on a system where the nice values for the runnable tasks were distributed
+> >     evenly around zero it will lead to anomalous load balancing if the
+> >     distribution is skewed in either direction.  To overcome this problem
+> >     SCHED_LOAD_SCALE has been replaced by the load_weight for the relevant task
+> >     or by the average load_weight per task for the queue in question (as
+> >     appropriate).
+> >
+> >                         if ((tl <= load &&
+> > -                               tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
+> > -                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+> > +                               tl + target_load(cpu, idx) <= tl_per_task) ||
+> > +                               100*(tl + p->load_weight) <= imbalance*load) {
+> 
+> The oldest patch i had found was: https://lkml.org/lkml/2005/2/24/34
+> where task_hot had been replaced by
+> + if ((tl <= load &&
+> + tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
+> + 100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+> 
+> but as explained, i haven't found a clear explanation of this condition
 
-diff --git a/drivers/staging/rtl8188eu/include/osdep_service.h b/drivers/staging/rtl8188eu/include/osdep_service.h
-index e82ba63..9d32bb2 100644
---- a/drivers/staging/rtl8188eu/include/osdep_service.h
-+++ b/drivers/staging/rtl8188eu/include/osdep_service.h
-@@ -119,11 +119,6 @@ static inline int rtw_netif_queue_stopped(struct net_device *pnetdev)
- 		netif_tx_queue_stopped(netdev_get_tx_queue(pnetdev, 3));
- }
- 
--static inline void rtw_netif_stop_queue(struct net_device *pnetdev)
--{
--	netif_tx_stop_all_queues(pnetdev);
--}
--
- #ifndef BIT
- 	#define BIT(x)	(1 << (x))
- #endif
-diff --git a/drivers/staging/rtl8188eu/os_dep/os_intfs.c b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-index e6596d5..0e0c32d 100644
---- a/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-+++ b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-@@ -1096,7 +1096,7 @@ netdev_open_normal_process:
- netdev_open_error:
- 	padapter->bup = false;
- 	netif_carrier_off(pnetdev);
--	rtw_netif_stop_queue(pnetdev);
-+	netif_tx_stop_all_queues(pnetdev);
- 	RT_TRACE(_module_os_intfs_c_, _drv_err_, ("-88eu_drv - dev_open, fail!\n"));
- 	DBG_88E("-88eu_drv - drv_open fail, bup =%d\n", padapter->bup);
- 	return -1;
-@@ -1219,7 +1219,7 @@ int netdev_close(struct net_device *pnetdev)
- 		/* s1. */
- 		if (pnetdev) {
- 			if (!rtw_netif_queue_stopped(pnetdev))
--				rtw_netif_stop_queue(pnetdev);
-+				netif_tx_stop_all_queues(pnetdev);
- 		}
- 
- 		/* s2. */
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 7b1c774..7526b98 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -307,7 +307,7 @@ int rtw_hw_suspend(struct adapter *padapter)
- 	/* s1. */
- 	if (pnetdev) {
- 		netif_carrier_off(pnetdev);
--		rtw_netif_stop_queue(pnetdev);
-+		netif_tx_stop_all_queues(pnetdev);
- 	}
- 
- 	/* s2. */
-@@ -416,7 +416,7 @@ static int rtw_suspend(struct usb_interface *pusb_intf, pm_message_t message)
- 	/* s1. */
- 	if (pnetdev) {
- 		netif_carrier_off(pnetdev);
--		rtw_netif_stop_queue(pnetdev);
-+		netif_tx_stop_all_queues(pnetdev);
- 	}
- 
- 	/* s2. */
--- 
-1.7.10.4
+Yeah, that's the commit I had below; but I suppose we could ask Nick if
+we really want, I've heard he still replies to email, even though he's
+locked up in a basement somewhere :-)
 
+> > commit a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
+> >
+> >
+> > +                       if ((tl <= load &&
+> > +                               tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
+> > +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+> >
+> >
+> > So back when the code got introduced, it read:
+> >
+> >         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE < source_load(this_cpu, idx) &&
+> >         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(this_cpu, idx) < SCHED_LOAD_SCALE
+> >
+> > So while the first line makes some sense, the second line is still
+> > somewhat challenging.
+> >
+> > I read the second line something like: if there's less than one full
+> > task running on the combined cpus.
+> 
+> ok. your explanation makes sense
+
+Maybe, its still slightly weird :-)
+
+> >
+> > Now for idx==0 this is hard, because even when sync=1 you can only make
+> > it true if both cpus are completely idle, in which case you really want
+> > to move to the waking cpu I suppose.
+> 
+> This use case is already taken into account by
+> 
+> if (this_load > 0)
+> ..
+> else
+>  balance = true
+
+Agreed.
+
+> > One task running will have it == SCHED_LOAD_SCALE.
+> >
+> > But for idx>0 this can trigger in all kinds of situations of light load.
+> 
+> target_load is the max between load for idx == 0 and load for the
+> selected idx so we have even less chance to match the condition : both
+> cpu are completely idle
+
+Ah, yes, I forgot to look at the target_load() thing and missed the max,
+yes that all makes it entirely less likely.
