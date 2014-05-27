@@ -1,89 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaE0Lpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:45:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37737 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751455AbaE0Lpw (ORCPT
+	id S1751984AbaE0LuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:50:08 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43707 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaE0LuF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:45:52 -0400
-Message-ID: <53847ADB.9080707@free-electrons.com>
-Date: Tue, 27 May 2014 13:45:31 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 27 May 2014 07:50:05 -0400
+Date: Tue, 27 May 2014 12:49:58 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Alex Elder <elder@linaro.org>
+Cc: "mporter@linaro.org" <mporter@linaro.org>,
+        "bcm@fixthebug.org" <bcm@fixthebug.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "rjui@broadcom.com" <rjui@broadcom.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "rvaswani@codeaurora.org" <rvaswani@codeaurora.org>
+Subject: Re: [PATCH v4 1/5] devicetree: bindings: document Broadcom CPU
+ enable method
+Message-ID: <20140527114958.GC18476@e102568-lin.cambridge.arm.com>
+References: <1400607830-10989-1-git-send-email-elder@linaro.org>
+ <1400607830-10989-2-git-send-email-elder@linaro.org>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] i2c: sunxi: add P2WI controller support
-References: <1399715163-11291-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1399715163-11291-1-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1400607830-10989-2-git-send-email-elder@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 27 May 2014 11:49:59.0401 (UTC) FILETIME=[C97AFD90:01CF79A1]
+X-MC-Unique: 114052712500201801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wolfram,
+On Tue, May 20, 2014 at 06:43:46PM +0100, Alex Elder wrote:
+> Broadcom mobile SoCs use a ROM-implemented holding pen for
+> controlled boot of secondary cores.  A special register is
+> used to communicate to the ROM that a secondary core should
+> start executing kernel code.  This enable method is currently
+> used for members of the bcm281xx and bcm21664 SoC families.
+> 
+> The use of an enable method also allows the SMP operation vector to
+> be assigned as a result of device tree content for these SoCs.
+> 
+> Signed-off-by: Alex Elder <elder@linaro.org>
 
-No news from you regarding this patch series.
+This is getting out of control, it is absolutely ghastly. I wonder how
+I can manage to keep cpus.txt updated if anyone with a boot method
+du jour adds into cpus.txt, and honestly in this specific case it is even
+hard to understand why.
 
-Is there anything you want me to fix ?
+Can't it be done with bindings for the relative register address space
+(regmap ?) and platform code just calls the registers driver to set-up the
+jump address ? It is platform specific code anyway there is no way you
+can make this generic.
 
-Otherwise It would be great to have this series merged, because the PMIC
-used on Allwinner's A31 boards are connected through this P2WI bus.
+I really do not see the point in cluttering cpus.txt with this stuff, it
+is a platform specific hack, and do not belong in generic bindings in my
+opinion.
 
-Best Regards,
+Thanks,
+Lorenzo
 
-Boris
-
-On 10/05/2014 11:46, Boris BREZILLON wrote:
-> Hello,
->
-> This series adds support for the P2WI block used by some Allwinner
-> boards to interface with the AXP221 PMIC.
->
-> Best Regards,
->
-> Boris
->
-> Changes since v3:
-> - update the DT bindings doc
-> - fix a comment that was no longer true
->
-> Changes since v2:
-> - drop the initialization (switch from I2C to P2WI mode) part
-> - print devm_ioremap_resource err code
->
-> Changes since v1:
-> - implement P2WI initilization
-> - implement P2WI bus frequency configuration
-> - implement address consistency check
-> - fix devm_request_and_ioremap return check
-> - rework the macro definitions
-> - fix typos
->
-> [1] http://www.spinics.net/lists/linux-i2c/msg15066.html
-> [2] http://comments.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/8947
-> Boris BREZILLON (2):
->   i2c: sunxi: add P2WI DT bindings documentation
->   i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface) controller support
->
->  .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     |  41 +++
->  drivers/i2c/busses/Kconfig                         |  12 +
->  drivers/i2c/busses/Makefile                        |   1 +
->  drivers/i2c/busses/i2c-sun6i-p2wi.c                | 349 +++++++++++++++++++++
->  4 files changed, 403 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
->  create mode 100644 drivers/i2c/busses/i2c-sun6i-p2wi.c
->
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+> ---
+>  Documentation/devicetree/bindings/arm/cpus.txt | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> index 333f4ae..c6a2411 100644
+> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> @@ -185,6 +185,7 @@ nodes to be present and contain the properties described below.
+>  			    "qcom,gcc-msm8660"
+>  			    "qcom,kpss-acc-v1"
+>  			    "qcom,kpss-acc-v2"
+> +			    "brcm,bcm11351-cpu-method"
+>  
+>  	- cpu-release-addr
+>  		Usage: required for systems that have an "enable-method"
+> @@ -209,6 +210,17 @@ nodes to be present and contain the properties described below.
+>  		Value type: <phandle>
+>  		Definition: Specifies the ACC[2] node associated with this CPU.
+>  
+> +	- secondary-boot-reg
+> +		Usage:
+> +			Required for systems that have an "enable-method"
+> +			property value of "brcm,bcm11351-cpu-method".
+> +		Value type: <u32>
+> +		Definition:
+> +			Specifies the physical address of the register used to
+> +			request the ROM holding pen code release a secondary
+> +			CPU.  The value written to the register is formed by
+> +			encoding the target CPU id into the low bits of the
+> +			physical start address it should jump to.
+>  
+>  Example 1 (dual-cluster big.LITTLE system 32-bit):
+>  
+> -- 
+> 1.9.1
+> 
+> 
 
