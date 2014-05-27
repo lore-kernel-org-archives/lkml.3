@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752AbaE0VWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 17:22:43 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:42712 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbaE0VWl (ORCPT
+	id S1753347AbaE0VYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 17:24:50 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23122 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466AbaE0VYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 17:22:41 -0400
-Date: Tue, 27 May 2014 14:22:37 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Tue, 27 May 2014 17:24:49 -0400
+Date: Wed, 28 May 2014 00:24:24 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Marcin Kostrzewa <marckostrzewa@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch V3 05/37] x86, PCI, ACPI: use kmalloc_node() to optimize
- for performance
-In-Reply-To: <1401178092-1228-6-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.02.1405271421470.14064@chino.kir.corp.google.com>
-References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com> <1401178092-1228-6-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        Fred Akers <knivey@botops.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] remove duplicated comment and fix brace placement in
+ drivers/staging/comedi/drivers/addi-data/hwdrv_acpi3501.c
+Message-ID: <20140527212424.GS15585@mwanda>
+References: <1401200257-790-1-git-send-email-marckostrzewa@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401200257-790-1-git-send-email-marckostrzewa@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Jiang Liu wrote:
+The subject should be:
 
-> Use kmalloc_node() instead of kmalloc() when possible to optimize
-> for performance on NUMA platforms.
+[PATCH] Staging: comedi: addi-data: <short title. clean up else statement>
+
+
+
+On Tue, May 27, 2014 at 02:17:35PM +0000, Marcin Kostrzewa wrote:
+> Signed-off-by: Marcin Kostrzewa <marckostrzewa@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
+> index 20e89b0..8add8d8 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
+> @@ -104,9 +104,7 @@ static int apci3501_write_insn_timer(struct comedi_device *dev,
+>  			outl(ul_Command1, dev->iobase + APCI3501_TIMER_CTRL_REG);
+>  		}
+>  
+> -		else if (data[1] == 0)	/* Stop The Watchdog */
+> -		{
+> -			/* Stop The Watchdog */
+> +		else if (data[1] == 0) { /* Stop The Watchdog */
 
-Acked-by: David Rientjes <rientjes@google.com>
 
-All the handling to make sure sd->node refers to either NUMA_NO_NODE 
-(fallback to local allocation) or an online node looks to be handled 
-properly.
+While you're at it, could you also move it like this:
+
+		} else if (data[1] == 0) { /* Stop The Watchdog */
+
+(I wouldn't have asked you to do this, except that you need to resend
+anyway with a fixed subject line).
+
+regards,
+dan carpenter
+
+>  			ul_Command1 = inl(dev->iobase + APCI3501_TIMER_CTRL_REG);
+>  			ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
+>  			outl(0x0, dev->iobase + APCI3501_TIMER_CTRL_REG);
+> -- 
+> 1.9.2
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
