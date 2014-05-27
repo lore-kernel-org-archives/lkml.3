@@ -1,42 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaE0U6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:58:04 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:61329 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752215AbaE0U6B (ORCPT
+	id S1752647AbaE0VCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 17:02:08 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20913 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751540AbaE0VCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 16:58:01 -0400
-Message-ID: <5384FC60.1070103@fb.com>
-Date: Tue, 27 May 2014 14:58:08 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 27 May 2014 17:02:06 -0400
+Date: Tue, 27 May 2014 17:02:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [PATCH v2] sched/numa: Fix use of spin_{un}lock_irq() when
+ interrupts are disabled
+Message-ID: <20140527170204.2968e4fd@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: blk-mq: refactor request allocation
-References: <1401217190-32453-1-git-send-email-hch@lst.de>
-In-Reply-To: <1401217190-32453-1-git-send-email-hch@lst.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-27_05:2014-05-27,2014-05-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1405270286
-X-FB-Internal: deliver
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 12:59 PM, Christoph Hellwig wrote:
-> This series streamlines the request allocation path.
-> 
+As Peter Zijlstra told me, we have the following path:
 
-Series looks innocuous enough to me, but it's about a 1.5% performance
-drop here with an actual device. These tests are very stable, anything
-over ~0.1% is definitely outside of noise. I repeated and rebooted a few
-times and tested both, it's persistent. No smoking guns in the profile.
+do_exit()
+  exit_itimers()
+    itimer_delete()
+      spin_lock_irqsave(&timer->it_lock, &flags);
+      timer_delete_hook(timer);
+        kc->timer_del(timer) := posix_cpu_timer_del()
+          put_task_struct()
+            __put_task_struct()
+              task_numa_free()
+                spin_lock(&grp->lock);
 
+
+Which means that task_numa_free() can be called with interrupts
+disabled, which means that we should not be using spin_lock_irq() but
+spin_lock_irqsave() instead. Otherwise we are enabling interrupts while
+holding an interrupt unsafe lock!
+
+Link: http://lkml.kernel.org/r/20140527182541.GH11096@twins.programming.kicks-ass.net
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+v2: let's see if claws mail screws up the format on this on :-p
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7570dd9..3ea16b0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1707,18 +1707,19 @@ no_join:
+ void task_numa_free(struct task_struct *p)
+ {
+ 	struct numa_group *grp = p->numa_group;
+-	int i;
+ 	void *numa_faults = p->numa_faults_memory;
++	unsigned long flags;
++	int i;
+ 
+ 	if (grp) {
+-		spin_lock_irq(&grp->lock);
++		spin_lock_irqsave(&grp->lock, flags);
+ 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+ 			grp->faults[i] -= p->numa_faults_memory[i];
+ 		grp->total_faults -= p->total_numa_faults;
+ 
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+-		spin_unlock_irq(&grp->lock);
++		spin_unlock_irqrestore(&grp->lock, flags);
+ 		rcu_assign_pointer(p->numa_group, NULL);
+ 		put_numa_group(grp);
+ 	}
