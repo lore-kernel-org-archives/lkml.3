@@ -1,131 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaE0KvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 06:51:20 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62825 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaE0KvQ (ORCPT
+	id S1752141AbaE0Kyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 06:54:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37076 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaE0Kyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 06:51:16 -0400
-Message-ID: <53846E1F.1080201@gmail.com>
-Date: Tue, 27 May 2014 12:51:11 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 27 May 2014 06:54:49 -0400
+Date: Tue, 27 May 2014 12:54:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Mike Marciniszyn <infinipath@intel.com>
+Subject: Re: [RFC][PATCH 0/5] VM_PINNED
+Message-ID: <20140527105438.GW13658@twins.programming.kicks-ass.net>
+References: <20140526145605.016140154@infradead.org>
+ <CALYGNiMG1NVBUS4TJrYJMr92yWGZHSdGUdCGtBJDHoUMMhE+Wg@mail.gmail.com>
+ <20140526203232.GC5444@laptop.programming.kicks-ass.net>
+ <CALYGNiO8FNKjtETQMRSqgiArjfQ9nRAALUg9GGdNYbpKru=Sjw@mail.gmail.com>
+ <20140527102909.GO30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org
-CC: linux-samsung-soc@vger.kernel.org, t.figa@samsung.com,
-        mturquette@linaro.org, Chanwoo Choi <cw00.choi@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] clk: exynos4: Add PPMU IP block source clocks.
-References: <1401179737-27521-1-git-send-email-jonghwa3.lee@samsung.com>
-In-Reply-To: <1401179737-27521-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JHjDRUnf1JOMxzko"
+Content-Disposition: inline
+In-Reply-To: <20140527102909.GO30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonghwa,
 
-On 27.05.2014 10:35, Jonghwa Lee wrote:
-> Exynos4 has saveral PPMUs and each of them has operation clock which
-> can be gated through CMU's SFR control.
-> 
-> New clocks are listed below. All clocks are added as a gate-typed clock.
-> 
-> CLK_PPMULEFT, CLK_PPMURIGHT, CLK_PPMUG3D, CLK_PPMUCAMIF, CLK_PPMUTV,
-> CLK_PPMUMFC_L, CLK_PPMUMFC_R, CLK_PPMUIMAGE, CLK_PPMULCD0, CLK_PPMULCD1,
-> CLK_PPMUFILE, CLK_PPMUGPS, CLK_PPMUCPU, CLK_PPMUACP, CLK_PPMUDMC0,
-> CLK_PPMUDMC1
-> 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-> ---
->  drivers/clk/samsung/clk-exynos4.c   |   20 ++++++++++++++++++++
->  include/dt-bindings/clock/exynos4.h |   18 ++++++++++++++++++
->  2 files changed, 38 insertions(+)
-> 
-> diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
-> index b4f9672..5648437 100644
-> --- a/drivers/clk/samsung/clk-exynos4.c
-> +++ b/drivers/clk/samsung/clk-exynos4.c
-> @@ -852,6 +852,22 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
->  			0, 0),
->  	GATE(CLK_AC97, "ac97", "aclk100", GATE_IP_PERIL, 27,
->  			0, 0),
-> +	GATE(CLK_PPMULEFT, "ppmuleft", "aclk200", GATE_IP_LEFTBUS, 1, 0, 0),
-> +	GATE(CLK_PPMURIGHT, "ppmuright", "aclk200", GATE_IP_RIGHTBUS,
-> +			1, 0, 0),
-> +	GATE(CLK_PPMUG3D, "ppmug3d", "aclk200", GATE_IP_G3D,
-> +			1, 0, 0),
-> +	GATE(CLK_PPMUCAMIF, "ppmucamif", "aclk160", GATE_IP_CAM, 16, 0, 0),
-> +	GATE(CLK_PPMUTV, "ppmutv", "aclk160", GATE_IP_TV, 5, 0, 0),
-> +	GATE(CLK_PPMUMFC_L, "ppmumfc_l", "aclk100", GATE_IP_MFC, 3, 0, 0),
-> +	GATE(CLK_PPMUMFC_R, "ppmumfc_r", "aclk100", GATE_IP_MFC, 4, 0, 0),
-> +	GATE(CLK_PPMULCD0, "ppmulcd0", "aclk160", GATE_IP_LCD0, 5, 0, 0),
-> +	GATE(CLK_PPMUFILE, "ppmufile", "aclk133", GATE_IP_FSYS, 17, 0, 0),
-> +	GATE(CLK_PPMUGPS, "ppmugps", "aclk200", GATE_IP_GPS, 2, 0, 0),
-> +	GATE(CLK_PPMUCPU, "ppmucpu", "aclk133", GATE_IP_DMC, 10, 0, 0),
-> +	GATE(CLK_PPMUACP, "ppmuacp", "aclk133", GATE_IP_DMC, 16, 0, 0),
-> +	GATE(CLK_PPMUDMC0, "ppmudmc0", "aclk133", GATE_IP_DMC, 8, 0, 0),
-> +	GATE(CLK_PPMUDMC1, "ppmudmc1", "aclk133", GATE_IP_DMC, 9, 0, 0),
+--JHjDRUnf1JOMxzko
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please keep the clocks sorted. It should be by register address
-ascending and then by bit field position ascending. I know that it went
-a bit out of control and there are unsorted entries, but we should try
-to keep it clean when adding new ones.
+On Tue, May 27, 2014 at 12:29:09PM +0200, Peter Zijlstra wrote:
+> On Tue, May 27, 2014 at 12:49:08AM +0400, Konstantin Khlebnikov wrote:
+> > Another suggestion. VM_RESERVED is stronger than VM_LOCKED and extends
+> > its functionality.
+> > Maybe it's easier to add VM_DONTMIGRATE and use it together with VM_LOC=
+KED.
+> > This will make accounting easier. No?
+>=20
+> I prefer the PINNED name because the not being able to migrate is only
+> one of the desired effects of it, not the primary effect. We're really
+> looking to keep physical pages in place and preserve mappings.
+>=20
+> The -rt people for example really want to avoid faults (even minor
+> faults), and DONTMIGRATE would still allow unmapping.
+>=20
+> Maybe always setting VM_PINNED and VM_LOCKED together is easier, I
+> hadn't considered that. The first thing that came to mind is that that
+> might make the fork() semantics difficult, but maybe it works out.
+>=20
+> And while we're on the subject, my patch preserves PINNED over fork()
+> but maybe we don't actually need that either.
 
->  };
->  
->  /* list of gate clocks supported in exynos4210 soc */
-> @@ -896,6 +912,9 @@ static struct samsung_gate_clock exynos4210_gate_clks[] __initdata = {
->  			CLK_SET_RATE_PARENT, 0),
->  	GATE(CLK_TMU_APBIF, "tmu_apbif", "aclk100", E4210_GATE_IP_PERIR, 17, 0,
->  		0),
-> +	GATE(CLK_PPMUIMAGE, "ppmuimage", "aclk200", E4210_GATE_IP_IMAGE, 9,
-> +		0, 0),
-> +	GATE(CLK_PPMULCD1, "ppmulcd1", "aclk160", E4210_GATE_IP_LCD1, 5, 0, 0),
+So pinned_vm is userspace exposed, which means we have to maintain the
+individual counts, and doing the fully orthogonal accounting is 'easier'
+than trying to get the boundary cases right.
 
-Ditto.
+That is, if we have a program that does mlockall() and then does the IB
+ioctl() to 'pin' a region, we'd have to make mm_mpin() do munlock()
+after it splits the vma, and then do the pinned accounting.
 
->  };
->  
->  /* list of gate clocks supported in exynos4x12 soc */
-> @@ -1001,6 +1020,7 @@ static struct samsung_gate_clock exynos4x12_gate_clks[] __initdata = {
->  	GATE(CLK_G2D, "g2d", "aclk200", GATE_IP_DMC, 23, 0, 0),
->  	GATE(CLK_TMU_APBIF, "tmu_apbif", "aclk100", E4X12_GATE_IP_PERIR, 17, 0,
->  		0),
-> +	GATE(CLK_PPMUIMAGE, "ppmuimage", "aclk200", E4X12_GATE_IP_IMAGE, 9, 0, 0),
+Also, we'll have lost the LOCKED state and unless MCL_FUTURE was used,
+we don't know what to restore the vma to on mm_munpin().
 
-Ditto.
+So while the accounting looks tricky, it has simpler semantics.
 
->  };
->  
->  static struct samsung_clock_alias exynos4_aliases[] __initdata = {
-> diff --git a/include/dt-bindings/clock/exynos4.h b/include/dt-bindings/clock/exynos4.h
-> index 75aff33..9f331f1 100644
-> --- a/include/dt-bindings/clock/exynos4.h
-> +++ b/include/dt-bindings/clock/exynos4.h
-> @@ -230,6 +230,24 @@
->  #define CLK_MOUT_G3D		394
->  #define CLK_ACLK400_MCUISP	395 /* Exynos4x12 only */
->  
-> +/* gate clocks - ppmu */
-> +#define CLK_PPMULEFT		400
-> +#define CLK_PPMURIGHT		401
-> +#define CLK_PPMUG3D		402
-> +#define CLK_PPMUCAMIF		403
-> +#define CLK_PPMUTV		404
-> +#define CLK_PPMUMFC_L		405
-> +#define CLK_PPMUMFC_R		406
-> +#define CLK_PPMUIMAGE		407
-> +#define CLK_PPMULCD0		408
-> +#define CLK_PPMULCD1		409
+--JHjDRUnf1JOMxzko
+Content-Type: application/pgp-signature
 
-A comment saying that this clock is only for Exynos4210 might be nice,
-as several Exynos4x12-specific clocks already have.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Best regards,
-Tomasz
+iQIcBAEBAgAGBQJThG7uAAoJEHZH4aRLwOS6eAIQALZlA3uluTkf8/ciEiNoNzcm
+O+a5nh6AC26jmjZ2Y732YdRo4hC00pK2TTj2uQ32sNteklK4VMB8ZrYwOArfV6mF
+zrj2zU1RlLkU1CkyIdF3UOhzzOf9F3TuEGVk3AuWVv33ybrdwQXLKKHzveczespg
+WWSEvRsSGcqQUGefmS9czAJVArk/AV0Rg+3BYucPYn036yJ2+a6Kw+rTtObASSxN
++UV7lTzBIg7HgxRweS6jZ18Q/FKG4fGE+RHXPBpT2sFdrVMq4A+QeFTGZ9WPDcvP
+spaNc+fr012RcVHWwLylGTkj/r9NwAv43K1TnsI5zTWMUrzDh8SGgsHsAWu6C8IK
+lpax0WSdfWn2MnAXhuEzGLoLuyTUwSXsudASaqaDdSmBMu1Ur/NZmlw3qGci5SUw
+0ORPj4/vPRFHaNI9Gg22fwtOTHqTOey710J2FpRtdEYxFpeAGFIfHTucj4Zal9Gu
+SraZSECzMaadd1Sz6EXjiMGgau26q62aikcOYpDFvtKxe6RGEdIS6oYuQeDNPADp
++bz08PDsdm+IJDKKctOnmKQoICljHFqKmZCLSz/HY/ybTf+G6BB0qgPnTRofIFtC
+6Ry7OZHTzaaJ0kfVhTxx45US63Vtoj69lQdTUnXnJDTuu3mu2VW6Dxyt51YikldN
+OQ+5smSQteJyV4P7hOZ/
+=I0k+
+-----END PGP SIGNATURE-----
+
+--JHjDRUnf1JOMxzko--
