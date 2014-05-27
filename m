@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaE0KGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 06:06:01 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:38740 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081AbaE0KF6 (ORCPT
+	id S1752087AbaE0KKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 06:10:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52642 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaE0KKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 06:05:58 -0400
-Date: Tue, 27 May 2014 11:05:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v3 1/6] mfd: axp20x: add AXP221 PMIC support
-Message-ID: <20140527100540.GJ5875@lee--X1>
-References: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
- <1401183535-31003-2-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 27 May 2014 06:10:18 -0400
+Date: Tue, 27 May 2014 12:10:29 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Amir Vadai <amirv@mellanox.com>
+cc: Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Or Gerlitz <ogerlitz@mellanox.com>, idos@mellanox.com,
+        Yevgeny Petrilin <yevgenyp@mellanox.com>
+Subject: Re: Extend irq_set_affinity_notifier() to use a call chain
+In-Reply-To: <5384498A.9080900@mellanox.com>
+Message-ID: <alpine.DEB.2.02.1405271202000.21720@ionos.tec.linutronix.de>
+References: <5381DEDC.8050204@gmail.com> <alpine.DEB.2.02.1405261313570.21720@ionos.tec.linutronix.de> <53832472.7070000@gmail.com> <alpine.DEB.2.02.1405261327500.21720@ionos.tec.linutronix.de> <53832D28.1050207@mellanox.com>
+ <alpine.DEB.2.02.1405261412110.21720@ionos.tec.linutronix.de> <5384498A.9080900@mellanox.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401183535-31003-2-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Add support for the AXP221 PMIC device to the existing AXP20x driver.
+On Tue, 27 May 2014, Amir Vadai wrote:
+> On 5/26/2014 3:39 PM, Thomas Gleixner wrote:
+> > Even if you'd solve that and have a callback in the driver, then the
+> > callback never can restart the napi session directly. All it can do is
+> > set a flag which needs to be checked in the RX path, right?
+> > 
+> > So what's the point of adding notifier call chain complexity, ordering
+> > problems etc., if you can simply note the fact that the affinity
+> > changed in the rmap itself and check that in the RX path?
 > 
-> The AXP221 defines a new set of registers, power supplies and regulators,
-> but most of the API is similar to the AXP20x ones.
-> The AXP20x irq chip definition is reused, though some interrupts are not
-> available in the AXP221.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  drivers/mfd/axp20x.c       | 58 +++++++++++++++++++++++++++++++++++++++++++---
+> I will try to find a solution in the spirit of what you suggested -
+> to let the rmap library notify napi about affinity changes - without
+> adding this complexity to the code.
 
-Quite a difference from 237 lines, eh?
+I'd rather avoid the term "notify". Because it's not an active
+notification which results in an immediate NAPI restart. NAPI has to
+poll the information in rmap or wherever you end up storing it.
 
->  include/linux/mfd/axp20x.h | 56 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 111 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-> index dee6539..119a7ed 100644
-> --- a/drivers/mfd/axp20x.c
-> +++ b/drivers/mfd/axp20x.c
+Thanks,
 
-[...]
-
-> @@ -190,7 +233,12 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
->  	axp20x->dev = &i2c->dev;
->  	dev_set_drvdata(axp20x->dev, axp20x);
->  
-> -	axp20x->regmap = devm_regmap_init_i2c(i2c, &axp20x_regmap_config);
-> +	if (axp20x->variant == AXP221_ID)
-> +		axp20x->regmap = devm_regmap_init_i2c(i2c,
-> +						      &axp22x_regmap_config);
-> +	else
-> +		axp20x->regmap = devm_regmap_init_i2c(i2c,
-> +						      &axp20x_regmap_config);
-
-Better to put these into a variable and have one instance of
-devm_regmap_init_i2c() where you pass said variable as the second
-parameter.
-
->  	if (IS_ERR(axp20x->regmap)) {
->  		ret = PTR_ERR(axp20x->regmap);
->  		dev_err(&i2c->dev, "regmap init failed: %d\n", ret);
-> @@ -206,8 +254,12 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
->  		return ret;
->  	}
->  
-> -	ret = mfd_add_devices(axp20x->dev, -1, axp20x_cells,
-> -			      ARRAY_SIZE(axp20x_cells), NULL, 0, NULL);
-> +	if (axp20x->variant == AXP221_ID)
-> +		ret = mfd_add_devices(axp20x->dev, -1, axp22x_cells,
-> +				      ARRAY_SIZE(axp22x_cells), NULL, 0, NULL);
-> +	else
-> +		ret = mfd_add_devices(axp20x->dev, -1, axp20x_cells,
-> +				      ARRAY_SIZE(axp20x_cells), NULL, 0, NULL);
-
-Same here.  New variables to carry the cell structure and its size.
-As the if statement is the same at the one above, you can move this
-all into the first one.
-
-[...]
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	tglx
