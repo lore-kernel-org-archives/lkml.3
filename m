@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaE0Wzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:55:54 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60000 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752108AbaE0Wzx (ORCPT
+	id S1753465AbaE0W5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:57:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56279 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaE0W5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:55:53 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arvind.chauhan@arm.com, edubezval@gmail.com, pavel@ucw.cz,
-        lgirdwood@gmail.com
-Subject: Re: [PATCH 1/2] regulators: Add definition of regulator_set_voltage_time() for !CONFIG_REGULATOR
-Date: Wed, 28 May 2014 01:12:57 +0200
-Message-ID: <233568355.QJI3TVGr1I@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140527192923.GC12304@sirena.org.uk>
-References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org> <20140527192923.GC12304@sirena.org.uk>
+	Tue, 27 May 2014 18:57:05 -0400
+Message-ID: <53851835.3060706@infradead.org>
+Date: Tue, 27 May 2014 15:56:53 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Seth Forshee <seth.forshee@canonical.com>, linux-kernel@vger.kernel.org,
+        lxc-devel@lists.linuxcontainers.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>, Marian Marinov <mm@1h.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Michael J Coss <michael.coss@alcatel-lucent.com>
+Subject: Re: [RFC PATCH 1/2] loop: Add loop filesystem
+References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com> <1401227936-15698-2-git-send-email-seth.forshee@canonical.com>
+In-Reply-To: <1401227936-15698-2-git-send-email-seth.forshee@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 27, 2014 08:29:23 PM Mark Brown wrote:
+On 05/27/2014 02:58 PM, Seth Forshee wrote:
+> Add limited capability for use of loop devices in containers via
+> a loopfs psuedo fs. When mounted this filesystem will contain
+> only a loop-control device node. This can be used to request free
+> loop devices which will be "owned" by that mount. Device nodes
+> appear automatically for these devices, and the same device will
+> not be given to another loopfs mount. Privileged loop ioctls
+> (for encrypted loop) will be allowed within the namespace which
+> mounted the loopfs.
 > 
-> --wJgPvdDu+gj56kJ8
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
+> Privileged block ioctls are not permitted, so features such as
+> partitions are not supported for unprivileged users.
 > 
-> On Tue, May 27, 2014 at 05:37:29PM +0530, Viresh Kumar wrote:
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  drivers/block/loop.c       | 110 +++++++++++---
+>  drivers/block/loop.h       |   2 +
+>  fs/Makefile                |   1 +
+>  fs/loopfs/Makefile         |   6 +
+>  fs/loopfs/inode.c          | 349 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/loopfs.h     |  46 ++++++
+>  include/uapi/linux/magic.h |   1 +
+>  7 files changed, 495 insertions(+), 20 deletions(-)
+>  create mode 100644 fs/loopfs/Makefile
+>  create mode 100644 fs/loopfs/inode.c
+>  create mode 100644 include/linux/loopfs.h
 > 
-> > Liam/Broonie: Please see if this can go through Rafael as 2nd patch is dependent
-> > on it.
-> 
-> Is that likely to happen before the merge window?
 
-Depending.  If there's -rc8, then maybe.  Otherwise, nope.
+> diff --git a/fs/loopfs/Makefile b/fs/loopfs/Makefile
+> new file mode 100644
+> index 000000000000..01aedfb2f841
+> --- /dev/null
+> +++ b/fs/loopfs/Makefile
+> @@ -0,0 +1,6 @@
+> +#
+> +# Makefile for the loopfs virtual filesystem
+> +#
+> +
+> +obj-$(CONFIG_BLK_DEV_LOOP)		+= loopfs.o
+> +loopfs-$(CONFIG_BLK_DEV_LOOP)		:= inode.o
 
-Rafael
+I guess that you need to update the BLK_DEV_LOOP entry in
+drivers/block/Kconfig to mention this?
 
+
+-- 
+~Randy
