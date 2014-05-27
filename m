@@ -1,76 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaE0WkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:40:00 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47989 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaE0Wj7 (ORCPT
+	id S1752972AbaE0WkL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:40:11 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:39609 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbaE0WkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:39:59 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Borislav Petkov <bp@alien8.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Tue, 27 May 2014 18:40:06 -0400
+Date: Tue, 27 May 2014 17:40:02 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Minchan Kim <minchan@kernel.org>, Weijie Yang <weijie.yang@samsung.com>,
+        Nitin Gupta <ngupta@vflare.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Kees Cook <keescook@chromium.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
-In-Reply-To: Your message of "Tue, 27 May 2014 21:43:59 +0200."
-             <20140527194359.GD4366@pd.tnic>
-From: Valdis.Kletnieks@vt.edu
-References: <1400524052-25625-1-git-send-email-bp@alien8.de> <20140527151728.64e8cf59@gandalf.local.home>
-            <20140527194359.GD4366@pd.tnic>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1401230184_14392P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 27 May 2014 18:36:24 -0400
-Message-ID: <34707.1401230184@turing-police.cc.vt.edu>
+        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm/zpool: prevent zbud/zsmalloc from unloading when
+ used
+Message-ID: <20140527224002.GB25781@cerebellum.variantweb.net>
+References: <1399499496-3216-1-git-send-email-ddstreet@ieee.org>
+ <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
+ <1400958369-3588-7-git-send-email-ddstreet@ieee.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400958369-3588-7-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1401230184_14392P
-Content-Type: text/plain; charset=us-ascii
+On Sat, May 24, 2014 at 03:06:09PM -0400, Dan Streetman wrote:
+> Add try_module_get() to pool creation functions for zbud and zsmalloc,
+> and module_put() to pool destruction functions, since they now can be
+> modules used via zpool.  Without usage counting, they could be unloaded
+> while pool(s) were active, resulting in an oops.
 
-On Tue, 27 May 2014 21:43:59 +0200, Borislav Petkov said:
-> On Tue, May 27, 2014 at 03:17:28PM -0400, Steven Rostedt wrote:
-> > This looks like functionality change to me.
-> >
-> > Please make the fix of "==" --> ">=" a separate patch.
->
-> Yeah, that's actually a fix for console_loglevel values > 10. I don't
-> think it is worth the effort of splitting though ... unless you have a
-> real good reason.
+I like the idea here, but what about doing this in the zpool layer? For
+me, it is kinda weird for a module to be taking a ref on itself.  Maybe
+this is excepted practice.  Is there precedent for this?
 
-If you don't split it out, you should at least mention the bugfix in the
-changelog....
+What about having the zbud/zsmalloc drivers pass their module pointers
+to zpool_register_driver() as an additional field in struct zpool_driver
+and have zpool take the reference?  Since zpool is the one in trouble if
+the driver is unloaded.
 
---==_Exmh_1401230184_14392P
-Content-Type: application/pgp-signature
+Seth
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU4UTaAdmEQWDXROgAQL6dg//SvAX3G0OYJT7aSTo4xfHkoxfSZC+cv85
-ARFnAPADp75ZlkQQIGwLH4TWZy3GAFWo5kr5GrBZR0GW/EmBhDxsRlrpybRAWY8P
-GlCIeQK/a1LWt/DsuWHKWmiyyXHdmxQcJNB0V3wtipJKGTU6Qsieu3XF5CSBrF5h
-xVZX8QRC+L/5krrB2AfHXHXGGK2H+wNoXUDJpXzZ5j7Njtg+vWcEtNUps/uYkwD+
-3liTtVZ6jao7zv39+7XWN+SkgFvXZoQKuUUIrVn6EVTYumhFFTXikYEMQrruyQAA
-2SWrUVbGsdiTxTqQU+fUnQNlfyzBGyDR+LtWDLPF1GD9dLTOjUM/vYy+Gw5UU/cv
-2YMGvIUZktnMnIlz19kCNN30ta3wJjCwjxDEUN3faqDHD9ktG2us6K8+Jjacck2f
-pjv3v6wbqIwuS/J4JzbD5nykjeaIcUVdA0kgggfjEA8JcCnUEubgqt4JyVA48Vwh
-9t3hKhERt+v9PX3cbOTkvkpLRH+VavtL2vbwMNMRFS+5DCsLdXJGnRBYtWLtmamb
-2y4jzeoqnbQ4DKAll34bxzOeTbFPSoAq8I6dXppWmStCmlLuFMoWuncM4Jzwizy8
-A2sBSmkMS86nWCadx7MXDswRaltDVkHiN27IypZMCanaUQcO5J1EUY6SgBMxOoGs
-Y40KwZRfGWc=
-=escV
------END PGP SIGNATURE-----
-
---==_Exmh_1401230184_14392P--
+> 
+> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+> Cc: Seth Jennings <sjennings@variantweb.net>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Weijie Yang <weijie.yang@samsung.com>
+> ---
+> 
+> New for this patch set.
+> 
+>  mm/zbud.c     | 5 +++++
+>  mm/zsmalloc.c | 5 +++++
+>  2 files changed, 10 insertions(+)
+> 
+> diff --git a/mm/zbud.c b/mm/zbud.c
+> index 8a72cb1..2b3689c 100644
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -282,6 +282,10 @@ struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops)
+>  	pool = kmalloc(sizeof(struct zbud_pool), GFP_KERNEL);
+>  	if (!pool)
+>  		return NULL;
+> +	if (!try_module_get(THIS_MODULE)) {
+> +		kfree(pool);
+> +		return NULL;
+> +	}
+>  	spin_lock_init(&pool->lock);
+>  	for_each_unbuddied_list(i, 0)
+>  		INIT_LIST_HEAD(&pool->unbuddied[i]);
+> @@ -302,6 +306,7 @@ struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops)
+>  void zbud_destroy_pool(struct zbud_pool *pool)
+>  {
+>  	kfree(pool);
+> +	module_put(THIS_MODULE);
+>  }
+>  
+>  /**
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index 07c3130..2cc2647 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -946,6 +946,10 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+>  	pool = kzalloc(ovhd_size, GFP_KERNEL);
+>  	if (!pool)
+>  		return NULL;
+> +	if (!try_module_get(THIS_MODULE)) {
+> +		kfree(pool);
+> +		return NULL;
+> +	}
+>  
+>  	for (i = 0; i < ZS_SIZE_CLASSES; i++) {
+>  		int size;
+> @@ -985,6 +989,7 @@ void zs_destroy_pool(struct zs_pool *pool)
+>  		}
+>  	}
+>  	kfree(pool);
+> +	module_put(THIS_MODULE);
+>  }
+>  EXPORT_SYMBOL_GPL(zs_destroy_pool);
+>  
+> -- 
+> 1.8.3.1
+> 
