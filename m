@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaE0JLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:11:38 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:40285 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaE0JLe (ORCPT
+	id S1752378AbaE0JNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:13:40 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:48490 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036AbaE0JNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:11:34 -0400
+	Tue, 27 May 2014 05:13:38 -0400
+Date: Tue, 27 May 2014 13:13:35 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, kirill.shutemov@linux.intel.com
+Subject: [linux-next] splice call weird results
+Message-ID: <20140527091335.GC20436@moon>
 MIME-Version: 1.0
-In-Reply-To: <1400649756-31353-1-git-send-email-lejun.zhu@linux.intel.com>
-References: <1400649756-31353-1-git-send-email-lejun.zhu@linux.intel.com>
-Date: Tue, 27 May 2014 11:11:34 +0200
-Message-ID: <CACRpkdYNFpj0VR-N9=9haCT2bAvHoQs-qAhSWOdqhxizsFUbQA@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bin.yang@intel.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 7:22 AM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
+Hi! While been trying to run criu on linux-next (due to recent Kirill's patch related
+to /proc/pid/clear_refs with THP enabled) I noticed that it fails dumping programs when
+moves data from memory pages into an image file. So I wrote pretty idiotic test and
+run it on current fedora 20 kernel and then on linux-next.
 
-> Devices based on Intel SoC products such as Baytrail have a Power
-> Management IC. In the PMIC there are subsystems for voltage regulation,
-> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
-> Crystal Cove.
->
-> This patch adds support for the GPIO function in Crystal Cove.
->
-> v2:
-> - Use IRQ chip helper to provide irqdomain.
-> - Implement .remove and can now build as a module.
-> - Various fix for unreadable or ugly code pieces.
+fedora-20 output
+----------------
+[cyrill@moon criu] ~/pipe 
+Opened pipe-test.SQBcJa
+vmspliced 8192 bytes
+spliced 4096 bytes
 
-This is much improved! I still have comments though.
+linux-next
+----------
+[root@fc criu]# ~/pipe
+Opened pipe-test.9nZSW7
+vmspliced 8192 bytes
+spliced 8192 bytes
 
-> +#define GPIO_TO_CTL(gpio, dir)         \
-> +       ((gpio < 8 ? GPIO0P0CTL ## dir : GPIO1P0CTL ## dir) + (gpio % 8))
+In test I fill pipe with 8K data then splice 4K of it into a file (the test
+is below). Is it intended, or I did some silly mistake?
+---
+#define _GNU_SOURCE
 
-This is unreadble. Use an explicit static inline function instead.
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <fcntl.h>
 
-> +static void crystalcove_update_irq_type(int gpio, int type)
-> +{
-> +       u8 ctli = GPIO_TO_CTL(gpio, I);
-> +
-> +       type &= IRQ_TYPE_EDGE_BOTH;
+#include <sys/uio.h>
 
-You silently ignore all other type configurations?
+#define ARRAY_SIZE(x)	(sizeof(x)/sizeof(x[0]))
 
-> +       intel_soc_pmic_clearb(ctli, CTLI_INTCNT_BE);
-> +
-> +       if (type == IRQ_TYPE_EDGE_BOTH)
-> +               intel_soc_pmic_setb(ctli, CTLI_INTCNT_BE);
-> +       else if (type == IRQ_TYPE_EDGE_RISING)
-> +               intel_soc_pmic_setb(ctli, CTLI_INTCNT_PE);
-> +       else if (type & IRQ_TYPE_EDGE_FALLING)
-> +               intel_soc_pmic_setb(ctli, CTLI_INTCNT_NE);
-> +}
+static char buf[8 << 20];
 
-I would prefer a switch(type) {} construction with a default:
-that warns.
-
-(...)
-> +static int crystalcove_irq_type(struct irq_data *data, unsigned type)
-> +{
-> +       struct gpio_chip *gc = irq_data_get_irq_chip_data(data);
-> +       struct crystalcove_gpio *cg =
-> +               container_of(gc, struct crystalcove_gpio, chip);
-
-I would create a static inline at the top of the file instead of
-using container_of() explicitly everywhere:
-
-static inline struct crystalcove_gpio *to_cg(struct gpio_chip *gc)
+int main(int argc, char *argv[])
 {
-    return container_of(gc, struct crystalcove_gpio, chip);
+	char *tmpname, t[64] = "pipe-test.XXXXXX";
+	int _pipe[2], fd, ret = 0;
+
+	struct iovec iov[] = {
+		[0] = {
+			.iov_base	= &buf[0],
+			.iov_len	= 4096,
+		},
+
+		[1] = {
+			.iov_base	= &buf[4096],
+			.iov_len	= 4096,
+		},
+	};
+
+	if (pipe(_pipe)) {
+		perror("Can't create pipe");
+		exit(1);
+	}
+
+	memset(buf, 0x1, sizeof(buf));
+	tmpname = mktemp(t);
+
+	fd = open(tmpname, O_RDWR | O_CREAT | O_TRUNC);
+	if (fd < 0) {
+		perror("Can't open temp file");
+		close(_pipe[0]);
+		close(_pipe[1]);
+		exit(1);
+	}
+	printf("Opened %s\n", tmpname);
+
+	ret = vmsplice(_pipe[1], iov, ARRAY_SIZE(iov), SPLICE_F_GIFT);
+	printf("vmspliced %li bytes\n", (long)ret);
+
+	ret = splice(_pipe[0], NULL, fd, NULL, iov[0].iov_len, SPLICE_F_MOVE);
+	printf("spliced %li bytes\n", (long)ret);
+
+out:
+	close(_pipe[0]);
+	close(_pipe[1]);
+	close(fd);
+	unlink(tmpname);
+	return ret;
 }
-
-Then just use:
-
-struct crystalcove_gpio *cg = to_cg(gc);
-
-Everywhere. Or if you only want the cg in some case (like this?)
-
-struct crystalcove_gpio *cg = to_cg(irq_data_get_irq_chip_data(data));
-
-> +       cg->trigger_type = type;
-> +       cg->update |= UPDATE_TYPE;
-> +
-> +       return 0;
-> +}
-(...)
-
-> +       gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
-> +                            handle_simple_irq, IRQ_TYPE_NONE);
-
-Really nice. Thanks for doing this!
-
-Yours,
-Linus Walleij
