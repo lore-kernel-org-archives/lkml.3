@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaE0RUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:20:48 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:53601 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaE0RUr (ORCPT
+	id S1752501AbaE0RZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:25:24 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:53494 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaE0RZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:20:47 -0400
+	Tue, 27 May 2014 13:25:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140527102728.GD20436@moon>
-References: <20140527091335.GC20436@moon>
-	<20140527102013.3BF61E009B@blue.fi.intel.com>
-	<20140527102728.GD20436@moon>
-Date: Tue, 27 May 2014 10:20:46 -0700
-Message-ID: <CAM_iQpXsJO+VNc9yearpQE19HQkF4bM9PibbQ6bwW=OCZn1FQg@mail.gmail.com>
-Subject: Re: [linux-next] splice call weird results
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>
+Date: Tue, 27 May 2014 12:25:22 -0500
+Message-ID: <CAAih0NjG4gC-7fkD5vOvF0CQks+DhqVZLeycsju-8RMVP6dbBw@mail.gmail.com>
+Subject: inotify_rm_watch() user-space safety requirements?
+From: Jeff Smith <jsmith.lkml@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 3:27 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Tue, May 27, 2014 at 01:20:13PM +0300, Kirill A. Shutemov wrote:
->> Cyrill Gorcunov wrote:
->> > Hi! While been trying to run criu on linux-next (due to recent Kirill's patch related
->> > to /proc/pid/clear_refs with THP enabled) I noticed that it fails dumping programs when
->> > moves data from memory pages into an image file. So I wrote pretty idiotic test and
->> > run it on current fedora 20 kernel and then on linux-next.
->> >
->>
->> +Al. He reworked splice code in linux-next.
->
-> Thanks Kirill. Al, it looks like iter_file_splice_write no longer honor @len while
-> building kiocb vector but pushes as much as it can.
+inotify's behavior concerning events from removed watches (they do
+happen) and watch descriptor reuse (beyond my knowledge) is currently
+undocumented.
 
+Although it mimics a standard multiplexing interface in most regards,
+writing a robust user-space handler is comparatively more complex due
+to the atypical delivery of "stale" wd events preceding an IN_IGNORE
+event and a lack of guarantees about how quickly a wd can be reused
+via inotify_add_watch(). Not being familiar with inotify/fsnotify
+internals, it's not trivially obvious to me how the fsnotify_group
+management is being done. Up to the present, I've maintained queues of
+"dead" wd wrappers (or at least a counter) to filter stale events, but
+I am clueless whether or not this is overkill.
 
-I guess this should fix your problem:
-https://lkml.org/lkml/2014/5/27/353
+If removed descriptors are reserved until the IN_IGNORE event is
+drained from the read queue, could that be formally guaranteed? If
+it's not, is it functionality that could ever reasonably be expected
+to be added, short of some other form of new (optional?)
+queue-filter-on-rm functionality? It's my experience that the
+asynchronous handling of watch removals is a cost that seldom serves
+much user benefit.
+
+Regards,
+Jeff
