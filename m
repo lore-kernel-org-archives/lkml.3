@@ -1,191 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445AbaE0JlB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:41:01 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37022 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752197AbaE0JkH (ORCPT
+	id S1751988AbaE0JsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:48:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33075 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbaE0JsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:40:07 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 3/6] regulator: axp20x: add support for AXP221 regulators
-Date: Tue, 27 May 2014 11:38:52 +0200
-Message-Id: <1401183535-31003-4-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 27 May 2014 05:48:23 -0400
+Date: Tue, 27 May 2014 11:48:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Libo Chen <libo.chen@huawei.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, tglx@linutronix.de,
+        mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: balance storm
+Message-ID: <20140527094802.GN30445@twins.programming.kicks-ass.net>
+References: <5382AF2E.1040407@huawei.com>
+ <1401090987.5339.79.camel@marge.simpson.net>
+ <53832A36.5020205@huawei.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fNM8tsUwH0E3hRem"
+Content-Disposition: inline
+In-Reply-To: <53832A36.5020205@huawei.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add AXP221 regulator definitions and choose the appropriate definitions
-according to the variant id passed by the MFD device.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/regulator/axp20x-regulator.c | 98 +++++++++++++++++++++++++++++++++---
- 1 file changed, 90 insertions(+), 8 deletions(-)
+--fNM8tsUwH0E3hRem
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
-index 5a59982..feaa0b5 100644
---- a/drivers/regulator/axp20x-regulator.c
-+++ b/drivers/regulator/axp20x-regulator.c
-@@ -27,6 +27,9 @@
- #define AXP20X_IO_ENABLED		0x03
- #define AXP20X_IO_DISABLED		0x07
- 
-+#define AXP22X_IO_ENABLED		0x04
-+#define AXP22X_IO_DISABLED		0x03
-+
- #define AXP20X_WORKMODE_DCDC2_MASK	BIT(2)
- #define AXP20X_WORKMODE_DCDC3_MASK	BIT(1)
- 
-@@ -143,6 +146,48 @@ static const struct regulator_desc axp20x_regulators[] = {
- 		       AXP20X_IO_DISABLED),
- };
- 
-+static const struct regulator_desc axp22x_regulators[] = {
-+	AXP_DESC(AXP22X, DCDC1, "vin1", 1600, 3400, 100, AXP22X_DCDC1_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(1)),
-+	AXP_DESC(AXP22X, DCDC2, "vin2", 600, 1540, 20, AXP22X_DCDC2_V_OUT, 0x3f,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(2)),
-+	AXP_DESC(AXP22X, DCDC3, "vin3", 600, 1860, 20, AXP22X_DCDC3_V_OUT, 0x3f,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(3)),
-+	AXP_DESC(AXP22X, DCDC4, "vin4", 600, 1540, 20, AXP22X_DCDC4_V_OUT, 0x3f,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(3)),
-+	AXP_DESC(AXP22X, DCDC5, "vin5", 1000, 2550, 50, AXP22X_DCDC5_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(4)),
-+	AXP_DESC(AXP22X, DC5LDO, "vin5", 700, 1400, 100, AXP22X_DC5LDO_V_OUT, 0x7,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(0)),
-+	AXP_DESC(AXP22X, ALDO1, "aldoin", 700, 3300, 100, AXP22X_ALDO1_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(6)),
-+	AXP_DESC(AXP22X, ALDO2, "aldoin", 700, 3300, 100, AXP22X_ALDO2_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL1, BIT(7)),
-+	AXP_DESC(AXP22X, ALDO3, "aldoin", 700, 3300, 100, AXP22X_ALDO3_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL3, BIT(7)),
-+	AXP_DESC(AXP22X, DLDO1, "dldoin", 700, 3300, 100, AXP22X_DLDO1_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL2, BIT(3)),
-+	AXP_DESC(AXP22X, DLDO2, "dldoin", 700, 3300, 100, AXP22X_DLDO2_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL2, BIT(4)),
-+	AXP_DESC(AXP22X, DLDO3, "dldoin", 700, 3300, 100, AXP22X_DLDO3_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL2, BIT(5)),
-+	AXP_DESC(AXP22X, DLDO4, "dldoin", 700, 3300, 100, AXP22X_DLDO4_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL2, BIT(6)),
-+	AXP_DESC(AXP22X, ELDO1, "eldoin", 700, 3300, 100, AXP22X_ELDO1_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL2, BIT(0)),
-+	AXP_DESC(AXP22X, ELDO2, "eldoin", 700, 3300, 100, AXP22X_ELDO2_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL2, BIT(1)),
-+	AXP_DESC(AXP22X, ELDO3, "eldoin", 700, 3300, 100, AXP22X_ELDO3_V_OUT, 0x1f,
-+		    AXP22X_PWR_OUT_CTRL2, BIT(2)),
-+	AXP_DESC_IO(AXP22X, LDO_IO0, "ldoioin", 1800, 3300, 100, AXP22X_LDO_IO0_V_OUT,
-+		       0x1f, AXP20X_GPIO0_CTRL, 0x07, AXP22X_IO_ENABLED,
-+		       AXP22X_IO_DISABLED),
-+	AXP_DESC_IO(AXP22X, LDO_IO1, "ldoioin", 1800, 3300, 100, AXP22X_LDO_IO1_V_OUT,
-+		       0x1f, AXP20X_GPIO1_CTRL, 0x07, AXP22X_IO_ENABLED,
-+		       AXP22X_IO_DISABLED),
-+	AXP_DESC_FIXED(AXP22X, RTC_LDO, "rtcldoin", 3000),
-+};
-+
- #define AXP_MATCH(_family, _name, _id) \
- 	[_family##_##_id] = { \
- 		.name		= #_name, \
-@@ -159,6 +204,28 @@ static struct of_regulator_match axp20x_matches[] = {
- 	AXP_MATCH(AXP20X, ldo5, LDO5),
- };
- 
-+static struct of_regulator_match axp22x_matches[] = {
-+	AXP_MATCH(AXP22X, dcdc1, DCDC1),
-+	AXP_MATCH(AXP22X, dcdc2, DCDC2),
-+	AXP_MATCH(AXP22X, dcdc3, DCDC3),
-+	AXP_MATCH(AXP22X, dcdc4, DCDC4),
-+	AXP_MATCH(AXP22X, dcdc5, DCDC5),
-+	AXP_MATCH(AXP22X, dc5ldo, DC5LDO),
-+	AXP_MATCH(AXP22X, aldo1, ALDO1),
-+	AXP_MATCH(AXP22X, aldo2, ALDO2),
-+	AXP_MATCH(AXP22X, aldo3, ALDO3),
-+	AXP_MATCH(AXP22X, dldo1, DLDO1),
-+	AXP_MATCH(AXP22X, dldo2, DLDO2),
-+	AXP_MATCH(AXP22X, dldo3, DLDO3),
-+	AXP_MATCH(AXP22X, dldo4, DLDO4),
-+	AXP_MATCH(AXP22X, eldo1, ELDO1),
-+	AXP_MATCH(AXP22X, eldo2, ELDO2),
-+	AXP_MATCH(AXP22X, eldo3, ELDO3),
-+	AXP_MATCH(AXP22X, ldo_io0, LDO_IO0),
-+	AXP_MATCH(AXP22X, ldo_io1, LDO_IO1),
-+	AXP_MATCH(AXP22X, rtc_ldo, RTC_LDO),
-+};
-+
- static int axp20x_set_dcdc_freq(struct platform_device *pdev, u32 dcdcfreq)
- {
- 	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
-@@ -237,37 +304,52 @@ static int axp20x_regulator_probe(struct platform_device *pdev)
- 	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
- 	struct regulator_config config = { };
- 	struct regulator_init_data *init_data;
-+	struct of_regulator_match *matches;
-+	int nmatches;
-+	const struct regulator_desc *regulators;
-+	int nregulators;
- 	int ret, i;
- 	u32 workmode;
- 
--	ret = axp20x_regulator_parse_dt(pdev, axp20x_matches,
--					ARRAY_SIZE(axp20x_matches));
-+	if (axp20x->variant == AXP221_ID) {
-+		matches = axp22x_matches;
-+		nmatches = ARRAY_SIZE(axp22x_matches);
-+		regulators = axp22x_regulators;
-+		nregulators = AXP22X_REG_ID_MAX;
-+	} else {
-+		matches = axp20x_matches;
-+		nmatches = ARRAY_SIZE(axp20x_matches);
-+		regulators = axp20x_regulators;
-+		nregulators = AXP20X_REG_ID_MAX;
-+	}
-+
-+	ret = axp20x_regulator_parse_dt(pdev, matches, nmatches);
- 	if (ret)
- 		return ret;
- 
- 	for (i = 0; i < AXP20X_REG_ID_MAX; i++) {
--		init_data = axp20x_matches[i].init_data;
-+		init_data = matches[i].init_data;
- 
- 		config.dev = &pdev->dev;
- 		config.init_data = init_data;
- 		config.regmap = axp20x->regmap;
--		config.of_node = axp20x_matches[i].of_node;
-+		config.of_node = matches[i].of_node;
- 
--		rdev = devm_regulator_register(&pdev->dev, &axp20x_regulators[i],
-+		rdev = devm_regulator_register(&pdev->dev, &regulators[i],
- 					       &config);
- 		if (IS_ERR(rdev)) {
- 			dev_err(&pdev->dev, "Failed to register %s\n",
--				axp20x_regulators[i].name);
-+				regulators[i].name);
- 
- 			return PTR_ERR(rdev);
- 		}
- 
--		ret = of_property_read_u32(axp20x_matches[i].of_node, "x-powers,dcdc-workmode",
-+		ret = of_property_read_u32(matches[i].of_node, "x-powers,dcdc-workmode",
- 					   &workmode);
- 		if (!ret) {
- 			if (axp20x_set_dcdc_workmode(rdev, i, workmode))
- 				dev_err(&pdev->dev, "Failed to set workmode on %s\n",
--					axp20x_regulators[i].name);
-+					regulators[i].name);
- 		}
- 	}
- 
--- 
-1.8.3.2
+On Mon, May 26, 2014 at 07:49:10PM +0800, Libo Chen wrote:
+> On 2014/5/26 15:56, Mike Galbraith wrote:
+> > On Mon, 2014-05-26 at 11:04 +0800, Libo Chen wrote:=20
+> >> hi,
+> >>     my box has 16 cpu (E5-2658,8 core, 2 thread per core), i did a tes=
+t on
+> >> 3.4.24stable, startup 50 same process, every process is sample:
+> >>
+> >>  	#include <unistd.h>
+> >>
+> >>  	int main()
+> >>  	{
+> >>           	for (;;)
+> >>           	{
+> >>                   	unsigned int i =3D 0;
+> >>                  	 while (i< 100){
+> >>                      	 i++;
+> >>                   	}
+> >>                   	usleep(100);
+> >>           	}
+> >>
+> >>          	 return 0;
+> >>   	}
+> >>
+> >> the result is process uses 15% cpu time, perf tool shows 70w migration=
+s in 5 second.
+> >=20
+> > My 8 socket 64 core DL980 running 256 copies (3.14-rt5) munches ~4%/copy
+> > per top, and does roughly 1 sh*tload migrations, nano-work loop or not.
+> > Turn SD_SHARE_PKG_RESOURCES off at MC (not a noop here), and consumption
+> > drops to ~2%/copy, and migrations ('course) mostly go away.
 
+So:=20
+
+1) what kind of weird ass workload is that? Why are you waking up so
+often to do no work?
+
+2) turning on/off share_pkg_resource is a horrid hack whichever way
+aruond you turn it.
+
+So I suppose this is due to the select_idle_sibling() nonsense again,
+where we assumes L3 is a fair compromise between cheap enough and
+effective enough.
+
+Of course, Intel keeps growing the cpu count covered by L3 to ridiculous
+sizes, 8 cores isn't nowhere near their top silly, which shifts the
+balance, and there's always going to be pathological cases (like the
+proposed workload) where its just always going to suck eggs.
+
+Also, when running 50 such things on a 16 cpu machine, you get roughly 3
+per cpu, since their runtime is stupid low, I would expect it to pretty
+much always hit an idle cpu, which in turn should inhibit the migration.
+
+Then again, maybe the timer slack is causing you grief, resulting in all
+3 being woken at the same time, instead of having them staggered.
+
+In any case, I'm not sure what the 'regression' report is against, as
+there's only a single kernel version mentioned: 3.4, and that's almost a
+dinosaur.
+
+--fNM8tsUwH0E3hRem
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThF9NAAoJEHZH4aRLwOS6Y2UP/2TIntyUYgbf2bU9+fYnAl6Y
+L2WDIza9bCScjoPYSOzVeVg071ylQ+FkPd80uZXA1ZPdkPzF3Wv2C/c6TLTXPWtb
+f4Jdr6xYYoEAsfSqFcd4LQmp+EKI+4ZZG++urDfzo7u339fgf58SRcd2HiPuKT6Z
+mh7M7CcaCPyTUcWgtUPCzhqDyPwkJDNQI3MU+GHawtXhLHs/yCTUOjFPcDUlh53x
+RIDnjKrabxcKjIE++pWAfUx8Jl73tjbXy3xwQk7bU7DVIleqJNZeyY8IO9pm4jp7
+uxVx1+LumZvOglZVUo3C7tWFSXcuexWDjjWiAGS9xL540d0p2kDi4ybWZjo4kvu6
+Z7qahovCBdXvarzt1s1+ZYdYKjwjBeT2FFsE6PYSEHB+OxiGoEB+MveSz1QcAX4b
+rnnH50pSKNiVveYuTFjM95O29HnfooGec9194ijTcaFfNi/VjRWYueU7Tak22gqL
+qYQkNHkCNpispeUOw/a7uUsyEipftF7AFJw6FxMXyDplQRqiKNf9g9ld841k7rgv
+2PaMqIjsRciiqhqq+Ns5dY2B15s5BB6rzT8oCy7cZsesV0xF/4PoOEXJZvixVBbR
+VbUEZaJtwjTflTfgy2+0RCxv6KJd+rUp2qmriFLPqlPDeFh3B5sxeaudNnPwBrUs
+/GPb6xtrBV4OlPRCWD+d
+=OAdk
+-----END PGP SIGNATURE-----
+
+--fNM8tsUwH0E3hRem--
