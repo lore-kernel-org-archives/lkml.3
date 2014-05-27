@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaE0H5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 03:57:07 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25417 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaE0H5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 03:57:03 -0400
-Message-ID: <53844510.1040502@huawei.com>
-Date: Tue, 27 May 2014 15:56:00 +0800
-From: Libo Chen <libo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751869AbaE0H7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 03:59:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13419 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200AbaE0H7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 03:59:47 -0400
+Date: Tue, 27 May 2014 09:59:27 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 14/14] perf tests: Add test for closing dso objects on
+ EMFILE error
+Message-ID: <20140527075927.GF12920@krava.brq.redhat.com>
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+ <1400174615-2121-15-git-send-email-jolsa@kernel.org>
+ <878upohu76.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: <tglx@linutronix.de>, <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, "Li Zefan" <lizefan@huawei.com>,
-        <peterz@infradead.org>
-Subject: Re: balance storm
-References: <5382AF2E.1040407@huawei.com>	 <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com> <1401113960.23186.41.camel@marge.simpson.net>
-In-Reply-To: <1401113960.23186.41.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878upohu76.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/26 22:19, Mike Galbraith wrote:
-> On Mon, 2014-05-26 at 20:16 +0800, Libo Chen wrote: 
->> On 2014/5/26 13:11, Mike Galbraith wrote:
+On Tue, May 27, 2014 at 10:43:57AM +0900, Namhyung Kim wrote:
+> On Thu, 15 May 2014 19:23:35 +0200, Jiri Olsa wrote:
+> > Testing that perf properly closes opened dso objects
+> > and tries to reopen in case we run out of allowed file
+> > descriptors for dso data.
+> >
+> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: David Ahern <dsahern@gmail.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Jean Pihet <jean.pihet@linaro.org>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> > ---
+> >  tools/perf/tests/builtin-test.c |  4 +++
+> >  tools/perf/tests/dso-data.c     | 70 +++++++++++++++++++++++++++++++++++++++++
+> >  tools/perf/tests/tests.h        |  1 +
+> >  3 files changed, 75 insertions(+)
+> >
+> > diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+> > index c4d581a..a489cda 100644
+> > --- a/tools/perf/tests/builtin-test.c
+> > +++ b/tools/perf/tests/builtin-test.c
+> > @@ -60,6 +60,10 @@ static struct test {
+> >  		.func = test__dso_data_cache,
+> >  	},
+> >  	{
+> > +		.desc = "Test dso data reopen",
+> > +		.func = test__dso_data_reopen,
+> > +	},
+> > +	{
+> >  		.desc = "roundtrip evsel->name check",
+> >  		.func = test__perf_evsel__roundtrip_name_test,
+> >  	},
+> > diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+> > index 84ab939..ecc8acd 100644
+> > --- a/tools/perf/tests/dso-data.c
+> > +++ b/tools/perf/tests/dso-data.c
+> > @@ -328,3 +328,73 @@ int test__dso_data_cache(void)
+> >  	TEST_ASSERT_VAL("failed leadking files", nr == open_files_cnt());
+> >  	return 0;
+> >  }
+> > +
+> > +int test__dso_data_reopen(void)
+> > +{
+> > +	struct machine machine;
+> > +	long nr = open_files_cnt();
+> > +#define BUFSIZE 10
 > 
->>> Your synthetic test is the absolute worst case scenario.  There has to
->>> be work between wakeups for select_idle_sibling() to have any chance
->>> whatsoever of turning in a win.  At 0 work, it becomes 100% overhead.
->>
->> not synthetic, it is a real problem in our product. under no load, waste
->> much cpu time.
-> 
-> What happens in your product if you apply the commit I pointed out?
+> Looks like a copy-n-paste error.. :)
 
-under no load, cpu usage is up to 60%, but the same apps cost 10% on
-susp sp1.  The apps use a lot of timer.
+yea.. ;) I wonder why gcc did not scream about that
 
-I am not sure that commit is the root cause, but they do have some different
-cpu usage between 3.4.24 and suse sp1, e.g. my synthetic test before.
+SNIP
 
+> > +
+> > +	/*
+> > +	 * dso_1 should get closed, because we reached
+> > +	 * the file descriptor limit
+> > +	 */
+> > +	TEST_ASSERT_VAL("failed to close dso_0", dso_1->data.fd == -1);
 > 
->>>> so I think 15% cpu usage and migration event are too high, how to fixed?
->>>
->>> You can't for free, low latency wakeup can be worth one hell of a lot.
->>>
->>> You could do a decayed hit/miss or such to shut the thing off when the
->>> price is just too high.  Restricting migrations per unit time per task
->>> also helps cut the cost, but hurts tasks that could have gotten to the
->>> CPU quicker, and started your next bit of work.  Anything you do there
->>> is going to be a rob Peter to pay Paul thing.
->>>
->>
->> I had tried to change sched_migration_cost and sched_nr_migrate in /proc,
->> but no use.  any other  suggestion?
->>
->> I still think this is a problem to schedular.  it is better to directly solve
->> this issue instead of a workaroud
+> s/dso_0/dso_1/
 > 
-> I didn't say it wasn't a problem, it is.  I said whatever you do will be
-> a tradeoff.
-> 
-> -Mike
-> 
-> 
-> 
+> Btw, I don't see a big difference between this and previous testcase.
+> Any chance to merge them into one?
 
+- the first one tests the caching or closing of file descriptors
+  after dso__data_close is called
+  
+- the second one tests that we actually try to close dso objects
+  in case we cannot open new dso
 
+thanks,
+jirka
