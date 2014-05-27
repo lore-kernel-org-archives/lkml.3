@@ -1,49 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaE0JFp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:05:45 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:54858 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaE0JFo (ORCPT
+	id S1752087AbaE0JHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:07:50 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:55488 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684AbaE0JHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:05:44 -0400
-Date: Tue, 27 May 2014 11:05:27 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: cavium-octeon: remove checks for CONFIG_CAVIUM_GDB
-Message-ID: <20140527090527.GG20055@linux-mips.org>
-References: <1400602574.4912.43.camel@x220>
- <20140522132645.GC10287@linux-mips.org>
- <20140523213701.GD23153@alberich>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140523213701.GD23153@alberich>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 May 2014 05:07:48 -0400
+X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 May 2014 05:07:48 EDT
+From: David Drysdale <drysdale@google.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        David Drysdale <drysdale@google.com>
+Subject: [PATCHv4 man-pages 3/3] execveat.2: initial man page for execveat(2)
+Date: Tue, 27 May 2014 10:02:10 +0100
+Message-Id: <1401181330-11997-4-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1401181330-11997-1-git-send-email-drysdale@google.com>
+References: <1401181330-11997-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 11:37:01PM +0200, Andreas Herrmann wrote:
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ man2/execveat.2 | 132 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 132 insertions(+)
+ create mode 100644 man2/execveat.2
 
-> > void __init smp_cpus_done(unsigned int max_cpus)
-> > {
-> > - 	mp_ops->cpus_done();
-> > + 	if (cpus_done)
-> > + 		mp_ops->cpus_done();
-> > }
-> > 
-> > which would make a NULL cpus_done function pointer safe and allow empty definitions
-> > to be removed.
-> 
-> I'd prefer this solution over complete removal of the hook.
+diff --git a/man2/execveat.2 b/man2/execveat.2
+new file mode 100644
+index 000000000000..fbbb9f824290
+--- /dev/null
++++ b/man2/execveat.2
+@@ -0,0 +1,132 @@
++.\" Copyright (c) 2014 Google, Inc.
++.\"
++.\" %%%LICENSE_START(VERBATIM)
++.\" Permission is granted to make and distribute verbatim copies of this
++.\" manual provided the copyright notice and this permission notice are
++.\" preserved on all copies.
++.\"
++.\" Permission is granted to copy and distribute modified versions of this
++.\" manual under the conditions for verbatim copying, provided that the
++.\" entire resulting derived work is distributed under the terms of a
++.\" permission notice identical to this one.
++.\"
++.\" Since the Linux kernel and libraries are constantly changing, this
++.\" manual page may be incorrect or out-of-date.  The author(s) assume no
++.\" responsibility for errors or omissions, or for damages resulting from
++.\" the use of the information contained herein.  The author(s) may not
++.\" have taken the same level of care in the production of this manual,
++.\" which is licensed free of charge, as they might when working
++.\" professionally.
++.\"
++.\" Formatted or processed versions of this manual, if unaccompanied by
++.\" the source, must acknowledge the copyright and authors of this work.
++.\" %%%LICENSE_END
++.\"
++.TH EXECVEAT 2 2014-04-02 "Linux" "Linux Programmer's Manual"
++.SH NAME
++execveat \- execute program relative to a directory file descriptor
++.SH SYNOPSIS
++.B #include <unistd.h>
++.sp
++.BI "int execve(int " fd ", const char *" pathname ","
++.br
++.BI "           char *const " argv "[],  char *const " envp "[],"
++.br
++.BI "           int " flags);
++.SH DESCRIPTION
++The
++.BR execveat ()
++system call executes the program pointed to by the combination of \fIfd\fP and \fIpathname\fP.
++The
++.BR execveat ()
++system call operates in exactly the same way as
++.BR execve (2),
++except for the differences described in this manual page.
++
++If the pathname given in
++.I pathname
++is relative, then it is interpreted relative to the directory
++referred to by the file descriptor
++.I fd
++(rather than relative to the current working directory of
++the calling process, as is done by
++.BR execve (2)
++for a relative pathname).
++
++If
++.I pathname
++is relative and
++.I fd
++is the special value
++.BR AT_FDCWD ,
++then
++.I pathname
++is interpreted relative to the current working
++directory of the calling process (like
++.BR execve (2)).
++
++If
++.I pathname
++is absolute, then
++.I fd
++is ignored.
++
++If
++.I pathname
++is NULL, then the file descriptor
++.I fd
++specifies the file to be executed.
++
++.I flags
++can either be 0, or include the following flag:
++.TP
++.B AT_SYMLINK_NOFOLLOW
++If the file identified by
++.I fd
++and a non-NULL
++.I pathname
++is a symbolic link, then the call fails with the error
++.BR EINVAL .
++.SH "RETURN VALUE"
++On success,
++.BR execveat ()
++does not return. On error \-1 is returned, and
++.I errno
++is set appropriately.
++.SH ERRORS
++The same errors that occur for
++.BR execve (2)
++can also occur for
++.BR execveat ().
++The following additional errors can occur for
++.BR execveat ():
++.TP
++.B EBADF
++.I fd
++is not a valid file descriptor.
++.TP
++.B EINVAL
++Invalid flag specified in
++.IR flags .
++.TP
++.B ENOTDIR
++.I pathname
++is relative and
++.I fd
++is a file descriptor referring to a file other than a directory.
++.SH VERSIONS
++.BR execveat ()
++was added to Linux in kernel 3.???.
++.SH NOTES
++In addition to the reasons explained in
++.BR openat (2),
++the
++.BR execveat ()
++system call is also needed to allow
++.BR fexecve (3)
++to be implemented on systems that do not have the
++.I /proc
++filesystem mounted.
++.SH SEE ALSO
++.BR execve (2),
++.BR fexecve (3)
+--
+1.9.1.423.g4596e3a
 
-In the end that's what I just did.
-
-Which leaves smp_cpus_done() empty.  I think I'm going to put in a
-function to print a summary of CPUs booted but that's for another
-patch.
-
-  Ralf
