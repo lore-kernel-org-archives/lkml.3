@@ -1,126 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287AbaE0Sp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:45:58 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:54806 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868AbaE0Spy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:45:54 -0400
+	id S1753343AbaE0SqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:46:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60317 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752868AbaE0SqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 14:46:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,921,1392192000"; 
+   d="scan'208";a="518520961"
+Message-ID: <5384DD67.3010408@intel.com>
+Date: Tue, 27 May 2014 11:45:59 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVZADpErLwsyaWEQqVa45_VEMyQg+L+g2gR4NhwNCXd4g@mail.gmail.com>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
-	<1400799936-26499-7-git-send-email-keescook@chromium.org>
-	<CALCETrWR6s7wqSwEeygOYqizrxy8eAyHb3SqvLoTooMZ+MfdqA@mail.gmail.com>
-	<CAGXu5j+=itFtHe25pZxXsk+1C1Cca4DGm83SC93=xRctUdeXsw@mail.gmail.com>
-	<CALCETrX3fjeHeigLXy7Juq6XrNFEeZLQPLmQhiOwBDgc0MRtBw@mail.gmail.com>
-	<CAGXu5jL4erM41JBG703adSht-f4K7fAfbG9XyjPNUwiyAde-Nw@mail.gmail.com>
-	<CALCETrVZADpErLwsyaWEQqVa45_VEMyQg+L+g2gR4NhwNCXd4g@mail.gmail.com>
-Date: Tue, 27 May 2014 11:45:53 -0700
-X-Google-Sender-Auth: sJKRrytP2VN3YACaKJqvUM1r9jo
-Message-ID: <CAGXu5jKdJDS5k+tpUhQdyMZt40S8H3C-4zFQQS-dmaP3dE6Avw@mail.gmail.com>
-Subject: Re: [PATCH v5 6/6] seccomp: add SECCOMP_EXT_ACT_TSYNC and SECCOMP_FILTER_TSYNC
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        liguang <lig.fnst@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] mm: bootmem: Check pfn_valid() before accessing struct
+ page
+References: <1401199802-10212-1-git-send-email-matt.fleming@intel.com>
+In-Reply-To: <1401199802-10212-1-git-send-email-matt.fleming@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 11:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, May 27, 2014 at 11:24 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Mon, May 26, 2014 at 12:27 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Fri, May 23, 2014 at 10:05 AM, Kees Cook <keescook@chromium.org> wrote:
->>>> On Thu, May 22, 2014 at 4:11 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> On Thu, May 22, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
->>>>>> Applying restrictive seccomp filter programs to large or diverse
->>>>>> codebases often requires handling threads which may be started early in
->>>>>> the process lifetime (e.g., by code that is linked in). While it is
->>>>>> possible to apply permissive programs prior to process start up, it is
->>>>>> difficult to further restrict the kernel ABI to those threads after that
->>>>>> point.
->>>>>>
->>>>>> This change adds a new seccomp extension action for synchronizing thread
->>>>>> group seccomp filters and a prctl() for accessing that functionality,
->>>>>> as well as a flag for SECCOMP_EXT_ACT_FILTER to perform sync at filter
->>>>>> installation time.
->>>>>>
->>>>>> When calling prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER,
->>>>>> flags, filter) with flags containing SECCOMP_FILTER_TSYNC, or when calling
->>>>>> prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0), it
->>>>>> will attempt to synchronize all threads in current's threadgroup to its
->>>>>> seccomp filter program. This is possible iff all threads are using a filter
->>>>>> that is an ancestor to the filter current is attempting to synchronize to.
->>>>>> NULL filters (where the task is running as SECCOMP_MODE_NONE) are also
->>>>>> treated as ancestors allowing threads to be transitioned into
->>>>>> SECCOMP_MODE_FILTER. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
->>>>>> calling thread, no_new_privs will be set for all synchronized threads too.
->>>>>> On success, 0 is returned. On failure, the pid of one of the failing threads
->>>>>> will be returned, with as many filters installed as possible.
->>>>>
->>>>> Is there a use case for adding a filter and synchronizing filters
->>>>> being separate operations?  If not, I think this would be easier to
->>>>> understand and to use if there was just a single operation.
->>>>
->>>> Yes: if the other thread's lifetime is not well controlled, it's good
->>>> to be able to have a distinct interface to retry the thread sync that
->>>> doesn't require adding "no-op" filters.
->>>
->>> Wouldn't this still be solved by:
->>>
->>> seccomp_add_filter(final_filter, SECCOMP_FILTER_ALL_THREADS);
->>>
->>> the idea would be that, if seccomp_add_filter fails, then you give up
->>> and, if it succeeds, then you're done.  It shouldn't fail unless out
->>> of memory or you've nested too deeply.
->>
->> I wanted to keep the case of being able to to wait for non-ancestor
->> threads to finish. For example, 2 threads start and set separate
->> filters. 1 does work and exits, 2 starts another thread (3) which adds
->> filters, does work, and then waits for 1 to finish by calling TSYNC.
->> Once 1 dies, TSYNC succeeds. In the case of not having direct control
->> over thread lifetime (say, when using third-party libraries), I'd like
->> to retain the flexibility of being able to do TSYNC without needing a
->> filter being attached to it.
->
-> I must admit this strikes me as odd.  What's the point of having a
-> thread set a filter if it intends to be a short-lived thread?
+On 05/27/2014 07:10 AM, Matt Fleming wrote:
+> We need to check that a pfn is valid before handing it to pfn_to_page()
+> since on low memory systems with CONFIG_HIGHMEM=n it's possible that a
+> pfn may not have a corresponding struct page.
+> 
+> This is in fact the case for one of Alan's machines where some of the
+> EFI boot services pages live in highmem, and running a kernel without
+> CONFIG_HIGHMEM enabled results in the following oops
+...
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index 90bd3507b413..406e9cb1d58c 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -164,6 +164,9 @@ void __init free_bootmem_late(unsigned long physaddr, unsigned long size)
+>  	end = PFN_DOWN(physaddr + size);
+>  
+>  	for (; cursor < end; cursor++) {
+> +		if (!pfn_valid(cursor))
+> +			continue;
+> +
+>  		__free_pages_bootmem(pfn_to_page(cursor), 0);
+>  		totalram_pages++;
+>  	}
 
-I was illustrating the potential insanity of third-party libraries.
-There isn't much sense in that behavior, but if it exists, working
-around it is harder without the separate TSYNC-only call.
+I don't think this is quite right.  pfn_valid() tells us whether we have
+a 'struct page' there or not.  *BUT*, it does not tell us whether it is
+RAM that we can actually address and than can be freed in to the buddy
+allocator.
 
-> In any case, I must have missed the ability for TSYNC to block.  Hmm.
-> That seems complicated, albeit potentially useful.
+I think sparsemem is where this matters.  Let's say mem= caused lowmem
+to end in the middle of a section (or that 896MB wasn't
+section-aligned).  Then someone calls free_bootmem_late() on an area
+that is in the last section, but _above_ max_mapnr.  It'll be
+pfn_valid(), we'll free it in to the buddy allocator, and we'll blam the
+first time we try to write to a bogus vaddr after a phys_to_virt().
 
-Oh, no, I didn't mean to imply TSYNC should block. I meant that thread
-3 could do:
+At a higher level, I don't like the idea of the bootmem code papering
+over bugs when somebody calls in to it trying to _free_ stuff that's not
+memory (as far as the kernel is concerned).
 
-while (TSYNC-fails)
-   wait-on-or-kill-unexpected-thread
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+I think the right thing to do is to call in to the e820 code and see if
+the range is E820_RAM before trying to bootmem-free it.
