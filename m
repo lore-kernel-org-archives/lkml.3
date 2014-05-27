@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbaE0MH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 08:07:58 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36967 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113AbaE0MHx (ORCPT
+	id S1752304AbaE0MIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 08:08:05 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:62768 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaE0MIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 08:07:53 -0400
+	Tue, 27 May 2014 08:08:02 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
         edubezval@gmail.com, pavel@ucw.cz, lgirdwood@gmail.com,
         broonie@kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 1/2] regulators: Add definition of regulator_set_voltage_time() for !CONFIG_REGULATOR
-Date: Tue, 27 May 2014 17:37:29 +0530
-Message-Id: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 2/2] cpufreq: cpufreq-cpu0: remove dependency on THERMAL and REGULATOR
+Date: Tue, 27 May 2014 17:37:30 +0530
+Message-Id: <9ce16082a5851781b49b0fe5918a55588126b3d9.1401192160.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+In-Reply-To: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already have dummy implementation for most of the regulators APIs for
-!CONFIG_REGULATOR case and were missing it for regulator_set_voltage_time().
+cpufreq-cpu0 uses thermal framework to register a cooling device, but doesn't
+depend on it as there are dummy calls provided by thermal layer when
+CONFIG_THERMAL=n. And when these calls fail, the driver is still usable.
 
-Found this issue while compiling cpufreq-cpu0 driver without regulators support
-in kernel.
+Similar explanation is valid for regulators as well. We do have dummy calls
+available for regulator APIs and the driver can work even when those calls
+fail.
 
-drivers/cpufreq/cpufreq-cpu0.c: In function ‘cpu0_cpufreq_probe’:
-drivers/cpufreq/cpufreq-cpu0.c:186:3: error: implicit declaration of function ‘regulator_set_voltage_time’ [-Werror=implicit-function-declaration]
-
-Fix this by adding dummy definition for regulator_set_voltage_time().
+So, we don't really need to mention thermal and regulators as a dependency for
+cpufreq-cpu0 in Kconfig. Remove it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-Liam/Broonie: Please see if this can go through Rafael as 2nd patch is dependent
-on it.
+V1-V2: Remove dependency on REGULATORs as well.
 
- include/linux/regulator/consumer.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/cpufreq/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index 1a4a8c1..0cfc286 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -397,6 +397,12 @@ static inline int regulator_set_voltage(struct regulator *regulator,
- 	return 0;
- }
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 1fbe11f..e473d65 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -185,7 +185,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
  
-+static inline int regulator_set_voltage_time(struct regulator *regulator,
-+					     int old_uV, int new_uV)
-+{
-+	return 0;
-+}
-+
- static inline int regulator_get_voltage(struct regulator *regulator)
- {
- 	return -EINVAL;
+ config GENERIC_CPUFREQ_CPU0
+ 	tristate "Generic CPU0 cpufreq driver"
+-	depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
++	depends on HAVE_CLK && OF
+ 	select PM_OPP
+ 	help
+ 	  This adds a generic cpufreq driver for CPU0 frequency management.
 -- 
 2.0.0.rc2
 
