@@ -1,199 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaE0V7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 17:59:31 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:40477 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953AbaE0V7M (ORCPT
+	id S1753434AbaE0WAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:00:19 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:35971 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363AbaE0WAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 17:59:12 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: linux-kernel@vger.kernel.org, lxc-devel@lists.linuxcontainers.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Michael H. Warfield" <mhw@wittsend.com>, Marian Marinov <mm@1h.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael J Coss <michael.coss@alcatel-lucent.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: [RFC PATCH 2/2] loop: Permit priveleged operations within user namespaces
-Date: Tue, 27 May 2014 23:58:56 +0200
-Message-Id: <1401227936-15698-3-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
-References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
+	Tue, 27 May 2014 18:00:17 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/2] ARM: dts: mvebu: split SolidRun CuBox into variants
+Date: Wed, 28 May 2014 00:00:06 +0200
+Message-Id: <1401228006-3212-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Priveleged operations should be allowed on loop devices within a
-devloop mount by root within the user namespace which owns the
-mount. Stash away the namespace at mount time and allow
-CAP_SYS_ADMIN within this namespace to perform priveleged
-operations on loop devices.
+As Mainlining effort for SolidRun CuBox has been carried out on the
+Engineering Sample, the board DTS was reflecting this. Actually,
+SolidRun CuBox comes in three different variants:
+Engineering Sample (ES), production with 1GB RAM (1G),
+and production with 2GB RAM (2G).
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Therefore, we base current dove-cubox.dts on to the 1G production
+variant and add a ES dts to add required quirk for misrouted SDHCI
+card detect on top of dove-cubox.dts. For the 2G variant we rely on
+the bootloader to setup correct RAM size.
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- drivers/block/loop.c   | 27 ++++++++++++++++++++++-----
- fs/loopfs/inode.c      | 11 +++++++++++
- include/linux/loopfs.h |  7 +++++++
- 3 files changed, 40 insertions(+), 5 deletions(-)
+Changelog:
+v1->v2:
+- drop 2G board dts and rely on bootloader (Suggested by Jason Cooper)
+- rework board files to allow to include 1G into ES and add quirks only
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index b69e6e91af10..34ade8193ca1 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -86,6 +86,19 @@ static DEFINE_MUTEX(loop_index_mutex);
- static int max_part;
- static int part_shift;
- 
-+static bool loop_capable(struct loop_device *lo, int cap)
-+{
-+	struct user_namespace *ns;
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/Makefile          |  1 +
+ arch/arm/boot/dts/dove-cubox-es.dts | 12 ++++++++++++
+ arch/arm/boot/dts/dove-cubox.dts    |  3 ---
+ 3 files changed, 13 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/boot/dts/dove-cubox-es.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 35c146f31e46..e7fec04e659d 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -405,6 +405,7 @@ dtb-$(CONFIG_MACH_ARMADA_XP) += \
+ 	armada-xp-openblocks-ax3-4.dtb
+ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
+ 	dove-cubox.dtb \
++	dove-cubox-es.dtb \
+ 	dove-d2plug.dtb \
+ 	dove-d3plug.dtb \
+ 	dove-dove-db.dtb
+diff --git a/arch/arm/boot/dts/dove-cubox-es.dts b/arch/arm/boot/dts/dove-cubox-es.dts
+new file mode 100644
+index 000000000000..e28ef056dd17
+--- /dev/null
++++ b/arch/arm/boot/dts/dove-cubox-es.dts
+@@ -0,0 +1,12 @@
++#include "dove-cubox.dts"
 +
-+	if (lo->loopfs_inode) {
-+		ns = loopfs_user_ns(loopfs_sb_from_inode(lo->loopfs_inode));
-+		if (ns)
-+			return ns_capable(ns, cap);
-+	}
++/ {
++	model = "SolidRun CuBox (Engineering Sample)";
++	compatible = "solidrun,cubox-es", "solidrun,cubox", "marvell,dove";
++};
 +
-+	return capable(cap);
-+}
-+
- /*
-  * Transfer functions
-  */
-@@ -1077,7 +1090,7 @@ loop_set_status(struct loop_device *lo, const struct loop_info64 *info)
++&sdio0 {
++	/* sdio0 card detect is connected to wrong pin on CuBox ES */
++	cd-gpios = <&gpio0 12 1>;
++	pinctrl-0 = <&pmx_sdio0 &pmx_gpio_12>;
++};
+diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+index 7a70f4ca502a..aae7efc09b0b 100644
+--- a/arch/arm/boot/dts/dove-cubox.dts
++++ b/arch/arm/boot/dts/dove-cubox.dts
+@@ -111,9 +111,6 @@
  
- 	if (lo->lo_encrypt_key_size &&
- 	    !uid_eq(lo->lo_key_owner, uid) &&
--	    !capable(CAP_SYS_ADMIN))
-+	    !loop_capable(lo, CAP_SYS_ADMIN))
- 		return -EPERM;
- 	if (lo->lo_state != Lo_bound)
- 		return -ENXIO;
-@@ -1167,7 +1180,8 @@ loop_get_status(struct loop_device *lo, struct loop_info64 *info)
- 	memcpy(info->lo_crypt_name, lo->lo_crypt_name, LO_NAME_SIZE);
- 	info->lo_encrypt_type =
- 		lo->lo_encryption ? lo->lo_encryption->number : 0;
--	if (lo->lo_encrypt_key_size && capable(CAP_SYS_ADMIN)) {
-+	if (lo->lo_encrypt_key_size &&
-+	    loop_capable(lo, CAP_SYS_ADMIN)) {
- 		info->lo_encrypt_key_size = lo->lo_encrypt_key_size;
- 		memcpy(info->lo_encrypt_key, lo->lo_encrypt_key,
- 		       lo->lo_encrypt_key_size);
-@@ -1312,7 +1326,8 @@ static int lo_ioctl(struct block_device *bdev, fmode_t mode,
- 		break;
- 	case LOOP_SET_STATUS:
- 		err = -EPERM;
--		if ((mode & FMODE_WRITE) || capable(CAP_SYS_ADMIN))
-+		if ((mode & FMODE_WRITE) ||
-+		    loop_capable(lo, CAP_SYS_ADMIN))
- 			err = loop_set_status_old(lo,
- 					(struct loop_info __user *)arg);
- 		break;
-@@ -1321,7 +1336,8 @@ static int lo_ioctl(struct block_device *bdev, fmode_t mode,
- 		break;
- 	case LOOP_SET_STATUS64:
- 		err = -EPERM;
--		if ((mode & FMODE_WRITE) || capable(CAP_SYS_ADMIN))
-+		if ((mode & FMODE_WRITE) ||
-+		    loop_capable(lo, CAP_SYS_ADMIN))
- 			err = loop_set_status64(lo,
- 					(struct loop_info64 __user *) arg);
- 		break;
-@@ -1330,7 +1346,8 @@ static int lo_ioctl(struct block_device *bdev, fmode_t mode,
- 		break;
- 	case LOOP_SET_CAPACITY:
- 		err = -EPERM;
--		if ((mode & FMODE_WRITE) || capable(CAP_SYS_ADMIN))
-+		if ((mode & FMODE_WRITE) ||
-+		    loop_capable(lo, CAP_SYS_ADMIN))
- 			err = loop_set_capacity(lo, bdev);
- 		break;
- 	default:
-diff --git a/fs/loopfs/inode.c b/fs/loopfs/inode.c
-index 78dbaf831d9b..6410af5700c4 100644
---- a/fs/loopfs/inode.c
-+++ b/fs/loopfs/inode.c
-@@ -20,6 +20,7 @@
- #include <linux/miscdevice.h>
- #include <linux/parser.h>
- #include <linux/fsnotify.h>
-+#include <linux/user_namespace.h>
- #include <linux/loopfs.h>
- 
- static struct vfsmount *loopfs_mnt;
-@@ -31,6 +32,7 @@ struct loop_mount_opts {
- struct loop_fs_info {
- 	struct dentry *control_dentry;
- 	struct loop_mount_opts opts;
-+	struct user_namespace *user_ns;
- 	kuid_t root_uid;
- 	kgid_t root_gid;
+ &sdio0 {
+ 	status = "okay";
+-	/* sdio0 card detect is connected to wrong pin on CuBox */
+-	cd-gpios = <&gpio0 12 1>;
+-	pinctrl-0 = <&pmx_sdio0 &pmx_gpio_12>;
  };
-@@ -57,6 +59,13 @@ struct super_block *loopfs_sb_from_inode(struct inode *inode)
- 	return loopfs_mnt->mnt_sb;
- }
  
-+struct user_namespace *loopfs_user_ns(struct super_block *sb)
-+{
-+	if (!sb)
-+		return NULL;
-+	return LOOPFS_SB(sb)->user_ns;
-+}
-+
- static int mknod_loop_control(struct super_block *sb)
- {
- 	int ret = 0;
-@@ -147,6 +156,7 @@ static int loopfs_fill_super(struct super_block *s, void *data, int silent)
- 		return -ENOMEM;
- 
- 	s->s_fs_info = fsi;
-+	fsi->user_ns = get_user_ns(current_user_ns());
- 
- 	fsi->root_uid = make_kuid(current_user_ns(), 0);
- 	if (!uid_valid(fsi->root_uid))
-@@ -237,6 +247,7 @@ cleanup:
- static void loopfs_kill_sb(struct super_block *sb)
- {
- 	loop_release_devices(sb);
-+	put_user_ns(LOOPFS_SB(sb)->user_ns);
- 	kfree(LOOPFS_SB(sb));
- 	kill_litter_super(sb);
- }
-diff --git a/include/linux/loopfs.h b/include/linux/loopfs.h
-index 27deadd02364..a4ff5094073e 100644
---- a/include/linux/loopfs.h
-+++ b/include/linux/loopfs.h
-@@ -14,10 +14,12 @@
- #include <linux/errno.h>
- #include <linux/fs.h>
- #include <linux/magic.h>
-+#include <linux/user_namespace.h>
- 
- #ifdef CONFIG_BLK_DEV_LOOP
- 
- struct super_block *loopfs_sb_from_inode(struct inode *inode);
-+struct user_namespace *loopfs_user_ns(struct super_block *sb);
- struct inode *loopfs_new_dev(struct inode *ref_inode, dev_t device,
- 			     int lo_number);
- void loopfs_kill_dev(struct inode *inode);
-@@ -32,6 +34,11 @@ static inline struct super_block *loopfs_sb_from_inode(struct inode *inode)
- 	return NULL;
- }
- 
-+static inline struct user_namespace *loopfs_user_ns(struct super_block *sb)
-+{
-+	return NULL;
-+}
-+
- static inline struct inode *loopfs_new_dev(struct inode *ref_inode,
- 					   dev_t device, int lo_number)
- {
+ &spi0 {
 -- 
 1.9.1
 
