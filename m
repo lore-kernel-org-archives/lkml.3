@@ -1,251 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaE0IXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:23:34 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:42491 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaE0IWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:22:31 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-8d-53844b442960
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Changman Lee'" <cm224.lee@samsung.com>
-Cc: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-References: <00f501cf7944$7e8a65d0$7b9f3170$@samsung.com>
- <20140527012505.GA4886@cm224.lee>
- <00ff01cf7975$a5f5fd10$f1e1f730$@samsung.com> <20140527072048.GC4886@cm224.lee>
-In-reply-to: <20140527072048.GC4886@cm224.lee>
-Subject: RE: [f2fs-dev] [PATCH v2] f2fs: avoid crash when trace
- f2fs_submit_page_mbio event in ra_sum_pages
-Date: Tue, 27 May 2014 16:21:39 +0800
-Message-id: <010601cf7984$cc11b430$64351c90$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHIWO27tRuSxAm/djtzsmpDxZ6XWQJaFYzdAl+Bo6kCqoTQApsnMOBA
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9jAV0X75Zgg5/3uCyu7Wtksri+6y+T
-	xaVF7hZ79p5ksbi8aw6bA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoEr48Gb/cwF
-	Rxwreh7/YW9gvGLUxcjJISFgIrFifx8zhC0mceHeerYuRi4OIYFFjBItTyayQjg/GCXW7d7G
-	DlLFJqAisbzjPxOILSKgJbG/p5sFpIhZYBKjxJKfzSwQHesZJT6cXQ1WxSmgJ3Hp82WwbmGB
-	XIm7a98zdjFycLAIqEqcPmwDEuYVsJT4tH4HE4QtKPFj8j0WEJsZaMH6nceZIGx5ic1r3kKd
-	qiCx4+xrRogj3CTuv7/FCFEjLrHxyC2WCYxCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk9
-	11CvODG3uDQvXS85P3cTIzgOnkntYFzZYHGIUYCDUYmHd4Jvc7AQa2JZcWXuIUYJDmYlEd5O
-	l5ZgId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxSDYwCtp7y
-	2q3W34pXGGa9fN6oeEdKQLpjuuIEmbkOTWGr/rqYMPtf3N/4PSv6VNR63bNF7r8slQ4KLf+p
-	H2jgMDvxhFfJRvYr9jdjpMOk/+VZvKquk1E+0nfx9PODc5/65wZpnZVL4lMO3Z/8+lKl2HuH
-	Rce9FLUlTvVI9bH4swjNXFwy757ONCWW4oxEQy3mouJEAGuVHJJ/AgAA
+	id S1752731AbaE0IWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:22:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23007 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751308AbaE0IWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:22:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,917,1392192000"; 
+   d="scan'208";a="545380576"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: [RFC Patch V1 1/4] x86, irq: refine mp_register_ioapic() to prepare for IOAPIC hotplug
+Date: Tue, 27 May 2014 16:24:34 +0800
+Message-Id: <1401179077-2020-2-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1401179077-2020-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1401179077-2020-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi changman,
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/io_apic.h |    4 +-
+ arch/x86/kernel/apic/io_apic.c |  143 ++++++++++++++++++++++++++--------------
+ 2 files changed, 94 insertions(+), 53 deletions(-)
 
-> -----Original Message-----
-> From: Changman Lee [mailto:cm224.lee@samsung.com]
-> Sent: Tuesday, May 27, 2014 3:21 PM
-> To: Chao Yu
-> Cc: 'Jaegeuk Kim'; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid crash when trace f2fs_submit_page_mbio event
-> in ra_sum_pages
-> 
-> On Tue, May 27, 2014 at 02:32:57PM +0800, Chao Yu wrote:
-> > Hi changman,
-> >
-> > > -----Original Message-----
-> > > From: Changman Lee [mailto:cm224.lee@samsung.com]
-> > > Sent: Tuesday, May 27, 2014 9:25 AM
-> > > To: Chao Yu
-> > > Cc: Jaegeuk Kim; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > > linux-f2fs-devel@lists.sourceforge.net
-> > > Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid crash when trace f2fs_submit_page_mbio event
-> > > in ra_sum_pages
-> > >
-> > > Hi, Chao
-> > >
-> > > Could you think about following once.
-> > > move node_inode in front of build_segment_manager, then use node_inode
-> > > instead of bd_inode.
-> >
-> > Jaegeuk and I discussed this solution previously in
-> > [PATCH 3/3 V3] f2fs: introduce f2fs_cache_node_page() to add page into node_inode cache
-> >
-> > You can see it from this url:
-> > http://sourceforge.net/p/linux-f2fs/mailman/linux-f2fs-devel/?viewmonth=201312&page=5
-> >
-> > And it seems not easy to change order of build_*_manager and make node_inode,
-> > because there are dependency between them.
-> >
-> 
-> Sorry to make a mess your patch thread.
-
-It doesn't matter, I think any complaint and suggestion is welcomed here,
-and thanks for your review.
-
-> I've understood it. In your patch, using NAT journal seems to be
-> possible. Anyway, thanks for your answer.
-
-Maybe it could, but now we should discard that patch because previous
-implementation of ra_sum_pages() which the patch based could cause a crash.
-
-Any problem founded here, please tell me, thanks. :)
-
-> 
-> > >
-> > > On Tue, May 27, 2014 at 08:41:07AM +0800, Chao Yu wrote:
-> > > > Previously we allocate pages with no mapping in ra_sum_pages(), so we may
-> > > > encounter a crash in event trace of f2fs_submit_page_mbio where we access
-> > > > mapping data of the page.
-> > > >
-> > > > We'd better allocate pages in bd_inode mapping and invalidate these pages after
-> > > > we restore data from pages. It could avoid crash in above scenario.
-> > > >
-> > > > Changes from V1
-> > > >  o remove redundant code in ra_sum_pages() suggested by Jaegeuk Kim.
-> > > >
-> > > > Call Trace:
-> > > >  [<f1031630>] ? ftrace_raw_event_f2fs_write_checkpoint+0x80/0x80 [f2fs]
-> > > >  [<f10377bb>] f2fs_submit_page_mbio+0x1cb/0x200 [f2fs]
-> > > >  [<f103c5da>] restore_node_summary+0x13a/0x280 [f2fs]
-> > > >  [<f103e22d>] build_curseg+0x2bd/0x620 [f2fs]
-> > > >  [<f104043b>] build_segment_manager+0x1cb/0x920 [f2fs]
-> > > >  [<f1032c85>] f2fs_fill_super+0x535/0x8e0 [f2fs]
-> > > >  [<c115b66a>] mount_bdev+0x16a/0x1a0
-> > > >  [<f102f63f>] f2fs_mount+0x1f/0x30 [f2fs]
-> > > >  [<c115c096>] mount_fs+0x36/0x170
-> > > >  [<c1173635>] vfs_kern_mount+0x55/0xe0
-> > > >  [<c1175388>] do_mount+0x1e8/0x900
-> > > >  [<c1175d72>] SyS_mount+0x82/0xc0
-> > > >  [<c16059cc>] sysenter_do_call+0x12/0x22
-> > > >
-> > > > Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > ---
-> > > >  fs/f2fs/node.c |   52 ++++++++++++++++++++++++----------------------------
-> > > >  1 file changed, 24 insertions(+), 28 deletions(-)
-> > > >
-> > > > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> > > > index 3d60d3d..02a59e9 100644
-> > > > --- a/fs/f2fs/node.c
-> > > > +++ b/fs/f2fs/node.c
-> > > > @@ -1658,35 +1658,29 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
-> > > >
-> > > >  /*
-> > > >   * ra_sum_pages() merge contiguous pages into one bio and submit.
-> > > > - * these pre-readed pages are linked in pages list.
-> > > > + * these pre-readed pages are alloced in bd_inode's mapping tree.
-> > > >   */
-> > > > -static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
-> > > > +static int ra_sum_pages(struct f2fs_sb_info *sbi, struct page **pages,
-> > > >  				int start, int nrpages)
-> > > >  {
-> > > > -	struct page *page;
-> > > > -	int page_idx = start;
-> > > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
-> > > > +	struct address_space *mapping = inode->i_mapping;
-> > > > +	int i, page_idx = start;
-> > > >  	struct f2fs_io_info fio = {
-> > > >  		.type = META,
-> > > >  		.rw = READ_SYNC | REQ_META | REQ_PRIO
-> > > >  	};
-> > > >
-> > > > -	for (; page_idx < start + nrpages; page_idx++) {
-> > > > -		/* alloc temporal page for read node summary info*/
-> > > > -		page = alloc_page(GFP_F2FS_ZERO);
-> > > > -		if (!page)
-> > > > +	for (i = 0; page_idx < start + nrpages; page_idx++, i++) {
-> > > > +		/* alloc page in bd_inode for reading node summary info */
-> > > > +		pages[i] = grab_cache_page(mapping, page_idx);
-> > > > +		if (!pages[i])
-> > > >  			break;
-> > > > -
-> > > > -		lock_page(page);
-> > > > -		page->index = page_idx;
-> > > > -		list_add_tail(&page->lru, pages);
-> > > > +		f2fs_submit_page_mbio(sbi, pages[i], page_idx, &fio);
-> > > >  	}
-> > > >
-> > > > -	list_for_each_entry(page, pages, lru)
-> > > > -		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
-> > > > -
-> > > >  	f2fs_submit_merged_bio(sbi, META, READ);
-> > > > -
-> > > > -	return page_idx - start;
-> > > > +	return i;
-> > > >  }
-> > > >
-> > > >  int restore_node_summary(struct f2fs_sb_info *sbi,
-> > > > @@ -1694,11 +1688,11 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
-> > > >  {
-> > > >  	struct f2fs_node *rn;
-> > > >  	struct f2fs_summary *sum_entry;
-> > > > -	struct page *page, *tmp;
-> > > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
-> > > >  	block_t addr;
-> > > >  	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-> > > > -	int i, last_offset, nrpages, err = 0;
-> > > > -	LIST_HEAD(page_list);
-> > > > +	struct page *pages[bio_blocks];
-> > > > +	int i, idx, last_offset, nrpages, err = 0;
-> > > >
-> > > >  	/* scan the node segment */
-> > > >  	last_offset = sbi->blocks_per_seg;
-> > > > @@ -1709,29 +1703,31 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
-> > > >  		nrpages = min(last_offset - i, bio_blocks);
-> > > >
-> > > >  		/* read ahead node pages */
-> > > > -		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
-> > > > +		nrpages = ra_sum_pages(sbi, pages, addr, nrpages);
-> > > >  		if (!nrpages)
-> > > >  			return -ENOMEM;
-> > > >
-> > > > -		list_for_each_entry_safe(page, tmp, &page_list, lru) {
-> > > > +		for (idx = 0; idx < nrpages; idx++) {
-> > > >  			if (err)
-> > > >  				goto skip;
-> > > >
-> > > > -			lock_page(page);
-> > > > -			if (unlikely(!PageUptodate(page))) {
-> > > > +			lock_page(pages[idx]);
-> > > > +			if (unlikely(!PageUptodate(pages[idx]))) {
-> > > >  				err = -EIO;
-> > > >  			} else {
-> > > > -				rn = F2FS_NODE(page);
-> > > > +				rn = F2FS_NODE(pages[idx]);
-> > > >  				sum_entry->nid = rn->footer.nid;
-> > > >  				sum_entry->version = 0;
-> > > >  				sum_entry->ofs_in_node = 0;
-> > > >  				sum_entry++;
-> > > >  			}
-> > > > -			unlock_page(page);
-> > > > +			unlock_page(pages[idx]);
-> > > >  skip:
-> > > > -			list_del(&page->lru);
-> > > > -			__free_pages(page, 0);
-> > > > +			page_cache_release(pages[idx]);
-> > > >  		}
-> > > > +
-> > > > +		invalidate_mapping_pages(inode->i_mapping, addr,
-> > > > +							addr + nrpages);
-> > > >  	}
-> > > >  	return err;
-> > > >  }
-> > > > --
-> > > > 1.7.9.5
-> > > >
-> > > >
-> > > >
-> > > > ------------------------------------------------------------------------------
-> > > > The best possible search technologies are now affordable for all companies.
-> > > > Download your FREE open source Enterprise Search Engine today!
-> > > > Our experts will assist you in its installation for $59/mo, no commitment.
-> > > > Test it for FREE on our Cloud platform anytime!
-> > > > http://pubads.g.doubleclick.net/gampad/clk?id=145328191&iu=/4140/ostg.clktrk
-> > > > _______________________________________________
-> > > > Linux-f2fs-devel mailing list
-> > > > Linux-f2fs-devel@lists.sourceforge.net
-> > > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 6b40122bec0c..64379c285435 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -181,8 +181,8 @@ extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ extern u32 mp_pin_to_gsi(int ioapic, int pin);
+ extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
+ extern void mp_unmap_irq(int irq);
+-extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-				      ioapic_create_domain_fn cb, void *arg);
++extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
++			      ioapic_create_domain_fn cb, void *arg);
+ extern struct irq_domain *mp_irqdomain_create(int ioapic,
+ 		struct device_node *np, const struct irq_domain_ops *ops);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index c7c84d5c0e57..f70fa239f34b 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -85,6 +85,7 @@ int sis_apic_bug = -1;
+ static DEFINE_RAW_SPINLOCK(ioapic_lock);
+ static DEFINE_RAW_SPINLOCK(vector_lock);
+ static DEFINE_MUTEX(ioapic_mutex);
++static int ioapic_initialized;
+ 
+ struct mp_pin_info {
+ 	int trigger;
+@@ -2920,19 +2921,40 @@ out:
+  */
+ #define PIC_IRQS	(1UL << PIC_CASCADE_IR)
+ 
+-static void ioapic_create_irqdomains(void)
++static int ioapic_create_irqdomain(int idx)
+ {
+-	int i, size;
+-	struct ioapic *ip;
++	int size;
++	struct ioapic *ip = &ioapics[idx];
+ 
+-	for_each_ioapic(i) {
+-		ip = &ioapics[i];
+-		size = sizeof(struct mp_pin_info) * mp_ioapic_pin_count(i);
+-		ip->pin_info = kzalloc(size, GFP_KERNEL);
+-		BUG_ON(!ip->pin_info);
+-		if (ip->irqdomain_cb)
+-			ip->irqdomain = ip->irqdomain_cb(i, ip->irqdomain_arg);
++	size = sizeof(struct mp_pin_info) * mp_ioapic_pin_count(idx);
++	ip->pin_info = kzalloc(size, GFP_KERNEL);
++	if (ip->pin_info == NULL && ioapic_initialized) {
++		pr_warn("failed to allocate memory IOAPIC pin_info.\n");
++		return -ENOMEM;
+ 	}
++	BUG_ON(!ip->pin_info);
++
++	if (ip->irqdomain_cb) {
++		ip->irqdomain = ip->irqdomain_cb(idx, ip->irqdomain_arg);
++		if (ip->irqdomain == NULL && ioapic_initialized) {
++			pr_warn("failed to create irqdomain for IOAPIC%d\n",
++				idx);
++			kfree(ip->pin_info);
++			ip->pin_info = NULL;
++			return -ENOMEM;
++		}
++		BUG_ON(!ip->irqdomain);
++	}
++
++	return 0;
++}
++
++static void ioapic_create_irqdomains(void)
++{
++	int idx;
++
++	for_each_ioapic(idx)
++		ioapic_create_irqdomain(idx);
+ }
+ 
+ void __init setup_IO_APIC(void)
+@@ -2955,6 +2977,8 @@ void __init setup_IO_APIC(void)
+ 	init_IO_APIC_traps();
+ 	if (legacy_pic->nr_legacy_irqs)
+ 		check_timer();
++
++	ioapic_initialized = 1;
+ }
+ 
+ /*
+@@ -3408,7 +3432,7 @@ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+ 	return ret;
+ }
+ 
+-static int __init io_apic_get_redir_entries(int ioapic)
++static int io_apic_get_redir_entries(int ioapic)
+ {
+ 	union IO_APIC_reg_01	reg_01;
+ 	unsigned long flags;
+@@ -3455,7 +3479,7 @@ int __init arch_probe_nr_irqs(void)
+ }
+ 
+ #ifdef CONFIG_X86_32
+-static int __init io_apic_get_unique_id(int ioapic, int apic_id)
++static int io_apic_get_unique_id(int ioapic, int apic_id)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	static physid_mask_t apic_id_map = PHYSID_MASK_NONE;
+@@ -3530,7 +3554,7 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+ 	return apic_id;
+ }
+ 
+-static u8 __init io_apic_unique_id(u8 id)
++static u8 io_apic_unique_id(u8 id)
+ {
+ 	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
+ 	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
+@@ -3539,7 +3563,7 @@ static u8 __init io_apic_unique_id(u8 id)
+ 		return id;
+ }
+ #else
+-static u8 __init io_apic_unique_id(u8 id)
++static u8 io_apic_unique_id(u8 id)
+ {
+ 	int i;
+ 	DECLARE_BITMAP(used, 256);
+@@ -3553,7 +3577,7 @@ static u8 __init io_apic_unique_id(u8 id)
+ }
+ #endif
+ 
+-static int __init io_apic_get_version(int ioapic)
++static int io_apic_get_version(int ioapic)
+ {
+ 	union IO_APIC_reg_01	reg_01;
+ 	unsigned long flags;
+@@ -3757,21 +3781,7 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ 	return gsi - gsi_cfg->gsi_base;
+ }
+ 
+-static __init int bad_ioapic(unsigned long address)
+-{
+-	if (nr_ioapics >= MAX_IO_APICS) {
+-		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
+-			MAX_IO_APICS, nr_ioapics);
+-		return 1;
+-	}
+-	if (!address) {
+-		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
+-		return 1;
+-	}
+-	return 0;
+-}
+-
+-static __init int bad_ioapic_register(int idx)
++static int bad_ioapic_register(int idx)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	union IO_APIC_reg_01 reg_01;
+@@ -3790,30 +3800,43 @@ static __init int bad_ioapic_register(int idx)
+ 	return 0;
+ }
+ 
+-void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-			       ioapic_create_domain_fn cb, void *arg)
++static int find_free_ioapic_entry(void)
++{
++	return nr_ioapics;
++}
++
++int mp_register_ioapic(int id, u32 address, u32 gsi_base,
++		       ioapic_create_domain_fn cb, void *arg)
+ {
+-	int idx = 0;
+-	int entries;
++	u32 gsi_end;
++	int idx, ioapic, entries;
+ 	struct mp_ioapic_gsi *gsi_cfg;
+ 
+-	if (bad_ioapic(address))
+-		return;
++	if (!address) {
++		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
++		return -EINVAL;
++	}
++	for_each_ioapic(ioapic)
++		if (ioapics[ioapic].mp_config.apicaddr == address) {
++			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
++				address, ioapic);
++			return -EEXIST;
++		}
+ 
+-	idx = nr_ioapics;
++	idx = find_free_ioapic_entry();
++	if (idx >= MAX_IO_APICS) {
++		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
++			MAX_IO_APICS, idx);
++		return -ENOSPC;
++	}
+ 
+ 	ioapics[idx].mp_config.type = MP_IOAPIC;
+ 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
+ 	ioapics[idx].mp_config.apicaddr = address;
+-	ioapics[idx].irqdomain_cb = cb;
+-	ioapics[idx].irqdomain_arg = arg;
+-	ioapics[idx].irqdomain = NULL;
+-
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
+-
+ 	if (bad_ioapic_register(idx)) {
+ 		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
+-		return;
++		return -ENODEV;
+ 	}
+ 
+ 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
+@@ -3824,24 +3847,43 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
+ 	 */
+ 	entries = io_apic_get_redir_entries(idx);
++	gsi_end = gsi_base + entries - 1;
++	for_each_ioapic(ioapic) {
++		gsi_cfg = mp_ioapic_gsi_routing(idx);
++		if ((gsi_base >= gsi_cfg->gsi_base &&
++		     gsi_base <= gsi_cfg->gsi_end) ||
++		    (gsi_end >= gsi_cfg->gsi_base &&
++		     gsi_end <= gsi_cfg->gsi_end)) {
++			pr_warn("GSI range [%u-%u] for new IOAPIC conflicts with GSI[%u-%u]\n",
++				gsi_base, gsi_end,
++				gsi_cfg->gsi_base, gsi_cfg->gsi_end);
++			clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
++			return -EEXIST;
++		}
++	}
+ 	gsi_cfg = mp_ioapic_gsi_routing(idx);
+ 	gsi_cfg->gsi_base = gsi_base;
+-	gsi_cfg->gsi_end = gsi_base + entries - 1;
++	gsi_cfg->gsi_end = gsi_end;
+ 
+-	/*
+-	 * The number of IO-APIC IRQ registers (== #pins):
+-	 */
+-	ioapics[idx].nr_registers = entries;
++	ioapics[idx].irqdomain_cb = cb;
++	ioapics[idx].irqdomain_arg = arg;
++	ioapics[idx].irqdomain = NULL;
+ 
+ 	if (gsi_cfg->gsi_end >= gsi_top)
+ 		gsi_top = gsi_cfg->gsi_end + 1;
+ 
++	if (nr_ioapics <= idx)
++		nr_ioapics = idx + 1;
++
++	/* Set nr_registers to mark entry present */
++	ioapics[idx].nr_registers = entries;
++
+ 	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
+ 		idx, mpc_ioapic_id(idx),
+ 		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
+ 		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
+ 
+-	nr_ioapics++;
++	return 0;
+ }
+ 
+ struct irq_domain *mp_irqdomain_create(int ioapic, struct device_node *np,
+@@ -3852,8 +3894,7 @@ struct irq_domain *mp_irqdomain_create(int ioapic, struct device_node *np,
+ 	int hwirqs = mp_ioapic_pin_count(ioapic);
+ 
+ 	domain = irq_domain_add_linear(np, hwirqs, ops, (void *)(long)ioapic);
+-	BUG_ON(!domain);
+-	if (gsi_cfg->gsi_base == 0)
++	if (domain && gsi_cfg->gsi_base == 0)
+ 		irq_set_default_host(domain);
+ 
+ 	return domain;
+-- 
+1.7.10.4
 
