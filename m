@@ -1,153 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaE0WJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:09:34 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39437 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753255AbaE0WJd (ORCPT
+	id S1752716AbaE0WTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:19:39 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:34261 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697AbaE0WTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:09:33 -0400
-Date: Tue, 27 May 2014 18:09:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [patch 1/6] rtmutex: Fix deadlock detector for real
-Message-ID: <20140527180930.1e9b020e@gandalf.local.home>
-In-Reply-To: <20140522031949.725272460@linutronix.de>
-References: <20140522031841.797415507@linutronix.de>
-	<20140522031949.725272460@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 27 May 2014 18:19:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
+References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 27 May 2014 15:19:15 -0700
+Message-ID: <CALCETrUZO42qk7GFcNOT8+aMRXvPLiAUOv6FH33Fx6o1XrNVxg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/2] Loop device psuedo filesystem
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>, Marian Marinov <mm@1h.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Michael J Coss <michael.coss@alcatel-lucent.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 May 2014 03:25:39 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
+On Tue, May 27, 2014 at 2:58 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> I'm posting these patches in response to the ongoing discussion of loop
+> devices in containers at [1].
+>
+> The patches implement a psuedo filesystem for loop devices, which will
+> allow use of loop devices in containters using standard utilities. Under
+> normal use a loopfs mount will initially contain a single device node
+> for loop-control which can be used to request and release loop devices.
+> Any devices allocated via this node will automatically appear in that
+> loopfs mount (and in devtmpfs) but not in any other loopfs mounts.
+> CAP_SYS_ADMIN in the userns of the process which performed the mount is
+> allowed to perform privileged loop ioctls on these devices.
+>
+> Alternately loopfs can be mounted with the hostmount option, intended
+> for mounting /dev/loop in the host. This is the default mount for any
+> devices not created via loop-control in a loopfs mount (e.g. devices
+> created during driver init, devices created via /dev/loop-control, etc).
+> This is only available to system-wide CAP_SYS_ADMIN.
+>
+> I still have some testing to do on these patches, but they work at
+> minimum for simple use cases. It's possible to use an unmodified losetup
+> if it's new enough to know about loop-control, with a couple of caveats:
+>
+>  * /dev/loop-control must be symlinked to /dev/loop/loop-control
+>  * In some cases losetup attempts to use /dev/loopN when the device node
+>    is at /dev/loop/N. For example, 'losetup -f disk.img' fails.
+>
+> Device nodes for loop partitions are not created in loopfs. These
+> devices are created by the generic block layer, and the loop driver has
+> no way of knowing when they are created, so some kind of hook into the
+> driver will be needed to support this.
 
-> The current deadlock detection logic does not work reliably due to the
-> following early exit path:
-> 
-> 	/*
-> 	 * Drop out, when the task has no waiters. Note,
-> 	 * top_waiter can be NULL, when we are in the deboosting
-> 	 * mode!
-> 	 */
-> 	if (top_waiter && (!task_has_pi_waiters(task) ||
-> 			   top_waiter != task_top_pi_waiter(task)))
-> 		goto out_unlock_pi;
-> 
-> So this not only exits when the task has no waiters, it also exits
-> unconditionally when the current waiter is not the top priority waiter
-> of the task.
-> 
-> So in a nested locking scenario, it might abort the lock chain walk
-> and therefor miss a potential deadlock.
-> 
-> Simple fix: Continue the chain walk, when deadlock detection is
-> enabled.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: stable@vger.kernel.org
-> ---
->  kernel/locking/rtmutex.c |   27 +++++++++++++++++++++------
->  1 file changed, 21 insertions(+), 6 deletions(-)
-> 
-> Index: tip/kernel/locking/rtmutex.c
-> ===================================================================
-> --- tip.orig/kernel/locking/rtmutex.c
-> +++ tip/kernel/locking/rtmutex.c
-> @@ -343,16 +343,22 @@ static int rt_mutex_adjust_prio_chain(st
->  	 * top_waiter can be NULL, when we are in the deboosting
->  	 * mode!
->  	 */
-> -	if (top_waiter && (!task_has_pi_waiters(task) ||
-> -			   top_waiter != task_top_pi_waiter(task)))
-> -		goto out_unlock_pi;
-> +	if (top_waiter) {
-> +		if (!task_has_pi_waiters(task))
-> +			goto out_unlock_pi;
-> +
-> +		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
-> +			goto out_unlock_pi;
-> +	}
+This is entertaining and a bit terrifying :)
 
-The above seems obvious.
+ISTM that what you've done is to create a way for per-userns devices
+to live in a special filesystem and for userns containers to
+instantiate those devices by offloading all the hard work to the
+kernel.
 
->  
->  	/*
->  	 * When deadlock detection is off then we check, if further
->  	 * priority adjustment is necessary.
->  	 */
-> -	if (!detect_deadlock && waiter->prio == task->prio)
-> -		goto out_unlock_pi;
-> +	if (waiter->prio == task->prio) {
-> +		if (!detect_deadlock)
-> +			goto out_unlock_pi;
-> +	}
+What if we generalized this?
 
-This too.
+For example, we could add a concept of ephemeral devices.  An
+ephemeral device is a device that can be referenced by an inode with a
+guarantee that the inode will *never* accidentally point to a
+different device [1].  Then we add a concept of the userns that owns a
+struct device.
 
-Although! if you want to micro-optimize the detect_deadlock case
-where !detect_deadlock is false. You might want to reverse the order.
-That way we don't need to dereference the ->prio for both waiter and
-task before seeing that we don't go to the out_unlock_pi.
+To make this safe, we'll need to make sure that old host udev will not
+see non-init-userns devices, ever.  This is easy enough to do, but
+doing it elegantly might take some design work.
 
-	if (!detect_deadlock) {
-		if (waiter->prio == task->prio)
-			goto out_unlock_pi;
-	}
+To make this useful, we'll need a way for things inside user
+namespaces to create the device nodes.  I can imagine at least three
+ways to make this work.
 
-Hmm, or you did it this way for your "don't requeue" patch? Looking at
-that one, it seems you did.
+a) Allow mknod on a tmpfs created by a particular userns to succeed if
+the targetting struct device is owned by that userns or a child and if
+the caller is ns_capable(CAP_MKNOD).
+b) Create a new filesystem that has some special ioctl or whatever to do it.
+c) Have real per-user-ns devtmpfs.
 
-	if (waiter->prio == task->prio) {
-		if (!detect_deadlock)
-			goto out_unlock_pi;
-		requeue = false;
-	}
+Now, to get loop working in a userns, we need a way for the userns (or
+the host!) to create a new loop-control device owned by that userns
+and we need to tweak the loop driver to make the created loop devices
+be owned by the userns.
 
-Oh well. But for stable maybe have the optimized way? And change it
-back when you add the requeue patch?
+(Note: I'm deliberately ignoring the fact that just doing this for
+loop seems to be almost entirely useless right now: you still can't
+mount the things.)
 
->  
->  	lock = waiter->lock;
->  	if (!raw_spin_trylock(&lock->wait_lock)) {
-> @@ -361,7 +367,12 @@ static int rt_mutex_adjust_prio_chain(st
->  		goto retry;
->  	}
->  
-> -	/* Deadlock detection */
-> +	/*
-> +	 * Deadlock detection. If the lock is the same as the original
-> +	 * lock which caused us to walk the lock chain or if the
-> +	 * current lock is owned by the task which initiated the chain
-> +	 * walk, we detected a deadlock.
-> +	 */
->  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
->  		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
->  		raw_spin_unlock(&lock->wait_lock);
-> @@ -527,6 +538,10 @@ static int task_blocks_on_rt_mutex(struc
->  	unsigned long flags;
->  	int chain_walk = 0, res;
->  
-> +	/* Early deadlock detection */
-> +	if (detect_deadlock && owner == task)
-> +		return -EDEADLK;
-> +
+Thoughts?
 
-This is an optimization, right? Does it belong for stable?
 
--- Steve
-
->  	raw_spin_lock_irqsave(&task->pi_lock, flags);
->  	__rt_mutex_adjust_prio(task);
->  	waiter->task = task;
-> 
-
+[1]  For example, there could be a special set of device numbers that
+are not reused until reboot.  Ephemeral device nodes point to these
+devices by number.  Alternatively, the inodes could keep references to
+the struct device.
