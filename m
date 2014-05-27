@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449AbaE0INQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:13:16 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.149]:28991 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752916AbaE0INK (ORCPT
+	id S1752888AbaE0IMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:12:55 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:50594 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaE0IMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:13:10 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-7.tower-178.messagelabs.com!1401178385!28065610!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 27 May 2014 10:13:06 +0200
-Date: Tue, 27 May 2014 11:05:37 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: <linux-kernel@vger.kernel.org>
-CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
-        <johannes.thumshirn@men.de>, <andreas.werner@men.de>
-Subject: [PATCH v2 0/3] Introduce MEN 14F02100 BMC driver series
-Message-ID: <cover.1401181010.git.andreas.werner@men.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+	Tue, 27 May 2014 04:12:43 -0400
+Message-ID: <1401178359.5134.95.camel@marge.simpson.net>
+Subject: Re: balance storm
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Libo Chen <libo.chen@huawei.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
+        peterz@infradead.org
+Date: Tue, 27 May 2014 10:12:39 +0200
+In-Reply-To: <53844277.3050204@huawei.com>
+References: <5382AF2E.1040407@huawei.com>
+	 <1401090987.5339.79.camel@marge.simpson.net> <53832A36.5020205@huawei.com>
+	 <1401112989.23186.28.camel@marge.simpson.net> <53844277.3050204@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set add support for the MEN 14F021P00 Board Management called BMC.
+On Tue, 2014-05-27 at 15:44 +0800, Libo Chen wrote: 
+> On 2014/5/26 22:03, Mike Galbraith wrote:
+> > On Mon, 2014-05-26 at 19:49 +0800, Libo Chen wrote:
+> > 
+> >> how to turn off SD_SHARE_PKG_RESOURCES in userspace ?
+> > 
+> > I use a script Ingo gave me years and years ago to
+> > twiddle /proc/sys/kernel/sched_domain/cpuN/domainN/flags domain wise.
+> > Doing that won't do you any good without a handler to build/tear down
+> > sd_llc when you poke at flags though.  You can easily add a sched
+> > feature to play with it.
+> 
+> 
+> I make a simple script：
+> 
+>    for ((i=0;i<=15;i++))
+>    do
+>            echo 4143 > /proc/sys/kernel/sched_domain/cpu$i/domain1/flags
+>    done
+> 
+> In our kernel  SD_SHARE_PKG_RESOURCE is 0x0200, the original flag value is 4655,
+> domain1's name is MC.
+> 
+> but migrations event doesn't reduce like yours, what problem?  I wouldn't like
+> recompile kernel :(
 
-The BMC is a PIC Mikrocontroller which assembled on almost all of our
-3U Compact PCI CPU board and a few Box PCs.
-The main part of the BMC is to start and monitor the board, but there are a
-lot more features which can be accessed using an I2C Host interface
+Hm, I thought you were a kernel hacker, but guess not since that would
+be a really weird thing for a kernel hacker to say :)  Problem is that
+there's no handler in your kernel to convert your flag poking to sd_llc
+poking.
 
-Features supported in this Patchset:
-        - Watchdog
-        - LEDs
+I could send you a patchlet, but that ain't gonna work, neither that nor
+the commit I pointed out will seep into the kernel via osmosis.  There
+should be a kernel hacker somewhere near you, look down the hall by the
+water cooler, when you find one, he/she should be able to help.
 
-The Patchset includes a MFD Core driver, Watchdog and LEDs driver.
-
-
-Changes in v2:
-	- changed i2c_smbus_read wrapper function to return both, value
-	  and error.
-	- moved "leave production mode" from Watchdog driver to mfd core.
-	- fixed some return values in the watchdog driver to return the original
-	  error value instead of -EIO.
-
-Andreas Werner (3):
-  drivers/mfd/menf21bmc: introduce MEN 14F021P00 BMC MFD Core driver
-  drivers/watchdog/menf21bmc_wd: introduce MEN 14F021P00 BMC Watchdog
-    driver
-  drivers/leds/leds-menf21bmc: introduce MEN 14F021P00 BMC LED driver
-
- drivers/leds/Kconfig            |   6 ++
- drivers/leds/Makefile           |   2 +-
- drivers/leds/leds-menf21bmc.c   | 136 +++++++++++++++++++++++++
- drivers/mfd/Kconfig             |  12 +++
- drivers/mfd/Makefile            |   1 +
- drivers/mfd/menf21bmc.c         | 220 ++++++++++++++++++++++++++++++++++++++++
- drivers/watchdog/Kconfig        |   7 ++
- drivers/watchdog/Makefile       |   1 +
- drivers/watchdog/menf21bmc_wd.c | 217 +++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/menf21bmc.h   |  31 ++++++
- 10 files changed, 632 insertions(+), 1 deletion(-)
- create mode 100644 drivers/leds/leds-menf21bmc.c
- create mode 100644 drivers/mfd/menf21bmc.c
- create mode 100644 drivers/watchdog/menf21bmc_wd.c
- create mode 100644 include/linux/mfd/menf21bmc.h
-
--- 
-1.9.3
+-Mike
 
