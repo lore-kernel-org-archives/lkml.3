@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373AbaE0Acl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 20:32:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62621 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312AbaE0Ach (ORCPT
+	id S1752015AbaE0Aj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 20:39:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:49440 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaE0AjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 20:32:37 -0400
-Message-ID: <5383DD20.8060901@gmail.com>
-Date: Tue, 27 May 2014 08:32:32 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFtQQVRDSCAwLzNdIGFyY2g6IHVuaWNvcmUzMjo=?=
- =?UTF-8?B?IGtzeW1zOiBleHBvcnQgc2V2ZXJhbCBpbXBsZW1ldGVkIHN5bWJvbHMgdG8gYXY=?=
- =?UTF-8?B?b2lkIGNvbXBpbGluZyBmYWlsdXJl?=
-References: <2100345427.23793.1401149582787.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <2100345427.23793.1401149582787.JavaMail.root@bj-mail03.pku.edu.cn>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 26 May 2014 20:39:25 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-36-5383debbaaf1
+Message-id: <5383DED8.40500@samsung.com>
+Date: Tue, 27 May 2014 09:39:52 +0900
+From: Heesub Shin <heesub.shin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] staging: ion: remove struct ion_page_pool_item
+References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
+ <1401098701-24049-4-git-send-email-heesub.shin@samsung.com>
+In-reply-to: <1401098701-24049-4-git-send-email-heesub.shin@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zTd3d95qDDR5/FrB4//c+m8X2jd9Y
+	LV4e0rQ4+OE+i8WeM7/YLZoXr2ezODh7CZPFmd+6Fpd3zWGzWDt/G5vFjcmFFqc7FrE68Hhs
+	272N1eNyXy+Tx719h1k8ds66y+5x59oeNo/9c9ewe/RtWcXo8XmTXABHFJdNSmpOZllqkb5d
+	AldGW3NEwRmmilX7WBsY25i6GDk5JARMJB5ve8oIYYtJXLi3nq2LkYtDSGAZo8T5c/fZYYpO
+	7D7ADJFYxCjR2fsVLCEk8IZRYubpVBCbV0BD4vutLrBJLAKqEgsuLgayOTjYBLQlDm0LBgmL
+	CkRI3Gs8zApRLijxY/I9FhBbRMBYov/sLHaQ+cwCn5gkbixtApsvLOAusXv5SaiLWhklXty9
+	C5bgFPCQaO/9zwxiMwtYS6yctI0RwpaX2LzmLdilEgKdHBI7Zn2AukhA4tvkQywgF0kIyEps
+	OsAM8ZmkxMEVN1gmMIrNQnLULCRjZyEZu4CReRWjaGpBckFxUnqRqV5xYm5xaV66XnJ+7iZG
+	SPxO3MF4/4D1IcZkoJUTmaVEk/OB8Z9XEm9obGZkYWpiamxkbmlGmrCSOG/6o6QgIYH0xJLU
+	7NTUgtSi+KLSnNTiQ4xMHJxSDYzC9qLbNgYxNLUdP3H/WbRDduF316pZH9SFWColprdoPr/f
+	8fxzRLyMkOvK/9u/Klmotr4/cu9qsPq936E75qnKJLHnXX7duEdXS988+Lm6skjUu4nLTjyN
+	ld5f5f3MyTHKyqr6iJx+x5bduVeemYbk8tYWp73+mnrj2v3/P5fyZ1m9+/W294ASS3FGoqEW
+	c1FxIgAIKIc09QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd3d95qDDd7s5LF4//c+m8X2jd9Y
+	LV4e0rQ4+OE+i8WeM7/YLZoXr2ezODh7CZPFmd+6Fpd3zWGzWDt/G5vFjcmFFqc7FrE68Hhs
+	272N1eNyXy+Tx719h1k8ds66y+5x59oeNo/9c9ewe/RtWcXo8XmTXABHVAOjTUZqYkpqkUJq
+	XnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QsUoKZYk5pUChgMTiYiV9
+	O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjLbmiIIzTBWr9rE2MLYxdTFyckgImEic2H2AGcIW
+	k7hwbz1bFyMXh5DAIkaJzt6v7CAJIYE3jBIzT6eC2LwCGhLfb3UxgtgsAqoSCy4uBrI5ONgE
+	tCUObQsGCYsKREjcazzMClEuKPFj8j0WEFtEwFii/+wsdpD5zAKfmCRuLG0Cmy8s4C6xe/lJ
+	qMWtjBIv7t4FS3AKeEi09/4Hu45ZwFpi5aRtjBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYwMq9i
+	FE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4Oz6R3MK5qsDjEKMDBqMTDO8G3OViINbGsuDL3
+	EKMEB7OSCO+Gk0Ah3pTEyqrUovz4otKc1OJDjMnAIJjILCWanA9MXHkl8YbGJmZGlkZmxibm
+	xsakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwCjiZKW3ZsHKnn+88cffnLO+Wls/xURd
+	P9j0mL+OcNb/srBzXw893ZC2OCf2Qem7u/zfZT6EObHe7q1ef+HwHqFQ68jr+Z6btyrHTYqS
+	VdvkYPTh8pf3YU7yxnzF1/5Ovli6/q3XmW1MNs2Z2xInlD7QtXN+N+v4RRunun/n0u75rghN
+	/6y+XVyJpTgj0VCLuag4EQCVACHKUgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-On 05/27/2014 08:13 AM, 管雪涛 wrote:
-> ----- Chen Gang <gang.chen.5i5j@gmail.com> 写道：
->> unicore32 has implemented 'find_first_bit', 'find_first_zero_bit',
->> 'pm_power_off', and '__cpuc_coherent_kern_range', need export them to
->> avoid compiling failure.
->>
->> The related error (with allmodconfig under unicore32):
->>
->>     MODPOST 4039 modules
->>   ERROR: "find_first_bit" [sound/soc/codecs/snd-soc-uda1380.ko] undefined!
->>   ERROR: "find_first_zero_bit" [net/sctp/sctp.ko] undefined!
->>   [...]
->>   ERROR: "__cpuc_coherent_kern_range" [drivers/misc/lkdtm.ko] undefined!
->>   ERROR: "pm_power_off" [drivers/mfd/retu-mfd.ko] undefined!
->>   [...]
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> 
-> Thanks, I'm waiting for these patches.
-> And then, I can request-pull in this month.
-> 
+On 05/26/2014 07:04 PM, Heesub Shin wrote:
+> Now that the order information is held on struct page itself, we do not
+> need to use extra data structure. This commit reduces unnecessary slab
+> usage for allocating small objects.
+>
 
-Thank you for your work. Hope we can finish within this month. And next
-month, I shall start another architectures.
+Oops. I need to amend changelog above and resend this patchset.
 
-But I am still very glad to continue to provide contributions for
-unicore32, and as far as I know:
-
- - allmodconfig under unicore32 finds many warnings which I skipped now.
-   (just like allmodconfig under another architectures without '-W')
-
- - open source unicore32 qemu still need guys to continue.
-
- - open source unicore32 cross-compiler still need guys to continue.
-
-If I have chance for them, I shall try (at present, I have started
-providing contribution to qemu, and just starting for toolchain, and
-will start for kvm/xen in 3rd or 4th quater 2014).
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+regards,
+Heesub
