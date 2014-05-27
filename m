@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaE0EHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 00:07:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31198 "EHLO mga01.intel.com"
+	id S1752738AbaE0EHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 00:07:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9187 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677AbaE0EG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 00:06:58 -0400
+	id S1751142AbaE0EG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 00:06:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,916,1392192000"; 
-   d="scan'208";a="545297430"
+   d="scan'208";a="437158870"
 From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
 To: lee.jones@linaro.org, broonie@kernel.org, sameo@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
         bin.yang@intel.com, lejun.zhu@linux.intel.com
-Subject: [PATCH v3 2/4] mfd: intel_soc_pmic: I2C interface
-Date: Tue, 27 May 2014 12:06:14 +0800
-Message-Id: <1401163576-14872-3-git-send-email-lejun.zhu@linux.intel.com>
+Subject: [PATCH v3 3/4] mfd: intel_soc_pmic: Crystal Cove support
+Date: Tue, 27 May 2014 12:06:15 +0800
+Message-Id: <1401163576-14872-4-git-send-email-lejun.zhu@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
 References: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
@@ -23,30 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel SoC PMIC devices are connected to the CPU via the I2C interface. This patch provides support of the related I2C operations.
+Crystal Cove is the PMIC in Baytrail-T platform. This patch provides chip-specific support for Crystal Cove.
 
 v2:
-- Use regmap instead of creating our own I2C read/write callbacks.
+- Add regmap_config for Crystal Cove.
 v3:
-- Use gpiod interface instead of gpio numbers.
-- Remove redundant I2C IDs.
-- Use managed allocations.
+- Convert IRQ config to regmap_irq_chip.
 
 Signed-off-by: Yang, Bin <bin.yang@intel.com>
 Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
 ---
- drivers/mfd/intel_soc_pmic_i2c.c | 150 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 150 insertions(+)
- create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
+ drivers/mfd/intel_soc_pmic_crc.c | 175 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 175 insertions(+)
+ create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
 
-diff --git a/drivers/mfd/intel_soc_pmic_i2c.c b/drivers/mfd/intel_soc_pmic_i2c.c
+diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
 new file mode 100644
-index 0000000..3b107d7
+index 0000000..341ab02
 --- /dev/null
-+++ b/drivers/mfd/intel_soc_pmic_i2c.c
-@@ -0,0 +1,150 @@
++++ b/drivers/mfd/intel_soc_pmic_crc.c
+@@ -0,0 +1,175 @@
 +/*
-+ * intel_soc_pmic_i2c.c - Intel SoC PMIC MFD Driver
++ * intel_soc_pmic_crc.c - Device access for Crystal Cove PMIC
 + *
 + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
 + *
@@ -70,131 +68,156 @@ index 0000000..3b107d7
 +#include <linux/i2c.h>
 +#include <linux/irq.h>
 +#include <linux/interrupt.h>
-+#include <linux/workqueue.h>
 +#include <linux/acpi.h>
 +#include <linux/version.h>
-+#include <linux/gpio/consumer.h>
 +#include <linux/regmap.h>
 +#include <linux/mfd/intel_soc_pmic.h>
 +#include "intel_soc_pmic_core.h"
 +
-+static struct intel_soc_pmic *pmic_i2c;
++#define	CHIP_NAME			"Crystal Cove"
++#define CRYSTAL_COVE_MAX_REGISTER	0xC6
 +
-+static void pmic_shutdown(struct i2c_client *client)
-+{
-+	disable_irq(pmic_i2c->irq);
-+	return;
-+}
++#define CHIPID		0x00
++#define CHIPVER		0x01
++#define IRQLVL1		0x02
++#define MIRQLVL1	0x0E
 +
-+static int pmic_suspend(struct device *dev)
-+{
-+	disable_irq(pmic_i2c->irq);
-+	return 0;
-+}
-+
-+static int pmic_resume(struct device *dev)
-+{
-+	enable_irq(pmic_i2c->irq);
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops pmic_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(pmic_suspend, pmic_resume)
++enum {
++	PWRSRC_IRQ = 0,
++	THRM_IRQ,
++	BCU_IRQ,
++	ADC_IRQ,
++	CHGR_IRQ,
++	GPIO_IRQ,
++	VHDMIOCP_IRQ
 +};
 +
-+static int pmic_i2c_probe(struct i2c_client *i2c,
-+			  const struct i2c_device_id *id)
-+{
-+	struct gpio_desc *desc;
-+	struct device *dev = &i2c->dev;
-+	int irq = i2c->irq;
-+
-+	if (pmic_i2c != NULL) {
-+		dev_err(dev, "PMIC already exists.\n");
-+		return -EBUSY;
-+	}
-+
-+	desc = devm_gpiod_get_index(dev, KBUILD_MODNAME, 0);
-+	if (IS_ERR(desc)) {
-+		dev_dbg(dev, "Not using GPIO as interrupt.\n");
-+	} else {
-+		irq = gpiod_to_irq(desc);
-+		if (irq < 0) {
-+			dev_warn(dev, "Can't get irq: %d\n", irq);
-+			irq = i2c->irq;
-+		}
-+	}
-+
-+	pmic_i2c = devm_kzalloc(dev, sizeof(*pmic_i2c), GFP_KERNEL);
-+	pmic_i2c->config = (struct intel_soc_pmic_config *)id->driver_data;
-+	pmic_i2c->dev = dev;
-+	pmic_i2c->regmap = devm_regmap_init_i2c(i2c,
-+						pmic_i2c->config->regmap_cfg);
-+	pmic_i2c->irq = irq;
-+
-+	return intel_pmic_add(pmic_i2c);
-+}
-+
-+static int pmic_i2c_remove(struct i2c_client *i2c)
-+{
-+	int ret;
-+	
-+	if (pmic_i2c == NULL)
-+		return -ENODEV;
-+
-+	ret = intel_pmic_remove(pmic_i2c);
-+
-+	pmic_i2c = NULL;
-+
-+	return ret;
-+}
-+
-+static const struct i2c_device_id pmic_i2c_id[] = {
-+	{ "INT33FD:00", (kernel_ulong_t)&crystal_cove_pmic},
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, pmic_i2c_id);
-+
-+static struct acpi_device_id pmic_acpi_match[] = {
-+	{ "INT33FD", (kernel_ulong_t)&crystal_cove_pmic},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, pmic_acpi_match);
-+
-+static struct i2c_driver pmic_i2c_driver = {
-+	.driver = {
-+		.name = "intel_soc_pmic_i2c",
-+		.owner = THIS_MODULE,
-+		.pm = &pmic_pm_ops,
-+		.acpi_match_table = ACPI_PTR(pmic_acpi_match),
++static struct resource gpio_resources[] = {
++	{
++		.name	= "GPIO",
++		.start	= GPIO_IRQ,
++		.end	= GPIO_IRQ,
++		.flags	= IORESOURCE_IRQ,
 +	},
-+	.probe = pmic_i2c_probe,
-+	.remove = pmic_i2c_remove,
-+	.id_table = pmic_i2c_id,
-+	.shutdown = pmic_shutdown,
 +};
 +
-+static int __init pmic_i2c_init(void)
++static struct resource pwrsrc_resources[] = {
++	{
++		.name  = "PWRSRC",
++		.start = PWRSRC_IRQ,
++		.end   = PWRSRC_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource adc_resources[] = {
++	{
++		.name  = "ADC",
++		.start = ADC_IRQ,
++		.end   = ADC_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource thermal_resources[] = {
++	{
++		.name  = "THERMAL",
++		.start = THRM_IRQ,
++		.end   = THRM_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource bcu_resources[] = {
++	{
++		.name  = "BCU",
++		.start = BCU_IRQ,
++		.end   = BCU_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct mfd_cell crystal_cove_dev[] = {
++	{
++		.name = "crystal_cove_pwrsrc",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(pwrsrc_resources),
++		.resources = pwrsrc_resources,
++	},
++	{
++		.name = "crystal_cove_adc",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(adc_resources),
++		.resources = adc_resources,
++	},
++	{
++		.name = "crystal_cove_thermal",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(thermal_resources),
++		.resources = thermal_resources,
++	},
++	{
++		.name = "crystal_cove_bcu",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(bcu_resources),
++		.resources = bcu_resources,
++	},
++	{
++		.name = "crystal_cove_gpio",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(gpio_resources),
++		.resources = gpio_resources,
++	},
++};
++
++static struct regmap_config crystal_cove_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++
++	.max_register = CRYSTAL_COVE_MAX_REGISTER,
++	.cache_type = REGCACHE_NONE,
++};
++
++#define	CRC_REGMAP_IRQ_VALUE(irq)	{	\
++		.reg_offset = 0,		\
++		.mask = BIT(irq),		\
++	}
++
++static const struct regmap_irq crystal_cove_irqs[] = {
++	[PWRSRC_IRQ]	= CRC_REGMAP_IRQ_VALUE(PWRSRC_IRQ),
++	[THRM_IRQ]	= CRC_REGMAP_IRQ_VALUE(THRM_IRQ),
++	[BCU_IRQ]	= CRC_REGMAP_IRQ_VALUE(BCU_IRQ),
++	[ADC_IRQ]	= CRC_REGMAP_IRQ_VALUE(ADC_IRQ),
++	[CHGR_IRQ]	= CRC_REGMAP_IRQ_VALUE(CHGR_IRQ),
++	[GPIO_IRQ]	= CRC_REGMAP_IRQ_VALUE(GPIO_IRQ),
++	[VHDMIOCP_IRQ]	= CRC_REGMAP_IRQ_VALUE(VHDMIOCP_IRQ),
++};
++
++static struct regmap_irq_chip crystal_cove_irq_chip = {
++	.name = CHIP_NAME,
++	.irqs = crystal_cove_irqs,
++	.num_irqs = ARRAY_SIZE(crystal_cove_irqs),
++	.num_regs = 1,
++	.status_base = IRQLVL1,
++	.mask_base = MIRQLVL1,
++};
++
++static int crystal_cove_init(void)
 +{
-+	int ret;
-+
-+	ret = i2c_add_driver(&pmic_i2c_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register pmic I2C driver: %d\n", ret);
-+
-+	return ret;
++	pr_debug("%s: ID 0x%02X, VERSION 0x%02X\n", CHIP_NAME,
++		 intel_soc_pmic_readb(CHIPID), intel_soc_pmic_readb(CHIPVER));
++	return 0;
 +}
-+module_init(pmic_i2c_init);
 +
-+static void __exit pmic_i2c_exit(void)
-+{
-+	i2c_del_driver(&pmic_i2c_driver);
-+}
-+module_exit(pmic_i2c_exit);
-+
-+MODULE_DESCRIPTION("I2C driver for Intel SoC PMIC");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
++struct intel_soc_pmic_config crystal_cove_pmic = {
++	.label		= CHIP_NAME,
++	.irq_flags	= IRQF_TRIGGER_RISING,
++	.init		= crystal_cove_init,
++	.cell_dev	= crystal_cove_dev,
++	.n_cell_devs	= ARRAY_SIZE(crystal_cove_dev),
++	.regmap_cfg	= &crystal_cove_regmap_config,
++	.irq_chip	= &crystal_cove_irq_chip,
++};
 -- 
 1.8.3.2
 
