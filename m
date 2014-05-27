@@ -1,164 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaE0L0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:26:45 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:62013 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaE0L0j (ORCPT
+	id S1752344AbaE0L1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:27:18 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:19107 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaE0L1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:26:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
-Date: Tue, 27 May 2014 16:56:37 +0530
-X-Google-Sender-Auth: 6O2tgUPO1C4SDYJgFr6sGuBzTpM
-Message-ID: <CAGm_ybjW6SAxsqmnBCGnZ0nEPLhBxgzeZS4dtLwwjW4PtuWJWg@mail.gmail.com>
-Subject: Re: [PATCH v4 00/11] ARM: Exynos: PMU cleanup and refactoring for
- using DT
-From: Vikas Sajjan <vikas.sajjan@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux@arm.linux.org.uk,
-        chow.kim@samsung.com, Young-Gun Jang <yg1004.jang@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 27 May 2014 07:27:13 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-2c-5384768f4fe1
+From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, t.figa@samsung.com,
+        mturquette@linaro.org, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH v2] clk: exynos4: Add PPMU IP block source clocks.
+Date: Tue, 27 May 2014 20:27:08 +0900
+Message-id: <1401190028-21020-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsWyRsSkWLe/rCXYYM8LLYvrX56zWnSefcJs
+	cXnXHDaLGef3MVk8nXCRzeJ24wo2i/UzXrM4sHvcubaHzaNvyypGj8+b5AKYo7hsUlJzMstS
+	i/TtErgyZuxdyFIwzbhiU+9M9gbGNu0uRk4OCQETiY8nZjJB2GISF+6tZ+ti5OIQEljKKNH9
+	6g8bTNGqfb2MEInpjBJ7np9lh3DamCR+fJ8KVsUmoCPxf99NdhBbREBBYnPvM1aQImaB04wS
+	N072sIIkhAWcJBbO7mIBsVkEVCU+njkD1swr4CFx/ON/5i5GDqB1ChJzJtmA9EoI/GaTeDzt
+	OCNEvYDEt8mHWCBqZCU2HWCGuE5S4uCKGywTGAUXMDKsYhRNLUguKE5KLzLVK07MLS7NS9dL
+	zs/dxAgM0tP/nk3cwXj/gPUhxmSgcROZpUST84FBnlcSb2hsZmRhamJqbGRuaUaasJI4b/qj
+	pCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjM2erNf3dnibveTRljm/ZPKa6krDc3vt3u6T
+	uWQYH/ylr3nLzqijDwLO3BMRUAr306zVVT7trJcaOHP+Le8jKn1buX5eluvc+Som36OwT2CB
+	y7WngmbiHM9+rHZR8rkSU53hudojIb9iYbFSUJRa48acgwyaX17E5Xw4cuzl3P/1r6dP1WWw
+	VWIpzkg01GIuKk4EACKWEPRoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t9jQd3+spZgg1fPFS2uf3nOatF59gmz
+	xeVdc9gsZpzfx2TxdMJFNovbjSvYLNbPeM3iwO5x59oeNo++LasYPT5vkgtgjmpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzJixdyFLwTTjik29M9kbGNu0uxg5OSQETCRW
+	7etlhLDFJC7cW8/WxcjFISQwnVFiz/Oz7BBOG5PEj+9T2UCq2AR0JP7vu8kOYosIKEhs7n3G
+	ClLELHCaUeLGyR5WkISwgJPEwtldLCA2i4CqxMczZ8CaeQU8JI5//M/cxcgBtE5BYs4kmwmM
+	3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBMfAM6kdjCsbLA4xCnAwKvHwTvBtDhZi
+	TSwrrsw9xCjBwawkwru+pCVYiDclsbIqtSg/vqg0J7X4EGMy0PKJzFKiyfnA+MwriTc0NjEz
+	sjQyN7QwMjYnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsYjV7uFNqo4O5uUlN5xvXXv
+	iwardu+pqMS5u1Rmc6a0Rt0zv8lS+1z0UWpSzayDKebSdTNuywbdqd0y4Yecis7GpLmTtgaz
+	z19c8eJB5KHkVy3vWlOXCTOdnXavUm73z8A7G5bIpRjULd5g49l+uUbHykQs5nfJmTXq53/u
+	ep5ZammTxBr38IkSS3FGoqEWc1FxIgBQ0Y5XxQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Exynos4 has saveral PPMUs and each of them has operation clock which
+can be gated through CMU's SFR control.
 
-Any comments on this series?
+New clocks are listed below. All clocks are added as a gate-typed clock.
 
+CLK_PPMULEFT, CLK_PPMURIGHT, CLK_PPMUCAMIF, CLK_PPMUTV, CLK_PPMUMFC_L,
+CLK_PPMUMFC_R, CLK_G3D, CLK_PPMUIMAGE, CLK_PPMULCD0, CLK_PPMULCD1,
+CLK_PPMUFILE, CLK_PPMUGPS, CLK_PPMUDMC0, CLK_PPMUDMC1, CLK_PPMUCPU,
+CLK_PPMUACP,
 
-On Sat, May 10, 2014 at 12:26 PM, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
-> This patch series, does some minor cleanup of exynos machine files.
-> It also modifies Exynos Power Management Unit (PMU) related code for
-> converting it into a platform_driver. This is also preparation for moving
-> PMU related code out of machine folder into a either "drivers/mfd", or
-> "drivers/power" or some other suitable place so that ARM64 based SoC can
-> utilize common piece of code.
->
-> These patches require change in Exynos4 SoC dtsi files, which has been
-> posted as separate patch series.
->
-> These patches are created on top of Kukjin Kim's for-next (v3.15-rc1 tag)
-> branch and on top of Daniel Lezcano's Exynos cpuidle refactor patches [2].
->
-> These patches depends on following three patch series:
-> [1] mfd: syscon: Support early initialization
->     https://lkml.org/lkml/2014/4/8/239
-> [2] Daniel Lezcano's Exynos cpuidle refactor patches
->     http://thread.gmane.org/gmane.linux.kernel.samsung-soc/29085
-> [3] Allow NULL property in syscon_early_regmap_lookup_by_phandle
->     https://lkml.org/lkml/2014/5/10/10 and
->     https://lkml.org/lkml/2014/4/29/661
->
-> We have tested these patches on SMDK5250 board for System boot and
-> Arndale (Exynos5250) board for System boot and PMU initialization and S2R.
->
-> For testing on Arndale (Exynos5250) board:
-> Tested-by: Pankaj Dubey <pankaj.dubey@samsung.com>
->
-> Changes Since v3:
->  - Addressed build fail issue in exynos.c as reported by Sachin Kamat.
->  - Optimized exynos_pmu_probe function by removing exynos_pmu_data_init
->    as suggested by Vikas Sajjan.
->  - Rebased on top of Sysram patches by Sachin Kamat.
->  - Modified syscon_early_regmap_lookup_by_phandle and
->    syscon_regmap_lookup_by_phandle function call to pass property as NULL.
->
-> Changes Since v2:
->  - Rebased on top of Daniel Lezcano's Exynos cpuidle refactor patches.
->  - Removed exynos_cpuidle_init and exynos_cpufreq_init code as suggested
->    by Tomasz Figa.
->  - Removed early mapping of PMU base address from exynos.c and removed
->    "get_exynos_pmuaddr" function. Instead of this added code in platsmp.c
->    to get PMU base address using of_iomap as suggested by Tomasz Figa.
->  - Converted PMU implementation into platform_driver by using static
->    platform_device method.
->
-> Changes Since v1:
->  - Rebased on latest for-next of Kukjin Kim's tree.
->  - Added patch: "Make exynos machine_ops as static".
->         For making more cleanup in "mach-exynos/common.h"
->         as suggested by Tomasz Figa.
->  - Addressed comments of Tomasz Figa for cleaning "mach-exynos/common.h".
->  - Updated patch: Remove file path from comment section
->         As suggested by Michel Simek, instead of updating file path
->         lets remove them from each file under "mach-exynos".
->         Even though Kukjin pointed out that there is similar patch pending from
->         Sachin/Tushar but since I could not find I have included this here. If
->         I have missed something please point to any existing such patch.
->  - Updated patch: Add support for mapping PMU base address via DT
->         - Removed __initdata from declaration of "exynos_pmu_base", as it caused
->         kernel crash as pointed out by Vikas Sajjan.
->         - Added support for Syscon initialization and getting PMU regmap handle
->         as suggested by Sylwester. Since current implementation of early
->         intialization [1] has limitation that "early_syscon_init" requires
->         DT to be unflattened and system should be able to allocate memory,
->         we can't use regmap handles for platsmp.c file as "smp_secondary_init"
->         will be called before DT unflattening. So I have kept both method for
->         accessing PMU base address. platsmp.c will use ioremmaped address where
->         as rest other files can use regmap handle.
->  - Added patch: Remove "linux/bug.h" from pmu.c.
->  - Updated patch: Refactored code for PMU register mapping via DT
->         - Modified to use regmap_read/write when using regmap handle.
->  - Added patch: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
->  - Added patch: Add device tree based initialization support for PMU.
->         - Convert existing PMU implementation to be a device tree based
->          before moving it to "drivers/mfd" folder. As suggested by Bartlomiej.
->         - Dropped making a platform_driver for PMU, as currently PMU binding
->         has two compatibility strings as "samsung, exynosxxx-pmu", "syscon",
->         once we enable MFD_SYSCON config option, current "syscon" driver probe
->         gets called and PMU probe never gets called. So modified PMU
->         initialization code to scan DT and match against supported compatiblity
->         string in driver code, and once we get matching node use that for
->         accessing PMU regmap handle using "syscon_early_regmap_lookup_by_phandle".
->         If there is any better solution please suggest.
->
-> Pankaj Dubey (7):
->   ARM: EXYNOS: Make exynos machine_ops as static
->   ARM: EXYNOS: Move cpufreq and cpuidle device registration to
->     init_machine
->   ARM: EXYNOS: Remove file path from comment section
->   ARM: EXYNOS: Remove "linux/bug.h" from pmu.c
->   ARM: EXYNOS: Refactored code for using PMU address via DT
->   ARM: EXYNOS: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
->   ARM: EXYNOS: Add platform driver support for Exynos PMU.
->
-> Young-Gun Jang (4):
->   ARM: EXYNOS: Move SYSREG definition into sys-reg specific file.
->   ARM: EXYNOS: Remove regs-pmu.h header dependency from pm_domain
->   ARM: EXYNOS: Add support for mapping PMU base address via DT
->   ARM: EXYNOS: Move PMU specific definitions from common.h
->
->  arch/arm/Kconfig                             |    1 +
->  arch/arm/mach-exynos/common.h                |   27 +-
->  arch/arm/mach-exynos/exynos-pmu.h            |   31 ++
->  arch/arm/mach-exynos/exynos.c                |   84 +++--
->  arch/arm/mach-exynos/headsmp.S               |    2 -
->  arch/arm/mach-exynos/hotplug.c               |    7 +-
->  arch/arm/mach-exynos/include/mach/map.h      |    3 -
->  arch/arm/mach-exynos/include/mach/memory.h   |    3 +-
->  arch/arm/mach-exynos/platsmp.c               |   42 ++-
->  arch/arm/mach-exynos/pm.c                    |   79 ++--
->  arch/arm/mach-exynos/pm_domains.c            |    8 +-
->  arch/arm/mach-exynos/pmu.c                   |  271 +++++++++++---
->  arch/arm/mach-exynos/regs-pmu.h              |  512 +++++++++++++-------------
->  arch/arm/mach-exynos/regs-sys.h              |   22 ++
->  arch/arm/plat-samsung/include/plat/map-s5p.h |    1 -
->  15 files changed, 665 insertions(+), 428 deletions(-)
->  create mode 100644 arch/arm/mach-exynos/exynos-pmu.h
->  create mode 100644 arch/arm/mach-exynos/regs-sys.h
->
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+---
+ V2 :
+    - Change clock definition order.
+
+ drivers/clk/samsung/clk-exynos4.c   |   19 +++++++++++++++++++
+ include/dt-bindings/clock/exynos4.h |   18 ++++++++++++++++++
+ 2 files changed, 37 insertions(+)
+
+diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
+index b4f9672..bed19b9 100644
+--- a/drivers/clk/samsung/clk-exynos4.c
++++ b/drivers/clk/samsung/clk-exynos4.c
+@@ -680,6 +680,8 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
+ 	 * the device name and clock alias names specified below for some
+ 	 * of the clocks can be removed.
+ 	 */
++	GATE(CLK_PPMULEFT, "ppmuleft", "aclk200", GATE_IP_LEFTBUS, 1, 0, 0),
++	GATE(CLK_PPMURIGHT, "ppmuright", "aclk200", GATE_IP_RIGHTBUS, 1, 0, 0),
+ 	GATE(CLK_SCLK_HDMI, "sclk_hdmi", "mout_hdmi", SRC_MASK_TV, 0, 0, 0),
+ 	GATE(CLK_SCLK_SPDIF, "sclk_spdif", "mout_spdif", SRC_MASK_PERIL1, 8, 0,
+ 		0),
+@@ -695,11 +697,13 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
+ 	GATE(CLK_SROMC, "sromc", "aclk133", GATE_IP_FSYS, 11, 0, 0),
+ 	GATE(CLK_SCLK_G3D, "sclk_g3d", "div_g3d", GATE_IP_G3D, 0,
+ 			CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_PPMUG3D, "ppmug3d", "aclk200", GATE_IP_G3D, 1, 0, 0),
+ 	GATE(CLK_USB_DEVICE, "usb_device", "aclk133", GATE_IP_FSYS, 13, 0, 0),
+ 	GATE(CLK_ONENAND, "onenand", "aclk133", GATE_IP_FSYS, 15, 0, 0),
+ 	GATE(CLK_NFCON, "nfcon", "aclk133", GATE_IP_FSYS, 16, 0, 0),
+ 	GATE(CLK_GPS, "gps", "aclk133", GATE_IP_GPS, 0, 0, 0),
+ 	GATE(CLK_SMMU_GPS, "smmu_gps", "aclk133", GATE_IP_GPS, 1, 0, 0),
++	GATE(CLK_PPMUGPS, "ppmugps", "aclk200", GATE_IP_GPS, 2, 0, 0),
+ 	GATE(CLK_SLIMBUS, "slimbus", "aclk100", GATE_IP_PERIL, 25, 0, 0),
+ 	GATE(CLK_SCLK_CAM0, "sclk_cam0", "div_cam0", GATE_SCLK_CAM, 4,
+ 			CLK_SET_RATE_PARENT, 0),
+@@ -781,19 +785,24 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
+ 			0, 0),
+ 	GATE(CLK_SMMU_JPEG, "smmu_jpeg", "aclk160", GATE_IP_CAM, 11,
+ 			0, 0),
++	GATE(CLK_PPMUCAMIF, "ppmucamif", "aclk160", GATE_IP_CAM, 16, 0, 0),
+ 	GATE(CLK_PIXELASYNCM0, "pxl_async0", "aclk160", GATE_IP_CAM, 17, 0, 0),
+ 	GATE(CLK_PIXELASYNCM1, "pxl_async1", "aclk160", GATE_IP_CAM, 18, 0, 0),
+ 	GATE(CLK_SMMU_TV, "smmu_tv", "aclk160", GATE_IP_TV, 4,
+ 			0, 0),
++	GATE(CLK_PPMUTV, "ppmutv", "aclk160", GATE_IP_TV, 5, 0, 0),
+ 	GATE(CLK_MFC, "mfc", "aclk100", GATE_IP_MFC, 0, 0, 0),
+ 	GATE(CLK_SMMU_MFCL, "smmu_mfcl", "aclk100", GATE_IP_MFC, 1,
+ 			0, 0),
+ 	GATE(CLK_SMMU_MFCR, "smmu_mfcr", "aclk100", GATE_IP_MFC, 2,
+ 			0, 0),
++	GATE(CLK_PPMUMFC_L, "ppmumfc_l", "aclk100", GATE_IP_MFC, 3, 0, 0),
++	GATE(CLK_PPMUMFC_R, "ppmumfc_r", "aclk100", GATE_IP_MFC, 4, 0, 0),
+ 	GATE(CLK_FIMD0, "fimd0", "aclk160", GATE_IP_LCD0, 0,
+ 			0, 0),
+ 	GATE(CLK_SMMU_FIMD0, "smmu_fimd0", "aclk160", GATE_IP_LCD0, 4,
+ 			0, 0),
++	GATE(CLK_PPMULCD0, "ppmulcd0", "aclk160", GATE_IP_LCD0, 5, 0, 0),
+ 	GATE(CLK_PDMA0, "pdma0", "aclk133", GATE_IP_FSYS, 0,
+ 			0, 0),
+ 	GATE(CLK_PDMA1, "pdma1", "aclk133", GATE_IP_FSYS, 1,
+@@ -806,6 +815,7 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
+ 			0, 0),
+ 	GATE(CLK_SDMMC3, "sdmmc3", "aclk133", GATE_IP_FSYS, 8,
+ 			0, 0),
++	GATE(CLK_PPMUFILE, "ppmufile", "aclk133", GATE_IP_FSYS, 17, 0, 0),
+ 	GATE(CLK_UART0, "uart0", "aclk100", GATE_IP_PERIL, 0,
+ 			0, 0),
+ 	GATE(CLK_UART1, "uart1", "aclk100", GATE_IP_PERIL, 1,
+@@ -852,6 +862,10 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
+ 			0, 0),
+ 	GATE(CLK_AC97, "ac97", "aclk100", GATE_IP_PERIL, 27,
+ 			0, 0),
++	GATE(CLK_PPMUDMC0, "ppmudmc0", "aclk133", GATE_IP_DMC, 8, 0, 0),
++	GATE(CLK_PPMUDMC1, "ppmudmc1", "aclk133", GATE_IP_DMC, 9, 0, 0),
++	GATE(CLK_PPMUCPU, "ppmucpu", "aclk133", GATE_IP_DMC, 10, 0, 0),
++	GATE(CLK_PPMUACP, "ppmuacp", "aclk133", GATE_IP_DMC, 16, 0, 0),
+ };
+ 
+ /* list of gate clocks supported in exynos4210 soc */
+@@ -863,6 +877,9 @@ static struct samsung_gate_clock exynos4210_gate_clks[] __initdata = {
+ 	GATE(CLK_SMMU_G2D, "smmu_g2d", "aclk200", E4210_GATE_IP_IMAGE, 3, 0, 0),
+ 	GATE(CLK_SMMU_MDMA, "smmu_mdma", "aclk200", E4210_GATE_IP_IMAGE, 5, 0,
+ 		0),
++	GATE(CLK_PPMUIMAGE, "ppmuimage", "aclk200", E4210_GATE_IP_IMAGE, 9, 0,
++		0),
++	GATE(CLK_PPMULCD1, "ppmulcd1", "aclk160", E4210_GATE_IP_LCD1, 5, 0, 0),
+ 	GATE(CLK_PCIE_PHY, "pcie_phy", "aclk133", GATE_IP_FSYS, 2, 0, 0),
+ 	GATE(CLK_SATA_PHY, "sata_phy", "aclk133", GATE_IP_FSYS, 3, 0, 0),
+ 	GATE(CLK_SATA, "sata", "aclk133", GATE_IP_FSYS, 10, 0, 0),
+@@ -906,6 +923,8 @@ static struct samsung_gate_clock exynos4x12_gate_clks[] __initdata = {
+ 	GATE(CLK_MDMA2, "mdma2", "aclk200", E4X12_GATE_IP_IMAGE, 2, 0, 0),
+ 	GATE(CLK_SMMU_MDMA, "smmu_mdma", "aclk200", E4X12_GATE_IP_IMAGE, 5, 0,
+ 		0),
++	GATE(CLK_PPMUIMAGE, "ppmuimage", "aclk200", E4X12_GATE_IP_IMAGE, 9, 0,
++		0),
+ 	GATE(CLK_MIPI_HSI, "mipi_hsi", "aclk133", GATE_IP_FSYS, 10, 0, 0),
+ 	GATE(CLK_CHIPID, "chipid", "aclk100", E4X12_GATE_IP_PERIR, 0, 0, 0),
+ 	GATE(CLK_SYSREG, "sysreg", "aclk100", E4X12_GATE_IP_PERIR, 1,
+diff --git a/include/dt-bindings/clock/exynos4.h b/include/dt-bindings/clock/exynos4.h
+index 75aff33..7dd7ec1 100644
+--- a/include/dt-bindings/clock/exynos4.h
++++ b/include/dt-bindings/clock/exynos4.h
+@@ -230,6 +230,24 @@
+ #define CLK_MOUT_G3D		394
+ #define CLK_ACLK400_MCUISP	395 /* Exynos4x12 only */
+ 
++/* gate clocks - ppmu */
++#define CLK_PPMULEFT		400
++#define CLK_PPMURIGHT		401
++#define CLK_PPMUCAMIF		402
++#define CLK_PPMUTV		403
++#define CLK_PPMUMFC_L		404
++#define CLK_PPMUMFC_R		405
++#define CLK_PPMUG3D		406
++#define CLK_PPMUIMAGE		407
++#define CLK_PPMULCD0		408
++#define CLK_PPMULCD1		409 /* Exynos4210 only */
++#define CLK_PPMUFILE		410
++#define CLK_PPMUGPS		411
++#define CLK_PPMUDMC0		412
++#define CLK_PPMUDMC1		413
++#define CLK_PPMUCPU		414
++#define CLK_PPMUACP		415
++
+ /* div clocks */
+ #define CLK_DIV_ISP0		450 /* Exynos4x12 only */
+ #define CLK_DIV_ISP1		451 /* Exynos4x12 only */
+-- 
+1.7.9.5
+
