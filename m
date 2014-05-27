@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357AbaE0Ndt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:33:49 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53104 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960AbaE0Ndq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:33:46 -0400
+	id S1752502AbaE0Ne3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:34:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275AbaE0Ne0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 09:34:26 -0400
+Date: Tue, 27 May 2014 09:34:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] export efi.flags to sysfs
+Message-ID: <20140527133411.GG10994@redhat.com>
+References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1400864617-27909-1-git-send-email-berthe.ab@gmail.com>
-References: <1400864617-27909-1-git-send-email-berthe.ab@gmail.com>
-Date: Tue, 27 May 2014 15:33:45 +0200
-Message-ID: <CACRpkdZg559ogf5koyxA_urM949ee-+upauYWQmo-sPUQn-g2w@mail.gmail.com>
-Subject: Re: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
-From: Linus Walleij <linus.walleij@linaro.org>
-To: abdoulaye berthe <berthe.ab@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 7:03 PM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+On Mon, May 26, 2014 at 04:39:35PM +0800, Dave Young wrote:
+> 
+> For efi=old_map and any old_map quirks like SGI UV in current
+> tree kexec/kdump will fail because it depends on the new 1:1 mapping.
+> 
+> Thus export the mapping method to sysfs so kexec tools can switch
+> to original way to boot.
+> 
+> Since we have efi.flags for all efi facilities so let's just export the
+> efi.flags itself, it maybe useful for other arches and use cases.
+> 
 
-> This avoids handling gpiochip remove error in device
-> remove handler.
->
-> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+Does it require any documentation in Documentation/ABI/..
 
-In general this is the right thing to do.
+Vivek
 
->         for (id = 0; id < chip->ngpio; id++) {
-> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
-> -                       status = -EBUSY;
-> -                       break;
-> -               }
-> -       }
-> -       if (status == 0) {
-> -               for (id = 0; id < chip->ngpio; id++)
-> -                       chip->desc[id].chip = NULL;
-> -
-> -               list_del(&chip->list);
-> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
-> +                       panic("gpiolib.c: gpiochip is still requested\n");
-
-panic("gpio: removing gpiochip with gpios still requested\");
-is more helpful.
-
-But I want a patch that also removes *ALL* users of the return value
-from this function in the *same* patch to avoid bisectability issues.
-
-$ git grep gpiochip_remove
-
-Then fix all of them or use coccinelle.
-
-Yours,
-Linus Walleij
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  drivers/firmware/efi/efi.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> Index: linux-2.6/drivers/firmware/efi/efi.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/firmware/efi/efi.c
+> +++ linux-2.6/drivers/firmware/efi/efi.c
+> @@ -86,16 +86,19 @@ static ssize_t name##_show(struct kobjec
+>  EFI_ATTR_SHOW(fw_vendor);
+>  EFI_ATTR_SHOW(runtime);
+>  EFI_ATTR_SHOW(config_table);
+> +EFI_ATTR_SHOW(flags);
+>  
+>  static struct kobj_attribute efi_attr_fw_vendor = __ATTR_RO(fw_vendor);
+>  static struct kobj_attribute efi_attr_runtime = __ATTR_RO(runtime);
+>  static struct kobj_attribute efi_attr_config_table = __ATTR_RO(config_table);
+> +static struct kobj_attribute efi_attr_flags = __ATTR_RO(flags);
+>  
+>  static struct attribute *efi_subsys_attrs[] = {
+>  	&efi_attr_systab.attr,
+>  	&efi_attr_fw_vendor.attr,
+>  	&efi_attr_runtime.attr,
+>  	&efi_attr_config_table.attr,
+> +	&efi_attr_flags.attr,
+>  	NULL,
+>  };
+>  
