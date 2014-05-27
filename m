@@ -1,221 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaE0HMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 03:12:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41356 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaE0HMw (ORCPT
+	id S1751768AbaE0HQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 03:16:32 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:62653 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaE0HQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 03:12:52 -0400
-Date: Tue, 27 May 2014 09:11:57 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Thor Thayer <tthayer.linux@gmail.com>
-Cc: Alan Tull <delicious.quinoa@gmail.com>, Thor Thayer <tthayer@altera.com>,
-        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
-        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
-        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Alan Tull <atull@altera.com>
-Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
- controller
-Message-ID: <20140527071157.GC20695@pengutronix.de>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
- <1400169891-29546-2-git-send-email-tthayer@altera.com>
- <20140516075344.GF949@pengutronix.de>
- <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
- <20140519191206.GH949@pengutronix.de>
- <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
- <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
- <20140520144446.GJ949@pengutronix.de>
- <CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
+	Tue, 27 May 2014 03:16:30 -0400
+Date: Tue, 27 May 2014 09:16:26 +0200
+From: Seth Forshee <seth.forshee@canonical.com>
+To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Marian Marinov <mm@1h.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [lxc-devel] [RFC PATCH 11/11] loop: Allow priveleged operations
+ for root in the namespace which owns a device
+Message-ID: <20140527071626.GA3617@ubuntu-mba51>
+Mail-Followup-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>, Jens Axboe <axboe@kernel.dk>,
+	Serge Hallyn <serge.hallyn@canonical.com>,
+	Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+	Marian Marinov <mm@1h.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
+ <1400103299-144589-12-git-send-email-seth.forshee@canonical.com>
+ <537EE129.1020603@1h.com>
+ <20140526091614.GA13666@ubuntu-mba51>
+ <1401118325.7572.82.camel@canyon.ip6.wittsend.com>
+ <20140527013634.GA3524@mail.hallyn.com>
+ <1401158362.7572.138.camel@canyon.ip6.wittsend.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:52:38 up 34 days, 24 min, 41 users,  load average: 0,06, 0,08,
- 0,10
+In-Reply-To: <1401158362.7572.138.camel@canyon.ip6.wittsend.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 10:38:34AM -0500, Thor Thayer wrote:
-> On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
-> <s.trumtrar@pengutronix.de> wrote:
-> > Hi!
-> >
-> > On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
-> >> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
-> >>
-> >> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> >> >>> >> new file mode 100644
-> >> >>> >> index 0000000..8f8746b
-> >> >>> >> --- /dev/null
-> >> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> >> >>> >> @@ -0,0 +1,11 @@
-> >> >>> >> +Altera SOCFPGA SDRAM Controller
-> >> >>> >> +
-> >> >>> >> +Required properties:
-> >> >>> >> +- compatible : "altr,sdr-ctl";
-> >> >>> >> +- reg : Should contain 1 register ranges(address and length)
-> >> >>> >> +
-> >> >>> >> +Example:
-> >> >>> >> +     sdrctl@ffc25000 {
-> >> >>> >> +             compatible = "altr,sdr-ctl";
-> >> >>> >> +             reg = <0xffc25000 0x1000>;
-> >> >>> >> +     };
-> >> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> >> >>> >> index df43702..6ce912e 100644
-> >> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
-> >> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> >> >>> >> @@ -676,6 +676,11 @@
-> >> >>> >>                       clocks = <&l4_sp_clk>;
-> >> >>> >>               };
-> >> >>> >>
-> >> >>> >> +             sdrctl@ffc25000 {
-> >> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
-> >> >>> >                                                    ^^^^^^^^^^
-> >> >>> >
-> >> >>> > Get rid of that, too, please.
-> >> >>>
-> >> >>> Hi Steffan,
-> >> >>>
-> >> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
-> >> >>> that has the ECC enable bitfield also includes the DRAM configuration
-> >> >>> bitfields that other drivers will want to access (specifically the
-> >> >>> FPGA bridge needs this information). Since this register will be
-> >> >>> shared between drivers,  syscon seems like the best solution.
-> >> >>>
-> >> >>
-> >> >> Hm, from looking at the documentation of the ctrlcfg I can't really
-> >> >> understand which bits you would need for the FPGA brigde and why.
-> >>
-> >> Hi Steffen,
-> >>
-> >> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
-> >> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
-> >> allows an FPGA port to come out of reset (enables that port).  Has no
-> >> other effect on SDRAM configuration.
-> >>
-> >> >> That all sounds like stuff you would want to set for the specific
-> >> >> RAM you are dealing with on a specific board.
-> >> >> What bridge are you talking about? The SDRAM bridge?
-> >>
-> >> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
-> >> register the only register in the sdr that the bridge driver needs.
-> >>
-> >
-> > So, what I suggested down ...
-> >
-> >> >>
-> >> >> I can see the problem with the ECC enable, though.
-> >> >>
-> >> >> Regards,
-> >> >> Steffen
-> >> >>
-> >> >
-> >> >>> >                 sdrctl@ffc25000 {
-> >> >>> >                         compatible = "altr,sdr-ctl";
-> >> >>> >                         reg = <0xffc25000 0x1000>;
-> >> >>> >                         ranges;
-> >> >>> >
-> >> >>> >                         edac@ffc2502c {
-> >> >>> >                                 compatible = "altr,sdram-edac";
-> >> >>> >                                 reg = <0xffc2502c 0x50>;
-> >> >>> >                                 interrupts = <0 39 4>;
-> >> >>> >                         };
-> >> >>> >                 };
-> >> >>> >
-> >> >>> > Then we can later add:
-> >> >>> >
-> >> >>> >                         sdr-ports: ports@ffc2507c {
-> >> >>> >                                 #reset-cells = <1>;
-> >> >>> >                                 compatible = "altr,sdr-ports";
-> >> >>> >                                 reg = <0xffc2507c 0x10>;
-> >> >>> >                                 clocks = <&ddr_dqs_clk>;
-> >> >>> >                                 ...
-> >> >>> >                         };
-> >>
-> >
-> > ... here should work. No?! Just a simple driver that registers with the
-> > reset-framework. I would add 0x7c to that driver and than that driver could
-> > "configure" the port and let it out of reset.
-> >
-> > I have done the same thing for the other 3 bridges, but am not finished yet.
-> > Especially the GPV-stuff needs to at least be able to be added later if not now.
-> >
-
-Hi Thor!
-
-> I'm not clear on how the EDAC driver will interact with the registers
-> allocated to the SDRAM controller. If the group of registers from
-> 0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
-> controller, how does the EDAC driver cleanly access that single
-> register inside this range?
+On Mon, May 26, 2014 at 10:39:22PM -0400, Michael H. Warfield wrote:
+> On Tue, 2014-05-27 at 03:36 +0200, Serge E. Hallyn wrote:
+> > Quoting Michael H. Warfield (mhw@WittsEnd.com):
+> > > On Mon, 2014-05-26 at 11:16 +0200, Seth Forshee wrote:
+> > > > On Fri, May 23, 2014 at 08:48:25AM +0300, Marian Marinov wrote:
+> > > > > -----BEGIN PGP SIGNED MESSAGE-----
+> > > > > Hash: SHA1
+> > > > > 
+> > > > > One question about this patch.
+> > > > > 
+> > > > > Why don't you use the devices cgroup check if the root user in that namespace is allowed to use this device?
+> > > > > 
+> > > > > This way you can be sure that the root in that namespace can not access devices to which the host system did not gave
+> > > > > him access to.
+> > > 
+> > > > That might be possible, but I don't want to require something on the
+> > > > host to whitelist the device for the container. Then loop would need to
+> > > > automatically add the device to devices.allow, which doesn't seem
+> > > > desirable to me. But I'm not entirely opposed to the idea if others
+> > > > think this is a better way to go.
+> > > 
+> > > I don't see any safe way to avoid it.  The host has to be in control of
+> > > what devices can and can not be accessed by the container.
 > 
-
-The compatible in the example is wrong. I didn't mean to map the whole address space
-to some driver.
-I think for the configuration register syscon is the right approach. It is a
-bag of bits that don't necessitate an own driver, so syscon is perfect.
-
-So, let me change my proposal to
-
-	sdr-ctl: sdram@ffc25000 {
-		compatible = "altr,sdr-ctl", "syscon";
-		reg = <0xffc25000 0x1>;
-	};
-
-	edac: edac@ffc2502c {
-		compatible = "altr,sdram-edac";
-		reg = <0xffc2502c 0x50>;
-		interrupts = <0 39 4>;
-		config = <&sdr-ctl>;
-		...
-	};
-
-	sdr-ports: ports@ffc2507c {
-		compatible = "altr,sdr-ports";
-		reg = <0xffc2507c 0x10>;
-		clocks = <&ddr_dqs_clk>;
-		...
-	};
-
-Maybe we can just skip the outer node that combines all the others.
-So, if we do it like that, you can still use syscon, but only for the register
-that needs it. And the EDAC definitely needs access to the config register, so
-all is good.
-
-> Is the solution that I don't use request_region() (and therefore not
-> request exclusive access) when setting up the SDRAM controller?
+> > Disagree.  loop%d is meaningless until it is attached to a file.  So
+> > whether a container can use loop2 vs loop9 is meaningless.  The point
+> > of Seth's loopfs as I understood it is that the container simply gets a
+> > unique (not visible to host or any other containers) set of loop devices
+> > which it can attach to files which it owns.  So long as the host can't
+> > see the container's loop devices (i.e. so it unwittently mounts it when
+> > looking for a particular UUID for /var), it won't get fooled by them.
 > 
-> If you could point me to your drivers for the other bridges that you
-> reference, your code may answer my question.
->
+> > So in this case *if* we can do it, a purely namespaced approach - meaning
+> > that we restrict visibility of a particular loopdev to one container - is
+> > perfect.  
+> 
+> And in that "*if" is a cloud that says "then a miracle occurs" and that
+> miracle needs a lot more detail.  How that translates into what is and
+> is not visible and what can be mimiced in a container becomes important
+> (to say nothing of notifying its udev).  I think this loopfs thing is
+> the answer for the loop device case, we just need to clear up those
+> details and exorcise the devils we find in them.  The loop devices are
+> unique while they strangely seem to work with minimal leakage already
+> (all meta data at this time).
+> 
+> Seth remarked that, maybe, he's not paranoid enough.  You know that I'm
+> a well trained professional paranoid and I accept if people think I'm
+> overly paranoid (is that even possible?).  Even paranoids have enemies
+> and just because you're paranoid it doesn't mean they're not out to get
+> you.  While I admit that total isolation is virtually (excuse the pun)
+> impossible that doesn't mean I don't strive to maximize the isolation
+> and analyze the possibilities and consequences of compromise.
+> 
+> As I stated, "I don't see any way to avoid it".  I would love to be
+> proven wrong.  It would permit my life to be so much more easy.  But how
+> can we allow this without the host in control of it and directing things
+> to the containers?  A container may request something and the host can
+> grant it but the container should not be capable of demanding a device
+> over and above the control of the host.  How do we define the rules that
+> say what a container can do and what it cannot do without it involving
+> knowledge in the host (whitelisting as Seth call's it) of what is and is
+> not allowed in the container?
 
-The other bridges don't need access to any SDRAM controller registers and
-I haven't even started to implement the GPV-stuff with the lw2hps-bridge :-(
+I need to post some code so we have something concrete to discuss, just
+haven't gotten to it yet due to travel and meetings. I'll try to work
+the code into something presentable and send it out later today.
 
-Regards,
-Steffen
+But in loopfs the kernel would ultimately controls directing loop devs
+to containers based on the mount. A container can request a free loop
+device via loop-control, and one gets assigned to that mount. Userspace
+can ask for a specific loop device number, but if that device is
+associated with a different mount that will fail, so the container can't
+gain access to another context's loop device. The container has access
+to only its loop devices by virtue of not having device nodes for any
+other devices.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> We already have the problem that the container devices.allow and
+> devices.deny are major and minor based, which we know is fundamentally
+> flawed in a udev environment.  We specify major:minor in the
+> configuration files as if they are cast in cement (which they are in all
+> common cases) but they are not in the general case.  Greg K-H hammers on
+> this frequently.
+> 
+> The loop devices are unique and deserve a unique solution, I'll agree.
+> But I'm also comfortable that the host should have rules and procedures
+> to whitelist hard devices and loop devices and manage their transfer
+> and/or sharing into the containers.
+
+I'm aiming for being able to use the same tools to manage loop device in
+a container as on the host. If the whole thing needs to be managed by a
+process on the host then I suspect we need something more like
+intercepting ioctls on loop-control within the container so the manager
+can handle them.
+
