@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaE0R56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:57:58 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50680 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaE0R55 (ORCPT
+	id S1752912AbaE0R6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:58:19 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:41286 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaE0R6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:57:57 -0400
-Date: Tue, 27 May 2014 18:57:55 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] vfs: fix vmplice_to_user()
-Message-ID: <20140527175755.GV18016@ZenIV.linux.org.uk>
-References: <20140527144116.GK17233@tucsk.piliscsaba.szeredi.hu>
- <CA+55aFzY--F_2BiZ4-mkFh+0Oy1SX7nBw7cAsSni_iDOtwU-mw@mail.gmail.com>
+	Tue, 27 May 2014 13:58:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzY--F_2BiZ4-mkFh+0Oy1SX7nBw7cAsSni_iDOtwU-mw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140526095730.GC25732@pd.tnic>
+References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
+	<1400169891-29546-4-git-send-email-tthayer@altera.com>
+	<20140526095730.GC25732@pd.tnic>
+Date: Tue, 27 May 2014 12:58:15 -0500
+Message-ID: <CAF03EBd+B5F_UOMOcn+pCE4dOL_24KZku4pweGym=Bip+H_-Rg@mail.gmail.com>
+Subject: Re: [PATCHv5 3/3] edac: altera: Add EDAC support for Altera SoC SDRAM Controller
+From: Thor Thayer <tthayer.linux@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
+        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
+        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-edac@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 10:04:58AM -0700, Linus Torvalds wrote:
-> On Tue, May 27, 2014 at 7:41 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> >
-> > This patch fixes two bugs:
-> 
-> Mind if I change it to avoid the "goto"? I don't think goto is evil,
-> but in this case it doesn't seem to buy anything, except to perhaps
-> make the patch a bit smaller at the expense of making the result a bit
-> harder to read.
-> 
-> Replacing the
-> 
->    if (ret <= 0)
->       goto out;
-> 
-> with
-> 
->    if (ret > 0) {
->        ...
->    }
-> 
-> also allows moving the various variable declarations closer to their use.
-> 
-> So something like the attached..
+On Mon, May 26, 2014 at 4:57 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, May 15, 2014 at 11:04:51AM -0500, tthayer@altera.com wrote:
+>> From: Thor Thayer <tthayer@altera.com>
+>>
+>> v2: Use the SDRAM controller registers to calculate memory size
+>>     instead of the Device Tree. Update To & Cc list. Add maintainer
+>>     information.
+>>
+>> v3: EDAC driver cleanup based on comments from Mailing list.
+>>
+>> v4: Panic on DBE. Add macro around inject-error reads to prevent
+>>     them from being optimized out. Remove of_match_ptr since this
+>>     will always use Device Tree.
+>>
+>> v5: Addition of printk to trigger function to ensure read vars
+>>     are not optimized out.
+>
+> Yeah, you could turn those vX: messages into a real commit message -
+> much better than none at all :-)
+>
+> Other than that, the edac bits look ok. I'll wait out until you guys've
+> sorted the devicetree issues so ping me when it is ready to pick up.
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-I'm not sure it's better; I've a pending patch that does combination of
-rw_copy_check_uvector() with iov_iter_init(), which means that iov
-array will be going to the outer scope anyway...
+Hi Boris,
+
+Sorry about the commit message - I thought I'd fixed it. It will be
+fixed in the next version.
+
+I think Steffen and I have worked out how the devicetree should look.
+I'll submit the changes soon.
+
+Thanks,
+
+Thor
