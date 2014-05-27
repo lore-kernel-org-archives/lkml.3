@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaE0M01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 08:26:27 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:59319 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaE0M0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 08:26:25 -0400
-Message-ID: <5384846D.1000305@atmel.com>
-Date: Tue, 27 May 2014 14:26:21 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751947AbaE0Mfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 08:35:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639AbaE0Mfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 08:35:31 -0400
+Date: Tue, 27 May 2014 08:34:46 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz
+Subject: Re: [RFC PATCH 00/11][V2] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140527123446.GB10994@redhat.com>
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+ <20140526082514.GA25732@pd.tnic>
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: add AT91 Clock Support entry
-References: <1401190768-3932-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1401190768-3932-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526082514.GA25732@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/2014 13:39, Boris BREZILLON :
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-
-Of course Boris, that will be good:
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> ---
->  MAINTAINERS | 5 +++++
->  1 file changed, 5 insertions(+)
+On Mon, May 26, 2014 at 10:25:14AM +0200, Borislav Petkov wrote:
+> Hi Vivek,
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 1066264..40c5580 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -808,6 +808,11 @@ F:	arch/arm/boot/dts/at91*.dtsi
->  F:	arch/arm/boot/dts/sama*.dts
->  F:	arch/arm/boot/dts/sama*.dtsi
->  
-> +ARM/ATMEL AT91 Clock Support
-> +M:	Boris Brezillon <boris.brezillon@free-electrons.com>
-> +S:	Maintained
-> +F:	drivers/clk/at91
-> +
->  ARM/CALXEDA HIGHBANK ARCHITECTURE
->  M:	Rob Herring <robh@kernel.org>
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> On Mon, Jan 27, 2014 at 01:57:40PM -0500, Vivek Goyal wrote:
+> > Hi
+> > 
+> > This is V2 of new system call patches. Previous version was posted here.
 > 
+> just a quick ping here, are you working on a v3? Anything I can help with?
 
+Hi Boris,
 
--- 
-Nicolas Ferre
+Yes, I am working on V3. I have been doing some more work to complete the
+series. Specifically make the patches work with UEFI system and also wrote
+code for verifying PKCS7 signature of bzImage. Signature verification code
+I will post separately.
+
+I am just battling a weared race condition where nested kdump seems to
+fail on UEFI system sometimes. Some checksum issue. Hopefully I will be able
+to resolve soon and repost patches for review.
+
+Thanks
+Vivek
