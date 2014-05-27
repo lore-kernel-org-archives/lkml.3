@@ -1,152 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaE0Rab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:30:31 -0400
-Received: from [113.140.84.86] ([113.140.84.86]:41769 "HELO zzxpop.gov.cn"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
-	id S1752616AbaE0Ra2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:30:28 -0400
-X-Greylist: delayed 1060 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 May 2014 13:30:28 EDT
-Date: Wed, 28 May 2014 01:13:13 +0800
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-Message-ID: <003347352148$58081368$72417017@avpttect>
-From: =?gb2312?B?uPDX3A==?= <sizhu@zzxpop.gov.cn>
-To: <linux-kernel@vger.kernel.org>
+	id S1753359AbaE0Ra6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:30:58 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:60742 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616AbaE0Raz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 13:30:55 -0400
+Date: Wed, 28 May 2014 01:30:50 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Seth Jennings <sjennings@variantweb.net>
+Subject: Re: [PATCH] crypto: lzo: try kmalloc() before vmalloc()
+Message-ID: <20140527173050.GA18214@gondor.apana.org.au>
+References: <1401211735.5367.254.camel@edumazet-glaptop2.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401211735.5367.254.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-      
-      
-      
-      
-      
-                               《微信营销从入门到实战》---【主讲：马佳彬】
+On Tue, May 27, 2014 at 10:28:55AM -0700, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> zswap allocates one LZO context per online cpu.
+> 
+> Using vmalloc() for small (16KB) memory areas has drawback of slowing
+> down /proc/vmallocinfo and /proc/meminfo reads, TLB pressure and poor
+> NUMA locality, as default NUMA policy at boot time is to interleave
+> pages :
+> 
+> edumazet:~# grep lzo /proc/vmallocinfo | head -4
+> 0xffffc90006062000-0xffffc90006067000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
+> 0xffffc90006067000-0xffffc9000606c000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
+> 0xffffc9000606c000-0xffffc90006071000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
+> 0xffffc90006071000-0xffffc90006076000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
+> 
+> This patch tries a regular kmalloc() and fallback to vmalloc in case
+> memory is too fragmented.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
 
+Looks good to me.  This would seem like something that could be
+generalised to other vmalloc users, no?
 
-     ===============================================================================================
-        报名详情 >
-      
-      【培训时间】2014年6月20上海、6月21北京、6月28深圳
-                       
-      【培训对象】企业的经营者、营销负责人、网络营销人员、企业营销策略制定者及所有营销人员。
-      
-      【授课方式】讲师讲授 + 视频演绎 + 案例研讨 +角色扮演 + 讲师点评 + 落地工具。
-      
-      【培训费用】3200/两人“买一赠一”，单独一人收费1980元（含资料费、午餐、茶点）
-      
-                赠送：
-      
-                 价值1800元的微网站，限前30名报名学员。
-      
-                 微信营销系统40多款公众平台接口，含大转盘、刮刮卡、优惠券等实用营销功能。
-      
-      【承办单位】宇杰企管
-      
-      【报名热线】深圳：O755-612 82 36O 上海: O21-51 6O2 O3O 北京：O1O-516 693 1O
-
-      【QQ在线】51179 8337
-     ===============================================================================================
-        课程简介 >  
-      
-      【课程背景】 ===》微网络撬动大市场
-      
-      10年前，互联网来了，有人因此成为商业巨头；
-      
-      5年前，淘宝来了，有人因此实现“草根创业”；
-      
-      3年前，微博来了，有人因此实现财富“核裂变”；
-      
-      而今天，微信来了，微营销来了……
-      
-      7天连锁酒店通过微信营销，一个月内，会员从30万几何式增至120万！
-      
-      小米手机通过微信营销，在短短3个月内吸引粉丝105万，网上订单暴增15倍！
-      
-      星巴克通过微信营销,在三周内，仅“冰摇沁爽”一项产品销售额就突破750万！
-      
-      “90后”大学生通过微信营销卖水果，一没店铺，二没员工情况下，实现月入8万的奇迹！
-      
-      微信来了，“微”机也就来了，你知道这意味着什么！！
-      
-      未来十年，是中国商业领域大规模打劫的时代，所有还在采用传统运营模式的企业的“粮仓”
-      
-      都有可能遭遇打劫，而那些适应了“微”机，抓住了“微”机的企业将是这个时代最大的赢家，小米赢了，
-      
-      星巴克赢了……
-      
-      参加《微信营销从入门到实战》，下一个赢家，就是你！
-      
-      【课程收益】
-      
-       1.全面系统学习微信营销两大平台，普及数10种实操技巧； 
-       2.知晓微信营销定位、策划、运营、推广、成 交5大模块致胜诀窍； 
-       3.学会渗透微信朋友圈子，把握强弱关系，实 现口碑营销及建立转介绍系统； 
-       4.掌握运营层面6大功能实操细节，解答线 上、线下活动策划注意事项。 
-       5.获得微信营销落地搭建团队一系列建议，包括绩效考核与效果分析。 
-       6.了解微信发展趋势以及企业移动互联网营销趋势，少走弯路取得成效。
-    =================================================================================================
-        导师简介 >【马佳彬】
-      
-      【讲师介绍】  
-      
-       微信实战应用专家、网络营销实战专家。
-      
-      【教育背景】
-      
-          上海交通大学EMBA总裁班导师；中央人民广播电台
-          经济之声时评嘉宾；中特《微信解码》专家；《微信宝典》作者；创新工场多贝网达人讲师；马老师
-      是多家知名网站的专栏作家，如：Chinaz站长之家，Donews新锐作家、速途网、艾瑞网、易观网、亿邦动
-      力网和最科技网等。微信营销领域专业排名前四*马老师拥有9年的互联网行业培训经验，先后从事信息咨
-      询及广告传媒工作。微博营销领域首次提出“灭亡论”。最早涉足研究微信营销，微信营销实战班网络培
-      训开创者，“微信营销六步思维法”讲师。长期担任业内多家知名IT门户站点写手。其个人博客在业内拥
-      有比较高的知名度，已被网站运营等专业书籍收录推荐。培训学员数以万计，马老师由于长期亲密接触网
-      络营销一线，因此，讲解风格生动、贴近实际，更易引起学员共鸣！是最早的微信营销研究及实践者，在
-      微信营销领域具有完善系统的研究成果。
-     ===============================================================================================
-      课程大纲
-      
-      一、微信营销概念篇
-      
-      1、移动电子商务带来了什么机会？
-      2、常见的移动互联网商业模式有哪些？
-      3、微信的发展历史及其商业模式。微信营销与社交网络有什么关系？
-      4、企业为什么要做微信营销？微信营销能给企业带来什么？
-      
-      二、微信营销入门篇
-      
-      1、微信手机版、网页版、公众平台介绍；
-      2、微信手机版实操技巧解密、电脑模拟手机版技术介绍；
-      3、微信网页版实操技巧介绍（批量微群加好友技巧）；
-      4、微信公众平台搭建全面系统介绍（科学正确使用微信公众帐号）；
-      5、微信9大辅助营销软件首度无保留全公开；
-      
-      三、微信营销进阶篇
-      
-      1、微信移动电子商务系统搭建指南；
-      2、微信O2O电子商务系统搭建指南；
-      3、微信客服系统（CRM）搭建指南；
-      4、微信自推广系统搭建指南；
-      5、微信营销四步思维法：定位+策划+运营+转化 四大模块系统解析；
-         5.1.1 企业微信运营团队建设策略；       
-         5.1.2 企业微信公众帐号内容策划策略；
-         5.1.3 企业微信公众帐号活动策划策略；   
-         5.1.4 企业微信公众帐号客服策略；
-         5.1.5 企业微信公众帐号推广策略；
-      6、微信个人帐号营销、公众帐号营销辅助手段延伸推荐（易信、微米、来往多平台营销推广）；
-      
-      四、微信营销落地篇
-      
-      1、微信个人帐号朋友圈销售实操技巧指南；
-      2、微信公众帐号落地策略（多行业）；
-      3、微信企业应用经典案例分享（多行业）；
-      4、微信自媒体品牌打造三部曲；
-      5、微信自媒体品牌经典案例分享；
-     ===============================================================================================
-
-
-
-
-
-      
-
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
