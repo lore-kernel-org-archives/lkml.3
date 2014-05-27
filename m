@@ -1,52 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaE0TYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 15:24:18 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46047 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623AbaE0TYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 15:24:17 -0400
-Date: Tue, 27 May 2014 15:24:14 -0400 (EDT)
-Message-Id: <20140527.152414.1304343647733553805.davem@davemloft.net>
-To: amirv@mellanox.com
-Cc: ogerlitz@mellanox.com, netdev@vger.kernel.org, yevgenyp@mellanox.com,
-        yuvala@mellanox.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next V6 1/2] cpumask: Utility function to set n'th
- cpu - local cpu first
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1401029247-15196-2-git-send-email-amirv@mellanox.com>
-References: <1401029247-15196-1-git-send-email-amirv@mellanox.com>
-	<1401029247-15196-2-git-send-email-amirv@mellanox.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 27 May 2014 12:24:17 -0700 (PDT)
+	id S1753425AbaE0T0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:26:00 -0400
+Received: from ns.horizon.com ([71.41.210.147]:40252 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752654AbaE0TZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 15:25:58 -0400
+Date: 27 May 2014 15:25:56 -0400
+Message-ID: <20140527192556.6555.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: viro@ZenIV.linux.org.uk
+Subject: Re: [PATCH] vfs: fix vmplice_to_user()
+Cc: linux@horizon.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, miklos@szeredi.hu,
+        torvalds@linux-foundation.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amir Vadai <amirv@mellanox.com>
-Date: Sun, 25 May 2014 17:47:26 +0300
+You could also get rid of the separate ret/count variables
+and use ssize_t everywhere; that's the declared return type
+of rw_copy_check_uvector and __splice_from_pipe, after all.
 
-> This function sets the n'th cpu - local cpu's first.
-> For example: in a 16 cores server with even cpu's local, will get the
-> following values:
-> cpumask_set_cpu_local_first(0, numa, cpumask) => cpu 0 is set
-> cpumask_set_cpu_local_first(1, numa, cpumask) => cpu 2 is set
-> ...
-> cpumask_set_cpu_local_first(7, numa, cpumask) => cpu 14 is set
-> cpumask_set_cpu_local_first(8, numa, cpumask) => cpu 1 is set
-> cpumask_set_cpu_local_first(9, numa, cpumask) => cpu 3 is set
-> ...
-> cpumask_set_cpu_local_first(15, numa, cpumask) => cpu 15 is set
-> 
-> Curently this function will be used by multi queue networking devices to
-> calculate the irq affinity mask, such that as many local cpu's as
-> possible will be utilized to handle the mq device irq's.
-> 
-> Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Hunks after the first two are optional extras to make types
+consistent in other functions in that file, although I stopped
+once I realized how big a job it owuld be to do it all.
 
-I would like someone who cares about these cpumask interfaces to provide
-a review.
+Signed-off-by: George Spelvin <linux@horizon.com>
+
+diff --git a/fs/splice.c b/fs/splice.c
+index 6b111500..2fce8f44 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -1534,18 +1534,17 @@ static long vmsplice_to_user(struct file *file, const struct iovec __user *uiov,
+ 	struct pipe_inode_info *pipe;
+ 	struct iovec iovstack[UIO_FASTIOV];
+ 	struct iovec *iov = iovstack;
+-	long ret;
++	ssize_t count;
+ 
+ 	pipe = get_pipe_info(file);
+ 	if (!pipe)
+ 		return -EBADF;
+ 
+-	ret = rw_copy_check_uvector(READ, uiov, nr_segs,
++	count = rw_copy_check_uvector(READ, uiov, nr_segs,
+ 				    ARRAY_SIZE(iovstack), iovstack, &iov);
+-	if (ret > 0) {
++	if (count > 0) {
+ 		struct splice_desc sd;
+ 		struct iov_iter iter;
+-		ssize_t count = ret;
+ 
+ 		iov_iter_init(&iter, iov, nr_segs, count, 0);
+ 
+@@ -1556,14 +1555,14 @@ static long vmsplice_to_user(struct file *file, const struct iovec __user *uiov,
+ 		sd.pos = 0;
+ 
+ 		pipe_lock(pipe);
+-		ret = __splice_from_pipe(pipe, &sd, pipe_to_user);
++		count = __splice_from_pipe(pipe, &sd, pipe_to_user);
+ 		pipe_unlock(pipe);
+ 	}
+ 
+ 	if (iov != iovstack)
+ 		kfree(iov);
+ 
+-	return ret;
++	return count;
+ }
+ 
+ /*
+@@ -1571,7 +1570,7 @@ static long vmsplice_to_user(struct file *file, const struct iovec __user *uiov,
+  * as splice-from-memory, where the regular splice is splice-from-file (or
+  * to file). In both cases the output is a pipe, naturally.
+  */
+-static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
++static ssize_t vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
+ 			     unsigned long nr_segs, unsigned int flags)
+ {
+ 	struct pipe_inode_info *pipe;
+@@ -1585,7 +1584,7 @@ static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
+ 		.ops = &user_page_pipe_buf_ops,
+ 		.spd_release = spd_release_page,
+ 	};
+-	long ret;
++	ssize_t ret;
+ 
+ 	pipe = get_pipe_info(file);
+ 	if (!pipe)
+@@ -1626,25 +1625,25 @@ SYSCALL_DEFINE4(vmsplice, int, fd, const struct iovec __user *, iov,
+ 		unsigned long, nr_segs, unsigned int, flags)
+ {
+ 	struct fd f;
+-	long error;
++	ssize_t ret;
+ 
+ 	if (unlikely(nr_segs > UIO_MAXIOV))
+ 		return -EINVAL;
+ 	else if (unlikely(!nr_segs))
+ 		return 0;
+ 
+-	error = -EBADF;
++	ret = -EBADF;
+ 	f = fdget(fd);
+ 	if (f.file) {
+ 		if (f.file->f_mode & FMODE_WRITE)
+-			error = vmsplice_to_pipe(f.file, iov, nr_segs, flags);
++			ret = vmsplice_to_pipe(f.file, iov, nr_segs, flags);
+ 		else if (f.file->f_mode & FMODE_READ)
+-			error = vmsplice_to_user(f.file, iov, nr_segs, flags);
++			ret = vmsplice_to_user(f.file, iov, nr_segs, flags);
+ 
+ 		fdput(f);
+ 	}
+ 
+-	return error;
++	return ret;
+ }
+ 
+ #ifdef CONFIG_COMPAT
