@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaE0GC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:02:29 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:54267 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaE0GC2 convert rfc822-to-8bit (ORCPT
+	id S1751748AbaE0GFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:05:17 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:40486 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaE0GFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:02:28 -0400
-Message-ID: <53842A53.1060404@ahsoftware.de>
-Date: Tue, 27 May 2014 08:01:55 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Alexander Shiyan <shc_work@mail.ru>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/27] mtd: nand: pxa3xx: show device structure in sysfs
-References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de> <1401142372-14148-10-git-send-email-holler@ahsoftware.de> <1401160341.192042842@f271.i.mail.ru>
-In-Reply-To: <1401160341.192042842@f271.i.mail.ru>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 May 2014 02:05:15 -0400
+Message-ID: <1401170709.11231.3.camel@phoenix>
+Subject: [PATCH] regulator: ltc3589: Remove ltc3589_list_voltage_fixed
+ function
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 27 May 2014 14:05:09 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.05.2014 05:12, schrieb Alexander Shiyan:
-> Tue, 27 May 2014 00:12:34 +0200 от Alexander Holler <holler@ahsoftware.de>:
->> Fix a common error in nand-drivers which do not set up a parent devicefor
->> the mtd-device by using a new inline function.
->>
->> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->> ---
->>   drivers/mtd/nand/pxa3xx_nand.c | 3 +--
->>   1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
->> index 7588fe2..7f62e7c 100644
->> --- a/drivers/mtd/nand/pxa3xx_nand.c
->> +++ b/drivers/mtd/nand/pxa3xx_nand.c
->> @@ -1584,8 +1584,7 @@ static int alloc_nand_resource(struct platform_device *pdev)
->>   		host->mtd = mtd;
->>   		host->cs = cs;
->>   		host->info_data = info;
->> -		mtd->priv = host;
->> -		mtd->owner = THIS_MODULE;
->> +		mtd_setup_common_members(mtd, host, pdev);
->>
->>   		chip->ecc.read_page	= pxa3xx_nand_read_page_hwecc;
->>   		chip->ecc.write_page	= pxa3xx_nand_write_page_hwecc;
->> --
->
-> Should we add "driver.owner = THIS_MODULE" field for struct platform_driver in this case?
+When fixed_uV is set and n_voltage is 1, regulator core will return
+rdev->desc->fixed_uV in regulator_get_voltage() and regulator_list_voltage().
 
-Yes. I assumed all drivers/modules already had an owner. I will check 
-them all and will send a v2 for those which don't have one. I wonder 
-what this field is used for if it works without. ;)
+Rename ltc3589_standby_regulator_ops to ltc3589_fixed_standby_regulator_ops,
+this makes the code clear that the ops is for fixed voltage regulator.
 
-Regards,
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/ltc3589.c | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
-Alexander Holler
+diff --git a/drivers/regulator/ltc3589.c b/drivers/regulator/ltc3589.c
+index fef64ee..110a99e 100644
+--- a/drivers/regulator/ltc3589.c
++++ b/drivers/regulator/ltc3589.c
+@@ -160,15 +160,6 @@ static int ltc3589_set_suspend_mode(struct regulator_dev *rdev,
+ 	return regmap_update_bits(ltc3589->regmap, LTC3589_VCCR, mask, bit);
+ }
+ 
+-static int ltc3589_list_voltage_fixed(struct regulator_dev *rdev,
+-				      unsigned int selector)
+-{
+-	if (selector)
+-		return -EINVAL;
+-
+-	return rdev->desc->fixed_uV;
+-}
+-
+ /* SW1, SW2, SW3, LDO2 */
+ static struct regulator_ops ltc3589_linear_regulator_ops = {
+ 	.enable = regulator_enable_regmap,
+@@ -188,12 +179,10 @@ static struct regulator_ops ltc3589_fixed_regulator_ops = {
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+ 	.is_enabled = regulator_is_enabled_regmap,
+-	.list_voltage = ltc3589_list_voltage_fixed,
+ };
+ 
+ /* LDO1 */
+-static struct regulator_ops ltc3589_standby_regulator_ops = {
+-	.list_voltage = ltc3589_list_voltage_fixed,
++static struct regulator_ops ltc3589_fixed_standby_regulator_ops = {
+ };
+ 
+ /* LDO4 */
+@@ -242,7 +231,7 @@ static struct ltc3589_regulator ltc3589_regulators[LTC3589_NUM_REGULATORS] = {
+ 	LTC3589_LINEAR_REG(SW2, B2DTV1),
+ 	LTC3589_LINEAR_REG(SW3, B3DTV1),
+ 	LTC3589_FIXED_REG(BB_OUT),
+-	LTC3589_REG(LDO1, standby, 0, 0, 0, 0),
++	LTC3589_REG(LDO1, fixed_standby, 0, 0, 0, 0),
+ 	LTC3589_LINEAR_REG(LDO2, L2DTV1),
+ 	LTC3589_FIXED_REG(LDO3),
+ 	LTC3589_REG(LDO4, table, LTC3589_OVEN_LDO4, LTC3589_L2DTV2, 0x60, 0),
+-- 
+1.8.3.2
+
+
 
