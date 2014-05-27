@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaE0J4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:56:00 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:52994 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaE0Jz5 (ORCPT
+	id S1752202AbaE0J5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:57:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:36443 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaE0J5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:55:57 -0400
-Message-ID: <1401184553.5134.115.camel@marge.simpson.net>
-Subject: Re: balance storm
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
-        peterz@infradead.org
-Date: Tue, 27 May 2014 11:55:53 +0200
-In-Reply-To: <53844510.1040502@huawei.com>
-References: <5382AF2E.1040407@huawei.com>
-	 <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com>
-	 <1401113960.23186.41.camel@marge.simpson.net> <53844510.1040502@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 27 May 2014 05:57:22 -0400
+Date: Tue, 27 May 2014 12:55:05 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Heesub Shin <heesub.shin@samsung.com>
+Cc: devel@driverdev.osuosl.org, Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daeseok Youn <daeseok.youn@gmail.com>, linux-kernel@vger.kernel.org,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>
+Subject: Re: [PATCH 1/9] staging: ion: tidy up a bit
+Message-ID: <20140527094609.GL15585@mwanda>
+References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
+ <20140526103612.GE15585@mwanda>
+ <5383E32A.6040009@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5383E32A.6040009@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-27 at 15:56 +0800, Libo Chen wrote: 
-> On 2014/5/26 22:19, Mike Galbraith wrote:
-> > On Mon, 2014-05-26 at 20:16 +0800, Libo Chen wrote: 
-> >> On 2014/5/26 13:11, Mike Galbraith wrote:
-> > 
-> >>> Your synthetic test is the absolute worst case scenario.  There has to
-> >>> be work between wakeups for select_idle_sibling() to have any chance
-> >>> whatsoever of turning in a win.  At 0 work, it becomes 100% overhead.
-> >>
-> >> not synthetic, it is a real problem in our product. under no load, waste
-> >> much cpu time.
-> > 
-> > What happens in your product if you apply the commit I pointed out?
+On Tue, May 27, 2014 at 09:58:18AM +0900, Heesub Shin wrote:
+> Hello Carpenter,
 > 
-> under no load, cpu usage is up to 60%, but the same apps cost 10% on
-> susp sp1.  The apps use a lot of timer.
+> On 05/26/2014 07:36 PM, Dan Carpenter wrote:
+> >On Mon, May 26, 2014 at 07:04:53PM +0900, Heesub Shin wrote:
+> >>@@ -124,7 +122,6 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+> >>
+> >>  		info->page = page;
+> >>  		info->order = orders[i];
+> >>-		INIT_LIST_HEAD(&info->list);
+> >>  		return info;
+> >>  	}
+> >>  	kfree(info);
+> >
+> >Wait.  How does this code work without that INIT_LIST_HEAD()?  What am
+> >I missing here...
+> 
+> No problem. As the object info is just a node, not a head, it is
+> completely useless to initialize it as a list head.
+> 
 
-Something is rotten.  3.14-rt contains that commit, I ran your test with
-256 threads on 64 core box, saw ~4%.
+Oh, sorry, you are right.  My bad.
 
-Putting master/nopreempt config on box and doing the same test, box is
-chewing up truckloads of CPU, but not from migrations. 
-
-perf top -g --sort=symbol
-
-Samples: 7M of event 'cycles', Event count (approx.): 1316249172581                                                                                                                                                                         
--   82.56%  [k] _raw_spin_lock_irqsave                                                                                                                                                                                                     ▒
-   - _raw_spin_lock_irqsave                                                                                                                                                                                                                ▒
-      - 96.59% __nanosleep_nocancel                                                                                                                                                                                                        ◆
-           100.00% __libc_start_main                                                                                                                                                                                                       ▒
-        2.88% __poll                                                                                                                                                                                                                       ▒
-           0                                                                                                                                                                                                                               ▒
-+    1.56%  [k] native_write_msr_safe                                                                                                                                                                                                      ▒
-+    1.21%  [k] update_cfs_shares                                                                                                                                                                                                          ▒
-+    0.92%  [k] __schedule                                                                                                                                                                                                                 ▒
-+    0.88%  [k] _raw_spin_lock                                                                                                                                                                                                             ▒
-+    0.73%  [k] update_cfs_rq_blocked_load                                                                                                                                                                                                 ▒
-+    0.62%  [k] idle_cpu                                                                                                                                                                                                                   ▒
-+    0.47%  [.] usleep                                                                                                                                                                                                                     ▒
-+    0.41%  [k] cpuidle_enter_state                                                                                                                                                                                                        ▒
-+    0.37%  [k] set_task_cpu
-
-Oh, 256 * usleep(100) is not a great idea.
-
-	-Mike
+regards,
+dan carpenter
 
