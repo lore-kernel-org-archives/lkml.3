@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaE0R7V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:59:21 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:51003 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaE0R7U (ORCPT
+	id S1753167AbaE0SAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:00:06 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:47425 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaE0SAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:59:20 -0400
+	Tue, 27 May 2014 14:00:03 -0400
+Date: Tue, 27 May 2014 11:00:14 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] MAINTAINERS: Add reset controller framework entry
+Message-ID: <20140527180014.GA26141@quad.lixom.net>
+References: <1401199089-28244-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <5384AA79.4010206@kernel.dk>
-References: <alpine.LRH.2.02.1405271059190.27492@file01.intranet.prod.int.rdu2.redhat.com>
-	<5384AA79.4010206@kernel.dk>
-Date: Tue, 27 May 2014 10:59:19 -0700
-Message-ID: <CALJ65znW7YK2moi6w6n-cm725c7Czci44EFzHDNv4y=sNcF66g@mail.gmail.com>
-Subject: Re: [PATCH] block: flush queued bios when the process blocks
-From: Kent Overstreet <kmo@daterainc.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401199089-28244-1-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 8:08 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> This really begs the question of why we just don't use the per-process plugs
-> for this. We already have scheduler hooks in place to flush those at the
-> appropriate time. Why are we reinventing something for essentially the same
-> thing?
+On Tue, May 27, 2014 at 03:58:09PM +0200, Philipp Zabel wrote:
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  MAINTAINERS | 8 ++++++++
+>  1 file changed, 8 insertions(+)
 
-Yes! Unifying the two plugging mechanisms has been on my todo/wishlist for ages.
+Applied to fixes for 3.15. Thanks.
+
+
+-Olof
