@@ -1,159 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaE0IJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:09:39 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:16773 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751949AbaE0IJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:09:29 -0400
-Message-ID: <53844829.5050005@arm.com>
-Date: Tue, 27 May 2014 09:09:13 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+	id S1752367AbaE0IIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:08:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13824 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752343AbaE0IIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:08:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,917,1392192000"; 
+   d="scan'208";a="538017374"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH 20/22] ARM: sun8i: Add SMP support for the Allwinner A23
-References: <1400831485-28576-1-git-send-email-wens@csie.org> <1400831485-28576-21-git-send-email-wens@csie.org> <20140525192652.GZ10768@lukather> <CAGb2v653DqF38OfbhLRbjM-D=mzm-+HGJYcFoVZQVJBv-hoJ6w@mail.gmail.com>
-In-Reply-To: <CAGb2v653DqF38OfbhLRbjM-D=mzm-+HGJYcFoVZQVJBv-hoJ6w@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: [Patch V3 12/37] x86, ioapic: kill static variable nr_irqs_gsi
+Date: Tue, 27 May 2014 16:07:47 +0800
+Message-Id: <1401178092-1228-13-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/05/14 04:57, Chen-Yu Tsai wrote:
-> On Mon, May 26, 2014 at 3:26 AM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
->> On Fri, May 23, 2014 at 03:51:23PM +0800, Chen-Yu Tsai wrote:
->>> The A23 is a dual Cortex-A7. Add the logic to use the IPs used to
->>> control the CPU configuration and the CPU power so that we can
->>> bring up secondary CPUs at boot.
->>>
->>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
->>> ---
->>>  arch/arm/mach-sunxi/platsmp.c | 69 +++++++++++++++++++++++++++++++++++++++++++
->>>  1 file changed, 69 insertions(+)
->>>
->>> diff --git a/arch/arm/mach-sunxi/platsmp.c b/arch/arm/mach-sunxi/platsmp.c
->>> index c53077b..688faaf 100644
->>> --- a/arch/arm/mach-sunxi/platsmp.c
->>> +++ b/arch/arm/mach-sunxi/platsmp.c
->>> @@ -121,3 +121,72 @@ struct smp_operations sun6i_smp_ops __initdata = {
->>>       .smp_boot_secondary     = sun6i_smp_boot_secondary,
->>>  };
->>>  CPU_METHOD_OF_DECLARE(sun6i_smp, "allwinner,sun6i-a31", &sun6i_smp_ops);
->>> +
->>> +static void __init sun8i_smp_prepare_cpus(unsigned int max_cpus)
->>> +{
->>> +     struct device_node *node;
->>> +
->>> +     node = of_find_compatible_node(NULL, NULL, "allwinner,sun8i-a23-prcm");
->>> +     if (!node) {
->>> +             pr_err("Missing A23 PRCM node in the device tree\n");
->>> +             return;
->>> +     }
->>> +
->>> +     prcm_membase = of_iomap(node, 0);
->>> +     if (!prcm_membase) {
->>> +             pr_err("Couldn't map A23 PRCM registers\n");
->>> +             return;
->>> +     }
->>> +
->>> +     node = of_find_compatible_node(NULL, NULL,
->>> +                                    "allwinner,sun8i-a23-cpuconfig");
->>> +     if (!node) {
->>> +             pr_err("Missing A23 CPU config node in the device tree\n");
->>> +             return;
->>> +     }
->>> +
->>> +     cpucfg_membase = of_iomap(node, 0);
->>> +     if (!cpucfg_membase)
->>> +             pr_err("Couldn't map A23 CPU config registers\n");
->>> +
->>> +}
->>> +
->>> +static int sun8i_smp_boot_secondary(unsigned int cpu,
->>> +                                 struct task_struct *idle)
->>> +{
->>> +     u32 reg;
->>> +
->>> +     if (!(prcm_membase && cpucfg_membase))
->>> +             return -EFAULT;
->>> +
->>> +     spin_lock(&cpu_lock);
->>> +
->>> +     /* Set CPU boot address */
->>> +     writel(virt_to_phys(secondary_startup),
->>> +            cpucfg_membase + CPUCFG_PRIVATE0_REG);
->>> +
->>> +     /* Assert the CPU core in reset */
->>> +     writel(0, cpucfg_membase + CPUCFG_CPU_RST_CTRL_REG(cpu));
->>> +
->>> +     /* Assert the L1 cache in reset */
->>> +     reg = readl(cpucfg_membase + CPUCFG_GEN_CTRL_REG);
->>> +     writel(reg & ~BIT(cpu), cpucfg_membase + CPUCFG_GEN_CTRL_REG);
->>> +
->>> +     /* Clear CPU power-off gating */
->>> +     reg = readl(prcm_membase + PRCM_CPU_PWROFF_REG);
->>> +     writel(reg & ~BIT(cpu), prcm_membase + PRCM_CPU_PWROFF_REG);
->>> +     mdelay(1);
->>> +
->>> +     /* Deassert the CPU core reset */
->>> +     writel(3, cpucfg_membase + CPUCFG_CPU_RST_CTRL_REG(cpu));
->>> +
->>> +     spin_unlock(&cpu_lock);
->>> +
->>> +     return 0;
->>> +}
->>> +
->>> +struct smp_operations sun8i_smp_ops __initdata = {
->>> +     .smp_prepare_cpus       = sun8i_smp_prepare_cpus,
->>> +     .smp_boot_secondary     = sun8i_smp_boot_secondary,
->>> +};
->>> +CPU_METHOD_OF_DECLARE(sun8i_smp, "allwinner,sun8i-a23", &sun8i_smp_ops);
->>
->> You forgot to document the new enable-method.
-> 
-> I will add it.
-> 
->> Also, is there any plan to hae a working u-boot? I'd much prefer to
->> use PSCI if possible.
-> 
-> IIRC PSCI needs a secure SRAM block to store its program code.
-> Unfortunately the A23 doesn't have secure SRAM. I think it is
-> missing other security related features as well.
-> 
-> Or could it just live in generic SRAM, and the kernel marks it
-> as reserved or something.
-> 
-> Maybe Marc Zyngier (CCed) can shed some light on this?
+Static variable nr_irqs_gsi is used to maintain the lowest dynamic
+allocatable IRQ number. It may cause trouble when enabling dynamic
+IRQ allocation for IOAPIC, so use arch_dynirq_lower_bound() to
+avoid directly accessing nr_irqs_gsi and kill nr_irqs_gsi.
 
-No secure SRAM is required. You can normal SRAM, or even a normal region
-of RAM that is accessed from secure mode. Not as nice as having proper
-SRAM as on sun7i, but still perfectly functional.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/apic/io_apic.c |   24 +++++-------------------
+ 1 file changed, 5 insertions(+), 19 deletions(-)
 
-Please consider having a proper PSCI implementation instead of always
-adding more code that will effectively lock people out of using the
-virtualization features the core has.
-
-Thanks,
-
-	M.
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e8dd12a04cea..397fb9a02e11 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -118,9 +118,6 @@ struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
+ /* # of MP IRQ source entries */
+ int mp_irq_entries;
+ 
+-/* GSI interrupts */
+-static int nr_irqs_gsi = NR_IRQS_LEGACY;
+-
+ #ifdef CONFIG_EISA
+ int mp_bus_id_to_type[MAX_MP_BUSSES];
+ #endif
+@@ -3333,20 +3330,11 @@ static int __init io_apic_get_redir_entries(int ioapic)
+ 	return reg_01.bits.entries + 1;
+ }
+ 
+-static void __init probe_nr_irqs_gsi(void)
+-{
+-	int nr;
+-
+-	nr = gsi_top + NR_IRQS_LEGACY;
+-	if (nr > nr_irqs_gsi)
+-		nr_irqs_gsi = nr;
+-
+-	printk(KERN_DEBUG "nr_irqs_gsi: %d\n", nr_irqs_gsi);
+-}
+-
+ unsigned int arch_dynirq_lower_bound(unsigned int from)
+ {
+-	return from < nr_irqs_gsi ? nr_irqs_gsi : from;
++	unsigned int min = gsi_top + NR_IRQS_LEGACY;
++
++	return from < min ? min : from;
+ }
+ 
+ int __init arch_probe_nr_irqs(void)
+@@ -3356,12 +3344,12 @@ int __init arch_probe_nr_irqs(void)
+ 	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
+ 		nr_irqs = NR_VECTORS * nr_cpu_ids;
+ 
+-	nr = nr_irqs_gsi + 8 * nr_cpu_ids;
++	nr = (gsi_top + NR_IRQS_LEGACY) + 8 * nr_cpu_ids;
+ #if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
+ 	/*
+ 	 * for MSI and HT dyn irq
+ 	 */
+-	nr += nr_irqs_gsi * 16;
++	nr += (gsi_top + NR_IRQS_LEGACY) * 16;
+ #endif
+ 	if (nr < nr_irqs)
+ 		nr_irqs = nr;
+@@ -3634,8 +3622,6 @@ fake_ioapic_page:
+ 		ioapic_res->end = ioapic_phys + IO_APIC_SLOT_SIZE - 1;
+ 		ioapic_res++;
+ 	}
+-
+-	probe_nr_irqs_gsi();
+ }
+ 
+ void __init ioapic_insert_resources(void)
 -- 
-Jazz is not dead. It just smells funny...
+1.7.10.4
+
