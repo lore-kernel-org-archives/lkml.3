@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819AbaE0RHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:07:19 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:45985 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605AbaE0RHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:07:14 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] ARM: multi_v7_defconfig: Enable Zynq peripheral drivers
-Date: Tue, 27 May 2014 10:04:28 -0700
-Message-Id: <1401210268-20729-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.3.1.ga73a6ad
+	id S1752521AbaE0RQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:16:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5681 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752217AbaE0RQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 13:16:33 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>, stable@vger.kernel.org,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org
+Subject: [PATCH] hv: use correct order when freeing monitor_pages
+Date: Tue, 27 May 2014 19:16:20 +0200
+Message-Id: <1401210980-2515-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -24,52 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few drivers for Zynq peripherals made it into mainline recently.
-Enable them in the defconfig. The following devices are enabled:
- - Cadence Macb Ethernet controller
- - Cadence I2C controller
- - Arasan SDHCI
+We try to free two pages when only one has been allocated.
+Cleanup path is unlikely, so I haven't found any trace that would fit,
+but I hope that free_pages_prepare() does catch it.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
-After quite a while I gave the defonfig a shot again. At first try it
-directly booted my Zynq board to a usable login prompt, and with this
-patch even some peripherals work out of the box.
+ Cc'd stable because the worst-case looks hard to debug.
+ Btw. the module can't get unloaded after we successfully connect?
 
-	Thanks,
-	Sören
----
- arch/arm/configs/multi_v7_defconfig | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hv/connection.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index d4e8a47a2f7c..763054810ccf 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -121,6 +121,7 @@ CONFIG_SATA_HIGHBANK=y
- CONFIG_SATA_MV=y
- CONFIG_NETDEVICES=y
- CONFIG_SUN4I_EMAC=y
-+CONFIG_MACB=y
- CONFIG_NET_CALXEDA_XGMAC=y
- CONFIG_MV643XX_ETH=y
- CONFIG_MVNETA=y
-@@ -175,6 +176,7 @@ CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_MUX=y
- CONFIG_I2C_MUX_PCA954x=y
- CONFIG_I2C_MUX_PINCTRL=y
-+CONFIG_I2C_CADENCE=y
- CONFIG_I2C_DESIGNWARE_PLATFORM=y
- CONFIG_I2C_MV64XXX=y
- CONFIG_I2C_SIRF=y
-@@ -272,6 +274,7 @@ CONFIG_MMC=y
- CONFIG_MMC_BLOCK_MINORS=16
- CONFIG_MMC_ARMMMCI=y
- CONFIG_MMC_SDHCI=y
-+CONFIG_MMC_SDHCI_OF_ARASAN=y
- CONFIG_MMC_SDHCI_ESDHC_IMX=y
- CONFIG_MMC_SDHCI_TEGRA=y
- CONFIG_MMC_SDHCI_DOVE=y
+diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
+index 7f10c15..e84f452 100644
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -224,8 +224,8 @@ cleanup:
+ 		vmbus_connection.int_page = NULL;
+ 	}
+ 
+-	free_pages((unsigned long)vmbus_connection.monitor_pages[0], 1);
+-	free_pages((unsigned long)vmbus_connection.monitor_pages[1], 1);
++	free_pages((unsigned long)vmbus_connection.monitor_pages[0], 0);
++	free_pages((unsigned long)vmbus_connection.monitor_pages[1], 0);
+ 	vmbus_connection.monitor_pages[0] = NULL;
+ 	vmbus_connection.monitor_pages[1] = NULL;
+ 
 -- 
-1.9.3.1.ga73a6ad
+1.9.3
 
