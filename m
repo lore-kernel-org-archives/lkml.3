@@ -1,163 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaE0UcI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:32:08 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:42728 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaE0UcG (ORCPT
+	id S1752415AbaE0UdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 16:33:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58389 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751710AbaE0UdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 16:32:06 -0400
-Message-ID: <5384F60C.5020608@ahsoftware.de>
-Date: Tue, 27 May 2014 22:31:08 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 27 May 2014 16:33:23 -0400
+Date: Tue, 27 May 2014 21:32:49 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 00/18] Cross-architecture definitions of relaxed MMIO
+ accessors
+Message-ID: <20140527203249.GB31850@arm.com>
+References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
+ <1401054363.3958.28.camel@pasglop>
+ <20140527193219.GB30751@arm.com>
+ <1401222098.20915.77.camel@pasglop>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jon Loeliger <jdl@jdl.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [RFC PATCH 1/9] dt: deps: dtc: Automatically add new property
- 'dependencies' which contains a list of referenced phandles
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>	<1399913280-6915-2-git-send-email-holler@ahsoftware.de>	<53775334.3030704@gmail.com> <5379FAA5.10404@ahsoftware.de> <20140527200225.F12C4C40B4B@trevor.secretlab.ca>
-In-Reply-To: <20140527200225.F12C4C40B4B@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401222098.20915.77.camel@pasglop>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.05.2014 22:02, schrieb Grant Likely:
-> On Mon, 19 May 2014 14:35:49 +0200, Alexander Holler <holler@ahsoftware.de> wrote:
-
->> What's still questionable about the patches for dtc is if dependencies 
->> to devices and not just drivers should be included in the new property 
->> dependencies too. My current assumption is that all devices belonging to 
->> one and the same driver don't have dependencies between each other. In 
->> other words the order in which devices will be attached to one and the 
->> same driver isn't important. If that assumption is correct it would be 
->> possible to just attach all devices belonging to a driver after the 
->> driver was loaded (also I haven't that done in my patches).
+On Tue, May 27, 2014 at 09:21:38PM +0100, Benjamin Herrenschmidt wrote:
+> On Tue, 2014-05-27 at 20:32 +0100, Will Deacon wrote:
 > 
-> There aren't really any guarantees here. It is perfectly valid to have
-> two of the same device depending on the other, or even a device with a
-> different driver between the two.
+> > Why would you need two barriers? I would have though an mmiowb() inlined
+> > into writel after the store operation would be sufficient. Or is this to
+> > ensure a non-relaxed write is ordered with respect to a relaxed write?
 > 
-> There's always going to be corner cases on the dependency chain. The
-> question is whether or not it is worth trying to solve every concievable
-> order, or if a partway solution is good enough.
+> Well, so the non-relaxed writel would have to do:
+> 
+> 	sync
+> 	store
+> 	sync
+> 
+> The first sync is to synchronize with DMAs, so that a sequence of
+> 
+> 	store to mem
+> 	writel
+> 
+> Remains ordered vs. the device (ie, when the writel causes the device
+> to do a DMA, it will see the previous store to mem).
+> 
+> The second sync is needed as mmiowb, to order with unlocks.
 
-Solving dependencies always happens automatically, with or without
-dependencies inbetween devices. I just ignored dependencies between pure
-devices (instead changed them into dependencies between drivers) because
-I'm still not sure how to handle devices at all. Below is a diff ontop
-my dtc-patches to include dependencies between devices too. As said, the
-changes to do so are minimal. Of course, the graphs are a bit more
-complex, because they then include devices too, but that isn't any
-problem for the solving algorithm at all.
+Ah yeah, thanks. I was so hung up on the ordering against locks that I
+completely forgot about DMA!
 
+> At this point, I'm keen on keeping my per-cpu trick to avoid that
+> second one in most cases.
 
-diff --git a/scripts/dtc/dependencies.c b/scripts/dtc/dependencies.c
-index 06f447b..602ec01 100644
---- a/scripts/dtc/dependencies.c
-+++ b/scripts/dtc/dependencies.c
-@@ -66,8 +66,10 @@ static void add_deps(struct node *dt, struct node
-*node, struct property *prop)
- 			continue;
- 		}
+Makes sense. The alternative is dropping that requirement and instead
+relying on drivers to use mmiowb() even with the non-relaxed accessors,
+but I think that's going to be fairly painful (and hence why you have the
+trick to start with).
 
--		source = find_compatible_not_disabled(node);
--		target = find_compatible_not_disabled(refnode);
-+		//source = find_compatible_not_disabled(node);
-+		//target = find_compatible_not_disabled(refnode);
-+		source = node;
-+		target = refnode;
- 		if (!source || !target || source == target ||
- 				is_parent_of(source, target) ||
- 				is_parent_of(target, source))
-@@ -385,9 +387,9 @@ static int __init add_deps_lnx(struct device_node
-*parent,
-
- 	if (!__of_device_is_available(node))
- 		return 0;
--	if (__of_get_property(node, "compatible", NULL)) {
-+//	if (__of_get_property(node, "compatible", NULL)) {
- 		if (!parent->phandle) {
--			if (__of_get_property(parent, "compatible", NULL))
-+//			if (__of_get_property(parent, "compatible", NULL))
- 				parent->phandle = 1 + order.max_phandle++;
- 		}
- 		if (!node->phandle)
-@@ -425,7 +427,7 @@ static int __init add_deps_lnx(struct device_node
-*parent,
- 		if (unlikely(rc))
- 			return rc;
- 		parent = node; /* change the parent only if node is a driver */
--	}
-+//	}
- 	for_each_child_of_node(node, child) {
- 		rc = add_deps_lnx(parent, child, print_dot);
- 		if (unlikely(rc))
--- 
-1.8.3.2
-
-
-
-To make it easier to see devices in the produced order, here is another
-patch on top:
-
-
-
-@@ -464,6 +467,8 @@ void __init of_init_print_order(const char *name)
-                if (order.order[i]->full_name)
-                        pr_cont(" (%s)", order.order[i]->full_name);
-                prop = get_property(order.order[i], "compatible");
-+               if (!prop)
-+                       pr_cont(" -");
-                for (cp = of_prop_next_string(prop, NULL); cp;
-                     cp = of_prop_next_string(prop, cp))
-                        pr_cont(" %s", cp);
-
-
-
-With that patch one can do e.g. dtc -t |  grep ' - ' to see which device
-nodes are included which don't have a compatible property. For the
-omap3-beagle this produces the following 21 additional entries in the
-init-order:
-
-aholler@laptopahbt ~/Source/aholler/dtc.git $ dts/make_dtb.sh
-dts/omap3-beagle.dts -t | grep ' - '
-init 4 0xe4 pinmux_twl4030_pins
-(/ocp/pinmux@48002030/pinmux_twl4030_pins) - (parent 0x14b)
-init 10 0x107 clocks (/ocp/cm@48004000/clocks) - (parent 0x106)
-init 17 0x101 clocks (/ocp/prm@48306000/clocks) - (parent 0x100)
-init 226 0x143 clocks (/ocp/scrm@48002000/clocks) - (parent 0x142)
-init 237 0xe1 pinmux_hsusb2_pins
-(/ocp/pinmux@48002030/pinmux_hsusb2_pins) - (parent 0x14b)
-init 239 0xe2 pinmux_gpio1_pins (/ocp/pinmux@48002a00/pinmux_gpio1_pins)
-- (parent 0x14d)
-init 251 0xec pinmux_hsusb2_2_pins
-(/ocp/pinmux@480025d8/pinmux_hsusb2_2_pins) - (parent 0x18e)
-init 255 0xf4 chosen (/chosen) - (parent 0xf3)
-init 256 0xf5 aliases (/aliases) - (parent 0xf3)
-init 257 0xf6 memory (/memory) - (parent 0xf3)
-init 258 0xf7 cpus (/cpus) - (parent 0xf3)
-init 269 0x105 clockdomains (/ocp/prm@48306000/clockdomains) - (parent
-0x100)
-init 311 0x131 clockdomains (/ocp/cm@48004000/clockdomains) - (parent 0x106)
-init 333 0x149 clockdomains (/ocp/scrm@48002000/clockdomains) - (parent
-0x142)
-init 335 0x14c pinmux_uart3_pins
-(/ocp/pinmux@48002030/pinmux_uart3_pins) - (parent 0x14b)
-init 343 0x157 codec (/ocp/i2c@48070000/twl@48/audio/codec) - (parent 0xf1)
-init 398 0x18f choosen (/choosen) - (parent 0xf3)
-init 400 0x191 pmu_stat (/leds/pmu_stat) - (parent 0x190)
-init 401 0x192 heartbeat (/leds/heartbeat) - (parent 0x190)
-init 402 0x193 mmc (/leds/mmc) - (parent 0x190)
-init 405 0x196 user (/gpio_keys/user) - (parent 0x195)
-
-
-Regards,
-
-Alexander Holler
+Will
