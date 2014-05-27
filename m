@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaE0SwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:52:07 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:49387 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752202AbaE0SwG (ORCPT
+	id S1753412AbaE0Swl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:52:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56763 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751913AbaE0Swk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:52:06 -0400
-Date: Tue, 27 May 2014 14:52:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH 3.14-rt] sched/numa: Fix task_numa_free() lockdep splat
-Message-ID: <20140527145201.6e79230f@gandalf.local.home>
-In-Reply-To: <20140527182541.GH11096@twins.programming.kicks-ass.net>
-References: <20140509181214.GK29014@linutronix.de>
-	<1400297819.9493.11.camel@marge.simpson.net>
-	<20140527141836.4f466086@gandalf.local.home>
-	<20140527182541.GH11096@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 27 May 2014 14:52:40 -0400
+Date: Tue, 27 May 2014 19:49:40 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [for-next][PATCH] ftrace: Make CALLER_ADDRx macros more generic
+Message-ID: <20140527184940.GA26035@arm.com>
+References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org>
+ <20140416135217.GF1001@arm.com>
+ <535E3040.7090402@linaro.org>
+ <20140527091019.54a8d2d6@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527091019.54a8d2d6@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014 20:25:41 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-
-> Nope, its really IRQs.
+On Tue, May 27, 2014 at 02:10:19PM +0100, Steven Rostedt wrote:
+> Will,
 > 
-> do_exit()
->   exit_itimers()
->     itimer_delete()
->       spin_lock_irqsave(&timer->it_lock, &flags);
->       timer_delete_hook(timer);
->         kc->timer_del(timer) := posix_cpu_timer_del()
->           put_task_struct()
->             __put_task_struct()
->               task_numa_free()
->                 spin_lock(&grp->lock);
+> I made a separate branch called ftrace/arm64 as shown below. You can
+> pull that branch to base the rest of Akashi-san's patches on top of it.
+> The branch is based on top of v3.15-rc5.
+
+Thanks Steve, I'll pull that in.
+
+Akashi: please can you re-send your series, based on the branch below and
+including the acks/reviewed-by tags you got for v6 of the patches?
+
+Cheers,
+
+Will
+
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> ftrace/arm64
 > 
-> Which nests the grp->lock inside the timer->it_lock, and where the
-> timer->it_lock is IRQ-safe, the grp->lock is not.
-> 
-> This allows for IRQ deadlocks.
-
-Ah crap. I did a search on all the callers of put_task_struct(), and
-somehow missed this one.  Yep, I was looking for places that called
-this while holding other irq safe locks.
-
--- Steve
-
+> Head SHA1: eed542d6962ba33a689b4007a389f466e407bd74
