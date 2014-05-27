@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaE0IWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:22:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18162 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752755AbaE0IWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:22:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,917,1392192000"; 
-   d="scan'208";a="545380607"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [RFC Patch V1 2/4] x86, irq, ACPI: introduce a rwsem to protect IOAPIC operations from hotplug
-Date: Tue, 27 May 2014 16:24:35 +0800
-Message-Id: <1401179077-2020-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1401179077-2020-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1401179077-2020-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752895AbaE0IWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:22:38 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:59495 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751697AbaE0IW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:22:29 -0400
+Message-ID: <1401178947.15450.2.camel@x220>
+Subject: [PATCH] [TRIVIAL] befs: remove check for CONFIG_BEFS_RW
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 27 May 2014 10:22:27 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 May 2014 08:22:28.0038 (UTC) FILETIME=[CBE3C660:01CF7984]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to support ACPI based IOAPIC hotplug, so introduce a rwsem
-to protect IOAPIC data structures from IOAPIC hotplug. We choose to
-serialize in ACPI instead of in the IOAPIC core because:
-1) currently we are only plan to support ACPI based IOAPIC hotplug
-2) it's much more clean and easy
-3) It does't affect IOAPIC discovered by devicetree, SFI and mppparse.
+Befs contains a check for CONFIG_BEFS_RW for over a decade now. The
+related Kconfig symbol never existed, so this check always evaluated to
+true. Remove it.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/x86/kernel/acpi/boot.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+Compile tested. Does this still qualify as trivial?
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index c8e8fe67bbc8..a1b388e88bcb 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -75,6 +75,8 @@ int acpi_fix_pin2_polarity __initdata;
- static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
- #endif
+ fs/befs/linuxvfs.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index d626756ff721..46149526b580 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -808,13 +808,11 @@ befs_fill_super(struct super_block *sb, void *data, int silent)
  
-+static DECLARE_RWSEM(acpi_ioapic_rwsem);
-+
- #ifndef __HAVE_ARCH_CMPXCHG
- #warning ACPI uses CMPXCHG, i486 and later hardware
- #endif
-@@ -495,8 +497,11 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
+ 	befs_debug(sb, "---> %s", __func__);
  
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- {
--	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	int irq;
+-#ifndef CONFIG_BEFS_RW
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		befs_warning(sb,
+ 			     "No write support. Marking filesystem read-only");
+ 		sb->s_flags |= MS_RDONLY;
+ 	}
+-#endif				/* CONFIG_BEFS_RW */
  
-+	down_read(&acpi_ioapic_rwsem);
-+	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	up_read(&acpi_ioapic_rwsem);
- 	if (irq >= 0) {
- 		*irqp = irq;
- 		return 0;
-@@ -537,7 +542,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 	int irq = gsi;
- 
- #ifdef CONFIG_X86_IO_APIC
-+	down_read(&acpi_ioapic_rwsem);
- 	irq = mp_register_gsi(dev, gsi, trigger, polarity);
-+	up_read(&acpi_ioapic_rwsem);
- #endif
- 
- 	return irq;
-@@ -546,7 +553,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- static void acpi_unregister_gsi_ioapic(u32 gsi)
- {
- #ifdef CONFIG_X86_IO_APIC
-+	down_read(&acpi_ioapic_rwsem);
- 	mp_unregister_gsi(gsi);
-+	up_read(&acpi_ioapic_rwsem);
- #endif
- }
- 
-@@ -1198,7 +1207,9 @@ static void __init acpi_process_madt(void)
- 			/*
- 			 * Parse MADT IO-APIC entries
- 			 */
-+			down_write(&acpi_ioapic_rwsem);
- 			error = acpi_parse_madt_ioapic_entries();
-+			up_write(&acpi_ioapic_rwsem);
- 			if (!error) {
- 				acpi_set_irq_model_ioapic();
- 
+ 	/*
+ 	 * Set dummy blocksize to read super block.
 -- 
-1.7.10.4
+1.9.3
 
