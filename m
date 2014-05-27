@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036AbaE0LNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:13:08 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64429 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751577AbaE0LNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:13:05 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	id S1752162AbaE0LOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:14:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750904AbaE0LOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 07:14:15 -0400
+Date: Tue, 27 May 2014 13:14:04 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH V3 4/8] driver/core: cpu: initialize opp table
-Date: Tue, 27 May 2014 13:30:09 +0200
-Message-ID: <11801597.a0CDeJOEp5@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpokZSw430PWjJfYOPA6KXOJiKFhxRi4BuEf6ouMgUHQ+gw@mail.gmail.com>
-References: <cover.1400736536.git.viresh.kumar@linaro.org> <CAKohponagSjOVbn-C64yh7=py9kE0m2VGbdquo_1+UzbPFsJ+w@mail.gmail.com> <CAKohpokZSw430PWjJfYOPA6KXOJiKFhxRi4BuEf6ouMgUHQ+gw@mail.gmail.com>
+        m.lombardi85@gmail.com
+Subject: Re: [PATCH V3] bio: modify __bio_add_page() to accept pages that
+ don't start a new segment
+Message-ID: <20140527111404.GE2205@dhcp-27-189.brq.redhat.com>
+References: <1398952615-22034-1-git-send-email-mlombard@redhat.com>
+ <CACVXFVNSZ7+MxW8-SiLXUFW6pGJ7b-OQzf8-KLzcXyE7BvhbbA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNSZ7+MxW8-SiLXUFW6pGJ7b-OQzf8-KLzcXyE7BvhbbA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 27, 2014 05:48:27 AM Viresh Kumar wrote:
-> On 27 May 2014 05:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > We are also using it for cpu->dev_id, but that's not so important. This
-> > routine wouldn't have existed if you wouldn't have asked for it. It is
-> > just a wrapper over of_init_opp_table, which also has a dummy
-> > implementation when its not supported.
-> >
-> > So, it might not be worth enough for any other code to use it. :)
-> > And so I added it here.
-> >
-> > Let me know how/where do you want it and I will resend it quickly.
+On Tue, May 27, 2014 at 06:15:45PM +0800, Ming Lei wrote:
 > 
-> There is another option here, add these print messages in
-> of_init_opp_table() ? That's the only difference new wrapper has.
+> If the page can be merged to last segment, it should have been
+> covered by code in branch of 'if (bio->bi_vcnt > 0) ...', shouldn't it?
+> 
+> Or maybe it is better to make that code cover your case since
+> looks your case is similar with that one according to your commit
+> log.
 
-Yeah, put them into of_init_opp_table() rather I'd say.
+the code in this branch does not cover our case, it is intended to cover the case
+where __bio_add_page() is called multiple times with the *same* page as parameter.
+My patch deals with the case when __bio_add_page() is called with *different* pages
+as parameter but physically adjacent to each other.
 
-Rafael
+That said it is true that maybe this branch can be extended to also cover the case
+I'm dealing with and try to avoid the problem that commit 3979ef4dcf introduced.
 
+Thanks,
+Maurizio Lombardi
