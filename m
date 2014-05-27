@@ -1,117 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaE0Aw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 20:52:58 -0400
-Received: from ozlabs.org ([103.22.144.67]:58928 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466AbaE0Aw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 20:52:57 -0400
-Date: Tue, 27 May 2014 10:52:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20140527105248.546d95bf@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752471AbaE0Aym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 20:54:42 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54426 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923AbaE0Ayk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 20:54:40 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5383E240.9040807@roeck-us.net>
+Date: Mon, 26 May 2014 17:54:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/TUcNQml.hEsn0gockPuaN4W"; protocol="application/pgp-signature"
+To: Sebastian Reichel <sre@kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
+References: <CAMuHMdWw39n8O0fFWECR6v6GaEJ3aB5S3ront4eDdXwxNO6Fgw@mail.gmail.com> <20140520055026.E3A98C412DA@trevor.secretlab.ca> <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com> <20140526104824.63F13C42129@trevor.secretlab.ca> <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com> <20140526112348.907B7C421A5@trevor.secretlab.ca> <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com> <20140526213303.C1C73C40E11@trevor.secretlab.ca> <20140526223630.GA32691@earth.universe> <5383D174.8070304@roeck-us.net> <20140527003219.GD32691@earth.universe>
+In-Reply-To: <20140527003219.GD32691@earth.universe>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TUcNQml.hEsn0gockPuaN4W
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 05/26/2014 05:32 PM, Sebastian Reichel wrote:
+> On Mon, May 26, 2014 at 04:42:44PM -0700, Guenter Roeck wrote:
+>> On 05/26/2014 03:36 PM, Sebastian Reichel wrote:
+>>> On Mon, May 26, 2014 at 10:33:03PM +0100, Grant Likely wrote:
+>>>> After thinking about it more, I think it is very likely that removing
+>>>> all the overlays is the correct thing to do in the kexec use-case. When
+>>>> kexec-ing, it makes sense that we'd want the exact same behaviour from
+>>>> the kexec'ed kernel. That means we want the device drivers to do the
+>>>> same thing including loading whatever overlays they depend on.
+>>>>
+>>>> If the flattened tree was left applied, then the behaviour becomes
+>>>> different.
+>>>>
+>>>> I say always remove the overlays unless explicitly told not to, but I'm
+>>>> struggling to come up with use cases where keeping them applied is
+>>>> desirable.
+>>>
+>>> I would assume, that I want them applied in most cases. DT describes
+>>> the hardware. If I kexec into a new kernel I change software, not
+>>> hardware.
+>>>
+>>> Maybe I'm missing the main purpose of the feature. I currently see
+>>> two useful usecases for DT overlays:
+>>>
+>>> 1. The dtb the kernel is booted with cannot be changed for some
+>>>     reason, but the board has additional hardware attached (e.g.
+>>>     the user added a sensor on the i2c bus)
+>>> 2. The hardware is changed on the fly (e.g. the user flashed the
+>>>     FPGA part of a zynq processor), sensors on i2c bus, ...
+>>>
+>>> In both cases the kernel should be booted with the additional
+>>> overlay information IMHO. Though for the second case it should
+>>> be possible to remove the "programmed" hardware information
+>>> somehow.
+>>>
+>>
+>> 3. Some hot-plug device or card is inserted or removed.
+>
+> Can you give a more specific example? I guess most hot-plug
+> devices are connected to busses, which are not described via
+> DT, but support auto-identification (USB, PCI, ...)
+>
+The card interface provides i2c and pcie busses, plus a number of
+gpio pins. Both I2C devices and PCIe devices depend on the inserted
+card type. There may be PCIe switches on some cards, or just PCIe
+devices on others. Auto-identification of PCIe devices does not help,
+as the device configuration depends on the card type inserted.
+A typical example is that the card may include a multi-function
+FPGA device with LED, GPIO, and I2C bus master functionality,
+and the specific configuration depends on the card type (even though
+the FPGA is the same). Other cards may include a PCIe switch with
+a number of ASICs connected to it. PCIe switch configuration
+depends on the card type, not on the PCIe switch type.
 
-Hi all,
+>> I would argue that the kernel should _not_ be booted with the
+>> overlay in place.
+>
+> well the device is still attached to the system when you kexec
+> into the new kernel, isn't it?
+>
+So ? the code executed is ultimately the same, if the kernel is booted
+from rommon or from kexec. In one case we'll have to insert the overlay,
+in the other case not.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-zynq/common.c between commit e1e4ccb5b1b6 ("ARM: l2c:
-zynq: convert to generic l2c OF initialisation") from the arm tree and
-commit 00f7dc636366 ("ARM: zynq: Add support for SOC_BUS") from the
-arm-soc tree.
+>> Otherwise the code handling overlays would have to have special
+>> handling for the restart case, which is much more complex than
+>> just to re-insert the overlay when it is determined that the
+>> device or card is still there.
+>
+> I assume, that the kernel cannot auto-detect the attached hardware.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Correct.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Otherwise we don't need the DT entries, but can simply scan the bus.
+> So the restart case (or restart + kexec case if kexec behaves like a
+> restart) means, that userspace needs to provide the information
+> about device existence.
+>
+Exactly the same informatin we get if the kernel is booted from ROMMON
+or BIOS. No difference here.
 
-diff --cc arch/arm/mach-zynq/common.c
-index d1e992e6403e,edbd9d83f407..000000000000
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@@ -66,8 -105,43 +105,38 @@@ static int __init zynq_get_revision(voi
-  static void __init zynq_init_machine(void)
-  {
-  	struct platform_device_info devinfo =3D { .name =3D "cpufreq-cpu0", };
-+ 	struct soc_device_attribute *soc_dev_attr;
-+ 	struct soc_device *soc_dev;
-+ 	struct device *parent =3D NULL;
-+=20
- -	/*
- -	 * 64KB way size, 8-way associativity, parity disabled
- -	 */
- -	l2x0_of_init(0x02060000, 0xF0F0FFFF);
- -
-+ 	soc_dev_attr =3D kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+ 	if (!soc_dev_attr)
-+ 		goto out;
-+=20
-+ 	system_rev =3D zynq_get_revision();
-+=20
-+ 	soc_dev_attr->family =3D kasprintf(GFP_KERNEL, "Xilinx Zynq");
-+ 	soc_dev_attr->revision =3D kasprintf(GFP_KERNEL, "0x%x", system_rev);
-+ 	soc_dev_attr->soc_id =3D kasprintf(GFP_KERNEL, "0x%x",
-+ 					 zynq_slcr_get_device_id());
-+=20
-+ 	soc_dev =3D soc_device_register(soc_dev_attr);
-+ 	if (IS_ERR(soc_dev)) {
-+ 		kfree(soc_dev_attr->family);
-+ 		kfree(soc_dev_attr->revision);
-+ 		kfree(soc_dev_attr->soc_id);
-+ 		kfree(soc_dev_attr);
-+ 		goto out;
-+ 	}
-+=20
-+ 	parent =3D soc_device_to_device(soc_dev);
- =20
-- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+ out:
-+ 	/*
-+ 	 * Finished with the static registrations now; fill in the missing
-+ 	 * devices
-+ 	 */
-+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
- =20
-  	platform_device_register(&zynq_cpuidle_device);
-  	platform_device_register_full(&devinfo);
+> Removing the overlay is like dropping information supplied from the
+> user. Not something, which should be done carelessly.
+>
 
---Sig_/TUcNQml.hEsn0gockPuaN4W
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+In our case it is done when the card is removed.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Guenter
 
-iQIcBAEBCAAGBQJTg+HmAAoJEMDTa8Ir7ZwVqK0P/A5Vk/Ft3aSMj6VdsmsMs2Qf
-JZ26anoTplDny0gX3k9voHFqkiYmphuV/hx+2LjrpgmuDb+0ALFmakBhCGqNf+i7
-YfoLiFKFKytzOpflTEHV1R0n9PI68gbcOByKEx9AGpuM/eOoEmoFZSEZFLr9GcBO
-v8YeCNN7OWNFRzCeG6SOvt5EATpQFPVLktrUV3CGYb2o7JiDfA/Za+0aeso2vJ6K
-f5lWuPa4lPrXDukZPy/cA6Cf89LP8fl6mfpIRvygMJVgoRqjxTGNou7YtFqV62fv
-Gq6mqdIxT1dEPhMgFFHXQkK24gAxEZ+eKPCmKlz4Xa7PexVxExFDNqwod7b9Uc91
-vh6JIF/8Nr/cszlo6I7RwDnxlEVExF+JUr5OctusvMuc5kkA+SAG4XLqmUvmapzf
-k/Bvyid1349WrW8rjYlxHAAdeCPRVMtHIPDy/4KpDho2CuBEa7omu1WMTBgCI6mP
-CBinhogZ+yEnUgPZGmh0rZHEr6H1/VJWByZ85ZCpeegkr3G4zaQdzBGiDgbXsHxi
-Cs4TQGQdvuH+WPDWTpojptcxov0KMTfyIeB0rBNtBNWp/PZSEpF96RSg5pt5wwa9
-eSv5A5JAfPRun+2XQ0id+BQTYzOFrV7R5dLPs2a7eInUgP3d9BDY364TMLYmOa/6
-vXrL+M/fJEqXm/9V0h9r
-=w2uR
------END PGP SIGNATURE-----
-
---Sig_/TUcNQml.hEsn0gockPuaN4W--
