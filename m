@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaE0VV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 17:21:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51105 "EHLO mga02.intel.com"
+	id S1753666AbaE0VWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 17:22:08 -0400
+Received: from fieldses.org ([174.143.236.118]:60213 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697AbaE0VV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 17:21:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,922,1392192000"; 
-   d="scan'208";a="547355572"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnomes@lxorguk.ukuu.org.uk,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH] x86: intel-mid: fix watchdog platform code
-Date: Tue, 27 May 2014 14:21:10 -0700
-Message-Id: <1401225670-28959-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401225066-28786-1-git-send-email-david.a.cohen@intel.com>
-References: <1401225066-28786-1-git-send-email-david.a.cohen@intel.com>
+	id S1753182AbaE0VWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 17:22:06 -0400
+Date: Tue, 27 May 2014 17:22:04 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+Message-ID: <20140527212204.GD32160@fieldses.org>
+References: <20140526111815.25153c0c@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526111815.25153c0c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes missing include asm/io_apic.h which may lead to
-following error:
+On Mon, May 26, 2014 at 11:18:15AM +1000, Stephen Rothwell wrote:
+> Hi Bruce,
+> 
+> After merging the nfsd tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> fs/nfsd/nfs4proc.c: In function 'warn_on_nonidempotent_op':
+> fs/nfsd/nfs4proc.c:1861:3: error: implicit declaration of function 'nfsd4_op_name' [-Werror=implicit-function-declaration]
+>    pr_err("unable to encode reply to nonidempotent op %d (%s)\n",
+>    ^
+> 
+> Caused by commit 4d332a993e64 ("nfsd4: fix encoding of out-of-space replies").
+> 
+> I have used the nfsd tree from next-20140523 for today.
 
-   arch/x86/platform/intel-mid/device_libs/platform_wdt.c: In function 'tangier_probe':
->> arch/x86/platform/intel-mid/device_libs/platform_wdt.c:37:2: error: implicit declaration of function 'mp_find_ioapic' [-Werror=implicit-function-declaration]
-     ioapic = mp_find_ioapic(irq);
-     ^
->> arch/x86/platform/intel-mid/device_libs/platform_wdt.c:44:3: error: implicit declaration of function 'io_apic_set_pci_routing' [-Werror=implicit-function-declaration]
-      ret = io_apic_set_pci_routing(NULL, irq, &irq_attr);
-      ^
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
----
+Thanks for catching that!  It should be fixed.  (But I also pushed out a
+bunch of new stuff, so hopefully that didn't introduce anything equally
+bad....).
 
-Hi,
-
-Delta from v1 to v1.1: amend my e-mail from @intel.com to @linux.intel.com
-
-FWIW it is not required to make INTEL_MID_WATCHDOG to depend on X86_IO_APIC,
-because this driver already depends on X86_INTEL_MID (which depends on
-X86_IO_APIC).
-
-BR, David
----
-
- arch/x86/platform/intel-mid/device_libs/platform_wdt.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-index a05315eb052d..973cf3bfa9fd 100644
---- a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-@@ -15,6 +15,7 @@
- #include <linux/platform_device.h>
- #include <linux/platform_data/intel-mid_wdt.h>
- #include <asm/intel-mid.h>
-+#include <asm/io_apic.h>
- 
- #define TANGIER_EXT_TIMER0_MSI 15
- 
--- 
-1.9.1
-
+--b.
