@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaE0UJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:09:57 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:55223 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaE0UJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753797AbaE0UJz (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 27 May 2014 16:09:55 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:44262 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499AbaE0UJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 16:09:53 -0400
 From: Chaitanya Hazarey <c@24.io>
 To: gregkh@linuxfoundation.org, andrea.merello@gmail.com,
         linville@tuxdriver.com, burzalodowa@gmail.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, c@24.io
-Subject: [PATCH 6/6] Staging: rtl8192u: r8180_93cx6.c & r8192U_wx.c fix checkpatch.pl errors and warnings
-Date: Tue, 27 May 2014 13:09:50 -0700
-Message-Id: <1401221390-10655-6-git-send-email-c@24.io>
+Subject: [PATCH 5/6] Staging: rtl8192u: r8180_93cx6.c & r8192U_wx.c fix checkpatch.pl errors and warnings
+Date: Tue, 27 May 2014 13:09:49 -0700
+Message-Id: <1401221390-10655-5-git-send-email-c@24.io>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401221390-10655-1-git-send-email-c@24.io>
 References: <1401221390-10655-1-git-send-email-c@24.io>
@@ -54,264 +54,272 @@ WARNING: __func__ should be used instead of gcc specific __FUNCTION__
 
 Signed-off-by: Chaitanya Hazarey <c@24.io>
 ---
- drivers/staging/rtl8192u/r8192U_wx.c |  131 ++++++++++++++++------------------
- 1 file changed, 61 insertions(+), 70 deletions(-)
+ drivers/staging/rtl8192u/r8192U_wx.c |  144 ++++++++++++++++++----------------
+ 1 file changed, 76 insertions(+), 68 deletions(-)
 
 diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index 7480c0e..ad95895 100644
+index 6b48c08..7480c0e 100644
 --- a/drivers/staging/rtl8192u/r8192U_wx.c
 +++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -740,77 +740,72 @@ exit:
- 	return err;
+@@ -388,9 +388,10 @@ static int r8192_wx_set_essid(struct net_device *dev,
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 	int ret;
++
+ 	down(&priv->wx_sem);
+ 
+-	ret = ieee80211_wx_set_essid(priv->ieee80211,a,wrqu,b);
++	ret = ieee80211_wx_set_essid(priv->ieee80211, a, wrqu, b);
+ 
+ 	up(&priv->wx_sem);
+ 
+@@ -482,10 +483,11 @@ static int r8192_wx_set_wap(struct net_device *dev,
+ 
+ 	int ret;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-//        struct sockaddr *temp = (struct sockaddr *)awrq;
++/*      struct sockaddr *temp = (struct sockaddr *)awrq; */
++
+ 	down(&priv->wx_sem);
+ 
+-	ret = ieee80211_wx_set_wap(priv->ieee80211,info,awrq,extra);
++	ret = ieee80211_wx_set_wap(priv->ieee80211, info, awrq, extra);
+ 
+ 	up(&priv->wx_sem);
+ 
+@@ -500,7 +502,7 @@ static int r8192_wx_get_wap(struct net_device *dev,
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 
+-	return ieee80211_wx_get_wap(priv->ieee80211,info,wrqu,extra);
++	return ieee80211_wx_get_wap(priv->ieee80211, info, wrqu, extra);
  }
  
--//hw security need to reorganized.
-+/*hw security need to reorganized. */
- static int r8192_wx_set_enc_ext(struct net_device *dev,
- 					struct iw_request_info *info,
- 					union iwreq_data *wrqu, char *extra)
- {
--	int ret=0;
-+	int ret = 0;
+ 
+@@ -520,36 +522,34 @@ static int r8192_wx_set_enc(struct net_device *dev,
  	struct r8192_priv *priv = ieee80211_priv(dev);
  	struct ieee80211_device *ieee = priv->ieee80211;
--	//printk("===>%s()\n", __func__);
+ 	int ret;
 -
+-	//u32 TargetContent;
+-	u32 hwkey[4]={0,0,0,0};
+-	u8 mask=0xff;
+-	u32 key_idx=0;
+-	//u8 broadcast_addr[6] ={	0xff,0xff,0xff,0xff,0xff,0xff};
+-	u8 zero_addr[4][6] ={	{0x00,0x00,0x00,0x00,0x00,0x00},
+-				{0x00,0x00,0x00,0x00,0x00,0x01},
+-				{0x00,0x00,0x00,0x00,0x00,0x02},
+-				{0x00,0x00,0x00,0x00,0x00,0x03} };
++	u32 hwkey[4] = {0, 0, 0, 0};
++	u8 mask = 0xff;
++	u32 key_idx = 0;
++	u8 zero_addr[4][6] = {	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
++				{0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
++				{0x00, 0x00, 0x00, 0x00, 0x00, 0x02},
++				{0x00, 0x00, 0x00, 0x00, 0x00, 0x03} };
+ 	int i;
+ 
+-       if(!priv->up) return -ENETDOWN;
++	if (!priv->up)
++		return -ENETDOWN;
  
  	down(&priv->wx_sem);
- 	ret = ieee80211_wx_set_encode_ext(priv->ieee80211, info, wrqu, extra);
  
- 	{
--		u8 broadcast_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff};
-+		u8 broadcast_addr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
- 		u8 zero[6] = {0};
- 		u32 key[4] = {0};
- 		struct iw_encode_ext *ext = (struct iw_encode_ext *)extra;
- 		struct iw_point *encoding = &wrqu->encoding;
- 		u8 idx = 0, alg = 0, group = 0;
-+
- 		if ((encoding->flags & IW_ENCODE_DISABLED) ||
--		ext->alg == IW_ENCODE_ALG_NONE) //none is not allowed to use hwsec WB 2008.07.01
-+				ext->alg == IW_ENCODE_ALG_NONE)
-+			/*none is not allowed to use hwsec WB 2008.07.01 */
- 			goto end_hw_sec;
+ 	RT_TRACE(COMP_SEC, "Setting SW wep key");
+-	ret = ieee80211_wx_set_encode(priv->ieee80211,info,wrqu,key);
++	ret = ieee80211_wx_set_encode(priv->ieee80211, info, wrqu, key);
  
--		alg =  (ext->alg == IW_ENCODE_ALG_CCMP)?KEY_TYPE_CCMP:ext->alg; // as IW_ENCODE_ALG_CCMP is defined to be 3 and KEY_TYPE_CCMP is defined to 4;
-+		/* as IW_ENCODE_ALG_CCMP is defined to be 3 and KEY_TYPE_CCMP is defined to 4; */
-+		alg =  (ext->alg == IW_ENCODE_ALG_CCMP)?KEY_TYPE_CCMP:ext->alg;
- 		idx = encoding->flags & IW_ENCODE_INDEX;
- 		if (idx)
--			idx --;
-+			idx--;
- 		group = ext->ext_flags & IW_ENCODE_EXT_GROUP_KEY;
+ 	up(&priv->wx_sem);
  
--		if ((!group) || (IW_MODE_ADHOC == ieee->iw_mode) || (alg ==  KEY_TYPE_WEP40))
--		{
--			if ((ext->key_len == 13) && (alg == KEY_TYPE_WEP40) )
-+		if ((!group) || (IW_MODE_ADHOC == ieee->iw_mode) || (alg ==  KEY_TYPE_WEP40)) {
-+			if ((ext->key_len == 13) && (alg == KEY_TYPE_WEP40))
- 				alg = KEY_TYPE_WEP104;
- 			ieee->pairwise_key_type = alg;
++	/*sometimes, the length is zero while we do not type key value */
++	if (wrqu->encoding.length != 0) {
+ 
+-
+-	//sometimes, the length is zero while we do not type key value
+-	if(wrqu->encoding.length!=0){
+-
+-		for(i=0 ; i<4 ; i++){
++		for (i = 0; i < 4 ; i++) {
+ 			hwkey[i] |=  key[4*i+0]&mask;
+-			if(i==1&&(4*i+1)==wrqu->encoding.length) mask=0x00;
+-			if(i==3&&(4*i+1)==wrqu->encoding.length) mask=0x00;
++			if (i == 1 && (4*i+1) == wrqu->encoding.length)
++				mask = 0x00;
++			if (i == 3 && (4*i+1) == wrqu->encoding.length)
++				mask = 0x00;
+ 			hwkey[i] |= (key[4*i+1]&mask)<<8;
+ 			hwkey[i] |= (key[4*i+2]&mask)<<16;
+ 			hwkey[i] |= (key[4*i+3]&mask)<<24;
+@@ -558,56 +558,65 @@ static int r8192_wx_set_enc(struct net_device *dev,
+ 		#define CONF_WEP40  0x4
+ 		#define CONF_WEP104 0x14
+ 
+-		switch (wrqu->encoding.flags & IW_ENCODE_INDEX){
+-		case 0: key_idx = ieee->tx_keyidx; break;
+-		case 1:	key_idx = 0; break;
+-		case 2:	key_idx = 1; break;
+-		case 3:	key_idx = 2; break;
+-		case 4:	key_idx	= 3; break;
+-		default: break;
++		switch (wrqu->encoding.flags & IW_ENCODE_INDEX) {
++		case 0:
++			key_idx = ieee->tx_keyidx;
++			break;
++		case 1:
++			key_idx = 0;
++			break;
++		case 2:
++			key_idx = 1;
++			break;
++		case 3:
++			key_idx = 2;
++			break;
++		case 4:
++			key_idx	= 3;
++			break;
++		default:
++			break;
+ 		}
+ 
+-		if(wrqu->encoding.length==0x5){
+-				ieee->pairwise_key_type = KEY_TYPE_WEP40;
++		if (wrqu->encoding.length == 0x5) {
++			ieee->pairwise_key_type = KEY_TYPE_WEP40;
  			EnableHWSecurityConfig8192(dev);
- 		}
--		memcpy((u8 *)key, ext->key, 16); //we only get 16 bytes key.why? WB 2008.7.1
--
--		if ((alg & KEY_TYPE_WEP40) && (ieee->auth_mode !=2) )
--		{
--
+ 
 -			setKey( dev,
--					idx,//EntryNo
--					idx, //KeyIndex
--					alg,  //KeyType
--					zero, //MacAddr
--					0,              //DefaultKey
--					key);           //KeyContent
+-				key_idx,                //EntryNo
+-				key_idx,                //KeyIndex
+-				KEY_TYPE_WEP40,         //KeyType
++			setKey(dev,
++				key_idx,                /*EntryNo */
++				key_idx,                /*KeyIndex */
++				KEY_TYPE_WEP40,         /*KeyType */
+ 				zero_addr[key_idx],
+-				0,                      //DefaultKey
+-				hwkey);                 //KeyContent
+-
 -		}
--		else if (group)
--		{
-+		memcpy((u8 *)key, ext->key, 16); /*we only get 16 bytes key.why? WB 2008.7.1 */
-+
-+		if ((alg & KEY_TYPE_WEP40) && (ieee->auth_mode != 2)) {
-+
-+			setKey(dev,
-+					idx,/*EntryNo */
-+					idx, /*KeyIndex */
-+					alg,  /*KeyType */
-+					zero, /*MacAddr */
-+					0,              /*DefaultKey */
-+					key);           /*KeyContent */
-+		} else if (group) {
- 			ieee->group_key_type = alg;
++				0,                      /*DefaultKey */
++				hwkey);                 /*KeyContent */
+ 
+-		else if(wrqu->encoding.length==0xd){
+-				ieee->pairwise_key_type = KEY_TYPE_WEP104;
+-				EnableHWSecurityConfig8192(dev);
++		} else if (wrqu->encoding.length == 0xd) {
++			ieee->pairwise_key_type = KEY_TYPE_WEP104;
++			EnableHWSecurityConfig8192(dev);
+ 
 -			setKey( dev,
--					idx,//EntryNo
--					idx, //KeyIndex
--					alg,  //KeyType
--					broadcast_addr, //MacAddr
--					0,              //DefaultKey
--					key);           //KeyContent
--		}
--		else //pairwise key
--		{
--			setKey( dev,
--					4,//EntryNo
--					idx, //KeyIndex
--					alg,  //KeyType
--					(u8 *)ieee->ap_mac_addr, //MacAddr
--					0,              //DefaultKey
--					key);           //KeyContent
+-				key_idx,                //EntryNo
+-				key_idx,                //KeyIndex
+-				KEY_TYPE_WEP104,        //KeyType
 +			setKey(dev,
-+					idx,/*EntryNo */
-+					idx, /*KeyIndex */
-+					alg,  /*KeyType */
-+					broadcast_addr, /*MacAddr */
-+					0,              /*DefaultKey */
-+					key);           /*KeyContent */
-+		} else /*pairwise key */ {
-+			setKey(dev,
-+					4,/*EntryNo */
-+					idx, /*KeyIndex */
-+					alg,  /*KeyType */
-+					(u8 *)ieee->ap_mac_addr, /*MacAddr */
-+					0,              /*DefaultKey */
-+					key);           /*KeyContent */
++				key_idx,                /*EntryNo */
++				key_idx,                /*KeyIndex */
++				KEY_TYPE_WEP104,        /*KeyType */
+ 				zero_addr[key_idx],
+-				0,                      //DefaultKey
+-				hwkey);                 //KeyContent
++				0,                      /*DefaultKey */
++				hwkey);                 /*KeyContent */
+ 
++		} else {
++			printk("wrong type in WEP, not WEP40 and WEP104\n");
  		}
- 
- 
-@@ -826,9 +821,9 @@ static int r8192_wx_set_auth(struct net_device *dev,
- 					struct iw_request_info *info,
- 					union iwreq_data *data, char *extra)
- {
--	int ret=0;
--	//printk("====>%s()\n", __func__);
-+	int ret = 0;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
-+
- 	down(&priv->wx_sem);
- 	ret = ieee80211_wx_set_auth(priv->ieee80211, info, &(data->param), extra);
- 	up(&priv->wx_sem);
-@@ -839,10 +834,9 @@ static int r8192_wx_set_mlme(struct net_device *dev,
- 					struct iw_request_info *info,
- 					union iwreq_data *wrqu, char *extra)
- {
--	//printk("====>%s()\n", __func__);
+-		else printk("wrong type in WEP, not WEP40 and WEP104\n");
 -
--	int ret=0;
-+	int ret = 0;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
-+
- 	down(&priv->wx_sem);
- 	ret = ieee80211_wx_set_mlme(priv->ieee80211, info, wrqu, extra);
- 
-@@ -854,27 +848,25 @@ static int r8192_wx_set_gen_ie(struct net_device *dev,
- 					struct iw_request_info *info,
- 					union iwreq_data *data, char *extra)
- {
--	   //printk("====>%s(), len:%d\n", __func__, data->length);
--	int ret=0;
-+	int ret = 0;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
-+
- 	down(&priv->wx_sem);
- 	ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, data->data.length);
- 	up(&priv->wx_sem);
--	//printk("<======%s(), ret:%d\n", __func__, ret);
- 	return ret;
- 
- 
- }
- 
- static int dummy(struct net_device *dev, struct iw_request_info *a,
--		 union iwreq_data *wrqu,char *b)
-+		 union iwreq_data *wrqu, char *b)
- {
- 	return -1;
- }
- 
- 
--static iw_handler r8192_wx_handlers[] =
--{
-+static iw_handler r8192_wx_handlers[] = {
- 	NULL,                     /* SIOCSIWCOMMIT */
- 	r8192_wx_get_name,	  /* SIOCGIWNAME */
- 	dummy,                    /* SIOCSIWNWID */
-@@ -923,13 +915,13 @@ static iw_handler r8192_wx_handlers[] =
- 	r8192_wx_get_power,                    /* SIOCGIWPOWER */
- 	NULL,			/*---hole---*/
- 	NULL,			/*---hole---*/
--	r8192_wx_set_gen_ie,//NULL,			/* SIOCSIWGENIE */
-+	r8192_wx_set_gen_ie,/*NULL, */			/* SIOCSIWGENIE */
- 	NULL,			/* SIOCSIWGENIE */
- 
--	r8192_wx_set_auth,//NULL,			/* SIOCSIWAUTH */
--	NULL,//r8192_wx_get_auth,//NULL,			/* SIOCSIWAUTH */
-+	r8192_wx_set_auth,/*NULL, */			/* SIOCSIWAUTH */
-+	NULL,/*r8192_wx_get_auth,*//*NULL,*/			/* SIOCSIWAUTH */
- 	r8192_wx_set_enc_ext,			/* SIOCSIWENCODEEXT */
--	NULL,//r8192_wx_get_enc_ext,//NULL,			/* SIOCSIWENCODEEXT */
-+	NULL,/*r8192_wx_get_enc_ext,*//*NULL,*/			/* SIOCSIWENCODEEXT */
- 	NULL,			/* SIOCSIWPMKSA */
- 	NULL,			 /*---hole---*/
- 
-@@ -962,27 +954,27 @@ static const struct iw_priv_args r8192_private_args[] = {
- 
- 
- static iw_handler r8192_private_handler[] = {
--//	r8192_wx_set_monitor,  /* SIOCIWFIRSTPRIV */
-+/*	r8192_wx_set_monitor, *//* SIOCIWFIRSTPRIV */
- 	r8192_wx_set_crcmon,   /*SIOCIWSECONDPRIV*/
--//	r8192_wx_set_forceassociate,
--//	r8192_wx_set_beaconinterval,
--//	r8192_wx_set_monitor_type,
-+/*	r8192_wx_set_forceassociate, */
-+/*	r8192_wx_set_beaconinterval, */
-+/*	r8192_wx_set_monitor_type, */
- 	r8192_wx_set_scan_type,
- 	r8192_wx_set_rawtx,
--	//r8192_wx_null,
-+	/*r8192_wx_null, */
- 	r8192_wx_force_reset,
- };
- 
- struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
- {
--       struct r8192_priv *priv = ieee80211_priv(dev);
-+	struct r8192_priv *priv = ieee80211_priv(dev);
- 	struct ieee80211_device *ieee = priv->ieee80211;
- 	struct iw_statistics *wstats = &priv->wstats;
- 	int tmp_level = 0;
- 	int tmp_qual = 0;
- 	int tmp_noise = 0;
--	if(ieee->state < IEEE80211_LINKED)
--	{
-+
-+	if (ieee->state < IEEE80211_LINKED) {
- 		wstats->qual.qual = 0;
- 		wstats->qual.level = 0;
- 		wstats->qual.noise = 0;
-@@ -990,20 +982,19 @@ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
- 		return wstats;
  	}
  
--       tmp_level = (&ieee->current_network)->stats.rssi;
-+	tmp_level = (&ieee->current_network)->stats.rssi;
- 	tmp_qual = (&ieee->current_network)->stats.signal;
- 	tmp_noise = (&ieee->current_network)->stats.noise;
--	//printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise);
- 
- 	wstats->qual.level = tmp_level;
- 	wstats->qual.qual = tmp_qual;
- 	wstats->qual.noise = tmp_noise;
--	wstats->qual.updated = IW_QUAL_ALL_UPDATED| IW_QUAL_DBM;
-+	wstats->qual.updated = IW_QUAL_ALL_UPDATED | IW_QUAL_DBM;
- 	return wstats;
+ 	return ret;
  }
  
  
--struct iw_handler_def  r8192_wx_handlers_def={
-+struct iw_handler_def  r8192_wx_handlers_def = {
- 	.standard = r8192_wx_handlers,
- 	.num_standard = ARRAY_SIZE(r8192_wx_handlers),
- 	.private = r8192_private_handler,
+-static int r8192_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa, union
+- iwreq_data *wrqu, char *p){
++static int r8192_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa,
++					union iwreq_data *wrqu, char *p){
+ 
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-	int *parms=(int *)p;
+-	int mode=parms[0];
++	int *parms = (int *)p;
++	int mode = parms[0];
+ 
+ 	priv->ieee80211->active_scan = mode;
+ 
+@@ -626,24 +635,24 @@ static int r8192_wx_set_retry(struct net_device *dev,
+ 	down(&priv->wx_sem);
+ 
+ 	if (wrqu->retry.flags & IW_RETRY_LIFETIME ||
+-	    wrqu->retry.disabled){
++	    wrqu->retry.disabled) {
+ 		err = -EINVAL;
+ 		goto exit;
+ 	}
+-	if (!(wrqu->retry.flags & IW_RETRY_LIMIT)){
++	if (!(wrqu->retry.flags & IW_RETRY_LIMIT)) {
+ 		err = -EINVAL;
+ 		goto exit;
+ 	}
+ 
+-	if(wrqu->retry.value > R8180_MAX_RETRY){
+-		err= -EINVAL;
++	if (wrqu->retry.value > R8180_MAX_RETRY) {
++		err = -EINVAL;
+ 		goto exit;
+ 	}
+ 	if (wrqu->retry.flags & IW_RETRY_MAX) {
+ 		priv->retry_rts = wrqu->retry.value;
+ 		DMESG("Setting retry for RTS/CTS data to %d", wrqu->retry.value);
+ 
+-	}else {
++	} else {
+ 		priv->retry_data = wrqu->retry.value;
+ 		DMESG("Setting retry for non RTS/CTS data to %d", wrqu->retry.value);
+ 	}
+@@ -689,7 +698,6 @@ static int r8192_wx_get_retry(struct net_device *dev,
+ 		wrqu->retry.flags = IW_RETRY_LIMIT | IW_RETRY_MIN;
+ 		wrqu->retry.value = priv->retry_data;
+ 	}
+-	//printk("returning %d",wrqu->retry.value);
+ 
+ 
+ 	return 0;
+@@ -700,7 +708,8 @@ static int r8192_wx_get_sens(struct net_device *dev,
+ 				union iwreq_data *wrqu, char *extra)
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-	if(priv->rf_set_sens == NULL)
++
++	if (priv->rf_set_sens == NULL)
+ 		return -1; /* we have not this support for this radio */
+ 	wrqu->sens.value = priv->sens;
+ 	return 0;
+@@ -713,18 +722,17 @@ static int r8192_wx_set_sens(struct net_device *dev,
+ {
+ 
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-
+ 	short err = 0;
++
+ 	down(&priv->wx_sem);
+-	//DMESG("attempt to set sensivity to %ddb",wrqu->sens.value);
+-	if(priv->rf_set_sens == NULL) {
+-		err= -1; /* we have not this support for this radio */
++	if (priv->rf_set_sens == NULL) {
++		err = -1; /* we have not this support for this radio */
+ 		goto exit;
+ 	}
+-	if(priv->rf_set_sens(dev, wrqu->sens.value) == 0)
++	if (priv->rf_set_sens(dev, wrqu->sens.value) == 0)
+ 		priv->sens = wrqu->sens.value;
+ 	else
+-		err= -EINVAL;
++		err = -EINVAL;
+ 
+ exit:
+ 	up(&priv->wx_sem);
 -- 
 1.7.9.5
 
