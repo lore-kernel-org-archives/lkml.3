@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaE0OHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:07:45 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:52911 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaE0OHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:07:42 -0400
+	id S1752350AbaE0OJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:09:16 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:23636
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751753AbaE0OJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 10:09:14 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "andreas.noever@gmail.com" <andreas.noever@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>
+Subject: Re: [PATCH v3 00/15] Thunderbolt driver for Apple MacBooks
+Thread-Topic: [PATCH v3 00/15] Thunderbolt driver for Apple MacBooks
+Thread-Index: AQHPebU7LaSLwZwcJkCtZFLwBcwgow==
+Date: Tue, 27 May 2014 14:09:10 +0000
+Message-ID: <1401199750.7663.3.camel@x230>
+References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+In-Reply-To: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 02243C58C6
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(199002)(189002)(4396001)(33646001)(99286001)(99396002)(21056001)(33716001)(92566001)(83072002)(81542001)(85852003)(81342001)(19580395003)(76482001)(558084003)(54356999)(64706001)(74502001)(50986999)(31966008)(80022001)(74662001)(86362001)(76176999)(20776003)(101416001)(92726001)(46102001)(19580405001)(83322001)(87936001)(103116003)(77982001)(79102001)(2656002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=matthew.garrett@nebula.com; 
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <B5A445DABCADE94B8AF158658F89DF75@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <5384887F.2060505@linaro.org>
-References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400849578-7585-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<CAPDyKFqz-O9-Douk96LBuFRD_P1146c_Ld14TgiduBgfBqRi_A@mail.gmail.com>
-	<5383C28D.1060808@linaro.org>
-	<CAPDyKFpD==5wMZa5KbcMpGnZMTyncmGZfc=17j0=YjKT8qq5bg@mail.gmail.com>
-	<5384887F.2060505@linaro.org>
-Date: Tue, 27 May 2014 16:07:41 +0200
-Message-ID: <CAPDyKFqy+UW7QHhJfVCefeWTwTzpzLb2APwxQKhAdzM6Ex_ZrQ@mail.gmail.com>
-Subject: Re: [PATCH v3 12/13] mmc: mmci: add explicit clk control
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4RE9OW9023216
 
->> Hmm. Looking a bit deeper into this, we have some additional related
->> code to fixup. :-)
->>
->> In ->probe(), we do clk_set_rate(100MHz), if the mclk > 100MHz. That's
->> due to the current variants don't support higher frequency than this.
->> It seems like the Qcom variant may support up to 208MHz? Now, if
->> that's the case, we need to add "f_max" to the struct variant_data to
->> store this information, so we can respect different values while doing
->> clk_set_rate() at ->probe().
->>
-> Yes, qcom SOCs support more than 100Hhz clock.
->
-> Probe and clk_set_rate/set_ios should respect this.
->
-> On the other thought, Should probe actually care about clocks which are
-> explicitly controlled? It should not even attempt to set any frequency to
-> start with.
+Adding the PCI IDs for the Thunderbolt 2 device in the Mac Pro seems to
+work, with the possible exception of hotplug - I'll look into that some
+more. I also have a new set of the ACPI patches, which I'll try to send
+out today.
 
-The 100 MHz is related to constraints set by the specification of the
-IP block, not the MMC/SD/SDIO spec.
-
-Thus at ->probe() we must perform the clk_set_rate().
-
-> mmc-core would set the right frequency depending on the mmc
-> state-machine respecting f_min and f_max.
-> I think for qcom, probe should just check the if f_max and f_min are valid
-> and set them to defaults if any in the same lines as existing code.
->
->
->> While updating mmc->f_max for host->variant->explicit_mclk_control, we
->> shouldn't care about using the host->mclk as a limiter, instead, use
->> min(mmc->f_max, host->variant->f_max) and fallback to fmax.
->>
-> Yes, that's correct, mclk should not be used as limiter. Adding f_max to the
-> variant looks useful.
->
->
->> Not sure how that will affect the logic. :-)
->>
->>>
->>>
->>>> Additionally, this makes me wonder about f_min. I haven't seen
->>>> anywhere in this patch were that value is being set to proper value,
->>>> right?
->>>>
->>>
->>> f_min should be 400000 for qcom, I think with the default mclk frequency
->>> and
->>> a divider of 512 used for calculating the f_min is bringing down the
->>> f_min
->>> to lessthan 400Kz. Which is why its working fine.
->>> I think the possibility of mclk default frequency being greater than
->>> 208Mhz
->>> is very less. so I could either leave it as it is Or force this to 400000
->>> all the time for qcom chips.
->>
->>
->> No, this seems like a wrong approach.
->>
->> I think you would like to do use the clk_round_rate() find out the
->> lowest possible rate. Or just use a fixed fallback value somehow.
->
->
-> clk_round_rate(mclk, 0) might be more generic, instead of fixed fallback.
-> Let the mmc-core figure out what frequency would be best from its table
-> starting from f_min.
-
-Agree!
-
-clk_round_rate(mclk, 100KHz), might be better though - since that is
-actually the lowest request frequency whatsoever.
-
-Kind regards
-Ulf Hansson
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
