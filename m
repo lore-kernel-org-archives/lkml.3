@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaE0OAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:00:52 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:32947 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaE0OAv (ORCPT
+	id S1752605AbaE0OCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:02:46 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:57173 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441AbaE0OCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:00:51 -0400
-Message-ID: <53849AF5.8040904@gmail.com>
-Date: Tue, 27 May 2014 16:02:29 +0200
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 27 May 2014 10:02:45 -0400
+Date: Tue, 27 May 2014 16:02:41 +0200
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Jungseok Lee <jays.lee@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
+        linux-kernel@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        steve.capper@linaro.org, sungjinn.chung@samsung.com,
+        Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com,
+        ilho215.lee@samsung.com
+Subject: Re: [PATCH v6 6/7] arm64: KVM: Set physical address size related
+ factors in runtime
+Message-ID: <20140527140241.GA13967@lvm>
+References: <000501cf6dc6$44fac0f0$cef042d0$@samsung.com>
+ <20140527135349.GJ31431@lvm>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-efi <linux-efi@vger.kernel.org>
-Subject: Re: kernel 3.14.2 oops: seems related to EFI
-References: <53777F7B.8060407@gmail.com> <20140518134206.GA8040@pd.tnic> <5379AE46.3000407@gmail.com> <20140520115421.GH4798@console-pimps.org>
-In-Reply-To: <20140520115421.GH4798@console-pimps.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527135349.GJ31431@lvm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 01:54 PM, Matt Fleming wrote:
-> On Mon, 19 May, at 09:09:58AM, Francis Moreau wrote:
->>
->> I don't know, I can't really afford to configure/compile/test this new
->> kernel, sorry.
+On Tue, May 27, 2014 at 03:53:49PM +0200, Christoffer Dall wrote:
+> On Mon, May 12, 2014 at 06:40:54PM +0900, Jungseok Lee wrote:
+> > This patch sets TCR_EL2.PS, VTCR_EL2.T0SZ and vttbr_baddr_mask in runtime,
+> > not compile time.
+> > 
+> > In ARMv8, EL2 physical address size (TCR_EL2.PS) and stage2 input address
+> > size (VTCR_EL2.T0SZE) cannot be determined in compile time since they
+> > depends on hardware capability.
 > 
-> It would be useful to know whether this issue still occurs when booting
-> with the efi=old_map kernel parameter.
+> s/depends/depend/
 > 
+> > 
+> > According to Table D4-23 and Table D4-25 in ARM DDI 0487A.b document,
+> > vttbr_x is calculated using different hard-coded values with consideration
+> 
+> super nit: I guess this is fixed values, and not hard-coded values
+> 
+> > of T0SZ, granule size and the level of translation tables. Therefore,
+> > vttbr_baddr_mask should be determined dynamically.
+> 
+> so I think there's a deeper issue here, which is that we're not
+> currently considering that for a given supported physical address size
+> (run-time) and given page granularity (compile-time), we may have some
+> flexibility in choosing the VTCR_EL2.SL0 field, and thereby the size of
+> the initial stage2 pgd, by concatinating the initial level page tables.
+> 
+> Additionally, the combinations of the givens may also force us to choose
+> a specific SL0 value.
+> 
+> Policy-wise, I would say we should concatenate as many initial level page
+> tables as possible when using 4K pages, iow. always set VTCR_EL2.SL0 to
+> the lowest possible value given the PARange and page size config we have
+> at hand.  That should always provide increased performance for VMs at
+> the cost of maximum 16 concatenated tables, which is a 64K contiguous
+> allocation and alignment, for 4K pages.
+> 
+> For 64K pages, it becomes a 256K alignment and contiguous allocation
+> requirement.  One could argue that if this is not possible on your
+> system, then you have no business runninng VMs on there, but I want to
+> leave this open for comments...
+> 
+Just had a brief chat with Marc, and he made me think of the fact that
+we cannot decide this freely, because the code in kvm_mmu.c assumes that
+the stage-2 page tables have the same number of levels etc. as the host
+kernel (we re-use functions like pud_offset, pud_addr_end, etc. etc.).
 
-the bug triggered:
+I'm not sure this can always be aligned, so we may have to write our own
+kvm_... versions of these to accomodate the best policy for KVM.
 
-[  +0.002872] BUG: unable to handle kernel paging request at
-fffffffefd4a1e60
-[  +0.000066] IP: [<ffffffff810648f8>] virt_efi_get_variable+0x48/0x80
-[  +0.000054] PGD 280f067 PUD 0
-[  +0.000031] Oops: 0000 [#1] PREEMPT SMP
-[  +0.000039] Modules linked in: tun ses enclosure usb_storage loop fuse
-joydev coretemp hwmon arc4 nls_iso8859_1 nls_c
-[  +0.000691]  ac ext4 crc16 mbcache jbd2 hid_generic usbhid hid bcache
-sd_mod sr_mod crc_t10dif cdrom crct10dif_common
-[  +0.000289] CPU: 7 PID: 23293 Comm: systemd-udevd Tainted: G        W
-   3.14.4-1-ARCH #1
-[  +0.000057] Hardware name: CLEVO CO.                        W55xEU
-                      /W55xEU
-[  +0.000087] task: ffff88039557bae0 ti: ffff8802de764000 task.ti:
-ffff8802de764000
-[  +0.000050] RIP: 0010:[<ffffffff810648f8>]  [<ffffffff810648f8>]
-virt_efi_get_variable+0x48/0x80
-[  +0.000064] RSP: 0018:ffff8802de765e58  EFLAGS: 00010082
-[  +0.000037] RAX: fffffffefd4a1e18 RBX: ffff8800da88f000 RCX:
-0000000000000000
-[  +0.000048] RDX: ffff8800da88f400 RSI: ffff8800da88f000 RDI:
-00000000ffffffff
-[  +0.000048] RBP: ffff8802de765e80 R08: ffff8802de765ec0 R09:
-0000000000000000
-[  +0.000047] R10: 0000000000000000 R11: 0000000000000246 R12:
-ffff8800da88f400
-[  +0.000048] R13: 0000000000000000 R14: ffff8802de765ec0 R15:
-0000000000000000
-[  +0.000048] FS:  00007f10751057c0(0000) GS:ffff88041e3c0000(0000)
-knlGS:0000000000000000
-[  +0.000054] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  +0.000040] CR2: fffffffefd4a1e60 CR3: 00000003c4afa000 CR4:
-00000000001407e0
-[  +0.000048] Stack:
-[  +0.000016]  ffff8800da88f000 ffff8802de765ec0 ffffffff81b27c20
-ffff8802de765f48
-[  +0.000060]  3bc93ec9a0004bba ffff8802de765ea8 ffffffff813dbc91
-ffff8800da88f000
-[  +0.000060]  00007fffdc30c104 0000000000000004 ffff8802de765ef8
-ffffffff81245779
-[  +0.000060] Call Trace:
-[  +0.000025]  [<ffffffff813dbc91>] efivar_entry_size+0x41/0x80
-[  +0.000044]  [<ffffffff81245779>] efivarfs_file_read+0x49/0x100
-[  +0.000044]  [<ffffffff811ba7d7>] vfs_read+0x97/0x160
-[  +0.000037]  [<ffffffff811bb329>] SyS_read+0x59/0xd0
-[  +0.000039]  [<ffffffff81517769>] system_call_fastpath+0x16/0x1b
-[  +0.000041] Code: ce 4d 89 c7 e8 9a 06 00 00 65 ff 04 25 a0 c7 00 00
-48 8b 05 1b d4 86 00 4d 89 f9 4d 89 f0 4c 89 e9
-[  +0.000335] RIP  [<ffffffff810648f8>] virt_efi_get_variable+0x48/0x80
-[  +0.000049]  RSP <ffff8802de765e58>
-[  +0.000026] CR2: fffffffefd4a1e60
-[  +0.016781] ---[ end trace 5a7017feeac75345 ]---
-
-the sad thing is tht my system can't shutdown properly when it happens.
-
+-Christoffer
