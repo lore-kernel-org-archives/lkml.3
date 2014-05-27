@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaE0DHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 23:07:16 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:37645 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476AbaE0DHM (ORCPT
+	id S1752591AbaE0DOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 23:14:21 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49527 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaE0DOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 23:07:12 -0400
-Message-ID: <1401160028.5134.7.camel@marge.simpson.net>
-Subject: Re: [PATCH v2 1/6] sched/fair.c: remove "power" from struct
- numa_stats
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Date: Tue, 27 May 2014 05:07:08 +0200
-In-Reply-To: <1401142779-6633-2-git-send-email-nicolas.pitre@linaro.org>
-References: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org>
-	 <1401142779-6633-2-git-send-email-nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 26 May 2014 23:14:19 -0400
+Date: Tue, 27 May 2014 04:14:15 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140527031415.GS18016@ZenIV.linux.org.uk>
+References: <20140526093741.GA1765@lahna.fi.intel.com>
+ <20140526135746.GM18016@ZenIV.linux.org.uk>
+ <20140526142948.GA1685@lahna.fi.intel.com>
+ <20140526152703.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+ <20140526182644.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
+ <20140527014054.GR18016@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527014054.GR18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-26 at 18:19 -0400, Nicolas Pitre wrote: 
+On Tue, May 27, 2014 at 02:40:54AM +0100, Al Viro wrote:
+> It looks plausible, but I doubt that serializing check_submounts_and_drop()
+> will suffice - shrink_dcache_parent() is just as unpleasant and it *is*
+> triggered in the same situations.  Moreover, the lack of loop in memory
+> shrinkers doesn't help - we might get shrink_dentry_list() from one of
+> those and loops that keep calling d_walk() from check_submounts_and_drop()
+> or shrink_dcache_parent()...
 > 
-> @@ -1046,7 +1046,7 @@ static void update_numa_stats(struct numa_stats *ns, int nid)
->  
->  		ns->nr_running += rq->nr_running;
->  		ns->load += weighted_cpuload(cpu);
-> -		ns->power += power_of(cpu);
-> +		ns->compute_capacity += power_of(cpu);
+> > Anyway, I'd like Mika to test the stupid "let's serialize the dentry
+> > shrinking in check_submounts_and_drop()" to see if his problem goes
+> > away. I agree that it's not the _proper_ fix, but we're damn late in
+> > the rc series..
+> 
+> That we are...  FWIW, if the nastiness matches the description above,
+> the right place to do something probably would be when those two
+> suckers get positive return value from d_walk() along with an empty
+> shrink list.  I wonder if we should do down_read() in shrink_dentry_list()
+> and down_write();up_write() in that case in shrink_dcache_parent() and
+> check_submounts_and_drop().  How about the following?
 
-power_of(cpu) as a capacity input looks odd now.. 
+As the matter of fact, let's try this instead - retry the same sucker
+immediately in case if trylocks fail.  Comments?
 
-> @@ -1062,9 +1062,10 @@ static void update_numa_stats(struct numa_stats *ns, int nid)
->  	if (!cpus)
->  		return;
->  
-> -	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->power;
-> -	ns->capacity = DIV_ROUND_CLOSEST(ns->power, SCHED_POWER_SCALE);
-> -	ns->has_capacity = (ns->nr_running < ns->capacity);
-> +	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->compute_capacity;
-> +	ns->task_capacity =
-> +		DIV_ROUND_CLOSEST(ns->compute_capacity, SCHED_POWER_SCALE);
-
-..as do SCHED_POWER_SCALE, update_cpu_power() etc.
-
--Mike
-
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 42ae01e..d58d4cc 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -798,6 +798,7 @@ static void shrink_dentry_list(struct list_head *list)
+ 
+ 	while (!list_empty(list)) {
+ 		dentry = list_entry(list->prev, struct dentry, d_lru);
++again:
+ 		spin_lock(&dentry->d_lock);
+ 		/*
+ 		 * The dispose list is isolated and dentries are not accounted
+@@ -830,7 +831,8 @@ static void shrink_dentry_list(struct list_head *list)
+ 			 */
+ 			d_shrink_add(dentry, list);
+ 			spin_unlock(&dentry->d_lock);
+-			continue;
++			cpu_relax();
++			goto again;
+ 		}
+ 		/*
+ 		 * We need to prune ancestors too. This is necessary to prevent
