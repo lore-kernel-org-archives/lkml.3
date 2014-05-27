@@ -1,119 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaE0Iup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:50:45 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:48800 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaE0Iul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:50:41 -0400
-X-AuditID: cbfee61b-b7fbb6d000001be3-80-538451de449e
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Changman Lee'" <cm224.lee@samsung.com>
-Cc: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-References: <00f601cf7948$1263a480$372aed80$@samsung.com>
- <20140527062307.GB4886@cm224.lee>
-In-reply-to: <20140527062307.GB4886@cm224.lee>
-Subject: RE: [f2fs-dev] [PATCH] f2fs: avoid overflow when large directory
- feathure is enabled
-Date: Tue, 27 May 2014 16:49:49 +0800
-Message-id: <010701cf7988$bc218420$34648c60$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQLARk+s/Gy8LVAXYjPcNN6ljA7IuwJGpqrtmWBNa/A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9jAd37gS3BBp+Xslpc29fIZHF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxoHv4QVX
-	xCu67vxhb2CcINzFyMkhIWAi8aavhRXCFpO4cG89WxcjF4eQwCJGid7Nh9khnB+MEvN+tjOD
-	VLEJqEgs7/jPBGKLCGhJ7O/pZgEpYhaYxCix5GczC0hCSCBWYt+pz2BjOQX0JLrermcHsYUF
-	4iWmvlkDZrMIqEqc//EdbBCvgKVEx26Iel4BQYkfk++BzWEGWrB+53EmCFteYvOat8wQpypI
-	7Dj7mhHiCCuJhz3L2CBqxCU2HrnFMoFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrp
-	FSfmFpfmpesl5+duYgRHwTPpHYyrGiwOMQpwMCrx8E7wbQ4WYk0sK67MPcQowcGsJMLb6dIS
-	LMSbklhZlVqUH19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoGx9nhCnChD
-	+ZplK33ZLgsasN7UW8K78I7Ax/lV6eU2X2c8ClHker8+V8PPKX5S4dvMPUZ7Toes6+LnO6mc
-	v9n7jP5xM4evlo/37wooajq6ccbSJHbdCYuL1QUnT5x49K7Ve++vhvoXWPrWvtOaraftdTRi
-	2Sfr+pTm37UZshZvM6/ldWp+Ov1GiaU4I9FQi7moOBEAFYqiV34CAAA=
+	id S1752123AbaE0IvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:51:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63295 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406AbaE0Iu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:50:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="348988208"
+Message-ID: <538451E7.7030206@linux.intel.com>
+Date: Tue, 27 May 2014 16:50:47 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Patch V3 01/37] x86, irq: update high address field when updating
+ affinity for MSI IRQ
+References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com> <1401178092-1228-2-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1405271010570.21720@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1405271010570.21720@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi changman,
+Yes, I think it should be marked for stable branches.
 
-> -----Original Message-----
-> From: Changman Lee [mailto:cm224.lee@samsung.com]
-> Sent: Tuesday, May 27, 2014 2:23 PM
-> To: Chao Yu
-> Cc: Jaegeuk Kim; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid overflow when large directory feathure is enabled
+On 2014/5/27 16:11, Thomas Gleixner wrote:
+> On Tue, 27 May 2014, Jiang Liu wrote:
 > 
-> Hi, Chao
-> Good catch. Please, modify Documentation/filesytems/f2fs.txt
-
-Thank you for reminding me, I will add modification of f2fs.txt in the patch later.
-
+>> If x2apic is enabled, the MSI high address field should also be aslo
+>> updated when setting affinity for MSI IRQ, otherwise the MSI IRQ may
+>> target wrong APIC IDs.
 > 
-> On Tue, May 27, 2014 at 09:06:52AM +0800, Chao Yu wrote:
-> > When large directory feathure is enable, We have one case which could cause
-> > overflow in dir_buckets() as following:
-> > special case: level + dir_level >= 32 and level < MAX_DIR_HASH_DEPTH / 2.
-> >
-> > Here we define MAX_DIR_BUCKETS to limit the return value when the condition
-> > could trigger potential overflow.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/dir.c           |    4 ++--
-> >  include/linux/f2fs_fs.h |    3 +++
-> >  2 files changed, 5 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > index c3f1485..966acb0 100644
-> > --- a/fs/f2fs/dir.c
-> > +++ b/fs/f2fs/dir.c
-> > @@ -23,10 +23,10 @@ static unsigned long dir_blocks(struct inode *inode)
-> >
-> >  static unsigned int dir_buckets(unsigned int level, int dir_level)
-> >  {
-> > -	if (level < MAX_DIR_HASH_DEPTH / 2)
-> > +	if (level + dir_level < MAX_DIR_HASH_DEPTH / 2)
-> >  		return 1 << (level + dir_level);
-> >  	else
-> > -		return 1 << ((MAX_DIR_HASH_DEPTH / 2 + dir_level) - 1);
-> > +		return MAX_DIR_BUCKETS;
-> >  }
-> >
-> >  static unsigned int bucket_blocks(unsigned int level)
-> > diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
-> > index 8c03f71..ba6f312 100644
-> > --- a/include/linux/f2fs_fs.h
-> > +++ b/include/linux/f2fs_fs.h
-> > @@ -394,6 +394,9 @@ typedef __le32	f2fs_hash_t;
-> >  /* MAX level for dir lookup */
-> >  #define MAX_DIR_HASH_DEPTH	63
-> >
-> > +/* MAX buckets in one level of dir */
-> > +#define MAX_DIR_BUCKETS		(1 << ((MAX_DIR_HASH_DEPTH / 2) - 1))
-> > +
-> >  #define SIZE_OF_DIR_ENTRY	11	/* by byte */
-> >  #define SIZE_OF_DENTRY_BITMAP	((NR_DENTRY_IN_BLOCK + BITS_PER_BYTE - 1) / \
-> >  					BITS_PER_BYTE)
-> > --
-> > 1.7.10.4
-> >
-> >
-> >
-> > ------------------------------------------------------------------------------
-> > The best possible search technologies are now affordable for all companies.
-> > Download your FREE open source Enterprise Search Engine today!
-> > Our experts will assist you in its installation for $59/mo, no commitment.
-> > Test it for FREE on our Cloud platform anytime!
-> > http://pubads.g.doubleclick.net/gampad/clk?id=145328191&iu=/4140/ostg.clktrk
-> > _______________________________________________
-> > Linux-f2fs-devel mailing list
-> > Linux-f2fs-devel@lists.sourceforge.net
-> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-
+> That should be tagged for stable, right?
+>  
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  arch/x86/kernel/apic/io_apic.c |    4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+>> index 9d0a9795a0f8..2de992501a1b 100644
+>> --- a/arch/x86/kernel/apic/io_apic.c
+>> +++ b/arch/x86/kernel/apic/io_apic.c
+>> @@ -3007,6 +3007,10 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+>>  
+>>  	__get_cached_msi_msg(data->msi_desc, &msg);
+>>  
+>> +	msg.address_hi = MSI_ADDR_BASE_HI;
+>> +	if (x2apic_enabled())
+>> +		msg.address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
+>> +
+>>  	msg.data &= ~MSI_DATA_VECTOR_MASK;
+>>  	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+>>  	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+>> -- 
+>> 1.7.10.4
+>>
+>>
