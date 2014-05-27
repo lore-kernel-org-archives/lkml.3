@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaE0Sy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:54:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41566 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaE0SyY (ORCPT
+	id S1753247AbaE0S4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:56:31 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:49893 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaE0S4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:54:24 -0400
-Message-ID: <5384DF5E.3020304@kernel.dk>
-Date: Tue, 27 May 2014 12:54:22 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 27 May 2014 14:56:30 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Ming Lei <tom.leiming@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
- flush worker
-References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com> <20140519151824.GA21762@lst.de> <CACVXFVNprzhEpXGKze=A4T2b-y35vXRxRTOUqpywu+Et=t37Kw@mail.gmail.com> <20140520152303.GA20352@lst.de> <CACVXFVNP--zj_-UtygxfXk7GvSXwKm2KMKFs=h9KsrL=ZzbWVQ@mail.gmail.com> <20140521053634.GA4764@lst.de> <CACVXFVO5znzYtPKMTPwx_2MU97xFZY+wHwm+R33T043SW4JHHw@mail.gmail.com> <20140527181305.GA7975@lst.de> <5384DB97.70606@kernel.dk> <20140527185301.GA8466@lst.de>
-In-Reply-To: <20140527185301.GA8466@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140526160403.GA26531@pd.tnic>
+References: <20140526160403.GA26531@pd.tnic>
+Date: Tue, 27 May 2014 11:56:29 -0700
+Message-ID: <CALAqxLWSLq8vgkcs3-Cu-coMB9L=eL-gmBPfsZ+ZuxF0LuY5LA@mail.gmail.com>
+Subject: Re: ACPI Error: Could not enable RealTimeClock event (20140214/evxfevnt-212)
+From: John Stultz <john.stultz@linaro.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-27 12:53, Christoph Hellwig wrote:
-> On Tue, May 27, 2014 at 12:38:15PM -0600, Jens Axboe wrote:
->> On 2014-05-27 12:13, Christoph Hellwig wrote:
->>> Here is my counter proposal that requeues via two lists and a work struct
->>> in the request_queue.  I've also tested it with scsi-mq.
->>>
->>
->> I like this, moves the state out of the request. But how about we
->> consolidate the two requeue requests lists, and just mark the request as
->> needing head insertion instead? Just add a cmd_flags flag, REQ_REQUEUE_HEAD
->> or something.
+On Mon, May 26, 2014 at 9:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+> Hi guys,
 >
-> That should be doable, just didn't like introducing even more flags.
+> so I get this with rc7+tip but not with rc6+tip:
+>
+> ACPI Error: Could not enable RealTimeClock event (20140214/evxfevnt-212)
+> ACPI Warning: Could not enable fixed event - RealTimeClock (4) (20140214/evxface-628)
 
-Space is plenty big again now... The down side is that the splice trick 
-wont work, but if we have more than a few requests on the requeue list, 
-we're doing it wrong anyway.
+Does it happen on -rc7 w/o tip?
 
--- 
-Jens Axboe
+Looking at the -rc6 to -rc7 commit list, I don't see anything that
+pops out at me.  There's no changes to drivers/rtc nor drivers/acpi.
 
+The only change that might be relevant from arch/x86/ is:
+a4b4f11b2783ec678cccb4ce7e4ce9665aa04a24 (perf/x86/intel: Fix
+Silvermont's event constraints).  Any other hardware details, etc?
+
+thanks
+-john
