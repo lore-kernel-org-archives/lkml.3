@@ -1,87 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaE0Urk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:47:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45128 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008AbaE0Uri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 16:47:38 -0400
-Date: Tue, 27 May 2014 22:47:31 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCHv5 09/10] DTS: ARM: OMAP3-N900: Add SSI support
-Message-ID: <20140527204730.GA30610@earth.universe>
-References: <1399739870-13526-10-git-send-email-sre@kernel.org>
- <20140514215503.GM27426@atomide.com>
- <20140520003538.GD15793@atomide.com>
- <20140521182513.GA26285@earth.universe>
- <20140521184319.GL17417@atomide.com>
- <20140521194527.GM17417@atomide.com>
- <20140521215055.GA26362@earth.universe>
- <20140521220807.GB14520@atomide.com>
- <20140522000558.GC29118@earth.universe>
- <20140527203543.GB32336@atomide.com>
+	id S1752937AbaE0UsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 16:48:01 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:1895 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752215AbaE0UsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 16:48:00 -0400
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Andy Gross <agross@codeaurora.org>, <linux-arm-msm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] pinctrl: msm: Add missing sdc1 and sdc3 groups
+Date: Tue, 27 May 2014 13:47:55 -0700
+Message-ID: <1401223675-13586-1-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <CACRpkdbfpquwtwbWK5tgqLfnuZhUY3vCWNRr__YReXaP5xkzkA@mail.gmail.com>
+References: <CACRpkdbfpquwtwbWK5tgqLfnuZhUY3vCWNRr__YReXaP5xkzkA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
-Content-Disposition: inline
-In-Reply-To: <20140527203543.GB32336@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+---
 
---UugvWAfsgieZRqgk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thought I already sent you parts of this previously, sorry about that.
+This should apply on your devel branch.
 
-On Tue, May 27, 2014 at 01:35:44PM -0700, Tony Lindgren wrote:
-> Based on chatting with Paul it seems that we most likely don't have
-> bits for sysc_flags for SYSC_HAS_EMUFREE or SYSS_HAS_RESET_STATUS
-> either. So applying the updated patch below, and the SSI dts changes
-> into omap-for-v3.16/dt-v2.
->=20
-> I'm keeping your previous ack Sebastian as the the idlemodes did
-> not change from the previous version, hopefully that's OK with you.
+ drivers/pinctrl/pinctrl-apq8064.c | 47 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-Sure, go for it.
+diff --git a/drivers/pinctrl/pinctrl-apq8064.c b/drivers/pinctrl/pinctrl-apq8064.c
+index 7c2a8ba..519f788 100644
+--- a/drivers/pinctrl/pinctrl-apq8064.c
++++ b/drivers/pinctrl/pinctrl-apq8064.c
+@@ -109,6 +109,13 @@ static const struct pinctrl_pin_desc apq8064_pins[] = {
+ 	PINCTRL_PIN(87, "GPIO_87"),
+ 	PINCTRL_PIN(88, "GPIO_88"),
+ 	PINCTRL_PIN(89, "GPIO_89"),
++
++	PINCTRL_PIN(90, "SDC1_CLK"),
++	PINCTRL_PIN(91, "SDC1_CMD"),
++	PINCTRL_PIN(92, "SDC1_DATA"),
++	PINCTRL_PIN(93, "SDC3_CLK"),
++	PINCTRL_PIN(94, "SDC3_CMD"),
++	PINCTRL_PIN(95, "SDC3_DATA"),
+ };
+ 
+ #define DECLARE_APQ_GPIO_PINS(pin) static const unsigned int gpio##pin##_pins[] = { pin }
+@@ -203,6 +210,13 @@ DECLARE_APQ_GPIO_PINS(87);
+ DECLARE_APQ_GPIO_PINS(88);
+ DECLARE_APQ_GPIO_PINS(89);
+ 
++static const unsigned int sdc1_clk_pins[] = { 90 };
++static const unsigned int sdc1_cmd_pins[] = { 91 };
++static const unsigned int sdc1_data_pins[] = { 92 };
++static const unsigned int sdc3_clk_pins[] = { 93 };
++static const unsigned int sdc3_cmd_pins[] = { 94 };
++static const unsigned int sdc3_data_pins[] = { 95 };
++
+ #define FUNCTION(fname)					\
+ 	[APQ_MUX_##fname] = {				\
+ 		.name = #fname,				\
+@@ -250,6 +264,31 @@ DECLARE_APQ_GPIO_PINS(89);
+ 		.intr_detection_width = 1,		\
+ 	}
+ 
++#define SDC_PINGROUP(pg_name, ctl, pull, drv)		\
++	{						\
++		.name = #pg_name,			\
++		.pins = pg_name##_pins,			\
++		.npins = ARRAY_SIZE(pg_name##_pins),	\
++		.ctl_reg = ctl,				\
++		.io_reg = 0,				\
++		.intr_cfg_reg = 0,			\
++		.intr_status_reg = 0,			\
++		.intr_target_reg = 0,			\
++		.mux_bit = -1,				\
++		.pull_bit = pull,			\
++		.drv_bit = drv,				\
++		.oe_bit = -1,				\
++		.in_bit = -1,				\
++		.out_bit = -1,				\
++		.intr_enable_bit = -1,			\
++		.intr_status_bit = -1,			\
++		.intr_target_bit = -1,			\
++		.intr_raw_status_bit = -1,		\
++		.intr_polarity_bit = -1,		\
++		.intr_detection_bit = -1,		\
++		.intr_detection_width = -1,		\
++	}
++
+ enum apq8064_functions {
+ 	APQ_MUX_cam_mclk,
+ 	APQ_MUX_codec_mic_i2s,
+@@ -514,6 +553,14 @@ static const struct msm_pingroup apq8064_groups[] = {
+ 	PINGROUP(87, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(88, usb2_hsic, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(89, usb2_hsic, NA, NA, NA, NA, NA, NA, NA, NA, NA),
++
++	SDC_PINGROUP(sdc1_clk, 0x20a0, 13, 6),
++	SDC_PINGROUP(sdc1_cmd, 0x20a0, 11, 3),
++	SDC_PINGROUP(sdc1_data, 0x20a0, 9, 0),
++
++	SDC_PINGROUP(sdc3_clk, 0x20a4, 14, 6),
++	SDC_PINGROUP(sdc3_cmd, 0x20a4, 11, 3),
++	SDC_PINGROUP(sdc3_data, 0x20a4, 9, 0),
+ };
+ 
+ #define NUM_GPIO_PINGROUPS 90
+-- 
+1.8.2.2
 
--- Sebastian
-
---UugvWAfsgieZRqgk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJThPniAAoJENju1/PIO/qazuAP/jWUjp10rDZcckjKqggbXNZq
-8BJRYi8skClJDvpUpLq5C+FC2YGsrEXWeiI6+gjk7sVgjgSS4tFMIj94dpSWDfE/
-dp3FXPGDX5Q3CsX5I5zPVXU1TfszkgOF86E2P1RF4+ks1c/5ih7W++R45i4QvCM7
-+BeN9vcBrVZy+OkLWpCC5vdJM9lPzk6E4uD0KRxfL/AEgyF7ZyG8tilQVK73/FL6
-GtueirRT7uTox1/oi9+3644x3zRaPTJuo/EeX0pha5DSZx6yUPM1raR2QW0oI/V6
-mdXvwco6viNljS6NPUB/Mm/vMLGx9O9NpVK8Tf8tYZcZ6f482CutTkMQh3iDjH55
-zlZiHfknl+EaFGVJ6yHkeUfUe4kK89uMOCs7oZjkpnnqiqt9J9Sy/4hHgvkHvV44
-EzQ0CnDzt3SUAq9j2nlhGPNOqEUzqiTj/S3mFxnIE5SbpbtmIWY65mpzICnWyBVU
-a1pWeB4ZvIrTzQsoDmRu1SBm+22GClJf+85akgeddn3z8eBFABqC1hwOWnnbXb4o
-934N7E0mnB4mZ63gJJnUFfwY+vV70efDwXqxonAos7SJF6Er5YnnYei1cxRBNuSX
-yCVGnk8OIX9rCvOFS4/oUcIpvLXFVPEoMUIgHXDUxKepUv/hKuyaXYzLRuJ0ZJsf
-8guupD5jsKjqDJ6CqYuf
-=yBWr
------END PGP SIGNATURE-----
-
---UugvWAfsgieZRqgk--
