@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaE0IMn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:12:43 -0400
+	id S1752866AbaE0IMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:12:48 -0400
 Received: from mga14.intel.com ([192.55.52.115]:41593 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824AbaE0IMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:12:40 -0400
+	id S1752821AbaE0IMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:12:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,917,1392192000"; 
-   d="scan'208";a="538019239"
+   d="scan'208";a="538019292"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -17,19 +17,17 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch V3 34/37] x86, irq, ACPI: release IOAPIC pin when PCI device is disabled
-Date: Tue, 27 May 2014 16:08:09 +0800
-Message-Id: <1401178092-1228-35-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org
+Subject: [Patch V3 35/37] x86, irq, mpparse: release IOAPIC pin when PCI device is disabled
+Date: Tue, 27 May 2014 16:08:10 +0800
+Message-Id: <1401178092-1228-36-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
@@ -42,94 +40,64 @@ is disabled.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |   28 ++++++++++++++++++++++++++++
- drivers/acpi/pci_irq.c      |    3 ++-
- 2 files changed, 30 insertions(+), 1 deletion(-)
+ arch/x86/kernel/mpparse.c |    1 +
+ arch/x86/pci/irq.c        |   13 +++++++++++--
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 0592c38d9952..c8e8fe67bbc8 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -313,9 +313,11 @@ static void  mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
- 				    u32 gsi);
- static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			   int polarity);
-+static void mp_unregister_gsi(u32 gsi);
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 55acf55b41e7..f6559942952d 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -115,6 +115,7 @@ static void __init MP_bus_info(struct mpc_bus *m)
  
- static struct irq_domain_ops acpi_irqdomain_ops = {
+ static struct irq_domain_ops mp_ioapic_irqdomain_ops = {
  	.map = mp_irqdomain_map,
 +	.unmap = mp_irqdomain_unmap,
  };
  
- static struct irq_domain *acpi_create_irqdomain(int idx, void *arg)
-@@ -541,8 +543,16 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 	return irq;
- }
+ static struct irq_domain *mp_ioapic_create_irqdomain(int ioapic, void *arg)
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index e4200e5e775e..748cfe8ab322 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -26,6 +26,7 @@ static int acer_tm360_irqrouting;
+ static struct irq_routing_table *pirq_table;
  
-+static void acpi_unregister_gsi_ioapic(u32 gsi)
-+{
-+#ifdef CONFIG_X86_IO_APIC
-+	mp_unregister_gsi(gsi);
-+#endif
-+}
-+
- int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
- 			   int trigger, int polarity) = acpi_register_gsi_pic;
-+void (*__acpi_unregister_gsi)(u32 gsi) = NULL;
+ static int pirq_enable_irq(struct pci_dev *dev);
++static void pirq_disable_irq(struct pci_dev *dev);
  
- #ifdef CONFIG_ACPI_SLEEP
- int (*acpi_suspend_lowlevel)(void) = x86_acpi_suspend_lowlevel;
-@@ -562,6 +572,8 @@ EXPORT_SYMBOL_GPL(acpi_register_gsi);
- 
- void acpi_unregister_gsi(u32 gsi)
- {
-+	if (__acpi_unregister_gsi)
-+		(*__acpi_unregister_gsi)(gsi);
- }
- EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
- 
-@@ -569,6 +581,7 @@ static void __init acpi_set_irq_model_ioapic(void)
- {
- 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
- 	__acpi_register_gsi = acpi_register_gsi_ioapic;
-+	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
- 	acpi_ioapic = 1;
- }
- 
-@@ -1050,6 +1063,21 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	return irq;
- }
- 
-+static void mp_unregister_gsi(u32 gsi)
-+{
-+	int irq;
-+
-+	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-+		return;
-+
-+	if (acpi_gbl_FADT.sci_interrupt == gsi)
-+		return;
-+
-+	irq = mp_map_gsi_to_irq(gsi, 0);
-+	if (irq > 0)
-+		mp_unmap_irq(irq);
-+}
-+
  /*
-  * Parse IOAPIC related entries in MADT
-  * returns 0 on success, < 0 on error
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index 9c62340c2360..6ba463ceccc6 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -498,5 +498,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	 */
+  * Never use: 0, 1, 2 (timer, keyboard, and cascade)
+@@ -53,7 +54,7 @@ struct irq_router_handler {
+ };
  
- 	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
--	acpi_unregister_gsi(gsi);
-+	if (gsi >= 0 && dev->irq > 0)
-+		acpi_unregister_gsi(gsi);
+ int (*pcibios_enable_irq)(struct pci_dev *dev) = pirq_enable_irq;
+-void (*pcibios_disable_irq)(struct pci_dev *dev) = NULL;
++void (*pcibios_disable_irq)(struct pci_dev *dev) = pirq_disable_irq;
+ 
+ /*
+  *  Check passed address for the PCI IRQ Routing Table signature
+@@ -1186,7 +1187,7 @@ void pcibios_penalize_isa_irq(int irq, int active)
+ 
+ static int pirq_enable_irq(struct pci_dev *dev)
+ {
+-	u8 pin;
++	u8 pin = 0;
+ 
+ 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+ 	if (pin && !pcibios_lookup_irq(dev, 1)) {
+@@ -1252,3 +1253,11 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 	}
+ 	return 0;
  }
++
++static void pirq_disable_irq(struct pci_dev *dev)
++{
++	if (io_apic_assign_pci_irqs && dev->irq) {
++		mp_unmap_irq(dev->irq);
++		dev->irq = 0;
++	}
++}
 -- 
 1.7.10.4
 
