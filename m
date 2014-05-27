@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531AbaE0ToF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 15:44:05 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60947 "EHLO mail.skyhub.de"
+	id S1753588AbaE0TpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:45:11 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33391 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729AbaE0ToC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 15:44:02 -0400
-Date: Tue, 27 May 2014 21:43:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Kees Cook <keescook@chromium.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
-Message-ID: <20140527194359.GD4366@pd.tnic>
-References: <1400524052-25625-1-git-send-email-bp@alien8.de>
- <20140527151728.64e8cf59@gandalf.local.home>
+	id S1752384AbaE0TpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 15:45:08 -0400
+Date: Tue, 27 May 2014 15:45:00 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/9] mm: memcontrol: remove ordering between
+ pc->mem_cgroup and PageCgroupUsed
+Message-ID: <20140527194500.GC2878@cmpxchg.org>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-7-git-send-email-hannes@cmpxchg.org>
+ <20140523132043.GB22135@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140527151728.64e8cf59@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140523132043.GB22135@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 03:17:28PM -0400, Steven Rostedt wrote:
-> This looks like functionality change to me.
+On Fri, May 23, 2014 at 03:20:43PM +0200, Michal Hocko wrote:
+> On Wed 30-04-14 16:25:40, Johannes Weiner wrote:
+> > There is a write barrier between setting pc->mem_cgroup and
+> > PageCgroupUsed, which was added to allow LRU operations to lookup the
+> > memcg LRU list of a page without acquiring the page_cgroup lock.  But
+> > ever since 38c5d72f3ebe ("memcg: simplify LRU handling by new rule"),
+> > pages are ensured to be off-LRU while charging, so nobody else is
+> > changing LRU state while pc->mem_cgroup is being written.
 > 
-> Please make the fix of "==" --> ">=" a separate patch.
+> This is quite confusing. Why do we have the lrucare path then?
 
-Yeah, that's actually a fix for console_loglevel values > 10. I don't
-think it is worth the effort of splitting though ... unless you have a
-real good reason.
+Some charge paths start with the page on the LRU, lrucare makes sure
+it's off during the charge.
 
--- 
-Regards/Gruss,
-    Boris.
+> The code is quite tricky so this deserves a more detailed explanation
+> IMO.
+> 
+> There are only 3 paths which check both the flag and mem_cgroup (
+> without page_cgroup_lock) get_mctgt_type* and mem_cgroup_page_lruvec AFAICS.
+> None of them have rmb so there was no guarantee about ordering anyway.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yeah, exactly.  As per the changelog, this is a remnant of the way it
+used to work but it's no longer needed because of guaranteed off-LRU
+state.
+
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> Anyway, the change is welcome
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks!
