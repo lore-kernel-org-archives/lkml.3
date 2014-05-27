@@ -1,226 +1,479 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaE0R2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:28:50 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:45356 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaE0R2p (ORCPT
+	id S1753372AbaE0Rb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:31:27 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:4301 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752779AbaE0R2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:28:45 -0400
-From: Lv Zheng <zetalog@gmail.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <zetalog@gmail.com>, Lv Zheng <lv.zheng@intel.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Oswald Buddenhagen <ossi@kde.org>
-Subject: [RFC PATCH 4/6] ACPICA: Tables: Enable both 32-bit and 64-bit FACS.
-Date: Wed, 28 May 2014 01:28:29 +0800
-Message-Id: <90363720a34ec0d7508882a0452aa5ac27ce5a09.1401210685.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1401210684.git.lv.zheng@intel.com>
-References: <38907770.bupFXhytsS@vostro.rjw.lan> <cover.1401210684.git.lv.zheng@intel.com>
+	Tue, 27 May 2014 13:28:49 -0400
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+CC: Josh Cartwright <joshc@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
+Subject: [PATCH 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT binding
+Date: Tue, 27 May 2014 10:28:39 -0700
+Message-ID: <1401211721-19712-2-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lv Zheng <lv.zheng@intel.com>
+Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660, 8960
+and 8064 based devices. The binding currently describes the rpm itself and the
+regulator subnodes.
 
-The root cause of the reported bug might be one of the followings:
-1. BIOS may favor the 64-bit firmware waking vector address when the
-   version of the FACS is greater than 0 and Linux currently only supports
-   resuming from the real mode, so the 64-bit firmware waking vector has
-   never been set and might be invalid to BIOS while the commit enables
-   higher version FACS.
-2. BIOS may favor the FACS reported via the "FIRMWARE_CTRL" field in the
-   FADT while the commit doesn't set the firmware waking vector address of
-   the FACS reported by "FIRMWARE_CTRL", it only sets the firware waking
-   vector address of the FACS reported by "X_FIRMWARE_CTRL".
-
-This patch excludes the cases that can trigger the bugs caused by the root
-cause 2.
-
-There is no handshaking mechanism can be used by OSPM to tell BIOS which
-FACS is currently used. Thus the FACS reported by "FIRMWARE_CTRL" may still
-be used by BIOS and the 0 value of the 32-bit firmware waking vector might
-trigger such failure.
-
-This patch tries to favor 32bit FACS address in another way where both the
-FACS reported by "FIRMWARE_CTRL" and the FACS reported by "X_FIRMWARE_CTRL"
-are loaded so that further commit can set firmware waking vector in the
-both tables to ensure we can exclude the cases that trigger the bugs caused
-by the root cause 2. The exclusion is split into 2 commits as this commit
-is also useful for dumping more ACPI tables, it won't get reverted when
-such exclusion is no longer necessary. Lv Zheng.
-
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=74021
-Reported-by: Oswald Buddenhagen <ossi@kde.org>
-Cc: Oswald Buddenhagen <ossi@kde.org>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 ---
- drivers/acpi/acpica/aclocal.h  |    1 +
- drivers/acpi/acpica/tbfadt.c   |   21 +++++++++++++--------
- drivers/acpi/acpica/tbutils.c  |   37 ++++++++++++++++++++++++++-----------
- drivers/acpi/acpica/tbxfload.c |    3 ++-
- include/acpi/acpixf.h          |    9 +++++++++
- 5 files changed, 51 insertions(+), 20 deletions(-)
+ Documentation/devicetree/bindings/mfd/qcom,rpm.txt | 284 +++++++++++++++++++++
+ include/dt-bindings/mfd/qcom_rpm.h                 | 142 +++++++++++
+ 2 files changed, 426 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/qcom,rpm.txt
+ create mode 100644 include/dt-bindings/mfd/qcom_rpm.h
 
-diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
-index 91f801a..c78761d 100644
---- a/drivers/acpi/acpica/aclocal.h
-+++ b/drivers/acpi/acpica/aclocal.h
-@@ -213,6 +213,7 @@ struct acpi_table_list {
- 
- #define ACPI_TABLE_INDEX_DSDT           (0)
- #define ACPI_TABLE_INDEX_FACS           (1)
-+#define ACPI_TABLE_INDEX_X_FACS         (2)
- 
- struct acpi_find_context {
- 	char *search_for;
-diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
-index 41519a9..dfa3f36 100644
---- a/drivers/acpi/acpica/tbfadt.c
-+++ b/drivers/acpi/acpica/tbfadt.c
-@@ -350,9 +350,18 @@ void acpi_tb_parse_fadt(u32 table_index)
- 	/* If Hardware Reduced flag is set, there is no FACS */
- 
- 	if (!acpi_gbl_reduced_hardware) {
--		acpi_tb_install_fixed_table((acpi_physical_address)
--					    acpi_gbl_FADT.Xfacs, ACPI_SIG_FACS,
--					    ACPI_TABLE_INDEX_FACS);
-+		if (acpi_gbl_FADT.facs) {
-+			acpi_tb_install_fixed_table((acpi_physical_address)
-+						    acpi_gbl_FADT.facs,
-+						    ACPI_SIG_FACS,
-+						    ACPI_TABLE_INDEX_FACS);
-+		}
-+		if (acpi_gbl_FADT.Xfacs) {
-+			acpi_tb_install_fixed_table((acpi_physical_address)
-+						    acpi_gbl_FADT.Xfacs,
-+						    ACPI_SIG_FACS,
-+						    ACPI_TABLE_INDEX_X_FACS);
-+		}
- 	}
- }
- 
-@@ -491,13 +500,9 @@ static void acpi_tb_convert_fadt(void)
- 	acpi_gbl_FADT.header.length = sizeof(struct acpi_table_fadt);
- 
- 	/*
--	 * Expand the 32-bit FACS and DSDT addresses to 64-bit as necessary.
-+	 * Expand the 32-bit DSDT addresses to 64-bit as necessary.
- 	 * Later ACPICA code will always use the X 64-bit field.
- 	 */
--	acpi_gbl_FADT.Xfacs = acpi_tb_select_address("FACS",
--						     acpi_gbl_FADT.facs,
--						     acpi_gbl_FADT.Xfacs);
--
- 	acpi_gbl_FADT.Xdsdt = acpi_tb_select_address("DSDT",
- 						     acpi_gbl_FADT.dsdt,
- 						     acpi_gbl_FADT.Xdsdt);
-diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
-index e37a103..d4552e8 100644
---- a/drivers/acpi/acpica/tbutils.c
-+++ b/drivers/acpi/acpica/tbutils.c
-@@ -68,7 +68,8 @@ acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size);
- 
- acpi_status acpi_tb_initialize_facs(void)
- {
--	acpi_status status;
-+	struct acpi_table_facs *facs32;
-+	struct acpi_table_facs *facs64;
- 
- 	/* If Hardware Reduced flag is set, there is no FACS */
- 
-@@ -77,11 +78,25 @@ acpi_status acpi_tb_initialize_facs(void)
- 		return (AE_OK);
- 	}
- 
--	status = acpi_get_table_by_index(ACPI_TABLE_INDEX_FACS,
--					 ACPI_CAST_INDIRECT_PTR(struct
--								acpi_table_header,
--								&acpi_gbl_FACS));
--	return (status);
-+	(void)acpi_get_table_by_index(ACPI_TABLE_INDEX_FACS,
-+				      ACPI_CAST_INDIRECT_PTR(struct
-+							     acpi_table_header,
-+							     &facs32));
-+	(void)acpi_get_table_by_index(ACPI_TABLE_INDEX_X_FACS,
-+				      ACPI_CAST_INDIRECT_PTR(struct
-+							     acpi_table_header,
-+							     &facs64));
-+	if (!facs32 && !facs64) {
-+		return (AE_NO_MEMORY);
-+	}
+diff --git a/Documentation/devicetree/bindings/mfd/qcom,rpm.txt b/Documentation/devicetree/bindings/mfd/qcom,rpm.txt
+new file mode 100644
+index 0000000..3908a5d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/qcom,rpm.txt
+@@ -0,0 +1,284 @@
++Qualcomm Resource Power Manager (RPM)
 +
-+	if (acpi_gbl_use32_bit_facs_addresses) {
-+		acpi_gbl_FACS = facs32 ? facs32 : facs64;
-+	} else {
-+		acpi_gbl_FACS = facs64 ? facs64 : facs32;
-+	}
++This driver is used to interface with the Resource Power Manager (RPM) found in
++various Qualcomm platforms. The RPM allows each component in the system to vote
++for state of the system resources, such as clocks, regulators and bus
++frequencies.
 +
-+	return (AE_OK);
- }
- #endif				/* !ACPI_REDUCED_HARDWARE */
- 
-@@ -101,7 +116,7 @@ acpi_status acpi_tb_initialize_facs(void)
- u8 acpi_tb_tables_loaded(void)
- {
- 
--	if (acpi_gbl_root_table_list.current_table_count >= 3) {
-+	if (acpi_gbl_root_table_list.current_table_count >= 4) {
- 		return (TRUE);
- 	}
- 
-@@ -357,11 +372,11 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
- 	table_entry = ACPI_ADD_PTR(u8, table, sizeof(struct acpi_table_header));
- 
- 	/*
--	 * First two entries in the table array are reserved for the DSDT
--	 * and FACS, which are not actually present in the RSDT/XSDT - they
--	 * come from the FADT
-+	 * First three entries in the table array are reserved for the DSDT
-+	 * and 32bit/64bit FACS, which are not actually present in the
-+	 * RSDT/XSDT - they come from the FADT
- 	 */
--	acpi_gbl_root_table_list.current_table_count = 2;
-+	acpi_gbl_root_table_list.current_table_count = 3;
- 
- 	/* Initialize the root table array from the RSDT/XSDT */
- 
-diff --git a/drivers/acpi/acpica/tbxfload.c b/drivers/acpi/acpica/tbxfload.c
-index ab5308b..435f716 100644
---- a/drivers/acpi/acpica/tbxfload.c
-+++ b/drivers/acpi/acpica/tbxfload.c
-@@ -166,7 +166,8 @@ static acpi_status acpi_tb_load_namespace(void)
- 
- 	(void)acpi_ut_acquire_mutex(ACPI_MTX_TABLES);
- 	for (i = 0; i < acpi_gbl_root_table_list.current_table_count; ++i) {
--		if ((!ACPI_COMPARE_NAME
-+		if (!acpi_gbl_root_table_list.tables[i].address ||
-+		    (!ACPI_COMPARE_NAME
- 		     (&(acpi_gbl_root_table_list.tables[i].signature),
- 		      ACPI_SIG_SSDT)
- 		     &&
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index cfa8782..0f79659 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -193,6 +193,15 @@ ACPI_INIT_GLOBAL(u8, acpi_gbl_do_not_use_xsdt, FALSE);
- ACPI_INIT_GLOBAL(u8, acpi_gbl_use32_bit_fadt_addresses, TRUE);
- 
- /*
-+ * Optionally use 32-bit FACS table addresses.
-+ * It is reported that some platforms fail to resume from system suspending
-+ * if 64-bit FACS table address is selected:
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=74021
-+ * Default is TRUE, favor the 32-bit addresses.
-+ */
-+ACPI_INIT_GLOBAL(u8, acpi_gbl_use32_bit_facs_addresses, TRUE);
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be one of:
++		    "qcom,rpm-apq8064"
++		    "qcom,rpm-msm8660"
++		    "qcom,rpm-msm8960"
 +
++- reg:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: two entries specifying the RPM's message ram and ipc register
++
++- reg-names:
++	Usage: required
++	Value type: <string-array>
++	Definition: must contain the following, in order:
++		    "msg_ram"
++		    "ipc"
++
++- interrupts:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: three entries specifying the RPM's:
++		    1. acknowledgement interrupt
++		    2. error interrupt
++		    3. wakeup interrupt
++
++- interrupt-names:
++	Usage: required
++	Value type: <string-array>
++	Definition: must be the three strings "ack", "err" and "wakeup", in order
++
++- #address-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: must be 1
++
++- #size-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: must be 0
++
++
++= SUBDEVICES
++
++The RPM exposes resources to its subnodes. The below bindings specify the set
++of valid subnodes that can operate on these resources.
++
++== Switch-mode Power Supply regulator
++
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be one of:
++		    "qcom,rpm-pm8058-smps"
++		    "qcom,rpm-pm8901-ftsmps"
++		    "qcom,rpm-pm8921-smps"
++		    "qcom,rpm-pm8921-ftsmps"
++
++- reg:
++	Usage: required
++	Value type: <u32>
++	Definition: resource as defined in <dt-bindings/mfd/qcom_rpm.h>
++
++- qcom,switch-mode-frequency:
++	Usage: required
++	Value type: <u32>
++	Definition: Frequency (Hz) of the switch-mode power supply;
++		    must be one of:
++		    19200000, 9600000, 6400000, 4800000, 3840000, 3200000,
++		    2740000, 2400000, 2130000, 1920000, 1750000, 1600000,
++		    1480000, 1370000, 1280000, 1200000
++
++- qcom,hpm-threshold:
++	Usage: optional
++	Value type: <u32>
++	Definition: indicates the breaking point at which the regulator should
++	            switch to high power mode
++
++- qcom,load-bias:
++	Usage: optional
++	Value type: <u32>
++	Definition: specifies a base load on the specific regulator
++
++- qcom,boot-load:
++	Usage: optional
++	Value type: <u32>
++	Definition: specifies the configured load on boot for the specific
++	            regulator
++
++- qcom,force-mode-none:
++	Usage: optional (default if no other qcom,force-mode is specified)
++	Value type: <empty>
++	Defintion: indicates that the regulator should not be forced to any
++	           particular mode
++
++- qcom,force-mode-lpm:
++	Usage: optional
++	Value type: <empty>
++	Definition: indicates that the regulator should be forced to operate in
++	            low-power-mode
++
++- qcom,force-mode-auto:
++	Usage: optional (only available for 8960/8064)
++	Value type: <empty>
++	Definition: indicates that the regulator should be automatically pick
++	            operating mode
++
++- qcom,force-mode-hpm:
++	Usage: optional (only available for 8960/8064)
++	Value type: <empty>
++	Definition: indicates that the regulator should be forced to operate in
++	            high-power-mode
++
++- qcom,force-mode-bypass: (only for 8960/8064)
++	Usage: optional (only available for 8960/8064)
++	Value type: <empty>
++	Definition: indicates that the regulator should be forced to operate in
++	            bypass mode
++
++- qcom,power-mode-hysteretic:
++	Usage: optional
++	Value type: <empty>
++	Definition: indicates that the power supply should operate in hysteretic
++		    mode (defaults to qcom,power-mode-pwm if not specified)
++
++- qcom,power-mode-pwm:
++	Usage: optional
++	Value type: <empty>
++	Definition: indicates that the power supply should operate in pwm mode
++
++Standard regulator bindings are used inside switch mode power supply subnodes.
++Check Documentation/devicetree/bindings/regulator/regulator.txt for more
++details.
++
++== Low-dropout regulator
++
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be one of:
++		    "qcom,rpm-pm8058-pldo"
++		    "qcom,rpm-pm8058-nldo"
++		    "qcom,rpm-pm8901-pldo"
++		    "qcom,rpm-pm8901-nldo"
++		    "qcom,rpm-pm8921-pldo"
++		    "qcom,rpm-pm8921-nldo"
++		    "qcom,rpm-pm8921-nldo1200"
++
++- reg:
++	Usage: required
++	Value type: <u32>
++	Definition: resource as defined in <dt-bindings/mfd/qcom_rpm.h>
++
++- qcom,hpm-threshold:
++	Usage: optional
++	Value type: <u32>
++	Definition: indicates the breaking point at which the regulator should
++	            switch to high power mode
++
++- qcom,load-bias:
++	Usage: optional
++	Value type: <u32>
++	Definition: specifies a base load on the specific regulator
++
++- qcom,boot-load:
++	Usage: optional
++	Value type: <u32>
++	Definition: specifies the configured load on boot for the specific
++	            regulator
++
++- qcom,force-mode-none:
++	Usage: optional (default if no other qcom,force-mode is specified)
++	Value type: <empty>
++	Defintion: indicates that the regulator should not be forced to any
++	           particular mode
++
++- qcom,force-mode-lpm:
++	Usage: optional
++	Value type: <empty>
++	Definition: indicates that the regulator should be forced to operate in
++	            low-power-mode
++
++- qcom,force-mode-auto:
++	Usage: optional (only available for 8960/8064)
++	Value type: <empty>
++	Definition: indicates that the regulator should be automatically pick
++	            operating mode
++
++- qcom,force-mode-hpm:
++	Usage: optional (only available for 8960/8064)
++	Value type: <empty>
++	Definition: indicates that the regulator should be forced to operate in
++	            high-power-mode
++
++- qcom,force-mode-bypass: (only for 8960/8064)
++	Usage: optional (only available for 8960/8064)
++	Value type: <empty>
++	Definition: indicates that the regulator should be forced to operate in
++	            bypass mode
++
++Standard regulator bindings are used inside switch low-dropout regulator
++subnodes.  Check Documentation/devicetree/bindings/regulator/regulator.txt for
++more details.
++
++== Negative Charge Pump
++
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be one of:
++		    "qcom,rpm-pm8058-ncp"
++		    "qcom,rpm-pm8921-ncp"
++		    "qcom,rpm-pm8921-nldo1200"
++
++- reg:
++	Usage: required
++	Value type: <u32>
++	Definition: resource as defined in <dt-bindings/mfd/qcom_rpm.h>
++
++- qcom,switch-mode-frequency:
++	Usage: required
++	Value type: <u32>
++	Definition: Frequency (Hz) of the swith mode power supply;
++		    must be one of:
++		    19200000, 9600000, 6400000, 4800000, 3840000, 3200000,
++		    2740000, 2400000, 2130000, 1920000, 1750000, 1600000,
++		    1480000, 1370000, 1280000, 1200000
++
++Standard regulator bindings are used inside negative charge pump regulator
++subnodes.  Check Documentation/devicetree/bindings/regulator/regulator.txt for
++more details.
++
++== Switch
++
++- compatible:
++	Usage: required
++	Value type: <string>
++	Definition: must be one of:
++		    "qcom,rpm-pm8058-switch"
++		    "qcom,rpm-pm8901-switch"
++		    "qcom,rpm-pm8921-switch"
++
++- reg:
++	Usage: required
++	Value type: <u32>
++	Definition: resource as defined in <dt-bindings/mfd/qcom_rpm.h>
++
++
++= EXAMPLE
++
++	#include <dt-bindings/mfd/qcom_rpm.h>
++
++	rpm@108000 {
++		compatible = "qcom,rpm-msm8960";
++		reg = <0x108000 0x1000 0x2011008 0x4>;
++
++		interrupts = <0 19 0>, <0 21 0>, <0 22 0>;
++		interrupt-names = "ack", "err", "wakeup";
++
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		pm8921_s1: pm8921-s1 {
++			compatible = "qcom,rpm-pm8921-smps";
++			reg = <QCOM_RPM_PM8921_S1>;
++
++			regulator-min-microvolt = <1225000>;
++			regulator-max-microvolt = <1225000>;
++			regulator-always-on;
++
++			qcom,switch-mode-frequency = <3200000>;
++			qcom,hpm-threshold = <100000>;
++		};
++	};
++
+diff --git a/include/dt-bindings/mfd/qcom_rpm.h b/include/dt-bindings/mfd/qcom_rpm.h
+new file mode 100644
+index 0000000..277e789
+--- /dev/null
++++ b/include/dt-bindings/mfd/qcom_rpm.h
+@@ -0,0 +1,142 @@
 +/*
-  * Optionally truncate I/O addresses to 16 bits. Provides compatibility
-  * with other ACPI implementations. NOTE: During ACPICA initialization,
-  * this value is set to TRUE if any Windows OSI strings have been
++ * This header provides constants for the Qualcomm RPM bindings.
++ */
++
++#ifndef _DT_BINDINGS_MFD_QCOM_RPM_H
++#define _DT_BINDINGS_MFD_QCOM_RPM_H
++
++#define QCOM_RPM_APPS_FABRIC_ARB		1
++#define QCOM_RPM_APPS_FABRIC_CLK		2
++#define QCOM_RPM_APPS_FABRIC_HALT		3
++#define QCOM_RPM_APPS_FABRIC_IOCTL		4
++#define QCOM_RPM_APPS_FABRIC_MODE		5
++#define QCOM_RPM_APPS_L2_CACHE_CTL		6
++#define QCOM_RPM_CFPB_CLK			7
++#define QCOM_RPM_CXO_BUFFERS			8
++#define QCOM_RPM_CXO_CLK			9
++#define QCOM_RPM_DAYTONA_FABRIC_CLK		10
++#define QCOM_RPM_DDR_DMM			11
++#define QCOM_RPM_EBI1_CLK			12
++#define QCOM_RPM_HDMI_SWITCH			13
++#define QCOM_RPM_MMFPB_CLK			14
++#define QCOM_RPM_MM_FABRIC_ARB			15
++#define QCOM_RPM_MM_FABRIC_CLK			16
++#define QCOM_RPM_MM_FABRIC_HALT			17
++#define QCOM_RPM_MM_FABRIC_IOCTL		18
++#define QCOM_RPM_MM_FABRIC_MODE			19
++#define QCOM_RPM_PLL_4				20
++#define QCOM_RPM_PM8058_LDO0			21
++#define QCOM_RPM_PM8058_LDO1			22
++#define QCOM_RPM_PM8058_LDO2			23
++#define QCOM_RPM_PM8058_LDO3			24
++#define QCOM_RPM_PM8058_LDO4			25
++#define QCOM_RPM_PM8058_LDO5			26
++#define QCOM_RPM_PM8058_LDO6			27
++#define QCOM_RPM_PM8058_LDO7			28
++#define QCOM_RPM_PM8058_LDO8			29
++#define QCOM_RPM_PM8058_LDO9			30
++#define QCOM_RPM_PM8058_LDO10			31
++#define QCOM_RPM_PM8058_LDO11			32
++#define QCOM_RPM_PM8058_LDO12			33
++#define QCOM_RPM_PM8058_LDO13			34
++#define QCOM_RPM_PM8058_LDO14			35
++#define QCOM_RPM_PM8058_LDO15			36
++#define QCOM_RPM_PM8058_LDO16			37
++#define QCOM_RPM_PM8058_LDO17			38
++#define QCOM_RPM_PM8058_LDO18			39
++#define QCOM_RPM_PM8058_LDO19			40
++#define QCOM_RPM_PM8058_LDO20			41
++#define QCOM_RPM_PM8058_LDO21			42
++#define QCOM_RPM_PM8058_LDO22			43
++#define QCOM_RPM_PM8058_LDO23			44
++#define QCOM_RPM_PM8058_LDO24			45
++#define QCOM_RPM_PM8058_LDO25			46
++#define QCOM_RPM_PM8058_LVS0			47
++#define QCOM_RPM_PM8058_LVS1			48
++#define QCOM_RPM_PM8058_NCP			49
++#define QCOM_RPM_PM8058_SMPS0			50
++#define QCOM_RPM_PM8058_SMPS1			51
++#define QCOM_RPM_PM8058_SMPS2			52
++#define QCOM_RPM_PM8058_SMPS3			53
++#define QCOM_RPM_PM8058_SMPS4			54
++#define QCOM_RPM_PM8821_L1			55
++#define QCOM_RPM_PM8821_S1			56
++#define QCOM_RPM_PM8821_S2			57
++#define QCOM_RPM_PM8901_LDO0			58
++#define QCOM_RPM_PM8901_LDO1			59
++#define QCOM_RPM_PM8901_LDO2			60
++#define QCOM_RPM_PM8901_LDO3			61
++#define QCOM_RPM_PM8901_LDO4			62
++#define QCOM_RPM_PM8901_LDO5			63
++#define QCOM_RPM_PM8901_LDO6			64
++#define QCOM_RPM_PM8901_LVS0			65
++#define QCOM_RPM_PM8901_LVS1			66
++#define QCOM_RPM_PM8901_LVS2			67
++#define QCOM_RPM_PM8901_LVS3			68
++#define QCOM_RPM_PM8901_MVS			69
++#define QCOM_RPM_PM8901_SMPS0			70
++#define QCOM_RPM_PM8901_SMPS1			71
++#define QCOM_RPM_PM8901_SMPS2			72
++#define QCOM_RPM_PM8901_SMPS3			73
++#define QCOM_RPM_PM8901_SMPS4			74
++#define QCOM_RPM_PM8921_CLK1			75
++#define QCOM_RPM_PM8921_CLK2			76
++#define QCOM_RPM_PM8921_L1			77
++#define QCOM_RPM_PM8921_L2			78
++#define QCOM_RPM_PM8921_L3			79
++#define QCOM_RPM_PM8921_L4			80
++#define QCOM_RPM_PM8921_L5			81
++#define QCOM_RPM_PM8921_L6			82
++#define QCOM_RPM_PM8921_L7			83
++#define QCOM_RPM_PM8921_L8			84
++#define QCOM_RPM_PM8921_L9			85
++#define QCOM_RPM_PM8921_L10			86
++#define QCOM_RPM_PM8921_L11			87
++#define QCOM_RPM_PM8921_L12			88
++#define QCOM_RPM_PM8921_L13			89
++#define QCOM_RPM_PM8921_L14			90
++#define QCOM_RPM_PM8921_L15			91
++#define QCOM_RPM_PM8921_L16			92
++#define QCOM_RPM_PM8921_L17			93
++#define QCOM_RPM_PM8921_L18			94
++#define QCOM_RPM_PM8921_L19			95
++#define QCOM_RPM_PM8921_L20			96
++#define QCOM_RPM_PM8921_L21			97
++#define QCOM_RPM_PM8921_L22			98
++#define QCOM_RPM_PM8921_L23			99
++#define QCOM_RPM_PM8921_L24			100
++#define QCOM_RPM_PM8921_L25			101
++#define QCOM_RPM_PM8921_L26			102
++#define QCOM_RPM_PM8921_L27			103
++#define QCOM_RPM_PM8921_L28			104
++#define QCOM_RPM_PM8921_L29			105
++#define QCOM_RPM_PM8921_LVS1			106
++#define QCOM_RPM_PM8921_LVS2			107
++#define QCOM_RPM_PM8921_LVS3			108
++#define QCOM_RPM_PM8921_LVS4			109
++#define QCOM_RPM_PM8921_LVS5			110
++#define QCOM_RPM_PM8921_LVS6			111
++#define QCOM_RPM_PM8921_LVS7			112
++#define QCOM_RPM_PM8921_MVS			113
++#define QCOM_RPM_PM8921_NCP			114
++#define QCOM_RPM_PM8921_S1			115
++#define QCOM_RPM_PM8921_S2			116
++#define QCOM_RPM_PM8921_S3			117
++#define QCOM_RPM_PM8921_S4			118
++#define QCOM_RPM_PM8921_S5			119
++#define QCOM_RPM_PM8921_S6			120
++#define QCOM_RPM_PM8921_S7			121
++#define QCOM_RPM_PM8921_S8			122
++#define QCOM_RPM_PXO_CLK			123
++#define QCOM_RPM_QDSS_CLK			124
++#define QCOM_RPM_SFPB_CLK			125
++#define QCOM_RPM_SMI_CLK			126
++#define QCOM_RPM_SYS_FABRIC_ARB			127
++#define QCOM_RPM_SYS_FABRIC_CLK			128
++#define QCOM_RPM_SYS_FABRIC_HALT		129
++#define QCOM_RPM_SYS_FABRIC_IOCTL		130
++#define QCOM_RPM_SYS_FABRIC_MODE		131
++#define QCOM_RPM_USB_OTG_SWITCH			132
++#define QCOM_RPM_VDDMIN_GPIO			133
++
++#endif
 -- 
-1.7.10
+1.8.2.2
 
