@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaE0J5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:57:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36443 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaE0J5W (ORCPT
+	id S1752106AbaE0KBz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 06:01:55 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:5030 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751605AbaE0KBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:57:22 -0400
-Date: Tue, 27 May 2014 12:55:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Heesub Shin <heesub.shin@samsung.com>
-Cc: devel@driverdev.osuosl.org, Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daeseok Youn <daeseok.youn@gmail.com>, linux-kernel@vger.kernel.org,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>
-Subject: Re: [PATCH 1/9] staging: ion: tidy up a bit
-Message-ID: <20140527094609.GL15585@mwanda>
-References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
- <20140526103612.GE15585@mwanda>
- <5383E32A.6040009@samsung.com>
+	Tue, 27 May 2014 06:01:52 -0400
+X-IronPort-AV: E=Sophos;i="4.98,918,1392134400"; 
+   d="scan'208";a="31061654"
+From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
+To: Vasily Kulikov <segooon@gmail.com>
+CC: "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Oleg Nesterov" <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: RE: [PATCH] /proc/pid/status: show all sets of pid according to ns
+Thread-Topic: [PATCH] /proc/pid/status: show all sets of pid according to ns
+Thread-Index: AQHPeQ0jEgXGaeE1U0ynobUh11lkJZtULC/A
+Date: Tue, 27 May 2014 10:01:53 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E51F963@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <1401098728-2001-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <20140526180443.GA11145@cachalot>
+In-Reply-To: <20140526180443.GA11145@cachalot>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.62]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5383E32A.6040009@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4RA1xFS021781
 
-On Tue, May 27, 2014 at 09:58:18AM +0900, Heesub Shin wrote:
-> Hello Carpenter,
+Hi Vasily,
+
+> -----Original Message-----
+> From: Vasily Kulikov [mailto:segooon@gmail.com]
+> Sent: Tuesday, May 27, 2014 2:05 AM
+> To: Chen, Hanxiao/³Â êÏÏö
+> Cc: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org; Serge
+> Hallyn; Oleg Nesterov; David Howells; Eric W. Biederman; Andrew Morton; Al Viro
+> Subject: Re: [PATCH] /proc/pid/status: show all sets of pid according to ns
 > 
-> On 05/26/2014 07:36 PM, Dan Carpenter wrote:
-> >On Mon, May 26, 2014 at 07:04:53PM +0900, Heesub Shin wrote:
-> >>@@ -124,7 +122,6 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
-> >>
-> >>  		info->page = page;
-> >>  		info->order = orders[i];
-> >>-		INIT_LIST_HEAD(&info->list);
-> >>  		return info;
-> >>  	}
-> >>  	kfree(info);
+> Hi Chen,
+> 
+> On Mon, May 26, 2014 at 18:05 +0800, Chen Hanxiao wrote:
+> > We need a direct method of getting the pid inside containers.
+> > If some issues occurred inside a container guest, host user
+> > could not know which process is in trouble just by guest pid:
+> > the users of container guest only knew the pid inside containers.
+> > This will bring obstacle for trouble shooting.
 > >
-> >Wait.  How does this code work without that INIT_LIST_HEAD()?  What am
-> >I missing here...
+> > This patch expands fields of Tgid and Pid:
+> > a) In init_pid_ns, nothing changed;
+> >
+> > b) In one pidns, they will tell the pid inside containers:
+> > Tgid:	1628 	9 	3
+> > Pid:	1628 	9 	3
+> > ** process id is 1628 in level 0, 9 in level 1, 3 in level 2.
 > 
-> No problem. As the object info is just a node, not a head, it is
-> completely useless to initialize it as a list head.
+> 1. It breaks ABI.  Any application which does something like "grep pid: | cut -d:
+> -f2"
+> is now broken by the patch.  Maybe add a new field like 'Pid-ns', 'PidNS',
+> or 'Pids' and leave the old one for compatibility?
 > 
 
-Oh, sorry, you are right.  My bad.
+Thanks for your comments.
+Adding a new field could solve backward compatibility issue.
 
-regards,
-dan carpenter
+> 2. Is it OK to show internal pids to unprivileged processes?  I cannot
+> see anything obviously dangerous with it, though.
+> 
 
+I thinks just 'showing' them would not bring some troubles.
+
+> > c) If pidns is nested, it depends on which pidns are you in.
+> > Tgid:	9 	3
+> > Pid:	9 	3
+> > ** Views from level 1 for Pid 1628 in host.
+> 
+> --
+> Vasily
+
+Thanks,
+- Chen
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
