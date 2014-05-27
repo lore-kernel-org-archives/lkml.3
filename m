@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaE0Swl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:52:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56763 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751913AbaE0Swk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:52:40 -0400
-Date: Tue, 27 May 2014 19:49:40 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [for-next][PATCH] ftrace: Make CALLER_ADDRx macros more generic
-Message-ID: <20140527184940.GA26035@arm.com>
-References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
- <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org>
- <20140416135217.GF1001@arm.com>
- <535E3040.7090402@linaro.org>
- <20140527091019.54a8d2d6@gandalf.local.home>
+	id S1753430AbaE0SxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:53:08 -0400
+Received: from verein.lst.de ([213.95.11.211]:60818 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752654AbaE0SxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 14:53:05 -0400
+Date: Tue, 27 May 2014 20:53:01 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
+	flush worker
+Message-ID: <20140527185301.GA8466@lst.de>
+References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com> <20140519151824.GA21762@lst.de> <CACVXFVNprzhEpXGKze=A4T2b-y35vXRxRTOUqpywu+Et=t37Kw@mail.gmail.com> <20140520152303.GA20352@lst.de> <CACVXFVNP--zj_-UtygxfXk7GvSXwKm2KMKFs=h9KsrL=ZzbWVQ@mail.gmail.com> <20140521053634.GA4764@lst.de> <CACVXFVO5znzYtPKMTPwx_2MU97xFZY+wHwm+R33T043SW4JHHw@mail.gmail.com> <20140527181305.GA7975@lst.de> <5384DB97.70606@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140527091019.54a8d2d6@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5384DB97.70606@kernel.dk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 02:10:19PM +0100, Steven Rostedt wrote:
-> Will,
-> 
-> I made a separate branch called ftrace/arm64 as shown below. You can
-> pull that branch to base the rest of Akashi-san's patches on top of it.
-> The branch is based on top of v3.15-rc5.
+On Tue, May 27, 2014 at 12:38:15PM -0600, Jens Axboe wrote:
+> On 2014-05-27 12:13, Christoph Hellwig wrote:
+>> Here is my counter proposal that requeues via two lists and a work struct
+>> in the request_queue.  I've also tested it with scsi-mq.
+>>
+>
+> I like this, moves the state out of the request. But how about we 
+> consolidate the two requeue requests lists, and just mark the request as 
+> needing head insertion instead? Just add a cmd_flags flag, REQ_REQUEUE_HEAD 
+> or something.
 
-Thanks Steve, I'll pull that in.
-
-Akashi: please can you re-send your series, based on the branch below and
-including the acks/reviewed-by tags you got for v6 of the patches?
-
-Cheers,
-
-Will
-
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> ftrace/arm64
-> 
-> Head SHA1: eed542d6962ba33a689b4007a389f466e407bd74
+That should be doable, just didn't like introducing even more flags.
