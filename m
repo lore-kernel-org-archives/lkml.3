@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaE0PcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:32:05 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:47550 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752407AbaE0PcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:32:01 -0400
-Date: Tue, 27 May 2014 10:31:58 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
- allocations
-In-Reply-To: <20140527145352.GB3765@amt.cnet>
-Message-ID: <alpine.DEB.2.10.1405271027430.14466@gentwo.org>
-References: <20140523193706.GA22854@amt.cnet> <alpine.DEB.2.10.1405270917510.13999@gentwo.org> <20140527145352.GB3765@amt.cnet>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752961AbaE0PcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:32:23 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.27]:58713 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752885AbaE0PcT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 11:32:19 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Bernhard Walle <bernhard@bwalle.de>, KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: request for backporting commit 99d3016de4 to 3.14 (stable)
+Thread-Topic: request for backporting commit 99d3016de4 to 3.14 (stable)
+Thread-Index: Ac95wLH85jVhEH9OSHmOIycNJ9BqKQ==
+Date: Tue, 27 May 2014 15:32:08 +0000
+Message-ID: <7788d6445c894835bf2e1dc64a77e797@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(189002)(199002)(164054003)(98676001)(81342001)(90146001)(46406003)(74662001)(94946001)(2656002)(81816001)(74502001)(81542001)(95416001)(21056001)(76786001)(94316002)(76796001)(86612001)(83072002)(6806004)(92566001)(97736001)(23726002)(68736004)(81686001)(74366001)(50466002)(51856002)(79102001)(85852003)(76176001)(2009001)(4396001)(83322001)(31966008)(97756001)(56776002)(47736002)(47776003)(20776003)(99396002)(44976005)(69226001)(50986002)(46102001)(54356002)(47976003)(63696004)(47446003)(97336001)(59766002)(65816002)(15975445006)(49866002)(54316003)(76482001)(53806002)(56816006)(19580395003)(64706001)(97186001)(85306002)(77982001)(93516002)(66066001)(80022001)(93136001)(87936001)(84676001)(87266001)(95666003)(575784001)(74876001)(33646001)(74706001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2SR01MB593;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Exchange-Antispam-Report-Test: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 02243C58C6
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Marcelo Tosatti wrote:
+Hi Dave, 
 
-> >
-> > Memory policies are only applied to a specific zone so this is not
-> > unprecedented. However, if a user wants to limit allocation to a specific
-> > node and there is no DMA memory there then may be that is a operator
-> > error? After all the application will be using memory from a node that the
-> > operator explicitly wanted not to be used.
->
-> Ok here is the use-case:
->
-> - machine contains driver which requires zone specific memory (such as
-> KVM, which requires root pagetable at paddr < 4GB).
+I found this commit is in stable tree already. Will it be backported into 3.14 as well? Otherwise, can we request it to be included into the next 3.14 update?
 
-GFP_KERNEL is used for page tables.
+https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/drivers/net/hyperv?id=99d3016de4f2a29635f5382b0e9bd0e5f2151487
+	hyperv: Change the receive buffer size for legacy hosts
 
->
->  * The second pass through get_page_from_freelist() doesn't even call
->  * here for GFP_ATOMIC calls.  For those calls, the __alloc_pages()
->  * variable 'wait' is not set, and the bit ALLOC_CPUSET is not set
->  * in alloc_flags.  That logic and the checks below have the combined
->  * affect that:
->  *      in_interrupt - any node ok (current task context irrelevant)
->  *      GFP_ATOMIC   - any node ok
->  *      TIF_MEMDIE   - any node ok
->  *      GFP_KERNEL   - any node in enclosing hardwalled cpuset ok
-
-Page table allocations are GFP_KERNEL allocations. So the above use case
-is ok if you switch off the hardwall flag in the cpuset.
-
+Thanks,
+- Haiyang
