@@ -1,142 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaE0PVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:21:37 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:44127 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbaE0PVe (ORCPT
+	id S1752841AbaE0PVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:21:42 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:44783 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaE0PVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:21:34 -0400
-Date: Tue, 27 May 2014 08:21:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Sebastian Reichel <sre@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Subject: Re: [PATCH v4 2/8] OF: Introduce DT overlay support.
-Message-ID: <20140527152115.GA30180@roeck-us.net>
-References: <CAMuHMdXjWENrq0MW-DU2x7WnaCsWyipN4DO=y0ZTL+3G_fPYGg@mail.gmail.com>
- <20140526104824.63F13C42129@trevor.secretlab.ca>
- <CAMuHMdUGdjVKBR5rRzZ274rf7p8XfztNRWEojH1RrZV8c_V1uA@mail.gmail.com>
- <20140526112348.907B7C421A5@trevor.secretlab.ca>
- <A6195DFD-0447-4444-AC09-501C43F09924@konsulko.com>
- <20140526213303.C1C73C40E11@trevor.secretlab.ca>
- <20140526223630.GA32691@earth.universe>
- <5383D174.8070304@roeck-us.net>
- <20140527121236.3B818C40A5A@trevor.secretlab.ca>
- <9CF30A1A-5EB6-401E-A0D5-453CB99B4A83@konsulko.com>
+	Tue, 27 May 2014 11:21:38 -0400
+Message-ID: <5384AD17.3020608@ahsoftware.de>
+Date: Tue, 27 May 2014 17:19:51 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9CF30A1A-5EB6-401E-A0D5-453CB99B4A83@konsulko.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>
+Subject: Re: [PATCH 2/2] bluetooth: raise HCI_CMD_TIMEOUT from 2s to 8s
+References: <1400076025-5103-1-git-send-email-holler@ahsoftware.de>	<1400076025-5103-2-git-send-email-holler@ahsoftware.de> <CABBYNZLFutVy=Msz7=AAwXmo4wDHjv59GcLCedEzSrWjkLQ3cw@mail.gmail.com> <5374D452.8020709@ahsoftware.de> <5374DAEF.40605@ahsoftware.de> <5375A3B5.1060706@ahsoftware.de>
+In-Reply-To: <5375A3B5.1060706@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 03:24:35PM +0300, Pantelis Antoniou wrote:
-> Hi Grant,
-> 
-> On May 27, 2014, at 3:12 PM, Grant Likely wrote:
-> 
-> > On Mon, 26 May 2014 16:42:44 -0700, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> On 05/26/2014 03:36 PM, Sebastian Reichel wrote:
-> >>> Hi,
-> >>> 
-> >>> On Mon, May 26, 2014 at 10:33:03PM +0100, Grant Likely wrote:
-> >>>> After thinking about it more, I think it is very likely that removing
-> >>>> all the overlays is the correct thing to do in the kexec use-case. When
-> >>>> kexec-ing, it makes sense that we'd want the exact same behaviour from
-> >>>> the kexec'ed kernel. That means we want the device drivers to do the
-> >>>> same thing including loading whatever overlays they depend on.
-> >>>> 
-> >>>> If the flattened tree was left applied, then the behaviour becomes
-> >>>> different.
-> >>>> 
-> >>>> I say always remove the overlays unless explicitly told not to, but I'm
-> >>>> struggling to come up with use cases where keeping them applied is
-> >>>> desirable.
-> >>> 
-> >>> I would assume, that I want them applied in most cases. DT describes
-> >>> the hardware. If I kexec into a new kernel I change software, not
-> >>> hardware.
-> >>> 
-> >>> Maybe I'm missing the main purpose of the feature. I currently see
-> >>> two useful usecases for DT overlays:
-> >>> 
-> >>> 1. The dtb the kernel is booted with cannot be changed for some
-> >>>    reason, but the board has additional hardware attached (e.g.
-> >>>    the user added a sensor on the i2c bus)
-> >>> 2. The hardware is changed on the fly (e.g. the user flashed the
-> >>>    FPGA part of a zynq processor), sensors on i2c bus, ...
-> >>> 
-> >>> In both cases the kernel should be booted with the additional
-> >>> overlay information IMHO. Though for the second case it should
-> >>> be possible to remove the "programmed" hardware information
-> >>> somehow.
-> >>> 
-> >> 
-> >> 3. Some hot-plug device or card is inserted or removed.
-> >> 
-> >> I would argue that the kernel should _not_ be booted with the overlay in place.
-> >> Otherwise the code handling overlays would have to have special handling
-> >> for the restart case, which is much more complex than just to re-insert
-> >> the overlay when it is determined that the device or card is still there.
-> > 
-> > Exactly.
-> > 
-> 
-> Looks like we are levitating to the 'remove overlays on kexec' approach.
-> Is that correct?
-> 
+Am 16.05.2014 07:35, schrieb Alexander Holler:
+> Am 15.05.2014 17:19, schrieb Alexander Holler:
+>> Am 15.05.2014 16:50, schrieb Alexander Holler:
+>>> Am 15.05.2014 14:54, schrieb Luiz Augusto von Dentz:
+>>
+>>>> This timeout seems arbitrary so I suppose we can increase it if we
+>>>> feel it is necessary but we used already different timeout for
+>>>> different commands like HCI_POWER_OFF_TIMEOUT, so perhaps if we can
+>>>> identify which command is more likely to timeout.
+>>>>
+>>>> We could perhaps auto reset if a command timeout if there is really no
+>>>> other way to recover.
+>>>
+>>> It is arbitrary but 2s is not enough here. And as I've written in the
+>>> description, there is absolutely no reason to keep this timeout
+>>> unnecessarily short. No one cares if an error message appears after 2s
+>>> or 8s if the communication with the dongle is in both cases broken
+>>> afterwards.
+>>>
+>>> One of the commands I experieced the problem with was e.g.
+>>> HCI_OP_DELETE_STORED_LINK_KEY or HCI_OP_WRITE_SSP_MODE.
+>>
+>> The problem is that you can never be sure what the origin of a timeouted
+>> command was. It might have been e.g. the USB-subsystem through wich the
+>> command and the response has to travel (in case of USB dongles) and not
+>> the dongle itself.
+>
+> To explain a bit more, the box I'm experiencing these problems boots
+> from USB2.0 HD. So it's likely that there is quiet some action on the
+> bus and that shouldn't affect the operation of the BT-stack (besides
+> slowing it maybe a bit down).
 
-Let's just assume for a minute that this is not the case, and that loaded
-overlays are passed on.
+Anything wrong with my conclusion?
 
-This would be an interesting challenge for the overlay manager, as it would
-have to handle a number of startup conditions. After all, it can not take
-it as granted that the hardware state did not change after it was stopped
-in the old kernel, and before it was started in the new kernel.
-- overlay loaded, but hardware/device no longer present
-  -> unload overlay
-- overlay loaded, but different hardware present
-  -> unload old overlay, load new one
-- overlay not loaded, hardware present
-  -> load overlay
-- overlay loaded and matches hardware
-  -> do nothing
+I don't know what's the origin of the current timeout of 2s, but I don't 
+think it takes the used transport into account.
 
-In comparison, its task would be quite straightforward if loaded overlays
-are not passed on to the new kernel.
-- If hardware is present, load overlay
+So if the source of these 2s is the spec for BT-devices, the 2s would 
+make sense as a timeout to test BT-devices, but it already becomes an 
+arbitrary value whenever the transport isn't realtime and/or exclusive 
+for the device but e.g. an I/O scheduler is inbetween (which is the case 
+for USB).
 
-Ultimately, I seem to be missing something, as I don't really see the benefit
-of passing on the loaded overlay(s) to the new kernel. Activation time, maybe,
-for the most common case (overlay loaded and matches hardware) ?
+Regards,
 
-Concern though is the other cases, with a mismatch between HW and loaded
-overlays. I am not sure if it is even possible to ensure that there are
-no race conditions if the devicetree is outdated at system startup. Sure,
-that is unlikely to happen in 'normal' operating conditions, but that only
-means that it _will_ happen a few hours after the first customer starts
-playing with the system.
-
-Guenter
+Alexander Holler
