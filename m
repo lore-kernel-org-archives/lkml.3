@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaE0Wy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:54:28 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:40708 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541AbaE0Wy0 (ORCPT
+	id S1753342AbaE0Wzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:55:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60000 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752108AbaE0Wzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:54:26 -0400
-Date: Tue, 27 May 2014 16:54:22 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <damm@opensource.se>, linux-pci@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] pci: rcar host needs OF
-Message-ID: <20140527225422.GE11907@google.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-14-git-send-email-arnd@arndb.de>
+	Tue, 27 May 2014 18:55:53 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arvind.chauhan@arm.com, edubezval@gmail.com, pavel@ucw.cz,
+        lgirdwood@gmail.com
+Subject: Re: [PATCH 1/2] regulators: Add definition of regulator_set_voltage_time() for !CONFIG_REGULATOR
+Date: Wed, 28 May 2014 01:12:57 +0200
+Message-ID: <233568355.QJI3TVGr1I@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140527192923.GC12304@sirena.org.uk>
+References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org> <20140527192923.GC12304@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399560990-1402858-14-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 04:56:25PM +0200, Arnd Bergmann wrote:
-> The pci-rcar driver is enabled for compile tests, and this has
-> now shown that the driver cannot build without CONFIG_OF,
-> following the inclusion of f8f2fe7355fb "PCI: rcar: Use new OF
-> interrupt mapping when possible":
+On Tuesday, May 27, 2014 08:29:23 PM Mark Brown wrote:
 > 
-> drivers/built-in.o: In function `rcar_pci_map_irq':
-> :(.text+0x1cc7c): undefined reference to `of_irq_parse_and_map_pci'
+> --wJgPvdDu+gj56kJ8
+> Content-Type: text/plain; charset=us-ascii
+> Content-Disposition: inline
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Magnus Damm <damm@opensource.se>
-> Cc: linux-pci@vger.kernel.org
-> Cc: linux-sh@vger.kernel.org
-
-If I understand correctly, this patch was superceded by this one:
-
-    "[PATCH] of/irq: provide int of_irq_parse_and_map_pci wrapper"
-
-and you aren't expecting me to do anything.  Let me know if otherwise.
-
-> ---
->  drivers/pci/host/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> On Tue, May 27, 2014 at 05:37:29PM +0530, Viresh Kumar wrote:
 > 
-> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
-> index fbbef0b..4675f47 100644
-> --- a/drivers/pci/host/Kconfig
-> +++ b/drivers/pci/host/Kconfig
-> @@ -27,7 +27,7 @@ config PCI_TEGRA
->  
->  config PCI_RCAR_GEN2
->  	bool "Renesas R-Car Gen2 Internal PCI controller"
-> -	depends on ARCH_SHMOBILE || (ARM && COMPILE_TEST)
-> +	depends on ARCH_SHMOBILE || (ARM && OF && COMPILE_TEST)
->  	help
->  	  Say Y here if you want internal PCI support on R-Car Gen2 SoC.
->  	  There are 3 internal PCI controllers available with a single
-> -- 
-> 1.8.3.2
+> > Liam/Broonie: Please see if this can go through Rafael as 2nd patch is dependent
+> > on it.
 > 
+> Is that likely to happen before the merge window?
+
+Depending.  If there's -rc8, then maybe.  Otherwise, nope.
+
+Rafael
+
