@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaE0Fwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 01:52:51 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:62933 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993AbaE0Fws convert rfc822-to-8bit (ORCPT
+	id S1751615AbaE0GC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:02:29 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:54267 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaE0GC2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 01:52:48 -0400
+	Tue, 27 May 2014 02:02:28 -0400
+Message-ID: <53842A53.1060404@ahsoftware.de>
+Date: Tue, 27 May 2014 08:01:55 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140526090623.77186cdf@canb.auug.org.au>
-References: <1400965544-20092-1-git-send-email-vincent.stehle@laposte.net>
-	<CANq1E4QdGeHeuCu9LvPkbGZX5C+ax4fWVqq4kJ5wMUBx5uWZrQ@mail.gmail.com>
-	<20140525225435.GZ3693@n2100.arm.linux.org.uk>
-	<20140526090623.77186cdf@canb.auug.org.au>
-Date: Tue, 27 May 2014 15:52:46 +1000
-Message-ID: <CAPM=9twkXSA2uyVPfdz=qbpM5H96tHHaD8HnTf7YGpB0QX1WZw@mail.gmail.com>
-Subject: Re: [PATCH linux-next] DRM: Armada: update dma_buf_export use
-From: Dave Airlie <airlied@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        =?UTF-8?Q?Vincent_Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Shiyan <shc_work@mail.ru>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/27] mtd: nand: pxa3xx: show device structure in sysfs
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de> <1401142372-14148-10-git-send-email-holler@ahsoftware.de> <1401160341.192042842@f271.i.mail.ru>
+In-Reply-To: <1401160341.192042842@f271.i.mail.ru>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 May 2014 09:06, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> On Sun, 25 May 2014 23:54:35 +0100 Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+Am 27.05.2014 05:12, schrieb Alexander Shiyan:
+> Tue, 27 May 2014 00:12:34 +0200 от Alexander Holler <holler@ahsoftware.de>:
+>> Fix a common error in nand-drivers which do not set up a parent devicefor
+>> the mtd-device by using a new inline function.
 >>
->> On Sun, May 25, 2014 at 02:08:48PM +0200, David Herrmann wrote:
->> >
->> > On Sat, May 24, 2014 at 11:05 PM, Vincent Stehlé
->> > <vincent.stehle@laposte.net> wrote:
->> > > The dma_buf_export function was updated in commit 4bcec44ffaf9 'dma-buf: use
->> > > reservation objects' to take a reservation object parameter; update Armada
->> > > export method accordingly.
->> > >
->> > > This fixes the following compilation error:
->> > >
->> > >   drivers/gpu/drm/armada/armada_gem.c: In function ‘armada_gem_prime_export’:
->> > >   drivers/gpu/drm/armada/armada_gem.c:544:16: error: macro "dma_buf_export" requires 5 arguments, but only 4 given
->> > >
->> > > Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
->> > > Cc: Russell King <rmk+kernel@arm.linux.org.uk>
->> > > Cc: David Airlie <airlied@linux.ie>
->> > > Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->> > > Cc: Sumit Semwal <sumit.semwal@linaro.org>
->> >
->> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+>> ---
+>>   drivers/mtd/nand/pxa3xx_nand.c | 3 +--
+>>   1 file changed, 1 insertion(+), 2 deletions(-)
 >>
->> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+>> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+>> index 7588fe2..7f62e7c 100644
+>> --- a/drivers/mtd/nand/pxa3xx_nand.c
+>> +++ b/drivers/mtd/nand/pxa3xx_nand.c
+>> @@ -1584,8 +1584,7 @@ static int alloc_nand_resource(struct platform_device *pdev)
+>>   		host->mtd = mtd;
+>>   		host->cs = cs;
+>>   		host->info_data = info;
+>> -		mtd->priv = host;
+>> -		mtd->owner = THIS_MODULE;
+>> +		mtd_setup_common_members(mtd, host, pdev);
 >>
->> Airlied, can you merge this please?  Thanks.
+>>   		chip->ecc.read_page	= pxa3xx_nand_read_page_hwecc;
+>>   		chip->ecc.write_page	= pxa3xx_nand_write_page_hwecc;
+>> --
 >
-> Except that commit 4bcec44ffaf9 'dma-buf: use reservation objects'
-> comes from the dma-buf tree, so Sumit needs to add this commit to his
-> tree.
->
+> Should we add "driver.owner = THIS_MODULE" field for struct platform_driver in this case?
 
-Then we should cc him.
+Yes. I assumed all drivers/modules already had an owner. I will check 
+them all and will send a v2 for those which don't have one. I wonder 
+what this field is used for if it works without. ;)
 
-Dave.
+Regards,
+
+Alexander Holler
+
