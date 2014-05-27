@@ -1,156 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaE0QaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:30:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3946 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922AbaE0Q3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:29:02 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: jolsa@redhat.com
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/7] Revert "perf: Disable PERF_RECORD_MMAP2 support"
-Date: Tue, 27 May 2014 12:28:02 -0400
-Message-Id: <1401208087-181977-3-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
-References: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
+	id S1752853AbaE0Qax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:30:53 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45472 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778AbaE0Qat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 12:30:49 -0400
+Message-ID: <5384BDB1.6000107@gmail.com>
+Date: Tue, 27 May 2014 18:30:41 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: mvebu: split SolidRun CuBox into variants
+References: <1401140009-31505-1-git-send-email-sebastian.hesselbarth@gmail.com> <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com> <20140527161143.GS8664@titan.lakedaemon.net>
+In-Reply-To: <20140527161143.GS8664@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
+On 05/27/2014 06:11 PM, Jason Cooper wrote:
+> On Mon, May 26, 2014 at 11:33:29PM +0200, Sebastian Hesselbarth wrote:
+>> As Mainlining effort for SolidRun CuBox has been carried out on the
+>> Engineering Sample, the board DTS was reflecting this. Actually,
+>> SolidRun CuBox comes in three different variants: Engineering Sample (ES),
+>> production with 1GB RAM (1G), and production with 2GB RAM (2G).
+>>
+>> Therefore, we split the current dove-cubox.dts into a common board include
+>> and one board dts for each of the above variants.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+[...]
+>> diff --git a/arch/arm/boot/dts/dove-cubox-1g.dts b/arch/arm/boot/dts/dove-cubox-1g.dts
+>> new file mode 100644
+>> index 000000000000..eebd3f7ca7e6
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/dove-cubox-1g.dts
+>> @@ -0,0 +1,17 @@
+>> +/dts-v1/;
+>> +
+>> +#include "dove-cubox.dtsi"
+>> +
+>> +/ {
+>> +	model = "SolidRun CuBox (1G)";
+>> +	compatible = "solidrun,cubox-1g", "solidrun,cubox", "marvell,dove";
+>> +
+>> +	memory {
+>> +		device_type = "memory";
+>> +		reg = <0x00000000 0x40000000>;
+>> +	};
+>> +
+>> +	chosen {
+>> +		bootargs = "console=ttyS0,115200n8 earlyprintk";
+>> +	};
+>> +};
+>> diff --git a/arch/arm/boot/dts/dove-cubox-2g.dts b/arch/arm/boot/dts/dove-cubox-2g.dts
+>> new file mode 100644
+>> index 000000000000..513b6a68eba3
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/dove-cubox-2g.dts
+>> @@ -0,0 +1,17 @@
+>> +/dts-v1/;
+>> +
+>> +#include "dove-cubox.dtsi"
+>> +
+>> +/ {
+>> +	model = "SolidRun CuBox (2G)";
+>> +	compatible = "solidrun,cubox-2g", "solidrun,cubox", "marvell,dove";
+>> +
+>> +	memory {
+>> +		device_type = "memory";
+>> +		reg = <0x00000000 0x80000000>;
+>
+> Do you anticipate any other differences between the 1G and the 2G?
+> Otherwise, I'm inclined to just have a "solidrun,cubox".  The bootloader
+> should be setting the amount of RAM at boottime anyway.
 
-Re-enable the mmap2 interface as we will have a user soon.
+No, there is no known difference between 1G and 2G except doubled RAM.
+I'll squash the two back into a single non-ES dts.
 
-Since things have changed since perf disabled mmap2, small tweaks
-to the revert had to be done:
+About the board specific compatibles, I am not so sure if we should
+keep them at all. "solidrun,cubox" for all three variants should be
+enough. checkpatch is already choking on every unknown compatible it
+sees and documenting each individual board clearly doesn't scale well.
 
-o commit 9d4ecc88 forced (n!=8) to become (n<7)
-o a new libunwind test needed updating to use mmap2 interface
+>> +	};
+>> +
+>> +	chosen {
+>> +		bootargs = "console=ttyS0,115200n8 earlyprintk";
+>> +	};
+>> +};
+>> diff --git a/arch/arm/boot/dts/dove-cubox-es.dts b/arch/arm/boot/dts/dove-cubox-es.dts
+>> new file mode 100644
+>> index 000000000000..5fc17ce34c98
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/dove-cubox-es.dts
+>> @@ -0,0 +1,23 @@
+>> +/dts-v1/;
+>> +
+>> +#include "dove-cubox.dtsi"
+>> +
+>> +/ {
+>> +	model = "SolidRun CuBox (ES)";
+>
+> "Engineering Sample" ?
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
-v2: added a better changelog
-    fix a unwind test (thanks Jiri)
----
- kernel/events/core.c            |  4 ----
- tools/perf/tests/dwarf-unwind.c |  2 +-
- tools/perf/util/event.c         | 36 +++++++++++++++++++-----------------
- tools/perf/util/evsel.c         |  1 +
- 4 files changed, 21 insertions(+), 22 deletions(-)
+Hmm, I guess those who have it know about ES=="Engineering Sample" but
+as I have to do a v2 anyway, I'll fix it up.
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 0711cc9..c793cb0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6882,10 +6882,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (ret)
- 		return -EFAULT;
- 
--	/* disabled for now */
--	if (attr->mmap2)
--		return -EINVAL;
--
- 	if (attr->__reserved_1)
- 		return -EINVAL;
- 
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index 108f0cd..96adb73 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -15,7 +15,7 @@ static int mmap_handler(struct perf_tool *tool __maybe_unused,
- 			struct perf_sample *sample __maybe_unused,
- 			struct machine *machine)
- {
--	return machine__process_mmap_event(machine, event, NULL);
-+	return machine__process_mmap2_event(machine, event, NULL);
- }
- 
- static int init_live_machine(struct machine *machine)
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 65795b8..5e7c722 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -178,13 +178,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		return -1;
- 	}
- 
--	event->header.type = PERF_RECORD_MMAP;
-+	event->header.type = PERF_RECORD_MMAP2;
- 
- 	while (1) {
- 		char bf[BUFSIZ];
- 		char prot[5];
- 		char execname[PATH_MAX];
- 		char anonstr[] = "//anon";
-+		unsigned int ino;
- 		size_t size;
- 		ssize_t n;
- 
-@@ -195,14 +196,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		strcpy(execname, "");
- 
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
--		       &event->mmap.start, &event->mmap.len, prot,
--		       &event->mmap.pgoff,
--		       execname);
--		/*
-- 		 * Anon maps don't have the execname.
-- 		 */
--		if (n < 4)
-+		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
-+		       &event->mmap2.start, &event->mmap2.len, prot,
-+		       &event->mmap2.pgoff, &event->mmap2.maj,
-+		       &event->mmap2.min,
-+		       &ino, execname);
-+
-+		event->mmap2.ino = (u64)ino;
-+
-+		if (n < 7)
- 			continue;
- 		/*
- 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
-@@ -223,15 +225,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			strcpy(execname, anonstr);
- 
- 		size = strlen(execname) + 1;
--		memcpy(event->mmap.filename, execname, size);
-+		memcpy(event->mmap2.filename, execname, size);
- 		size = PERF_ALIGN(size, sizeof(u64));
--		event->mmap.len -= event->mmap.start;
--		event->mmap.header.size = (sizeof(event->mmap) -
--					(sizeof(event->mmap.filename) - size));
--		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
--		event->mmap.header.size += machine->id_hdr_size;
--		event->mmap.pid = tgid;
--		event->mmap.tid = pid;
-+		event->mmap2.len -= event->mmap.start;
-+		event->mmap2.header.size = (sizeof(event->mmap2) -
-+					(sizeof(event->mmap2.filename) - size));
-+		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
-+		event->mmap2.header.size += machine->id_hdr_size;
-+		event->mmap2.pid = tgid;
-+		event->mmap2.tid = pid;
- 
- 		if (process(tool, event, &synth_sample, machine) != 0) {
- 			rc = -1;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 5c28d82..21154da 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -659,6 +659,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 		perf_evsel__set_sample_bit(evsel, WEIGHT);
- 
- 	attr->mmap  = track;
-+	attr->mmap2 = track && !perf_missing_features.mmap2;
- 	attr->comm  = track;
- 
- 	if (opts->sample_transaction)
--- 
-1.7.11.7
+Thanks!
+
+Sebastian
 
