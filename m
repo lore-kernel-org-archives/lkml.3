@@ -1,104 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaE0S7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:59:48 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33384 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753574AbaE0S7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:59:46 -0400
-Date: Tue, 27 May 2014 14:59:30 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140527185930.GB2878@cmpxchg.org>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
- <1398889543-23671-10-git-send-email-hannes@cmpxchg.org>
- <53844220.5040507@jp.fujitsu.com>
+	id S1752753AbaE0TKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:10:35 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:35431 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaE0TKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 15:10:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53844220.5040507@jp.fujitsu.com>
+In-Reply-To: <CAGXu5jKdJDS5k+tpUhQdyMZt40S8H3C-4zFQQS-dmaP3dE6Avw@mail.gmail.com>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
+ <1400799936-26499-7-git-send-email-keescook@chromium.org> <CALCETrWR6s7wqSwEeygOYqizrxy8eAyHb3SqvLoTooMZ+MfdqA@mail.gmail.com>
+ <CAGXu5j+=itFtHe25pZxXsk+1C1Cca4DGm83SC93=xRctUdeXsw@mail.gmail.com>
+ <CALCETrX3fjeHeigLXy7Juq6XrNFEeZLQPLmQhiOwBDgc0MRtBw@mail.gmail.com>
+ <CAGXu5jL4erM41JBG703adSht-f4K7fAfbG9XyjPNUwiyAde-Nw@mail.gmail.com>
+ <CALCETrVZADpErLwsyaWEQqVa45_VEMyQg+L+g2gR4NhwNCXd4g@mail.gmail.com> <CAGXu5jKdJDS5k+tpUhQdyMZt40S8H3C-4zFQQS-dmaP3dE6Avw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 27 May 2014 12:10:12 -0700
+Message-ID: <CALCETrVTfViNBua0DURxPwbbSnoL07x=EMTxxq3zO5bzQrM00A@mail.gmail.com>
+Subject: Re: [PATCH v5 6/6] seccomp: add SECCOMP_EXT_ACT_TSYNC and SECCOMP_FILTER_TSYNC
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        liguang <lig.fnst@cn.fujitsu.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kame,
+On Tue, May 27, 2014 at 11:45 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Tue, May 27, 2014 at 11:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, May 27, 2014 at 11:24 AM, Kees Cook <keescook@chromium.org> wrote:
+>>> On Mon, May 26, 2014 at 12:27 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> On Fri, May 23, 2014 at 10:05 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>>> On Thu, May 22, 2014 at 4:11 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>>> On Thu, May 22, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
+>>>>>>> Applying restrictive seccomp filter programs to large or diverse
+>>>>>>> codebases often requires handling threads which may be started early in
+>>>>>>> the process lifetime (e.g., by code that is linked in). While it is
+>>>>>>> possible to apply permissive programs prior to process start up, it is
+>>>>>>> difficult to further restrict the kernel ABI to those threads after that
+>>>>>>> point.
+>>>>>>>
+>>>>>>> This change adds a new seccomp extension action for synchronizing thread
+>>>>>>> group seccomp filters and a prctl() for accessing that functionality,
+>>>>>>> as well as a flag for SECCOMP_EXT_ACT_FILTER to perform sync at filter
+>>>>>>> installation time.
+>>>>>>>
+>>>>>>> When calling prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER,
+>>>>>>> flags, filter) with flags containing SECCOMP_FILTER_TSYNC, or when calling
+>>>>>>> prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0), it
+>>>>>>> will attempt to synchronize all threads in current's threadgroup to its
+>>>>>>> seccomp filter program. This is possible iff all threads are using a filter
+>>>>>>> that is an ancestor to the filter current is attempting to synchronize to.
+>>>>>>> NULL filters (where the task is running as SECCOMP_MODE_NONE) are also
+>>>>>>> treated as ancestors allowing threads to be transitioned into
+>>>>>>> SECCOMP_MODE_FILTER. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
+>>>>>>> calling thread, no_new_privs will be set for all synchronized threads too.
+>>>>>>> On success, 0 is returned. On failure, the pid of one of the failing threads
+>>>>>>> will be returned, with as many filters installed as possible.
+>>>>>>
+>>>>>> Is there a use case for adding a filter and synchronizing filters
+>>>>>> being separate operations?  If not, I think this would be easier to
+>>>>>> understand and to use if there was just a single operation.
+>>>>>
+>>>>> Yes: if the other thread's lifetime is not well controlled, it's good
+>>>>> to be able to have a distinct interface to retry the thread sync that
+>>>>> doesn't require adding "no-op" filters.
+>>>>
+>>>> Wouldn't this still be solved by:
+>>>>
+>>>> seccomp_add_filter(final_filter, SECCOMP_FILTER_ALL_THREADS);
+>>>>
+>>>> the idea would be that, if seccomp_add_filter fails, then you give up
+>>>> and, if it succeeds, then you're done.  It shouldn't fail unless out
+>>>> of memory or you've nested too deeply.
+>>>
+>>> I wanted to keep the case of being able to to wait for non-ancestor
+>>> threads to finish. For example, 2 threads start and set separate
+>>> filters. 1 does work and exits, 2 starts another thread (3) which adds
+>>> filters, does work, and then waits for 1 to finish by calling TSYNC.
+>>> Once 1 dies, TSYNC succeeds. In the case of not having direct control
+>>> over thread lifetime (say, when using third-party libraries), I'd like
+>>> to retain the flexibility of being able to do TSYNC without needing a
+>>> filter being attached to it.
+>>
+>> I must admit this strikes me as odd.  What's the point of having a
+>> thread set a filter if it intends to be a short-lived thread?
+>
+> I was illustrating the potential insanity of third-party libraries.
+> There isn't much sense in that behavior, but if it exists, working
+> around it is harder without the separate TSYNC-only call.
+>
+>> In any case, I must have missed the ability for TSYNC to block.  Hmm.
+>> That seems complicated, albeit potentially useful.
+>
+> Oh, no, I didn't mean to imply TSYNC should block. I meant that thread
+> 3 could do:
+>
+> while (TSYNC-fails)
+>    wait-on-or-kill-unexpected-thread
+>
 
-it's been a long time, I hope you're doing well.
+Ok.
 
-On Tue, May 27, 2014 at 04:43:28PM +0900, Kamezawa Hiroyuki wrote:
-> (2014/05/01 5:25), Johannes Weiner wrote:
-> > The memcg uncharging code that is involved towards the end of a page's
-> > lifetime - truncation, reclaim, swapout, migration - is impressively
-> > complicated and fragile.
-> > 
-> > Because anonymous and file pages were always charged before they had
-> > their page->mapping established, uncharges had to happen when the page
-> > type could be known from the context, as in unmap for anonymous, page
-> > cache removal for file and shmem pages, and swap cache truncation for
-> > swap pages.  However, these operations also happen well before the
-> > page is actually freed, and so a lot of synchronization is necessary:
-> > 
-> > - On page migration, the old page might be unmapped but then reused,
-> >    so memcg code has to prevent an untimely uncharge in that case.
-> >    Because this code - which should be a simple charge transfer - is so
-> >    special-cased, it is not reusable for replace_page_cache().
-> > 
-> > - Swap cache truncation happens during both swap-in and swap-out, and
-> >    possibly repeatedly before the page is actually freed.  This means
-> >    that the memcg swapout code is called from many contexts that make
-> >    no sense and it has to figure out the direction from page state to
-> >    make sure memory and memory+swap are always correctly charged.
-> > 
-> > But now that charged pages always have a page->mapping, introduce
-> > mem_cgroup_uncharge(), which is called after the final put_page(),
-> > when we know for sure that nobody is looking at the page anymore.
-> > 
-> > For page migration, introduce mem_cgroup_migrate(), which is called
-> > after the migration is successful and the new page is fully rmapped.
-> > Because the old page is no longer uncharged after migration, prevent
-> > double charges by decoupling the page's memcg association (PCG_USED
-> > and pc->mem_cgroup) from the page holding an actual charge.  The new
-> > bits PCG_MEM and PCG_MEMSW represent the respective charges and are
-> > transferred to the new page during migration.
-> > 
-> > mem_cgroup_migrate() is suitable for replace_page_cache() as well.
-> > 
-> > Swap accounting is massively simplified: because the page is no longer
-> > uncharged as early as swap cache deletion, a new mem_cgroup_swapout()
-> > can transfer the page's memory+swap charge (PCG_MEMSW) to the swap
-> > entry before the final put_page() in page reclaim.
-> > 
-> > Finally, because pages are now charged under proper serialization
-> > (anon: exclusive; cache: page lock; swapin: page lock; migration: page
-> > lock), and uncharged under full exclusion, they can not race with
-> > themselves.  Because they are also off-LRU during charge/uncharge,
-> > charge migration can not race, with that, either.  Remove the crazily
-> > expensive the page_cgroup lock and set pc->flags non-atomically.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> The whole series seems wonderful to me. Thank you.
-> I'm not sure whether I have enough good eyes now but this seems good.
+I'm still not seeing the need for a separate TSYNC option, though --
+just add-a-filter-across-all-threads would work if it failed
+harmlessly on error.  FWIW, TSYNC is probably equivalent to adding an
+always-accept filter across all threads, although no one should really
+do the latter for efficiency reasons.
 
-Thank you!
+--Andy
 
-> One thing in my mind is batched uncharge rework.
-> 
-> Because uncharge() is done in final put_page() path, 
-> mem_cgroup_uncharge_start()/mem_cgroup_uncharge_end() placement may not be good enough.
-> 
-> swap.c::release_pages() may be good to have mem_cgroup_uncharge_start()/end().
-> (and you may be able to remove unnecessary calls of mem_cgroup_uncharge_start/end())
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
 
-That's a good point.
 
-I pushed the batch calls from all pagevec_release() callers directly
-into release_pages(), which is everyone but shrink_page_list().
 
-THP fallback abort used to do real uncharging, but now only does
-cancelling, so it's no longer batched - I removed the batch calls
-there as well.  Not optimal, but it should be fine in this slowpath.
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
