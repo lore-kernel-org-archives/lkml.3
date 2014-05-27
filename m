@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaE0W5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:57:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56279 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaE0W5F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:57:05 -0400
-Message-ID: <53851835.3060706@infradead.org>
-Date: Tue, 27 May 2014 15:56:53 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752815AbaE0XAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 19:00:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52499 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441AbaE0XAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 19:00:00 -0400
+Date: Wed, 28 May 2014 00:59:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Valdis.Kletnieks@vt.edu, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
+        Kees Cook <keescook@chromium.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
+Message-ID: <20140527225956.GF4366@pd.tnic>
+References: <1400524052-25625-1-git-send-email-bp@alien8.de>
+ <20140527151728.64e8cf59@gandalf.local.home>
+ <20140527194359.GD4366@pd.tnic>
+ <34707.1401230184@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-To: Seth Forshee <seth.forshee@canonical.com>, linux-kernel@vger.kernel.org,
-        lxc-devel@lists.linuxcontainers.org
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Michael H. Warfield" <mhw@wittsend.com>, Marian Marinov <mm@1h.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Michael J Coss <michael.coss@alcatel-lucent.com>
-Subject: Re: [RFC PATCH 1/2] loop: Add loop filesystem
-References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com> <1401227936-15698-2-git-send-email-seth.forshee@canonical.com>
-In-Reply-To: <1401227936-15698-2-git-send-email-seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <34707.1401230184@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 02:58 PM, Seth Forshee wrote:
-> Add limited capability for use of loop devices in containers via
-> a loopfs psuedo fs. When mounted this filesystem will contain
-> only a loop-control device node. This can be used to request free
-> loop devices which will be "owned" by that mount. Device nodes
-> appear automatically for these devices, and the same device will
-> not be given to another loopfs mount. Privileged loop ioctls
-> (for encrypted loop) will be allowed within the namespace which
-> mounted the loopfs.
-> 
-> Privileged block ioctls are not permitted, so features such as
-> partitions are not supported for unprivileged users.
-> 
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> ---
->  drivers/block/loop.c       | 110 +++++++++++---
->  drivers/block/loop.h       |   2 +
->  fs/Makefile                |   1 +
->  fs/loopfs/Makefile         |   6 +
->  fs/loopfs/inode.c          | 349 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/loopfs.h     |  46 ++++++
->  include/uapi/linux/magic.h |   1 +
->  7 files changed, 495 insertions(+), 20 deletions(-)
->  create mode 100644 fs/loopfs/Makefile
->  create mode 100644 fs/loopfs/inode.c
->  create mode 100644 include/linux/loopfs.h
-> 
+On Tue, May 27, 2014 at 06:36:24PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> If you don't split it out, you should at least mention the bugfix in
+> the changelog....
 
-> diff --git a/fs/loopfs/Makefile b/fs/loopfs/Makefile
-> new file mode 100644
-> index 000000000000..01aedfb2f841
-> --- /dev/null
-> +++ b/fs/loopfs/Makefile
-> @@ -0,0 +1,6 @@
-> +#
-> +# Makefile for the loopfs virtual filesystem
-> +#
-> +
-> +obj-$(CONFIG_BLK_DEV_LOOP)		+= loopfs.o
-> +loopfs-$(CONFIG_BLK_DEV_LOOP)		:= inode.o
+Ok ok, I give up. Steve is bugging me on IRC about it, too. Damn. Ok, I
+got it.
 
-I guess that you need to update the BLK_DEV_LOOP entry in
-drivers/block/Kconfig to mention this?
+@Andrew: can you please replace the sentence:
 
+"There should be no functionality change resulting from this patch."
+
+with
+
+"Also, correct the check in x86_64_start_kernel which should be >= as
+we're clearly issuing the string there for all debug levels, not only
+the magical 10."
+
+so that Steve can sleep tonight? :-)
+
+Or do you want me to resend with corrected changelog?
+
+Thanks.
 
 -- 
-~Randy
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
