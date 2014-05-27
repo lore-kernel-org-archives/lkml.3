@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaE0Ooq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:44:46 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:6112 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751250AbaE0Oon (ORCPT
+	id S1752676AbaE0OqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:46:10 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:51973 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324AbaE0OqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:44:43 -0400
-Date: Tue, 27 May 2014 08:44:37 -0600
-From: Jens Axboe <axboe@fb.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <sakari.ailus@iki.fi>,
-        <rusty@rustcorp.com.au>
-Subject: [GIT PULL] virtio_blk fix for 3.15
-Message-ID: <20140527144437.GA31504@kernel.dk>
+	Tue, 27 May 2014 10:46:04 -0400
+Date: Tue, 27 May 2014 10:46:01 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v2 0/6] sched: expel confusing usage of the term
+ "power"
+In-Reply-To: <CAKfTPtAb45b0KC==k7+DB_JZrXsSHcLFrn=oenX3wnS42eK6Xg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1405271036040.17310@knanqh.ubzr>
+References: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org> <CAKfTPtAb45b0KC==k7+DB_JZrXsSHcLFrn=oenX3wnS42eK6Xg@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-27_04:2014-05-26,2014-05-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.1206036099054e-12 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.997600857122248
- urlsuspect_oldscore=0.997600857122248 suspectscore=3
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.997600857122248 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1405270203
-X-FB-Internal: deliver
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 27 May 2014, Vincent Guittot wrote:
 
-There's a start/stop queue race in virtio_blk, which causes stalls and
-erratic behaviour for some. I've had this queued up for 3.16 for a
-while, but I think we should push it into the current series as well. So
-I cherry picked the commit and added a stable marker as well, so it can
-propagate down.
+> Hi Nicolas,
+> 
+> There are still some use of "power" instead of "capacity" in the sched
+> directory like SD_SHARE_CPUPOWER, ARCH_POWER or NONTASK_POWER. They
+> should also be renamed in capacity as there are also used for capacity
 
-Please pull!
+I thought the first one was used to identify CPU sharing the same 
+(electric) power domain.  Or maybe I confused it with 
+SD_SHARE_POWERDOMAIN, illustrating the point once again for this series.
 
-  git://git.kernel.dk/linux-block.git for-linus
-
-  virtio_blk: fix race between start and stop queue (2014-05-27 08:41:10 -0600)
-
-----------------------------------------------------------------
-Ming Lei (1):
-      virtio_blk: fix race between start and stop queue
-
- drivers/block/virtio_blk.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I'll create additional patches.
 
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 6d8a87f252de..cb9b1f8326c3 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -144,11 +144,11 @@ static void virtblk_done(struct virtqueue *vq)
- 		if (unlikely(virtqueue_is_broken(vq)))
- 			break;
- 	} while (!virtqueue_enable_cb(vq));
--	spin_unlock_irqrestore(&vblk->vq_lock, flags);
- 
- 	/* In case queue is stopped waiting for more buffers. */
- 	if (req_done)
- 		blk_mq_start_stopped_hw_queues(vblk->disk->queue);
-+	spin_unlock_irqrestore(&vblk->vq_lock, flags);
- }
- 
- static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
-@@ -202,8 +202,8 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
- 	if (err) {
- 		virtqueue_kick(vblk->vq);
--		spin_unlock_irqrestore(&vblk->vq_lock, flags);
- 		blk_mq_stop_hw_queue(hctx);
-+		spin_unlock_irqrestore(&vblk->vq_lock, flags);
- 		/* Out of mem doesn't actually happen, since we fall back
- 		 * to direct descriptors */
- 		if (err == -ENOMEM || err == -ENOSPC)
-
--- 
-Jens Axboe
-
+Nicolas
