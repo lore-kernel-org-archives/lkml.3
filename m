@@ -1,84 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaE0GFR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:05:17 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:40486 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaE0GFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:05:15 -0400
-Message-ID: <1401170709.11231.3.camel@phoenix>
-Subject: [PATCH] regulator: ltc3589: Remove ltc3589_list_voltage_fixed
- function
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 27 May 2014 14:05:09 +0800
+	id S1751678AbaE0GMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:12:10 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44419 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128AbaE0GMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 02:12:07 -0400
+Message-ID: <53842C7D.6050106@ti.com>
+Date: Tue, 27 May 2014 11:41:09 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>, Mike Turquette <mturquette@linaro.org>,
+        Tero Kristo <t-kristo@ti.com>, Roger Quadros <rogerq@ti.com>
+CC: dt list <devicetree@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Rajendra Nayak <rnayak@ti.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 03/17] phy: ti-pipe3: add external clock support for PCIe
+ PHY
+References: <1399383244-14556-1-git-send-email-kishon@ti.com>	<1399383244-14556-4-git-send-email-kishon@ti.com>	<53736CBC.2060702@ti.com>	<5373897C.6080504@ti.com>	<CAGo_u6qw1OomEw_ueb3x+xT+qZLAfGv7Se1K=o725aOoD3ankQ@mail.gmail.com>	<5374859F.5080902@ti.com>	<53748819.8060705@ti.com>	<CAGo_u6qbbdAbdvrB3AFXSH1qD5MaBkJbi6oJJvvTWW4xfbmd_Q@mail.gmail.com>	<5374AC0A.7070709@ti.com> <CAGo_u6r8XtGHOvsfJKQMZ2ghFRz8x8_UhzyKE9jnwO6mJ2HYpQ@mail.gmail.com> <5374B09F.2080803@ti.com> <5374B409.3000607@ti.com>
+In-Reply-To: <5374B409.3000607@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When fixed_uV is set and n_voltage is 1, regulator core will return
-rdev->desc->fixed_uV in regulator_get_voltage() and regulator_list_voltage().
+Hi,
 
-Rename ltc3589_standby_regulator_ops to ltc3589_fixed_standby_regulator_ops,
-this makes the code clear that the ops is for fixed voltage regulator.
+On Thursday 15 May 2014 06:03 PM, Nishanth Menon wrote:
+> On 05/15/2014 07:18 AM, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Thursday 15 May 2014 05:42 PM, Nishanth Menon wrote:
+>>> On Thu, May 15, 2014 at 6:59 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>> Hi Nishant,
+>>>>
+>>>> On Thursday 15 May 2014 05:16 PM, Nishanth Menon wrote:
+>>>>> On Thu, May 15, 2014 at 4:25 AM, Roger Quadros <rogerq@ti.com> wrote:
+>>>>>> On 05/15/2014 12:15 PM, Kishon Vijay Abraham I wrote:
+>>>>>>> Hi Nishanth,
+>>>>>>>
+>>>>>>> On Wednesday 14 May 2014 09:04 PM, Nishanth Menon wrote:
+>>>>>>>> On Wed, May 14, 2014 at 10:19 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>>>>>>> Hi Roger,
+>>>>>>>>>
+>>>>>>>>> On Wednesday 14 May 2014 06:46 PM, Roger Quadros wrote:
+>>>>>>>>>> Hi Kishon,
+>>>>>>>>>>
+>>>>>>>>>> On 05/06/2014 04:33 PM, Kishon Vijay Abraham I wrote:
+>>>>>>>>>>> APLL used by PCIE phy can either use external clock as input or the clock
+>>>>>>>>>>> from DPLL. Added support for the APLL to use external clock as input here.
+>>>>>>>>>>>
+>>>>>>>>>>> Cc: Rajendra Nayak <rnayak@ti.com>
+>>>>>>>>>>> Cc: Tero Kristo <t-kristo@ti.com>
+>>>>>>>>>>> Cc: Paul Walmsley <paul@pwsan.com>
+>>>>>>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>>>>>>> ---
+>>>>>>>>>>>  Documentation/devicetree/bindings/phy/ti-phy.txt |    4 ++
+>>>>>>>>>>>  drivers/phy/phy-ti-pipe3.c                       |   75 ++++++++++++++--------
+>>>>>>>>>>>  2 files changed, 52 insertions(+), 27 deletions(-)
+>>>>>>>>>>>
+>>>>>>>>>>> diff --git a/Documentation/devicetree/bindings/phy/ti-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>>>>>>>>> index bc9afb5..d50f8ee 100644
+>>>>>>>>>>> --- a/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>>>>>>>>> +++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+>>>>>>>>>>> @@ -76,6 +76,10 @@ Required properties:
+>>>>>>>>>>>     * "dpll_ref_m2" - external dpll ref clk
+>>>>>>>>>>>     * "phy-div" - divider for apll
+>>>>>>>>>>>     * "div-clk" - apll clock
+>>>>>>>>>>> +   * "apll_mux" - mux for pcie apll
+>>>>>>>>>>> +   * "refclk_ext" - external reference clock for pcie apll
+>>>>>>>>>>> + - ti,ext-clk: To specifiy if PCIE apll should use external clock. Applicable
+>>>>>>>>>>> +   only to PCIE PHY.
+>>>>>>>>>>
+>>>>>>>>>> Instead of specifying both clock sources "dpll_ref_clock", "refclk_ext" and then specifying a 3rd control option "ti,ext-clk" to select one of the 2 sources, why can't the DT just supply one clock source, i.e. the one that is being used in the board instance? The driver should then just configure the clock rate that is needed at that node. Shouldn't the clock framework automatically take care of muxing and parent rates?
+>>>>>>>>>
+>>>>>>>>> Want the dt to have all the clocks used by the controller. "ti,ext-clk" should
+>>>>>>>>> go in the board dt file (suggested by Nishanth).
+>>>>>>>>> The point is at some point later if some one wants to change the clock source,
+>>>>>>>>> it should be a simple enabling "ti,ext-clk" flag instead of finding the clock
+>>>>>>>>> phandle etc..
+>>>>>>>>
+>>>>>>>> Wonder if that is implicit by the presence of  "refclk_ext" in the
+>>>>>>>> clocks provided?
+>>>>>>>
+>>>>>>> IMO the presence of "refclk_ext" is useless unless the board indicates it
+>>>>>>> provides the clock source.
+>>>>>>>
+>>>>>>> refclk_ext holds phandle for *fixed-clock*, so irrespective of whether the
+>>>>>>> board provides a clock or not, it can have that handle for configuring in PRCM.
+>>>>>>> However if the board does not provide the clock source, configuring refclk_ext
+>>>>>>> in PRCM is useless.
+>>>>>>
+>>>>>> I think what Nishant meant is that if "refclk_ext" is provided it means that the driver
+>>>>>> should use that over "dpll_ref_clock" so no need of a separate "ti,ext-clk" flag.
+>>>>>
+>>>>> yes, thank you for clarifying - it does indeed redundant to have
+>>>>> "ti,ext-clk". and apologies on being a little obscure in the comment.
+>>>>
+>>>> Irrespective of whether external reference clock is used or not, all DRA7
+>>>> (apll) has an input for external reference clock (and also a PRCM register for
+>>>> programming it) and it has to be specified in dt no?
+>>>
+>>> Why is that a binding for ti-phy? that is a problem for the APLL clock
+>>> driver (selecting it's own source). PHY properties should describe
+>>> itself -> let the bindings of the APLL describe itself. please dont
+>>> mix the two up.
+>>
+>> The apll clock node is like this
+>>
+>> apll_pcie_in_clk_mux: apll_pcie_in_clk_mux@4ae06118 {
+>>         compatible = "mux-clock";
+>>         clocks = <&dpll_pcie_ref_m2ldo_ck>, <&pciesref_acs_clk_ck>;
+>>         #clock-cells = <0>;
+>>         reg = <0x4a00821c 0x4>;
+>>         bit-mask = <0x80>;
+>> };
+>>
+>> The external reference clock is denoted by *pciesref_acs_clk_ck*.
+>>
+>> refclk_ext holds the phandle to *pciesref_acs_clk_ck* and is used in
+>> "clk_set_parent" to set the parent of apll mux.
+> 
+> So, How about this: if refclk_ext is not defined, dont do setparent,
+> if it is defined, do setparent.
+> in short:
+> Optional Properties:
+> * "refclk_ext" - external reference clock for pcie apll - if defined,
+> used as the parent to "apll_mux"
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/ltc3589.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+just realized, refclk_ext is not a property by itself but just one of the
+phandle for clocks/clock-names. Since we want to indicate if we are using
+external clock from *board* dts file, I'm not sure if there is a way to
+*append* a property.
 
-diff --git a/drivers/regulator/ltc3589.c b/drivers/regulator/ltc3589.c
-index fef64ee..110a99e 100644
---- a/drivers/regulator/ltc3589.c
-+++ b/drivers/regulator/ltc3589.c
-@@ -160,15 +160,6 @@ static int ltc3589_set_suspend_mode(struct regulator_dev *rdev,
- 	return regmap_update_bits(ltc3589->regmap, LTC3589_VCCR, mask, bit);
- }
- 
--static int ltc3589_list_voltage_fixed(struct regulator_dev *rdev,
--				      unsigned int selector)
--{
--	if (selector)
--		return -EINVAL;
--
--	return rdev->desc->fixed_uV;
--}
--
- /* SW1, SW2, SW3, LDO2 */
- static struct regulator_ops ltc3589_linear_regulator_ops = {
- 	.enable = regulator_enable_regmap,
-@@ -188,12 +179,10 @@ static struct regulator_ops ltc3589_fixed_regulator_ops = {
- 	.enable = regulator_enable_regmap,
- 	.disable = regulator_disable_regmap,
- 	.is_enabled = regulator_is_enabled_regmap,
--	.list_voltage = ltc3589_list_voltage_fixed,
- };
- 
- /* LDO1 */
--static struct regulator_ops ltc3589_standby_regulator_ops = {
--	.list_voltage = ltc3589_list_voltage_fixed,
-+static struct regulator_ops ltc3589_fixed_standby_regulator_ops = {
- };
- 
- /* LDO4 */
-@@ -242,7 +231,7 @@ static struct ltc3589_regulator ltc3589_regulators[LTC3589_NUM_REGULATORS] = {
- 	LTC3589_LINEAR_REG(SW2, B2DTV1),
- 	LTC3589_LINEAR_REG(SW3, B3DTV1),
- 	LTC3589_FIXED_REG(BB_OUT),
--	LTC3589_REG(LDO1, standby, 0, 0, 0, 0),
-+	LTC3589_REG(LDO1, fixed_standby, 0, 0, 0, 0),
- 	LTC3589_LINEAR_REG(LDO2, L2DTV1),
- 	LTC3589_FIXED_REG(LDO3),
- 	LTC3589_REG(LDO4, table, LTC3589_OVEN_LDO4, LTC3589_L2DTV2, 0x60, 0),
--- 
-1.8.3.2
-
-
-
+Thanks
+Kishon
