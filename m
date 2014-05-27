@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaE0JlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:41:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37000 "EHLO
+	id S1752445AbaE0JlB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:41:01 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37022 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752188AbaE0JkH (ORCPT
+	with ESMTP id S1752197AbaE0JkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 May 2014 05:40:07 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
@@ -15,9 +15,9 @@ Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
         kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 5/6] regulator: add support for regulator set registration
-Date: Tue, 27 May 2014 11:38:54 +0200
-Message-Id: <1401183535-31003-6-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 3/6] regulator: axp20x: add support for AXP221 regulators
+Date: Tue, 27 May 2014 11:38:52 +0200
+Message-Id: <1401183535-31003-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -25,287 +25,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PMIC devices often provide several regulators, and these regulators are
-all using the same regmap and are all attached to the same device (the
-PMIC device).
-
-Add helper functions (both simple and resource managed versions) to
-register and unregister such kind of regulator set.
-
-This implementation handles self dependency issues where one regulator
-provided the PMIC depends on another one provided by the same PMIC.
+Add AXP221 regulator definitions and choose the appropriate definitions
+according to the variant id passed by the MFD device.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- drivers/regulator/core.c         | 106 +++++++++++++++++++++++++++++++++++++++
- drivers/regulator/devres.c       |  68 +++++++++++++++++++++++++
- include/linux/regulator/driver.h |  51 +++++++++++++++++++
- 3 files changed, 225 insertions(+)
+ drivers/regulator/axp20x-regulator.c | 98 +++++++++++++++++++++++++++++++++---
+ 1 file changed, 90 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 9a09f3c..7703853 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3595,6 +3595,112 @@ void regulator_unregister(struct regulator_dev *rdev)
- EXPORT_SYMBOL_GPL(regulator_unregister);
+diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
+index 5a59982..feaa0b5 100644
+--- a/drivers/regulator/axp20x-regulator.c
++++ b/drivers/regulator/axp20x-regulator.c
+@@ -27,6 +27,9 @@
+ #define AXP20X_IO_ENABLED		0x03
+ #define AXP20X_IO_DISABLED		0x07
  
- /**
-+ * regulator_set_register - register a set of regulators
-+ * @config: runtime configuration for regulator set
-+ *
-+ * Called by regulator drivers to register a set of regulators.
-+ * Returns a valid pointer to struct regulator_set on success
-+ * or an ERR_PTR() on error.
-+ */
-+struct regulator_set *
-+regulator_set_register(const struct regulator_set_config *config)
-+{
-+	struct regulator_set *rset;
-+	int prev_nregistered = -1;
-+	int nregistered = 0;
-+	int ret;
-+	int i;
++#define AXP22X_IO_ENABLED		0x04
++#define AXP22X_IO_DISABLED		0x03
 +
-+	if (!config->descs || !config->nregulators)
-+		return ERR_PTR(-EINVAL);
-+
-+	rset = kzalloc(sizeof(*rset) +
-+		       (config->nregulators * sizeof(struct regulator_dev *)),
-+		       GFP_KERNEL);
-+	if (!rset)
-+		return ERR_PTR(-ENOMEM);
-+
-+	rset->nregulators = config->nregulators;
-+
-+	while (nregistered < config->nregulators &&
-+	       prev_nregistered < nregistered) {
-+
-+		prev_nregistered = nregistered;
-+
-+		for (i = 0; i < config->nregulators; i++) {
-+			struct regulator_config conf;
-+			struct regulator_dev *regulator;
-+
-+			if (rset->regulators[i])
-+				continue;
-+
-+			memset(&conf, 0, sizeof(conf));
-+
-+			conf.dev = config->dev;
-+			conf.regmap = config->regmap;
-+			conf.driver_data = config->driver_data;
-+			if (config->matches && config->matches[i].init_data)
-+				conf.init_data = config->matches[i].init_data;
-+			else if (config->init_data)
-+				conf.init_data = config->init_data[i];
-+
-+			if (config->matches)
-+				conf.of_node = config->matches[i].of_node;
-+
-+			regulator = regulator_register(&config->descs[i],
-+						       &conf);
-+			if (IS_ERR(regulator)) {
-+				ret = PTR_ERR(regulator);
-+				if (ret == -EPROBE_DEFER)
-+					continue;
-+
-+				goto err;
-+			}
-+
-+			rset->regulators[i] = regulator;
-+			nregistered++;
-+		}
-+	}
-+
-+	if (nregistered < config->nregulators) {
-+		ret = -EPROBE_DEFER;
-+		goto err;
-+	}
-+
-+	return rset;
-+
-+err:
-+	for (i = 0; i < config->nregulators; i++) {
-+		if (rset->regulators[i])
-+			regulator_unregister(rset->regulators[i]);
-+	}
-+
-+	kfree(rset);
-+
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(regulator_set_register);
-+
-+/**
-+ * regulator_set_unregister - unregister regulator set
-+ * @rset: regulator set to unregister
-+ *
-+ * Called by regulator drivers to unregister a regulator set.
-+ */
-+void regulator_set_unregister(struct regulator_set *rset)
-+{
-+	int i;
-+
-+	for (i = 0; i < rset->nregulators; i++) {
-+		if (rset->regulators[i])
-+			regulator_unregister(rset->regulators[i]);
-+	}
-+
-+	kfree(rset);
-+}
-+EXPORT_SYMBOL_GPL(regulator_set_unregister);
-+
-+/**
-  * regulator_suspend_prepare - prepare regulators for system wide suspend
-  * @state: system suspend state
-  *
-diff --git a/drivers/regulator/devres.c b/drivers/regulator/devres.c
-index f44818b..a34f34c 100644
---- a/drivers/regulator/devres.c
-+++ b/drivers/regulator/devres.c
-@@ -251,6 +251,74 @@ void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev)
- }
- EXPORT_SYMBOL_GPL(devm_regulator_unregister);
+ #define AXP20X_WORKMODE_DCDC2_MASK	BIT(2)
+ #define AXP20X_WORKMODE_DCDC3_MASK	BIT(1)
  
-+static void devm_rset_release(struct device *dev, void *res)
-+{
-+	regulator_set_unregister(*(struct regulator_set **)res);
-+}
-+
-+/**
-+ * devm_regulator_set_register - Resource managed regulator_set_register()
-+ * @dev: device registering the regulator set
-+ * @config: runtime configuration for regulator set
-+ *
-+ * Called by regulator drivers to register a set of regulators.  Returns a
-+ * valid pointer to struct regulator_set on success or an ERR_PTR() on
-+ * error.  The regulator will automatically be released when the device
-+ * is unbound.
-+ */
-+struct regulator_set *
-+devm_regulator_set_register(struct device *dev,
-+			    const struct regulator_set_config *config)
-+{
-+	struct regulator_set **ptr, *rset;
-+
-+	ptr = devres_alloc(devm_rset_release, sizeof(*ptr),
-+			   GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	rset = regulator_set_register(config);
-+	if (!IS_ERR(rset)) {
-+		*ptr = rset;
-+		devres_add(dev, ptr);
-+	} else {
-+		devres_free(ptr);
-+	}
-+
-+	return rset;
-+}
-+EXPORT_SYMBOL_GPL(devm_regulator_set_register);
-+
-+static int devm_rset_match(struct device *dev, void *res, void *data)
-+{
-+	struct regulator_set **r = res;
-+	if (!r || !*r) {
-+		WARN_ON(!r || !*r);
-+		return 0;
-+	}
-+	return *r == data;
-+}
-+
-+/**
-+ * devm_regulator_set_unregister - Resource managed regulator_set_unregister()
-+ * @dev: device unregistering the regulator set
-+ * @rset: regulator set to release
-+ *
-+ * Unregister a regulator set registered with devm_regulator_set_register().
-+ * Normally this function will not need to be called and the resource
-+ * management code will ensure that the resource is freed.
-+ */
-+void devm_regulator_set_unregister(struct device *dev,
-+				   struct regulator_set *rset)
-+{
-+	int rc;
-+
-+	rc = devres_release(dev, devm_rdev_release, devm_rset_match, rset);
-+	if (rc != 0)
-+		WARN_ON(rc);
-+}
-+EXPORT_SYMBOL_GPL(devm_regulator_unregister);
-+
- struct regulator_supply_alias_match {
- 	struct device *dev;
- 	const char *id;
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index bbe03a1..b683f68 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -350,6 +350,48 @@ struct regulator_dev {
- 	unsigned int ena_gpio_state:1;
+@@ -143,6 +146,48 @@ static const struct regulator_desc axp20x_regulators[] = {
+ 		       AXP20X_IO_DISABLED),
  };
  
-+/**
-+ * struct regulator_set_config - Dynamic regulator set descriptor
-+ *
-+ * This structure describe a regulator and each regulator in this set
-+ * will be registered using informations passed through regulator_desc
-+ * and of_regulator_match tables.
-+ *
-+ * @dev: struct device providing the regulator set.
-+ * @driver_data: private driver data for this regulator set.
-+ * @regmap: regmap to use for core regmap helpers if dev_get_regulator() is
-+ *          insufficient.
-+ * @descs: table of regulator descriptors.
-+ * @matches: table of DT regulator descriptors. This table should have
-+ *           been filled by the of_regulator_match function.
-+ * @init_data: a table of init_data in case matches is NULL or the init_data
-+ *             of the match entry is NULL.
-+ * @nregulators: number of regulators in the regulator set.
-+ */
-+struct regulator_set_config {
-+	struct device *dev;
-+	void *driver_data;
-+	struct regmap *regmap;
-+	const struct regulator_desc *descs;
-+	const struct of_regulator_match *matches;
-+	const struct regulator_init_data **init_data;
-+	int nregulators;
++static const struct regulator_desc axp22x_regulators[] = {
++	AXP_DESC(AXP22X, DCDC1, "vin1", 1600, 3400, 100, AXP22X_DCDC1_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL1, BIT(1)),
++	AXP_DESC(AXP22X, DCDC2, "vin2", 600, 1540, 20, AXP22X_DCDC2_V_OUT, 0x3f,
++		    AXP22X_PWR_OUT_CTRL1, BIT(2)),
++	AXP_DESC(AXP22X, DCDC3, "vin3", 600, 1860, 20, AXP22X_DCDC3_V_OUT, 0x3f,
++		    AXP22X_PWR_OUT_CTRL1, BIT(3)),
++	AXP_DESC(AXP22X, DCDC4, "vin4", 600, 1540, 20, AXP22X_DCDC4_V_OUT, 0x3f,
++		    AXP22X_PWR_OUT_CTRL1, BIT(3)),
++	AXP_DESC(AXP22X, DCDC5, "vin5", 1000, 2550, 50, AXP22X_DCDC5_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL1, BIT(4)),
++	AXP_DESC(AXP22X, DC5LDO, "vin5", 700, 1400, 100, AXP22X_DC5LDO_V_OUT, 0x7,
++		    AXP22X_PWR_OUT_CTRL1, BIT(0)),
++	AXP_DESC(AXP22X, ALDO1, "aldoin", 700, 3300, 100, AXP22X_ALDO1_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL1, BIT(6)),
++	AXP_DESC(AXP22X, ALDO2, "aldoin", 700, 3300, 100, AXP22X_ALDO2_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL1, BIT(7)),
++	AXP_DESC(AXP22X, ALDO3, "aldoin", 700, 3300, 100, AXP22X_ALDO3_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL3, BIT(7)),
++	AXP_DESC(AXP22X, DLDO1, "dldoin", 700, 3300, 100, AXP22X_DLDO1_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL2, BIT(3)),
++	AXP_DESC(AXP22X, DLDO2, "dldoin", 700, 3300, 100, AXP22X_DLDO2_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL2, BIT(4)),
++	AXP_DESC(AXP22X, DLDO3, "dldoin", 700, 3300, 100, AXP22X_DLDO3_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL2, BIT(5)),
++	AXP_DESC(AXP22X, DLDO4, "dldoin", 700, 3300, 100, AXP22X_DLDO4_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL2, BIT(6)),
++	AXP_DESC(AXP22X, ELDO1, "eldoin", 700, 3300, 100, AXP22X_ELDO1_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL2, BIT(0)),
++	AXP_DESC(AXP22X, ELDO2, "eldoin", 700, 3300, 100, AXP22X_ELDO2_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL2, BIT(1)),
++	AXP_DESC(AXP22X, ELDO3, "eldoin", 700, 3300, 100, AXP22X_ELDO3_V_OUT, 0x1f,
++		    AXP22X_PWR_OUT_CTRL2, BIT(2)),
++	AXP_DESC_IO(AXP22X, LDO_IO0, "ldoioin", 1800, 3300, 100, AXP22X_LDO_IO0_V_OUT,
++		       0x1f, AXP20X_GPIO0_CTRL, 0x07, AXP22X_IO_ENABLED,
++		       AXP22X_IO_DISABLED),
++	AXP_DESC_IO(AXP22X, LDO_IO1, "ldoioin", 1800, 3300, 100, AXP22X_LDO_IO1_V_OUT,
++		       0x1f, AXP20X_GPIO1_CTRL, 0x07, AXP22X_IO_ENABLED,
++		       AXP22X_IO_DISABLED),
++	AXP_DESC_FIXED(AXP22X, RTC_LDO, "rtcldoin", 3000),
 +};
 +
-+/*
-+ * struct regulator_set - Regulator set
-+ *
-+ * This structure stores a set of regulator devices provided by a single
-+ * device (e.g. a PMIC device).
-+ *
-+ * @nregulators: number of regulators in the set
-+ * @regulators: regulators table
-+ */
-+struct regulator_set {
-+	int nregulators;
-+	struct regulator_dev *regulators[0];
-+};
-+
- struct regulator_dev *
- regulator_register(const struct regulator_desc *regulator_desc,
- 		   const struct regulator_config *config);
-@@ -360,6 +402,15 @@ devm_regulator_register(struct device *dev,
- void regulator_unregister(struct regulator_dev *rdev);
- void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev);
+ #define AXP_MATCH(_family, _name, _id) \
+ 	[_family##_##_id] = { \
+ 		.name		= #_name, \
+@@ -159,6 +204,28 @@ static struct of_regulator_match axp20x_matches[] = {
+ 	AXP_MATCH(AXP20X, ldo5, LDO5),
+ };
  
-+struct regulator_set *
-+regulator_set_register(const struct regulator_set_config *config);
-+struct regulator_set *
-+devm_regulator_set_register(struct device *dev,
-+			    const struct regulator_set_config *config);
-+void regulator_set_unregister(struct regulator_set *rset);
-+void devm_regulator_set_unregister(struct device *dev,
-+				   struct regulator_set *rset);
++static struct of_regulator_match axp22x_matches[] = {
++	AXP_MATCH(AXP22X, dcdc1, DCDC1),
++	AXP_MATCH(AXP22X, dcdc2, DCDC2),
++	AXP_MATCH(AXP22X, dcdc3, DCDC3),
++	AXP_MATCH(AXP22X, dcdc4, DCDC4),
++	AXP_MATCH(AXP22X, dcdc5, DCDC5),
++	AXP_MATCH(AXP22X, dc5ldo, DC5LDO),
++	AXP_MATCH(AXP22X, aldo1, ALDO1),
++	AXP_MATCH(AXP22X, aldo2, ALDO2),
++	AXP_MATCH(AXP22X, aldo3, ALDO3),
++	AXP_MATCH(AXP22X, dldo1, DLDO1),
++	AXP_MATCH(AXP22X, dldo2, DLDO2),
++	AXP_MATCH(AXP22X, dldo3, DLDO3),
++	AXP_MATCH(AXP22X, dldo4, DLDO4),
++	AXP_MATCH(AXP22X, eldo1, ELDO1),
++	AXP_MATCH(AXP22X, eldo2, ELDO2),
++	AXP_MATCH(AXP22X, eldo3, ELDO3),
++	AXP_MATCH(AXP22X, ldo_io0, LDO_IO0),
++	AXP_MATCH(AXP22X, ldo_io1, LDO_IO1),
++	AXP_MATCH(AXP22X, rtc_ldo, RTC_LDO),
++};
 +
- int regulator_notifier_call_chain(struct regulator_dev *rdev,
- 				  unsigned long event, void *data);
+ static int axp20x_set_dcdc_freq(struct platform_device *pdev, u32 dcdcfreq)
+ {
+ 	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
+@@ -237,37 +304,52 @@ static int axp20x_regulator_probe(struct platform_device *pdev)
+ 	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
+ 	struct regulator_config config = { };
+ 	struct regulator_init_data *init_data;
++	struct of_regulator_match *matches;
++	int nmatches;
++	const struct regulator_desc *regulators;
++	int nregulators;
+ 	int ret, i;
+ 	u32 workmode;
+ 
+-	ret = axp20x_regulator_parse_dt(pdev, axp20x_matches,
+-					ARRAY_SIZE(axp20x_matches));
++	if (axp20x->variant == AXP221_ID) {
++		matches = axp22x_matches;
++		nmatches = ARRAY_SIZE(axp22x_matches);
++		regulators = axp22x_regulators;
++		nregulators = AXP22X_REG_ID_MAX;
++	} else {
++		matches = axp20x_matches;
++		nmatches = ARRAY_SIZE(axp20x_matches);
++		regulators = axp20x_regulators;
++		nregulators = AXP20X_REG_ID_MAX;
++	}
++
++	ret = axp20x_regulator_parse_dt(pdev, matches, nmatches);
+ 	if (ret)
+ 		return ret;
+ 
+ 	for (i = 0; i < AXP20X_REG_ID_MAX; i++) {
+-		init_data = axp20x_matches[i].init_data;
++		init_data = matches[i].init_data;
+ 
+ 		config.dev = &pdev->dev;
+ 		config.init_data = init_data;
+ 		config.regmap = axp20x->regmap;
+-		config.of_node = axp20x_matches[i].of_node;
++		config.of_node = matches[i].of_node;
+ 
+-		rdev = devm_regulator_register(&pdev->dev, &axp20x_regulators[i],
++		rdev = devm_regulator_register(&pdev->dev, &regulators[i],
+ 					       &config);
+ 		if (IS_ERR(rdev)) {
+ 			dev_err(&pdev->dev, "Failed to register %s\n",
+-				axp20x_regulators[i].name);
++				regulators[i].name);
+ 
+ 			return PTR_ERR(rdev);
+ 		}
+ 
+-		ret = of_property_read_u32(axp20x_matches[i].of_node, "x-powers,dcdc-workmode",
++		ret = of_property_read_u32(matches[i].of_node, "x-powers,dcdc-workmode",
+ 					   &workmode);
+ 		if (!ret) {
+ 			if (axp20x_set_dcdc_workmode(rdev, i, workmode))
+ 				dev_err(&pdev->dev, "Failed to set workmode on %s\n",
+-					axp20x_regulators[i].name);
++					regulators[i].name);
+ 		}
+ 	}
  
 -- 
 1.8.3.2
