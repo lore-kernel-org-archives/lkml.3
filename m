@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaE0AVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 20:21:51 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51145 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaE0AVq (ORCPT
+	id S1752156AbaE0A1Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 20:27:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46056 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaE0A1X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 20:21:46 -0400
-Message-ID: <5383DA98.5010300@techfak.uni-bielefeld.de>
-Date: Tue, 27 May 2014 02:21:44 +0200
-From: Robert Abel <rabel@techfak.uni-bielefeld.de>
-Reply-To: rabel@techfak.uni-bielefeld.de
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 26 May 2014 20:27:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,915,1392192000"; 
+   d="scan'208";a="518037891"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH] KVM: lapic: sync highest ISR to hardware apic on EOI
+Thread-Topic: [PATCH] KVM: lapic: sync highest ISR to hardware apic on EOI
+Thread-Index: AQHPdpaiz0U4PEBytESNOv6ntY3j3ptSOodggAAZG4CAAUKkIA==
+Date: Tue, 27 May 2014 00:26:30 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AAD4436@SHSMSX104.ccr.corp.intel.com>
+References: <1400856713-18628-1-git-send-email-pbonzini@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AAD347A@SHSMSX104.ccr.corp.intel.com>
+ <53833C97.3040305@redhat.com>
+In-Reply-To: <53833C97.3040305@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 3.14: WARNING: sysfs group ffffffff81c50ca0 not found for kobject
- 'target5:0:0'
-References: <20140516171842.GA4610@aepfle.de>
-In-Reply-To: <20140516171842.GA4610@aepfle.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olaf,
+Paolo Bonzini wrote on 2014-05-26:
+> Il 26/05/2014 05:44, Zhang, Yang Z ha scritto:
+>> Paolo Bonzini wrote on 2014-05-23:
+>>> When Hyper-V enlightenments are in effect, Windows prefers to issue
+>>> an Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
+>>> The Hyper-V MSR write is not handled by the processor, and besides
+>>> being slower, this also causes bugs with APIC virtualization.  The
+>>> reason is that on EOI the processor will modify the highest
+>>> in-service interrupt (SVI) field of the VMCS, as explained in
+>>> section
+>>> 29.1.4 of the SDM.
+>>> 
+>> 
+>> Not only SVI update. It also includes ISR and PPR update. During PPR
+>> update, a new pending interrupt may be recognized and inject to guest.
+> 
+> Right, but SVI update is the only part that is missing.  Writing VISR
+> is done by apic_clear_isr and PPR virtualization is done by
+> apic_update_ppr. PPR virtualization is also done anyway at any VM
+> entry, together with evaluating and delivering pending virtual interrupts.
+> 
+> We'll do two PPR virtualizations (one in KVM, one in the processor),
+> but that's ok because they're idempotent.
+> 
+> We also operate as if the EOI exit bitmap was all ones, but that's ok
+> because a useless kvm_ioapic_send_eoi is not harmful.
+> 
+>>>  static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+>>> {
+>>> -	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
+>>> +	struct kvm_vcpu *vcpu;
+>>> +	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
+>>> +		return;
+>>> +
+>>> +	vcpu = apic->vcpu;
+>>> +
+>>> +	/*
+>>> +	 * We do get here for APIC virtualization enabled if the guest
+>>> +	 * uses the Hyper-V APIC enlightenment.  In this case we may need
+>>> +	 * to trigger a new interrupt delivery by writing the SVI field;
+>>> +	 * on the other hand isr_count and highest_isr_cache are unused
+>>> +	 * and must be left alone.
+>>> +	 */
+>>> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
+>>> +		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
+>>> +					       apic_find_highest_isr(apic));
+>> 
+>> If there is a pending interrupt, will it be recognized? I am not
+>> looking into the Hyper-V enlightenments code, not sure whether it
+>> already covers interrupt recognition. But if it doesn't do it, then
+>> we need to do it.
+> 
+> Yes, on the next VM entry the processor will do RVI to the PPR.
+> Before the VM entry KVM_REQ_EVENT will also be processed, which
+> updates RVI in hwapic_irr_update .
 
-On 16.05.2014 19:18, Olaf Hering wrote:
-> I did unplug an USB stick by accident with 3.14.4, the result is this
-> warning:
->
->
-> [94414.233882] usb 1-3: USB disconnect, device number 4
-> [94414.245377] scsi 5:0:0:0: rejecting I/O to offline device
-> [94414.245383] scsi 5:0:0:0: killing request
-> [94414.370354] FAT-fs (sdc1): unable to read boot sector to mark fs as 
-> dirty
-> [94414.370393] ------------[ cut here ]------------
-> [94414.370400] WARNING: CPU: 2 PID: 3619 at fs/sysfs/group.c:216 
-> sysfs_remove_group+0xa1/0xb0()
-> [94414.370403] sysfs group ffffffff81c50ca0 not found for kobject 
-> 'target5:0:0'
-This [1] might fix the problem you encountered. I reckon one of your 
-drivers exposes a binary attribute file in a named attribute group, 
-which it tries to remove when being unloaded. However, the path it looks 
-for this attribute file is likely wrong.
+Ok, thanks for explanation. 
 
-     [1] http://comments.gmane.org/gmane.linux.kernel/1684070
+Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+
+> 
+> Paolo
+
+
+Best regards,
+Yang
+
