@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742AbaE0RFE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:05:04 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:60959 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425AbaE0RFA (ORCPT
+	id S1752206AbaE0RHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:07:05 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:46676 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605AbaE0RG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:05:00 -0400
+	Tue, 27 May 2014 13:06:59 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Tarek Dakhran <t.dakhran@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
+Subject: Re: [PATCH v11 0/3] Exynos 5410 support
+References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
+Date: Tue, 27 May 2014 10:06:56 -0700
+In-Reply-To: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com> (Tarek
+	Dakhran's message of "Mon, 26 May 2014 07:23:30 +0400")
+Message-ID: <7hr43f9mmn.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140527144116.GK17233@tucsk.piliscsaba.szeredi.hu>
-References: <20140527144116.GK17233@tucsk.piliscsaba.szeredi.hu>
-Date: Tue, 27 May 2014 10:04:58 -0700
-X-Google-Sender-Auth: _-WEQD0_RRnna2yxdI1p1VjYSrY
-Message-ID: <CA+55aFzY--F_2BiZ4-mkFh+0Oy1SX7nBw7cAsSni_iDOtwU-mw@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix vmplice_to_user()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=089e013a13b0252b4004fa64b25a
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e013a13b0252b4004fa64b25a
-Content-Type: text/plain; charset=UTF-8
+Tarek Dakhran <t.dakhran@samsung.com> writes:
 
-On Tue, May 27, 2014 at 7:41 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> The series of patches represent support of Exynos 5410 SoC
 >
-> This patch fixes two bugs:
+> The Exynos 5410 is the first Samsung SoC based on big.LITTLE architecture
+>
+> Patches add new platform description, support of clock controller and device
+> tree for Exynos 5410.
+>
+> Has been build on Samsung Linux Kernel
+>   (branch: for-next, commit: 97eae6c Merge branch 'v3.16-next/multiplatform' into for-next)
+>
+> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
+> 		    2) Exynos 5410 reference board (multi_v7_defconfig)
+> 		    3) Odroid-XU board (exynos_defconfig)
+> 		    4) Odroid-XU board (multi_v7_defconfig)
 
-Mind if I change it to avoid the "goto"? I don't think goto is evil,
-but in this case it doesn't seem to buy anything, except to perhaps
-make the patch a bit smaller at the expense of making the result a bit
-harder to read.
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-Replacing the
+FYI, I boot tested this on an odroid-xu (exynos_defconfig and
+multi_v7_defconfig.)
 
-   if (ret <= 0)
-      goto out;
-
-with
-
-   if (ret > 0) {
-       ...
-   }
-
-also allows moving the various variable declarations closer to their use.
-
-So something like the attached..
-
-             Linus
-
---089e013a13b0252b4004fa64b25a
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hvpgfjqw0
-
-IGZzL3NwbGljZS5jIHwgMzAgKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUg
-Y2hhbmdlZCwgMTUgaW5zZXJ0aW9ucygrKSwgMTUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEv
-ZnMvc3BsaWNlLmMgYi9mcy9zcGxpY2UuYwppbmRleCA5YmMwN2QyYjUzY2YuLjZiMTExNTAwNTE1
-MCAxMDA2NDQKLS0tIGEvZnMvc3BsaWNlLmMKKysrIGIvZnMvc3BsaWNlLmMKQEAgLTE1MzIsMTIg
-KzE1MzIsOSBAQCBzdGF0aWMgbG9uZyB2bXNwbGljZV90b191c2VyKHN0cnVjdCBmaWxlICpmaWxl
-LCBjb25zdCBzdHJ1Y3QgaW92ZWMgX191c2VyICp1aW92LAogCQkJICAgICB1bnNpZ25lZCBsb25n
-IG5yX3NlZ3MsIHVuc2lnbmVkIGludCBmbGFncykKIHsKIAlzdHJ1Y3QgcGlwZV9pbm9kZV9pbmZv
-ICpwaXBlOwotCXN0cnVjdCBzcGxpY2VfZGVzYyBzZDsKLQlsb25nIHJldDsKIAlzdHJ1Y3QgaW92
-ZWMgaW92c3RhY2tbVUlPX0ZBU1RJT1ZdOwogCXN0cnVjdCBpb3ZlYyAqaW92ID0gaW92c3RhY2s7
-Ci0Jc3RydWN0IGlvdl9pdGVyIGl0ZXI7Ci0Jc3NpemVfdCBjb3VudCA9IDA7CisJbG9uZyByZXQ7
-CiAKIAlwaXBlID0gZ2V0X3BpcGVfaW5mbyhmaWxlKTsKIAlpZiAoIXBpcGUpCkBAIC0xNTQ1LDIw
-ICsxNTQyLDIzIEBAIHN0YXRpYyBsb25nIHZtc3BsaWNlX3RvX3VzZXIoc3RydWN0IGZpbGUgKmZp
-bGUsIGNvbnN0IHN0cnVjdCBpb3ZlYyBfX3VzZXIgKnVpb3YsCiAKIAlyZXQgPSByd19jb3B5X2No
-ZWNrX3V2ZWN0b3IoUkVBRCwgdWlvdiwgbnJfc2VncywKIAkJCQkgICAgQVJSQVlfU0laRShpb3Zz
-dGFjayksIGlvdnN0YWNrLCAmaW92KTsKLQlpZiAocmV0IDw9IDApCi0JCXJldHVybiByZXQ7CisJ
-aWYgKHJldCA+IDApIHsKKwkJc3RydWN0IHNwbGljZV9kZXNjIHNkOworCQlzdHJ1Y3QgaW92X2l0
-ZXIgaXRlcjsKKwkJc3NpemVfdCBjb3VudCA9IHJldDsKIAotCWlvdl9pdGVyX2luaXQoJml0ZXIs
-IGlvdiwgbnJfc2VncywgY291bnQsIDApOworCQlpb3ZfaXRlcl9pbml0KCZpdGVyLCBpb3YsIG5y
-X3NlZ3MsIGNvdW50LCAwKTsKIAotCXNkLmxlbiA9IDA7Ci0Jc2QudG90YWxfbGVuID0gY291bnQ7
-Ci0Jc2QuZmxhZ3MgPSBmbGFnczsKLQlzZC51LmRhdGEgPSAmaXRlcjsKLQlzZC5wb3MgPSAwOwor
-CQlzZC5sZW4gPSAwOworCQlzZC50b3RhbF9sZW4gPSBjb3VudDsKKwkJc2QuZmxhZ3MgPSBmbGFn
-czsKKwkJc2QudS5kYXRhID0gJml0ZXI7CisJCXNkLnBvcyA9IDA7CiAKLQlwaXBlX2xvY2socGlw
-ZSk7Ci0JcmV0ID0gX19zcGxpY2VfZnJvbV9waXBlKHBpcGUsICZzZCwgcGlwZV90b191c2VyKTsK
-LQlwaXBlX3VubG9jayhwaXBlKTsKKwkJcGlwZV9sb2NrKHBpcGUpOworCQlyZXQgPSBfX3NwbGlj
-ZV9mcm9tX3BpcGUocGlwZSwgJnNkLCBwaXBlX3RvX3VzZXIpOworCQlwaXBlX3VubG9jayhwaXBl
-KTsKKwl9CiAKIAlpZiAoaW92ICE9IGlvdnN0YWNrKQogCQlrZnJlZShpb3YpOwo=
---089e013a13b0252b4004fa64b25a--
+Kevin
