@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaE0R6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:58:19 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:41286 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaE0R6Q (ORCPT
+	id S1753108AbaE0R62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:58:28 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:35490 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951AbaE0R6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:58:16 -0400
+	Tue, 27 May 2014 13:58:24 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 27 May 2014 14:02:30 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
+Subject: Re: perf: fuzzer getting stuck with slow memory leak
+In-Reply-To: <alpine.DEB.2.10.1405271327470.1839@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.10.1405271400240.4012@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405271327470.1839@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140526095730.GC25732@pd.tnic>
-References: <1400169891-29546-1-git-send-email-tthayer@altera.com>
-	<1400169891-29546-4-git-send-email-tthayer@altera.com>
-	<20140526095730.GC25732@pd.tnic>
-Date: Tue, 27 May 2014 12:58:15 -0500
-Message-ID: <CAF03EBd+B5F_UOMOcn+pCE4dOL_24KZku4pweGym=Bip+H_-Rg@mail.gmail.com>
-Subject: Re: [PATCHv5 3/3] edac: altera: Add EDAC support for Altera SoC SDRAM Controller
-From: Thor Thayer <tthayer.linux@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thor Thayer <tthayer@altera.com>, Rob Herring <robherring2@gmail.com>,
-        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        Rob Landley <rob@landley.net>, linux@arm.linux.org.uk,
-        Dinh Nguyen <dinguyen@altera.com>, dougthompson@xmission.com,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-edac@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 4:57 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, May 15, 2014 at 11:04:51AM -0500, tthayer@altera.com wrote:
->> From: Thor Thayer <tthayer@altera.com>
->>
->> v2: Use the SDRAM controller registers to calculate memory size
->>     instead of the Device Tree. Update To & Cc list. Add maintainer
->>     information.
->>
->> v3: EDAC driver cleanup based on comments from Mailing list.
->>
->> v4: Panic on DBE. Add macro around inject-error reads to prevent
->>     them from being optimized out. Remove of_match_ptr since this
->>     will always use Device Tree.
->>
->> v5: Addition of printk to trigger function to ensure read vars
->>     are not optimized out.
->
-> Yeah, you could turn those vX: messages into a real commit message -
-> much better than none at all :-)
->
-> Other than that, the edac bits look ok. I'll wait out until you guys've
-> sorted the devicetree issues so ping me when it is ready to pick up.
->
-> Thanks.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+On Tue, 27 May 2014, Vince Weaver wrote:
 
-Hi Boris,
+> Not a useful trace though, due to the dreaded EVENTS_DROPPED 
+> happening right when things would be interesting.
+> 
+> CPU:0 [148307 EVENTS DROPPED]
+>      perf_fuzzer-2940  [000]   396.172211: kmalloc:              (T.1267+0xe) call_site=ffffffff810d027d ptr=0xffff8800be516b00 bytes_req=216 bytes_alloc=256 gfp_flags=GFP_KERNEL|GFP_ZERO
+>      perf_fuzzer-2940  [000]   396.172211: function:             perf_lock_task_context
+>      perf_fuzzer-2940  [000]   396.172211: function:             alloc_perf_context
 
-Sorry about the commit message - I thought I'd fixed it. It will be
-fixed in the next version.
+for what it's worth the even that seems to trigger this is a 
+SW_EMULATION_FAULTS event.  Odd.
 
-I think Steffen and I have worked out how the devicetree should look.
-I'll submit the changes soon.
+     perf_fuzzer-2989  [001]  1994.514398: sys_enter:		NR 298 (699f28, bad, 0, ffffffff, 2, 7fff361a3360)
+     perf_fuzzer-2989  [001]  1994.514399: bprint:		SYSC_perf_event_open: VMW: perf_event_open type=1 config=8 period=0 pid=2989 cpu=0 group=-1 flags=2
+     perf_fuzzer-2989  [001]  1994.514400: kmalloc:		(T.1267+0xe) call_site=ffffffff810d027d ptr=0xffff880119d1f400 bytes_req=936 bytes_alloc=1024 gfp_flags=GFP_KERNEL|GFP_ZERO
+     perf_fuzzer-2989  [001]  1994.514401: kmalloc:		(T.1267+0xe) call_site=ffffffff810d027d ptr=0xffff8800cbbbd000 bytes_req=2064 bytes_alloc=4096 gfp_flags=GFP_KERNEL|GFP_ZERO
+     perf_fuzzer-2989  [001]  1994.514401: kmalloc:     	(T.1267+0xe) call_site=ffffffff810d027d ptr=0xffff880119fcd000 bytes_req=2064 bytes_alloc=4096 gfp_flags=GFP_KERNEL|GFP_ZERO
+     perf_fuzzer-2989  [001]  1994.514402: kmalloc:		(T.1267+0xe) call_site=ffffffff810d027d ptr=0xffff8800c9344400 bytes_req=216 bytes_alloc=256 gfp_flags=GFP_KERNEL|GFP_ZERO
+	(repeat forever)
 
-Thanks,
-
-Thor
+Vince
