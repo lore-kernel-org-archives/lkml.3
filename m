@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaE0HkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 03:40:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884AbaE0HkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 03:40:04 -0400
-Date: Tue, 27 May 2014 09:39:53 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 10/14] perf tests: Spawn child for each test
-Message-ID: <20140527073953.GC12920@krava.brq.redhat.com>
-References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
- <1400174615-2121-11-git-send-email-jolsa@kernel.org>
- <87lhtohvue.fsf@sejong.aot.lge.com>
+	id S1751837AbaE0Hnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 03:43:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41244 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750884AbaE0Hnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 03:43:37 -0400
+Date: Tue, 27 May 2014 09:43:33 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        "'Antoine Tenart'" <antoine.tenart@free-electrons.com>,
+        "'Sebastian Hesselbarth'" <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] pinctrl: berlin: Use devm_ioremap_resource()
+Message-ID: <20140527074333.GA3768@kwain>
+References: <000a01cf7974$fc9fc4d0$f5df4e70$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <87lhtohvue.fsf@sejong.aot.lge.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <000a01cf7974$fc9fc4d0$f5df4e70$%han@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 10:08:25AM +0900, Namhyung Kim wrote:
-> On Thu, 15 May 2014 19:23:31 +0200, Jiri Olsa wrote:
-> > In upcoming tests we will setup process limits, which
-> > might affect other tests. Spawning child for each test
-> > to prevent this.
+On Tue, May 27, 2014 at 03:29:17PM +0900, Jingoo Han wrote:
+> Use devm_ioremap_resource() because devm_request_and_ioremap() is
+> obsoleted by devm_ioremap_resource().
 > 
-> But you can restore original limits after the test using soft limits?
-> But I think it's better to run the tests in a child anyway. :)
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-right.. I also recalled that Ingo recommended this before,
-I'll queue this one separately..
+Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 
-thanks,
-jirka
 
+Thanks!
+
+Antoine
+
+> ---
+>  drivers/pinctrl/berlin/berlin-bg2.c   |    6 +++---
+>  drivers/pinctrl/berlin/berlin-bg2cd.c |    6 +++---
+>  drivers/pinctrl/berlin/berlin-bg2q.c  |    6 +++---
+>  3 files changed, 9 insertions(+), 9 deletions(-)
 > 
-> Thanks,
-> Namhyung
+> diff --git a/drivers/pinctrl/berlin/berlin-bg2.c b/drivers/pinctrl/berlin/berlin-bg2.c
+> index 0d8fd50..dcd4f6a 100644
+> --- a/drivers/pinctrl/berlin/berlin-bg2.c
+> +++ b/drivers/pinctrl/berlin/berlin-bg2.c
+> @@ -243,9 +243,9 @@ static int berlin2_pinctrl_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	base = devm_request_and_ioremap(&pdev->dev, res);
+> -	if (!base)
+> -		return -EADDRNOTAVAIL;
+> +	base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(base))
+> +		return PTR_ERR(base);
+>  
+>  	rmconfig->reg_bits = 32,
+>  	rmconfig->val_bits = 32,
+> diff --git a/drivers/pinctrl/berlin/berlin-bg2cd.c b/drivers/pinctrl/berlin/berlin-bg2cd.c
+> index e095a5d..89d585e 100644
+> --- a/drivers/pinctrl/berlin/berlin-bg2cd.c
+> +++ b/drivers/pinctrl/berlin/berlin-bg2cd.c
+> @@ -186,9 +186,9 @@ static int berlin2cd_pinctrl_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	base = devm_request_and_ioremap(&pdev->dev, res);
+> -	if (!base)
+> -		return -EADDRNOTAVAIL;
+> +	base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(base))
+> +		return PTR_ERR(base);
+>  
+>  	rmconfig->reg_bits = 32,
+>  	rmconfig->val_bits = 32,
+> diff --git a/drivers/pinctrl/berlin/berlin-bg2q.c b/drivers/pinctrl/berlin/berlin-bg2q.c
+> index ab33a3b..9fcf983 100644
+> --- a/drivers/pinctrl/berlin/berlin-bg2q.c
+> +++ b/drivers/pinctrl/berlin/berlin-bg2q.c
+> @@ -405,9 +405,9 @@ static int berlin2q_pinctrl_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	base = devm_request_and_ioremap(&pdev->dev, res);
+> -	if (!base)
+> -		return -EADDRNOTAVAIL;
+> +	base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(base))
+> +		return PTR_ERR(base);
+>  
+>  	rmconfig->reg_bits = 32,
+>  	rmconfig->val_bits = 32,
+> -- 
+> 1.7.10.4
+> 
+> 
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
