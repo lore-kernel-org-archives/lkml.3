@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaE0She (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:37:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35127 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaE0Shb (ORCPT
+	id S1753391AbaE0SiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:38:20 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:46174 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237AbaE0SiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:37:31 -0400
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: Heesub Shin <heesub.shin@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/9] staging: ion: remove order argument from free_buffer_page()
-References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
-	<1401098701-24049-7-git-send-email-heesub.shin@samsung.com>
-Date: Tue, 27 May 2014 11:37:28 -0700
-In-Reply-To: <1401098701-24049-7-git-send-email-heesub.shin@samsung.com>
-	(Heesub Shin's message of "Mon, 26 May 2014 19:04:59 +0900")
-Message-ID: <vnkw1tvf5aqf.fsf@mitchelh-linux.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 27 May 2014 14:38:17 -0400
+Message-ID: <5384DB97.70606@kernel.dk>
+Date: Tue, 27 May 2014 12:38:15 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Christoph Hellwig <hch@lst.de>, Ming Lei <tom.leiming@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
+ flush worker
+References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com> <20140519151824.GA21762@lst.de> <CACVXFVNprzhEpXGKze=A4T2b-y35vXRxRTOUqpywu+Et=t37Kw@mail.gmail.com> <20140520152303.GA20352@lst.de> <CACVXFVNP--zj_-UtygxfXk7GvSXwKm2KMKFs=h9KsrL=ZzbWVQ@mail.gmail.com> <20140521053634.GA4764@lst.de> <CACVXFVO5znzYtPKMTPwx_2MU97xFZY+wHwm+R33T043SW4JHHw@mail.gmail.com> <20140527181305.GA7975@lst.de>
+In-Reply-To: <20140527181305.GA7975@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26 2014 at 03:04:59 AM, Heesub Shin <heesub.shin@samsung.com> wrote:
-> Not that the pages returned from the pool are compound pages, we do not
-> need to pass the order information to free_buffer_page().
+On 2014-05-27 12:13, Christoph Hellwig wrote:
+> Here is my counter proposal that requeues via two lists and a work struct
+> in the request_queue.  I've also tested it with scsi-mq.
+>
 
-s/Not/Now/
-
+I like this, moves the state out of the request. But how about we 
+consolidate the two requeue requests lists, and just mark the request as 
+needing head insertion instead? Just add a cmd_flags flag, 
+REQ_REQUEUE_HEAD or something.
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Jens Axboe
+
