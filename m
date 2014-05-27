@@ -1,126 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaE0Vuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 17:50:37 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:40549 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaE0Vuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 17:50:35 -0400
-Message-ID: <538508A5.2010809@gmail.com>
-Date: Tue, 27 May 2014 23:50:29 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: dts: mvebu: split SolidRun CuBox into variants
-References: <1401140009-31505-1-git-send-email-sebastian.hesselbarth@gmail.com> <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com> <20140527161143.GS8664@titan.lakedaemon.net> <5384CB29.1090204@gmail.com> <20140527213549.GU8664@titan.lakedaemon.net>
-In-Reply-To: <20140527213549.GU8664@titan.lakedaemon.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752708AbaE0VyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 17:54:00 -0400
+Received: from mga14.intel.com ([192.55.52.115]:16161 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751434AbaE0Vx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 17:53:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,922,1392192000"; 
+   d="scan'208";a="538497266"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: RE: [PATCH] x86, MCE: Flesh out when to panic comment
+Thread-Topic: [PATCH] x86, MCE: Flesh out when to panic comment
+Thread-Index: AQHPeMv4f2OJPRjwKESY7TWOSfRq25tTJI8AgAAETgCAAdE5YA==
+Date: Tue, 27 May 2014 21:53:56 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3281EEA5@ORSMSX114.amr.corp.intel.com>
+References: <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
+ <20140521214319.GF25130@pd.tnic> <537D1E8B.1010505@zytor.com>
+ <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
+ <20140521215411.GI25130@pd.tnic> <537D21F2.8030702@zytor.com>
+ <20140521221121.GL25130@pd.tnic> <537D2522.80702@zytor.com>
+ <20140526101859.GD25732@pd.tnic>
+ <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
+ <20140526110634.GG25732@pd.tnic>
+In-Reply-To: <20140526110634.GG25732@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4RLs5aX026448
 
-On 05/27/2014 11:35 PM, Jason Cooper wrote:
-> On Tue, May 27, 2014 at 07:28:09PM +0200, Sebastian Hesselbarth wrote:
->> On 05/27/2014 06:11 PM, Jason Cooper wrote:
->>> On Mon, May 26, 2014 at 11:33:29PM +0200, Sebastian Hesselbarth wrote:
->>>> As Mainlining effort for SolidRun CuBox has been carried out on the
->>>> Engineering Sample, the board DTS was reflecting this. Actually,
->>>> SolidRun CuBox comes in three different variants: Engineering Sample (ES),
->>>> production with 1GB RAM (1G), and production with 2GB RAM (2G).
->>>>
->>>> Therefore, we split the current dove-cubox.dts into a common board include
->>>> and one board dts for each of the above variants.
->>>>
->>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>>> ---
->> [...]
->>>> ---
->>>>  arch/arm/boot/dts/Makefile                         |  4 +++-
->>>>  arch/arm/boot/dts/dove-cubox-1g.dts                | 17 ++++++++++++++++
->>>>  arch/arm/boot/dts/dove-cubox-2g.dts                | 17 ++++++++++++++++
->>>>  arch/arm/boot/dts/dove-cubox-es.dts                | 23 ++++++++++++++++++++++
->>>>  .../boot/dts/{dove-cubox.dts => dove-cubox.dtsi}   | 17 ----------------
->>>>  5 files changed, 60 insertions(+), 18 deletions(-)
->>>>  create mode 100644 arch/arm/boot/dts/dove-cubox-1g.dts
->>>>  create mode 100644 arch/arm/boot/dts/dove-cubox-2g.dts
->>>>  create mode 100644 arch/arm/boot/dts/dove-cubox-es.dts
->>>>  rename arch/arm/boot/dts/{dove-cubox.dts => dove-cubox.dtsi} (86%)
->>>>
->> [...]
->>>> diff --git a/arch/arm/boot/dts/dove-cubox-2g.dts b/arch/arm/boot/dts/dove-cubox-2g.dts
->>>> new file mode 100644
->>>> index 000000000000..513b6a68eba3
->>>> --- /dev/null
->>>> +++ b/arch/arm/boot/dts/dove-cubox-2g.dts
->>>> @@ -0,0 +1,17 @@
->>>> +/dts-v1/;
->>>> +
->>>> +#include "dove-cubox.dtsi"
->>>> +
->>>> +/ {
->>>> +	model = "SolidRun CuBox (2G)";
->>>> +	compatible = "solidrun,cubox-2g", "solidrun,cubox", "marvell,dove";
->>>> +
->>>> +	memory {
->>>> +		device_type = "memory";
->>>> +		reg = <0x00000000 0x80000000>;
->>>
->>> Do you anticipate any other differences between the 1G and the 2G?
->>> Otherwise, I'm inclined to just have a "solidrun,cubox".  The bootloader
->>> should be setting the amount of RAM at boottime anyway.
->>
->> Given the minor differences between ES and production, instead of
->>
->> dove-cubox-common.dtsi
->> +--> dove-cubox.dts (production)
->> +--> dove-cubos-es.dts (engineering sample)
->>
->> we could also just have an "overlay" for the ES like
->>
->> dove-cubox.dts (production)
->> +--> dove-cubox-es.dts (engineering sample)
->>
->> It is not used commonly until now, maybe just a matter of taste.
->>
->> Is there any version you prefer?
-> 
-> iiuc, overlays were intended for daughterboard (capes, etc) specific
+>> I think the comment is still not explaining the big part of what the
+>> discussion was about -- i.e. if it was in kernel context, we always
+>> panic.
+>
+> I thought the pointer to mce_severity was enough? People should open an
+> editor and look at the function and at its gory insanity. :-P
 
-Oh, ok. I guess "overlay" was misleading here. I did not mean dynamic
-loading/unloading of dtb but including a dts from another dts.
+It is far from obvious that mce_severity() will always say that an error
+detected inside the kernel will be fatal.
 
-> info.  It may be useful here, but I'd like to hear from the DT
-> maintainers how they want it used.  eg: most popular first, like you
-> have it, or oldest first
-> 
-> dove-cubox-es.dts
-> +--> dove-cubox.dts
-
-In the cubox case, this is not possible. ES has a misrouted
-card-detection for sdhci, this requires an additional property.
-There is no way to remove a property once it is written down in
-any of the files included. But you know about that already.
-
-> There's also what to do with the older files using #include...
-> 
-> In short, I'd prefer to stick to the old method until we have a good
-> reason to move to overlays and a recommended way to execute that.*
-
-Ok, the old method is straight forward and I keep that in mind. I'll
-send a v2 of this using the approach we just talked about to eliminate
-any misinterpretations. Just have a look and feel free to request an
-"old-method" v3 immediately :P
-
-Sebastian
-
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
