@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaE0Ou6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:50:58 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63018 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaE0Ou5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:50:57 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+cFXbkvhK9kgRVaQjEP/KryJzg1GjIoc4=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 166BC580D2D
-Date: Tue, 27 May 2014 10:50:55 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: core changes for v3.16
-Message-ID: <20140527145055.GP8664@titan.lakedaemon.net>
+	id S1752235AbaE0Oyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:54:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751250AbaE0Oym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 10:54:42 -0400
+Date: Tue, 27 May 2014 11:53:52 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations
+Message-ID: <20140527145352.GB3765@amt.cnet>
+References: <20140523193706.GA22854@amt.cnet>
+ <alpine.DEB.2.10.1405270917510.13999@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.10.1405270917510.13999@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On Tue, May 27, 2014 at 09:21:32AM -0500, Christoph Lameter wrote:
+> On Fri, 23 May 2014, Marcelo Tosatti wrote:
+> 
+> > Zone specific allocations, such as GFP_DMA32, should not be restricted
+> > to cpusets allowed node list: the zones which such allocations demand
+> > might be contained in particular nodes outside the cpuset node list.
+> >
+> > The alternative would be to not perform such allocations from
+> > applications which are cpuset restricted, which is unrealistic.
+> >
+> > Fixes KVM's alloc_page(gfp_mask=GFP_DMA32) with cpuset as explained.
+> 
+> Memory policies are only applied to a specific zone so this is not
+> unprecedented. However, if a user wants to limit allocation to a specific
+> node and there is no DMA memory there then may be that is a operator
+> error? After all the application will be using memory from a node that the
+> operator explicitly wanted not to be used.
 
-Here's the patches I've collected since you asked me to start helping
-out.  It's only been a few weeks so there isn't too much here.  A lot of
-the patches I've encountered aren't ready yet, and I'll continue working
-with those for the next window.  -rc7 dropped earlier than expected. :-/
+Ok here is the use-case:
 
-Please pull.
+- machine contains driver which requires zone specific memory (such as
+KVM, which requires root pagetable at paddr < 4GB).
 
-thx,
+- user wants to limit allocation of application to nodeX, and nodeX has
+no memory < 4GB.
 
-Jason.
+How would you solve that? Options:
+
+1) force admin to allow allocation from node(s) which contain 0-4GB
+  range, which unfortunately would allow every allocation, including
+  ones which are not restricted to particular nodes, to be performed
+  there.
+
+or
+
+2) allow zone specific allocations to bypass memory policies.
+
+It seems 2) is the best option (and there is precedent for it).
+
+> There is also the hardwall flag. I think its ok to allocate outside of the
+> cpuset if that flag is not set. However, if it is set then any attempt to
+> alloc outside of the cpuset should fail.
+
+GFP_ATOMIC bypasses hardwall:
+
+ * The second pass through get_page_from_freelist() doesn't even call
+ * here for GFP_ATOMIC calls.  For those calls, the __alloc_pages()
+ * variable 'wait' is not set, and the bit ALLOC_CPUSET is not set
+ * in alloc_flags.  That logic and the checks below have the combined
+ * affect that:
+ *      in_interrupt - any node ok (current task context irrelevant)
+ *      GFP_ATOMIC   - any node ok
+ *      TIF_MEMDIE   - any node ok
+ *      GFP_KERNEL   - any node in enclosing hardwalled cpuset ok
+ *      GFP_USER     - only nodes in current tasks mems allowed ok.
 
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-3.16
-
-for you to fetch changes up to c8dfe94bc7a14c6a644ce55ef77b7a81505c696f:
-
-  Documentation: brcmstb-l2: Add Broadcom STB Level-2 interrupt controller binding (2014-05-27 14:43:36 +0000)
-
-----------------------------------------------------------------
-irqchip core changes for v3.16
-
- - irq-gic
-    - use a mask field
-
- - irq-armada-370-xp
-    - move the DT binding docs to the irqchip directory
-
- - irq-brcmstb-l2
-    - new driver for Broadcom Set Top Box Level-2
-
-----------------------------------------------------------------
-Ezequiel Garcia (1):
-      irqchip: armada-370-xp: Move the devicetree binding documentation
-
-Florian Fainelli (2):
-      irqchip: brcmstb-l2: Add Broadcom Set Top Box Level-2 interrupt controller
-      Documentation: brcmstb-l2: Add Broadcom STB Level-2 interrupt controller binding
-
-Haojian Zhuang (1):
-      irqchip: gic: Use mask field in GICC_IAR
-
- .../bindings/interrupt-controller/brcm,l2-intc.txt |  29 +++
- .../marvell,armada-370-xp-mpic.txt}                |   0
- drivers/irqchip/Kconfig                            |   6 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-brcmstb-l2.c                   | 202 +++++++++++++++++++++
- drivers/irqchip/irq-gic.c                          |   2 +-
- include/linux/irqchip/arm-gic.h                    |   2 +
- 7 files changed, 241 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
- rename Documentation/devicetree/bindings/{arm/armada-370-xp-mpic.txt => interrupt-controller/marvell,armada-370-xp-mpic.txt} (100%)
- create mode 100644 drivers/irqchip/irq-brcmstb-l2.c
