@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaE0PEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:04:15 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:15914 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752590AbaE0PEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:04:12 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhsKAIKohFNXQwje/2dsb2JhbABZgwerKAQBAQEBAQEFAYM8lFCBDhd0glMvI4EaN4hGAdRxF4VViBlkHYQqBI8/ijSTJ4M6O4Ew
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Sage Weil <sage@inktank.com>,
+	id S1752794AbaE0PGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:06:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717AbaE0PGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 11:06:01 -0400
+Date: Tue, 27 May 2014 11:57:08 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/ceph/export.c: add static to local function
-Date: Tue, 27 May 2014 17:04:05 +0200
-Message-Id: <1401203045-25202-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations
+Message-ID: <20140527145708.GA21238@amt.cnet>
+References: <20140523193706.GA22854@amt.cnet>
+ <alpine.DEB.2.10.1405270917510.13999@gentwo.org>
+ <20140527145352.GB3765@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527145352.GB3765@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ceph_get_parent is only used in fs/ceph/export.c
+On Tue, May 27, 2014 at 11:53:52AM -0300, Marcelo Tosatti wrote:
+> On Tue, May 27, 2014 at 09:21:32AM -0500, Christoph Lameter wrote:
+> > On Fri, 23 May 2014, Marcelo Tosatti wrote:
+> > 
+> > > Zone specific allocations, such as GFP_DMA32, should not be restricted
+> > > to cpusets allowed node list: the zones which such allocations demand
+> > > might be contained in particular nodes outside the cpuset node list.
+> > >
+> > > The alternative would be to not perform such allocations from
+> > > applications which are cpuset restricted, which is unrealistic.
+> > >
+> > > Fixes KVM's alloc_page(gfp_mask=GFP_DMA32) with cpuset as explained.
+> > 
+> > Memory policies are only applied to a specific zone so this is not
+> > unprecedented. However, if a user wants to limit allocation to a specific
+> > node and there is no DMA memory there then may be that is a operator
+> > error? After all the application will be using memory from a node that the
+> > operator explicitly wanted not to be used.
+> 
+> Ok here is the use-case:
+> 
+> - machine contains driver which requires zone specific memory (such as
+> KVM, which requires root pagetable at paddr < 4GB).
+> 
+> - user wants to limit allocation of application to nodeX, and nodeX has
+> no memory < 4GB.
+> 
+> How would you solve that? Options:
+> 
+> 1) force admin to allow allocation from node(s) which contain 0-4GB
+>   range, which unfortunately would allow every allocation, including
+>   ones which are not restricted to particular nodes, to be performed
+>   there.
+> 
+> or
+> 
+> 2) allow zone specific allocations to bypass memory policies.
+> 
+> It seems 2) is the best option (and there is precedent for it).
+> 
+> > There is also the hardwall flag. I think its ok to allocate outside of the
+> > cpuset if that flag is not set. However, if it is set then any attempt to
+> > alloc outside of the cpuset should fail.
+> 
+> GFP_ATOMIC bypasses hardwall:
+> 
+>  * The second pass through get_page_from_freelist() doesn't even call
+>  * here for GFP_ATOMIC calls.  For those calls, the __alloc_pages()
+>  * variable 'wait' is not set, and the bit ALLOC_CPUSET is not set
+>  * in alloc_flags.  That logic and the checks below have the combined
+>  * affect that:
+>  *      in_interrupt - any node ok (current task context irrelevant)
+>  *      GFP_ATOMIC   - any node ok
+>  *      TIF_MEMDIE   - any node ok
+>  *      GFP_KERNEL   - any node in enclosing hardwalled cpuset ok
+>  *      GFP_USER     - only nodes in current tasks mems allowed ok.
 
-Cc: Sage Weil <sage@inktank.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ceph/export.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/ceph/export.c b/fs/ceph/export.c
-index 00d6af6..8d7d782 100644
---- a/fs/ceph/export.c
-+++ b/fs/ceph/export.c
-@@ -169,7 +169,7 @@ static struct dentry *__get_parent(struct super_block *sb,
- 	return dentry;
- }
- 
--struct dentry *ceph_get_parent(struct dentry *child)
-+static struct dentry *ceph_get_parent(struct dentry *child)
- {
- 	/* don't re-export snaps */
- 	if (ceph_snap(child->d_inode) != CEPH_NOSNAP)
--- 
-1.8.4.5
+Thats softwall nevermind. 
 
