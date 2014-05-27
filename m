@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114AbaE0VOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 17:14:12 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:40747 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830AbaE0VOK (ORCPT
+	id S1752688AbaE0VQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 17:16:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54404 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaE0VQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 17:14:10 -0400
-Date: Tue, 27 May 2014 18:13:57 -0300
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, julia.lawall@lip6.fr,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH v2] ehea: Introduce the use of the managed version of
- kzalloc
-Message-ID: <20140527211357.GA4700@oc0268524204.ibm.com>
-References: <20140525185037.GA3041@himangi-Dell>
+	Tue, 27 May 2014 17:16:45 -0400
+Date: Tue, 27 May 2014 14:20:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: Re: [char-misc-next 1/3] mei: move from misc to char device
+Message-ID: <20140527212019.GA26089@kroah.com>
+References: <1399969321-6512-1-git-send-email-tomas.winkler@intel.com>
+ <1399969321-6512-2-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140525185037.GA3041@himangi-Dell>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052721-1798-0000-0000-000002B55476
+In-Reply-To: <1399969321-6512-2-git-send-email-tomas.winkler@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 12:20:38AM +0530, Himangi Saraogi wrote:
-> This patch moves data allocated using kzalloc to managed data allocated
-> using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-> functions. Also, linux/device.h is added to make sure the devm_*()
-> routine declarations are unambiguously available.
+On Tue, May 13, 2014 at 11:21:59AM +0300, Tomas Winkler wrote:
+> From: Alexander Usyskin <alexander.usyskin@intel.com>
 > 
-> The following Coccinelle semantic patch was used for making the change:
+> We need to support more then one mei interface
+> hence the simple misc devices is not longer an option.
+> We use char device now with to not break application
+> space we preserve /dev/mei for the first interface.
 > 
-> @platform@
-> identifier p, probefn, removefn;
-> @@
-> struct platform_driver p = {
->   .probe = probefn,
->   .remove = removefn,
-> };
-> 
-> @prb@
-> identifier platform.probefn, pdev;
-> expression e, e1, e2;
-> @@
-> probefn(struct platform_device *pdev, ...) {
->   <+...
-> - e = kzalloc(e1, e2)
-> + e = devm_kzalloc(&pdev->dev, e1, e2)
->   ...
-> ?-kfree(e);
->   ...+>
-> }
-> 
-> @rem depends on prb@
-> identifier platform.removefn;
-> expression e;
-> @@
-> removefn(...) {
->   <...
-> - kfree(e);
->   ...>
-> }
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 > ---
-> Not compiled due to incompatible architecture
+>  drivers/misc/mei/main.c    | 98 +++++++++++++++++++++++++++++++++-------------
+>  drivers/misc/mei/mei_dev.h |  7 ++++
+>  drivers/misc/mei/pci-me.c  |  1 -
+>  3 files changed, 78 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+> index 66f0a1a..c58e059 100644
+> --- a/drivers/misc/mei/main.c
+> +++ b/drivers/misc/mei/main.c
+> @@ -32,7 +32,6 @@
+>  #include <linux/compat.h>
+>  #include <linux/jiffies.h>
+>  #include <linux/interrupt.h>
+> -#include <linux/miscdevice.h>
+>  
+>  #include <linux/mei.h>
+>  
+> @@ -49,19 +48,12 @@
+>   */
+>  static int mei_open(struct inode *inode, struct file *file)
+>  {
+> -	struct miscdevice *misc = file->private_data;
+> -	struct pci_dev *pdev;
+>  	struct mei_cl *cl;
+>  	struct mei_device *dev;
+>  
+>  	int err;
+>  
+> -	if (!misc->parent)
+> -		return -ENODEV;
+> -
+> -	pdev = container_of(misc->parent, struct pci_dev, dev);
+> -
+> -	dev = pci_get_drvdata(pdev);
+> +	dev = container_of(inode->i_cdev, struct mei_device, cdev);
+>  	if (!dev)
+>  		return -ENODEV;
+>  
+> @@ -667,26 +659,48 @@ static const struct file_operations mei_fops = {
+>  	.llseek = no_llseek
+>  };
+>  
+> -/*
+> - * Misc Device Struct
+> - */
+> -static struct miscdevice  mei_misc_device = {
+> -		.name = "mei",
+> -		.fops = &mei_fops,
+> -		.minor = MISC_DYNAMIC_MINOR,
+> -};
+> -
+> +static struct class *mei_class;
+> +static dev_t mei_devt;
+> +#define MAX_MEI_DEVS 5            /* Maximum number of mei devices */
 
-For now, compile-tested.
+Why have a max number at all?
 
-Cascardo.
+>  
+>  int mei_register(struct mei_device *dev)
+>  {
+> -	int ret;
+> -	mei_misc_device.parent = &dev->pdev->dev;
+> -	ret = misc_register(&mei_misc_device);
+> -	if (ret)
+> +
+> +	int ret, devno;
+> +	int id = 0; /* FIXME: retrieve interface version*/
 
-> 
-> v2: add linux/device.h include
->  drivers/net/ethernet/ibm/ehea/ehea_main.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-> index 538903b..a25f3c6 100644
-> --- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
-> +++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-> @@ -29,6 +29,7 @@
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> 
->  #include <linux/in.h>
-> +#include<linux/device.h>
->  #include <linux/ip.h>
->  #include <linux/tcp.h>
->  #include <linux/udp.h>
-> @@ -3273,7 +3274,7 @@ static int ehea_probe_adapter(struct platform_device *dev)
->  		return -EINVAL;
->  	}
-> 
-> -	adapter = kzalloc(sizeof(*adapter), GFP_KERNEL);
-> +	adapter = devm_kzalloc(&dev->dev, sizeof(*adapter), GFP_KERNEL);
->  	if (!adapter) {
->  		ret = -ENOMEM;
->  		dev_err(&dev->dev, "no mem for ehea_adapter\n");
-> @@ -3359,7 +3360,6 @@ out_kill_eq:
-> 
->  out_free_ad:
->  	list_del(&adapter->list);
-> -	kfree(adapter);
-> 
->  out:
->  	ehea_update_firmware_handles();
-> @@ -3386,7 +3386,6 @@ static int ehea_remove(struct platform_device *dev)
->  	ehea_destroy_eq(adapter->neq);
->  	ehea_remove_adapter_mr(adapter);
->  	list_del(&adapter->list);
-> -	kfree(adapter);
-> 
->  	ehea_update_firmware_handles();
-> 
-> -- 
-> 1.9.1
-> 
+You still are only allocating 1 mei device, so why do all of this work
+at all?  Nothing changes, so why should I accept this patch?
+
+greg k-h
 
