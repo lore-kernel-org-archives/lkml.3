@@ -1,74 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaE0KSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 06:18:53 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:62546 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaE0KSt (ORCPT
+	id S1752360AbaE0KUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 06:20:10 -0400
+Received: from [119.145.14.66] ([119.145.14.66]:57510 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869AbaE0KUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 06:18:49 -0400
-From: Harini Katakam <harinik@xilinx.com>
-To: wim@iguana.be, grant.likely@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net
-Cc: michals@xilinx.com, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Harini Katakam <harinik@xilinx.com>
-Subject: [PATCH v2 2/2] devicetree: Add Cadence WDT devicetree bindings documentation
-Date: Tue, 27 May 2014 15:48:15 +0530
-Message-Id: <1401185895-3677-2-git-send-email-harinik@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401185895-3677-1-git-send-email-harinik@xilinx.com>
-References: <1401185895-3677-1-git-send-email-harinik@xilinx.com>
+	Tue, 27 May 2014 06:20:06 -0400
+From: Kefeng Wang <wangkefeng.wang@huawei.com>
+To: Joerg Roedel <joro@8bytes.org>
+CC: <guohanjun@huawei.com>, <iommu@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Kefeng Wang <wangkefeng.wang@huawei.com>
+Subject: [PATCH] iommu: msm: use devm_ioremap_resource to simplify code
+Date: Tue, 27 May 2014 18:18:42 +0800
+Message-ID: <1401185922-6908-1-git-send-email-wangkefeng.wang@huawei.com>
+X-Mailer: git-send-email 1.8.3.msysgit.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.177.21.224]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add cadence-wdt bindings documentation.
+Use devm_ioremap_resource() to make the code simpler, drop unused variable,
+redundant return value check, and error-handing code.
 
-Signed-off-by: Harini Katakam <harinik@xilinx.com>
+Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
 ---
+ drivers/iommu/msm_iommu_dev.c |   38 +++++++-------------------------------
+ 1 files changed, 7 insertions(+), 31 deletions(-)
 
-v2:
-No changes
-
----
- .../devicetree/bindings/watchdog/cadence-wdt.txt   |   26 ++++++++++++++++++++
- 1 file changed, 26 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-
-diff --git a/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-new file mode 100644
-index 0000000..1f7a732
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-@@ -0,0 +1,26 @@
-+Zynq Watchdog Device Tree Bindings
-+-------------------------------------------
-+
-+Required properties:
-+- compatible		: Should be "xlnx,zynq-wdt-r1p2" or "cdns,wdt-r1p2".
-+- clocks		: Clock phandles (see clock bindings for details).
-+- reg			: Physical base address and size of WDT registers map.
-+- interrupts		: Property with a value describing the interrupt
-+			  number.
-+- interrupt-parent	: Must be core interrupt controller.
-+
-+Optional properties
-+- reset			: Reset interrupt.
-+- timeout-sec		: Watchdog timeout value (in seconds).
-+
-+Example:
-+
-+		wdt@f8005000 {
-+			compatible = "xlnx,zynq-wdt-r1p2";
-+			clocks = <&clkc 45>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 9 1>;
-+			reg = <0xf8005000 0x1000>;
-+			reset = <0>;
-+			timeout-sec = <10>;
-+		} ;
+diff --git a/drivers/iommu/msm_iommu_dev.c b/drivers/iommu/msm_iommu_dev.c
+index 08ba497..61def7c 100644
+--- a/drivers/iommu/msm_iommu_dev.c
++++ b/drivers/iommu/msm_iommu_dev.c
+@@ -127,13 +127,12 @@ static void msm_iommu_reset(void __iomem *base, int ncb)
+ 
+ static int msm_iommu_probe(struct platform_device *pdev)
+ {
+-	struct resource *r, *r2;
++	struct resource *r;
+ 	struct clk *iommu_clk;
+ 	struct clk *iommu_pclk;
+ 	struct msm_iommu_drvdata *drvdata;
+ 	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
+ 	void __iomem *regs_base;
+-	resource_size_t	len;
+ 	int ret, irq, par;
+ 
+ 	if (pdev->id == -1) {
+@@ -178,35 +177,16 @@ static int msm_iommu_probe(struct platform_device *pdev)
+ 		iommu_clk = NULL;
+ 
+ 	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "physbase");
+-
+-	if (!r) {
+-		ret = -ENODEV;
+-		goto fail_clk;
+-	}
+-
+-	len = resource_size(r);
+-
+-	r2 = request_mem_region(r->start, len, r->name);
+-	if (!r2) {
+-		pr_err("Could not request memory region: start=%p, len=%d\n",
+-							(void *) r->start, len);
+-		ret = -EBUSY;
++	regs_base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(regs_base)) {
++		ret = PTR_ERR(regs_base);
+ 		goto fail_clk;
+ 	}
+ 
+-	regs_base = ioremap(r2->start, len);
+-
+-	if (!regs_base) {
+-		pr_err("Could not ioremap: start=%p, len=%d\n",
+-			 (void *) r2->start, len);
+-		ret = -EBUSY;
+-		goto fail_mem;
+-	}
+-
+ 	irq = platform_get_irq_byname(pdev, "secure_irq");
+ 	if (irq < 0) {
+ 		ret = -ENODEV;
+-		goto fail_io;
++		goto fail_clk;
+ 	}
+ 
+ 	msm_iommu_reset(regs_base, iommu_dev->ncb);
+@@ -222,14 +202,14 @@ static int msm_iommu_probe(struct platform_device *pdev)
+ 	if (!par) {
+ 		pr_err("%s: Invalid PAR value detected\n", iommu_dev->name);
+ 		ret = -ENODEV;
+-		goto fail_io;
++		goto fail_clk;
+ 	}
+ 
+ 	ret = request_irq(irq, msm_iommu_fault_handler, 0,
+ 			"msm_iommu_secure_irpt_handler", drvdata);
+ 	if (ret) {
+ 		pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
+-		goto fail_io;
++		goto fail_clk;
+ 	}
+ 
+ 
+@@ -250,10 +230,6 @@ static int msm_iommu_probe(struct platform_device *pdev)
+ 	clk_disable(iommu_pclk);
+ 
+ 	return 0;
+-fail_io:
+-	iounmap(regs_base);
+-fail_mem:
+-	release_mem_region(r->start, len);
+ fail_clk:
+ 	if (iommu_clk) {
+ 		clk_disable(iommu_clk);
 -- 
-1.7.9.5
+1.7.1
+
 
