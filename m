@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaE0Kyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 06:54:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37076 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaE0Kyt (ORCPT
+	id S1752162AbaE0K4B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 06:56:01 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:55562 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaE0Kz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 06:54:49 -0400
-Date: Tue, 27 May 2014 12:54:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Mike Marciniszyn <infinipath@intel.com>
-Subject: Re: [RFC][PATCH 0/5] VM_PINNED
-Message-ID: <20140527105438.GW13658@twins.programming.kicks-ass.net>
-References: <20140526145605.016140154@infradead.org>
- <CALYGNiMG1NVBUS4TJrYJMr92yWGZHSdGUdCGtBJDHoUMMhE+Wg@mail.gmail.com>
- <20140526203232.GC5444@laptop.programming.kicks-ass.net>
- <CALYGNiO8FNKjtETQMRSqgiArjfQ9nRAALUg9GGdNYbpKru=Sjw@mail.gmail.com>
- <20140527102909.GO30445@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JHjDRUnf1JOMxzko"
-Content-Disposition: inline
-In-Reply-To: <20140527102909.GO30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 27 May 2014 06:55:59 -0400
+Message-ID: <1401188155.5134.125.camel@marge.simpson.net>
+Subject: Re: balance storm
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Libo Chen <libo.chen@huawei.com>, tglx@linutronix.de, mingo@elte.hu,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>
+Date: Tue, 27 May 2014 12:55:55 +0200
+In-Reply-To: <20140527104349.GP30445@twins.programming.kicks-ass.net>
+References: <5382AF2E.1040407@huawei.com>
+	 <1401090987.5339.79.camel@marge.simpson.net> <53832A36.5020205@huawei.com>
+	 <20140527094802.GN30445@twins.programming.kicks-ass.net>
+	 <1401185133.5134.119.camel@marge.simpson.net>
+	 <20140527104349.GP30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-05-27 at 12:43 +0200, Peter Zijlstra wrote: 
+> On Tue, May 27, 2014 at 12:05:33PM +0200, Mike Galbraith wrote:
+> > On Tue, 2014-05-27 at 11:48 +0200, Peter Zijlstra wrote:
+> > 
+> > > So I suppose this is due to the select_idle_sibling() nonsense again,
+> > > where we assumes L3 is a fair compromise between cheap enough and
+> > > effective enough.
+> > 
+> > Nodz.
+> > 
+> > > Of course, Intel keeps growing the cpu count covered by L3 to ridiculous
+> > > sizes, 8 cores isn't nowhere near their top silly, which shifts the
+> > > balance, and there's always going to be pathological cases (like the
+> > > proposed workload) where its just always going to suck eggs.
+> > 
+> > Test is as pathological as it gets.  15 core + SMT wouldn't be pretty.
+> 
+> So one thing we could maybe do is measure the cost of
+> select_idle_sibling(), just like we do for idle_balance() and compare
+> this against the tasks avg runtime.
+> 
+> We can go all crazy and do reduced searches; like test every n-th cpu in
+> the mask, or make it statistical and do a full search ever n wakeups.
+> 
+> Not sure what's a good approach. But L3 spanning more and more CPUs is
+> not something that's going to get cured anytime soon I'm afraid.
+> 
+> Not to mention bloody SMT which makes the whole mess worse.
 
---JHjDRUnf1JOMxzko
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think we should keep it dirt simple and above all dirt cheap.  The per
+task migration cap per unit time should meet that bill, limit the damage
+potential, while also limiting the good, but that's tough.  I don't see
+any way to make it perfect, so I'll settle for good enough.
 
-On Tue, May 27, 2014 at 12:29:09PM +0200, Peter Zijlstra wrote:
-> On Tue, May 27, 2014 at 12:49:08AM +0400, Konstantin Khlebnikov wrote:
-> > Another suggestion. VM_RESERVED is stronger than VM_LOCKED and extends
-> > its functionality.
-> > Maybe it's easier to add VM_DONTMIGRATE and use it together with VM_LOC=
-KED.
-> > This will make accounting easier. No?
->=20
-> I prefer the PINNED name because the not being able to migrate is only
-> one of the desired effects of it, not the primary effect. We're really
-> looking to keep physical pages in place and preserve mappings.
->=20
-> The -rt people for example really want to avoid faults (even minor
-> faults), and DONTMIGRATE would still allow unmapping.
->=20
-> Maybe always setting VM_PINNED and VM_LOCKED together is easier, I
-> hadn't considered that. The first thing that came to mind is that that
-> might make the fork() semantics difficult, but maybe it works out.
->=20
-> And while we're on the subject, my patch preserves PINNED over fork()
-> but maybe we don't actually need that either.
+-Mike
 
-So pinned_vm is userspace exposed, which means we have to maintain the
-individual counts, and doing the fully orthogonal accounting is 'easier'
-than trying to get the boundary cases right.
 
-That is, if we have a program that does mlockall() and then does the IB
-ioctl() to 'pin' a region, we'd have to make mm_mpin() do munlock()
-after it splits the vma, and then do the pinned accounting.
-
-Also, we'll have lost the LOCKED state and unless MCL_FUTURE was used,
-we don't know what to restore the vma to on mm_munpin().
-
-So while the accounting looks tricky, it has simpler semantics.
-
---JHjDRUnf1JOMxzko
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThG7uAAoJEHZH4aRLwOS6eAIQALZlA3uluTkf8/ciEiNoNzcm
-O+a5nh6AC26jmjZ2Y732YdRo4hC00pK2TTj2uQ32sNteklK4VMB8ZrYwOArfV6mF
-zrj2zU1RlLkU1CkyIdF3UOhzzOf9F3TuEGVk3AuWVv33ybrdwQXLKKHzveczespg
-WWSEvRsSGcqQUGefmS9czAJVArk/AV0Rg+3BYucPYn036yJ2+a6Kw+rTtObASSxN
-+UV7lTzBIg7HgxRweS6jZ18Q/FKG4fGE+RHXPBpT2sFdrVMq4A+QeFTGZ9WPDcvP
-spaNc+fr012RcVHWwLylGTkj/r9NwAv43K1TnsI5zTWMUrzDh8SGgsHsAWu6C8IK
-lpax0WSdfWn2MnAXhuEzGLoLuyTUwSXsudASaqaDdSmBMu1Ur/NZmlw3qGci5SUw
-0ORPj4/vPRFHaNI9Gg22fwtOTHqTOey710J2FpRtdEYxFpeAGFIfHTucj4Zal9Gu
-SraZSECzMaadd1Sz6EXjiMGgau26q62aikcOYpDFvtKxe6RGEdIS6oYuQeDNPADp
-+bz08PDsdm+IJDKKctOnmKQoICljHFqKmZCLSz/HY/ybTf+G6BB0qgPnTRofIFtC
-6Ry7OZHTzaaJ0kfVhTxx45US63Vtoj69lQdTUnXnJDTuu3mu2VW6Dxyt51YikldN
-OQ+5smSQteJyV4P7hOZ/
-=I0k+
------END PGP SIGNATURE-----
-
---JHjDRUnf1JOMxzko--
