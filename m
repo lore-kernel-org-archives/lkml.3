@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaE0Q3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:29:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594AbaE0Q3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:29:01 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: jolsa@redhat.com
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 0/7 V4] perf: Enable mmap2 and add dcacheline sorting
-Date: Tue, 27 May 2014 12:28:00 -0400
-Message-Id: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
+	id S1752809AbaE0QaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:30:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56246 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688AbaE0QaT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 12:30:19 -0400
+Message-ID: <5384BD93.6030502@linutronix.de>
+Date: Tue, 27 May 2014 18:30:11 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Jamie Iles <jamie@jamieiles.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>
+Subject: Re: [PATCH v3] gpio: dwapb: use a second irq chip
+References: <CACRpkdY=oVyBCwRkppq11B0tkn2bMw+-h_fDhy538eatVUJ=pQ@mail.gmail.com>	<1401137894-6096-1-git-send-email-bigeasy@linutronix.de> <CACRpkdYx9Zwoig5QZmpF1w_Gcyoga8erPZd0RwvHsiC3prjNTA@mail.gmail.com>
+In-Reply-To: <CACRpkdYx9Zwoig5QZmpF1w_Gcyoga8erPZd0RwvHsiC3prjNTA@mail.gmail.com>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches enable mmap2 support in the kernel and perf to
-allow support for data cacheline sorting.
+On 05/27/2014 04:21 PM, Linus Walleij wrote:
+> OK this version applied worked fine.
 
-Note: I haven't been able to reproduce Jiri's perf hang yet, so I don't
-have a patch for that particular problem yet.
+Thank you.
 
-V4: reworked setting up cacheline size (Jiri Olsa)
+> Please check the result because I had to rebase it a little.
 
-V3: added patch to get cacheline size at runtime
-    updated some changelogs
-    fix a test failure (after install libunwind-devel)
-    fix header column length
+Looks good. What remains in my queue is:
 
-V2: change cacheline to dcacheline (Namhyung Kim)
-    change dcacheline alogorithm a bit
-    re-order mmap2 patches (Namhyung Kim)
-    provide documentation (Andi Kleen)
+* gpio: dwapb: use irq_linear_revmap() for the faster lookup
+* gpio: dwapb: use irq_gc_lock() for locking instead bc's lock
+* gpio: dwapb: use d->mask instead of BIT(bit)
 
-Don Zickus (7):
-  events, perf: Pass protection and flags bits through mmap2 interface
-  Revert "perf: Disable PERF_RECORD_MMAP2 support"
-  perf: Update mmap2 interface with protection and flag bits
-  perf report: Add mem-mode documentation to report command
-  perf: Add cpumode to struct hist_entry
-  perf: Add support to dynamically get cacheline size
-  perf: Add dcacheline sort
+what do we do about those?
 
- include/uapi/linux/perf_event.h          |   1 +
- kernel/events/core.c                     |  37 +++++++++--
- tools/perf/Documentation/perf-report.txt |  23 +++++++
- tools/perf/builtin-report.c              |   2 +-
- tools/perf/perf.c                        |   5 ++
- tools/perf/tests/dwarf-unwind.c          |   2 +-
- tools/perf/util/cpumap.c                 |  27 ++++++++
- tools/perf/util/cpumap.h                 |   3 +
- tools/perf/util/event.c                  |  59 +++++++++++------
- tools/perf/util/event.h                  |   2 +
- tools/perf/util/evsel.c                  |   1 +
- tools/perf/util/hist.c                   |   9 ++-
- tools/perf/util/hist.h                   |   1 +
- tools/perf/util/machine.c                |   4 +-
- tools/perf/util/map.c                    |   4 +-
- tools/perf/util/map.h                    |   4 +-
- tools/perf/util/sort.c                   | 108 +++++++++++++++++++++++++++++++
- tools/perf/util/sort.h                   |   2 +
- tools/perf/util/util.c                   |   1 +
- tools/perf/util/util.h                   |   1 +
- 20 files changed, 265 insertions(+), 31 deletions(-)
-
--- 
-1.7.11.7
-
+> Yours,
+> Linus Walleij
+> 
+Sebastian
