@@ -1,102 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaE0QOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:14:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56107 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbaE0QOt (ORCPT
+	id S1753089AbaE0QOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:14:44 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:42508 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049AbaE0QOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:14:49 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 1/2] perf script: move the number processing into its own function
-Date: Tue, 27 May 2014 18:14:33 +0200
-Message-Id: <1401207274-8170-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 2.0.0.rc4
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 27 May 2014 12:14:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140527153937.GE19143@laptop.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-3-git-send-email-vincent.guittot@linaro.org>
+ <20140527124848.GQ30445@twins.programming.kicks-ass.net> <CAKfTPtAbnDdQ=C6oABtwUPr7ADhHo1qsdzt5GFsuVMncA9Q=Qw@mail.gmail.com>
+ <20140527153937.GE19143@laptop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 27 May 2014 18:14:22 +0200
+Message-ID: <CAKfTPtCZx4i5HFnma3EFYjxVHojUAkezSS7jL7KDTgwvKEVFwQ@mail.gmail.com>
+Subject: Re: [PATCH v2 02/11] sched: remove a wake_affine condition
+To: Peter Zijlstra <peterz@infradead.org>, nickpiggin@yahoo.com.au
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was going to change something here and the result was so much on the
-right side of the screen that I decided to move that piece into its own
-function.
-This patch should make no function change except the moving the code
-into its own function.
+On 27 May 2014 17:39, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, May 27, 2014 at 05:19:02PM +0200, Vincent Guittot wrote:
+>> On 27 May 2014 14:48, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Fri, May 23, 2014 at 05:52:56PM +0200, Vincent Guittot wrote:
+>> >> I have tried to understand the meaning of the condition :
+>> >>  (this_load <= load &&
+>> >>   this_load + target_load(prev_cpu, idx) <= tl_per_task)
+>> >> but i failed to find a use case that can take advantage of it and i haven't
+>> >> found description of it in the previous commits' log.
+>> >
+>> > commit 2dd73a4f09beacadde827a032cf15fd8b1fa3d48
+>> >
+>> >     int try_to_wake_up():
+>> >
+>> >     in this function the value SCHED_LOAD_BALANCE is used to represent the load
+>> >     contribution of a single task in various calculations in the code that
+>> >     decides which CPU to put the waking task on.  While this would be a valid
+>> >     on a system where the nice values for the runnable tasks were distributed
+>> >     evenly around zero it will lead to anomalous load balancing if the
+>> >     distribution is skewed in either direction.  To overcome this problem
+>> >     SCHED_LOAD_SCALE has been replaced by the load_weight for the relevant task
+>> >     or by the average load_weight per task for the queue in question (as
+>> >     appropriate).
+>> >
+>> >                         if ((tl <= load &&
+>> > -                               tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
+>> > -                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+>> > +                               tl + target_load(cpu, idx) <= tl_per_task) ||
+>> > +                               100*(tl + p->load_weight) <= imbalance*load) {
+>>
+>> The oldest patch i had found was: https://lkml.org/lkml/2005/2/24/34
+>> where task_hot had been replaced by
+>> + if ((tl <= load &&
+>> + tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
+>> + 100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+>>
+>> but as explained, i haven't found a clear explanation of this condition
+>
+> Yeah, that's the commit I had below; but I suppose we could ask Nick if
+> we really want, I've heard he still replies to email, even though he's
+> locked up in a basement somewhere :-)
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- .../util/scripting-engines/trace-event-python.c    | 38 +++++++++++++---------
- 1 file changed, 23 insertions(+), 15 deletions(-)
+ok, I have added him in the list
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cd9774d..aa11790 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -230,6 +230,28 @@ static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
- 	return event;
- }
- 
-+static PyObject *get_field_numeric_entry(struct event_format *event,
-+		struct format_field *field, void *data)
-+{
-+	PyObject *obj;
-+	unsigned long long val;
-+
-+	val = read_size(event, data + field->offset, field->size);
-+	if (field->flags & FIELD_IS_SIGNED) {
-+		if ((long long)val >= LONG_MIN &&
-+				(long long)val <= LONG_MAX)
-+			obj = PyInt_FromLong(val);
-+		else
-+			obj = PyLong_FromLongLong(val);
-+	} else {
-+		if (val <= LONG_MAX)
-+			obj = PyInt_FromLong(val);
-+		else
-+			obj = PyLong_FromUnsignedLongLong(val);
-+	}
-+	return obj;
-+}
-+
- static void python_process_tracepoint(struct perf_sample *sample,
- 				      struct perf_evsel *evsel,
- 				      struct thread *thread,
-@@ -238,7 +260,6 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
- 	struct format_field *field;
--	unsigned long long val;
- 	unsigned long s, ns;
- 	struct event_format *event;
- 	unsigned n = 0;
-@@ -302,20 +323,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 				offset = field->offset;
- 			obj = PyString_FromString((char *)data + offset);
- 		} else { /* FIELD_IS_NUMERIC */
--			val = read_size(event, data + field->offset,
--					field->size);
--			if (field->flags & FIELD_IS_SIGNED) {
--				if ((long long)val >= LONG_MIN &&
--				    (long long)val <= LONG_MAX)
--					obj = PyInt_FromLong(val);
--				else
--					obj = PyLong_FromLongLong(val);
--			} else {
--				if (val <= LONG_MAX)
--					obj = PyInt_FromLong(val);
--				else
--					obj = PyLong_FromUnsignedLongLong(val);
--			}
-+			obj = get_field_numeric_entry(event, field, data);
- 		}
- 		if (handler)
- 			PyTuple_SetItem(t, n++, obj);
--- 
-2.0.0.rc4
+Nick,
 
+While doing some rework on the wake affine part of the scheduler, i
+failed to catch the use case that takes advantage of a condition that
+you added some while ago with the commit
+a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
+
+Could you help us to clarify the 2 first lines of the test that you added ?
+
++                       if ((tl <= load &&
++                               tl + target_load(cpu, idx) <=
+SCHED_LOAD_SCALE) ||
++                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+
+Regards,
+Vincent
+
+>
+>> > commit a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
+>> >
+>> >
+>> > +                       if ((tl <= load &&
+>> > +                               tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
+>> > +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+>> >
+>> >
+>> > So back when the code got introduced, it read:
+>> >
+>> >         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE < source_load(this_cpu, idx) &&
+>> >         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(this_cpu, idx) < SCHED_LOAD_SCALE
+>> >
+>> > So while the first line makes some sense, the second line is still
+>> > somewhat challenging.
+>> >
+>> > I read the second line something like: if there's less than one full
+>> > task running on the combined cpus.
+>>
+>> ok. your explanation makes sense
+>
+> Maybe, its still slightly weird :-)
+>
+>> >
+>> > Now for idx==0 this is hard, because even when sync=1 you can only make
+>> > it true if both cpus are completely idle, in which case you really want
+>> > to move to the waking cpu I suppose.
+>>
+>> This use case is already taken into account by
+>>
+>> if (this_load > 0)
+>> ..
+>> else
+>>  balance = true
+>
+> Agreed.
+>
+>> > One task running will have it == SCHED_LOAD_SCALE.
+>> >
+>> > But for idx>0 this can trigger in all kinds of situations of light load.
+>>
+>> target_load is the max between load for idx == 0 and load for the
+>> selected idx so we have even less chance to match the condition : both
+>> cpu are completely idle
+>
+> Ah, yes, I forgot to look at the target_load() thing and missed the max,
+> yes that all makes it entirely less likely.
