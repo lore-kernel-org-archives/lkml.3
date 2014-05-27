@@ -1,86 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaE0Qrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:47:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36965 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615AbaE0Qrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:47:36 -0400
-Message-ID: <5384C17E.5060806@ti.com>
-Date: Tue, 27 May 2014 12:46:54 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1752448AbaE0Qro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:47:44 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:60975 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206AbaE0Qri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 12:47:38 -0400
+Date: Tue, 27 May 2014 17:47:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH v3 3/4] mfd: intel_soc_pmic: Crystal Cove support
+Message-ID: <20140527164731.GD4227@lee--X1>
+References: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
+ <1401163576-14872-4-git-send-email-lejun.zhu@linux.intel.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v1 3/5] phy: pci serdes phy driver for keystone
-References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <9550746.D1ri3H0uvi@wuerfel> <537F81D8.2080005@ti.com> <9828919.7tZBgbvqj4@wuerfel>
-In-Reply-To: <9828919.7tZBgbvqj4@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401163576-14872-4-git-send-email-lejun.zhu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/23/2014 3:23 PM, Arnd Bergmann wrote:
-> On Friday 23 May 2014 13:14:00 Murali Karicheri wrote:
->> On 5/15/2014 12:14 PM, Arnd Bergmann wrote:
->>> On Thursday 15 May 2014 12:01:30 Murali Karicheri wrote:
->>>> +static struct serdes_config ks_100mhz_pcie_5gbps_serdes[] = {
->>>> +       {0x0000, 0x00000800, 0x0000ff00},
->>>> +       {0x0060, 0x00041c5c, 0x00ffffff},
->>>> +       {0x0064, 0x0343c700, 0xffffff00},
->>>> +       {0x006c, 0x00000012, 0x000000ff},
->>>> +       {0x0068, 0x00070000, 0x00ff0000},
->>>> +       {0x0078, 0x0000c000, 0x0000ff00},
->>> It looks like the PHY is generic, but the configuration above is
->>> PCI specific. If this is true, you should have #phy-cells=<1>
->>> and document the possible modes, adding a lookup table here to
->>> pick the configuration based on the argument. It's fine to just
->>> implement pcie-5ghz initially, but the binding should list all
->>> the modes that the PHY can support.
->> The PCIE name needs to be dropped and as you correctly guessed, this SERDES
->> is generic.
-> Ok, good.
->
->>> Also, please list the exact name of the phy if you can find it
->>> out. You mention that you don't know the register descriptions,
->>> but you should at least be able to let us know what phy this
->>> is, in case some other SoC reuses the same thing.
->> Unfortunately there is a NDA restriction that prevents us from using the
->> actual Phy name and keystone phy is the name what we can usel at the
->> moment. I am checking
->> this with our IP team and if original name can  be used, I will update
->> the driver to reflect the same.
-> Can you please check the phy drivers that we already have in linux-next
-> to see if any of those are for the same hardware then?
->
-> I guess it's our best hope to catch duplications by inspecting all
-> other phy drivers as they get merged then.
->
-> 	Arnd
-Arnd,
+On Tue, 27 May 2014, Zhu, Lejun wrote:
 
-I have checked the register set of the following drivers under 
-drivers/phy from the
-master branch (v3.15-rc6) using the registers set available with us 
-internally and
-I can't find a match.
+> Crystal Cove is the PMIC in Baytrail-T platform. This patch provides chip-specific support for Crystal Cove.
+> 
+> v2:
+> - Add regmap_config for Crystal Cove.
+> v3:
+> - Convert IRQ config to regmap_irq_chip.
 
-phy-exynos5250-sata.c  phy-exynos-mipi-video.c  phy-omap-usb2.c 
-phy-sun4i-usb.c
-phy-xgene.c phy-exynos4210-usb2.c  phy-exynos5250-usb2.c phy-mvebu-sata.c
-phy-samsung-usb2.c  phy-ti-pipe3.c phy-bcm-kona-usb2.c phy-exynos4x12-usb2.c
-  phy-exynos-dp-video.c  phy-omap-control.c  phy-twl4030-usb.c
+Same comments about the commit log as before.
 
-So there is no duplication.
+> Signed-off-by: Yang, Bin <bin.yang@intel.com>
+> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> ---
+>  drivers/mfd/intel_soc_pmic_crc.c | 175 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 175 insertions(+)
+>  create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
+> 
+> diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
+> new file mode 100644
+> index 0000000..341ab02
+> --- /dev/null
+> +++ b/drivers/mfd/intel_soc_pmic_crc.c
+> @@ -0,0 +1,175 @@
+> +/*
+> + * intel_soc_pmic_crc.c - Device access for Crystal Cove PMIC
+> + *
+> + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author: Yang, Bin <bin.yang@intel.com>
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/delay.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/err.h>
+> +#include <linux/i2c.h>
+> +#include <linux/irq.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/acpi.h>
+> +#include <linux/version.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/intel_soc_pmic.h>
+> +#include "intel_soc_pmic_core.h"
 
-Murali
+Please review these.
 
+> +#define	CHIP_NAME			"Crystal Cove"
+
+Don't do this.  Just use the name in the correct places.
+
+> +#define CRYSTAL_COVE_MAX_REGISTER	0xC6
+> +
+> +#define CHIPID		0x00
+> +#define CHIPVER		0x01
+> +#define IRQLVL1		0x02
+> +#define MIRQLVL1	0x0E
+> +
+> +enum {
+> +	PWRSRC_IRQ = 0,
+> +	THRM_IRQ,
+> +	BCU_IRQ,
+> +	ADC_IRQ,
+> +	CHGR_IRQ,
+> +	GPIO_IRQ,
+> +	VHDMIOCP_IRQ
+> +};
+> +
+> +static struct resource gpio_resources[] = {
+> +	{
+> +		.name	= "GPIO",
+> +		.start	= GPIO_IRQ,
+> +		.end	= GPIO_IRQ,
+> +		.flags	= IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct resource pwrsrc_resources[] = {
+> +	{
+> +		.name  = "PWRSRC",
+> +		.start = PWRSRC_IRQ,
+> +		.end   = PWRSRC_IRQ,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct resource adc_resources[] = {
+> +	{
+> +		.name  = "ADC",
+> +		.start = ADC_IRQ,
+> +		.end   = ADC_IRQ,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct resource thermal_resources[] = {
+> +	{
+> +		.name  = "THERMAL",
+> +		.start = THRM_IRQ,
+> +		.end   = THRM_IRQ,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct resource bcu_resources[] = {
+> +	{
+> +		.name  = "BCU",
+> +		.start = BCU_IRQ,
+> +		.end   = BCU_IRQ,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct mfd_cell crystal_cove_dev[] = {
+> +	{
+> +		.name = "crystal_cove_pwrsrc",
+> +		.id = 0,
+> +		.num_resources = ARRAY_SIZE(pwrsrc_resources),
+> +		.resources = pwrsrc_resources,
+> +	},
+> +	{
+> +		.name = "crystal_cove_adc",
+> +		.id = 0,
+> +		.num_resources = ARRAY_SIZE(adc_resources),
+> +		.resources = adc_resources,
+> +	},
+> +	{
+> +		.name = "crystal_cove_thermal",
+> +		.id = 0,
+> +		.num_resources = ARRAY_SIZE(thermal_resources),
+> +		.resources = thermal_resources,
+> +	},
+> +	{
+> +		.name = "crystal_cove_bcu",
+> +		.id = 0,
+> +		.num_resources = ARRAY_SIZE(bcu_resources),
+> +		.resources = bcu_resources,
+> +	},
+> +	{
+> +		.name = "crystal_cove_gpio",
+> +		.id = 0,
+> +		.num_resources = ARRAY_SIZE(gpio_resources),
+> +		.resources = gpio_resources,
+> +	},
+> +};
+
+You can remove the id field.
+
+> +static struct regmap_config crystal_cove_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +
+> +	.max_register = CRYSTAL_COVE_MAX_REGISTER,
+> +	.cache_type = REGCACHE_NONE,
+> +};
+> +
+> +#define	CRC_REGMAP_IRQ_VALUE(irq)	{	\
+> +		.reg_offset = 0,		\
+> +		.mask = BIT(irq),		\
+> +	}
+
+Can you sort out the whitespace here?
+
+> +static const struct regmap_irq crystal_cove_irqs[] = {
+> +	[PWRSRC_IRQ]	= CRC_REGMAP_IRQ_VALUE(PWRSRC_IRQ),
+> +	[THRM_IRQ]	= CRC_REGMAP_IRQ_VALUE(THRM_IRQ),
+> +	[BCU_IRQ]	= CRC_REGMAP_IRQ_VALUE(BCU_IRQ),
+> +	[ADC_IRQ]	= CRC_REGMAP_IRQ_VALUE(ADC_IRQ),
+> +	[CHGR_IRQ]	= CRC_REGMAP_IRQ_VALUE(CHGR_IRQ),
+> +	[GPIO_IRQ]	= CRC_REGMAP_IRQ_VALUE(GPIO_IRQ),
+> +	[VHDMIOCP_IRQ]	= CRC_REGMAP_IRQ_VALUE(VHDMIOCP_IRQ),
+> +};
+> +
+> +static struct regmap_irq_chip crystal_cove_irq_chip = {
+> +	.name = CHIP_NAME,
+> +	.irqs = crystal_cove_irqs,
+> +	.num_irqs = ARRAY_SIZE(crystal_cove_irqs),
+> +	.num_regs = 1,
+> +	.status_base = IRQLVL1,
+> +	.mask_base = MIRQLVL1,
+> +};
+> +
+> +static int crystal_cove_init(void)
+> +{
+> +	pr_debug("%s: ID 0x%02X, VERSION 0x%02X\n", CHIP_NAME,
+> +		 intel_soc_pmic_readb(CHIPID), intel_soc_pmic_readb(CHIPVER));
+> +	return 0;
+> +}
+
+This seems pointless.
+
+> +struct intel_soc_pmic_config crystal_cove_pmic = {
+> +	.label		= CHIP_NAME,
+
+Where is this used?
+
+> +	.irq_flags	= IRQF_TRIGGER_RISING,
+> +	.init		= crystal_cove_init,
+> +	.cell_dev	= crystal_cove_dev,
+> +	.n_cell_devs	= ARRAY_SIZE(crystal_cove_dev),
+> +	.regmap_cfg	= &crystal_cove_regmap_config,
+> +	.irq_chip	= &crystal_cove_irq_chip,
+> +};
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
