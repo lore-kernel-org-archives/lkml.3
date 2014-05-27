@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaE0DXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 23:23:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60523 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887AbaE0DXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 23:23:36 -0400
-Message-ID: <538404F2.9000505@ti.com>
-Date: Tue, 27 May 2014 08:52:26 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
-        <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <sameo@linux.intel.com>, <lee.jones@linaro.org>
-Subject: Re: [PATCH 5/5] regulator: tps65917: Add Regulator driver for tps65917
- PMIC
-References: <1401098197-647-1-git-send-email-j-keerthy@ti.com> <1401098197-647-6-git-send-email-j-keerthy@ti.com> <20140526150052.GP22111@sirena.org.uk>
-In-Reply-To: <20140526150052.GP22111@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1752288AbaE0D3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 23:29:13 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:25413 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751359AbaE0D3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 23:29:12 -0400
+Message-ID: <1401161350.5620.0.camel@pippen.local.home>
+Subject: Re: [PATCH 12/12] [include/linux] Remove strict_strto definitions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Daniel Walter <dwalter@google.com>
+Cc: linux-kernel@vger.kernel.org, richard@nod.at
+Date: Mon, 26 May 2014 23:29:10 -0400
+In-Reply-To: <20140526221718.GN25779@google.com>
+References: <20140526221718.GN25779@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Mon, 2014-05-26 at 23:17 +0100, Daniel Walter wrote:
+> From: Daniel Walter <dwalter@google.com>
+> Subject: [PATCH 12/12] [include/linux] remove strict_strto* definitions
+> 
+> Remove obsolete and unused strict_strto* functions
+> 
+> Signed-off-by: Daniel Walter <dwalter@google.com>
 
-On Monday 26 May 2014 08:30 PM, Mark Brown wrote:
-> On Mon, May 26, 2014 at 03:26:37PM +0530, Keerthy wrote:
->> This patch adds support for TPS65917 PMIC regulators.
->>
->> The regulators set consists of 5 SMPSs and 5 LDOs. The output
->> voltages are configurable and are meant to supply power to the
->> main processor and other components.
-> This appears to look *very* like the Palmas driver, should it not be
-> sharing code with that?  If it were just data tables it'd be less of a
-> concern but there's quite a bit of actual code here.
-Yes it is. The difference is in the entire register space of the regulators
-between the two. There are other differences in how the ramp delay
-is configured and SMPS ordering. The difference is also a bit in the 
-programming
-sequence. I agree that largely it is Palmas based. I did not want to add 
-more
-checks in the probe of the palmas driver. Hence came up with a new one.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Coming to sharing the code, can we have 2 drivers which share the common
-functions with separate data and specific functions?
+-- Steve
 
-I just simply do not want to add anything more to the palmas driver 
-probe function.
+> ---
+>  include/linux/kernel.h | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 4c52907..a39043c 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -376,10 +376,6 @@ extern unsigned long simple_strtoul(const char *,char **,unsigned int);
+>  extern long simple_strtol(const char *,char **,unsigned int);
+>  extern unsigned long long simple_strtoull(const char *,char **,unsigned int);
+>  extern long long simple_strtoll(const char *,char **,unsigned int);
+> -#define strict_strtoul	kstrtoul
+> -#define strict_strtol	kstrtol
+> -#define strict_strtoull	kstrtoull
+> -#define strict_strtoll	kstrtoll
+>  
+>  extern int num_to_str(char *buf, int size, unsigned long long num);
+>  
 
-Kind Regards,
-Keerthy
+
