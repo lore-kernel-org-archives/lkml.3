@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbaE0RHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:07:05 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:46676 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605AbaE0RG7 (ORCPT
+	id S1752819AbaE0RHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:07:19 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45985 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605AbaE0RHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:06:59 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tarek Dakhran <t.dakhran@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
-Subject: Re: [PATCH v11 0/3] Exynos 5410 support
-References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
-Date: Tue, 27 May 2014 10:06:56 -0700
-In-Reply-To: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com> (Tarek
-	Dakhran's message of "Mon, 26 May 2014 07:23:30 +0400")
-Message-ID: <7hr43f9mmn.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Tue, 27 May 2014 13:07:14 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] ARM: multi_v7_defconfig: Enable Zynq peripheral drivers
+Date: Tue, 27 May 2014 10:04:28 -0700
+Message-Id: <1401210268-20729-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.9.3.1.ga73a6ad
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tarek Dakhran <t.dakhran@samsung.com> writes:
+A few drivers for Zynq peripherals made it into mainline recently.
+Enable them in the defconfig. The following devices are enabled:
+ - Cadence Macb Ethernet controller
+ - Cadence I2C controller
+ - Arasan SDHCI
 
-> The series of patches represent support of Exynos 5410 SoC
->
-> The Exynos 5410 is the first Samsung SoC based on big.LITTLE architecture
->
-> Patches add new platform description, support of clock controller and device
-> tree for Exynos 5410.
->
-> Has been build on Samsung Linux Kernel
->   (branch: for-next, commit: 97eae6c Merge branch 'v3.16-next/multiplatform' into for-next)
->
-> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
-> 		    2) Exynos 5410 reference board (multi_v7_defconfig)
-> 		    3) Odroid-XU board (exynos_defconfig)
-> 		    4) Odroid-XU board (multi_v7_defconfig)
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+After quite a while I gave the defonfig a shot again. At first try it
+directly booted my Zynq board to a usable login prompt, and with this
+patch even some peripherals work out of the box.
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
+	Thanks,
+	Sören
+---
+ arch/arm/configs/multi_v7_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
-FYI, I boot tested this on an odroid-xu (exynos_defconfig and
-multi_v7_defconfig.)
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index d4e8a47a2f7c..763054810ccf 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -121,6 +121,7 @@ CONFIG_SATA_HIGHBANK=y
+ CONFIG_SATA_MV=y
+ CONFIG_NETDEVICES=y
+ CONFIG_SUN4I_EMAC=y
++CONFIG_MACB=y
+ CONFIG_NET_CALXEDA_XGMAC=y
+ CONFIG_MV643XX_ETH=y
+ CONFIG_MVNETA=y
+@@ -175,6 +176,7 @@ CONFIG_I2C_CHARDEV=y
+ CONFIG_I2C_MUX=y
+ CONFIG_I2C_MUX_PCA954x=y
+ CONFIG_I2C_MUX_PINCTRL=y
++CONFIG_I2C_CADENCE=y
+ CONFIG_I2C_DESIGNWARE_PLATFORM=y
+ CONFIG_I2C_MV64XXX=y
+ CONFIG_I2C_SIRF=y
+@@ -272,6 +274,7 @@ CONFIG_MMC=y
+ CONFIG_MMC_BLOCK_MINORS=16
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
++CONFIG_MMC_SDHCI_OF_ARASAN=y
+ CONFIG_MMC_SDHCI_ESDHC_IMX=y
+ CONFIG_MMC_SDHCI_TEGRA=y
+ CONFIG_MMC_SDHCI_DOVE=y
+-- 
+1.9.3.1.ga73a6ad
 
-Kevin
