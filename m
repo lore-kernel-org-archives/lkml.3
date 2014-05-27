@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaE0VyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 17:54:00 -0400
-Received: from mga14.intel.com ([192.55.52.115]:16161 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434AbaE0Vx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 17:53:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,922,1392192000"; 
-   d="scan'208";a="538497266"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: RE: [PATCH] x86, MCE: Flesh out when to panic comment
-Thread-Topic: [PATCH] x86, MCE: Flesh out when to panic comment
-Thread-Index: AQHPeMv4f2OJPRjwKESY7TWOSfRq25tTJI8AgAAETgCAAdE5YA==
-Date: Tue, 27 May 2014 21:53:56 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3281EEA5@ORSMSX114.amr.corp.intel.com>
-References: <CA+55aFwiZxg3kS7seKPnkteOBA5N8ENXt6Y+Azn_HH6Z1iRN5w@mail.gmail.com>
- <20140521214319.GF25130@pd.tnic> <537D1E8B.1010505@zytor.com>
- <CALCETrVP3WtaQ72RgaPUuF2tAZRmJUtEyzyGMKWytv422_thmw@mail.gmail.com>
- <20140521215411.GI25130@pd.tnic> <537D21F2.8030702@zytor.com>
- <20140521221121.GL25130@pd.tnic> <537D2522.80702@zytor.com>
- <20140526101859.GD25732@pd.tnic>
- <alpine.LNX.2.00.1405261250230.12047@pobox.suse.cz>
- <20140526110634.GG25732@pd.tnic>
-In-Reply-To: <20140526110634.GG25732@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752831AbaE0V7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 17:59:08 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:45384 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697AbaE0V7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 17:59:07 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: linux-kernel@vger.kernel.org, lxc-devel@lists.linuxcontainers.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Michael H. Warfield" <mhw@wittsend.com>, Marian Marinov <mm@1h.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Michael J Coss <michael.coss@alcatel-lucent.com>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [RFC PATCH 0/2] Loop device psuedo filesystem
+Date: Tue, 27 May 2014 23:58:54 +0200
+Message-Id: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4RLs5aX026448
 
->> I think the comment is still not explaining the big part of what the
->> discussion was about -- i.e. if it was in kernel context, we always
->> panic.
->
-> I thought the pointer to mce_severity was enough? People should open an
-> editor and look at the function and at its gory insanity. :-P
+I'm posting these patches in response to the ongoing discussion of loop
+devices in containers at [1].
 
-It is far from obvious that mce_severity() will always say that an error
-detected inside the kernel will be fatal.
+The patches implement a psuedo filesystem for loop devices, which will
+allow use of loop devices in containters using standard utilities. Under
+normal use a loopfs mount will initially contain a single device node
+for loop-control which can be used to request and release loop devices.
+Any devices allocated via this node will automatically appear in that
+loopfs mount (and in devtmpfs) but not in any other loopfs mounts.
+CAP_SYS_ADMIN in the userns of the process which performed the mount is
+allowed to perform privileged loop ioctls on these devices.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Alternately loopfs can be mounted with the hostmount option, intended
+for mounting /dev/loop in the host. This is the default mount for any
+devices not created via loop-control in a loopfs mount (e.g. devices
+created during driver init, devices created via /dev/loop-control, etc).
+This is only available to system-wide CAP_SYS_ADMIN.
+
+I still have some testing to do on these patches, but they work at
+minimum for simple use cases. It's possible to use an unmodified losetup
+if it's new enough to know about loop-control, with a couple of caveats:
+
+ * /dev/loop-control must be symlinked to /dev/loop/loop-control
+ * In some cases losetup attempts to use /dev/loopN when the device node
+   is at /dev/loop/N. For example, 'losetup -f disk.img' fails.
+
+Device nodes for loop partitions are not created in loopfs. These
+devices are created by the generic block layer, and the loop driver has
+no way of knowing when they are created, so some kind of hook into the
+driver will be needed to support this.
+
+Thanks,
+Seth
+
+[1] http://article.gmane.org/gmane.linux.kernel/1703988
+
+Seth Forshee (2):
+  loop: Add loop filesystem
+  loop: Permit priveleged operations within user namespaces
+
+ drivers/block/loop.c       | 137 +++++++++++++----
+ drivers/block/loop.h       |   2 +
+ fs/Makefile                |   1 +
+ fs/loopfs/Makefile         |   6 +
+ fs/loopfs/inode.c          | 360 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/loopfs.h     |  53 +++++++
+ include/uapi/linux/magic.h |   1 +
+ 7 files changed, 535 insertions(+), 25 deletions(-)
+ create mode 100644 fs/loopfs/Makefile
+ create mode 100644 fs/loopfs/inode.c
+ create mode 100644 include/linux/loopfs.h
+
