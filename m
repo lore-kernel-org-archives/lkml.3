@@ -1,87 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321AbaE0Xrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 19:47:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5516 "EHLO mga01.intel.com"
+	id S1753006AbaE0XxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 19:53:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9494 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922AbaE0Xru convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 19:47:50 -0400
+	id S1751434AbaE0XxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 19:53:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,923,1392192000"; 
-   d="scan'208";a="545833699"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Usyskin, Alexander" <alexander.usyskin@intel.com>
-Subject: RE: [char-misc-next 3/3] mei: add WPT second mei interface
-Thread-Topic: [char-misc-next 3/3] mei: add WPT second mei interface
-Thread-Index: AQHPefE8tqagw885w0+GVaVeBZ0JS5tU8GkA///ZPQCAAEVykA==
-Date: Tue, 27 May 2014 23:47:44 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AFFBE0A@HASMSX106.ger.corp.intel.com>
-References: <1399969321-6512-1-git-send-email-tomas.winkler@intel.com>
- <1399969321-6512-4-git-send-email-tomas.winkler@intel.com>
- <20140527212207.GB26089@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AFFBCDC@HASMSX106.ger.corp.intel.com>
- <20140527220630.GA7924@kroah.com>
-In-Reply-To: <20140527220630.GA7924@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="547457323"
+Message-ID: <5385255D.5060204@intel.com>
+Date: Tue, 27 May 2014 16:53:01 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com
+Subject: Re: [PATCH] pci: Save and restore VFs as a part of a reset
+References: <20140505212346.18767.34117.stgit@ahduyck-cp2.jf.intel.com> <20140527222256.GC11907@google.com>
+In-Reply-To: <20140527222256.GC11907@google.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Wednesday, May 28, 2014 01:07
-> To: Winkler, Tomas
-> Cc: arnd@arndb.de; linux-kernel@vger.kernel.org; Usyskin, Alexander
-> Subject: Re: [char-misc-next 3/3] mei: add WPT second mei interface
+On 05/27/2014 03:22 PM, Bjorn Helgaas wrote:
+> On Mon, May 05, 2014 at 02:25:17PM -0700, Alexander Duyck wrote:
+>> This fixes an issue I found in which triggering a reset via the PCI sysfs
+>> reset while SR-IOV was enabled would leave the VFs in a state in which the
+>> BME and MSI-X enable bits were all cleared.
+>>
+>> To correct that I have added code so that the VF state is saved and restored
+>> as a part of the PF save and restore state functions.  By doing this the VF
+>> state is restored as well as the IOV state allowing the VFs to resume function
+>> following a reset.
+>>
+>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+>> ---
+>>  drivers/pci/iov.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++--
+>>  drivers/pci/pci.c |    2 ++
+>>  drivers/pci/pci.h |    5 +++++
+>>  3 files changed, 53 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+>> index de7a747..645ed71 100644
+>> --- a/drivers/pci/iov.c
+>> +++ b/drivers/pci/iov.c
+>> @@ -521,13 +521,57 @@ resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
+>>  }
+>>  
+>>  /**
+>> + * pci_save_iov_state - Save the state of the VF configurations
+>> + * @dev: the PCI device
+>> + */
+>> +int pci_save_iov_state(struct pci_dev *dev)
+>> +{
+>> +	struct pci_dev *vfdev = NULL;
+>> +	unsigned short dev_id;
+>> +
+>> +	/* only search if we are a PF */
+>> +	if (!dev->is_physfn)
+>> +		return 0;
+>> +
+>> +	/* retrieve VF device ID */
+>> +	pci_read_config_word(dev, dev->sriov->pos + PCI_SRIOV_VF_DID, &dev_id);
 > 
-> On Tue, May 27, 2014 at 09:42:19PM +0000, Winkler, Tomas wrote:
-> > > > +/* PCH devices MEI 2 interface */
-> > > > +const struct mei_cfg mei_me_pch_2_cfg = {
-> > > > +	MEI_CFG_PCH_HFS,
-> > > > +	.mei_id = 1
-> > >
-> > > That's going to be a recipe for disaster.  Have the MEI core allocate
-> > > the id numbers as things are registered, don't have the individual
-> > > drivers create their id.
-> >
-> > I'm don't think can ensure the enumeration order.
-> 
-> You should not be relying on the order to get anything right.
-> 
-> > This is per device not per driver configuration structure.
-> > Each pci device is actually just  another head to one MEI device but heads are not
-> equal the name/id matters
-> > Yes I assume it looks odd at the first glance, anyhow we are open to any
-> reasonable suggestions
-> 
-> Just dynamically allocate the numbers like all other subsystems do?
->
-> Then userspace can open the device nodes it cares about, it should be
-> able to somehow tell what device is what somehow, right?  If not, you
-> are doing something wrong with the interface as you can't rely on minor
-> numbers.
+> This is just an optimization to reduce the number of things you get
+> back from pci_get_device(), and hence reduce the number of times the
+> "vfdev->is_virtfn && (vfdev->physfn == dev)" condition is false, right?
 > 
 
-The only way for user space to distinguish among interfaces is the same way as driver does by looking for device id. 
-The assignment of the device name/id is pretty much static in the HW. Now the same device id database from the driver has to be copied 
-to the udev rules or equivalent  and kept in sync.   
-Most importantly all the legacy user space just opens /dev/mei  so I wanted to leave /dev/mei (not /dev/mei0) to be assigned always to the first mei head and to not break existing user space. 
+Yes, this is just a mechanism to reduce the number of items we have to test.
 
-Can you be a bit more specific on why we cannot depend on minor numbers and default naming rules, what is the scenario that will break? 
+>> +	/* loop through all the VFs and save their state information */
+>> +	while ((vfdev = pci_get_device(dev->vendor, dev_id, vfdev))) {
+>> +		if (vfdev->is_virtfn && (vfdev->physfn == dev)) {
+>> +			int err = pci_save_state(vfdev);
+> 
+> It makes me uneasy to operate on another device (we're resetting A, and
+> here we save state for B).  I know B is dependent on A, since B is a VF
+> related to PF A, but what synchronization is there to serialize this
+> against any other save/restore operations that may be in progress by B's
+> driver or by a sysfs operation on B?
 
-Thanks
-Tomas
+I don't believe there is any synchronization mechanism in place
+currently.  I can look into that as well.  Odds are we probably need to
+have the VFs check the parent lock before they take any independent action.
+
+> 
+> Is there anything in the reset path that pays attention to whether
+> resetting this PF will clobber VFs?  Do we care whether those VFs are in
+> use?  I assume they might be in use by guests?
+
+The problem I found was that the sysfs reset call doesn't bother to
+check with the PF driver at all.  It just clobbers the PF and any VFs on
+it without talking to the PF driver.
+
+> 
+>> +			if (err)
+>> +				return err;
+>> +		}
+>> +	}
+> 
+> pci_get_device() acquires a reference on each device it returns, so this
+> strategy would require a pci_dev_put().
+
+Yes, if I am not mistaken the pci_dev_put is called as a part of
+pci_get_dev_by_id which is what pci_get_device ends up being.
+
+> 
+> But I'm not really keen on pci_get_device() in the first place.  It works
+> by iterating over all PCI devices in the system, which seems like a
+> sledgehammer approach.  It *is* widely used, but mostly in quirk-type code
+> from which I avert my eyes.
+> 
+> Maybe you could do something based on pci_walk_bus()?  If you did that, I
+> think the PCI_SRIOV_VF_DID would become superfluous.
+> 
+
+I can look into that, I'm not familiar with the interface.  I'll have to
+see what the relationship is between the PF and VF in terms of busses as
+I don't recall it off of the top of my head.
+
+If it is simple enough I might submit a second patch to update the
+pci_vfs_assigned since it is using similar logic.
+
+Thanks,
+
+Alex
 
