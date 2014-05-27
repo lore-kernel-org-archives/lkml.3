@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbaE0T3t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 15:29:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44684 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424AbaE0T3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 15:29:47 -0400
-Date: Tue, 27 May 2014 20:29:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arvind.chauhan@arm.com, edubezval@gmail.com, pavel@ucw.cz,
-        lgirdwood@gmail.com
-Message-ID: <20140527192923.GC12304@sirena.org.uk>
-References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+	id S1753417AbaE0Tc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:32:28 -0400
+Received: from mout.gmx.net ([212.227.15.15]:59760 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752078AbaE0Tc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 15:32:26 -0400
+Message-ID: <5384E83B.1030209@gmx.de>
+Date: Tue, 27 May 2014 21:32:11 +0200
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wJgPvdDu+gj56kJ8"
-Content-Disposition: inline
-In-Reply-To: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulators: Add definition of
- regulator_set_voltage_time() for !CONFIG_REGULATOR
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Jeff Smith <jsmith.lkml@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>, Jan Kara <jack@suse.cz>
+Subject: Re: inotify_rm_watch() user-space safety requirements?
+References: <CAAih0NjG4gC-7fkD5vOvF0CQks+DhqVZLeycsju-8RMVP6dbBw@mail.gmail.com>
+In-Reply-To: <CAAih0NjG4gC-7fkD5vOvF0CQks+DhqVZLeycsju-8RMVP6dbBw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:AqUT7fsuA2tXvRGKIk77UNLJH11ZJRdBnlddiN+Db1EOgmCXL1o
+ Ne9m3zSTbRLRlEyqDJoqzP4w6ujG67KrsLCJyepUlMFZvmfO1Jg1h1xE3sCAXjXF/5CnJoK
+ BN5Oneomg8fb5jWO9oCClD5KHjcduQsNOrwCl6Uqx4c0HSWpQMBlPZkAXwsXqHHEWpbcubY
+ 7rm2zq2qURvfdtNN6cTAQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 27.05.2014 19:25, Jeff Smith wrote:
+> inotify's behavior concerning events from removed watches (they do
+> happen) and watch descriptor reuse (beyond my knowledge) is currently
+> undocumented.
+>
+> Although it mimics a standard multiplexing interface in most regards,
+> writing a robust user-space handler is comparatively more complex due
+> to the atypical delivery of "stale" wd events preceding an IN_IGNORE
+> event and a lack of guarantees about how quickly a wd can be reused
+> via inotify_add_watch(). Not being familiar with inotify/fsnotify
+> internals, it's not trivially obvious to me how the fsnotify_group
+> management is being done. Up to the present, I've maintained queues of
+> "dead" wd wrappers (or at least a counter) to filter stale events, but
+> I am clueless whether or not this is overkill.
+>
+> If removed descriptors are reserved until the IN_IGNORE event is
+> drained from the read queue, could that be formally guaranteed? If
+> it's not, is it functionality that could ever reasonably be expected
+> to be added, short of some other form of new (optional?)
+> queue-filter-on-rm functionality? It's my experience that the
+> asynchronous handling of watch removals is a cost that seldom serves
+> much user benefit.
+>
+ > Regards,
+ > Jeff
 
---wJgPvdDu+gj56kJ8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hello Jeff,
 
-On Tue, May 27, 2014 at 05:37:29PM +0530, Viresh Kumar wrote:
+I tried to dive a bit into the code. This is what I understand:
 
-> Liam/Broonie: Please see if this can go through Rafael as 2nd patch is dependent
-> on it.
+Function inotify_ignored_and_remove_idr is called after the mark has 
+been removed. This function puts an IN_IGNORED event onto the inotify 
+queue and removes the watch descriptor from the list of used watch 
+descriptors using function idr_remove.
 
-Is that likely to happen before the merge window?
+With a test program I could receive the IN_IGNORED event. This behavior 
+is currently not documented in the manpages (inotify.7 and 
+inotify_rm_watch.2).
 
-> +static inline int regulator_set_voltage_time(struct regulator *regulator,
-> +					     int old_uV, int new_uV)
-> +{
-> +	return 0;
-> +}
-> +
+When inotify_add_watch is called it uses function idr_alloc_cyclic to 
+assign a watch descriptor ID. This function starts looking for an unused 
+id starting with the id after the last assigned watch descriptor.
 
-Hrm, I'd have expected this to return -EINVAL when stubbed.  I'd also
-have expected regulator_set_voltage() to return -EINVAL mind you.  I
-*suppose* that something that doesn't actually depend on regulator like
-cpufreq might not care if the voltage really did change (I bet this was
-added for cpufreq) but it's not awesome.
+This implies that in most cases inotify_add_watch will return a watch 
+descriptor different to the one released by a prior call to 
+inotify_rm_watch. But there is no guarantee.
 
---wJgPvdDu+gj56kJ8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I consider this a bug.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+I CCed the maintainers of the inotify interface hoping that they can 
+provide a better solution.
 
-iQIcBAEBAgAGBQJThOeQAAoJELSic+t+oim9FCEP/1CuJKOmQKwxTvltj3Ypv7SZ
-cU1Rnf9gfnttYRAopHz9JRumLV3ynyWON7pLk4rliDWwf0Z/TMVnWt4vAiUINW/6
-/tplfmTwSiYi2iwZdbA2osXaWSKD0BuCIIqRuLdtRqVz/MShaWcmlnEOW0aUqMp+
-qn9DUdqbyJpXTIJOQKW1qZSGPmQ07c9opRKXY4bMiNKAIfnt804yqiENSj2RxrVf
-BGx2RsCER1pTuqYN0FoVC+qjrPIg9jRhtGJ0N5KxrnHb6LaP/3F55rnNAA9sZeFp
-RBRnVpkCWD8aK9ie+JI2JtkmNLpCcj5VWxmZZw1L52qQ83VRejN+NWhSv7T/ic3d
-3JkvWdhS7cCPKOD0qLIP7lKadLOVSeTYow7UbchcPSslSWf3eAYYBj1C/Ag+qyNi
-U9R6uLE+0Dptyj83yuG8Gzt6hFTNWKRhMwrN7D2CIYUv2BJlrRx5ov2VjK7fWO7A
-1Az+2mBwC5vHzH6A7tDJRh2stJZU+z+82CDfOw2ynGpRv/iPBT635fjxA9r/uz2G
-qups7vqohRmqY1U8UBvv8CtK6uJrlBL5kaCdKuEgmkVESYNnVU28e3Ocp6MpE5o8
-5xES7aBgf8ZvbW9VVAM5LH8m7n+W6de62zMJ6+oGYkkYZAq+LFUpfi+WNjsnaaHX
-Vpoum2tXB+r8+IdfRJR+
-=fEEO
------END PGP SIGNATURE-----
+Until such a solution is provided I suggest you use the following 
+workaround. After calling inotify_rm_watch read from the inotify file 
+descriptor until you reach the matching IN_IGNORED event.
 
---wJgPvdDu+gj56kJ8--
+Only thereafter you can safely call inotify_add_watch again.
+
+Best regards
+
+Heinrich Schuchardt
+
