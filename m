@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbaE0OYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:24:50 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:39967 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaE0OYs (ORCPT
+	id S1752647AbaE0OZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:25:54 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:53916 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752275AbaE0OZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:24:48 -0400
-Date: Tue, 27 May 2014 10:24:43 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] workqueue: always pass cascading responsibility to
- the next flusher
-Message-ID: <20140527142443.GC22767@htj.dyndns.org>
-References: <1401105501-13307-1-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401105501-13307-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 27 May 2014 10:25:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag4VACKfhFNXQwje/2dsb2JhbABZgweCRahnAQEBAQEBBQGDPJRMAgIBgQ0XdIIlAQEEATocIwULCAMYLjkeBhOIOgwB1R8XhVWIfQeEQAEDmXIBixeIEIM6Ow
+Date: Tue, 27 May 2014 16:25:54 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/4] lib/debugobjects.c: convert printk to pr_foo()
+Message-Id: <20140527162554.c0e15156130eedf712934eea@skynet.be>
+In-Reply-To: <20140525034043.GA26647@thin>
+References: <1400936768-24897-1-git-send-email-fabf@skynet.be>
+	<20140524215322.GA24038@thin>
+	<20140525051836.116fe09126f16de8b3955d27@skynet.be>
+	<20140525034043.GA26647@thin>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On Sat, 24 May 2014 20:40:43 -0700
+Josh Triplett <josh@joshtriplett.org> wrote:
 
-On Mon, May 26, 2014 at 07:58:12PM +0800, Lai Jiangshan wrote:
-> This optimization saves one mutex_lock(&wq->mutex) due to the current
-> first-flusher already held it.
+> On Sun, May 25, 2014 at 05:18:36AM +0200, Fabian Frederick wrote:
+> > On Sat, 24 May 2014 14:53:22 -0700
+> > Josh Triplett <josh@joshtriplett.org> wrote:
+> > 
+> > > On Sat, May 24, 2014 at 03:06:08PM +0200, Fabian Frederick wrote:
+> > > > Convert all except KERN_DEBUG
+> > > 
+> > > Why not KERN_DEBUG?
+> > printk(KERN_DEBUG can't be converted to pr_debug the same way as other printk.
 > 
-> This optimization reduces the cascading-latency, because the next flusher
-> is not running currently, it will delay a little when we keep the next's
-> responsibility for cascading.
+> True, but I don't see any obvious reason why that prevents you from
+> converting them.  More importantly, though, you should explain for the
+> benefit of the changelog.
+
+	There's no documentation yet in mainline for this but in linux-next:
+commit 8ce2658fc31bb7
+
+	I can submit one more patch with pr_debug conversion using #define DEBUG
+or compilation -DDEBUG
+
+Fabian
+
 > 
-> This optimization may also have other benefits. However, it is slow-path
-> and low-probability-hit case, and it is not good at these aspects:
->     1) it adds a special case and makes the code complex, bad for review.
->     2) it adds a special state for the first-flusher which is allowed to
->        be deprived. It causes a race and we have to check wq->first_flusher
->        again with mutex held: 4ce48b37bfed ("workqueue: fix race condition
->        in flush_workqueue()").
-
-The original goal was replicating the wake up behavior of the existing
-implementation.  It doesn't matter whether we have a couple more
-lockings or somewhat more complex logic there but it *does* make
-noticeable difference when it starts involving scheduling latencies.
-They are multiple orders of magnitude longer after all.  Not quite the
-same but synchronize_rcu() is similar and we've had several cases
-where blind synchronize_rcu() invocations in userland visible paths
-causing crippling latencies (e.g. SCSI scanning through non-existent
-LUNs ending up taking tens of seconds in pathological cases).
-
-So, I think hiding latencies which can easily in millisecs range is
-important.  It isn't a performance optimization.  It almost becomes a
-correctness issue when the problem is severely hit and the amount of
-code simplification that we get from dropping this doesn't seem like
-much.  As such, I'm not quite convinced I wanna apply this one.
-
-Thanks.
-
--- 
-tejun
+> - Josh Triplett
