@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaE0Ros (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:44:48 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:35851 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747AbaE0Roo (ORCPT
+	id S1751735AbaE0Rsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:48:41 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:43450 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaE0Rsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:44:44 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tarek Dakhran <t.dakhran@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
-Subject: Re: [PATCH v11 0/3] Exynos 5410 support
-References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
-	<7hr43f9mmn.fsf@paris.lan>
-Date: Tue, 27 May 2014 10:44:40 -0700
-In-Reply-To: <7hr43f9mmn.fsf@paris.lan> (Kevin Hilman's message of "Tue, 27
-	May 2014 10:06:56 -0700")
-Message-ID: <7hd2ez9kvr.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Tue, 27 May 2014 13:48:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1401197235-13440-3-git-send-email-bp@alien8.de>
+References: <1401197235-13440-1-git-send-email-bp@alien8.de>
+	<1401197235-13440-3-git-send-email-bp@alien8.de>
+Date: Tue, 27 May 2014 10:48:38 -0700
+Message-ID: <CA+8MBbKyHfwK7v9nmFNm0TLvpjbEpDbWemk4C8tE7mkZedE3ag@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3] MCE, CE: Wire in the CE collector
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-edac <linux-edac@vger.kernel.org>, X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Hilman <khilman@linaro.org> writes:
+> +       } else if (c->x86_vendor == X86_VENDOR_INTEL)
+> +               return m->status & BIT(7);
 
-> Tarek Dakhran <t.dakhran@samsung.com> writes:
->
->> The series of patches represent support of Exynos 5410 SoC
->>
->> The Exynos 5410 is the first Samsung SoC based on big.LITTLE architecture
->>
->> Patches add new platform description, support of clock controller and device
->> tree for Exynos 5410.
->>
->> Has been build on Samsung Linux Kernel
->>   (branch: for-next, commit: 97eae6c Merge branch 'v3.16-next/multiplatform' into for-next)
->>
->> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
->> 		    2) Exynos 5410 reference board (multi_v7_defconfig)
->> 		    3) Odroid-XU board (exynos_defconfig)
->> 		    4) Odroid-XU board (multi_v7_defconfig)
->
-> Tested-by: Kevin Hilman <khilman@linaro.org>
->
-> FYI, I boot tested this on an odroid-xu (exynos_defconfig and
-> multi_v7_defconfig.)
+Intel compound error codes aren't quite that simple.  You need to look
+at the low 16 bits of "status" (the MCACOD) field and see which is the
+most significant bit set (ignoring bit 12, the "filter" bit).  If the answer is
+bit 7 - then this is a memory error. But you can't just blindly check bit
+7 because if bit 8 is set, then this is a cache error, and if bit 11 is set,
+then it is a bus/interconnect error - and either way bit 7 just gives more
+detail on what cache/bus/interconnect error happened.  In hex the test
+you want is:
 
-Oops, I may have spoke to soon.  There seem to be some problems with
-multi_v7_defconfig.
+                  return (m->status & 0xef80) == BIT(7);
 
-Applying this series directly on the commit mentioned above and testing,
-it works just fine using multi_v7_defconfig.
+[compound error codes make my head hurt too]
 
-However, if I directly test the current contents of the samsung for-next
-branch (where this series has been merged) it no longer boots on the
-odroid-xu.
+>                 if (!(flags & MCP_TIMESTAMP))
+>                         m.tsc = 0;
+> -               /*
+> -                * Don't get the IP here because it's unlikely to
+> -                * have anything to do with the actual error location.
+> -                */
+> -               if (!(flags & MCP_DONTLOG) && !mca_cfg.dont_log_ce)
+> -                       mce_log(&m);
+> +
+> +               __log_ce(&m, flags);
 
-A quick diff shows that there are some other changes to
-multi_v7_defconfig in the samsung/for-next branch that may be causing
-problems here.
+I'm not happy with the total removal of mce_log() here.  Skipping
+it and doing *some* filtering in the kernel is OK (goal of this patch
+set). But you just cut EDAC and/or EXTLOG out of the reporting path
+completely.  If the corrected error count for a page gets too high, your
+new code will try to take the page offline ... but we won't have a report
+from EDAC/EXTLOG telling us which DIMM that page belonged to.
 
-Kevin
+Perhaps __log_ce() needs a return value to say whether it took action
+and then:
+
+                 if (__log_ce(&m, flags) && all-those-other-tests)
+                             mce_log(&m);
+
+-Tony
