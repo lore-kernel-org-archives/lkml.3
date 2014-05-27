@@ -1,112 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaE0H7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 03:59:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13419 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200AbaE0H7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 03:59:47 -0400
-Date: Tue, 27 May 2014 09:59:27 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 14/14] perf tests: Add test for closing dso objects on
- EMFILE error
-Message-ID: <20140527075927.GF12920@krava.brq.redhat.com>
-References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
- <1400174615-2121-15-git-send-email-jolsa@kernel.org>
- <878upohu76.fsf@sejong.aot.lge.com>
+	id S1751830AbaE0IEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:04:23 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:47952 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbaE0IER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:04:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878upohu76.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANqRtoQk1=ZVJAqio4Oo-2NSO2qVo=xM0sUCDL_sMz1+zyOLPQ@mail.gmail.com>
+References: <1400781734-19002-1-git-send-email-geert+renesas@glider.be>
+	<CANqRtoQk1=ZVJAqio4Oo-2NSO2qVo=xM0sUCDL_sMz1+zyOLPQ@mail.gmail.com>
+Date: Tue, 27 May 2014 10:04:16 +0200
+X-Google-Sender-Auth: FAxuzWkLzqkMT5uBXxw4GTF-7wc
+Message-ID: <CAMuHMdUO+avQtRQ2zwqiCZwtnGubC3M-7+VHR4NXjft4P4FDnw@mail.gmail.com>
+Subject: Re: [PATCH v3] clk: shmobile: mstp: Fix the is_enabled() operation
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Mike Turquette <mturquette@linaro.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 10:43:57AM +0900, Namhyung Kim wrote:
-> On Thu, 15 May 2014 19:23:35 +0200, Jiri Olsa wrote:
-> > Testing that perf properly closes opened dso objects
-> > and tries to reopen in case we run out of allowed file
-> > descriptors for dso data.
-> >
-> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Jean Pihet <jean.pihet@linaro.org>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> > ---
-> >  tools/perf/tests/builtin-test.c |  4 +++
-> >  tools/perf/tests/dso-data.c     | 70 +++++++++++++++++++++++++++++++++++++++++
-> >  tools/perf/tests/tests.h        |  1 +
-> >  3 files changed, 75 insertions(+)
-> >
-> > diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-> > index c4d581a..a489cda 100644
-> > --- a/tools/perf/tests/builtin-test.c
-> > +++ b/tools/perf/tests/builtin-test.c
-> > @@ -60,6 +60,10 @@ static struct test {
-> >  		.func = test__dso_data_cache,
-> >  	},
-> >  	{
-> > +		.desc = "Test dso data reopen",
-> > +		.func = test__dso_data_reopen,
-> > +	},
-> > +	{
-> >  		.desc = "roundtrip evsel->name check",
-> >  		.func = test__perf_evsel__roundtrip_name_test,
-> >  	},
-> > diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-> > index 84ab939..ecc8acd 100644
-> > --- a/tools/perf/tests/dso-data.c
-> > +++ b/tools/perf/tests/dso-data.c
-> > @@ -328,3 +328,73 @@ int test__dso_data_cache(void)
-> >  	TEST_ASSERT_VAL("failed leadking files", nr == open_files_cnt());
-> >  	return 0;
-> >  }
-> > +
-> > +int test__dso_data_reopen(void)
-> > +{
-> > +	struct machine machine;
-> > +	long nr = open_files_cnt();
-> > +#define BUFSIZE 10
-> 
-> Looks like a copy-n-paste error.. :)
+Hi Magnus,
 
-yea.. ;) I wonder why gcc did not scream about that
+On Tue, May 27, 2014 at 3:02 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> On Fri, May 23, 2014 at 3:02 AM, Geert Uytterhoeven
+> <geert+renesas@glider.be> wrote:
+>> From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+>>
+>> The MSTP[SC]R registers have clock stop bits, not clock enable bits. The
+>> bit value should thus be inverted in the is_enabled() operation.
+>>
+>> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>> Cc: Mike Turquette <mturquette@linaro.org>
+>> ---
+>> v3:
+>>   - This depends on commit 3c90c55dcde745bed81f6447f24ba96bda43d984
+>>     ("drivers: sh: compile drivers/sh/pm_runtime.c if
+>>     ARCH_SHMOBILE_MULTI"), which has entered mainline in v3.15-rc6.
+>
+> Thanks for resubmitting this fix. Do you intend to get this included
+> in v3.15 (seems unlikely) or is your target v3.16?
 
-SNIP
+3.16 is OK. The only ill effect is that some clocks may be enabled,
+while they're
+not needed.
 
-> > +
-> > +	/*
-> > +	 * dso_1 should get closed, because we reached
-> > +	 * the file descriptor limit
-> > +	 */
-> > +	TEST_ASSERT_VAL("failed to close dso_0", dso_1->data.fd == -1);
-> 
-> s/dso_0/dso_1/
-> 
-> Btw, I don't see a big difference between this and previous testcase.
-> Any chance to merge them into one?
+Gr{oetje,eeting}s,
 
-- the first one tests the caching or closing of file descriptors
-  after dso__data_close is called
-  
-- the second one tests that we actually try to close dso objects
-  in case we cannot open new dso
+                        Geert
 
-thanks,
-jirka
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
