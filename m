@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaE0Hvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 03:51:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884AbaE0Hvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 03:51:45 -0400
-Date: Tue, 27 May 2014 09:51:30 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 12/14] perf tests: Add test interface for dso data fd
- limit
-Message-ID: <20140527075130.GD12920@krava.brq.redhat.com>
-References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
- <1400174615-2121-13-git-send-email-jolsa@kernel.org>
- <87ha4chvqn.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ha4chvqn.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752015AbaE0HyV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 03:54:21 -0400
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:40625 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaE0HyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 03:54:19 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, Behan Webster <behanw@converseincode.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] Makefile: Fix unrecognized cross-compiler command line options
+Date: Tue, 27 May 2014 09:54:12 +0200
+Message-Id: <1401177252-11919-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 10:10:40AM +0900, Namhyung Kim wrote:
-> On Thu, 15 May 2014 19:23:33 +0200, Jiri Olsa wrote:
-> > Adding a way to setup test dso limit by global variable
-> > test_dso_data__fd_limit. It'll be used in the dso data
-> > cache tests.
-> 
-> Why is this needed?  Why not justing setting RLIMIT_NOFILE in the test
-> cases?
+On architectures that setup CROSS_COMPILE in their arch/*/Makefile
+(arc, blackfin, m68k, mips, parisc, score, sh, tile, unicore32, xtensa),
+cc-option and cc-disable-warning may check against the wrong compiler,
+causing errors like
 
-well, I wanted to avoid to customizing the test to the current
-open files count state.. the way with artifical limit is easier
-and more clean IMO ;-)
+    cc1: error: unrecognized command line option "-Wno-maybe-uninitialized"
 
-I'll see if I can make the setup without this one
+if the host gcc supports a compiler option, while the cross compiler
+doesn't support that option.
 
-thanks,
-jirka
+Move all logic using cc-option or cc-disable-warning below the inclusion
+of the arch's Makefile to fix this.
+
+Introduced by
+  - commit e74fc973b6e531fef1fce8b101ffff05ecfb774c ("Turn off
+    -Wmaybe-uninitialized when building with -Os"),
+  - commit 61163efae02040f66a95c8ed17f4407951ba58fa ("kbuild: LLVMLinux:
+    Add Kbuild support for building kernel with Clang").
+
+As -Wno-maybe-uninitialized requires a quite recent gcc (gcc 4.6.3 on
+Ubuntu 12.04 LTS doesn't support it), this only showed up recently (gcc
+4.8.2 on Ubuntu 14.04 LTS does support it).
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+Perhaps all KBUILD_* definitions can be moved below the inclusion of the
+arch's Makefile, to make it less likely to happen again?
+But that's definitely post-3.15 material.
+
+ Makefile | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index cf3412d78ff1..da910e09fc9a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -395,8 +395,8 @@ KBUILD_CPPFLAGS := -D__KERNEL__
+ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+ 		   -fno-strict-aliasing -fno-common \
+ 		   -Werror-implicit-function-declaration \
+-		   -Wno-format-security \
+-		   $(call cc-option,-fno-delete-null-pointer-checks,)
++		   -Wno-format-security
++
+ KBUILD_AFLAGS_KERNEL :=
+ KBUILD_CFLAGS_KERNEL :=
+ KBUILD_AFLAGS   := -D__ASSEMBLY__
+@@ -594,14 +594,16 @@ endif # $(dot-config)
+ # Defaults to vmlinux, but the arch makefile usually adds further targets
+ all: vmlinux
+ 
++include $(srctree)/arch/$(SRCARCH)/Makefile
++
++KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
++
+ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+ KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+ else
+ KBUILD_CFLAGS	+= -O2
+ endif
+ 
+-include $(srctree)/arch/$(SRCARCH)/Makefile
+-
+ ifdef CONFIG_READABLE_ASM
+ # Disable optimizations that make assembler listings hard to read.
+ # reorder blocks reorders the control in the function
+-- 
+1.9.1
+
