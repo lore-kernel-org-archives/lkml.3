@@ -1,182 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaE0DVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 23:21:06 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:57318 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950AbaE0DVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 23:21:00 -0400
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        srinivas.pandruvada@linux.intel.com, jic23@kernel.org
-Cc: Reyad Attiyat <reyad.attiyat@gmail.com>
-Subject: [PATCH] IIO: Added iio magn_north ABI documentation
-Date: Mon, 26 May 2014 22:20:21 -0500
-Message-Id: <1401160821-5006-2-git-send-email-reyad.attiyat@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1401160821-5006-1-git-send-email-reyad.attiyat@gmail.com>
-References: <538076CA.6050809@kernel.org>
- <1401160821-5006-1-git-send-email-reyad.attiyat@gmail.com>
+	id S1752636AbaE0DXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 23:23:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60523 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751887AbaE0DXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 May 2014 23:23:36 -0400
+Message-ID: <538404F2.9000505@ti.com>
+Date: Tue, 27 May 2014 08:52:26 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
+        <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <sameo@linux.intel.com>, <lee.jones@linaro.org>
+Subject: Re: [PATCH 5/5] regulator: tps65917: Add Regulator driver for tps65917
+ PMIC
+References: <1401098197-647-1-git-send-email-j-keerthy@ti.com> <1401098197-647-6-git-send-email-j-keerthy@ti.com> <20140526150052.GP22111@sirena.org.uk>
+In-Reply-To: <20140526150052.GP22111@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added documentation for HID magnometer true/magnetic north sensor.
----
- Documentation/ABI/testing/sysfs-bus-iio | 76 +++++++++++++++++++++++++++++++++
- 1 file changed, 76 insertions(+)
+Hi Mark,
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index 6e02c50..3305fe8 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -165,6 +165,10 @@ Description:
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_raw
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_raw
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_raw
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_raw
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_raw
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_tilt_compensated_raw
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_tilt_compensated_raw
- KernelVersion:	2.6.35
- Contact:	linux-iio@vger.kernel.org
- Description:
-@@ -249,6 +253,10 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_tilt_compensated_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_tilt_compensated_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
- KernelVersion:	2.6.35
-@@ -436,6 +444,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_rising_en
- What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_falling_en
- What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_rising_en
- What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_thresh_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_thresh_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_thresh_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_thresh_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_thresh_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_thresh_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_thresh_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_thresh_falling_en
- What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_rising_en
- What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_falling_en
- What:		/sys/.../iio:deviceX/events/in_voltageY_thresh_rising_en
-@@ -481,6 +497,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_rising_en
- What:		/sys/.../iio:deviceX/events/in_magn_y_roc_falling_en
- What:		/sys/.../iio:deviceX/events/in_magn_z_roc_rising_en
- What:		/sys/.../iio:deviceX/events/in_magn_z_roc_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_roc_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_roc_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_roc_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_roc_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_roc_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_roc_falling_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_roc_rising_en
-+What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_roc_falling_en
- What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_rising_en
- What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_falling_en
- What:		/sys/.../iio:deviceX/events/in_voltageY_roc_rising_en
-@@ -527,6 +551,14 @@ What:		/sys/.../events/in_magn_y_raw_thresh_rising_value
- What:		/sys/.../events/in_magn_y_raw_thresh_falling_value
- What:		/sys/.../events/in_magn_z_raw_thresh_rising_value
- What:		/sys/.../events/in_magn_z_raw_thresh_falling_value
-+What:		/sys/.../events/in_magn_north_magnetic_raw_thresh_rising_value
-+What:		/sys/.../events/in_magn_north_magnetic_raw_thresh_falling_value
-+What:		/sys/.../events/in_magn_north_true_raw_thresh_rising_value
-+What:		/sys/.../events/in_magn_north_true_raw_thresh_falling_value
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_thresh_rising_value
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_thresh_falling_value
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_thresh_rising_value
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_thresh_falling_value
- What:		/sys/.../events/in_voltageY_supply_raw_thresh_rising_value
- What:		/sys/.../events/in_voltageY_supply_raw_thresh_falling_value
- What:		/sys/.../events/in_voltageY_raw_thresh_rising_value
-@@ -577,6 +609,18 @@ What:		/sys/.../events/in_magn_y_thresh_either_hysteresis
- What:		/sys/.../events/in_magn_z_thresh_rising_hysteresis
- What:		/sys/.../events/in_magn_z_thresh_falling_hysteresis
- What:		/sys/.../events/in_magn_z_thresh_either_hysteresis
-+What:		/sys/.../events/in_magn_north_magnetic_thresh_rising_hysteresis
-+What:		/sys/.../events/in_magn_north_magnetic_thresh_falling_hysteresis
-+What:		/sys/.../events/in_magn_north_magnetic_thresh_either_hysteresis
-+What:		/sys/.../events/in_magn_north_true_thresh_rising_hysteresis
-+What:		/sys/.../events/in_magn_north_true_thresh_falling_hysteresis
-+What:		/sys/.../events/in_magn_north_true_thresh_either_hysteresis
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_rising_hysteresis
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_falling_hysteresis
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_either_hysteresis
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_rising_hysteresis
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_falling_hysteresis
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_either_hysteresis
- What:		/sys/.../events/in_voltageY_thresh_rising_hysteresis
- What:		/sys/.../events/in_voltageY_thresh_falling_hysteresis
- What:		/sys/.../events/in_voltageY_thresh_either_hysteresis
-@@ -624,6 +668,14 @@ What:		/sys/.../events/in_magn_y_raw_roc_rising_value
- What:		/sys/.../events/in_magn_y_raw_roc_falling_value
- What:		/sys/.../events/in_magn_z_raw_roc_rising_value
- What:		/sys/.../events/in_magn_z_raw_roc_falling_value
-+What:		/sys/.../events/in_magn_north_magnetic_raw_roc_rising_value
-+What:		/sys/.../events/in_magn_north_magnetic_raw_roc_falling_value
-+What:		/sys/.../events/in_magn_north_true_raw_roc_rising_value
-+What:		/sys/.../events/in_magn_north_true_raw_roc_falling_value
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_roc_rising_value
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_roc_falling_value
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_roc_rising_value
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_roc_falling_value
- What:		/sys/.../events/in_voltageY_supply_raw_roc_rising_value
- What:		/sys/.../events/in_voltageY_supply_raw_roc_falling_value
- What:		/sys/.../events/in_voltageY_raw_roc_rising_value
-@@ -679,6 +731,22 @@ What:		/sys/.../events/in_magn_z_thresh_rising_period
- What:		/sys/.../events/in_magn_z_thresh_falling_period
- What:		/sys/.../events/in_magn_z_roc_rising_period
- What:		/sys/.../events/in_magn_z_roc_falling_period
-+What:		/sys/.../events/in_magn_north_magnetic_thresh_rising_period
-+What:		/sys/.../events/in_magn_north_magnetic_thresh_falling_period
-+What:		/sys/.../events/in_magn_north_magnetic_roc_rising_period
-+What:		/sys/.../events/in_magn_north_magnetic_roc_falling_period
-+What:		/sys/.../events/in_magn_north_true_thresh_rising_period
-+What:		/sys/.../events/in_magn_north_true_thresh_falling_period
-+What:		/sys/.../events/in_magn_north_true_roc_rising_period
-+What:		/sys/.../events/in_magn_north_true_roc_falling_period
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_rising_period
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_falling_period
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_roc_rising_period
-+What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_roc_falling_period
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_rising_period
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_falling_period
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_roc_rising_period
-+What:		/sys/.../events/in_magn_north_true_tilt_compensated_roc_falling_period
- What:		/sys/.../events/in_voltageY_supply_thresh_rising_period
- What:		/sys/.../events/in_voltageY_supply_thresh_falling_period
- What:		/sys/.../events/in_voltageY_supply_roc_rising_period
-@@ -776,6 +844,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_en
- What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_en
- What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_en
- What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_en
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_en
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_en
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_tilt_compensated_en
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_tilt_compensated_en
- What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_en
- What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_en
- What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_en
-@@ -840,6 +912,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_index
- What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_index
- What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_index
- What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_index
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_index
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_index
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_tilt_compensated_index
-+What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_tilt_compensated_index
- What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_index
- What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
- What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
--- 
-1.9.0
+On Monday 26 May 2014 08:30 PM, Mark Brown wrote:
+> On Mon, May 26, 2014 at 03:26:37PM +0530, Keerthy wrote:
+>> This patch adds support for TPS65917 PMIC regulators.
+>>
+>> The regulators set consists of 5 SMPSs and 5 LDOs. The output
+>> voltages are configurable and are meant to supply power to the
+>> main processor and other components.
+> This appears to look *very* like the Palmas driver, should it not be
+> sharing code with that?  If it were just data tables it'd be less of a
+> concern but there's quite a bit of actual code here.
+Yes it is. The difference is in the entire register space of the regulators
+between the two. There are other differences in how the ramp delay
+is configured and SMPS ordering. The difference is also a bit in the 
+programming
+sequence. I agree that largely it is Palmas based. I did not want to add 
+more
+checks in the probe of the palmas driver. Hence came up with a new one.
 
+Coming to sharing the code, can we have 2 drivers which share the common
+functions with separate data and specific functions?
+
+I just simply do not want to add anything more to the palmas driver 
+probe function.
+
+Kind Regards,
+Keerthy
