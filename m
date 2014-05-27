@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaE0SCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:02:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60042 "EHLO
+	id S1752741AbaE0SEZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:04:25 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60333 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaE0SCs (ORCPT
+	with ESMTP id S1751477AbaE0SEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:02:48 -0400
-Message-ID: <5384D345.4070606@codeaurora.org>
-Date: Tue, 27 May 2014 11:02:45 -0700
+	Tue, 27 May 2014 14:04:23 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
         Gilles Muller <Gilles.Muller@lip6.fr>,
         Nicolas Palix <nicolas.palix@imag.fr>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH] coccinelle: Check for missing NULL terminators in of_device_id
- tables
-References: <1400888504-31309-1-git-send-email-sboyd@codeaurora.org> <alpine.DEB.2.02.1405240956220.2012@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1405240956220.2012@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v2] coccinelle: Check for missing NULL terminators in of_device_id tables
+Date: Tue, 27 May 2014 11:04:18 -0700
+Message-Id: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/14 00:57, Julia Lawall wrote:
-> On Fri, 23 May 2014, Stephen Boyd wrote:
->
->> +... struct of_device_id arr[] = {
->> +	...,
->> +	{
->> +	...,
->> +	.var = E,
->> +	...
->> +	}
->> +};
-> You shouldn't need any of the ...s in these rules.
->
+Failure to terminate an of_device_id table can lead to confusing
+failures depending on where the compiler places the array. Add a
+check to make sure these tables are terminated. Thanks to Mitchel
+Humpherys for coming up with the pattern initially.
 
-Hm.. Removing all the ...s in these rules only gives me 3 matches now. I
-used to get 5.
+Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Gilles Muller <Gilles.Muller@lip6.fr>
+Cc: Nicolas Palix <nicolas.palix@imag.fr>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: devicetree@vger.kernel.org
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ scripts/coccinelle/misc/of_table.cocci | 73 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+ create mode 100644 scripts/coccinelle/misc/of_table.cocci
 
-Before
-
-$ COCCI=scripts/coccinelle/misc/of_table.cocci make coccicheck MODE=report
-
-Please check for false positives in the output before submitting a patch.
-When using "patch" mode, carefully review the patch before submitting it.
-
-./sound/soc/pxa/pxa-ssp.c:810:36-37: pxa_ssp_of_ids is not NULL terminated at line 810
-./drivers/mfd/tps65218.c:199:32-33: of_tps65218_match_table is not NULL terminated at line 199
-./drivers/staging/mt29f_spinand/mt29f_spinand.c:926:34-35: spinand_dt is not NULL terminated at line 926
-./drivers/clk/clk-u300.c:1170:1-2: u300_clk_match is not NULL terminated at line 1170
-./drivers/clk/st/clkgen-pll.c:655:1-2: c32_gpu_pll_of_match is not NULL terminated at line 655
-
-
-After
-
-$ COCCI=scripts/coccinelle/misc/of_table.cocci make coccicheck MODE=report
-
-Please check for false positives in the output before submitting a patch.
-When using "patch" mode, carefully review the patch before submitting it.
-
-./sound/soc/pxa/pxa-ssp.c:810:36-37: pxa_ssp_of_ids is not NULL terminated at line 810
-./drivers/mfd/tps65218.c:199:32-33: of_tps65218_match_table is not NULL terminated at line 199
-./drivers/staging/mt29f_spinand/mt29f_spinand.c:926:34-35: spinand_dt is not NULL terminated at line 926
-
-
-Removing most of the ...s seems to work though. I'll send a v2.
-
+diff --git a/scripts/coccinelle/misc/of_table.cocci b/scripts/coccinelle/misc/of_table.cocci
+new file mode 100644
+index 000000000000..838c74c418c9
+--- /dev/null
++++ b/scripts/coccinelle/misc/of_table.cocci
+@@ -0,0 +1,73 @@
++/// Make sure of_device_id tables are NULL terminated
++//
++// Keywords: of_table
++// Confidence: Medium
++// Options: --include-headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++@bad_of_table exists@
++identifier var, arr;
++expression E;
++@@
++struct of_device_id arr[] = {
++	...,
++	{
++	.var = E,
++	}
++};
++
++@depends on bad_of_table && context@
++identifier var, arr;
++expression E;
++@@
++struct of_device_id arr[] = {
++	...,
++	{
++*	.var = E,
++	}
++};
++
++@depends on bad_of_table && patch@
++identifier var, arr;
++expression E;
++@@
++struct of_device_id arr[] = {
++	...,
++	{
++	.var = E,
++-	}
+++	},
+++	{ }
++};
++
++@r depends on bad_of_table exists@
++position p1;
++identifier var, arr;
++expression E;
++@@
++struct of_device_id arr[] = {
++	...,
++	{
++	.var = E,
++	}
++	@p1
++};
++
++@script:python depends on org@
++p1 << r.p1;
++arr << r.arr;
++@@
++
++cocci.print_main(arr,p1)
++
++@script:python depends on report@
++p1 << r.p1;
++arr << r.arr;
++@@
++
++msg = "%s is not NULL terminated at line %s" % (arr, p1[0].line)
++coccilib.report.print_report(p1[0],msg)
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
 
