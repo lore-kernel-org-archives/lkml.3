@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaE0EG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 00:06:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34554 "EHLO mga09.intel.com"
+	id S1752773AbaE0EHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 00:07:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31198 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142AbaE0EGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 00:06:52 -0400
+	id S1752677AbaE0EG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 00:06:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,916,1392192000"; 
-   d="scan'208";a="518100759"
+   d="scan'208";a="545297430"
 From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
 To: lee.jones@linaro.org, broonie@kernel.org, sameo@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
         bin.yang@intel.com, lejun.zhu@linux.intel.com
-Subject: [PATCH v3 1/4] mfd: intel_soc_pmic: Core driver
-Date: Tue, 27 May 2014 12:06:13 +0800
-Message-Id: <1401163576-14872-2-git-send-email-lejun.zhu@linux.intel.com>
+Subject: [PATCH v3 2/4] mfd: intel_soc_pmic: I2C interface
+Date: Tue, 27 May 2014 12:06:14 +0800
+Message-Id: <1401163576-14872-3-git-send-email-lejun.zhu@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
 References: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
@@ -23,37 +23,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides the common code for the intel_soc_pmic MFD driver, such as read/write register and set up IRQ.
+The Intel SoC PMIC devices are connected to the CPU via the I2C interface. This patch provides support of the related I2C operations.
 
 v2:
-- Use regmap instead of our own callbacks for read/write.
-- Add one missing EXPORT_SYMBOL.
-- Remove some duplicate code and put them into pmic_regmap_load_from_hw.
+- Use regmap instead of creating our own I2C read/write callbacks.
 v3:
-- Use regmap-irq. Remove our own pmic_regmap_* and IRQ handling code.
-- Remove intel_soc_pmic_dev() because gpio driver no longer uses it.
-- Remove intel_soc_pmic_set_pdata() because currently it's not used.
-- Use EXPORT_SYMBOL_GPL for exposed APIs.
+- Use gpiod interface instead of gpio numbers.
+- Remove redundant I2C IDs.
+- Use managed allocations.
 
 Signed-off-by: Yang, Bin <bin.yang@intel.com>
 Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
 ---
- drivers/mfd/intel_soc_pmic_core.c  | 212 +++++++++++++++++++++++++++++++++++++
- drivers/mfd/intel_soc_pmic_core.h  |  44 ++++++++
- include/linux/mfd/intel_soc_pmic.h |  27 +++++
- 3 files changed, 283 insertions(+)
- create mode 100644 drivers/mfd/intel_soc_pmic_core.c
- create mode 100644 drivers/mfd/intel_soc_pmic_core.h
- create mode 100644 include/linux/mfd/intel_soc_pmic.h
+ drivers/mfd/intel_soc_pmic_i2c.c | 150 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 150 insertions(+)
+ create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
 
-diff --git a/drivers/mfd/intel_soc_pmic_core.c b/drivers/mfd/intel_soc_pmic_core.c
+diff --git a/drivers/mfd/intel_soc_pmic_i2c.c b/drivers/mfd/intel_soc_pmic_i2c.c
 new file mode 100644
-index 0000000..4f95a4a
+index 0000000..3b107d7
 --- /dev/null
-+++ b/drivers/mfd/intel_soc_pmic_core.c
-@@ -0,0 +1,212 @@
++++ b/drivers/mfd/intel_soc_pmic_i2c.c
+@@ -0,0 +1,150 @@
 +/*
-+ * intel_soc_pmic_core.c - Intel SoC PMIC Core Functions
++ * intel_soc_pmic_i2c.c - Intel SoC PMIC MFD Driver
 + *
 + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
 + *
@@ -72,281 +65,136 @@ index 0000000..4f95a4a
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/delay.h>
-+#include <linux/mutex.h>
 +#include <linux/mfd/core.h>
 +#include <linux/err.h>
++#include <linux/i2c.h>
 +#include <linux/irq.h>
 +#include <linux/interrupt.h>
 +#include <linux/workqueue.h>
 +#include <linux/acpi.h>
 +#include <linux/version.h>
-+#include <linux/gpio.h>
++#include <linux/gpio/consumer.h>
 +#include <linux/regmap.h>
 +#include <linux/mfd/intel_soc_pmic.h>
 +#include "intel_soc_pmic_core.h"
 +
-+static DEFINE_MUTEX(pmic_lock);	/* protect pmic */
-+static struct intel_soc_pmic *pmic;
++static struct intel_soc_pmic *pmic_i2c;
 +
-+/*
-+ * Read from a PMIC register
-+ */
-+int intel_soc_pmic_readb(int reg)
++static void pmic_shutdown(struct i2c_client *client)
 +{
-+	int ret;
-+	unsigned int val;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic) {
-+		ret = -EIO;
-+	} else {
-+		ret = regmap_read(pmic->regmap, reg, &val);
-+		if (!ret)
-+			ret = val;
-+	}
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
++	disable_irq(pmic_i2c->irq);
++	return;
 +}
-+EXPORT_SYMBOL_GPL(intel_soc_pmic_readb);
 +
-+/*
-+ * Write to a PMIC register
-+ */
-+int intel_soc_pmic_writeb(int reg, u8 val)
++static int pmic_suspend(struct device *dev)
 +{
-+	int ret;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic)
-+		ret = -EIO;
-+	else
-+		ret = regmap_write(pmic->regmap, reg, val);
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
++	disable_irq(pmic_i2c->irq);
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(intel_soc_pmic_writeb);
 +
-+/*
-+ * Set 1 bit in a PMIC register
-+ */
-+int intel_soc_pmic_setb(int reg, u8 mask)
++static int pmic_resume(struct device *dev)
 +{
-+	int ret;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic)
-+		ret = -EIO;
-+	else
-+		ret = regmap_update_bits(pmic->regmap, reg, mask, mask);
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
++	enable_irq(pmic_i2c->irq);
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(intel_soc_pmic_setb);
 +
-+/*
-+ * Clear 1 bit in a PMIC register
-+ */
-+int intel_soc_pmic_clearb(int reg, u8 mask)
++static const struct dev_pm_ops pmic_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(pmic_suspend, pmic_resume)
++};
++
++static int pmic_i2c_probe(struct i2c_client *i2c,
++			  const struct i2c_device_id *id)
 +{
-+	int ret;
++	struct gpio_desc *desc;
++	struct device *dev = &i2c->dev;
++	int irq = i2c->irq;
 +
-+	mutex_lock(&pmic_lock);
-+
-+	if (!pmic)
-+		ret = -EIO;
-+	else
-+		ret = regmap_update_bits(pmic->regmap, reg, mask, 0);
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(intel_soc_pmic_clearb);
-+
-+/*
-+* Set and clear multiple bits of a PMIC register
-+*/
-+int intel_soc_pmic_update(int reg, u8 val, u8 mask)
-+{
-+	int ret;
-+	
-+	mutex_lock(&pmic_lock);
-+	
-+	if (!pmic)
-+		ret = -EIO;
-+	else
-+		ret = regmap_update_bits(pmic->regmap, reg, mask, val);
-+	
-+	mutex_unlock(&pmic_lock);
-+	
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(intel_soc_pmic_update);
-+
-+int intel_pmic_add(struct intel_soc_pmic *chip)
-+{
-+	int ret;
-+	struct intel_soc_pmic_config *cfg = chip->config;
-+
-+	mutex_lock(&pmic_lock);
-+
-+	if (pmic != NULL) {
-+		mutex_unlock(&pmic_lock);
++	if (pmic_i2c != NULL) {
++		dev_err(dev, "PMIC already exists.\n");
 +		return -EBUSY;
 +	}
 +
-+	pmic = chip;
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	if (cfg->init) {
-+		ret = cfg->init();
-+		if (ret != 0)
-+			goto err;
++	desc = devm_gpiod_get_index(dev, KBUILD_MODNAME, 0);
++	if (IS_ERR(desc)) {
++		dev_dbg(dev, "Not using GPIO as interrupt.\n");
++	} else {
++		irq = gpiod_to_irq(desc);
++		if (irq < 0) {
++			dev_warn(dev, "Can't get irq: %d\n", irq);
++			irq = i2c->irq;
++		}
 +	}
 +
-+	ret = regmap_add_irq_chip(chip->regmap, chip->irq,
-+				  cfg->irq_flags | IRQF_ONESHOT,
-+				  0, cfg->irq_chip,
-+				  &chip->irq_chip_data);
-+	if (ret != 0)
-+		goto err;
++	pmic_i2c = devm_kzalloc(dev, sizeof(*pmic_i2c), GFP_KERNEL);
++	pmic_i2c->config = (struct intel_soc_pmic_config *)id->driver_data;
++	pmic_i2c->dev = dev;
++	pmic_i2c->regmap = devm_regmap_init_i2c(i2c,
++						pmic_i2c->config->regmap_cfg);
++	pmic_i2c->irq = irq;
 +
-+	ret = enable_irq_wake(chip->irq);
-+	if (ret != 0)
-+		dev_warn(chip->dev, "Can't enable IRQ as wake source: %d\n",
-+			 ret);
++	return intel_pmic_add(pmic_i2c);
++}
 +
-+	ret = mfd_add_devices(chip->dev, -1, cfg->cell_dev,
-+			       cfg->n_cell_devs, NULL, 0,
-+			       regmap_irq_get_domain(chip->irq_chip_data));
++static int pmic_i2c_remove(struct i2c_client *i2c)
++{
++	int ret;
++	
++	if (pmic_i2c == NULL)
++		return -ENODEV;
 +
-+	if (ret)
-+		goto err_del_irq_chip;
++	ret = intel_pmic_remove(pmic_i2c);
 +
-+	return 0;
++	pmic_i2c = NULL;
 +
-+err_del_irq_chip:
-+	regmap_del_irq_chip(chip->irq, chip->irq_chip_data);
-+err:
-+	mutex_lock(&pmic_lock);
-+	if (pmic == chip)
-+		pmic = NULL;
-+	mutex_unlock(&pmic_lock);
 +	return ret;
 +}
 +
-+int intel_pmic_remove(struct intel_soc_pmic *chip)
++static const struct i2c_device_id pmic_i2c_id[] = {
++	{ "INT33FD:00", (kernel_ulong_t)&crystal_cove_pmic},
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, pmic_i2c_id);
++
++static struct acpi_device_id pmic_acpi_match[] = {
++	{ "INT33FD", (kernel_ulong_t)&crystal_cove_pmic},
++	{ },
++};
++MODULE_DEVICE_TABLE(acpi, pmic_acpi_match);
++
++static struct i2c_driver pmic_i2c_driver = {
++	.driver = {
++		.name = "intel_soc_pmic_i2c",
++		.owner = THIS_MODULE,
++		.pm = &pmic_pm_ops,
++		.acpi_match_table = ACPI_PTR(pmic_acpi_match),
++	},
++	.probe = pmic_i2c_probe,
++	.remove = pmic_i2c_remove,
++	.id_table = pmic_i2c_id,
++	.shutdown = pmic_shutdown,
++};
++
++static int __init pmic_i2c_init(void)
 +{
-+	mutex_lock(&pmic_lock);
++	int ret;
 +
-+	if (pmic != chip) {
-+		mutex_unlock(&pmic_lock);
-+		return -ENODEV;
-+	}
++	ret = i2c_add_driver(&pmic_i2c_driver);
++	if (ret != 0)
++		pr_err("Failed to register pmic I2C driver: %d\n", ret);
 +
-+	pmic = NULL;
-+
-+	mutex_unlock(&pmic_lock);
-+
-+	regmap_del_irq_chip(chip->irq, chip->irq_chip_data);
-+
-+	mfd_remove_devices(chip->dev);
-+
-+	return 0;
++	return ret;
 +}
-diff --git a/drivers/mfd/intel_soc_pmic_core.h b/drivers/mfd/intel_soc_pmic_core.h
-new file mode 100644
-index 0000000..9189ca5
---- /dev/null
-+++ b/drivers/mfd/intel_soc_pmic_core.h
-@@ -0,0 +1,44 @@
-+/*
-+ * intel_soc_pmic_core.h - Intel SoC PMIC MFD Driver
-+ *
-+ * Copyright (C) 2012-2014 Intel Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Author: Yang, Bin <bin.yang@intel.com>
-+ */
++module_init(pmic_i2c_init);
 +
-+#ifndef __INTEL_SOC_PMIC_CORE_H__
-+#define __INTEL_SOC_PMIC_CORE_H__
++static void __exit pmic_i2c_exit(void)
++{
++	i2c_del_driver(&pmic_i2c_driver);
++}
++module_exit(pmic_i2c_exit);
 +
-+struct intel_soc_pmic_config {
-+	const char			*label;
-+	unsigned long			irq_flags;
-+	struct mfd_cell			*cell_dev;
-+	int				n_cell_devs;
-+	struct regmap_config		*regmap_cfg;
-+	struct regmap_irq_chip		*irq_chip;
-+	int				(*init)(void);
-+};
-+
-+struct intel_soc_pmic {
-+	struct intel_soc_pmic_config	*config;
-+	struct device			*dev;
-+	int				irq;
-+	struct regmap			*regmap;
-+	struct regmap_irq_chip_data	*irq_chip_data;
-+};
-+
-+int intel_pmic_add(struct intel_soc_pmic *chip);
-+int intel_pmic_remove(struct intel_soc_pmic *chip);
-+
-+extern struct intel_soc_pmic_config crystal_cove_pmic;
-+
-+#endif	/* __INTEL_SOC_PMIC_CORE_H__ */
-diff --git a/include/linux/mfd/intel_soc_pmic.h b/include/linux/mfd/intel_soc_pmic.h
-new file mode 100644
-index 0000000..01270e4
---- /dev/null
-+++ b/include/linux/mfd/intel_soc_pmic.h
-@@ -0,0 +1,27 @@
-+/*
-+ * intel_soc_pmic.h - Intel SoC PMIC Driver
-+ *
-+ * Copyright (C) 2012-2014 Intel Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Author: Yang, Bin <bin.yang@intel.com>
-+ */
-+
-+#ifndef __INTEL_SOC_PMIC_H__
-+#define __INTEL_SOC_PMIC_H__
-+
-+int intel_soc_pmic_readb(int reg);
-+int intel_soc_pmic_writeb(int reg, u8 val);
-+int intel_soc_pmic_setb(int reg, u8 mask);
-+int intel_soc_pmic_clearb(int reg, u8 mask);
-+int intel_soc_pmic_update(int reg, u8 val, u8 mask);
-+
-+#endif	/* __INTEL_SOC_PMIC_H__ */
++MODULE_DESCRIPTION("I2C driver for Intel SoC PMIC");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
 -- 
 1.8.3.2
 
