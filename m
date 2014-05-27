@@ -1,201 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021AbaE0R2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 13:28:10 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:64445 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968AbaE0R2E (ORCPT
+	id S1753086AbaE0R2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 13:28:19 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:41816 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040AbaE0R2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 13:28:04 -0400
-From: Lv Zheng <zetalog@gmail.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <zetalog@gmail.com>, Lv Zheng <lv.zheng@intel.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Oswald Buddenhagen <ossi@kde.org>
-Subject: [RFC PATCH 2/6] ACPICA: Hardware: Enable 64-bit firmware waking vector for selected FACS.
-Date: Wed, 28 May 2014 01:27:51 +0800
-Message-Id: <bfc148ab11693d189ff347d523637cd383a76967.1401210685.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1401210684.git.lv.zheng@intel.com>
-References: <38907770.bupFXhytsS@vostro.rjw.lan> <cover.1401210684.git.lv.zheng@intel.com>
+	Tue, 27 May 2014 13:28:15 -0400
+Message-ID: <5384CB29.1090204@gmail.com>
+Date: Tue, 27 May 2014 19:28:09 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: mvebu: split SolidRun CuBox into variants
+References: <1401140009-31505-1-git-send-email-sebastian.hesselbarth@gmail.com> <1401140009-31505-2-git-send-email-sebastian.hesselbarth@gmail.com> <20140527161143.GS8664@titan.lakedaemon.net>
+In-Reply-To: <20140527161143.GS8664@titan.lakedaemon.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lv Zheng <lv.zheng@intel.com>
+On 05/27/2014 06:11 PM, Jason Cooper wrote:
+> On Mon, May 26, 2014 at 11:33:29PM +0200, Sebastian Hesselbarth wrote:
+>> As Mainlining effort for SolidRun CuBox has been carried out on the
+>> Engineering Sample, the board DTS was reflecting this. Actually,
+>> SolidRun CuBox comes in three different variants: Engineering Sample (ES),
+>> production with 1GB RAM (1G), and production with 2GB RAM (2G).
+>>
+>> Therefore, we split the current dove-cubox.dts into a common board include
+>> and one board dts for each of the above variants.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+[...]
+>> ---
+>>  arch/arm/boot/dts/Makefile                         |  4 +++-
+>>  arch/arm/boot/dts/dove-cubox-1g.dts                | 17 ++++++++++++++++
+>>  arch/arm/boot/dts/dove-cubox-2g.dts                | 17 ++++++++++++++++
+>>  arch/arm/boot/dts/dove-cubox-es.dts                | 23 ++++++++++++++++++++++
+>>  .../boot/dts/{dove-cubox.dts => dove-cubox.dtsi}   | 17 ----------------
+>>  5 files changed, 60 insertions(+), 18 deletions(-)
+>>  create mode 100644 arch/arm/boot/dts/dove-cubox-1g.dts
+>>  create mode 100644 arch/arm/boot/dts/dove-cubox-2g.dts
+>>  create mode 100644 arch/arm/boot/dts/dove-cubox-es.dts
+>>  rename arch/arm/boot/dts/{dove-cubox.dts => dove-cubox.dtsi} (86%)
+>>
+[...]
+>> diff --git a/arch/arm/boot/dts/dove-cubox-2g.dts b/arch/arm/boot/dts/dove-cubox-2g.dts
+>> new file mode 100644
+>> index 000000000000..513b6a68eba3
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/dove-cubox-2g.dts
+>> @@ -0,0 +1,17 @@
+>> +/dts-v1/;
+>> +
+>> +#include "dove-cubox.dtsi"
+>> +
+>> +/ {
+>> +	model = "SolidRun CuBox (2G)";
+>> +	compatible = "solidrun,cubox-2g", "solidrun,cubox", "marvell,dove";
+>> +
+>> +	memory {
+>> +		device_type = "memory";
+>> +		reg = <0x00000000 0x80000000>;
+> 
+> Do you anticipate any other differences between the 1G and the 2G?
+> Otherwise, I'm inclined to just have a "solidrun,cubox".  The bootloader
+> should be setting the amount of RAM at boottime anyway.
 
-The root cause of the reported bug might be one of the followings:
-1. BIOS may favor the 64-bit firmware waking vector address when the
-   version of the FACS is greater than 0 and Linux currently only supports
-   resuming from the real mode, so the 64-bit firmware waking vector has
-   never been set and might be invalid to BIOS while the commit enables
-   higher version FACS.
-2. BIOS may favor the FACS reported via the "FIRMWARE_CTRL" field in the
-   FADT while the commit doesn't set the firmware waking vector address of
-   the FACS reported by "FIRMWARE_CTRL", it only sets the firware waking
-   vector address of the FACS reported by "X_FIRMWARE_CTRL".
+Given the minor differences between ES and production, instead of
 
-This patch excludes the cases that can trigger the bugs caused by the root
-cause 1.
+dove-cubox-common.dtsi
++--> dove-cubox.dts (production)
++--> dove-cubos-es.dts (engineering sample)
 
-ACPI specification says:
-A. 32-bit FACS address (FIRMWARE_CTRL field in FADT):
-   Physical memory address of the FACS, where OSPM and firmware exchange
-   control information.
-   If the X_FIRMWARE_CTRL field contains a non zero value then this field
-   must be zero.
-   A zero value indicates that no FACS is specified by this field.
-B. 64-bit FACS address (X_FIRMWARE_CTRL field in FADT):
-   64bit physical memory address of the FACS.
-   This field is used when the physical address of the FACS is above 4GB.
-   If the FIRMWARE_CTRL field contains a non zero value then this field
-   must be zero.
-   A zero value indicates that no FACS is specified by this field.
-Thus the 32bit and 64bit firmware waking vector should indicate completely
-different resuming environment - real mode (1MB addressable) and non real
-mode (4GB+ addressable) and currently Linux only supports resuming from
-real mode.
+we could also just have an "overlay" for the ES like
 
-This patch enables 64-bit firmware waking vector for selected FACS via
-acpi_set_firmware_waking_vector() so that it's up to OSPMs to determine which
-resuming mode should be used by BIOS and ACPICA changes won't trigger the
-bugs caused by the root cause 1. For example, Linux can pass
-physical_address64=0 as the parameter of acpi_set_firmware_waking_vector() to
-indicate no 64bit waking vector support. Lv Zheng.
+dove-cubox.dts (production)
++--> dove-cubox-es.dts (engineering sample)
 
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=74021
-Reported-by: Oswald Buddenhagen <ossi@kde.org>
-Cc: Oswald Buddenhagen <ossi@kde.org>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
----
- drivers/acpi/acpica/hwxfsleep.c |   61 ++++++++++++---------------------------
- include/acpi/acpixf.h           |   11 +++----
- 2 files changed, 23 insertions(+), 49 deletions(-)
+It is not used commonly until now, maybe just a matter of taste.
 
-diff --git a/drivers/acpi/acpica/hwxfsleep.c b/drivers/acpi/acpica/hwxfsleep.c
-index 103d9a7..2b988d5 100644
---- a/drivers/acpi/acpica/hwxfsleep.c
-+++ b/drivers/acpi/acpica/hwxfsleep.c
-@@ -73,7 +73,6 @@ static struct acpi_sleep_functions acpi_sleep_dispatch[] = {
- /*
-  * These functions are removed for the ACPI_REDUCED_HARDWARE case:
-  *      acpi_set_firmware_waking_vector
-- *      acpi_set_firmware_waking_vector64
-  *      acpi_enter_sleep_state_s4bios
-  */
- 
-@@ -83,15 +82,19 @@ static struct acpi_sleep_functions acpi_sleep_dispatch[] = {
-  * FUNCTION:    acpi_set_firmware_waking_vector
-  *
-  * PARAMETERS:  physical_address    - 32-bit physical address of ACPI real mode
-- *                                    entry point.
-+ *                                    entry point
-+ *              physical_address64  - 64-bit physical address of ACPI protected
-+ *                                    entry point
-  *
-  * RETURN:      Status
-  *
-- * DESCRIPTION: Sets the 32-bit firmware_waking_vector field of the FACS
-+ * DESCRIPTION: Sets the firmware_waking_vector fields of the FACS
-  *
-  ******************************************************************************/
- 
--acpi_status acpi_set_firmware_waking_vector(u32 physical_address)
-+acpi_status
-+acpi_set_firmware_waking_vector(acpi_physical_address physical_address,
-+				acpi_physical_address physical_address64)
- {
- 	ACPI_FUNCTION_TRACE(acpi_set_firmware_waking_vector);
- 
-@@ -106,53 +109,27 @@ acpi_status acpi_set_firmware_waking_vector(u32 physical_address)
- 
- 	/* Set the 32-bit vector */
- 
--	acpi_gbl_FACS->firmware_waking_vector = physical_address;
-+	acpi_gbl_FACS->firmware_waking_vector = (u32)physical_address;
- 
--	/* Clear the 64-bit vector if it exists */
-+	if (acpi_gbl_FACS->length > 32) {
-+		if (acpi_gbl_FACS->version >= 1) {
- 
--	if ((acpi_gbl_FACS->length > 32) && (acpi_gbl_FACS->version >= 1)) {
--		acpi_gbl_FACS->xfirmware_waking_vector = 0;
--	}
--
--	return_ACPI_STATUS(AE_OK);
--}
--
--ACPI_EXPORT_SYMBOL(acpi_set_firmware_waking_vector)
--
--#if ACPI_MACHINE_WIDTH == 64
--/*******************************************************************************
-- *
-- * FUNCTION:    acpi_set_firmware_waking_vector64
-- *
-- * PARAMETERS:  physical_address    - 64-bit physical address of ACPI protected
-- *                                    mode entry point.
-- *
-- * RETURN:      Status
-- *
-- * DESCRIPTION: Sets the 64-bit X_firmware_waking_vector field of the FACS, if
-- *              it exists in the table. This function is intended for use with
-- *              64-bit host operating systems.
-- *
-- ******************************************************************************/
--acpi_status acpi_set_firmware_waking_vector64(u64 physical_address)
--{
--	ACPI_FUNCTION_TRACE(acpi_set_firmware_waking_vector64);
-+			/* Set the 64-bit vector */
- 
--	/* Determine if the 64-bit vector actually exists */
-+			acpi_gbl_FACS->xfirmware_waking_vector =
-+			    physical_address64;
-+		} else {
-+			/* Clear the 64-bit vector if it exists */
- 
--	if ((acpi_gbl_FACS->length <= 32) || (acpi_gbl_FACS->version < 1)) {
--		return_ACPI_STATUS(AE_NOT_EXIST);
-+			acpi_gbl_FACS->xfirmware_waking_vector = 0;
-+		}
- 	}
- 
--	/* Clear 32-bit vector, set the 64-bit X_ vector */
--
--	acpi_gbl_FACS->firmware_waking_vector = 0;
--	acpi_gbl_FACS->xfirmware_waking_vector = physical_address;
- 	return_ACPI_STATUS(AE_OK);
- }
- 
--ACPI_EXPORT_SYMBOL(acpi_set_firmware_waking_vector64)
--#endif
-+ACPI_EXPORT_SYMBOL(acpi_set_firmware_waking_vector)
-+
- /*******************************************************************************
-  *
-  * FUNCTION:    acpi_enter_sleep_state_s4bios
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index b5f7132..cfa8782 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -777,13 +777,10 @@ ACPI_EXTERNAL_RETURN_STATUS(acpi_status
- ACPI_EXTERNAL_RETURN_STATUS(acpi_status acpi_leave_sleep_state(u8 sleep_state))
- 
- ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
--				acpi_set_firmware_waking_vector(u32
--								physical_address))
--#if ACPI_MACHINE_WIDTH == 64
--ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
--				acpi_set_firmware_waking_vector64(u64
--								  physical_address))
--#endif
-+				acpi_set_firmware_waking_vector
-+				(acpi_physical_address physical_address,
-+				 acpi_physical_address physical_address64))
-+
- /*
-  * ACPI Timer interfaces
-  */
--- 
-1.7.10
+Is there any version you prefer?
 
+Sebastian
