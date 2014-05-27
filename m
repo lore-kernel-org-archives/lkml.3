@@ -1,37 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273AbaE0XB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 19:01:26 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:42177 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaE0XBY (ORCPT
+	id S1753442AbaE0XCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 19:02:07 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:55749 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823AbaE0XCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 19:01:24 -0400
+	Tue, 27 May 2014 19:02:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140527220838.GA32311@iris.ozlabs.ibm.com>
-References: <1400254112-4662-1-git-send-email-pbonzini@redhat.com>
-	<20140527220838.GA32311@iris.ozlabs.ibm.com>
-Date: Tue, 27 May 2014 16:01:23 -0700
-X-Google-Sender-Auth: dticZWO6GwuP07MbZ1C5bUEFhfY
-Message-ID: <CA+55aFxNkVkqjy1dP+3cg5xbwaOaXTD1ka7HkMnH3L_udAw5PA@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM fixes for 3.15-rc6
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>
+In-Reply-To: <alpine.LSU.2.11.1405271406520.4317@eggly.anvils>
+References: <1400749779-24879-1-git-send-email-mgorman@suse.de>
+	<alpine.LSU.2.11.1405261441320.7154@eggly.anvils>
+	<20140527023751.GB8554@dastard>
+	<alpine.LSU.2.11.1405271406520.4317@eggly.anvils>
+Date: Wed, 28 May 2014 03:02:04 +0400
+Message-ID: <CALYGNiPZXnTG+vxg5tr+jnaDSvHRArJq=fmQ4bPD-m-iJU9jqA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Shrinkers and proportional reclaim
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 3:08 PM, Paul Mackerras <paulus@samba.org> wrote:
+On Wed, May 28, 2014 at 1:17 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Tue, 27 May 2014, Dave Chinner wrote:
+>> On Mon, May 26, 2014 at 02:44:29PM -0700, Hugh Dickins wrote:
+>> >
+>> > [PATCH 4/3] fs/superblock: Avoid counting without __GFP_FS
+>> >
+>> > Don't waste time counting objects in super_cache_count() if no __GFP_FS:
+>> > super_cache_scan() would only back out with SHRINK_STOP in that case.
+>> >
+>> > Signed-off-by: Hugh Dickins <hughd@google.com>
+>>
+>> While you might think that's a good thing, it's not.  The act of
+>> shrinking is kept separate from the accounting of how much shrinking
+>> needs to take place.  The amount of work the shrinker can't do due
+>> to the reclaim context is deferred until the shrinker is called in a
+>> context where it can do work (eg. kswapd)
+>>
+>> Hence not accounting for work that can't be done immediately will
+>> adversely impact the balance of the system under memory intensive
+>> filesystem workloads. In these worklaods, almost all allocations are
+>> done in the GFP_NOFS or GFP_NOIO contexts so not deferring the work
+>> will will effectively stop superblock cache reclaim entirely....
 >
-> Linus seems not to have done this pull yet - Paolo, maybe you should
-> resend the request and cc Linus this time?
+> Thanks for filling me in on that.  At first I misunderstood you,
+> and went off looking in the wrong direction.  Now I see what you're
+> referring to: the quantity that shrink_slab_node() accumulates in
+> and withdraws from shrinker->nr_deferred[nid].
 
-Indeed. I don't pull stuff unless it's explicitly sent to me, and this
-one seems to have been sent just to the lists. Please re-send
-properly,
-
-            Linus
+Maybe shrinker could accumulate fraction nr_pages_scanned / lru_pages
+instead of exact amount of required work? Count of shrinkable objects
+might be calculated later, when shrinker is called from a suitable context and
+can actualy do something.
