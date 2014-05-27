@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaE0GON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:14:13 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:32888 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaE0GOM (ORCPT
+	id S1751947AbaE0GPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:15:25 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:39006 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaE0GPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:14:12 -0400
-Message-ID: <1401171246.11231.5.camel@phoenix>
-Subject: [PATCH] regulator: pfuze100: Remove *regulators[] from struct
- pfuze_chip
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 27 May 2014 14:14:06 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 27 May 2014 02:15:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
+References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com> <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 27 May 2014 15:15:01 +0900
+Message-ID: <CAAVeFu+mpRWLS8Nwn-sCw5YAUCup7-fzZ=x=tM86DVcTq-TcGQ@mail.gmail.com>
+Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is using devm_regulator_register() so we don't need to save the
-pointer for cleanup.
+On Tue, May 27, 2014 at 2:38 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> +       gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
+>> +                            handle_simple_irq, IRQ_TYPE_NONE);
+>> +
+>> +       retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
+>> +                                     IRQF_ONESHOT, KBUILD_MODNAME, cg);
+>
+> Can't you use devm_request_threaded_irq() here?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/pfuze100-regulator.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index 930eb13..c12cbdf32 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -69,7 +69,6 @@ struct pfuze_chip {
- 	struct regmap *regmap;
- 	struct device *dev;
- 	struct pfuze_regulator regulator_descs[PFUZE100_MAX_REGULATOR];
--	struct regulator_dev *regulators[PFUZE100_MAX_REGULATOR];
- };
- 
- static const int pfuze100_swbst[] = {
-@@ -411,6 +410,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 	struct pfuze_regulator_platform_data *pdata =
- 	    dev_get_platdata(&client->dev);
- 	struct regulator_config config = { };
-+	struct regulator_dev *rdev;
- 	int i, ret;
- 	const struct of_device_id *match;
- 	u32 regulator_num;
-@@ -508,12 +508,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 		config.of_node = match_of_node(i);
- 		config.ena_gpio = -EINVAL;
- 
--		pfuze_chip->regulators[i] =
--			devm_regulator_register(&client->dev, desc, &config);
--		if (IS_ERR(pfuze_chip->regulators[i])) {
-+		rdev = devm_regulator_register(&client->dev, desc, &config);
-+		if (IS_ERR(rdev)) {
- 			dev_err(&client->dev, "register regulator%s failed\n",
- 				pfuze_regulators[i].desc.name);
--			return PTR_ERR(pfuze_chip->regulators[i]);
-+			return PTR_ERR(rdev);
- 		}
- 	}
- 
--- 
-1.8.3.2
-
-
-
+Ah, I suppose doing so would keep the IRQ handler active longer than
+we want - please ignore this comment.
