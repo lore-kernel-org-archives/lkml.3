@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaE0Q3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:29:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43306 "EHLO mx1.redhat.com"
+	id S1752495AbaE0Q3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:29:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594AbaE0Q3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:29:06 -0400
+	id S1751979AbaE0Q3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 12:29:03 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: jolsa@redhat.com
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -13,145 +13,134 @@ Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
         eranian@google.com, Andi Kleen <andi@firstfloor.org>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 6/7] perf: Add support to dynamically get cacheline size
-Date: Tue, 27 May 2014 12:28:06 -0400
-Message-Id: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 1/7] events, perf: Pass protection and flags bits through mmap2 interface
+Date: Tue, 27 May 2014 12:28:01 -0400
+Message-Id: <1401208087-181977-2-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
 References: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Different arches may have different cacheline sizes.  Look it up and set
-a global variable for reference.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
+The mmap2 interface was missing the protection and flags bits needed to
+accurately determine if a mmap memory area was shared or private and
+if it was readable or not.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+[tweaked patch to compile and wrote changelog]
 Signed-off-by: Don Zickus <dzickus@redhat.com>
-
 ---
-V2: change to be global and setup in perf.c
-    use filename__read_int for setup
----
- tools/perf/perf.c        |  5 +++++
- tools/perf/util/cpumap.c | 27 +++++++++++++++++++++++++++
- tools/perf/util/cpumap.h |  3 +++
- tools/perf/util/sort.c   |  1 +
- tools/perf/util/util.c   |  1 +
- tools/perf/util/util.h   |  1 +
- 6 files changed, 38 insertions(+)
+ include/uapi/linux/perf_event.h |  1 +
+ kernel/events/core.c            | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
 
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 431798a..dabf08b 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -13,6 +13,7 @@
- #include "util/quote.h"
- #include "util/run-command.h"
- #include "util/parse-events.h"
-+#include "util/cpumap.h"
- #include <api/fs/debugfs.h>
- #include <pthread.h>
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 853bc1c..2ed502f 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -699,6 +699,7 @@ enum perf_event_type {
+ 	 *	u32				min;
+ 	 *	u64				ino;
+ 	 *	u64				ino_generation;
++	 *	u32				prot, flags;
+ 	 *	char				filename[];
+ 	 * 	struct sample_id		sample_id;
+ 	 * };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5129b12..0711cc9 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -40,6 +40,7 @@
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
+ #include <linux/module.h>
++#include <linux/mman.h>
  
-@@ -459,6 +460,10 @@ int main(int argc, const char **argv)
- 	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
+ #include "internal.h"
  
-+	/* The cacheline_size is placed in util objet */
-+	if (cpu__setup_cacheline_size() < 0) 
-+		goto out;
+@@ -5089,6 +5090,7 @@ struct perf_mmap_event {
+ 	int			maj, min;
+ 	u64			ino;
+ 	u64			ino_generation;
++	u32			prot, flags;
+ 
+ 	struct {
+ 		struct perf_event_header	header;
+@@ -5130,6 +5132,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
++		mmap_event->event_id.header.size += sizeof(mmap_event->prot);
++		mmap_event->event_id.header.size += sizeof(mmap_event->flags);
+ 	}
+ 
+ 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+@@ -5148,6 +5152,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		perf_output_put(&handle, mmap_event->min);
+ 		perf_output_put(&handle, mmap_event->ino);
+ 		perf_output_put(&handle, mmap_event->ino_generation);
++		perf_output_put(&handle, mmap_event->prot);
++		perf_output_put(&handle, mmap_event->flags);
+ 	}
+ 
+ 	__output_copy(&handle, mmap_event->file_name,
+@@ -5166,6 +5172,7 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 	struct file *file = vma->vm_file;
+ 	int maj = 0, min = 0;
+ 	u64 ino = 0, gen = 0;
++	u32 prot = 0, flags = 0;
+ 	unsigned int size;
+ 	char tmp[16];
+ 	char *buf = NULL;
+@@ -5196,6 +5203,28 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 		gen = inode->i_generation;
+ 		maj = MAJOR(dev);
+ 		min = MINOR(dev);
 +
- 	cmd = perf_extract_argv0_path(argv[0]);
- 	if (!cmd)
- 		cmd = "perf-help";
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index c4e55b7..1029982 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -477,3 +477,30 @@ int cpu__setup_cpunode_map(void)
- 	closedir(dir1);
- 	return 0;
- }
++		if (vma->vm_flags & VM_READ)
++			prot |= PROT_READ;
++		if (vma->vm_flags & VM_WRITE)
++			prot |= PROT_WRITE;
++		if (vma->vm_flags & VM_EXEC)
++			prot |= PROT_EXEC;
 +
-+int cpu__setup_cacheline_size(void)
-+{
-+	const char *mnt;
-+	char path[PATH_MAX];
-+	int n, size;
-+	
++		if (vma->vm_flags & VM_MAYSHARE)
++			flags = MAP_SHARED;
++		else
++			flags = MAP_PRIVATE;
 +
-+	mnt = sysfs__mountpoint();
-+	if (!mnt)
-+		return -1;
++		if (vma->vm_flags & VM_DENYWRITE)
++			flags |= MAP_DENYWRITE;
++		if (vma->vm_flags & VM_MAYEXEC)
++			flags |= MAP_EXECUTABLE;
++		if (vma->vm_flags & VM_LOCKED)
++			flags |= MAP_LOCKED;
++		if (vma->vm_flags & VM_HUGETLB)
++			flags |= MAP_HUGETLB;
 +
-+	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
-+	if (n == PATH_MAX) {
-+		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
-+		return -1;
-+	}
-+
-+	if (filename__read_int(path, &size)) {
-+		pr_err("Can not read cacheline size\n");
-+		return -1;
-+	}
-+
-+	cacheline_size = size;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index 61a6548..507d7fd 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -5,6 +5,7 @@
- #include <stdbool.h>
+ 		goto got_name;
+ 	} else {
+ 		name = (char *)arch_vma_name(vma);
+@@ -5236,6 +5265,8 @@ got_name:
+ 	mmap_event->min = min;
+ 	mmap_event->ino = ino;
+ 	mmap_event->ino_generation = gen;
++	mmap_event->prot = prot;
++	mmap_event->flags = flags;
  
- #include "perf.h"
-+#include "util/util.h"
- #include "util/debug.h"
+ 	if (!(vma->vm_flags & VM_EXEC))
+ 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+@@ -5276,6 +5307,8 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 		/* .min (attr_mmap2 only) */
+ 		/* .ino (attr_mmap2 only) */
+ 		/* .ino_generation (attr_mmap2 only) */
++		/* .prot (attr_mmap2 only) */
++		/* .flags (attr_mmap2 only) */
+ 	};
  
- struct cpu_map {
-@@ -81,4 +82,6 @@ static inline int cpu__get_node(int cpu)
- 	return cpunode_map[cpu];
- }
- 
-+int cpu__setup_cacheline_size(void);
-+
- #endif /* __PERF_CPUMAP_H */
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 635cd8f..6e06567 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -2,6 +2,7 @@
- #include "hist.h"
- #include "comm.h"
- #include "symbol.h"
-+#include "cpumap.h"
- 
- regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 7fff6be..95aefa7 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -17,6 +17,7 @@
-  * XXX We need to find a better place for these things...
-  */
- unsigned int page_size;
-+int cacheline_size;
- 
- bool test_attr__enabled;
- 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index b03da44..6686436 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -304,6 +304,7 @@ char *rtrim(char *s);
- void dump_stack(void);
- 
- extern unsigned int page_size;
-+extern int cacheline_size;
- 
- void get_term_dimensions(struct winsize *ws);
- 
+ 	perf_event_mmap_event(&mmap_event);
 -- 
 1.7.11.7
 
