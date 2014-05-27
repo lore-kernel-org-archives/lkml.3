@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaE0WkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:40:11 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:39609 "EHLO
+	id S1752585AbaE0WoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:44:16 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:59914 "EHLO
 	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaE0WkG (ORCPT
+	with ESMTP id S1751413AbaE0WoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:40:06 -0400
-Date: Tue, 27 May 2014 17:40:02 -0500
+	Tue, 27 May 2014 18:44:14 -0400
+Date: Tue, 27 May 2014 17:44:10 -0500
 From: Seth Jennings <sjennings@variantweb.net>
 To: Dan Streetman <ddstreet@ieee.org>
 Cc: Minchan Kim <minchan@kernel.org>, Weijie Yang <weijie.yang@samsung.com>,
@@ -19,98 +19,79 @@ Cc: Minchan Kim <minchan@kernel.org>, Weijie Yang <weijie.yang@samsung.com>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Linux-MM <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] mm/zpool: prevent zbud/zsmalloc from unloading when
- used
-Message-ID: <20140527224002.GB25781@cerebellum.variantweb.net>
+Subject: Re: [PATCHv3 0/6] mm/zpool: add common api for zswap to use
+ zbud/zsmalloc
+Message-ID: <20140527224410.GC25781@cerebellum.variantweb.net>
 References: <1399499496-3216-1-git-send-email-ddstreet@ieee.org>
  <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
- <1400958369-3588-7-git-send-email-ddstreet@ieee.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400958369-3588-7-git-send-email-ddstreet@ieee.org>
+In-Reply-To: <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 24, 2014 at 03:06:09PM -0400, Dan Streetman wrote:
-> Add try_module_get() to pool creation functions for zbud and zsmalloc,
-> and module_put() to pool destruction functions, since they now can be
-> modules used via zpool.  Without usage counting, they could be unloaded
-> while pool(s) were active, resulting in an oops.
+On Sat, May 24, 2014 at 03:06:03PM -0400, Dan Streetman wrote:
+> In order to allow zswap users to choose between zbud and zsmalloc for
+> the compressed storage pool, this patch set adds a new api "zpool" that
+> provides an interface to both zbud and zsmalloc.  Only minor changes
+> to zbud's interface were needed.  This does not include implementing
+> shrinking in zsmalloc, which will be sent separately.
+> 
+> I believe Seth originally was using zsmalloc for swap, but there were
+> concerns about how significant the impact of shrinking zsmalloc would
+> be when zswap had to start reclaiming pages.  That still may be an
+> issue, but this at least allows users to choose themselves whether
+> they want a lower-density or higher-density compressed storage medium.
+> At least for situations where zswap reclaim is never or rarely reached,
+> it probably makes sense to use the higher density of zsmalloc.
+> 
+> Note this patch set does not change zram to use zpool, although that
+> change should be possible as well.
 
-I like the idea here, but what about doing this in the zpool layer? For
-me, it is kinda weird for a module to be taking a ref on itself.  Maybe
-this is excepted practice.  Is there precedent for this?
+Much cleaner now, thanks Dan :)
 
-What about having the zbud/zsmalloc drivers pass their module pointers
-to zpool_register_driver() as an additional field in struct zpool_driver
-and have zpool take the reference?  Since zpool is the one in trouble if
-the driver is unloaded.
+A few more comments (see replies to 3/6 and 6/6)
 
 Seth
 
 > 
-> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-> Cc: Seth Jennings <sjennings@variantweb.net>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Weijie Yang <weijie.yang@samsung.com>
 > ---
 > 
-> New for this patch set.
+> Changes since v2 : https://lkml.org/lkml/2014/5/7/927
+>   -Change zpool to use driver registration instead of hardcoding
+>    implementations
+>   -Add module use counting in zbud/zsmalloc
 > 
->  mm/zbud.c     | 5 +++++
->  mm/zsmalloc.c | 5 +++++
->  2 files changed, 10 insertions(+)
+> Changes since v1 https://lkml.org/lkml/2014/4/19/97
+>  -remove zsmalloc shrinking
+>  -change zbud size param type from unsigned int to size_t
+>  -remove zpool fallback creation
+>  -zswap manually falls back to zbud if specified type fails
 > 
-> diff --git a/mm/zbud.c b/mm/zbud.c
-> index 8a72cb1..2b3689c 100644
-> --- a/mm/zbud.c
-> +++ b/mm/zbud.c
-> @@ -282,6 +282,10 @@ struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops)
->  	pool = kmalloc(sizeof(struct zbud_pool), GFP_KERNEL);
->  	if (!pool)
->  		return NULL;
-> +	if (!try_module_get(THIS_MODULE)) {
-> +		kfree(pool);
-> +		return NULL;
-> +	}
->  	spin_lock_init(&pool->lock);
->  	for_each_unbuddied_list(i, 0)
->  		INIT_LIST_HEAD(&pool->unbuddied[i]);
-> @@ -302,6 +306,7 @@ struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops)
->  void zbud_destroy_pool(struct zbud_pool *pool)
->  {
->  	kfree(pool);
-> +	module_put(THIS_MODULE);
->  }
->  
->  /**
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index 07c3130..2cc2647 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -946,6 +946,10 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->  	pool = kzalloc(ovhd_size, GFP_KERNEL);
->  	if (!pool)
->  		return NULL;
-> +	if (!try_module_get(THIS_MODULE)) {
-> +		kfree(pool);
-> +		return NULL;
-> +	}
->  
->  	for (i = 0; i < ZS_SIZE_CLASSES; i++) {
->  		int size;
-> @@ -985,6 +989,7 @@ void zs_destroy_pool(struct zs_pool *pool)
->  		}
->  	}
->  	kfree(pool);
-> +	module_put(THIS_MODULE);
->  }
->  EXPORT_SYMBOL_GPL(zs_destroy_pool);
->  
+> 
+> Dan Streetman (6):
+>   mm/zbud: zbud_alloc() minor param change
+>   mm/zbud: change zbud_alloc size type to size_t
+>   mm/zpool: implement common zpool api to zbud/zsmalloc
+>   mm/zpool: zbud/zsmalloc implement zpool
+>   mm/zpool: update zswap to use zpool
+>   mm/zpool: prevent zbud/zsmalloc from unloading when used
+> 
+>  include/linux/zbud.h  |   2 +-
+>  include/linux/zpool.h | 214 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/Kconfig            |  43 +++++-----
+>  mm/Makefile           |   1 +
+>  mm/zbud.c             | 113 ++++++++++++++++++++++----
+>  mm/zpool.c            | 197 ++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/zsmalloc.c         |  86 ++++++++++++++++++++
+>  mm/zswap.c            |  76 ++++++++++--------
+>  8 files changed, 668 insertions(+), 64 deletions(-)
+>  create mode 100644 include/linux/zpool.h
+>  create mode 100644 mm/zpool.c
+> 
 > -- 
 > 1.8.3.1
 > 
