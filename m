@@ -1,97 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaE0PYQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:24:16 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:57257 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752871AbaE0PYK convert rfc822-to-8bit (ORCPT
+	id S1752746AbaE0P1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:27:07 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60557 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751777AbaE0P1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:24:10 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'David Miller'" <davem@davemloft.net>
-CC: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "jim_baxter@mentor.com" <jim_baxter@mentor.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kamal@canonical.com" <kamal@canonical.com>,
-        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
-        "edumazet@google.com" <edumazet@google.com>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
-Subject: RE: skbuff truesize incorrect.
-Thread-Topic: skbuff truesize incorrect.
-Thread-Index: AQHPdgCCL2lnKeimqUeV55a8ET8tq5tN2VIAgACyNICABgQW8A==
-Date: Tue, 27 May 2014 15:23:14 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724E565@AcuExch.aculab.com>
-References: <537E4AFD.20304@mentor.com>
-	<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
-	<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>
- <20140523.161823.1006372695373018122.davem@davemloft.net>
-In-Reply-To: <20140523.161823.1006372695373018122.davem@davemloft.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 May 2014 11:27:04 -0400
+X-Sasl-enc: RF6+gGmCYuk6z8JYyKXMwy1oLTDc1qRHX/h9OifcSmCB 1401204420
+Date: Tue, 27 May 2014 08:30:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Finn Thain <fthain@telegraphics.com.au>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: linux-next: manual merge of the tty tree with the m68k tree
+Message-ID: <20140527153034.GA20250@kroah.com>
+References: <20140527165337.5c7d4fa4@canb.auug.org.au>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527165337.5c7d4fa4@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller
-> From: David Laight <David.Laight@ACULAB.COM>
-> Date: Fri, 23 May 2014 08:52:13 +0000
+On Tue, May 27, 2014 at 04:53:37PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> > The hardware will put multiple ethernet frames into a single USB bulk data
-> > message. To handle this the driver generates a URB that is (hopefully) long
-> > enough for the longest USB message (typically 32k is assumed to be enough).
-> > The URB that usb_net generated have the data in a linear skb - which then
-> > has a large 'truesize'.
-> >
-> > Since USB bulk data are terminated by a short fragment there is actually
-> > no need for the URB be long enough for the full message. Provided the
-> > URB are multiples of the USB message size (1k for USB 3) the message
-> > can be received into multiple URB - the driver just has to be willing
-> > to merge URB buffers (as well as split them) when generating the ethernet
-> > frames.
+> Today's linux-next merge of the tty tree got a conflict in
+> Documentation/kernel-parameters.txt between commit d5ebf7cc86a7 ("m68k:
+> Multi-platform EARLY_PRINTK") from the m68k tree and commit
+> 0d3c673e7881 ("tty/serial: pl011: add generic earlycon support") from
+> the tty tree.
 > 
-> I think we could take a less invasive approach.
-> 
-> Use whatever order page is needed for that 32K chunk for the URB,
-> but split up the compound page so that the individual pages can be
-> accounted for separately.
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).  Thanks Geert for the heads up.
 
-Using 4k 'pages' would be fine (or even 1k).
-All the USB interfaces support SG provided the fragments are all
-aligned.
-Recycling the unused 4k pages would probably be better than using
-separate URB for each fragment.
+Looks good, thanks.
 
-Note that the xhci driver has to split buffers that cross 64k
-boundaries into separate ring entries - and these must not cross
-the end of the ring (thank you hardware engineers...).
-So not receiving into the 'linear' part of an skb helps.
-
-Although I suspect that 32k is excessive - provided the driver can
-merge URB (as well as pages) to generate ethernet frames.
-
-> Hook up the pages into the SKB frag array, and only account PAGE_SIZE
-> into the SKB truesize for the individual pages actually used from
-> the superpage.
-> 
-> This will largely retain the URB allocation and processing scheme,
-> yet at the same time dramatically decrease the truesize overrage
-> factor.
-
-True, you still need to sort out how to handle multiple ethernet
-frames in the same 4k page, and arbitrary page boundaries within a frame.
-
-I suspect that using 1k or 2k pages and using 'copybreak' to never pass
-up shared pages would give the best overall performance.
-
-	David
-
-
-
+greg k-h
