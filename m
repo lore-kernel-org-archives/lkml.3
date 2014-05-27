@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaE0M5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 08:57:45 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:39460 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaE0M5o (ORCPT
+	id S1752390AbaE0M7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 08:59:23 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:42749 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaE0M7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 08:57:44 -0400
-Message-ID: <53848B81.4090709@huawei.com>
-Date: Tue, 27 May 2014 20:56:33 +0800
-From: Libo Chen <libo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 27 May 2014 08:59:21 -0400
+Date: Tue, 27 May 2014 14:56:22 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vincent =?iso-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrzej Hajda <a.hajda@samsung.com>, Dave Airlie <airlied@linux.ie>
+Subject: Re: [PATCH linux-next] imx-drm: imx-tve: remove unused variable
+Message-ID: <20140527125622.GA14841@phenom.ffwll.local>
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Vincent =?iso-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	linux-next@vger.kernel.org, Andrzej Hajda <a.hajda@samsung.com>,
+	Dave Airlie <airlied@linux.ie>
+References: <1401054854-20932-1-git-send-email-vincent.stehle@laposte.net>
+ <20140525221235.GA26619@kroah.com>
+ <20140526091252.2a4496d4@canb.auug.org.au>
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: <tglx@linutronix.de>, <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, "Li Zefan" <lizefan@huawei.com>
-Subject: Re: balance storm
-References: <5382AF2E.1040407@huawei.com>	 <1401090987.5339.79.camel@marge.simpson.net> <53832A36.5020205@huawei.com>	 <20140527094802.GN30445@twins.programming.kicks-ass.net>	 <1401185133.5134.119.camel@marge.simpson.net>	 <20140527104349.GP30445@twins.programming.kicks-ass.net> <1401188155.5134.125.camel@marge.simpson.net>
-In-Reply-To: <1401188155.5134.125.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140526091252.2a4496d4@canb.auug.org.au>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/27 18:55, Mike Galbraith wrote:
-> On Tue, 2014-05-27 at 12:43 +0200, Peter Zijlstra wrote: 
->> On Tue, May 27, 2014 at 12:05:33PM +0200, Mike Galbraith wrote:
->>> On Tue, 2014-05-27 at 11:48 +0200, Peter Zijlstra wrote:
->>>
->>>> So I suppose this is due to the select_idle_sibling() nonsense again,
->>>> where we assumes L3 is a fair compromise between cheap enough and
->>>> effective enough.
->>>
->>> Nodz.
->>>
->>>> Of course, Intel keeps growing the cpu count covered by L3 to ridiculous
->>>> sizes, 8 cores isn't nowhere near their top silly, which shifts the
->>>> balance, and there's always going to be pathological cases (like the
->>>> proposed workload) where its just always going to suck eggs.
->>>
->>> Test is as pathological as it gets.  15 core + SMT wouldn't be pretty.
->>
->> So one thing we could maybe do is measure the cost of
->> select_idle_sibling(), just like we do for idle_balance() and compare
->> this against the tasks avg runtime.
->>
->> We can go all crazy and do reduced searches; like test every n-th cpu in
->> the mask, or make it statistical and do a full search ever n wakeups.
->>
->> Not sure what's a good approach. But L3 spanning more and more CPUs is
->> not something that's going to get cured anytime soon I'm afraid.
->>
->> Not to mention bloody SMT which makes the whole mess worse.
+On Mon, May 26, 2014 at 09:12:52AM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> I think we should keep it dirt simple and above all dirt cheap.  The per
-> task migration cap per unit time should meet that bill, limit the damage
-> potential, while also limiting the good, but that's tough.  I don't see
+> On Sun, 25 May 2014 15:12:35 -0700 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> >
+> > On Sun, May 25, 2014 at 11:54:14PM +0200, Vincent Stehlé wrote:
+> > > Commit f9b0e251dfbf 'drm: make mode_valid callback optional' left variable ret
+> > > unused; remove it.
+> > > 
+> > > This fixes the following compilation warning:
+> > > 
+> > >   drivers/staging/imx-drm/imx-tve.c: In function ‘imx_tve_connector_mode_valid’:
+> > >   drivers/staging/imx-drm/imx-tve.c:252:6: warning: unused variable ‘ret’ [-Wunused-variable]
+> > 
+> > It doesn't apply to my tree :(
+> 
+> Yeah, commit f9b0e251dfbf 'drm: make mode_valid callback optional' is
+> in the drm tree, so this patch needs to go to Dave Airlie (cc'd).
+> Though Daniel Vetter may want to send it on.
+> 
+> For Dave's benefit, here is the patch again:
 
-agree
+I've pulled it into my drm-stuff branch so it doesn't get lost. Should
+land in 3.16 one way or the other.
 
-> any way to make it perfect, so I'll settle for good enough.
+Thanks, Daniel
+
 > 
-> -Mike
+> From:	Vincent Stehlé <vincent.stehle@laposte.net>
+> Subject: [PATCH linux-next] imx-drm: imx-tve: remove unused variable
+> Date:	Sun, 25 May 2014 23:54:14 +0200
 > 
+> Commit f9b0e251dfbf 'drm: make mode_valid callback optional' left variable ret
+> unused; remove it.
 > 
+> This fixes the following compilation warning:
 > 
+>   drivers/staging/imx-drm/imx-tve.c: In function ‘imx_tve_connector_mode_valid’:
+>   drivers/staging/imx-drm/imx-tve.c:252:6: warning: unused variable ‘ret’ [-Wunused-variable]
 > 
+> Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+> Cc: Andrzej Hajda <a.hajda@samsung.com>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> 
+> Hi,
+> 
+> This can be seen with e.g. linux next-20140523 and arm allmodconfig.
+> 
+> Best regards,
+> 
+> V.
+> 
+>  drivers/staging/imx-drm/imx-tve.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
+> index 3e8b0a1..4caef2b1 100644
+> --- a/drivers/staging/imx-drm/imx-tve.c
+> +++ b/drivers/staging/imx-drm/imx-tve.c
+> @@ -249,7 +249,6 @@ static int imx_tve_connector_mode_valid(struct drm_connector *connector,
+>  {
+>  	struct imx_tve *tve = con_to_tve(connector);
+>  	unsigned long rate;
+> -	int ret;
+>  
+>  	/* pixel clock with 2x oversampling */
+>  	rate = clk_round_rate(tve->clk, 2000UL * mode->clock) / 2000;
+> -- 
+> 2.0.0.rc2
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
 
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
