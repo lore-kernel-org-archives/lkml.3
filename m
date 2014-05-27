@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaE0XT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 19:19:56 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:53179 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaE0XTy (ORCPT
+	id S1753382AbaE0XUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 19:20:31 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:55842 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073AbaE0XU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 19:19:54 -0400
-Date: Tue, 27 May 2014 17:19:50 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND] rapidio/tsi721: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Message-ID: <20140527231950.GI11907@google.com>
-References: <1399993292-31692-1-git-send-email-agordeev@redhat.com>
+	Tue, 27 May 2014 19:20:29 -0400
+Date: Tue, 27 May 2014 16:19:12 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Shrinkers and proportional reclaim
+In-Reply-To: <CALYGNiPZXnTG+vxg5tr+jnaDSvHRArJq=fmQ4bPD-m-iJU9jqA@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1405271618360.5019@eggly.anvils>
+References: <1400749779-24879-1-git-send-email-mgorman@suse.de> <alpine.LSU.2.11.1405261441320.7154@eggly.anvils> <20140527023751.GB8554@dastard> <alpine.LSU.2.11.1405271406520.4317@eggly.anvils>
+ <CALYGNiPZXnTG+vxg5tr+jnaDSvHRArJq=fmQ4bPD-m-iJU9jqA@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399993292-31692-1-git-send-email-agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 13, 2014 at 05:01:32PM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+On Wed, 28 May 2014, Konstantin Khlebnikov wrote:
+> On Wed, May 28, 2014 at 1:17 AM, Hugh Dickins <hughd@google.com> wrote:
+> > On Tue, 27 May 2014, Dave Chinner wrote:
+> >> On Mon, May 26, 2014 at 02:44:29PM -0700, Hugh Dickins wrote:
+> >> >
+> >> > [PATCH 4/3] fs/superblock: Avoid counting without __GFP_FS
+> >> >
+> >> > Don't waste time counting objects in super_cache_count() if no __GFP_FS:
+> >> > super_cache_scan() would only back out with SHRINK_STOP in that case.
+> >> >
+> >> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> >>
+> >> While you might think that's a good thing, it's not.  The act of
+> >> shrinking is kept separate from the accounting of how much shrinking
+> >> needs to take place.  The amount of work the shrinker can't do due
+> >> to the reclaim context is deferred until the shrinker is called in a
+> >> context where it can do work (eg. kswapd)
+> >>
+> >> Hence not accounting for work that can't be done immediately will
+> >> adversely impact the balance of the system under memory intensive
+> >> filesystem workloads. In these worklaods, almost all allocations are
+> >> done in the GFP_NOFS or GFP_NOIO contexts so not deferring the work
+> >> will will effectively stop superblock cache reclaim entirely....
+> >
+> > Thanks for filling me in on that.  At first I misunderstood you,
+> > and went off looking in the wrong direction.  Now I see what you're
+> > referring to: the quantity that shrink_slab_node() accumulates in
+> > and withdraws from shrinker->nr_deferred[nid].
 > 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Matt Porter <mporter@kernel.crashing.org>
-> Cc: Alexandre Bounine <alexandre.bounine@idt.com>
-> Cc: linux-pci@vger.kernel.org
+> Maybe shrinker could accumulate fraction nr_pages_scanned / lru_pages
+> instead of exact amount of required work? Count of shrinkable objects
+> might be calculated later, when shrinker is called from a suitable context
+> and can actualy do something.
 
-I assume this is being handled by Matt and/or Alexandre (listed in
-MAINTAINERS).  Let me know if I should do anything.
+Good idea, probably a worthwhile optimization to think through further.
+(Though experience says that Dave will explain how that can never work.)
 
-> ---
->  drivers/rapidio/devices/tsi721.c |   11 +++--------
->  1 files changed, 3 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
-> index 1753dc6..2ca1a0b 100644
-> --- a/drivers/rapidio/devices/tsi721.c
-> +++ b/drivers/rapidio/devices/tsi721.c
-> @@ -768,15 +768,10 @@ static int tsi721_enable_msix(struct tsi721_device *priv)
->  	}
->  #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
->  
-> -	err = pci_enable_msix(priv->pdev, entries, ARRAY_SIZE(entries));
-> +	err = pci_enable_msix_exact(priv->pdev, entries, ARRAY_SIZE(entries));
->  	if (err) {
-> -		if (err > 0)
-> -			dev_info(&priv->pdev->dev,
-> -				 "Only %d MSI-X vectors available, "
-> -				 "not using MSI-X\n", err);
-> -		else
-> -			dev_err(&priv->pdev->dev,
-> -				"Failed to enable MSI-X (err=%d)\n", err);
-> +		dev_err(&priv->pdev->dev,
-> +			"Failed to enable MSI-X (err=%d)\n", err);
->  		return err;
->  	}
->  
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hugh
