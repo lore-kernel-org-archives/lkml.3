@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaE0IM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:12:29 -0400
-Received: from mga14.intel.com ([192.55.52.115]:41564 "EHLO mga14.intel.com"
+	id S1752847AbaE0IMn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:12:43 -0400
+Received: from mga14.intel.com ([192.55.52.115]:41593 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaE0IMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:12:24 -0400
+	id S1752824AbaE0IMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:12:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,917,1392192000"; 
-   d="scan'208";a="538019086"
+   d="scan'208";a="538019239"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -17,17 +17,19 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [Patch V3 33/37] x86, irq: introduce helper functions to release IOAPIC pin
-Date: Tue, 27 May 2014 16:08:08 +0800
-Message-Id: <1401178092-1228-34-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [Patch V3 34/37] x86, irq, ACPI: release IOAPIC pin when PCI device is disabled
+Date: Tue, 27 May 2014 16:08:09 +0800
+Message-Id: <1401178092-1228-35-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,130 +37,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce function mp_unmap_irq() to release IOAPIC IRQ when IRQ is not
-used any more, which will typically called by pcibios_disabled_irq.
-
-And function mp_irqdomain_unmap() is a common implementation of
-irq_domain_ops.unmap for IOAPIC.
+Release IOAPIC pin associated with PCI device when the PCI device
+is disabled.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/io_apic.h |    3 ++
- arch/x86/kernel/apic/io_apic.c |   60 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 63 insertions(+)
+ arch/x86/kernel/acpi/boot.c |   28 ++++++++++++++++++++++++++++
+ drivers/acpi/pci_irq.c      |    3 ++-
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 073358c12d90..6b40122bec0c 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -180,12 +180,14 @@ extern int mp_find_ioapic(u32 gsi);
- extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
- extern u32 mp_pin_to_gsi(int ioapic, int pin);
- extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
-+extern void mp_unmap_irq(int irq);
- extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
- 				      ioapic_create_domain_fn cb, void *arg);
- extern struct irq_domain *mp_irqdomain_create(int ioapic,
- 		struct device_node *np, const struct irq_domain_ops *ops);
- extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 			    irq_hw_number_t hwirq);
-+extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
- extern int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node);
- extern void __init pre_init_apic_IRQ0(void);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 0592c38d9952..c8e8fe67bbc8 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -313,9 +313,11 @@ static void  mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
+ 				    u32 gsi);
+ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+ 			   int polarity);
++static void mp_unregister_gsi(u32 gsi);
  
-@@ -229,6 +231,7 @@ static inline void ioapic_insert_resources(void) { }
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
- static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
- static inline int mp_map_gsi_to_irq(u32 gsi, unsigned int flags) { return gsi; }
-+static inline void mp_unmap_irq(int irq) { }
+ static struct irq_domain_ops acpi_irqdomain_ops = {
+ 	.map = mp_irqdomain_map,
++	.unmap = mp_irqdomain_unmap,
+ };
  
- static inline int save_ioapic_entries(void)
- {
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 7fc34fcf3ea3..c7c84d5c0e57 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -480,6 +480,21 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
- 	return 0;
+ static struct irq_domain *acpi_create_irqdomain(int idx, void *arg)
+@@ -541,8 +543,16 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ 	return irq;
  }
  
-+static void __remove_pin_from_irq(struct irq_cfg *cfg, int apic, int pin)
++static void acpi_unregister_gsi_ioapic(u32 gsi)
 +{
-+	struct irq_pin_list **last, *entry;
-+
-+	last = &cfg->irq_2_pin;
-+	for_each_irq_pin(entry, cfg->irq_2_pin)
-+		if (entry->apic == apic && entry->pin == pin) {
-+			*last = entry->next;
-+			kfree(entry);
-+			return;
-+		} else {
-+			last = &entry->next;
-+		}
++#ifdef CONFIG_X86_IO_APIC
++	mp_unregister_gsi(gsi);
++#endif
 +}
 +
- static void add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
+ int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
+ 			   int trigger, int polarity) = acpi_register_gsi_pic;
++void (*__acpi_unregister_gsi)(u32 gsi) = NULL;
+ 
+ #ifdef CONFIG_ACPI_SLEEP
+ int (*acpi_suspend_lowlevel)(void) = x86_acpi_suspend_lowlevel;
+@@ -562,6 +572,8 @@ EXPORT_SYMBOL_GPL(acpi_register_gsi);
+ 
+ void acpi_unregister_gsi(u32 gsi)
  {
- 	if (__add_pin_to_irq_node(cfg, node, apic, pin))
-@@ -1068,6 +1083,30 @@ int mp_map_gsi_to_irq(u32 gsi, unsigned int flags)
- 	return mp_map_pin_to_irq(gsi, idx, ioapic, pin, flags);
++	if (__acpi_unregister_gsi)
++		(*__acpi_unregister_gsi)(gsi);
+ }
+ EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
+ 
+@@ -569,6 +581,7 @@ static void __init acpi_set_irq_model_ioapic(void)
+ {
+ 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+ 	__acpi_register_gsi = acpi_register_gsi_ioapic;
++	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
+ 	acpi_ioapic = 1;
  }
  
-+void mp_unmap_irq(int irq)
+@@ -1050,6 +1063,21 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+ 	return irq;
+ }
+ 
++static void mp_unregister_gsi(u32 gsi)
 +{
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	struct mp_pin_info *info;
-+	int ioapic, pin;
++	int irq;
 +
-+	if (!data || !data->domain)
++	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
 +		return;
 +
-+	ioapic = (int)(long)data->domain->host_data;
-+	pin = (int)data->hwirq;
-+	info = mp_pin_info(ioapic, pin);
-+
-+	mutex_lock(&ioapic_mutex);
-+	if (--info->count == 0) {
-+		info->set = 0;
-+		if (irq < NR_IRQS_LEGACY)
-+			irq_domain_disassociate(data->domain, irq);
-+		else
-+			irq_dispose_mapping(irq);
-+	}
-+	mutex_unlock(&ioapic_mutex);
-+}
-+
- static int pin_2_irq(int idx, int ioapic, int pin, unsigned int flags)
- {
- 	u32 gsi = mp_pin_to_gsi(ioapic, pin);
-@@ -3857,6 +3896,27 @@ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 	return io_apic_setup_irq_pin(virq, info->node, &attr);
- }
- 
-+void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq)
-+{
-+	struct irq_data *data = irq_get_irq_data(virq);
-+	struct irq_cfg *cfg = irq_cfg(virq);
-+	int ioapic = (int)(long)domain->host_data;
-+	int pin = (int)data->hwirq;
-+
-+	/*
-+	 * Skip the timer IRQ if there's a quirk handler installed and if it
-+	 * returns 1:
-+	 */
-+	if (apic->multi_timer_check &&
-+	    apic->multi_timer_check(ioapic, virq))
++	if (acpi_gbl_FADT.sci_interrupt == gsi)
 +		return;
 +
-+	ioapic_mask_entry(ioapic, pin);
-+	__remove_pin_from_irq(cfg, ioapic, pin);
-+	WARN_ON(cfg->irq_2_pin != NULL);
-+	arch_teardown_hwirq(virq);
++	irq = mp_map_gsi_to_irq(gsi, 0);
++	if (irq > 0)
++		mp_unmap_irq(irq);
 +}
 +
- int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
- {
- 	int ret = 0;
+ /*
+  * Parse IOAPIC related entries in MADT
+  * returns 0 on success, < 0 on error
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 9c62340c2360..6ba463ceccc6 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -498,5 +498,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	 */
+ 
+ 	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
+-	acpi_unregister_gsi(gsi);
++	if (gsi >= 0 && dev->irq > 0)
++		acpi_unregister_gsi(gsi);
+ }
 -- 
 1.7.10.4
 
