@@ -1,136 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaE0HQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 03:16:32 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:62653 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaE0HQa (ORCPT
+	id S1751837AbaE0HWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 03:22:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26786 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaE0HWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 03:16:30 -0400
-Date: Tue, 27 May 2014 09:16:26 +0200
-From: Seth Forshee <seth.forshee@canonical.com>
-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Jens Axboe <axboe@kernel.dk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Marian Marinov <mm@1h.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [lxc-devel] [RFC PATCH 11/11] loop: Allow priveleged operations
- for root in the namespace which owns a device
-Message-ID: <20140527071626.GA3617@ubuntu-mba51>
-Mail-Followup-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>,
-	"Serge E. Hallyn" <serge@hallyn.com>, Jens Axboe <axboe@kernel.dk>,
-	Serge Hallyn <serge.hallyn@canonical.com>,
-	Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-	Marian Marinov <mm@1h.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <1400103299-144589-1-git-send-email-seth.forshee@canonical.com>
- <1400103299-144589-12-git-send-email-seth.forshee@canonical.com>
- <537EE129.1020603@1h.com>
- <20140526091614.GA13666@ubuntu-mba51>
- <1401118325.7572.82.camel@canyon.ip6.wittsend.com>
- <20140527013634.GA3524@mail.hallyn.com>
- <1401158362.7572.138.camel@canyon.ip6.wittsend.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401158362.7572.138.camel@canyon.ip6.wittsend.com>
+	Tue, 27 May 2014 03:22:17 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-c1-53843d265b82
+Date: Tue, 27 May 2014 16:20:48 +0900
+From: Changman Lee <cm224.lee@samsung.com>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid crash when trace
+ f2fs_submit_page_mbio event in ra_sum_pages
+Message-id: <20140527072048.GC4886@cm224.lee>
+References: <00f501cf7944$7e8a65d0$7b9f3170$@samsung.com>
+ <20140527012505.GA4886@cm224.lee> <00ff01cf7975$a5f5fd10$f1e1f730$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-disposition: inline
+In-reply-to: <00ff01cf7975$a5f5fd10$f1e1f730$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t8zA11125Zgg1ZTi/9NH9ksru/6y2Rx
+	aZG7xZ69J1ksLu+aw+bA6rF7wWcmj74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MrYs/UYe0Gf
+	ZcW9ltlMDYzndLoYOTkkBEwkVjScZYewxSQu3FvP1sXIxSEksIxR4uCf7+wwRTcfr2eHSExn
+	lJiy4BULhPOTUWLq69ksIFUsAqoSjXuugNlsAloS7afXgtkiAkoSv+YvYgVpYBaYxCix5Gcz
+	UIKDQ1ggV6LjhB5IDa+ArsSSiXehNnQzSqxq+cMIkRCU+DH5HtggZqCh63ceZ4KwpSUe/Z0B
+	dh6ngJXE3t+HwGpEBVQkppzcxgZx9iZ2iRNtzhDHCUh8m3wIbK+EgKzEpgPMECWSEgdX3GCZ
+	wCg2C8m2WUi2zUKybQEj8ypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MkGjq38F494D1IcZk
+	oJUTmaVEk/OB0ZhXEm9obGZkYWpiamxkbmlGmrCSOO/9h0lBQgLpiSWp2ampBalF8UWlOanF
+	hxiZODilGhiDZWQjrv6JMzFo5pPm5DAu377212v2VpP+G592uG77veLfBJ/i7fPyldUrfe9/
+	uLLwPrtVYerEzXenqV1ZJq53/dbkKalGD/YUGP7WVH4QtoXZOdSxyO4/j97+lWdip55bU2K4
+	9/VbmTjWw79+rn1p9ujqoeI24bL9a85btH2oMEv9fmLChaCrSizFGYmGWsxFxYkAHqQ/P7wC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xoK6abUuwwfbH5hb/mz6yWVzf9ZfJ
+	4tIid4s9e0+yWFzeNYfNgdVj94LPTB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r
+	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
+	TGOErm9IEFyPkQEaSFjHmLFn6zH2gj7Linsts5kaGM/pdDFyckgImEjcfLyeHcIWk7hwbz1b
+	FyMXh5DAdEaJKQtesUA4Pxklpr6ezQJSxSKgKtG45wqYzSagJdF+ei2YLSKgJPFr/iJWkAZm
+	gUmMEkt+NgMlODiEBXIlOk7ogdTwCuhKLJl4lx1iaDejxKqWP4wQCUGJH5PvgQ1iBhq6fudx
+	JghbWuLR3xlg53EKWEns/X0IrEZUQEViysltbBMYBWYhaZ+FpH0WkvYFjMyrGEVTC5ILipPS
+	cw31ihNzi0vz0vWS83M3MYLj9ZnUDsaVDRaHGAU4GJV4eCf4NgcLsSaWFVfmHmKU4GBWEuGN
+	ZWoJFuJNSaysSi3Kjy8qzUktPsSYDAyOicxSosn5wFSSVxJvaGxiZmRpZGZhZGJuTpqwkjjv
+	gVbrQCGB9MSS1OzU1ILUIpgtTBycUg2M27K9j50zef7q/PtFBSFRulULMz7tfLhSSvVA5yf5
+	LnmPW+9iVCd/PrxWPa9Gd+9p2ynLPp3w0fKqrHvn83XdlXMrFSd0P8z1Xr7gMIff/Ctzoj8t
+	W/ahwPJpXOVRRuP51efvr+B6e/TYqR3f5YKYnOb1muRLbJG0NrLVM9rnyahjolSxvnjiMyWW
+	4oxEQy3mouJEAHTAQacbAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 10:39:22PM -0400, Michael H. Warfield wrote:
-> On Tue, 2014-05-27 at 03:36 +0200, Serge E. Hallyn wrote:
-> > Quoting Michael H. Warfield (mhw@WittsEnd.com):
-> > > On Mon, 2014-05-26 at 11:16 +0200, Seth Forshee wrote:
-> > > > On Fri, May 23, 2014 at 08:48:25AM +0300, Marian Marinov wrote:
-> > > > > -----BEGIN PGP SIGNED MESSAGE-----
-> > > > > Hash: SHA1
-> > > > > 
-> > > > > One question about this patch.
-> > > > > 
-> > > > > Why don't you use the devices cgroup check if the root user in that namespace is allowed to use this device?
-> > > > > 
-> > > > > This way you can be sure that the root in that namespace can not access devices to which the host system did not gave
-> > > > > him access to.
-> > > 
-> > > > That might be possible, but I don't want to require something on the
-> > > > host to whitelist the device for the container. Then loop would need to
-> > > > automatically add the device to devices.allow, which doesn't seem
-> > > > desirable to me. But I'm not entirely opposed to the idea if others
-> > > > think this is a better way to go.
-> > > 
-> > > I don't see any safe way to avoid it.  The host has to be in control of
-> > > what devices can and can not be accessed by the container.
+On Tue, May 27, 2014 at 02:32:57PM +0800, Chao Yu wrote:
+> Hi changman,
 > 
-> > Disagree.  loop%d is meaningless until it is attached to a file.  So
-> > whether a container can use loop2 vs loop9 is meaningless.  The point
-> > of Seth's loopfs as I understood it is that the container simply gets a
-> > unique (not visible to host or any other containers) set of loop devices
-> > which it can attach to files which it owns.  So long as the host can't
-> > see the container's loop devices (i.e. so it unwittently mounts it when
-> > looking for a particular UUID for /var), it won't get fooled by them.
+> > -----Original Message-----
+> > From: Changman Lee [mailto:cm224.lee@samsung.com]
+> > Sent: Tuesday, May 27, 2014 9:25 AM
+> > To: Chao Yu
+> > Cc: Jaegeuk Kim; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net
+> > Subject: Re: [f2fs-dev] [PATCH v2] f2fs: avoid crash when trace f2fs_submit_page_mbio event
+> > in ra_sum_pages
+> > 
+> > Hi, Chao
+> > 
+> > Could you think about following once.
+> > move node_inode in front of build_segment_manager, then use node_inode
+> > instead of bd_inode.
 > 
-> > So in this case *if* we can do it, a purely namespaced approach - meaning
-> > that we restrict visibility of a particular loopdev to one container - is
-> > perfect.  
+> Jaegeuk and I discussed this solution previously in
+> [PATCH 3/3 V3] f2fs: introduce f2fs_cache_node_page() to add page into node_inode cache
 > 
-> And in that "*if" is a cloud that says "then a miracle occurs" and that
-> miracle needs a lot more detail.  How that translates into what is and
-> is not visible and what can be mimiced in a container becomes important
-> (to say nothing of notifying its udev).  I think this loopfs thing is
-> the answer for the loop device case, we just need to clear up those
-> details and exorcise the devils we find in them.  The loop devices are
-> unique while they strangely seem to work with minimal leakage already
-> (all meta data at this time).
+> You can see it from this url:
+> http://sourceforge.net/p/linux-f2fs/mailman/linux-f2fs-devel/?viewmonth=201312&page=5
 > 
-> Seth remarked that, maybe, he's not paranoid enough.  You know that I'm
-> a well trained professional paranoid and I accept if people think I'm
-> overly paranoid (is that even possible?).  Even paranoids have enemies
-> and just because you're paranoid it doesn't mean they're not out to get
-> you.  While I admit that total isolation is virtually (excuse the pun)
-> impossible that doesn't mean I don't strive to maximize the isolation
-> and analyze the possibilities and consequences of compromise.
+> And it seems not easy to change order of build_*_manager and make node_inode,
+> because there are dependency between them.
 > 
-> As I stated, "I don't see any way to avoid it".  I would love to be
-> proven wrong.  It would permit my life to be so much more easy.  But how
-> can we allow this without the host in control of it and directing things
-> to the containers?  A container may request something and the host can
-> grant it but the container should not be capable of demanding a device
-> over and above the control of the host.  How do we define the rules that
-> say what a container can do and what it cannot do without it involving
-> knowledge in the host (whitelisting as Seth call's it) of what is and is
-> not allowed in the container?
 
-I need to post some code so we have something concrete to discuss, just
-haven't gotten to it yet due to travel and meetings. I'll try to work
-the code into something presentable and send it out later today.
+Sorry to make a mess your patch thread.
+I've understood it. In your patch, using NAT journal seems to be
+possible. Anyway, thanks for your answer.
 
-But in loopfs the kernel would ultimately controls directing loop devs
-to containers based on the mount. A container can request a free loop
-device via loop-control, and one gets assigned to that mount. Userspace
-can ask for a specific loop device number, but if that device is
-associated with a different mount that will fail, so the container can't
-gain access to another context's loop device. The container has access
-to only its loop devices by virtue of not having device nodes for any
-other devices.
-
-> We already have the problem that the container devices.allow and
-> devices.deny are major and minor based, which we know is fundamentally
-> flawed in a udev environment.  We specify major:minor in the
-> configuration files as if they are cast in cement (which they are in all
-> common cases) but they are not in the general case.  Greg K-H hammers on
-> this frequently.
-> 
-> The loop devices are unique and deserve a unique solution, I'll agree.
-> But I'm also comfortable that the host should have rules and procedures
-> to whitelist hard devices and loop devices and manage their transfer
-> and/or sharing into the containers.
-
-I'm aiming for being able to use the same tools to manage loop device in
-a container as on the host. If the whole thing needs to be managed by a
-process on the host then I suspect we need something more like
-intercepting ioctls on loop-control within the container so the manager
-can handle them.
-
+> > 
+> > On Tue, May 27, 2014 at 08:41:07AM +0800, Chao Yu wrote:
+> > > Previously we allocate pages with no mapping in ra_sum_pages(), so we may
+> > > encounter a crash in event trace of f2fs_submit_page_mbio where we access
+> > > mapping data of the page.
+> > >
+> > > We'd better allocate pages in bd_inode mapping and invalidate these pages after
+> > > we restore data from pages. It could avoid crash in above scenario.
+> > >
+> > > Changes from V1
+> > >  o remove redundant code in ra_sum_pages() suggested by Jaegeuk Kim.
+> > >
+> > > Call Trace:
+> > >  [<f1031630>] ? ftrace_raw_event_f2fs_write_checkpoint+0x80/0x80 [f2fs]
+> > >  [<f10377bb>] f2fs_submit_page_mbio+0x1cb/0x200 [f2fs]
+> > >  [<f103c5da>] restore_node_summary+0x13a/0x280 [f2fs]
+> > >  [<f103e22d>] build_curseg+0x2bd/0x620 [f2fs]
+> > >  [<f104043b>] build_segment_manager+0x1cb/0x920 [f2fs]
+> > >  [<f1032c85>] f2fs_fill_super+0x535/0x8e0 [f2fs]
+> > >  [<c115b66a>] mount_bdev+0x16a/0x1a0
+> > >  [<f102f63f>] f2fs_mount+0x1f/0x30 [f2fs]
+> > >  [<c115c096>] mount_fs+0x36/0x170
+> > >  [<c1173635>] vfs_kern_mount+0x55/0xe0
+> > >  [<c1175388>] do_mount+0x1e8/0x900
+> > >  [<c1175d72>] SyS_mount+0x82/0xc0
+> > >  [<c16059cc>] sysenter_do_call+0x12/0x22
+> > >
+> > > Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > ---
+> > >  fs/f2fs/node.c |   52 ++++++++++++++++++++++++----------------------------
+> > >  1 file changed, 24 insertions(+), 28 deletions(-)
+> > >
+> > > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > > index 3d60d3d..02a59e9 100644
+> > > --- a/fs/f2fs/node.c
+> > > +++ b/fs/f2fs/node.c
+> > > @@ -1658,35 +1658,29 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+> > >
+> > >  /*
+> > >   * ra_sum_pages() merge contiguous pages into one bio and submit.
+> > > - * these pre-readed pages are linked in pages list.
+> > > + * these pre-readed pages are alloced in bd_inode's mapping tree.
+> > >   */
+> > > -static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+> > > +static int ra_sum_pages(struct f2fs_sb_info *sbi, struct page **pages,
+> > >  				int start, int nrpages)
+> > >  {
+> > > -	struct page *page;
+> > > -	int page_idx = start;
+> > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
+> > > +	struct address_space *mapping = inode->i_mapping;
+> > > +	int i, page_idx = start;
+> > >  	struct f2fs_io_info fio = {
+> > >  		.type = META,
+> > >  		.rw = READ_SYNC | REQ_META | REQ_PRIO
+> > >  	};
+> > >
+> > > -	for (; page_idx < start + nrpages; page_idx++) {
+> > > -		/* alloc temporal page for read node summary info*/
+> > > -		page = alloc_page(GFP_F2FS_ZERO);
+> > > -		if (!page)
+> > > +	for (i = 0; page_idx < start + nrpages; page_idx++, i++) {
+> > > +		/* alloc page in bd_inode for reading node summary info */
+> > > +		pages[i] = grab_cache_page(mapping, page_idx);
+> > > +		if (!pages[i])
+> > >  			break;
+> > > -
+> > > -		lock_page(page);
+> > > -		page->index = page_idx;
+> > > -		list_add_tail(&page->lru, pages);
+> > > +		f2fs_submit_page_mbio(sbi, pages[i], page_idx, &fio);
+> > >  	}
+> > >
+> > > -	list_for_each_entry(page, pages, lru)
+> > > -		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
+> > > -
+> > >  	f2fs_submit_merged_bio(sbi, META, READ);
+> > > -
+> > > -	return page_idx - start;
+> > > +	return i;
+> > >  }
+> > >
+> > >  int restore_node_summary(struct f2fs_sb_info *sbi,
+> > > @@ -1694,11 +1688,11 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+> > >  {
+> > >  	struct f2fs_node *rn;
+> > >  	struct f2fs_summary *sum_entry;
+> > > -	struct page *page, *tmp;
+> > > +	struct inode *inode = sbi->sb->s_bdev->bd_inode;
+> > >  	block_t addr;
+> > >  	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+> > > -	int i, last_offset, nrpages, err = 0;
+> > > -	LIST_HEAD(page_list);
+> > > +	struct page *pages[bio_blocks];
+> > > +	int i, idx, last_offset, nrpages, err = 0;
+> > >
+> > >  	/* scan the node segment */
+> > >  	last_offset = sbi->blocks_per_seg;
+> > > @@ -1709,29 +1703,31 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+> > >  		nrpages = min(last_offset - i, bio_blocks);
+> > >
+> > >  		/* read ahead node pages */
+> > > -		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
+> > > +		nrpages = ra_sum_pages(sbi, pages, addr, nrpages);
+> > >  		if (!nrpages)
+> > >  			return -ENOMEM;
+> > >
+> > > -		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+> > > +		for (idx = 0; idx < nrpages; idx++) {
+> > >  			if (err)
+> > >  				goto skip;
+> > >
+> > > -			lock_page(page);
+> > > -			if (unlikely(!PageUptodate(page))) {
+> > > +			lock_page(pages[idx]);
+> > > +			if (unlikely(!PageUptodate(pages[idx]))) {
+> > >  				err = -EIO;
+> > >  			} else {
+> > > -				rn = F2FS_NODE(page);
+> > > +				rn = F2FS_NODE(pages[idx]);
+> > >  				sum_entry->nid = rn->footer.nid;
+> > >  				sum_entry->version = 0;
+> > >  				sum_entry->ofs_in_node = 0;
+> > >  				sum_entry++;
+> > >  			}
+> > > -			unlock_page(page);
+> > > +			unlock_page(pages[idx]);
+> > >  skip:
+> > > -			list_del(&page->lru);
+> > > -			__free_pages(page, 0);
+> > > +			page_cache_release(pages[idx]);
+> > >  		}
+> > > +
+> > > +		invalidate_mapping_pages(inode->i_mapping, addr,
+> > > +							addr + nrpages);
+> > >  	}
+> > >  	return err;
+> > >  }
+> > > --
+> > > 1.7.9.5
+> > >
+> > >
+> > >
+> > > ------------------------------------------------------------------------------
+> > > The best possible search technologies are now affordable for all companies.
+> > > Download your FREE open source Enterprise Search Engine today!
+> > > Our experts will assist you in its installation for $59/mo, no commitment.
+> > > Test it for FREE on our Cloud platform anytime!
+> > > http://pubads.g.doubleclick.net/gampad/clk?id=145328191&iu=/4140/ostg.clktrk
+> > > _______________________________________________
+> > > Linux-f2fs-devel mailing list
+> > > Linux-f2fs-devel@lists.sourceforge.net
+> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
