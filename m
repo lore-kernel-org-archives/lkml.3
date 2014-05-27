@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaE0OGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:06:49 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:33722 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938AbaE0OGo (ORCPT
+	id S1752757AbaE0OHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:07:06 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:51381 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578AbaE0OHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:06:44 -0400
+	Tue, 27 May 2014 10:07:03 -0400
+Message-ID: <53849C13.5010007@linaro.org>
+Date: Tue, 27 May 2014 16:07:15 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1401117687-28911-19-git-send-email-benoit.taine@lip6.fr>
-References: <1401117687-28911-1-git-send-email-benoit.taine@lip6.fr>
-	<1401117687-28911-19-git-send-email-benoit.taine@lip6.fr>
-Date: Tue, 27 May 2014 16:06:43 +0200
-Message-ID: <CACRpkdaz+cz5WW6udV7eQw+=c+mrzicp9rf5ab-P_E-iJ=ezYw@mail.gmail.com>
-Subject: Re: [PATCH 18/18] pinctrl: pinconf-generic: Use kmemdup instead of
- kmalloc + memcpy
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Benoit Taine <benoit.taine@lip6.fr>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 0/6] sched: expel confusing usage of the term "power"
+References: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org>
+In-Reply-To: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 5:21 PM, Benoit Taine <benoit.taine@lip6.fr> wrote:
-
-> This issue was reported by coccicheck using the semantic patch
-> at scripts/coccinelle/api/memdup.cocci
+On 05/27/2014 12:19 AM, Nicolas Pitre wrote:
+> "Power" is a very bad term in the scheduler context.  There are so many
+> meanings that can be attached to it.  And with the upcoming "power
+> aware" scheduler work, confusion is sure to happen.
 >
-> Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
-> ---
-> Not compile tested, due incompatible architecture.
+> The definition of "power" is typically the rate at which work is performed,
+> energy is converted or electric energy is transferred.  The notion of
+> "compute capacity" is rather at odds with "power" to the point many
+> comments in the code have to make it explicit that "capacity" is the
+> actual intended meaning.
+>
+> So let's make it clear what we man by using "capacity" in place of "power"
+> directly in the code.  That will make the introduction of actual "power
+> consumption" concepts much clearer later on.
+>
+> This is based on the latest tip tree to apply correctly on top of existing
+> scheduler changes already queued there.
+>
+> Changes from v1:
+>
+> - capa_factor and SCHED_CAPA_* changed to be spelled "capacity" in full
+>    to save peterz some Chupacabra nightmares
+>
+> - some minor corrections in commit logs
+>
+> - rebased on latest tip tree
+>
+>
+>   arch/arm/kernel/topology.c |  54 +++----
+>   include/linux/sched.h      |   8 +-
+>   kernel/sched/core.c        |  87 ++++++-----
+>   kernel/sched/fair.c        | 323 ++++++++++++++++++++-------------------
+>   kernel/sched/sched.h       |  18 +--
+>   5 files changed, 246 insertions(+), 244 deletions(-)
 
-Excellent fix, thanks. Patch applied.
+Hi Nico,
 
-Yours,
-Linus Walleij
+it is a good initiative to replace the 'power' word by another to 
+prevent confusion for future code. Personally I have a preference to 
+'strength' instead of 'capacity', in case that matter.
+
+Apart that:
+
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+Thanks
+   -- Daniel
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
