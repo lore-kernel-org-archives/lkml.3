@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaE0OUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:20:40 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:54831 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaE0OUi (ORCPT
+	id S1752708AbaE0OUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:20:53 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:40677 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671AbaE0OUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:20:38 -0400
+	Tue, 27 May 2014 10:20:51 -0400
 From: Ming Lei <tom.leiming@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
 Cc: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH 1/3] blk-mq: fix leak of hctx->ctx_map
-Date: Tue, 27 May 2014 22:20:12 +0800
-Message-Id: <1401200414-10823-2-git-send-email-tom.leiming@gmail.com>
+Subject: [PATCH 2/3] blk-mq: avoid code duplication
+Date: Tue, 27 May 2014 22:20:13 +0800
+Message-Id: <1401200414-10823-3-git-send-email-tom.leiming@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401200414-10823-1-git-send-email-tom.leiming@gmail.com>
 References: <1401200414-10823-1-git-send-email-tom.leiming@gmail.com>
@@ -20,25 +20,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hctx->ctx_map should have been freed inside blk_mq_free_queue().
+blk_mq_exit_hw_queues() and blk_mq_free_hw_queues()
+are introduced to avoid code duplication.
 
 Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- block/blk-mq.c |    1 +
- 1 file changed, 1 insertion(+)
+ block/blk-mq.c |   60 ++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 37 insertions(+), 23 deletions(-)
 
 diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 54e7886..ba39fa7 100644
+index ba39fa7..e32c04c 100644
 --- a/block/blk-mq.c
 +++ b/block/blk-mq.c
-@@ -1841,6 +1841,7 @@ void blk_mq_free_queue(struct request_queue *q)
+@@ -1519,11 +1519,43 @@ static int blk_mq_hctx_notify(void *data, unsigned long action,
+ 	return NOTIFY_OK;
+ }
  
- 	queue_for_each_hw_ctx(q, hctx, i) {
- 		kfree(hctx->ctxs);
++static void blk_mq_exit_hw_queues(struct request_queue *q,
++		struct blk_mq_tag_set *set, int nr_queue)
++{
++	struct blk_mq_hw_ctx *hctx;
++	unsigned int i;
++
++	queue_for_each_hw_ctx(q, hctx, i) {
++		if (i == nr_queue)
++			break;
++
++		if (set->ops->exit_hctx)
++			set->ops->exit_hctx(hctx, i);
++
++		blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
++		kfree(hctx->ctxs);
 +		blk_mq_free_bitmap(&hctx->ctx_map);
- 		blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
- 		if (q->mq_ops->exit_hctx)
- 			q->mq_ops->exit_hctx(hctx, i);
++	}
++
++}
++
++static void blk_mq_free_hw_queues(struct request_queue *q,
++		struct blk_mq_tag_set *set)
++{
++	struct blk_mq_hw_ctx *hctx;
++	unsigned int i;
++
++	queue_for_each_hw_ctx(q, hctx, i) {
++		free_cpumask_var(hctx->cpumask);
++		set->ops->free_hctx(hctx, i);
++	}
++}
++
+ static int blk_mq_init_hw_queues(struct request_queue *q,
+ 		struct blk_mq_tag_set *set)
+ {
+ 	struct blk_mq_hw_ctx *hctx;
+-	unsigned int i, j;
++	unsigned int i;
+ 
+ 	/*
+ 	 * Initialize hardware queues
+@@ -1575,17 +1607,7 @@ static int blk_mq_init_hw_queues(struct request_queue *q,
+ 	/*
+ 	 * Init failed
+ 	 */
+-	queue_for_each_hw_ctx(q, hctx, j) {
+-		if (i == j)
+-			break;
+-
+-		if (set->ops->exit_hctx)
+-			set->ops->exit_hctx(hctx, j);
+-
+-		blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
+-		kfree(hctx->ctxs);
+-		blk_mq_free_bitmap(&hctx->ctx_map);
+-	}
++	blk_mq_exit_hw_queues(q, set, i);
+ 
+ 	return 1;
+ }
+@@ -1834,20 +1856,12 @@ EXPORT_SYMBOL(blk_mq_init_queue);
+ 
+ void blk_mq_free_queue(struct request_queue *q)
+ {
+-	struct blk_mq_hw_ctx *hctx;
+-	int i;
++	struct blk_mq_tag_set	*set = q->tag_set;
+ 
+ 	blk_mq_del_queue_tag_set(q);
+ 
+-	queue_for_each_hw_ctx(q, hctx, i) {
+-		kfree(hctx->ctxs);
+-		blk_mq_free_bitmap(&hctx->ctx_map);
+-		blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
+-		if (q->mq_ops->exit_hctx)
+-			q->mq_ops->exit_hctx(hctx, i);
+-		free_cpumask_var(hctx->cpumask);
+-		q->mq_ops->free_hctx(hctx, i);
+-	}
++	blk_mq_exit_hw_queues(q, set, set->nr_hw_queues);
++	blk_mq_free_hw_queues(q, set);
+ 
+ 	free_percpu(q->queue_ctx);
+ 	kfree(q->queue_hw_ctx);
 -- 
 1.7.9.5
 
