@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaE0JSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:18:48 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:47136 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940AbaE0JSm (ORCPT
+	id S1752001AbaE0JXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:23:37 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:41361 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572AbaE0JXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:18:42 -0400
-Date: Tue, 27 May 2014 10:18:36 +0100
+	Tue, 27 May 2014 05:23:34 -0400
+Date: Tue, 27 May 2014 10:23:29 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: vexpress: refine dependencies for new code
-Message-ID: <20140527091836.GE5875@lee--X1>
-References: <6862654.ZzBrnrRESe@wuerfel>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH] mfd: tps65218: Terminate of match table
+Message-ID: <20140527092329.GG5875@lee--X1>
+References: <1400890613-5704-4-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <6862654.ZzBrnrRESe@wuerfel>
+In-Reply-To: <1400890613-5704-4-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The versatile express changes for 3.16 introduced a number of
-> build regressions for randconfig kernels by not tracking dependencies
-> between the components right.
+On Fri, 23 May 2014, Stephen Boyd wrote:
+
+> Failure to terminate this match table can lead to boot failures
+> depending on where the compiler places the match table.
 > 
-> This patch tries to rectify that:
-> 
-> * the mach-vexpress code cannot link without the syscfg driver,
->   which in turn needs MFD_VEXPRESS_SYSREG
-> * various drivers call devm_regmap_init_vexpress_config(), which
->   has to be exported so it can be used by loadable modules
-> * the configuration bus uses OF DT helper functions that are not
->   available to platforms disable CONFIG_OF
-> * The sysreg driver exports GPIOs through gpiolib, which can
->   be disabled on some platforms.
-> * The clocksource code cannot be built on platforms that don't
->   use modern timekeeping but rely on gettimeoffset.
+> Cc: Keerthy <j-keerthy@ti.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/mfd/tps65218.c | 1 +
+>  1 file changed, 1 insertion(+)
 
-Where's the diff?
+Applied, thanks.
 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-[...]
-
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-
-For the MFD part:
-
-  Acked-by: Lee Jones <lee.jones@linaro.org>
-
-This patch has a high chance of creating conflicts.  Can someone apply
-this to a branch, tag it and sent out a pull-request to the other
-maintainers please?
+> diff --git a/drivers/mfd/tps65218.c b/drivers/mfd/tps65218.c
+> index a74bfb59f18f..0d256cb002eb 100644
+> --- a/drivers/mfd/tps65218.c
+> +++ b/drivers/mfd/tps65218.c
+> @@ -197,6 +197,7 @@ static struct regmap_irq_chip tps65218_irq_chip = {
+>  
+>  static const struct of_device_id of_tps65218_match_table[] = {
+>  	{ .compatible = "ti,tps65218", },
+> +	{}
+>  };
+>  
+>  static int tps65218_probe(struct i2c_client *client,
 
 -- 
 Lee Jones
