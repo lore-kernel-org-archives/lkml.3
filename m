@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaE0AOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 20:14:34 -0400
-Received: from mx7.pku.edu.cn ([162.105.129.170]:59886 "EHLO mail.pku.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752444AbaE0AOc convert rfc822-to-8bit (ORCPT
+	id S1752126AbaE0ASa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 20:18:30 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:50170 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaE0AS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 20:14:32 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -307.413
-Date: Tue, 27 May 2014 08:14:21 +0800 (CST)
-From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
-Message-ID: <1270810603.23809.1401149661357.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <5383D766.7070106@gmail.com>
-Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_[PATCH_3/3]_arch:_uni?=
- =?utf-8?Q?core32:_ksyms:_export_'=5F=5Fc?=
- =?utf-8?Q?puc=5Fcoherent=5Fkern=5Frange'_to_avoid_compiling_failure?=
+	Mon, 26 May 2014 20:18:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [162.105.129.134]
+In-Reply-To: <CAKohponagSjOVbn-C64yh7=py9kE0m2VGbdquo_1+UzbPFsJ+w@mail.gmail.com>
+References: <cover.1400736536.git.viresh.kumar@linaro.org>
+	<6379a5109bf6b4875cc1656b025f9b8186bbb91a.1400736536.git.viresh.kumar@linaro.org>
+	<3104462.ta2PpIfF9J@vostro.rjw.lan>
+	<CAKohponagSjOVbn-C64yh7=py9kE0m2VGbdquo_1+UzbPFsJ+w@mail.gmail.com>
+Date: Tue, 27 May 2014 05:48:27 +0530
+Message-ID: <CAKohpokZSw430PWjJfYOPA6KXOJiKFhxRi4BuEf6ouMgUHQ+gw@mail.gmail.com>
+Subject: Re: [PATCH V3 4/8] driver/core: cpu: initialize opp table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Ips Gandhi <inderpal.s@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 27 May 2014 05:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> We are also using it for cpu->dev_id, but that's not so important. This
+> routine wouldn't have existed if you wouldn't have asked for it. It is
+> just a wrapper over of_init_opp_table, which also has a dummy
+> implementation when its not supported.
+>
+> So, it might not be worth enough for any other code to use it. :)
+> And so I added it here.
+>
+> Let me know how/where do you want it and I will resend it quickly.
 
------ Chen Gang <gang.chen.5i5j@gmail.com> 写道：
-> flush_icache_range() is '__cpuc_coherent_kern_range' under unicore32,
-> and lkdtm.ko needs it. At present, '__cpuc_coherent_kern_range' is
-> still used by unicore32, so export it to avoid compiling failure.
-> 
-> The related error (with allmodconfig under unicore32):
-> 
->   ERROR: "__cpuc_coherent_kern_range" [drivers/misc/lkdtm.ko] undefined!
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-
-Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-
-> ---
->  arch/unicore32/mm/proc-syms.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/unicore32/mm/proc-syms.c b/arch/unicore32/mm/proc-syms.c
-> index f30071e..21c00fc 100644
-> --- a/arch/unicore32/mm/proc-syms.c
-> +++ b/arch/unicore32/mm/proc-syms.c
-> @@ -19,5 +19,7 @@
->  EXPORT_SYMBOL(cpu_dcache_clean_area);
->  EXPORT_SYMBOL(cpu_set_pte);
->  
-> +EXPORT_SYMBOL(__cpuc_coherent_kern_range);
-> +
->  EXPORT_SYMBOL(__cpuc_dma_flush_range);
->  EXPORT_SYMBOL(__cpuc_dma_clean_range);
-> -- 
-> 1.9.2.459.g68773ac
-
+There is another option here, add these print messages in
+of_init_opp_table() ? That's the only difference new wrapper has.
