@@ -1,88 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271AbaE0WIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:08:49 -0400
-Received: from ozlabs.org ([103.22.144.67]:34933 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071AbaE0WIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:08:48 -0400
-Date: Wed, 28 May 2014 08:08:38 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL] KVM fixes for 3.15-rc6
-Message-ID: <20140527220838.GA32311@iris.ozlabs.ibm.com>
-References: <1400254112-4662-1-git-send-email-pbonzini@redhat.com>
+	id S1753421AbaE0WJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:09:34 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39437 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753255AbaE0WJd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 18:09:33 -0400
+Date: Tue, 27 May 2014 18:09:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [patch 1/6] rtmutex: Fix deadlock detector for real
+Message-ID: <20140527180930.1e9b020e@gandalf.local.home>
+In-Reply-To: <20140522031949.725272460@linutronix.de>
+References: <20140522031841.797415507@linutronix.de>
+	<20140522031949.725272460@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400254112-4662-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 05:28:32PM +0200, Paolo Bonzini wrote:
-> Linus,
-> 
-> The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
-> 
->   Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
-> 
-> for you to fetch changes up to a4e91d04b86504f145cc5f766c2609357a68b186:
+On Thu, 22 May 2014 03:25:39 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Linus seems not to have done this pull yet - Paolo, maybe you should
-resend the request and cc Linus this time?
+> The current deadlock detection logic does not work reliably due to the
+> following early exit path:
+> 
+> 	/*
+> 	 * Drop out, when the task has no waiters. Note,
+> 	 * top_waiter can be NULL, when we are in the deboosting
+> 	 * mode!
+> 	 */
+> 	if (top_waiter && (!task_has_pi_waiters(task) ||
+> 			   top_waiter != task_top_pi_waiter(task)))
+> 		goto out_unlock_pi;
+> 
+> So this not only exits when the task has no waiters, it also exits
+> unconditionally when the current waiter is not the top priority waiter
+> of the task.
+> 
+> So in a nested locking scenario, it might abort the lock chain walk
+> and therefor miss a potential deadlock.
+> 
+> Simple fix: Continue the chain walk, when deadlock detection is
+> enabled.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: stable@vger.kernel.org
+> ---
+>  kernel/locking/rtmutex.c |   27 +++++++++++++++++++++------
+>  1 file changed, 21 insertions(+), 6 deletions(-)
+> 
+> Index: tip/kernel/locking/rtmutex.c
+> ===================================================================
+> --- tip.orig/kernel/locking/rtmutex.c
+> +++ tip/kernel/locking/rtmutex.c
+> @@ -343,16 +343,22 @@ static int rt_mutex_adjust_prio_chain(st
+>  	 * top_waiter can be NULL, when we are in the deboosting
+>  	 * mode!
+>  	 */
+> -	if (top_waiter && (!task_has_pi_waiters(task) ||
+> -			   top_waiter != task_top_pi_waiter(task)))
+> -		goto out_unlock_pi;
+> +	if (top_waiter) {
+> +		if (!task_has_pi_waiters(task))
+> +			goto out_unlock_pi;
+> +
+> +		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
+> +			goto out_unlock_pi;
+> +	}
 
+The above seems obvious.
+
+>  
+>  	/*
+>  	 * When deadlock detection is off then we check, if further
+>  	 * priority adjustment is necessary.
+>  	 */
+> -	if (!detect_deadlock && waiter->prio == task->prio)
+> -		goto out_unlock_pi;
+> +	if (waiter->prio == task->prio) {
+> +		if (!detect_deadlock)
+> +			goto out_unlock_pi;
+> +	}
+
+This too.
+
+Although! if you want to micro-optimize the detect_deadlock case
+where !detect_deadlock is false. You might want to reverse the order.
+That way we don't need to dereference the ->prio for both waiter and
+task before seeing that we don't go to the out_unlock_pi.
+
+	if (!detect_deadlock) {
+		if (waiter->prio == task->prio)
+			goto out_unlock_pi;
+	}
+
+Hmm, or you did it this way for your "don't requeue" patch? Looking at
+that one, it seems you did.
+
+	if (waiter->prio == task->prio) {
+		if (!detect_deadlock)
+			goto out_unlock_pi;
+		requeue = false;
+	}
+
+Oh well. But for stable maybe have the optimized way? And change it
+back when you add the requeue patch?
+
+>  
+>  	lock = waiter->lock;
+>  	if (!raw_spin_trylock(&lock->wait_lock)) {
+> @@ -361,7 +367,12 @@ static int rt_mutex_adjust_prio_chain(st
+>  		goto retry;
+>  	}
+>  
+> -	/* Deadlock detection */
+> +	/*
+> +	 * Deadlock detection. If the lock is the same as the original
+> +	 * lock which caused us to walk the lock chain or if the
+> +	 * current lock is owned by the task which initiated the chain
+> +	 * walk, we detected a deadlock.
+> +	 */
+>  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+>  		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+>  		raw_spin_unlock(&lock->wait_lock);
+> @@ -527,6 +538,10 @@ static int task_blocks_on_rt_mutex(struc
+>  	unsigned long flags;
+>  	int chain_walk = 0, res;
+>  
+> +	/* Early deadlock detection */
+> +	if (detect_deadlock && owner == task)
+> +		return -EDEADLK;
+> +
+
+This is an optimization, right? Does it belong for stable?
+
+-- Steve
+
+>  	raw_spin_lock_irqsave(&task->pi_lock, flags);
+>  	__rt_mutex_adjust_prio(task);
+>  	waiter->task = task;
 > 
->   Merge tag 'kvm-s390-for-3.15-1' of git://git.kernel.org/pub/scm/linux/kernel/git/kvms390/linux into kvm-master (2014-05-15 14:46:57 +0200)
-> 
-> ----------------------------------------------------------------
-> 
-> Small fixes for x86, slightly larger fixes for PPC, and a forgotten s390 patch.
-> The PPC fixes are important because they fix breakage that is new in 3.15.
-> 
-> ----------------------------------------------------------------
-> Alexander Graf (2):
->       KVM: PPC: Book3S: ifdef on CONFIG_KVM_BOOK3S_32_HANDLER for 32bit
->       KVM guest: Make pv trampoline code executable
-> 
-> Cornelia Huck (1):
->       KVM: s390: announce irqfd capability
-> 
-> Marcelo Tosatti (1):
->       KVM: x86: disable master clock if TSC is reset during suspend
-> 
-> Paolo Bonzini (3):
->       KVM: vmx: disable APIC virtualization in nested guests
->       Merge tag 'signed-for-3.15' of git://github.com/agraf/linux-2.6 into kvm-master
->       Merge tag 'kvm-s390-for-3.15-1' of git://git.kernel.org/.../kvms390/linux into kvm-master
-> 
-> Paul Mackerras (1):
->       KVM: PPC: Book3S HV: Add missing code for transaction reclaim on guest exit
-> 
-> pingfank@linux.vnet.ibm.com (1):
->       KVM: PPC: Book3S: HV: make _PAGE_NUMA take effect
-> 
->  Documentation/virtual/kvm/api.txt       |   2 +-
->  arch/powerpc/include/asm/sections.h     |  11 ++++
->  arch/powerpc/kernel/kvm.c               |   2 +-
->  arch/powerpc/kvm/book3s.c               |   6 +-
->  arch/powerpc/kvm/book3s_hv_rm_mmu.c     |   2 +-
->  arch/powerpc/kvm/book3s_hv_rmhandlers.S | 104 ++++++++++++++++++++++++++++++++
->  arch/powerpc/kvm/book3s_pr.c            |   6 +-
->  arch/powerpc/mm/hash_utils_64.c         |   4 ++
->  arch/s390/kvm/kvm-s390.c                |   1 +
->  arch/x86/kvm/vmx.c                      |   7 ++-
->  arch/x86/kvm/x86.c                      |   6 +-
->  11 files changed, 139 insertions(+), 12 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
