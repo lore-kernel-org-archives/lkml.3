@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaE0UU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 16:20:28 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:51176 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaE0UU0 (ORCPT
+	id S1752317AbaE0UVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 16:21:21 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:35880 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186AbaE0UVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 16:20:26 -0400
-Message-ID: <1401222025.5367.262.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] sched/numa: Fix use of spin_{un}lock_irq() when
- interrupts are disabled
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>
-Date: Tue, 27 May 2014 13:20:25 -0700
-In-Reply-To: <20140527155251.5dc77977@gandalf.local.home>
-References: <20140527155251.5dc77977@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 27 May 2014 16:21:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <5382B4E8.7020806@oracle.com>
+References: <1400791604-12094-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<5382B4E8.7020806@oracle.com>
+Date: Tue, 27 May 2014 22:21:19 +0200
+Message-ID: <CAFo99gbv5x7tmLZqjygcvpR-tZ9bUAUEtocaGRCUaNPPPYq6PQ@mail.gmail.com>
+Subject: Re: [Ocfs2-devel] [PATCH] fs: ocfs2: move_extents.c: Fix for possible
+ null pointer dereference
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ocfs2-devel@oss.oracle.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-05-27 at 15:52 -0400, Steven Rostedt wrote:
-> As Peter Zijlstra told me, we have the following path:
-> 
-> do_exit()
->   exit_itimers()
->     itimer_delete()
->       spin_lock_irqsave(&timer->it_lock, &flags);
->       timer_delete_hook(timer);
->         kc->timer_del(timer) := posix_cpu_timer_del()
->           put_task_struct()
->             __put_task_struct()
->               task_numa_free()
->                 spin_lock(&grp->lock);
-> 
-> 
-> Which means that task_numa_free() can be called with interrupts
-> disabled, which means that we should not be using spin_lock_irq() but
-> spin_lock_irqsave() instead. Otherwise we are enabling interrupts while
-> holding an interrupt unsafe lock!
-> 
-> Link: http://lkml.kernel.org/r/20140527182541.GH11096@twins.programming.kicks-ass.net
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
+Hi
 
-Your patch was mangled it seems...
+Ok good, then everything is under control.
+The result has been that I've done a number of these types of patches to :)
 
-Fixes: 60e69eed85bb ("sched/numa: Fix task_numa_free() lockdep splat")
+Sending a new patch of that kind then.
 
 
+Best regards
+Rickard Strandqvist
 
+
+2014-05-26 5:28 GMT+02:00 Jeff Liu <jeff.liu@oracle.com>:
+> Hi,
+>
+> On 05/23/2014 04:46 AM, Rickard Strandqvist wrote:
+>> There is otherwise a risk of a possible null pointer dereference.
+>>
+>> Was largely found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  fs/ocfs2/move_extents.c |    4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/fs/ocfs2/move_extents.c b/fs/ocfs2/move_extents.c
+>> index 599eb4c..6a8e3c8 100644
+>> --- a/fs/ocfs2/move_extents.c
+>> +++ b/fs/ocfs2/move_extents.c
+>> @@ -902,11 +902,13 @@ static int ocfs2_move_extents(struct ocfs2_move_extents_context *context)
+>>       struct inode *inode = context->inode;
+>>       struct ocfs2_dinode *di;
+>>       struct buffer_head *di_bh = NULL;
+>> -     struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+>> +     struct ocfs2_super *osb;
+>>
+>>       if (!inode)
+>>               return -ENOENT;
+>>
+>> +     osb = OCFS2_SB(inode->i_sb);
+>> +
+>>       if (ocfs2_is_hard_readonly(osb) || ocfs2_is_soft_readonly(osb))
+>>               return -EROFS;
+>
+> Thanks for your patch, it looks reasonable if we consider it in the context
+> of above function only. However, the inode should not be NULL in any case
+> given that ocfs2_move_extents() is called by ocfs2_ioctl_move_extents() at
+> where the inode is already validated.
+>
+> IMO, maybe we can just get rid of the useless inode pre-checkup, i.e,
+>
+> if (!inode)
+>         return -ENOENT;
+>
+>
+> Thanks,
+> -Jeff
