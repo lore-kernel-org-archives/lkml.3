@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbaE0IIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:08:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13824 "EHLO mga11.intel.com"
+	id S1752647AbaE0ITX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:19:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32985 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752343AbaE0IIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:08:07 -0400
+	id S1752097AbaE0IIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:08:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,917,1392192000"; 
-   d="scan'208";a="538017374"
+   d="scan'208";a="538017469"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -25,9 +25,9 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [Patch V3 12/37] x86, ioapic: kill static variable nr_irqs_gsi
-Date: Tue, 27 May 2014 16:07:47 +0800
-Message-Id: <1401178092-1228-13-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch V3 14/37] x86, ioapic: use irq_cfg() instead of irq_get_chip_data() for better readability
+Date: Tue, 27 May 2014 16:07:49 +0800
+Message-Id: <1401178092-1228-15-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,78 +35,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Static variable nr_irqs_gsi is used to maintain the lowest dynamic
-allocatable IRQ number. It may cause trouble when enabling dynamic
-IRQ allocation for IOAPIC, so use arch_dynirq_lower_bound() to
-avoid directly accessing nr_irqs_gsi and kill nr_irqs_gsi.
+Use defined helper function irq_cfg() instead of irq_get_chip_data() for
+better readability.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   24 +++++-------------------
- 1 file changed, 5 insertions(+), 19 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e8dd12a04cea..397fb9a02e11 100644
+index 55fb3c1385c5..18d0e8a831c0 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -118,9 +118,6 @@ struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
- /* # of MP IRQ source entries */
- int mp_irq_entries;
- 
--/* GSI interrupts */
--static int nr_irqs_gsi = NR_IRQS_LEGACY;
--
- #ifdef CONFIG_EISA
- int mp_bus_id_to_type[MAX_MP_BUSSES];
- #endif
-@@ -3333,20 +3330,11 @@ static int __init io_apic_get_redir_entries(int ioapic)
- 	return reg_01.bits.entries + 1;
+@@ -230,7 +230,7 @@ int __init arch_early_irq_init(void)
+ 	return 0;
  }
  
--static void __init probe_nr_irqs_gsi(void)
--{
--	int nr;
--
--	nr = gsi_top + NR_IRQS_LEGACY;
--	if (nr > nr_irqs_gsi)
--		nr_irqs_gsi = nr;
--
--	printk(KERN_DEBUG "nr_irqs_gsi: %d\n", nr_irqs_gsi);
--}
--
- unsigned int arch_dynirq_lower_bound(unsigned int from)
+-static struct irq_cfg *irq_cfg(unsigned int irq)
++static inline struct irq_cfg *irq_cfg(unsigned int irq)
  {
--	return from < nr_irqs_gsi ? nr_irqs_gsi : from;
-+	unsigned int min = gsi_top + NR_IRQS_LEGACY;
-+
-+	return from < min ? min : from;
+ 	return irq_get_chip_data(irq);
  }
- 
- int __init arch_probe_nr_irqs(void)
-@@ -3356,12 +3344,12 @@ int __init arch_probe_nr_irqs(void)
- 	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
- 		nr_irqs = NR_VECTORS * nr_cpu_ids;
- 
--	nr = nr_irqs_gsi + 8 * nr_cpu_ids;
-+	nr = (gsi_top + NR_IRQS_LEGACY) + 8 * nr_cpu_ids;
- #if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
- 	/*
- 	 * for MSI and HT dyn irq
- 	 */
--	nr += nr_irqs_gsi * 16;
-+	nr += (gsi_top + NR_IRQS_LEGACY) * 16;
- #endif
- 	if (nr < nr_irqs)
- 		nr_irqs = nr;
-@@ -3634,8 +3622,6 @@ fake_ioapic_page:
- 		ioapic_res->end = ioapic_phys + IO_APIC_SLOT_SIZE - 1;
- 		ioapic_res++;
+@@ -272,7 +272,7 @@ static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
+ 	if (res < 0) {
+ 		if (res != -EEXIST)
+ 			return NULL;
+-		cfg = irq_get_chip_data(at);
++		cfg = irq_cfg(at);
+ 		if (cfg)
+ 			return cfg;
  	}
--
--	probe_nr_irqs_gsi();
- }
+@@ -1204,7 +1204,7 @@ void __setup_vector_irq(int cpu)
+ 	raw_spin_lock(&vector_lock);
+ 	/* Mark the inuse vectors */
+ 	for_each_active_irq(irq) {
+-		cfg = irq_get_chip_data(irq);
++		cfg = irq_cfg(irq);
+ 		if (!cfg)
+ 			continue;
  
- void __init ioapic_insert_resources(void)
+@@ -1612,7 +1612,7 @@ __apicdebuginit(void) print_IO_APICs(void)
+ 		if (chip != &ioapic_chip)
+ 			continue;
+ 
+-		cfg = irq_get_chip_data(irq);
++		cfg = irq_cfg(irq);
+ 		if (!cfg)
+ 			continue;
+ 		entry = cfg->irq_2_pin;
+@@ -2253,7 +2253,7 @@ static void irq_complete_move(struct irq_cfg *cfg)
+ 
+ void irq_force_complete_move(int irq)
+ {
+-	struct irq_cfg *cfg = irq_get_chip_data(irq);
++	struct irq_cfg *cfg = irq_cfg(irq);
+ 
+ 	if (!cfg)
+ 		return;
+@@ -2526,7 +2526,7 @@ static inline void init_IO_APIC_traps(void)
+ 	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
+ 	 */
+ 	for_each_active_irq(irq) {
+-		cfg = irq_get_chip_data(irq);
++		cfg = irq_cfg(irq);
+ 		if (IO_APIC_IRQ(irq) && cfg && !cfg->vector) {
+ 			/*
+ 			 * Hmm.. We don't have an entry for this,
+@@ -2659,7 +2659,7 @@ early_param("disable_timer_pin_1", disable_timer_pin_setup);
+  */
+ static inline void __init check_timer(void)
+ {
+-	struct irq_cfg *cfg = irq_get_chip_data(0);
++	struct irq_cfg *cfg = irq_cfg(0);
+ 	int node = cpu_to_node(0);
+ 	int apic1, pin1, apic2, pin2;
+ 	unsigned long flags;
+@@ -2923,7 +2923,7 @@ int arch_setup_hwirq(unsigned int irq, int node)
+ 
+ void arch_teardown_hwirq(unsigned int irq)
+ {
+-	struct irq_cfg *cfg = irq_get_chip_data(irq);
++	struct irq_cfg *cfg = irq_cfg(irq);
+ 	unsigned long flags;
+ 
+ 	free_remapped_irq(irq);
+@@ -3052,7 +3052,7 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 	if (!irq_offset)
+ 		write_msi_msg(irq, &msg);
+ 
+-	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
++	setup_remapped_irq(irq, irq_cfg(irq), chip);
+ 
+ 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+ 
+@@ -3187,7 +3187,7 @@ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+ 
+ 	hpet_msi_write(irq_get_handler_data(irq), &msg);
+ 	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-	setup_remapped_irq(irq, irq_get_chip_data(irq), chip);
++	setup_remapped_irq(irq, irq_cfg(irq), chip);
+ 
+ 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+ 	return 0;
 -- 
 1.7.10.4
 
