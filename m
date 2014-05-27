@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaE0Sx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:53:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:6370 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753224AbaE0Sxz (ORCPT
+	id S1753473AbaE0SyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:54:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36491 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224AbaE0SyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:53:55 -0400
-Date: Tue, 27 May 2014 14:53:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH 3.14-rt] sched/numa: Fix task_numa_free() lockdep splat
-Message-ID: <20140527145349.0bc2030e@gandalf.local.home>
-In-Reply-To: <20140527145201.6e79230f@gandalf.local.home>
-References: <20140509181214.GK29014@linutronix.de>
-	<1400297819.9493.11.camel@marge.simpson.net>
-	<20140527141836.4f466086@gandalf.local.home>
-	<20140527182541.GH11096@twins.programming.kicks-ass.net>
-	<20140527145201.6e79230f@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 27 May 2014 14:54:04 -0400
+Message-ID: <5384DF47.2070904@codeaurora.org>
+Date: Tue, 27 May 2014 11:53:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, Corey Minyard <cminyard@mvista.com>,
+        linux-kernel@vger.kernel.org, Stanislav Meduna <stano@meduna.org>,
+        minyard@acm.org, linux-rt-users@vger.kernel.org
+Subject: Re: [PATCH] arm: Set hardirq tracing to on when idling
+References: <1401045323-7116-1-git-send-email-minyard@acm.org> <4559339.apo3Fd10HK@wuerfel> <5384BF89.6010509@meduna.org> <4475199.26Fs5MKAfh@wuerfel>
+In-Reply-To: <4475199.26Fs5MKAfh@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014 14:52:01 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On 05/27/14 11:49, Arnd Bergmann wrote:
+>
+> You also commented in that thread about stop_critical_timings()/
+> start_critical_timings(). Corey, can you look at that, too? I
+> think it's designed to avoid the issue you are seeing but
+> for some reason doesn't.
 
- 
-> Ah crap. I did a search on all the callers of put_task_struct(), and
-> somehow missed this one.  Yep, I was looking for places that called
-> this while holding other irq safe locks.
-> 
+I sent a patch last week to "solve" this problem. I'm not sure if it's
+right but it works for me.
 
-Anyway, this nicely answers Mike's question to why it causes lockdep
-splat. There exists a location that calls put_task_struct() with irqs
-disabled (not to mention holding irq unsafe locks).
+https://lkml.org/lkml/2014/5/19/607
 
-I was having problems just finding a place that called it with irqs off.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
--- Steve
