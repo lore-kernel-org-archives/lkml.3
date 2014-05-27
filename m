@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaE0IaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:30:24 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:59123 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbaE0IaS (ORCPT
+	id S1752106AbaE0IfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:35:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41790 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751658AbaE0IfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:30:18 -0400
-Date: Tue, 27 May 2014 09:30:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <a0393675@ti.com>
-Cc: Mark Brown <broonie@kernel.org>, Keerthy <j-keerthy@ti.com>,
-        linux-omap@vger.kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 5/5] regulator: tps65917: Add Regulator driver for
- tps65917 PMIC
-Message-ID: <20140527083012.GA5875@lee--X1>
-References: <1401098197-647-1-git-send-email-j-keerthy@ti.com>
- <1401098197-647-6-git-send-email-j-keerthy@ti.com>
- <20140526150052.GP22111@sirena.org.uk>
- <538404F2.9000505@ti.com>
+	Tue, 27 May 2014 04:35:06 -0400
+Date: Tue, 27 May 2014 10:32:01 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: Re: [PATCH 03/22] clk: sunxi: add "pll6" to sun6i protected clock
+ list
+Message-ID: <20140527083201.GF4730@lukather>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
+ <1400831485-28576-4-git-send-email-wens@csie.org>
+ <20140525184808.GP10768@lukather>
+ <CAGb2v643UmK6GfuDVfywVUeo_g7FpdZC_7SgeY-UMZ_k_-2N9Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E7i4zwmWs5DOuDSH"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <538404F2.9000505@ti.com>
+In-Reply-To: <CAGb2v643UmK6GfuDVfywVUeo_g7FpdZC_7SgeY-UMZ_k_-2N9Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>This patch adds support for TPS65917 PMIC regulators.
-> >>
-> >>The regulators set consists of 5 SMPSs and 5 LDOs. The output
-> >>voltages are configurable and are meant to supply power to the
-> >>main processor and other components.
-> >This appears to look *very* like the Palmas driver, should it not be
-> >sharing code with that?  If it were just data tables it'd be less of a
-> >concern but there's quite a bit of actual code here.
-> Yes it is. The difference is in the entire register space of the regulators
-> between the two. There are other differences in how the ramp delay
-> is configured and SMPS ordering. The difference is also a bit in the
-> programming
-> sequence. I agree that largely it is Palmas based. I did not want to
-> add more
-> checks in the probe of the palmas driver. Hence came up with a new one.
-> 
-> Coming to sharing the code, can we have 2 drivers which share the common
-> functions with separate data and specific functions?
 
-Yes, that is what the match functionality is for.  Once you know which
-driver you're dealing with, you can call specific initialisation
-functions and/or supplement generic generic data structures with device
-specific ones.
+--E7i4zwmWs5DOuDSH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I just simply do not want to add anything more to the palmas driver
-> probe function.
+On Mon, May 26, 2014 at 12:47:30PM +0800, Chen-Yu Tsai wrote:
+> On Mon, May 26, 2014 at 2:48 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Fri, May 23, 2014 at 03:51:06PM +0800, Chen-Yu Tsai wrote:
+> >> PLL6 is used by some important but undocumented module, most likely
+> >> memory related, such as mbus or the actual memory controller. As we
+> >> do not have a driver for that, add pll6 to the list of protected
+> >> clocks, so that it won't be disabled and leave us with a non-responsive
+> >> system.
+> >
+> > What issue have you seen?
+>=20
+> Completely unresponsive after PLL6 is gated (on the A23).
+>=20
+> > The system actually works pretty great on the A31.
+>=20
+> Does it work when there aren't any other PLL6 consumers?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yes.
+
+> Maybe the boot0 on A31 and A23 setup some DRAM-related modules differentl=
+y.
+>=20
+> If the A31 works without protecting PLL6, I'll add a separate list
+> for the A23.
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--E7i4zwmWs5DOuDSH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJThE2BAAoJEBx+YmzsjxAg+y0P/jrK8t/KVps0omNNRHN/Cqr7
+17LCuGScPMDQXDywyMlysR9Ndb2WvKjmHIDKDfvylgfvAxmARXYLYb8ifDZoaWZd
+w4WiXXvw5YHs/+0GBXlH+/I04TE3/SVJiLtbcHGak0HzmP65SkIhWMKB7dl5zRnq
+bkiKrBQs2NA7ot3BZpp0mcVGy4RIdaUChy//S+Hfi/mWVNBCGzqVJ6dFMhDjpSj7
+fqZ2xiE2k+zryLZM3XEm2Vi2E1GE/gSOb+5dD8K+6HA2miapfmL5afVUfLZZPIRI
+NeENCztft8JzxkhB/BaaBK8Bq1aOZo0Txh4voU40opZFRdwRRZbJGS4coC3IAZQv
+qHRQ4iyou3EchtZi0ggOroGZXAvfZlWdsFst2XWa1MYDANB9LL8nV+PKongmCGft
+SVHxfi9KRcZUFtneoX7TkQGwT6iHU5LAv+2xJTAceGRz76tc9TLlbCEoaunzZobp
+cbEh9mLPfABWTDdHUCN9OlfrhfOiIDN4ve3iBv58y1gFx95ztQDjlDGuc1vhjcsV
+p9iTMIbUiR6DZEMhVjIFC93DbQD4wBYoI/NaxSxwTXP9MA5vzBYM6Ye6Vg4equQ2
+yiCXQkqQ12dTT0Y29JxZ/RJbxCAMGukDclZPvLYOqXji8VQYxo78RuTbnWe3djDe
+/klXg6kVmbbperVCc2nZ
+=eu7F
+-----END PGP SIGNATURE-----
+
+--E7i4zwmWs5DOuDSH--
