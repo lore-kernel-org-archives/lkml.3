@@ -1,113 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440AbaE0Sxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:53:42 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:59595 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654AbaE0Sxl (ORCPT
+	id S1753459AbaE0Sx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:53:57 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:6370 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753224AbaE0Sxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:53:41 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: next-20140529 - 'perf' fails to build on Fedora Rawhide...
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1401216702_14392P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 27 May 2014 14:53:55 -0400
+Date: Tue, 27 May 2014 14:53:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 3.14-rt] sched/numa: Fix task_numa_free() lockdep splat
+Message-ID: <20140527145349.0bc2030e@gandalf.local.home>
+In-Reply-To: <20140527145201.6e79230f@gandalf.local.home>
+References: <20140509181214.GK29014@linutronix.de>
+	<1400297819.9493.11.camel@marge.simpson.net>
+	<20140527141836.4f466086@gandalf.local.home>
+	<20140527182541.GH11096@twins.programming.kicks-ass.net>
+	<20140527145201.6e79230f@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Tue, 27 May 2014 14:51:42 -0400
-Message-ID: <15963.1401216702@turing-police.cc.vt.edu>
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1401216702_14392P
-Content-Type: text/plain; charset=us-ascii
+On Tue, 27 May 2014 14:52:01 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-So what did I do wrong with this build of 'perf' (other than
-trying to do it on a Fedora Rawhide box updated to last night? :)
+ 
+> Ah crap. I did a search on all the callers of put_task_struct(), and
+> somehow missed this one.  Yep, I was looking for places that called
+> this while holding other irq safe locks.
+> 
 
-(The obvious hack fix is to change the '#define _BSD_SOURCE 1' in util/util.h
-to use _DEFAULT_SOURCE instead, but not sure how that plays on older
-userspaces, as that was a glibc 2.19 feature that only escaped about
-3 months ago....)
+Anyway, this nicely answers Mike's question to why it causes lockdep
+splat. There exists a location that calls put_task_struct() with irqs
+disabled (not to mention holding irq unsafe locks).
 
-[/usr/src/linux-next/tools/perf] make
-  BUILD:   Doing 'make -j4' parallel build
-config/Makefile:580: No numa.h found, disables 'perf bench numa mem' benchmark, please install numactl-devel/libnuma-devel/libnuma-dev
+I was having problems just finding a place that called it with irqs off.
 
-Auto-detecting system features:
-...                         dwarf: [ on  ]
-...                         glibc: [ on  ]
-...                          gtk2: [ on  ]
-...                      libaudit: [ on  ]
-...                        libbfd: [ on  ]
-...                        libelf: [ on  ]
-...                       libnuma: [ OFF ]
-...                       libperl: [ OFF ]
-...                     libpython: [ on  ]
-...                      libslang: [ on  ]
-...                     libunwind: [ on  ]
-...            libdw-dwarf-unwind: [ on  ]
-...     DWARF post unwind library: libunwind
-
-  GEN      common-cmds.h
-  FLAGS:   * new build flags or prefix
-  CC       bench/mem-memcpy-x86-64-asm.o
-  CC       bench/mem-memset-x86-64-asm.o
-  CC       bench/mem-memcpy.o
-  CC       bench/mem-memset.o
-  CC       bench/futex-hash.o
-  CC       bench/futex-wake.o
-  CC       bench/futex-requeue.o
-  CC       builtin-diff.o
-In file included from /usr/include/unistd.h:25:0,
-                 from util/util.h:44,
-                 from builtin.h:4,
-                 from builtin-diff.c:7:
-/usr/include/features.h:148:3: error: #warning "_BSD_SOURCE and _SVID_SOURCE are deprecated, use _DEFAULT_SOURCE" [-Werror=cpp]
- # warning "_BSD_SOURCE and _SVID_SOURCE are deprecated, use _DEFAULT_SOURCE"
-   ^
-  CC       builtin-evlist.o
-  CC       builtin-help.o
-In file included from /usr/include/unistd.h:25:0,
-                 from util/util.h:44,
-                 from builtin.h:4,
-                 from builtin-evlist.c:5:
-/usr/include/features.h:148:3: error: #warning "_BSD_SOURCE and _SVID_SOURCE are deprecated, use _DEFAULT_SOURCE" [-Werror=cpp]
- # warning "_BSD_SOURCE and _SVID_SOURCE are deprecated, use _DEFAULT_SOURCE"
-   ^
-cc1: all warnings being treated as errors
-make[1]: *** [builtin-evlist.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-cc1: all warnings being treated as errors
-make[1]: *** [builtin-diff.o] Error 1
-  PERF_VERSION = 3.15.rc7.g531a53
-make: *** [all] Error 2
-
-
---==_Exmh_1401216702_14392P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU4TevgdmEQWDXROgAQKT1hAAm0Lna8gLcZ/i2vpx4uSWA4lx/6o4837J
-gQSgzIAK28hy9P7Ro6rbrHArlO5PCIcYBV7bAVSGKqTragqaDy8jiQ590Bq6uZ1k
-Z9KuUE4nG4PZbx0k0CkxIa6tWyGoH73JqKeAjtwsMEV8eKInlDv1rIcoJu7lKD3w
-9srrjgpcRAjB1n143+DyoLTiysyQZiw/WUTKTSgA4TMapyCmwR444GQFVx3RZjN0
-LAn/6DfX4QpOFm4/BU5B/zoLmo6bFv5y6/6Jx6iEQeTKy2ntSIJGZ42L6P+Rze4A
-SzYiz9Ks3ug7oBxUZfO7heFDp02nmy4jc9TgUMbP7Ttc7QCyVZoTzt3qJk80Rbdf
-J0U5t3yOcyRezJywAHo8UNsqSGKDA27MhrOzQK0CA2rev/9tpPwefQXFWCWbO9XP
-hqlA06mht5khga0Mo1obp9TU+higfjTPO2sXbkPZY13dVtzjBvlXwoXMZMK8zO6c
-QEDJD2fwYQre0QnGolzZrkHoJcD2/AiK17y3iFwU60m4QW/U6+XecK0EfuNnke6W
-nriB9zejSJx6Fzk9YI+pavfqyfmn0VTuI9k2JlGWPwM6rEP3UjrrBpIt2pMMWvZD
-94lcOSz0+rYrrrhpp+UGD1NgI7Z/FYT9SOZxZ/v6jkzrCqoTH3dHvFKvc8t6BCbs
-sGKxRCEIzdo=
-=hwqa
------END PGP SIGNATURE-----
-
---==_Exmh_1401216702_14392P--
+-- Steve
