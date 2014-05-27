@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaE0LxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:53:00 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:43985 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaE0Lw5 (ORCPT
+	id S1752419AbaE0LxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:53:11 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62297 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390AbaE0LxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:52:57 -0400
+	Tue, 27 May 2014 07:53:06 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
         inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
         pavel@ucw.cz, len.brown@intel.com, sudeep.holla@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH V4 4/8] driver/core: cpu: initialize opp table
-Date: Tue, 27 May 2014 17:20:53 +0530
-Message-Id: <ce68a1ba333ab080a2428242d8fa4d4629064a4d.1401191054.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V4 5/8] cpufreq: arm_big_little: don't initialize opp table
+Date: Tue, 27 May 2014 17:20:54 +0530
+Message-Id: <b09607a9e3b65c24ce6de8ab9715d3d1b86eaf74.1401191054.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <cover.1401191054.git.viresh.kumar@linaro.org>
 References: <cover.1401191054.git.viresh.kumar@linaro.org>
@@ -29,57 +26,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers expecting CPU's OPPs from device tree initialize OPP table themselves by
-calling of_init_opp_table() and there is nothing driver specific in that. They
-all do it in the same redundant way.
+CPU OPP tables are already initialized by CPU core and we don't need to
+reinitialize them from arm_big_little_dt driver.
 
-It would be better if we can get rid of redundancy by initializing CPU OPPs from
-CPU core code for all CPUs (that have a "operating-points" property defined in
-their node).
+As the arm_big_little_dt driver doesn't have a .init_opp_table() callback
+anymore, make this callback optional.
 
-This patch calls of_init_opp_table() right after CPU device is registered in
-register_cpu(). of_init_opp_table() also has a dummy implementation which simply
-returns -ENOSYS when CONFIG_OPP or CONFIG_OF isn't supported by some platform.
-
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
 Cc: Sudeep Holla <sudeep.holla@arm.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/base/cpu.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/cpufreq/arm_big_little.c    | 12 +++++++-----
+ drivers/cpufreq/arm_big_little_dt.c | 18 ------------------
+ 2 files changed, 7 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 006b1bc..790183f 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -16,6 +16,7 @@
- #include <linux/acpi.h>
- #include <linux/of.h>
- #include <linux/cpufeature.h>
-+#include <linux/pm_opp.h>
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index 1f4d4e3..561261e 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -325,11 +325,13 @@ static int _get_cluster_clk_and_freq_table(struct device *cpu_dev)
+ 	if (freq_table[cluster])
+ 		return 0;
  
- #include "base.h"
+-	ret = arm_bL_ops->init_opp_table(cpu_dev);
+-	if (ret) {
+-		dev_err(cpu_dev, "%s: init_opp_table failed, cpu: %d, err: %d\n",
++	if (arm_bL_ops->init_opp_table) {
++		ret = arm_bL_ops->init_opp_table(cpu_dev);
++		if (ret) {
++			dev_err(cpu_dev, "%s: init_opp_table failed, cpu: %d, err: %d\n",
+ 				__func__, cpu_dev->id, ret);
+-		goto out;
++			goto out;
++		}
+ 	}
  
-@@ -349,10 +350,12 @@ int register_cpu(struct cpu *cpu, int num)
- 	if (cpu->hotpluggable)
- 		cpu->dev.groups = hotplugable_cpu_attr_groups;
- 	error = device_register(&cpu->dev);
--	if (!error)
--		per_cpu(cpu_sys_devices, num) = &cpu->dev;
--	if (!error)
--		register_cpu_under_node(num, cpu_to_node(num));
-+	if (error)
-+		return error;
-+
-+	per_cpu(cpu_sys_devices, num) = &cpu->dev;
-+	register_cpu_under_node(num, cpu_to_node(num));
-+	of_init_opp_table(&cpu->dev);
+ 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table[cluster]);
+@@ -542,7 +544,7 @@ int bL_cpufreq_register(struct cpufreq_arm_bL_ops *ops)
+ 		return -EBUSY;
+ 	}
  
- 	return error;
+-	if (!ops || !strlen(ops->name) || !ops->init_opp_table) {
++	if (!ops || !strlen(ops->name)) {
+ 		pr_err("%s: Invalid arm_bL_ops, exiting\n", __func__);
+ 		return -ENODEV;
+ 	}
+diff --git a/drivers/cpufreq/arm_big_little_dt.c b/drivers/cpufreq/arm_big_little_dt.c
+index 8d9d591..502182d 100644
+--- a/drivers/cpufreq/arm_big_little_dt.c
++++ b/drivers/cpufreq/arm_big_little_dt.c
+@@ -43,23 +43,6 @@ static struct device_node *get_cpu_node_with_valid_op(int cpu)
+ 	return np;
  }
+ 
+-static int dt_init_opp_table(struct device *cpu_dev)
+-{
+-	struct device_node *np;
+-	int ret;
+-
+-	np = of_node_get(cpu_dev->of_node);
+-	if (!np) {
+-		pr_err("failed to find cpu%d node\n", cpu_dev->id);
+-		return -ENOENT;
+-	}
+-
+-	ret = of_init_opp_table(cpu_dev);
+-	of_node_put(np);
+-
+-	return ret;
+-}
+-
+ static int dt_get_transition_latency(struct device *cpu_dev)
+ {
+ 	struct device_node *np;
+@@ -81,7 +64,6 @@ static int dt_get_transition_latency(struct device *cpu_dev)
+ static struct cpufreq_arm_bL_ops dt_bL_ops = {
+ 	.name	= "dt-bl",
+ 	.get_transition_latency = dt_get_transition_latency,
+-	.init_opp_table = dt_init_opp_table,
+ };
+ 
+ static int generic_bL_probe(struct platform_device *pdev)
 -- 
 2.0.0.rc2
 
