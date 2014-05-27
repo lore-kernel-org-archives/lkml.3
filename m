@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaE0IiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:38:13 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:41289 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940AbaE0IiK (ORCPT
+	id S1752360AbaE0Iig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:38:36 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:58829 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337AbaE0Iid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:38:10 -0400
-Date: Tue, 27 May 2014 09:38:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: linux-omap@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 4/5] mfd: palmas: Add tps65917 support
-Message-ID: <20140527083804.GB5875@lee--X1>
-References: <1401098197-647-1-git-send-email-j-keerthy@ti.com>
- <1401098197-647-5-git-send-email-j-keerthy@ti.com>
+	Tue, 27 May 2014 04:38:33 -0400
+Date: Tue, 27 May 2014 10:38:31 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
+        linux-sh@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.15-rc7
+In-Reply-To: <alpine.DEB.2.02.1405271035140.13584@ayla.of.borg>
+Message-ID: <alpine.DEB.2.02.1405271035420.13614@ayla.of.borg>
+References: <alpine.DEB.2.02.1405271035140.13584@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401098197-647-5-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 May 2014, Keerthy wrote:
+On Tue, 27 May 2014, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.15-rc7[1]  to v3.15-rc6[3], the summaries are:
+>   - build errors: +4/-1
 
-> Add tps65917 PMIC support. tps65917 is a subset of palmas PMIC.
-> Some of the register definitions and the interrupt mappings
-> are different.
-> 
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> ---
->  drivers/mfd/palmas.c |  177 ++++++++++++++++++++++++++++++++++++++++++++++++--
+  + /scratch/kisskb/src/drivers/tty/serial/nwpserial.c: error: implicit declaration of function 'udelay' [-Werror=implicit-function-declaration]:  => 53:3
 
-Much nicer.  You just saved yourself(/the subsystem) 420 lines!
+powerpc-randconfig
 
-I have a single nit.  Once it's fixed-up you can apply my:
+  + error: No rule to make target drivers/scsi/aic7xxx/aicasm/*.[chyl]:  => N/A
 
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+i386-randconfig
 
->  1 file changed, 172 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> index d280d78..e4684cc 100644
-> --- a/drivers/mfd/palmas.c
-> +++ b/drivers/mfd/palmas.c
+  + error: ion.c: undefined reference to `vm_insert_pfn':  => .text+0x66f4c4)
+  + error: ion.c: undefined reference to `zap_page_range':  => .text+0x672794)
 
-[...]
+sh-randconfig
 
->  static const struct of_device_id of_palmas_match_tbl[] = {
->  	{
->  		.compatible = "ti,palmas",
-> -		.data = &palmas_features,
-> +		.data = &palmas_data,
->  	},
->  	{
->  		.compatible = "ti,tps659038",
-> -		.data = &tps659038_features,
-> +		.data = &tps659038_data,
->  	},
-> +	{
-> +		.compatible = "ti,tps65917",
-> +		.data = &tps65917_data,
-> +	},
-> +
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7506/ (all 119 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/7497/ (all 119 configs)
 
-Please get rid of this line.
+Gr{oetje,eeting}s,
 
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
+						Geert
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
