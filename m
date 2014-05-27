@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaE0PVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:21:42 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:44783 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaE0PVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:21:38 -0400
-Message-ID: <5384AD17.3020608@ahsoftware.de>
-Date: Tue, 27 May 2014 17:19:51 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752864AbaE0PXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:23:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751877AbaE0PXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 11:23:46 -0400
+Date: Tue, 27 May 2014 11:23:41 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Jens Axboe <axboe@kernel.dk>
+cc: Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>
+Subject: Re: [PATCH] block: flush queued bios when the process blocks
+In-Reply-To: <5384AA79.4010206@kernel.dk>
+Message-ID: <alpine.LRH.2.02.1405271120390.31404@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1405271059190.27492@file01.intranet.prod.int.rdu2.redhat.com> <5384AA79.4010206@kernel.dk>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>
-Subject: Re: [PATCH 2/2] bluetooth: raise HCI_CMD_TIMEOUT from 2s to 8s
-References: <1400076025-5103-1-git-send-email-holler@ahsoftware.de>	<1400076025-5103-2-git-send-email-holler@ahsoftware.de> <CABBYNZLFutVy=Msz7=AAwXmo4wDHjv59GcLCedEzSrWjkLQ3cw@mail.gmail.com> <5374D452.8020709@ahsoftware.de> <5374DAEF.40605@ahsoftware.de> <5375A3B5.1060706@ahsoftware.de>
-In-Reply-To: <5375A3B5.1060706@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.05.2014 07:35, schrieb Alexander Holler:
-> Am 15.05.2014 17:19, schrieb Alexander Holler:
->> Am 15.05.2014 16:50, schrieb Alexander Holler:
->>> Am 15.05.2014 14:54, schrieb Luiz Augusto von Dentz:
->>
->>>> This timeout seems arbitrary so I suppose we can increase it if we
->>>> feel it is necessary but we used already different timeout for
->>>> different commands like HCI_POWER_OFF_TIMEOUT, so perhaps if we can
->>>> identify which command is more likely to timeout.
->>>>
->>>> We could perhaps auto reset if a command timeout if there is really no
->>>> other way to recover.
->>>
->>> It is arbitrary but 2s is not enough here. And as I've written in the
->>> description, there is absolutely no reason to keep this timeout
->>> unnecessarily short. No one cares if an error message appears after 2s
->>> or 8s if the communication with the dongle is in both cases broken
->>> afterwards.
->>>
->>> One of the commands I experieced the problem with was e.g.
->>> HCI_OP_DELETE_STORED_LINK_KEY or HCI_OP_WRITE_SSP_MODE.
->>
->> The problem is that you can never be sure what the origin of a timeouted
->> command was. It might have been e.g. the USB-subsystem through wich the
->> command and the response has to travel (in case of USB dongles) and not
->> the dongle itself.
->
-> To explain a bit more, the box I'm experiencing these problems boots
-> from USB2.0 HD. So it's likely that there is quiet some action on the
-> bus and that shouldn't affect the operation of the BT-stack (besides
-> slowing it maybe a bit down).
 
-Anything wrong with my conclusion?
 
-I don't know what's the origin of the current timeout of 2s, but I don't 
-think it takes the used transport into account.
+On Tue, 27 May 2014, Jens Axboe wrote:
 
-So if the source of these 2s is the spec for BT-devices, the 2s would 
-make sense as a timeout to test BT-devices, but it already becomes an 
-arbitrary value whenever the transport isn't realtime and/or exclusive 
-for the device but e.g. an I/O scheduler is inbetween (which is the case 
-for USB).
+> On 2014-05-27 09:03, Mikulas Patocka wrote:
+> > The block layer uses per-process bio list to avoid recursion in
+> > generic_make_request. When generic_make_request is called recursively, the
+> > bio is added to current->bio_list and the function returns immediatelly.
+> > The top-level instance of generic_make_requests takes bios from
+> > current->bio_list and processes them.
+> 
+> This really begs the question of why we just don't use the per-process plugs
+> for this. We already have scheduler hooks in place to flush those at the
+> appropriate time. Why are we reinventing something for essentially the same
+> thing?
+> 
+> -- 
+> Jens Axboe
 
-Regards,
+Plugs work with requests, this patch works with bios. They are different 
+structures, so you can't use one infrastructure to process them.
 
-Alexander Holler
+The patch adds bio list flushing to the scheduler just besides plug 
+flushsing.
+
+Mikulas
