@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaE0NgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:36:10 -0400
-Received: from smtp7.sms.unimo.it ([155.185.44.150]:56585 "EHLO
-	smtp7.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaE0NgE (ORCPT
+	id S1752590AbaE0Ngn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:36:43 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:41347 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413AbaE0Ngm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:36:04 -0400
-From: paolo <paolo.valente@unimore.it>
-To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Cc: Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Paolo Valente <paolo.valente@unimore.it>
-Subject: [PATCH RFC RESEND 01/14] block: kconfig update and build bits for BFQ
-Date: Tue, 27 May 2014 14:42:25 +0200
-Message-Id: <1401194558-5283-2-git-send-email-paolo.valente@unimore.it>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
-References: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
-UNIMORE-X-SA-Score: -2.9
+	Tue, 27 May 2014 09:36:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140527030058.GB2372@darkstar.nay.redhat.com>
+References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
+	<20140527030058.GB2372@darkstar.nay.redhat.com>
+Date: Tue, 27 May 2014 14:36:41 +0100
+Message-ID: <CAL01qpvqa-8u2MZ=8wE8gsiprFLbN4U3AbEX9+h7FuemXNR93Q@mail.gmail.com>
+Subject: Re: [PATCH] export efi.flags to sysfs
+From: "Fleming, Matt" <matt.fleming@intel.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: "bp@alien8.de" <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        vgoyal@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Checconi <fchecconi@gmail.com>
+On 27 May 2014 04:00, Dave Young <dyoung@redhat.com> wrote:
+> On 05/26/14 at 04:39pm, Dave Young wrote:
+>>
+>> For efi=old_map and any old_map quirks like SGI UV in current
+>> tree kexec/kdump will fail because it depends on the new 1:1 mapping.
+>>
+>> Thus export the mapping method to sysfs so kexec tools can switch
+>> to original way to boot.
+>>
+>> Since we have efi.flags for all efi facilities so let's just export the
+>> efi.flags itself, it maybe useful for other arches and use cases.
+>
+> Rethink about this issue, export flags will expose the efi facility
+> macros to userspace, Matt, what's your opinion? It might be better to export
+> a file 'old_map' only which is '0|1'
 
-Update Kconfig.iosched and make the related Makefile changes to include
-kernel-configuration options for BFQ.
+Exporting efi.flags is a non-starter. Those flags are part of an
+internal interface and I'm not prepared to turn them into a userspace
+ABI that we can never, ever change without a massive amount of pain.
 
-Signed-off-by: Fabio Checconi <fchecconi@gmail.com>
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
----
- block/Kconfig.iosched | 19 +++++++++++++++++++
- block/Makefile        |  1 +
- 2 files changed, 20 insertions(+)
+I've only vaguely been following along with the other thread, so please
+summarise everything again in your patch. Particularly, I need answers
+to the following questions,
 
-diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
-index 421bef9..8f98cc7 100644
---- a/block/Kconfig.iosched
-+++ b/block/Kconfig.iosched
-@@ -39,6 +39,15 @@ config CFQ_GROUP_IOSCHED
- 	---help---
- 	  Enable group IO scheduling in CFQ.
- 
-+config IOSCHED_BFQ
-+	tristate "BFQ I/O scheduler"
-+	default n
-+	---help---
-+	  The BFQ I/O scheduler tries to distribute bandwidth among all
-+	  processes according to their weights.
-+	  It aims at distributing the bandwidth as desired, regardless
-+	  of the disk parameters and with any workload.
-+
- choice
- 	prompt "Default I/O scheduler"
- 	default DEFAULT_CFQ
-@@ -52,6 +61,15 @@ choice
- 	config DEFAULT_CFQ
- 		bool "CFQ" if IOSCHED_CFQ=y
- 
-+	config DEFAULT_BFQ
-+		bool "BFQ" if IOSCHED_BFQ=y
-+		help
-+		  Selects BFQ as the default I/O scheduler which will be
-+		  used by default for all block devices.
-+		  The BFQ I/O scheduler aims at distributing the bandwidth
-+		  as desired, regardless of the disk parameters and with
-+		  any workload.
-+
- 	config DEFAULT_NOOP
- 		bool "No-op"
- 
-@@ -61,6 +79,7 @@ config DEFAULT_IOSCHED
- 	string
- 	default "deadline" if DEFAULT_DEADLINE
- 	default "cfq" if DEFAULT_CFQ
-+	default "bfq" if DEFAULT_BFQ
- 	default "noop" if DEFAULT_NOOP
- 
- endmenu
-diff --git a/block/Makefile b/block/Makefile
-index 20645e8..cbd83fb 100644
---- a/block/Makefile
-+++ b/block/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_BLK_DEV_THROTTLING)	+= blk-throttle.o
- obj-$(CONFIG_IOSCHED_NOOP)	+= noop-iosched.o
- obj-$(CONFIG_IOSCHED_DEADLINE)	+= deadline-iosched.o
- obj-$(CONFIG_IOSCHED_CFQ)	+= cfq-iosched.o
-+obj-$(CONFIG_IOSCHED_BFQ)	+= bfq-iosched.o
- 
- obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
- obj-$(CONFIG_BLK_DEV_INTEGRITY)	+= blk-integrity.o
--- 
-1.9.2
+ - Are you trying to fix a kexec/kdump regression?
+ - Does SGI UV work with kexec + UEFI at all?
 
+The 1:1 mapping was required to make kexec + EFI work in the first
+instance. If a machine implements the EFI 1:1 mapping, kexec should
+work. If it doesn't implement the 1:1 mapping, then it's probably not
+going to work, right?
+
+The crux of the question: are you trying to fix a regression?
+
+If not, then we just need to get SGI UV working with the EFI 1:1
+mapping. No?
