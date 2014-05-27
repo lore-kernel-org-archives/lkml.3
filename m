@@ -1,99 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaE0SPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:15:42 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:64940 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192AbaE0SPl (ORCPT
+	id S1752909AbaE0SSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:18:42 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:10496 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751920AbaE0SSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:15:41 -0400
-Message-ID: <5384D64A.8040603@lwfinger.net>
-Date: Tue, 27 May 2014 13:15:38 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 27 May 2014 14:18:40 -0400
+Date: Tue, 27 May 2014 14:18:36 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3.14-rt] sched/numa: Fix task_numa_free() lockdep splat
+Message-ID: <20140527141836.4f466086@gandalf.local.home>
+In-Reply-To: <1400297819.9493.11.camel@marge.simpson.net>
+References: <20140509181214.GK29014@linutronix.de>
+	<1400297819.9493.11.camel@marge.simpson.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel <devel@driverdev.osuosl.org>
-Subject: Re: randconfig build error with next-20140527, in drivers/staging/rtl8192ee
-References: <CA+r1Zhg+XHZrgK73ucpSG4gsVpCR1xzh6LzCek0-CQ8woK5TKw@mail.gmail.com>
-In-Reply-To: <CA+r1Zhg+XHZrgK73ucpSG4gsVpCR1xzh6LzCek0-CQ8woK5TKw@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------090704010600060209040804"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090704010600060209040804
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+[ moving this to LKML from linux-rt-users, as that's where it should be ]
 
-On 05/27/2014 12:27 PM, Jim Davis wrote:
-> Building with the attached random configuration file,
+On Sat, 17 May 2014 05:36:59 +0200
+Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-A problem with the build when PCI is not selected was reported yesterday. I 
-think this build error is caused by MAC80211 not being selected. The fix for 
-both problems was merged as commit 42e4c20f114c71e12cdf35d9b5dd60d2546c7d57 
-yesterday in staging-next. If it has not reached linux-next, the attached patch 
-should fix the problem.
+> 3.14-rt being build with a non-rt config is unlikely, but..
+> 
+> >From 60e69eed85bb7b5198ef70643b5895c26ad76ef7 Mon Sep 17 00:00:00 2001
+> From: Mike Galbraith <bitbucket@online.de>
+> Date: Mon, 7 Apr 2014 10:55:15 +0200
+> Subject: [PATCH] sched/numa: Fix task_numa_free() lockdep splat
+> 
+> Sasha reported that lockdep claims that the following commit:
+> made numa_group.lock interrupt unsafe:
+> 
+>   156654f491dd ("sched/numa: Move task_numa_free() to __put_task_struct()")
+> 
+> While I don't see how that could be, given the commit in question moved
+> task_numa_free() from one irq enabled region to another, the below does
+> make both gripes and lockups upon gripe with numa=fake=4 go away.
 
-Thanks,
+It wasn't the irqs that was causing the lockdep splat, but the
+softirqs. You moved it into __put_task_struct() which is called as a
+rcu callback that gets called from soft irqs. So yes, you need to
+prevent softirqs from happening whenever you take the lock.
+spin_lock_irq() is a bigger hammer than needed. The patch below should
+be good enough.
 
-Larry
+I kept the double_lock_irq() as there is no double_lock_bh(). Should we
+bother to make one?
 
-
-
---------------090704010600060209040804
-Content-Type: text/x-patch;
- name="0002-staging-r8192ee-Fix-build-errors-when-PCI-is-not-ava.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0002-staging-r8192ee-Fix-build-errors-when-PCI-is-not-ava.pa";
- filename*1="tch"
-
->From d10ca90ffaf99f43bb61d5b4001f6a6acfde3454 Mon Sep 17 00:00:00 2001
-From: Larry Finger <Larry.Finger@lwfinger.net>
-Date: Mon, 26 May 2014 13:35:48 -0500
-Subject: [PATCH 2/3] staging: r8192ee: Fix build errors when PCI is not
- available
-To: gregkh@linuxfoundation.org
-Cc: netdev@vger.kernel.org,
-    devel@driverdev.osuosl.org
-
-A build of this driver fails when PCI is not selected. It would also
-fail if MAC80211 is not selected. Kconfig is fixed to handle these
-conditions, and to select additional necessary components.
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
- drivers/staging/rtl8192ee/Kconfig | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/staging/rtl8192ee/Kconfig b/drivers/staging/rtl8192ee/Kconfig
-index 92c5f44..beb07ac2 100644
---- a/drivers/staging/rtl8192ee/Kconfig
-+++ b/drivers/staging/rtl8192ee/Kconfig
-@@ -1,6 +1,13 @@
- config R8192EE
- 	tristate "Realtek RTL8192EE Wireless Network Adapter"
-+	depends on PCI && WLAN && MAC80211
-+	depends on m
-+	select WIRELESS_EXT
-+	select WEXT_PRIV
-+	select EEPROM_93CX6
-+	select CRYPTO
- 	select FW_LOADER
-+	default N
- 	---help---
- 	This is the driver for Realtek RTL8192EE 802.11 PCIe
- 	wireless network adapters.
--- 
-1.8.4.5
+-- Steve
 
 
---------------090704010600060209040804--
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7570dd9..f072ea9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1497,7 +1497,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	/* If the task is part of a group prevent parallel updates to group stats */
+ 	if (p->numa_group) {
+ 		group_lock = &p->numa_group->lock;
+-		spin_lock_irq(group_lock);
++		spin_lock_bh(group_lock);
+ 	}
+ 
+ 	/* Find the node with the highest number of faults */
+@@ -1572,7 +1572,7 @@ static void task_numa_placement(struct task_struct *p)
+ 			}
+ 		}
+ 
+-		spin_unlock_irq(group_lock);
++		spin_unlock_bh(group_lock);
+ 	}
+ 
+ 	/* Preferred node as the node with the most faults */
+@@ -1711,14 +1711,14 @@ void task_numa_free(struct task_struct *p)
+ 	void *numa_faults = p->numa_faults_memory;
+ 
+ 	if (grp) {
+-		spin_lock_irq(&grp->lock);
++		spin_lock_bh(&grp->lock);
+ 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+ 			grp->faults[i] -= p->numa_faults_memory[i];
+ 		grp->total_faults -= p->total_numa_faults;
+ 
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+-		spin_unlock_irq(&grp->lock);
++		spin_unlock_bh(&grp->lock);
+ 		rcu_assign_pointer(p->numa_group, NULL);
+ 		put_numa_group(grp);
+ 	}
