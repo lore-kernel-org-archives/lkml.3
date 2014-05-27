@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaE0OrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:47:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38090 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457AbaE0OrC (ORCPT
+	id S1752451AbaE0Ou6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:50:58 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63018 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaE0Ou5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 10:47:02 -0400
-Date: Tue, 27 May 2014 16:46:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Mike Marciniszyn <infinipath@intel.com>
-Subject: Re: [RFC][PATCH 0/5] VM_PINNED
-Message-ID: <20140527144655.GC19143@laptop.programming.kicks-ass.net>
-References: <20140526145605.016140154@infradead.org>
- <CALYGNiMG1NVBUS4TJrYJMr92yWGZHSdGUdCGtBJDHoUMMhE+Wg@mail.gmail.com>
- <20140526203232.GC5444@laptop.programming.kicks-ass.net>
- <CALYGNiO8FNKjtETQMRSqgiArjfQ9nRAALUg9GGdNYbpKru=Sjw@mail.gmail.com>
- <20140527102909.GO30445@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405270929550.13999@gentwo.org>
+	Tue, 27 May 2014 10:50:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+cFXbkvhK9kgRVaQjEP/KryJzg1GjIoc4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 166BC580D2D
+Date: Tue, 27 May 2014 10:50:55 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] irqchip: core changes for v3.16
+Message-ID: <20140527145055.GP8664@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405270929550.13999@gentwo.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 09:34:22AM -0500, Christoph Lameter wrote:
-> On Tue, 27 May 2014, Peter Zijlstra wrote:
-> 
-> > The things I care about for VM_PINNED are long term pins, like the IB
-> > stuff, which sets up its RDMA buffers at the start of a program and
-> > basically leaves them in place for the entire duration of said program.
-> 
-> Ok that also means the pages are not to be allocated from ZONE_MOVABLE?
+Thomas,
 
-Well, like with IB, they start out as normal userspace pages, and will
-be from ZONE_MOVABLE.
+Here's the patches I've collected since you asked me to start helping
+out.  It's only been a few weeks so there isn't too much here.  A lot of
+the patches I've encountered aren't ready yet, and I'll continue working
+with those for the next window.  -rc7 dropped earlier than expected. :-/
 
-> I expected the use of a page flag. With a vma flag we may have a situation
-> that mapping a page into a vma changes it to pinned and terminating a
-> process may unpin a page. That means the zone that the page should be
-> allocated from changes.
+Please pull.
 
-So the only way to 'map' something into pinned is what perf does (have
-the f_ops->mmap call set VM_PINNED). But that way already ensures we
-have full control over the allocation since its a custom file.
+thx,
 
-And in fact the perf buffer is allocated with GFP_KERNEL and is thus
-already not from MOVABLE.
+Jason.
 
-Any other use, like (again) the IB stuff, will go through
-get_user_pages() which will ensure all the pages are mapped and present.
 
-So I don't think this is a real problem and certainly not one that
-requires a page flag.
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
-> Pinned pages in ZONE_MOVABLE are not a good idea. But since "kernelcore"
-> is rarely used maybe that is not an issue?
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
-Well, the idea was to migrate pages to a more suitable location on
-mm_mpin(). We could choose to move them out again on mm_munpin() or not.
+are available in the git repository at:
+
+  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-3.16
+
+for you to fetch changes up to c8dfe94bc7a14c6a644ce55ef77b7a81505c696f:
+
+  Documentation: brcmstb-l2: Add Broadcom STB Level-2 interrupt controller binding (2014-05-27 14:43:36 +0000)
+
+----------------------------------------------------------------
+irqchip core changes for v3.16
+
+ - irq-gic
+    - use a mask field
+
+ - irq-armada-370-xp
+    - move the DT binding docs to the irqchip directory
+
+ - irq-brcmstb-l2
+    - new driver for Broadcom Set Top Box Level-2
+
+----------------------------------------------------------------
+Ezequiel Garcia (1):
+      irqchip: armada-370-xp: Move the devicetree binding documentation
+
+Florian Fainelli (2):
+      irqchip: brcmstb-l2: Add Broadcom Set Top Box Level-2 interrupt controller
+      Documentation: brcmstb-l2: Add Broadcom STB Level-2 interrupt controller binding
+
+Haojian Zhuang (1):
+      irqchip: gic: Use mask field in GICC_IAR
+
+ .../bindings/interrupt-controller/brcm,l2-intc.txt |  29 +++
+ .../marvell,armada-370-xp-mpic.txt}                |   0
+ drivers/irqchip/Kconfig                            |   6 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-brcmstb-l2.c                   | 202 +++++++++++++++++++++
+ drivers/irqchip/irq-gic.c                          |   2 +-
+ include/linux/irqchip/arm-gic.h                    |   2 +
+ 7 files changed, 241 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,l2-intc.txt
+ rename Documentation/devicetree/bindings/{arm/armada-370-xp-mpic.txt => interrupt-controller/marvell,armada-370-xp-mpic.txt} (100%)
+ create mode 100644 drivers/irqchip/irq-brcmstb-l2.c
