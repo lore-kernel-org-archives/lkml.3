@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaE0TRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 15:17:32 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:37257 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751991AbaE0TRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 15:17:31 -0400
-Date: Tue, 27 May 2014 15:17:28 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Kees Cook <keescook@chromium.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
-Message-ID: <20140527151728.64e8cf59@gandalf.local.home>
-In-Reply-To: <1400524052-25625-1-git-send-email-bp@alien8.de>
-References: <1400524052-25625-1-git-send-email-bp@alien8.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753286AbaE0TVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:21:22 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41343 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752462AbaE0TVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 15:21:20 -0400
+Date: Tue, 27 May 2014 16:21:15 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
+        Caitlin Bestler <caitlin.bestler@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Elie De Brauwer <eliedebrauwer@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Steven Whitehouse <steve@chygwyn.com>,
+        =?iso-8859-1?Q?R=E9mi?= Denis-Courmont 
+	<remi.denis-courmont@nokia.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Chris Friesen <chris.friesen@windriver.com>
+Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
+Message-ID: <20140527192115.GD25474@kernel.org>
+References: <536101C9.9090601@gmail.com>
+ <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com>
+ <20140512143451.GB13801@kernel.org>
+ <20140521210535.GA5414@kernel.org>
+ <537E0961.8040005@gmail.com>
+ <20140526134647.GB8176@kernel.org>
+ <20140526211706.GA25474@kernel.org>
+ <5384BEC5.2080607@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5384BEC5.2080607@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014 20:27:32 +0200
-Borislav Petkov <bp@alien8.de> wrote:
-
-> From: Borislav Petkov <bp@suse.de>
-> 
+Em Tue, May 27, 2014 at 06:35:17PM +0200, Michael Kerrisk (man-pages) escreveu:
+> On 05/26/2014 11:17 PM, Arnaldo Carvalho de Melo wrote:
+> > Can you try the attached patch on top of the first one?
  
-> There should be no functionality change resulting from this patch.
-> 
+> Patches on patches is a way to make your testers work unnecessarily
+> harder. Also, it means that anyone else who was interested in this
 
-> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-> index 068054f4bf20..eda1a865641e 100644
-> --- a/arch/x86/kernel/head64.c
-> +++ b/arch/x86/kernel/head64.c
-> @@ -172,7 +172,7 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
->  	 */
->  	load_ucode_bsp();
->  
-> -	if (console_loglevel == 10)
-> +	if (console_loglevel >= CONSOLE_LOGLEVEL_DEBUG)
+It was meant to highlight the changes with regard to the previous patch,
+i.e. to make things easier for reviewing.
 
-This looks like functionality change to me.
+> thread likely got lost at this point, because they probably didn't 
+> save the first patch. All of this to say: it makes life much easier 
+> if you provide a complete new self-contained patch on each iteration.
 
-Please make the fix of "==" --> ">=" a separate patch.
-
--- Steve
+If you prefer it that way, find one attached, that I was about to send
+(but you can wait till I use your program to test it ;-) )
  
+> > It starts adding explicit parentheses on a ternary, as David requested,
+> > and then should return the remaining timeouts in cases like signals,
+> > etc.
+> > 
+> > Please let me know if this is enough.
+> 
+> Nope, it doesn't fix the problem. (I applied both patches against 3.15-rc7)
+
+What was the problem experienced?
+ 
+> > P.S. compile testing while sending this message :-)
+> 
+> Okay -- how about some real testing for the next version ;-). I've appended
+
+Hey, you were provinding that real testing! thanks for that! :-)
+
+> my test program below. You can use it as follows:
+> 
+> ./t_recvmmsg <port> <timeout-in-secs> <bufsize>...
+> 
+> (The timeout can also be '-' meaning use NULL as the timeout argument.)
+
+Thanks for the test proggie, will use it.
+ 
+> Cheers,
+> 
+> Michael
