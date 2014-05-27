@@ -1,179 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429AbaE0IZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:25:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41616 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752074AbaE0IZF (ORCPT
+	id S1751828AbaE0I31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:29:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45077 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaE0I3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:25:05 -0400
-Date: Tue, 27 May 2014 10:22:16 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH 22/22] ARM: sun8i: dt: Add Ippo-q8h v5 support
-Message-ID: <20140527082216.GD4730@lukather>
-References: <1400831485-28576-1-git-send-email-wens@csie.org>
- <1400831485-28576-23-git-send-email-wens@csie.org>
- <20140525193955.GB10768@lukather>
- <CAGb2v64EHLsj-cy13yf28K8vkTJUCv95q=x-7c2yiHQ=uBm-sw@mail.gmail.com>
+	Tue, 27 May 2014 04:29:22 -0400
+Date: Tue, 27 May 2014 01:27:29 -0700
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-a257954bb38ab23dbf93df812b4b2c01cae29d8b@git.kernel.org>
+Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        grant.likely@linaro.org, yinghai@kernel.org, trivial@kernel.org,
+        joro@8bytes.org, benh@kernel.crashing.org, bhelgaas@google.com,
+        rjw@rjwysocki.net, paul.gortmaker@windriver.com
+Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        grant.likely@linaro.org, yinghai@kernel.org, trivial@kernel.org,
+        joro@8bytes.org, benh@kernel.crashing.org, bhelgaas@google.com,
+        rjw@rjwysocki.net, paul.gortmaker@windriver.com
+In-Reply-To: <1401178092-1228-3-git-send-email-jiang.liu@linux.intel.com>
+References: <1401178092-1228-3-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq:
+  Improve documentation to match current implementation
+Git-Commit-ID: a257954bb38ab23dbf93df812b4b2c01cae29d8b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RYJh/3oyKhIjGcML"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAGb2v64EHLsj-cy13yf28K8vkTJUCv95q=x-7c2yiHQ=uBm-sw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  a257954bb38ab23dbf93df812b4b2c01cae29d8b
+Gitweb:     http://git.kernel.org/tip/a257954bb38ab23dbf93df812b4b2c01cae29d8b
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Tue, 27 May 2014 16:07:37 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 27 May 2014 10:16:44 +0200
 
---RYJh/3oyKhIjGcML
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+genirq: Improve documentation to match current implementation
 
-On Mon, May 26, 2014 at 12:23:09PM +0800, Chen-Yu Tsai wrote:
-> On Mon, May 26, 2014 at 3:39 AM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
-> > On Fri, May 23, 2014 at 03:51:25PM +0800, Chen-Yu Tsai wrote:
-> >> The Ippo-q8h is a tablet circiut board commonly found in cheap Android
-> >> tablets with A23 SoCs. There are at least 2 versions of the board, with
-> >> different peripherals, such as WiFi chips.
-> >>
-> >> This patch add supports for v5 of such boards, which has a ESP8089 WiFi
-> >> chip (not supported) connected to mmc1.
-> >>
-> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> >> ---
-> >>  arch/arm/boot/dts/Makefile                  |  2 ++
-> >>  arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts | 51 ++++++++++++++++++++=
-+++++++++
-> >>  2 files changed, 53 insertions(+)
-> >>  create mode 100644 arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts
-> >>
-> >> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> >> index 6967393..f809a53 100644
-> >> --- a/arch/arm/boot/dts/Makefile
-> >> +++ b/arch/arm/boot/dts/Makefile
-> >> @@ -354,6 +354,8 @@ dtb-$(CONFIG_MACH_SUN7I) +=3D \
-> >>       sun7i-a20-cubietruck.dtb \
-> >>       sun7i-a20-i12-tvbox.dtb \
-> >>       sun7i-a20-olinuxino-micro.dtb
-> >> +dtb-$(CONFIG_MACH_SUN8I) +=3D \
-> >> +     sun8i-a23-ippo-q8h-v5.dtb
-> >>  dtb-$(CONFIG_ARCH_TEGRA) +=3D tegra20-harmony.dtb \
-> >>       tegra20-iris-512.dtb \
-> >>       tegra20-medcom-wide.dtb \
-> >> diff --git a/arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts b/arch/arm/bo=
-ot/dts/sun8i-a23-ippo-q8h-v5.dts
-> >> new file mode 100644
-> >> index 0000000..7d0bd97
-> >> --- /dev/null
-> >> +++ b/arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts
-> >> @@ -0,0 +1,51 @@
-> >> +/*
-> >> + * Copyright 2014 Chen-Yu Tsai
-> >> + *
-> >> + * Chen-Yu Tsai <wens@csie.org>
-> >> + *
-> >> + * The code contained herein is licensed under the GNU General Public
-> >> + * License. You may obtain a copy of the GNU General Public License
-> >> + * Version 2 or later at the following locations:
-> >> + *
-> >> + * http://www.opensource.org/licenses/gpl-license.html
-> >> + * http://www.gnu.org/copyleft/gpl.html
-> >> + */
-> >> +
-> >> +/dts-v1/;
-> >> +/include/ "sun8i-a23.dtsi"
-> >> +
-> >> +/ {
-> >> +     model =3D "Ippo Q8H Dual Core Tablet (v5)";
-> >> +     compatible =3D "ippo,q8h-v5", "allwinner,sun8i-a23";
-> >> +
-> >> +     chosen {
-> >> +             bootargs =3D "earlyprintk console=3DttyS0,115200";
-> >> +     };
-> >
-> > You should probably add the memory node here too.
->=20
-> OK.
->=20
-> >> +
-> >> +     soc@01c00000 {
-> >> +             uart0: serial@01c28000 {
-> >> +                     pinctrl-names =3D "default";
-> >> +                     pinctrl-0 =3D <&uart0_pins_a>;
-> >> +                     status =3D "okay";
-> >> +             };
-> >> +
-> >> +             i2c0: i2c@01c2ac00 {
-> >> +                     pinctrl-names =3D "default";
-> >> +                     pinctrl-0 =3D <&i2c0_pins_a>;
-> >> +                     status =3D "okay";
-> >> +             };
-> >> +
-> >> +             i2c1: i2c@01c2b000 {
-> >> +                     pinctrl-names =3D "default";
-> >> +                     pinctrl-0 =3D <&i2c1_pins_a>;
-> >> +                     status =3D "okay";
-> >> +             };
-> >
-> > What are the two i2c busses wired to?
->=20
-> i2c0 has the capacitive touch panel controller gsl1680 @ 0x40.
->=20
-> i2c1 has something (gsensor maybe) connected @ 0x15.
-> The FEX file lists the gsensor on i2c1, but with the address as 0x18.
-> I may need to boot back to stock Android to figure it out.
->=20
-> i2c2 has the camera sensor (GC0309) control connected to it @ 0x66.
-> I didn't list it because I overlooked it, and i2cdetect hangs.
-> It seems to need AXP PMIC support to activate the regulators.
->=20
-> AFAIK, the kernel doesn't have drivers for these devices,
-> so how would we list them?
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Jiri Kosina <trivial@kernel.org>
+Link: http://lkml.kernel.org/r/1401178092-1228-3-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ Documentation/IRQ-domain.txt | 3 +--
+ kernel/irq/internals.h       | 2 +-
+ kernel/irq/irqdomain.c       | 6 +++---
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-We don't need to list them yet. We can just wait for the drivers, it
-was just out of curiosity.
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---RYJh/3oyKhIjGcML
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJThEs4AAoJEBx+YmzsjxAgfpYP/R0OjC8+UkOsZ/SuC/cGmS2Z
-ocnz0z1qkoRwCv3dNV93lo5OhFBjyDrgioXYHVzQ2dzjZDcxfGkJvKfnvGJAF12J
-8WS3g2+D7QOTAKfVWxOQcO4Fd+t0S+hZmQOAU6IVYSQjnKCoJAXVCCxfYKF8WH3W
-olYWjR1NxLr5FoAyOZfcngHInKDujT+yyrtHnLhSZ/3CWYYva0YqQUuhgf+niEDc
-L3ZyYphq8h05E2VXlTEHtMq+M4S0Iaa1WdRPZkFQsjZSvIvqR12yGDSXURyJIKiz
-gMnszdbh6ufMAic/xffOzJtyacSGecPdpjyNxGKq6nQbmnE5evaSuSqqvbMAGrHh
-KuixGccvNjklsMb8li8EIPaoZ3X/uVXghirHqsl96gyucXbbAtj12SYlI4OIgVWV
-wkKbHR/TefukV3Zcz1Vn8bCXBh6JLosTBwuVWmJeCF8S0b2BiFD78/+HKUb4vSSR
-qI3vGCfYqJ9HuvL2/gLM/iBKkeyiMusDBZE4fH/0aUC4bsuvPzWQYO5DP8dgpMhj
-PYJR39PnbkAAzLFnaKN2k/6XQ+DCLF7LgWv+zW8zHuVfX1mPBjLFEfRUzJd55Jai
-W6IC1uST3g3r1fo8Q7ik5ubYsLV3KDyvFH/psfG9JIx8XSzA5EyJ70ey1HEfBRa+
-L+d+2x1Ypu7ZjcoHfMd4
-=MJF0
------END PGP SIGNATURE-----
-
---RYJh/3oyKhIjGcML--
+diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
+index 03df71a..8a8b82c 100644
+--- a/Documentation/IRQ-domain.txt
++++ b/Documentation/IRQ-domain.txt
+@@ -41,8 +41,7 @@ An interrupt controller driver creates and registers an irq_domain by
+ calling one of the irq_domain_add_*() functions (each mapping method
+ has a different allocator function, more on that later).  The function
+ will return a pointer to the irq_domain on success.  The caller must
+-provide the allocator function with an irq_domain_ops structure with
+-the .map callback populated as a minimum.
++provide the allocator function with an irq_domain_ops structure.
+ 
+ In most cases, the irq_domain will begin empty without any mappings
+ between hwirq and IRQ numbers.  Mappings are added to the irq_domain
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index c4065e3..099ea2e 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -33,7 +33,7 @@ enum {
+ };
+ 
+ /*
+- * Bit masks for desc->state
++ * Bit masks for desc->core_internal_state__do_not_mess_with_it
+  *
+  * IRQS_AUTODETECT		- autodetection in progress
+  * IRQS_SPURIOUS_DISABLED	- was disabled due to spurious interrupt
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index f140337..eb5e10e 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -27,14 +27,14 @@ static struct irq_domain *irq_default_domain;
+  * __irq_domain_add() - Allocate a new irq_domain data structure
+  * @of_node: optional device-tree node of the interrupt controller
+  * @size: Size of linear map; 0 for radix mapping only
++ * @hwirq_max: Maximum number of interrupts supported by controller
+  * @direct_max: Maximum value of direct maps; Use ~0 for no limit; 0 for no
+  *              direct mapping
+  * @ops: map/unmap domain callbacks
+  * @host_data: Controller private data pointer
+  *
+- * Allocates and initialize and irq_domain structure.  Caller is expected to
+- * register allocated irq_domain with irq_domain_register().  Returns pointer
+- * to IRQ domain, or NULL on failure.
++ * Allocates and initialize and irq_domain structure.
++ * Returns pointer to IRQ domain, or NULL on failure.
+  */
+ struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
+ 				    irq_hw_number_t hwirq_max, int direct_max,
