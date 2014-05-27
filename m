@@ -1,224 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaE0Gov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:44:51 -0400
-Received: from mail-pb0-f65.google.com ([209.85.160.65]:40703 "EHLO
-	mail-pb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474AbaE0Gor (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:44:47 -0400
-From: hnnnet48@gmail.com
-To: gregkh@suse.de, devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Cc: kevin <hnnnet48@gmail.com>
-Subject: [PATCH] This is my first commit
-Date: Tue, 27 May 2014 14:44:21 +0800
-Message-Id: <1401173061-6500-1-git-send-email-hnnnet48@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751975AbaE0Grw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:47:52 -0400
+Received: from mail.southpole.se ([37.247.8.11]:51315 "EHLO mail.southpole.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540AbaE0Grv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 02:47:51 -0400
+Message-ID: <53843508.7060007@southpole.se>
+Date: Tue, 27 May 2014 08:47:36 +0200
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux <linux@openrisc.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4] openrisc: irq: use irqchip framework
+References: <1401136302-27654-1-git-send-email-stefan.kristiansson@saunalahti.fi> <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
+In-Reply-To: <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.4.1(14132) on assp.southpole.se
+X-Assp-ID: assp.southpole.se 73251-13799
+X-Assp-Session: 7F61235C55C8 (mail 1)
+X-Assp-Client-TLS: yes
+X-Assp-Server-TLS: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: kevin <hnnnet48@gmail.com>
+On 05/26/2014 10:52 PM, Geert Uytterhoeven wrote:
+> CC devicetree for the bindings
+> 
+> On Mon, May 26, 2014 at 10:31 PM, Stefan Kristiansson
+> <stefan.kristiansson@saunalahti.fi> wrote:
+>> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
+>> @@ -0,0 +1,23 @@
+>> +OpenRISC 1000 Programmable Interrupt Controller
+>> +
+>> +Required properties:
+>> +
+>> +- compatible : should be "opencores,or1k-pic-level" for variants with
+>> +  level triggered interrupt lines, "opencores,or1k-pic-edge" for variants with
+>> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
+>> +  with the non-spec compliant or1200 type implementation.
+>> +
+>> +  "opencores,or1k-pic" is also provided as an alias to "opencores,or1200-pic",
+>> +  but this is only for backwards compatibility.
 
----
- gtserio.c | 188 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 188 insertions(+)
- create mode 100755 gtserio.c
+I still think this identifier needs to be versioned.  Use the same
+version number as we have on the cpu identifier since the OR1200 PIC
+hasn't changed since then; i.e. opencores,or1200-pic-rtlsvnXYZ.
 
-diff --git a/gtserio.c b/gtserio.c
-new file mode 100755
-index 0000000..24f1e00
---- /dev/null
-+++ b/gtserio.c
-@@ -0,0 +1,188 @@
-+/*
-+ *  gtserio.c - Create an input/output character device for GeneralTouch serial screen
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/fs.h>
-+#include <asm/uaccess.h>
-+#include <linux/device.h>
-+#include <linux/input.h>
-+#include <linux/kd.h>
-+//#include <linux/ioctl.h>
-+
-+#define MAJOR_NUM              100
-+#define MAJOR_MIN              0
-+#define SUCCESS                0
-+#define DEVICE_NAME            "general_touch_serial"
-+#define BUF_LEN                80
-+MODULE_AUTHOR("GeneralTouch <support@generaltouch.com>");
-+MODULE_DESCRIPTION(DEVICE_NAME);
-+MODULE_LICENSE("GPL");
-+static int Device_Open = 0;
-+struct input_dev *devq;
-+char Message[BUF_LEN];
-+dev_t gts_t;
-+unsigned char val[10];
-+int gtsdata[4];
-+unsigned long min_x = 0;
-+unsigned long max_x = 32767;
-+unsigned long min_y = 0;
-+unsigned long max_y = 32767;
-+
-+char *Message_Ptr;
-+struct class *gts_class;
-+
-+static int device_open(struct inode *inode, struct file *file)
-+{
-+	printk("GTS device_open(%p)\n", file);
-+
-+#ifdef DEBUG
-+	printk("device_open(%p)\n", file);
-+#endif
-+
-+	/* 
-+	 * We don't want to talk to two processes at the same time 
-+	 */
-+	if (Device_Open)
-+		return -EBUSY;
-+
-+	Device_Open++;
-+	/*
-+	 * Initialize the message 
-+	 */
-+	Message_Ptr = Message;
-+	return SUCCESS;
-+}
-+
-+static int device_release(struct inode *inode, struct file *file)
-+{
-+#ifdef DEBUG
-+	printk("device_release(%p,%p)\n", inode, file);
-+#endif
-+
-+	/* 
-+	 * We're now ready for our next caller 
-+	 */
-+	Device_Open--;
-+
-+	module_put(THIS_MODULE);
-+	return SUCCESS;
-+}
-+
-+/* 
-+ * This function is called whenever a process which has already opened the
-+ * device file attempts to read from it.
-+ */
-+static ssize_t device_read(struct file *file,
-+			   char __user * buffer, size_t length, loff_t * offset)
-+{
-+
-+	return 0;
-+}
-+
-+static ssize_t
-+device_write(struct file *file,
-+	     const char __user * buffer, size_t length, loff_t * offset)
-+{
-+#ifdef DEBUG
-+	printk("device_write(%p,%s,%d)", file, buffer, length);
-+#endif
-+
-+	if (copy_from_user(&val, buffer, length)) {
-+		length = -EFAULT;
-+	}
-+
-+	printk("val[3] = %x,val[4] = %x\nval[5] = %x,val[6] = %x\n", val[3],
-+	       val[4], val[5], val[6]);
-+	gtsdata[0] = val[2];
-+	gtsdata[1] = (val[4] << 8) | (val[3]);
-+	gtsdata[2] = (val[6] << 8) | (val[5]);
-+	gtsdata[3] = val[9];
-+	printk("gtsdata[1] = %x\ngtsdata[2] = %x\n", gtsdata[1], gtsdata[2]);
-+	input_report_abs(devq, ABS_X, gtsdata[1]);
-+	input_report_abs(devq, ABS_Y, gtsdata[2]);
-+	if (gtsdata[0] == 0x81) {
-+
-+		input_report_key(devq, BTN_TOUCH, 1);
-+		input_report_abs(devq, ABS_PRESSURE, 1);
-+		input_sync(devq);
-+	}
-+	if (gtsdata[0] == 0x84) {
-+		input_report_key(devq, BTN_TOUCH, 0);
-+		input_report_abs(devq, ABS_PRESSURE, 0);
-+		input_sync(devq);
-+	}
-+	input_sync(devq);
-+
-+	return length;
-+}
-+
-+struct file_operations Fops = {
-+	.read = device_read,
-+	.write = device_write,
-+	.open = device_open,
-+	.release = device_release,	/* a.k.a. close */
-+};
-+
-+/* 
-+ * Initialize the module - Register the character device 
-+ */
-+static int __init gts_init(void)
-+{
-+	int ret_val;
-+	struct input_dev *gts_dev;
-+	int err1;
-+	gts_t = MKDEV(MAJOR_NUM, MAJOR_MIN);
-+
-+	gts_class = class_create(THIS_MODULE, "gts_class");
-+	device_create(gts_class, NULL, gts_t, NULL, DEVICE_NAME);
-+	ret_val = register_chrdev(MAJOR_NUM, DEVICE_NAME, &Fops);
-+
-+	if (ret_val < 0) {
-+		printk("%s failed with %d\n",
-+		       "Sorry, registering the character device ", ret_val);
-+		return ret_val;
-+	}
-+
-+	gts_dev = input_allocate_device();
-+	if (!gts_dev) {
-+		err1 = -ENOMEM;
-+		goto fail1;
-+	}
-+	gts_dev->name = "GeneralTouch Serial TouchScreen";
-+	gts_dev->phys = "generaltouch/input0";
-+	gts_dev->id.bustype = BUS_RS232;
-+	gts_dev->id.vendor = (int)("GT_SERIAL");
-+	gts_dev->id.product = (int)("GT_SERIAL");
-+	gts_dev->id.version = 0x0100;
-+	gts_dev->evbit[0] =
-+	    BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-+	gts_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
-+
-+	input_set_abs_params(gts_dev, ABS_X, min_x, max_x, 0, 0);
-+	input_set_abs_params(gts_dev, ABS_Y, min_y, max_y, 0, 0);
-+
-+	err1 = input_register_device(gts_dev);
-+	devq = gts_dev;
-+fail1:	input_free_device(gts_dev);
-+	return err1;
-+}
-+
-+static void __exit gts_exit(void)
-+{
-+	int ret;
-+
-+	/* 
-+	 * Unregister the device 
-+	 */
-+	unregister_chrdev(MAJOR_NUM, DEVICE_NAME);
-+
-+	/* 
-+	 * If there's an error, report it 
-+	 */
-+	if (ret < 0)
-+		printk("Error in module_unregister_chrdev: %d\n", ret);
-+}
-+
-+module_init(gts_init);
-+module_exit(gts_exit);
--- 
-1.8.3.2
+/Jonas
+
 
