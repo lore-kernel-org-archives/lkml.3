@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaE0SqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:46:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60317 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752868AbaE0SqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:46:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,921,1392192000"; 
-   d="scan'208";a="518520961"
-Message-ID: <5384DD67.3010408@intel.com>
-Date: Tue, 27 May 2014 11:45:59 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753374AbaE0Sq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:46:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38999 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654AbaE0SqZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 14:46:25 -0400
+Date: Tue, 27 May 2014 11:46:16 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Roger Pau =?UTF-8?B?TW9ubsOp?= <roger.pau@citrix.com>,
+        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [V1 PATCH] dom0 pvh: map foreign pfns in our p2m
+ for toolstack
+Message-ID: <20140527114616.1dd86141@mantra.us.oracle.com>
+In-Reply-To: <5384700E.1030501@citrix.com>
+References: <1400898824-18769-1-git-send-email-mukesh.rathor@oracle.com>
+	<1400898824-18769-2-git-send-email-mukesh.rathor@oracle.com>
+	<53846C4C.1080701@citrix.com>
+	<5384700E.1030501@citrix.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] mm: bootmem: Check pfn_valid() before accessing struct
- page
-References: <1401199802-10212-1-git-send-email-matt.fleming@intel.com>
-In-Reply-To: <1401199802-10212-1-git-send-email-matt.fleming@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 07:10 AM, Matt Fleming wrote:
-> We need to check that a pfn is valid before handing it to pfn_to_page()
-> since on low memory systems with CONFIG_HIGHMEM=n it's possible that a
-> pfn may not have a corresponding struct page.
+On Tue, 27 May 2014 11:59:26 +0100
+David Vrabel <david.vrabel@citrix.com> wrote:
+
+> On 27/05/14 11:43, Roger Pau Monné wrote:
+> > On 24/05/14 03:33, Mukesh Rathor wrote:
+> >> When running as dom0 in pvh mode, foreign pfns that are accessed
+> >> must be added to our p2m which is managed by xen. This is done via
+> >> XENMEM_add_to_physmap_range hypercall. This is needed for toolstack
+> >> building guests and mapping guest memory, xentrace mapping xen
+> >> pages, etc..
 > 
-> This is in fact the case for one of Alan's machines where some of the
-> EFI boot services pages live in highmem, and running a kernel without
-> CONFIG_HIGHMEM enabled results in the following oops
-...
-> diff --git a/mm/bootmem.c b/mm/bootmem.c
-> index 90bd3507b413..406e9cb1d58c 100644
-> --- a/mm/bootmem.c
-> +++ b/mm/bootmem.c
-> @@ -164,6 +164,9 @@ void __init free_bootmem_late(unsigned long physaddr, unsigned long size)
->  	end = PFN_DOWN(physaddr + size);
->  
->  	for (; cursor < end; cursor++) {
-> +		if (!pfn_valid(cursor))
-> +			continue;
-> +
->  		__free_pages_bootmem(pfn_to_page(cursor), 0);
->  		totalram_pages++;
->  	}
+> Thanks.
+> 
+> Applied to devel/for-linus-3.16, but see comments below.
+> 
+> >> +static int xlate_add_to_p2m(unsigned long lpfn, unsigned long
+> >> fgmfn,
+> >> +			    unsigned int domid)
+> 
+> The preferred abbreviation is GFN not GMFN.  I fixed this up.
+> 
+> >> +{
+> >> +	int rc, err = 0;
+> >> +	xen_pfn_t gpfn = lpfn;
+> >> +	xen_ulong_t idx = fgmfn;
+> >> +
+> >> +	struct xen_add_to_physmap_range xatp = {
+> >> +		.domid = DOMID_SELF,
+> >> +		.foreign_domid = domid,
+> >> +		.size = 1,
+> >> +		.space = XENMAPSPACE_gmfn_foreign,
+> >> +	};
+> >> +	set_xen_guest_handle(xatp.idxs, &idx);
+> >> +	set_xen_guest_handle(xatp.gpfns, &gpfn);
+> >> +	set_xen_guest_handle(xatp.errs, &err);
+> >> +
+> >> +	rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap_range,
+> >> &xatp);
+> >> +	return rc;
+> > 
+> > Thanks for the patches, I see two problems with this approach, the
+> > first one is that you are completely ignoring the error in the
+> > variable "err", which means that you can end up with a pfn that
+> > Linux thinks it's valid, but it's not mapped to any mfn, so when
+> > you try to access it you will trigger the vioapic crash.
+> 
+> I spotted this and fixed this up by adding:
+> 
+> +       if (rc < 0)
+> +               return rc;
+> +       return err;
 
-I don't think this is quite right.  pfn_valid() tells us whether we have
-a 'struct page' there or not.  *BUT*, it does not tell us whether it is
-RAM that we can actually address and than can be freed in to the buddy
-allocator.
+Thanks a lot.
 
-I think sparsemem is where this matters.  Let's say mem= caused lowmem
-to end in the middle of a section (or that 896MB wasn't
-section-aligned).  Then someone calls free_bootmem_late() on an area
-that is in the last section, but _above_ max_mapnr.  It'll be
-pfn_valid(), we'll free it in to the buddy allocator, and we'll blam the
-first time we try to write to a bogus vaddr after a phys_to_virt().
+> > The second one is that this seems extremely inefficient, you are
+> > issuing one hypercall for each memory page, when you could instead
+> > batch all the pages into a single hypercall and map them in one
+> > shot.
+> 
+> I agree, but the 3.16 merge window is nearly here so I've applied it
+> as-is.  Note that the privcmd driver calls this function once per
+> page, so the lack of batching doesn't really hurt here.
 
-At a higher level, I don't like the idea of the bootmem code papering
-over bugs when somebody calls in to it trying to _free_ stuff that's not
-memory (as far as the kernel is concerned).
+Thanks again, pleasure working with maintainer like you!
 
-I think the right thing to do is to call in to the e820 code and see if
-the range is E820_RAM before trying to bootmem-free it.
+Mukesh
+
