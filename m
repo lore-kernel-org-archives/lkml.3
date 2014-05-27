@@ -1,247 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaE0Qro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 12:47:44 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:60975 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206AbaE0Qri (ORCPT
+	id S1752577AbaE0QsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 12:48:24 -0400
+Received: from mailrelay.anl.gov ([130.202.101.22]:38835 "EHLO
+	mailrelay.anl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaE0QsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 12:47:38 -0400
-Date: Tue, 27 May 2014 17:47:31 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v3 3/4] mfd: intel_soc_pmic: Crystal Cove support
-Message-ID: <20140527164731.GD4227@lee--X1>
-References: <1401163576-14872-1-git-send-email-lejun.zhu@linux.intel.com>
- <1401163576-14872-4-git-send-email-lejun.zhu@linux.intel.com>
+	Tue, 27 May 2014 12:48:22 -0400
+X-Greylist: delayed 1927 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 May 2014 12:48:22 EDT
+X-IronPort-AV: E=Sophos;i="4.98,920,1392184800"; 
+   d="scan'208";a="45184812"
+Date: Tue, 27 May 2014 11:16:13 -0500
+From: Kamil Iskra <iskra@mcs.anl.gov>
+To: Tony Luck <tony.luck@gmail.com>
+CC: Tony Luck <tony.luck@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>
+Subject: Re: [PATCH 1/2] memory-failure: Send right signal code to correct
+ thread
+Message-ID: <20140527161613.GC4108@mcs.anl.gov>
+References: <cover.1400607328.git.tony.luck@intel.com>
+ <eb791998a8ada97b204dddf2719a359149e9ae31.1400607328.git.tony.luck@intel.com>
+ <20140523033438.GC16945@gchen.bj.intel.com>
+ <CA+8MBb+Una+Z5Q-Pn0OoMYaaSx9sPJ3fdriMRMgN=CE1Jdp7Cg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401163576-14872-4-git-send-email-lejun.zhu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+8MBb+Una+Z5Q-Pn0OoMYaaSx9sPJ3fdriMRMgN=CE1Jdp7Cg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [146.137.81.4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Zhu, Lejun wrote:
+On Fri, May 23, 2014 at 09:48:42 -0700, Tony Luck wrote:
 
-> Crystal Cove is the PMIC in Baytrail-T platform. This patch provides chip-specific support for Crystal Cove.
+Tony,
+
+> Added Kamil (hope I got the right one - the spinics.net archive obfuscates
+> the e-mail addresses).
+
+Yes, you got the right address :-).
+
+> >> -     if ((flags & MF_ACTION_REQUIRED) && t == current) {
+> >> +     if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
+> >>               si.si_code = BUS_MCEERR_AR;
+> >> -             ret = force_sig_info(SIGBUS, &si, t);
+> >> +             ret = force_sig_info(SIGBUS, &si, current);
+> >>       } else {
+> >>               /*
+> >>                * Don't use force here, it's convenient if the signal
+> >> --
+> >> 1.8.4.1
+> > Very interesting. I remembered there was a thread about AO error. Here is
+> > the link: http://www.spinics.net/lists/linux-mm/msg66653.html.
+> > According to this link, I have two concerns:
+> >
+> > 1) how to handle the similar scenario like it in this link. I mean once
+> > the main thread doesn't handle AR error but a thread does this, if SIGBUS
+> > can't be handled at once.
+> > 2) why that patch isn't merged. From that thread, Naoya should mean
+> > "acknowledge" :-).
+> That's an interesting thread ... and looks like it helps out in a case
+> where there are only AO signals.
+
+Unfortunately, I got distracted by other pressing work at the time and
+didn't follow up on my patch/didn't follow the correct kernel workflow on
+patch submission procedures.  I haven't checked any developments in that
+area so I don't even know if my patch is still applicable -- do you think
+it makes sense for me to revisit the issue at this time, or will the patch
+that you are working on make my old patch redundant?
+
+> But the "AR" case complicates things. Kamil points out at the start
+> of the thread:
+> > Also, do I understand it correctly that "action required" faults *must* be
+> > handled by the thread that triggered the error?  I guess it makes sense for
+> > it to be that way, even if it circumvents the "dedicated handling thread"
+> > idea...
+> this is absolutely true ... in the BUS_MCEERR_AR case the current
+> thread is executing an instruction that is attempting to consume poison
+> data ... and we cannot let that instruction retire, so we have to signal that
+> thread - if it can fix the problem by mapping a new page to the location
+> that was lost, and refilling it with the right data - the handler can return
+> to resume - otherwise it can longjmp() somewhere or exit.
+
+Exactly.
+
+> This means that the idea of having a multi-threaded application where
+> just one thread has a SIGBUS handler and we gently steer the
+> BUS_MCEERR_AO signals to that thread to be handled is flawed.
+> Every thread needs to have a SIGBUS handler - so that we can handle
+> the "AR" case. [Digression: what does happen to a process with a thread
+> with no SIGBUS handler if we in fact send it a SIGBUS? Does just that
+> thread die (default action for SIGBUS)? Or does the whole process get
+> killed?  If just one thread is terminated ... then perhaps someone could
+> write a recovery aware application that worked like this - though it sounds
+> like that would be working blindfold with one hand tied behind your back.
+> How would the remaining threads know why their buddy just died? The
+> siginfo_t describing the problem isn't available]
+
+I believe I experimented with this and the whole process would get killed.
+
+> If we want steerable AO signals to a dedicated thread - we'd have to
+> use different signals for AO & AR. So every thread can have an AR
+> handler, but just one have the AO handler.  Or something more exotic
+> with prctl to designate the preferred target for AO signals?
 > 
-> v2:
-> - Add regmap_config for Crystal Cove.
-> v3:
-> - Convert IRQ config to regmap_irq_chip.
+> Or just live with the fact that every thread needs a handler for AR ...
+> and have the application internally pass AO activity from the
+> thread that originally got the SIGBUS to some worker thread.
 
-Same comments about the commit log as before.
+Yes, you make a very valid point that my patch was not complete... but
+then, neither was what was there before it.  So my patch was only an
+incremental improvement, enough to play with when artificially injecting
+fault events, but not enough to *really* solve the problem.  If you have a
+complete solution in mind instead, that would be great.
 
-> Signed-off-by: Yang, Bin <bin.yang@intel.com>
-> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
-> ---
->  drivers/mfd/intel_soc_pmic_crc.c | 175 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 175 insertions(+)
->  create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
-> 
-> diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
-> new file mode 100644
-> index 0000000..341ab02
-> --- /dev/null
-> +++ b/drivers/mfd/intel_soc_pmic_crc.c
-> @@ -0,0 +1,175 @@
-> +/*
-> + * intel_soc_pmic_crc.c - Device access for Crystal Cove PMIC
-> + *
-> + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version
-> + * 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author: Yang, Bin <bin.yang@intel.com>
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/delay.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/err.h>
-> +#include <linux/i2c.h>
-> +#include <linux/irq.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/acpi.h>
-> +#include <linux/version.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/intel_soc_pmic.h>
-> +#include "intel_soc_pmic_core.h"
-
-Please review these.
-
-> +#define	CHIP_NAME			"Crystal Cove"
-
-Don't do this.  Just use the name in the correct places.
-
-> +#define CRYSTAL_COVE_MAX_REGISTER	0xC6
-> +
-> +#define CHIPID		0x00
-> +#define CHIPVER		0x01
-> +#define IRQLVL1		0x02
-> +#define MIRQLVL1	0x0E
-> +
-> +enum {
-> +	PWRSRC_IRQ = 0,
-> +	THRM_IRQ,
-> +	BCU_IRQ,
-> +	ADC_IRQ,
-> +	CHGR_IRQ,
-> +	GPIO_IRQ,
-> +	VHDMIOCP_IRQ
-> +};
-> +
-> +static struct resource gpio_resources[] = {
-> +	{
-> +		.name	= "GPIO",
-> +		.start	= GPIO_IRQ,
-> +		.end	= GPIO_IRQ,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct resource pwrsrc_resources[] = {
-> +	{
-> +		.name  = "PWRSRC",
-> +		.start = PWRSRC_IRQ,
-> +		.end   = PWRSRC_IRQ,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct resource adc_resources[] = {
-> +	{
-> +		.name  = "ADC",
-> +		.start = ADC_IRQ,
-> +		.end   = ADC_IRQ,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct resource thermal_resources[] = {
-> +	{
-> +		.name  = "THERMAL",
-> +		.start = THRM_IRQ,
-> +		.end   = THRM_IRQ,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct resource bcu_resources[] = {
-> +	{
-> +		.name  = "BCU",
-> +		.start = BCU_IRQ,
-> +		.end   = BCU_IRQ,
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct mfd_cell crystal_cove_dev[] = {
-> +	{
-> +		.name = "crystal_cove_pwrsrc",
-> +		.id = 0,
-> +		.num_resources = ARRAY_SIZE(pwrsrc_resources),
-> +		.resources = pwrsrc_resources,
-> +	},
-> +	{
-> +		.name = "crystal_cove_adc",
-> +		.id = 0,
-> +		.num_resources = ARRAY_SIZE(adc_resources),
-> +		.resources = adc_resources,
-> +	},
-> +	{
-> +		.name = "crystal_cove_thermal",
-> +		.id = 0,
-> +		.num_resources = ARRAY_SIZE(thermal_resources),
-> +		.resources = thermal_resources,
-> +	},
-> +	{
-> +		.name = "crystal_cove_bcu",
-> +		.id = 0,
-> +		.num_resources = ARRAY_SIZE(bcu_resources),
-> +		.resources = bcu_resources,
-> +	},
-> +	{
-> +		.name = "crystal_cove_gpio",
-> +		.id = 0,
-> +		.num_resources = ARRAY_SIZE(gpio_resources),
-> +		.resources = gpio_resources,
-> +	},
-> +};
-
-You can remove the id field.
-
-> +static struct regmap_config crystal_cove_regmap_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +
-> +	.max_register = CRYSTAL_COVE_MAX_REGISTER,
-> +	.cache_type = REGCACHE_NONE,
-> +};
-> +
-> +#define	CRC_REGMAP_IRQ_VALUE(irq)	{	\
-> +		.reg_offset = 0,		\
-> +		.mask = BIT(irq),		\
-> +	}
-
-Can you sort out the whitespace here?
-
-> +static const struct regmap_irq crystal_cove_irqs[] = {
-> +	[PWRSRC_IRQ]	= CRC_REGMAP_IRQ_VALUE(PWRSRC_IRQ),
-> +	[THRM_IRQ]	= CRC_REGMAP_IRQ_VALUE(THRM_IRQ),
-> +	[BCU_IRQ]	= CRC_REGMAP_IRQ_VALUE(BCU_IRQ),
-> +	[ADC_IRQ]	= CRC_REGMAP_IRQ_VALUE(ADC_IRQ),
-> +	[CHGR_IRQ]	= CRC_REGMAP_IRQ_VALUE(CHGR_IRQ),
-> +	[GPIO_IRQ]	= CRC_REGMAP_IRQ_VALUE(GPIO_IRQ),
-> +	[VHDMIOCP_IRQ]	= CRC_REGMAP_IRQ_VALUE(VHDMIOCP_IRQ),
-> +};
-> +
-> +static struct regmap_irq_chip crystal_cove_irq_chip = {
-> +	.name = CHIP_NAME,
-> +	.irqs = crystal_cove_irqs,
-> +	.num_irqs = ARRAY_SIZE(crystal_cove_irqs),
-> +	.num_regs = 1,
-> +	.status_base = IRQLVL1,
-> +	.mask_base = MIRQLVL1,
-> +};
-> +
-> +static int crystal_cove_init(void)
-> +{
-> +	pr_debug("%s: ID 0x%02X, VERSION 0x%02X\n", CHIP_NAME,
-> +		 intel_soc_pmic_readb(CHIPID), intel_soc_pmic_readb(CHIPVER));
-> +	return 0;
-> +}
-
-This seems pointless.
-
-> +struct intel_soc_pmic_config crystal_cove_pmic = {
-> +	.label		= CHIP_NAME,
-
-Where is this used?
-
-> +	.irq_flags	= IRQF_TRIGGER_RISING,
-> +	.init		= crystal_cove_init,
-> +	.cell_dev	= crystal_cove_dev,
-> +	.n_cell_devs	= ARRAY_SIZE(crystal_cove_dev),
-> +	.regmap_cfg	= &crystal_cove_regmap_config,
-> +	.irq_chip	= &crystal_cove_irq_chip,
-> +};
+Kamil
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Kamil Iskra, PhD
+Argonne National Laboratory, Mathematics and Computer Science Division
+9700 South Cass Avenue, Building 240, Argonne, IL 60439, USA
+phone: +1-630-252-7197  fax: +1-630-252-5986
