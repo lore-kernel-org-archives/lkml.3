@@ -1,190 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaE0PXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:23:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44287 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711AbaE0PXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:23:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,920,1392192000"; 
-   d="scan'208";a="518387969"
-Message-ID: <5384AEFE.2010804@linux.intel.com>
-Date: Tue, 27 May 2014 08:27:58 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752895AbaE0PYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:24:16 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:57257 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752871AbaE0PYK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 11:24:10 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'David Miller'" <davem@davemloft.net>
+CC: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "jim_baxter@mentor.com" <jim_baxter@mentor.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kamal@canonical.com" <kamal@canonical.com>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        "edumazet@google.com" <edumazet@google.com>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>, "fw@strlen.de" <fw@strlen.de>
+Subject: RE: skbuff truesize incorrect.
+Thread-Topic: skbuff truesize incorrect.
+Thread-Index: AQHPdgCCL2lnKeimqUeV55a8ET8tq5tN2VIAgACyNICABgQW8A==
+Date: Tue, 27 May 2014 15:23:14 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724E565@AcuExch.aculab.com>
+References: <537E4AFD.20304@mentor.com>
+	<1400792295.5367.174.camel@edumazet-glaptop2.roam.corp.google.com>
+	<063D6719AE5E284EB5DD2968C1650D6D1724C490@AcuExch.aculab.com>
+ <20140523.161823.1006372695373018122.davem@davemloft.net>
+In-Reply-To: <20140523.161823.1006372695373018122.davem@davemloft.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org, jic23@kernel.org
-Subject: Re: [PATCH] IIO: Added iio magn_north ABI documentation
-References: <538076CA.6050809@kernel.org> <1401160821-5006-1-git-send-email-reyad.attiyat@gmail.com> <1401160821-5006-2-git-send-email-reyad.attiyat@gmail.com>
-In-Reply-To: <1401160821-5006-2-git-send-email-reyad.attiyat@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2014 08:20 PM, Reyad Attiyat wrote:
-> Added documentation for HID magnometer true/magnetic north sensor.
-> ---
->   Documentation/ABI/testing/sysfs-bus-iio | 76 +++++++++++++++++++++++++++++++++
->   1 file changed, 76 insertions(+)
->
-> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-> index 6e02c50..3305fe8 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-iio
-> +++ b/Documentation/ABI/testing/sysfs-bus-iio
-> @@ -165,6 +165,10 @@ Description:
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_raw
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_raw
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_tilt_compensated_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_tilt_compensated_raw
-These names are very long. May be we remove work "magnetic" as there 
-attributes only apply to magnetometer.
->   KernelVersion:	2.6.35
->   Contact:	linux-iio@vger.kernel.org
->   Description:
-> @@ -249,6 +253,10 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_magnetic_tilt_compensated_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_magn_north_true_tilt_compensated_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
->   KernelVersion:	2.6.35
-> @@ -436,6 +444,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_falling_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_thresh_falling_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_rising_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_falling_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_thresh_rising_en
-> @@ -481,6 +497,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_y_roc_falling_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_roc_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_magnetic_tilt_compensated_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_magn_north_true_tilt_compensated_roc_falling_en
-Same as above. Names are very long.
+From: David Miller
+> From: David Laight <David.Laight@ACULAB.COM>
+> Date: Fri, 23 May 2014 08:52:13 +0000
+> 
+> > The hardware will put multiple ethernet frames into a single USB bulk data
+> > message. To handle this the driver generates a URB that is (hopefully) long
+> > enough for the longest USB message (typically 32k is assumed to be enough).
+> > The URB that usb_net generated have the data in a linear skb - which then
+> > has a large 'truesize'.
+> >
+> > Since USB bulk data are terminated by a short fragment there is actually
+> > no need for the URB be long enough for the full message. Provided the
+> > URB are multiples of the USB message size (1k for USB 3) the message
+> > can be received into multiple URB - the driver just has to be willing
+> > to merge URB buffers (as well as split them) when generating the ethernet
+> > frames.
+> 
+> I think we could take a less invasive approach.
+> 
+> Use whatever order page is needed for that 32K chunk for the URB,
+> but split up the compound page so that the individual pages can be
+> accounted for separately.
 
-Thanks,
-Srinivas
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_rising_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_falling_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_roc_rising_en
-> @@ -527,6 +551,14 @@ What:		/sys/.../events/in_magn_y_raw_thresh_rising_value
->   What:		/sys/.../events/in_magn_y_raw_thresh_falling_value
->   What:		/sys/.../events/in_magn_z_raw_thresh_rising_value
->   What:		/sys/.../events/in_magn_z_raw_thresh_falling_value
-> +What:		/sys/.../events/in_magn_north_magnetic_raw_thresh_rising_value
-> +What:		/sys/.../events/in_magn_north_magnetic_raw_thresh_falling_value
-> +What:		/sys/.../events/in_magn_north_true_raw_thresh_rising_value
-> +What:		/sys/.../events/in_magn_north_true_raw_thresh_falling_value
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_thresh_rising_value
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_thresh_falling_value
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_thresh_rising_value
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_thresh_falling_value
->   What:		/sys/.../events/in_voltageY_supply_raw_thresh_rising_value
->   What:		/sys/.../events/in_voltageY_supply_raw_thresh_falling_value
->   What:		/sys/.../events/in_voltageY_raw_thresh_rising_value
-> @@ -577,6 +609,18 @@ What:		/sys/.../events/in_magn_y_thresh_either_hysteresis
->   What:		/sys/.../events/in_magn_z_thresh_rising_hysteresis
->   What:		/sys/.../events/in_magn_z_thresh_falling_hysteresis
->   What:		/sys/.../events/in_magn_z_thresh_either_hysteresis
-> +What:		/sys/.../events/in_magn_north_magnetic_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_magn_north_magnetic_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_magn_north_magnetic_thresh_either_hysteresis
-> +What:		/sys/.../events/in_magn_north_true_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_magn_north_true_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_magn_north_true_thresh_either_hysteresis
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_either_hysteresis
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_either_hysteresis
->   What:		/sys/.../events/in_voltageY_thresh_rising_hysteresis
->   What:		/sys/.../events/in_voltageY_thresh_falling_hysteresis
->   What:		/sys/.../events/in_voltageY_thresh_either_hysteresis
-> @@ -624,6 +668,14 @@ What:		/sys/.../events/in_magn_y_raw_roc_rising_value
->   What:		/sys/.../events/in_magn_y_raw_roc_falling_value
->   What:		/sys/.../events/in_magn_z_raw_roc_rising_value
->   What:		/sys/.../events/in_magn_z_raw_roc_falling_value
-> +What:		/sys/.../events/in_magn_north_magnetic_raw_roc_rising_value
-> +What:		/sys/.../events/in_magn_north_magnetic_raw_roc_falling_value
-> +What:		/sys/.../events/in_magn_north_true_raw_roc_rising_value
-> +What:		/sys/.../events/in_magn_north_true_raw_roc_falling_value
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_roc_rising_value
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_raw_roc_falling_value
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_roc_rising_value
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_raw_roc_falling_value
->   What:		/sys/.../events/in_voltageY_supply_raw_roc_rising_value
->   What:		/sys/.../events/in_voltageY_supply_raw_roc_falling_value
->   What:		/sys/.../events/in_voltageY_raw_roc_rising_value
-> @@ -679,6 +731,22 @@ What:		/sys/.../events/in_magn_z_thresh_rising_period
->   What:		/sys/.../events/in_magn_z_thresh_falling_period
->   What:		/sys/.../events/in_magn_z_roc_rising_period
->   What:		/sys/.../events/in_magn_z_roc_falling_period
-> +What:		/sys/.../events/in_magn_north_magnetic_thresh_rising_period
-> +What:		/sys/.../events/in_magn_north_magnetic_thresh_falling_period
-> +What:		/sys/.../events/in_magn_north_magnetic_roc_rising_period
-> +What:		/sys/.../events/in_magn_north_magnetic_roc_falling_period
-> +What:		/sys/.../events/in_magn_north_true_thresh_rising_period
-> +What:		/sys/.../events/in_magn_north_true_thresh_falling_period
-> +What:		/sys/.../events/in_magn_north_true_roc_rising_period
-> +What:		/sys/.../events/in_magn_north_true_roc_falling_period
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_rising_period
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_thresh_falling_period
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_roc_rising_period
-> +What:		/sys/.../events/in_magn_north_magnetic_tilt_compensated_roc_falling_period
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_rising_period
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_thresh_falling_period
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_roc_rising_period
-> +What:		/sys/.../events/in_magn_north_true_tilt_compensated_roc_falling_period
->   What:		/sys/.../events/in_voltageY_supply_thresh_rising_period
->   What:		/sys/.../events/in_voltageY_supply_thresh_falling_period
->   What:		/sys/.../events/in_voltageY_supply_roc_rising_period
-> @@ -776,6 +844,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_tilt_compensated_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_tilt_compensated_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_en
-> @@ -840,6 +912,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_magnetic_tilt_compensated_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_magn_north_true_tilt_compensated_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
+Using 4k 'pages' would be fine (or even 1k).
+All the USB interfaces support SG provided the fragments are all
+aligned.
+Recycling the unused 4k pages would probably be better than using
+separate URB for each fragment.
+
+Note that the xhci driver has to split buffers that cross 64k
+boundaries into separate ring entries - and these must not cross
+the end of the ring (thank you hardware engineers...).
+So not receiving into the 'linear' part of an skb helps.
+
+Although I suspect that 32k is excessive - provided the driver can
+merge URB (as well as pages) to generate ethernet frames.
+
+> Hook up the pages into the SKB frag array, and only account PAGE_SIZE
+> into the SKB truesize for the individual pages actually used from
+> the superpage.
+> 
+> This will largely retain the URB allocation and processing scheme,
+> yet at the same time dramatically decrease the truesize overrage
+> factor.
+
+True, you still need to sort out how to handle multiple ethernet
+frames in the same 4k page, and arbitrary page boundaries within a frame.
+
+I suspect that using 1k or 2k pages and using 'copybreak' to never pass
+up shared pages would give the best overall performance.
+
+	David
+
+
 
