@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450AbaE0PIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:08:45 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:43003 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615AbaE0PIo (ORCPT
+	id S1752851AbaE0PIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:08:55 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42589 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751737AbaE0PIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:08:44 -0400
-Message-ID: <5384AA79.4010206@kernel.dk>
-Date: Tue, 27 May 2014 09:08:41 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 27 May 2014 11:08:53 -0400
+Date: Tue, 27 May 2014 11:08:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+cc: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lugovskoy@dev.rtsoft.ru>
+Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
+ on ULI hw
+In-Reply-To: <1401166602-26379-1-git-send-email-nyushchenko@dev.rtsoft.ru>
+Message-ID: <Pine.LNX.4.44L0.1405271055240.1372-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>, Kent Overstreet <kmo@daterainc.com>
-CC: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>
-Subject: Re: [PATCH] block: flush queued bios when the process blocks
-References: <alpine.LRH.2.02.1405271059190.27492@file01.intranet.prod.int.rdu2.redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1405271059190.27492@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-27 09:03, Mikulas Patocka wrote:
-> The block layer uses per-process bio list to avoid recursion in
-> generic_make_request. When generic_make_request is called recursively, the
-> bio is added to current->bio_list and the function returns immediatelly.
-> The top-level instance of generic_make_requests takes bios from
-> current->bio_list and processes them.
+On Tue, 27 May 2014, Nikita Yushchenko wrote:
 
-This really begs the question of why we just don't use the per-process 
-plugs for this. We already have scheduler hooks in place to flush those 
-at the appropriate time. Why are we reinventing something for 
-essentially the same thing?
+> This access causes hang on Freescale P2020DS board (that has OHCI
+> provided by ULI 1533 chip).
 
--- 
-Jens Axboe
+Which access, the read or the write?
+
+> Since preserving OHCI_FMINTERVAL was originally done only for NVIDIA
+> hardware and only later (in c6187597) was turned unconditional, and
+
+Correction: Preserving OHCI_FMINTERVAL was originally done for all 
+controllers that needed to be reset.  It just so happened that NVIDIA 
+was the only one that got reset.  In c6187597 the reset became 
+unconditional, so fminterval was preserved for all hardware.
+
+> c6187597 commit message again mentions only NVIDIA, I think it should be
+> safe to disable preserving OHCI_FMINTERVAL if device vendor is ULI.
+> 
+> Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+
+It looks like you haven't read ohci_shutdown() and ohci_run() in 
+drivers/usb/host/ohci-hcd.c.  They both access the fminterval register, 
+and this patch doesn't change them.
+
+So I don't see why this patch should make any difference to the 
+system's operation.
+
+Alan Stern
 
