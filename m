@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaE0KU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 06:20:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50777 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaE0KUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 06:20:24 -0400
-Date: Tue, 27 May 2014 13:20:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: lidza.louina@gmail.com, gregkh@linuxfoundation.org, markh@compro.net,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] staging: dgap: implement proper error handling in
- dgap_firmware_load()
-Message-ID: <20140527102002.GI17724@mwanda>
-References: <20140527070937.GA21621@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140527070937.GA21621@devel.8.8.4.4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1752243AbaE0KWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 06:22:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37902 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752015AbaE0KWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 06:22:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,918,1392192000"; 
+   d="scan'208";a="518242682"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, x86@kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
+        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
+In-Reply-To: <53842FB1.7090909@linux.vnet.ibm.com>
+References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
+ <537479E7.90806@linux.vnet.ibm.com>
+ <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
+ <87wqdik4n5.fsf@rustcorp.com.au>
+ <53797511.1050409@linux.vnet.ibm.com>
+ <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
+ <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
+ <20140520004429.E660AE009B@blue.fi.intel.com>
+ <87oaythsvk.fsf@rustcorp.com.au>
+ <20140520102738.7F096E009B@blue.fi.intel.com>
+ <53842FB1.7090909@linux.vnet.ibm.com>
+Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
+ for powerpc
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140527102200.012BBE009B@blue.fi.intel.com>
+Date: Tue, 27 May 2014 13:21:59 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "brd->nasync = 0;" was wrong, yes, but my main complaint was that
-you are writing complicated error handling.  This v2 patch makes the
-error handling even more complicated.  If dgap_tty_init() fails it
-should free the things it allocates itself, instead of the caller
-handling errors for it.
+Madhavan Srinivasan wrote:
+> On Tuesday 20 May 2014 03:57 PM, Kirill A. Shutemov wrote:
+> > Rusty Russell wrote:
+> >> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
+> >>> Andrew Morton wrote:
+> >>>> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
+> >>>>
+> >>>>> Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
+> >>>>> the order of the fault-around size in bytes, and fault_around_pages()
+> >>>>> use 1UL << (fault_around_order - PAGE_SHIFT)
+> >>>>
+> >>>> Yes.  And shame on me for missing it (this time!) at review.
+> >>>>
+> >>>> There's still time to fix this.  Patches, please.
+> >>>
+> >>> Here it is. Made at 3.30 AM, build tested only.
+> >>
+> >> Prefer on top of Maddy's patch which makes it always a variable, rather
+> >> than CONFIG_DEBUG_FS.  It's got enough hair as it is.
+> > 
+> > Something like this?
+> > 
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > Date: Tue, 20 May 2014 13:02:03 +0300
+> > Subject: [PATCH] mm: nominate faultaround area in bytes rather then page order
+> > 
+> > There are evidences that faultaround feature is less relevant on
+> > architectures with page size bigger then 4k. Which makes sense since
+> > page fault overhead per byte of mapped area should be less there.
+> > 
+> > Let's rework the feature to specify faultaround area in bytes instead of
+> > page order. It's 64 kilobytes for now.
+> > 
+> > The patch effectively disables faultaround on architectures with
+> > page size >= 64k (like ppc64).
+> > 
+> > It's possible that some other size of faultaround area is relevant for a
+> > platform. We can expose `fault_around_bytes' variable to arch-specific
+> > code once such platforms will be found.
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > ---
+> >  mm/memory.c | 62 +++++++++++++++++++++++--------------------------------------
+> >  1 file changed, 23 insertions(+), 39 deletions(-)
+> > 
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 037b812a9531..252b319e8cdf 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -3402,63 +3402,47 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+> >  	update_mmu_cache(vma, address, pte);
+> >  }
+> > 
+> > -#define FAULT_AROUND_ORDER 4
+> > +static unsigned long fault_around_bytes = 65536;
+> > +
+> > +static inline unsigned long fault_around_pages(void)
+> > +{
+> > +	return rounddown_pow_of_two(fault_around_bytes) / PAGE_SIZE;
+> > +}
+> > +
+> > +static inline unsigned long fault_around_mask(void)
+> > +{
+> > +	return ~(rounddown_pow_of_two(fault_around_bytes) - 1) & PAGE_MASK;
+> > +}
+> > 
+> > -#ifdef CONFIG_DEBUG_FS
+> > -static unsigned int fault_around_order = FAULT_AROUND_ORDER;
+> > 
+> > -static int fault_around_order_get(void *data, u64 *val)
+> > +#ifdef CONFIG_DEBUG_FS
+> > +static int fault_around_bytes_get(void *data, u64 *val)
+> >  {
+> > -	*val = fault_around_order;
+> > +	*val = fault_around_bytes;
+> >  	return 0;
+> >  }
+> > 
+> > -static int fault_around_order_set(void *data, u64 val)
+> > +static int fault_around_bytes_set(void *data, u64 val)
+> >  {
+> 
+> Kindly ignore the question if not relevant. Even though we need root
+> access to alter the value, will we be fine with
+> negative value?.
 
-It's not actually that hard.  The only error handling we need to do in
-dgap_tty_init() is if the kzalloc() fails:
+val is u64. or I miss something?
 
-  1374          /*
-  1375           * Allocate channel memory that might not have been allocated
-  1376           * when the driver was first loaded.
-  1377           */
-  1378          for (i = 0; i < brd->nasync; i++) {
-  1379                  if (!brd->channels[i]) {
-  1380                          brd->channels[i] =
-  1381                                  kzalloc(sizeof(struct channel_t), GFP_KERNEL);
-  1382                          if (!brd->channels[i])
-  1383                                  return -ENOMEM;
-
-Instead of returning directly here we should free the previous
-allocations.
-
-  1384                  }
-  1385          }
-
-The code is confusing because which ones did we allocate and which ones
-were already non-NULL at the start of the function?  In other words
-the "if (!brd->channels[i]) {" test?
-
-The answer is that the comment and the test seem to be wrong they were
-all NULL at the start of the function.  Just add a:
-
-free_chan:
-	while (--i >= 0) {
-		kfree(brd->channels[i]);
-		brd->channels[i] = NULL;
-	}
-	return ret;
-
-Actually, for these I would introduce an "int chan" variable just for
-that loop instead of "i" which we re-use.
-
-So then we remove the call to dgap_tty_uninit() from
-dgap_firmware_load().
-
-regards,
-dan carpenter
-
+-- 
+ Kirill A. Shutemov
