@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaE0DRN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 May 2014 23:17:13 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39723 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaE0DRK (ORCPT
+	id S1752642AbaE0DSN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 May 2014 23:18:13 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:59271 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566AbaE0DSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 May 2014 23:17:10 -0400
-Message-ID: <53840368.4030004@linux.vnet.ibm.com>
-Date: Tue, 27 May 2014 08:45:52 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 26 May 2014 23:18:10 -0400
+Date: Mon, 26 May 2014 23:18:08 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 1/6] sched/fair.c: remove "power" from struct
+ numa_stats
+In-Reply-To: <1401160028.5134.7.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.11.1405262315210.17310@knanqh.ubzr>
+References: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org> <1401142779-6633-2-git-send-email-nicolas.pitre@linaro.org> <1401160028.5134.7.camel@marge.simpson.net>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: viresh.kumar@linaro.org, svaidy@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: governor: Be friendly towards latency-sensitive
- bursty workloads
-References: <20140526205337.1100.55275.stgit@srivatsabhat.in.ibm.com> <2902116.OdbNv5KQzQ@vostro.rjw.lan>
-In-Reply-To: <2902116.OdbNv5KQzQ@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052703-1396-0000-0000-000004EA1D59
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 04:57 AM, Rafael J. Wysocki wrote:
-> Hi Srivatsa,
+On Tue, 27 May 2014, Mike Galbraith wrote:
+
+> On Mon, 2014-05-26 at 18:19 -0400, Nicolas Pitre wrote: 
+> > 
+> > @@ -1046,7 +1046,7 @@ static void update_numa_stats(struct numa_stats *ns, int nid)
+> >  
+> >  		ns->nr_running += rq->nr_running;
+> >  		ns->load += weighted_cpuload(cpu);
+> > -		ns->power += power_of(cpu);
+> > +		ns->compute_capacity += power_of(cpu);
 > 
-> On Tuesday, May 27, 2014 02:23:38 AM Srivatsa S. Bhat wrote:
->> Cpufreq governors like the ondemand governor calculate the load on the CPU
->> periodically by employing deferrable timers. A deferrable timer won't fire
->> if the CPU is completely idle (and there are no other timers to be run), in
->> order to avoid unnecessary wakeups and thus save CPU power.
->>
->> However, the load calculation logic is agnostic to all this, and this can
->> lead to the problem described below.
+> power_of(cpu) as a capacity input looks odd now.. 
 > 
-> This is subtle enough that I need some more time to chew on it, but since the
-> merge window is coming, I'm not sure when that's going to happen honestly.
->
+> > @@ -1062,9 +1062,10 @@ static void update_numa_stats(struct numa_stats *ns, int nid)
+> >  	if (!cpus)
+> >  		return;
+> >  
+> > -	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->power;
+> > -	ns->capacity = DIV_ROUND_CLOSEST(ns->power, SCHED_POWER_SCALE);
+> > -	ns->has_capacity = (ns->nr_running < ns->capacity);
+> > +	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->compute_capacity;
+> > +	ns->task_capacity =
+> > +		DIV_ROUND_CLOSEST(ns->compute_capacity, SCHED_POWER_SCALE);
+> 
+> ..as do SCHED_POWER_SCALE, update_cpu_power() etc.
 
-Sure, I completely understand. Please take your time, no hurry!
+The rest is renamed in a later patch.  I wanted to split it into 
+multiple patches to keep those changes manageable.
 
-Thank you very much!
 
-Regards,
-Srivatsa S. Bhat
-
+Nicolas
