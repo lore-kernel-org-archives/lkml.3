@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaE0LmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:42:03 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:56652 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaE0LmA convert rfc822-to-8bit (ORCPT
+	id S1751981AbaE0Lpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:45:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37737 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751455AbaE0Lpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:42:00 -0400
+	Tue, 27 May 2014 07:45:52 -0400
+Message-ID: <53847ADB.9080707@free-electrons.com>
+Date: Tue, 27 May 2014 13:45:31 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140527162213.0ecfb9d4@canb.auug.org.au>
-References: <1400965544-20092-1-git-send-email-vincent.stehle@laposte.net>
- <CANq1E4QdGeHeuCu9LvPkbGZX5C+ax4fWVqq4kJ5wMUBx5uWZrQ@mail.gmail.com>
- <20140525225435.GZ3693@n2100.arm.linux.org.uk> <20140526090623.77186cdf@canb.auug.org.au>
- <CAPM=9twkXSA2uyVPfdz=qbpM5H96tHHaD8HnTf7YGpB0QX1WZw@mail.gmail.com> <20140527162213.0ecfb9d4@canb.auug.org.au>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Tue, 27 May 2014 17:11:39 +0530
-Message-ID: <CAO_48GGprE5o5QTi01U2PuroQ671-dYoCaOpkz8miVU1wdx=ag@mail.gmail.com>
-Subject: Re: [PATCH linux-next] DRM: Armada: update dma_buf_export use
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        =?UTF-8?Q?Vincent_Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] i2c: sunxi: add P2WI controller support
+References: <1399715163-11291-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1399715163-11291-1-git-send-email-boris.brezillon@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 May 2014 11:52, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Dave,
->
-> On Tue, 27 May 2014 15:52:46 +1000 Dave Airlie <airlied@gmail.com> wrote:
->>
->> Then we should cc him.
->
-> He was cc'd on my email that you replied to ...
->
-> But I guess the extra prod won't hurt :-)
-:) thanks for the prod Stephen!
+Hello Wolfram,
 
-All,
+No news from you regarding this patch series.
 
-I'll merge it in today's for-next for me.
+Is there anything you want me to fix ?
 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+Otherwise It would be great to have this series merged, because the PMIC
+used on Allwinner's A31 boards are connected through this P2WI bus.
+
+Best Regards,
+
+Boris
+
+On 10/05/2014 11:46, Boris BREZILLON wrote:
+> Hello,
+>
+> This series adds support for the P2WI block used by some Allwinner
+> boards to interface with the AXP221 PMIC.
+>
+> Best Regards,
+>
+> Boris
+>
+> Changes since v3:
+> - update the DT bindings doc
+> - fix a comment that was no longer true
+>
+> Changes since v2:
+> - drop the initialization (switch from I2C to P2WI mode) part
+> - print devm_ioremap_resource err code
+>
+> Changes since v1:
+> - implement P2WI initilization
+> - implement P2WI bus frequency configuration
+> - implement address consistency check
+> - fix devm_request_and_ioremap return check
+> - rework the macro definitions
+> - fix typos
+>
+> [1] http://www.spinics.net/lists/linux-i2c/msg15066.html
+> [2] http://comments.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/8947
+> Boris BREZILLON (2):
+>   i2c: sunxi: add P2WI DT bindings documentation
+>   i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface) controller support
+>
+>  .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     |  41 +++
+>  drivers/i2c/busses/Kconfig                         |  12 +
+>  drivers/i2c/busses/Makefile                        |   1 +
+>  drivers/i2c/busses/i2c-sun6i-p2wi.c                | 349 +++++++++++++++++++++
+>  4 files changed, 403 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
+>  create mode 100644 drivers/i2c/busses/i2c-sun6i-p2wi.c
+>
 
 -- 
-Thanks and regards,
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
-Sumit Semwal
-Graphics Engineer - Graphics working group
-Linaro.org │ Open source software for ARM SoCs
