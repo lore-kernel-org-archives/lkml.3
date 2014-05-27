@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaE0MHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 08:07:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57687 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751947AbaE0MHt (ORCPT
+	id S1752224AbaE0MH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 08:07:58 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36967 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbaE0MHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 08:07:49 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, arnd@arndb.de, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] regulator: arizona-ldo1: add missing #include
-Date: Tue, 27 May 2014 13:00:10 +0100
-Message-Id: <1401192010-5443-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 27 May 2014 08:07:53 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        edubezval@gmail.com, pavel@ucw.cz, lgirdwood@gmail.com,
+        broonie@kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/2] regulators: Add definition of regulator_set_voltage_time() for !CONFIG_REGULATOR
+Date: Tue, 27 May 2014 17:37:29 +0530
+Message-Id: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+We already have dummy implementation for most of the regulators APIs for
+!CONFIG_REGULATOR case and were missing it for regulator_set_voltage_time().
 
-commit 2cce4be9e6b8 "regulator: arizona-ldo1: Add processing of init_data
-from device tree" added a call to of_get_child_by_name() but
-did not add an #include to the header file declaring that function.
+Found this issue while compiling cpufreq-cpu0 driver without regulators support
+in kernel.
 
-I got a build error when doing randconfig testing on this, which
-is fixed by this patch to include of.h.
+drivers/cpufreq/cpufreq-cpu0.c: In function ‘cpu0_cpufreq_probe’:
+drivers/cpufreq/cpufreq-cpu0.c:186:3: error: implicit declaration of function ‘regulator_set_voltage_time’ [-Werror=implicit-function-declaration]
 
-drivers/regulator/arizona-ldo1.c:192:2: error: implicit declaration of function 'of_get_child_by_name' [-Werror=implicit-function-declaration]
-drivers/regulator/arizona-ldo1.c:193:2: error: implicit declaration of function 'of_parse_phandle' [-Werror=implicit-function-declaration]
-drivers/regulator/arizona-ldo1.c:213:2: error: implicit declaration of function 'of_node_put' [-Werror=implicit-function-declaration]
+Fix this by adding dummy definition for regulator_set_voltage_time().
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: Mark Brown <broonie@linaro.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
+Liam/Broonie: Please see if this can go through Rafael as 2nd patch is dependent
+on it.
 
-Hi,
+ include/linux/regulator/consumer.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-I think this patch got missed when Arnd Bergmann sent it in,
-I hope no one minds me resending it to make sure it gets
-applied.
-
-Thanks,
-Charles
-
- drivers/regulator/arizona-ldo1.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
-index d3787e1..04f262a 100644
---- a/drivers/regulator/arizona-ldo1.c
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -16,6 +16,7 @@
- #include <linux/init.h>
- #include <linux/bitops.h>
- #include <linux/err.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index 1a4a8c1..0cfc286 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -397,6 +397,12 @@ static inline int regulator_set_voltage(struct regulator *regulator,
+ 	return 0;
+ }
+ 
++static inline int regulator_set_voltage_time(struct regulator *regulator,
++					     int old_uV, int new_uV)
++{
++	return 0;
++}
++
+ static inline int regulator_get_voltage(struct regulator *regulator)
+ {
+ 	return -EINVAL;
 -- 
-1.7.2.5
+2.0.0.rc2
 
