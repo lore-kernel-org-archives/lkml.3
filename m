@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaE0Paj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 11:30:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48752 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402AbaE0Pag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 11:30:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,920,1392192000"; 
-   d="scan'208";a="518392425"
-Message-ID: <5384B099.2070808@linux.intel.com>
-Date: Tue, 27 May 2014 08:34:49 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752879AbaE0Pb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 11:31:57 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60139 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215AbaE0Pby (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 11:31:54 -0400
+Date: Tue, 27 May 2014 17:31:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Mike Marciniszyn <infinipath@intel.com>
+Subject: Re: [RFC][PATCH 0/5] VM_PINNED
+Message-ID: <20140527153143.GD19143@laptop.programming.kicks-ass.net>
+References: <20140526145605.016140154@infradead.org>
+ <CALYGNiMG1NVBUS4TJrYJMr92yWGZHSdGUdCGtBJDHoUMMhE+Wg@mail.gmail.com>
+ <20140526203232.GC5444@laptop.programming.kicks-ass.net>
+ <CALYGNiO8FNKjtETQMRSqgiArjfQ9nRAALUg9GGdNYbpKru=Sjw@mail.gmail.com>
+ <20140527102909.GO30445@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405270929550.13999@gentwo.org>
+ <20140527144655.GC19143@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405271011100.14466@gentwo.org>
 MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org, jic23@kernel.org
-Subject: Re: [PATCH] IIO: Support for True/Magnetic north
-References: <538076CA.6050809@kernel.org> <1401160821-5006-1-git-send-email-reyad.attiyat@gmail.com>
-In-Reply-To: <1401160821-5006-1-git-send-email-reyad.attiyat@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405271011100.14466@gentwo.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Reyad,
+On Tue, May 27, 2014 at 10:14:10AM -0500, Christoph Lameter wrote:
+> On Tue, 27 May 2014, Peter Zijlstra wrote:
+> 
+> > Well, like with IB, they start out as normal userspace pages, and will
+> > be from ZONE_MOVABLE.
+> 
+> Well we could change that now I think. If the VMA has VM_PINNED set
+> pages then do not allocate from ZONE_MOVABLE.
 
-On 05/26/2014 08:20 PM, Reyad Attiyat wrote:
-> Hey Jonathan and Srinivas,
->
-> I have added in the needed magn_north iio sysfs attributes to the documentation.
-> I hope I did everything correct.
-> I noticed that the line length was very long as compensated is a  fairly long word.
-> I'm thinking I could shorten some of the sysfs paths or shorten the name.
->
-> For updating the hid-sensor-magn-3d do you have any tips on this? I'm thinking I'll need a
-> dynamic iio_chan array that is passed to iio_register function. It would need to
-> be dynamic in the sense it would only add channels if it found x, y, z, or one of
-> the north attributes. I'll start working on this soon.
+But most allocations sites don't have the vma. We allocate page-cache
+pages based on its address_space/mapping, not on whatever vma they're
+mapped into.
 
-I think you mean dynamic " iio_chan_spec magn_3d_channels[]". Currently 
-this is a
-constant. So we can change this to add only channel, which are available.
+So I still think the sanest way to do this is by making mm_mpin() do a
+mm_populate() and have reclaim skip VM_PINNED pages (so they stay
+present), and then migrate the lot out of MOVABLE.
 
-Also your other changes must be submitted as series of patches, 
-including the drivers using them.
-
-Thanks,
-Srinivas
-
-> Thank You,
-> Reyad Attiyat
->
->
->
-> Reyad Attiyat (1):
->    IIO: Added iio magn_north ABI documentation
->
->   Documentation/ABI/testing/sysfs-bus-iio | 76 +++++++++++++++++++++++++++++++++
->   1 file changed, 76 insertions(+)
->
 
