@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaE0SyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 14:54:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36491 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224AbaE0SyE (ORCPT
+	id S1753493AbaE0Sy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 14:54:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:41566 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479AbaE0SyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 14:54:04 -0400
-Message-ID: <5384DF47.2070904@codeaurora.org>
-Date: Tue, 27 May 2014 11:53:59 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 27 May 2014 14:54:24 -0400
+Message-ID: <5384DF5E.3020304@kernel.dk>
+Date: Tue, 27 May 2014 12:54:22 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, Corey Minyard <cminyard@mvista.com>,
-        linux-kernel@vger.kernel.org, Stanislav Meduna <stano@meduna.org>,
-        minyard@acm.org, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH] arm: Set hardirq tracing to on when idling
-References: <1401045323-7116-1-git-send-email-minyard@acm.org> <4559339.apo3Fd10HK@wuerfel> <5384BF89.6010509@meduna.org> <4475199.26Fs5MKAfh@wuerfel>
-In-Reply-To: <4475199.26Fs5MKAfh@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christoph Hellwig <hch@lst.de>
+CC: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
+ flush worker
+References: <1400511950-18522-1-git-send-email-tom.leiming@gmail.com> <20140519151824.GA21762@lst.de> <CACVXFVNprzhEpXGKze=A4T2b-y35vXRxRTOUqpywu+Et=t37Kw@mail.gmail.com> <20140520152303.GA20352@lst.de> <CACVXFVNP--zj_-UtygxfXk7GvSXwKm2KMKFs=h9KsrL=ZzbWVQ@mail.gmail.com> <20140521053634.GA4764@lst.de> <CACVXFVO5znzYtPKMTPwx_2MU97xFZY+wHwm+R33T043SW4JHHw@mail.gmail.com> <20140527181305.GA7975@lst.de> <5384DB97.70606@kernel.dk> <20140527185301.GA8466@lst.de>
+In-Reply-To: <20140527185301.GA8466@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/14 11:49, Arnd Bergmann wrote:
+On 2014-05-27 12:53, Christoph Hellwig wrote:
+> On Tue, May 27, 2014 at 12:38:15PM -0600, Jens Axboe wrote:
+>> On 2014-05-27 12:13, Christoph Hellwig wrote:
+>>> Here is my counter proposal that requeues via two lists and a work struct
+>>> in the request_queue.  I've also tested it with scsi-mq.
+>>>
+>>
+>> I like this, moves the state out of the request. But how about we
+>> consolidate the two requeue requests lists, and just mark the request as
+>> needing head insertion instead? Just add a cmd_flags flag, REQ_REQUEUE_HEAD
+>> or something.
 >
-> You also commented in that thread about stop_critical_timings()/
-> start_critical_timings(). Corey, can you look at that, too? I
-> think it's designed to avoid the issue you are seeing but
-> for some reason doesn't.
+> That should be doable, just didn't like introducing even more flags.
 
-I sent a patch last week to "solve" this problem. I'm not sure if it's
-right but it works for me.
-
-https://lkml.org/lkml/2014/5/19/607
+Space is plenty big again now... The down side is that the splice trick 
+wont work, but if we have more than a few requests on the requeue list, 
+we're doing it wrong anyway.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Jens Axboe
 
