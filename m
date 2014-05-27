@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaE0O1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 10:27:45 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:55346 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaE0O1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752731AbaE0O1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 10:27:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58248 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752664AbaE0O1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 May 2014 10:27:39 -0400
-Date: Tue, 27 May 2014 10:27:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] workqueue: always pass cascading responsibility to
- the next flusher
-Message-ID: <20140527142736.GD22767@htj.dyndns.org>
-References: <1401105501-13307-1-git-send-email-laijs@cn.fujitsu.com>
- <20140527142443.GC22767@htj.dyndns.org>
+Date: Tue, 27 May 2014 16:27:26 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: Ming Lei <tom.leiming@gmail.com>, axboe@kernel.dk
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maurizio Lombardi <m.lombardi85@gmail.com>
+Subject: Re: [PATCH V3] bio: modify __bio_add_page() to accept pages that
+ don't start a new segment
+Message-ID: <20140527142726.GB30458@dhcp-27-189.brq.redhat.com>
+References: <1398952615-22034-1-git-send-email-mlombard@redhat.com>
+ <CACVXFVNSZ7+MxW8-SiLXUFW6pGJ7b-OQzf8-KLzcXyE7BvhbbA@mail.gmail.com>
+ <20140527115859.GA30458@dhcp-27-189.brq.redhat.com>
+ <CACVXFVNwn+_6qk29HtqLLsyiJVHLgJ9XgP=owHJ_B0z_Y0_DuA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140527142443.GC22767@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CACVXFVNwn+_6qk29HtqLLsyiJVHLgJ9XgP=owHJ_B0z_Y0_DuA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 10:24:43AM -0400, Tejun Heo wrote:
-> So, I think hiding latencies which can easily in millisecs range is
-> important.  It isn't a performance optimization.  It almost becomes a
-> correctness issue when the problem is severely hit and the amount of
+On Tue, May 27, 2014 at 10:04:58PM +0800, Ming Lei wrote:
+> 
+> Looks your approach is simpler.
+> 
+> But looks there is one problem if I understand correctly:
+> __blk_recalc_rq_segments() may not cover the last vector
+> because bio->bi_iter.bi_size isn't updated until the end of
+> __bio_add_page().
+> 
+> But it shouldn't have been related with current virtio-blk problem.
+>
 
-Another way to think about it is considering flushing an event
-notification mechanism.  Doing the above can reliably induce tens of
-millisecs of latency in event delivery on the right combination of
-work items and flush patterns, which isn't acceptable.  We sure still
-can fail to such state when the flush color space is exhausted but
-this is a lot easier to trigger.
+This is a valid point, bi_iter.bi_size influences the behaviour of
+blk_recount_segments(). Maybe Jens can confirm your observation.
 
-Thanks.
+Anyway it doesn't explain the reason behind the regression
+introduced by commit 3979ef4dcf
 
--- 
-tejun
+Maurizio Lombardi
