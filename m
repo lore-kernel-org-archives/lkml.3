@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaE0M5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 08:57:11 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:32908 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaE0M5H (ORCPT
+	id S1752324AbaE0M5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 08:57:45 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:39460 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaE0M5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 08:57:07 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>
-In-Reply-To: <5279118.J5305KQNjB@wuerfel>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
-	<53610663.7070305@ti.com> <20140501131210.CCC13C409DA@trevor.secretlab.ca>
-	<5279118.J5305KQNjB@wuerfel>
-Date: Tue, 27 May 2014 13:56:55 +0100
-Message-Id: <20140527125655.63A46C40FCB@trevor.secretlab.ca>
+	Tue, 27 May 2014 08:57:44 -0400
+Message-ID: <53848B81.4090709@huawei.com>
+Date: Tue, 27 May 2014 20:56:33 +0800
+From: Libo Chen <libo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: <tglx@linutronix.de>, <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, "Li Zefan" <lizefan@huawei.com>
+Subject: Re: balance storm
+References: <5382AF2E.1040407@huawei.com>	 <1401090987.5339.79.camel@marge.simpson.net> <53832A36.5020205@huawei.com>	 <20140527094802.GN30445@twins.programming.kicks-ass.net>	 <1401185133.5134.119.camel@marge.simpson.net>	 <20140527104349.GP30445@twins.programming.kicks-ass.net> <1401188155.5134.125.camel@marge.simpson.net>
+In-Reply-To: <1401188155.5134.125.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 May 2014 11:58:30 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 01 May 2014 14:12:10 Grant Likely wrote:
-> > > > I've got two concerns here. of_dma_get_range() retrieves only the first
-> > > > tuple from the dma-ranges property, but it is perfectly valid for
-> > > > dma-ranges to contain multiple tuples. How should we handle it if a
-> > > > device has multiple ranges it can DMA from?
-> > > > 
-> > > 
-> > > We've not found any cases in current Linux where more than one dma-ranges
-> > > would be used. Moreover, The MM (definitely for ARM) isn't supported such
-> > > cases at all (if i understand everything right).
-> > > - there are only one arm_dma_pfn_limit
-> > > - there is only one MM zone is used for ARM
-> > > - some arches like x86,mips can support 2 zones (per arch - not per device or bus)
-> > >   DMA & DMA32, but they configured once and forever per arch.
-> > 
-> > Okay. If anyone ever does implement multiple ranges then this code will
-> > need to be revisited.
+On 2014/5/27 18:55, Mike Galbraith wrote:
+> On Tue, 2014-05-27 at 12:43 +0200, Peter Zijlstra wrote: 
+>> On Tue, May 27, 2014 at 12:05:33PM +0200, Mike Galbraith wrote:
+>>> On Tue, 2014-05-27 at 11:48 +0200, Peter Zijlstra wrote:
+>>>
+>>>> So I suppose this is due to the select_idle_sibling() nonsense again,
+>>>> where we assumes L3 is a fair compromise between cheap enough and
+>>>> effective enough.
+>>>
+>>> Nodz.
+>>>
+>>>> Of course, Intel keeps growing the cpu count covered by L3 to ridiculous
+>>>> sizes, 8 cores isn't nowhere near their top silly, which shifts the
+>>>> balance, and there's always going to be pathological cases (like the
+>>>> proposed workload) where its just always going to suck eggs.
+>>>
+>>> Test is as pathological as it gets.  15 core + SMT wouldn't be pretty.
+>>
+>> So one thing we could maybe do is measure the cost of
+>> select_idle_sibling(), just like we do for idle_balance() and compare
+>> this against the tasks avg runtime.
+>>
+>> We can go all crazy and do reduced searches; like test every n-th cpu in
+>> the mask, or make it statistical and do a full search ever n wakeups.
+>>
+>> Not sure what's a good approach. But L3 spanning more and more CPUs is
+>> not something that's going to get cured anytime soon I'm afraid.
+>>
+>> Not to mention bloody SMT which makes the whole mess worse.
 > 
-> I wonder if it's needed for platforms implementing the standard "ARM memory map" [1].
-> The document only talks about addresses as seen from the CPU, and I can see
-> two logical interpretations how the RAM is supposed to be visible from a device:
-> either all RAM would be visible contiguously at DMA address zero, or everything
-> would be visible at the same physical address as the CPU sees it.
+> I think we should keep it dirt simple and above all dirt cheap.  The per
+> task migration cap per unit time should meet that bill, limit the damage
+> potential, while also limiting the good, but that's tough.  I don't see
+
+agree
+
+> any way to make it perfect, so I'll settle for good enough.
 > 
-> If anyone picks the first interpretation, we will have to implement that
-> in Linux. We can of course hope that all hardware designs follow the second
-> interpretation, which would be more convenient for us here.
+> -Mike
+> 
+> 
+> 
+> 
 
-Indeed. Hope though we might, I would not be surprised to see a platform
-that does the first. In that case we could probably handle it with a
-ranges property that is DMA-controller facing instead of device facing.
-That would be able to handle the translation between CPU addressing and
-DMA addressing.
 
-Come to think of it, doesn't PCI DMA have to deal with that situation if
-the PCI window is not 1:1 mapped into the CPU address space?
-
-g.
