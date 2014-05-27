@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaE0JBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 05:01:44 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:39098 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaE0JBl (ORCPT
+	id S1752104AbaE0JC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 05:02:29 -0400
+Received: from mail-we0-f201.google.com ([74.125.82.201]:64972 "EHLO
+	mail-we0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999AbaE0JC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 05:01:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAVeFuLK6TcGBtiVWFui9NunantvqNUqCmJErsFLN8DeC3C3nw@mail.gmail.com>
-References: <1400082247-24168-1-git-send-email-lejun.zhu@linux.intel.com>
-	<CAAVeFuLK6TcGBtiVWFui9NunantvqNUqCmJErsFLN8DeC3C3nw@mail.gmail.com>
-Date: Tue, 27 May 2014 11:01:40 +0200
-Message-ID: <CACRpkdbVFT23h-BCpshE9w-eK5+sdXHB_utzxAffO+iUs9cPBA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bin.yang@intel.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 27 May 2014 05:02:26 -0400
+From: David Drysdale <drysdale@google.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        David Drysdale <drysdale@google.com>
+Subject: [PATCHv4 0/3] syscalls,x86: Add execveat() system call
+Date: Tue, 27 May 2014 10:02:07 +0100
+Message-Id: <1401181330-11997-1-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 17, 2014 at 4:37 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Thu, May 15, 2014 at 12:44 AM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
+This patch set adds execveat(2) for x86, and is derived from Meredydd
+Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
 
->> +static void __crystalcove_irq_type(int gpio, int type)
->> +{
->> +       u8 ctli = gpio < 8 ? GPIO0P0CTLI + gpio : GPIO1P0CTLI + (gpio - 8);
->
-> Not a big comment, but wouldn't it be safer to factorize this logic
-> (which is repeated in many places) into some macro? e.g. something
-> like:
->
-> #define GPIOP0CTL(gpio, dir) ((gpio < 8 ? GPIO0P0CTL ## dir :
-> GPIO1P0CTL ## dir) + (gpio & ~0x8))
+The primary aim of adding an execveat syscall is to allow an
+implementation of fexecve(3) that does not rely on the /proc
+filesystem.  The current glibc version of fexecve(3) is implemented
+via /proc, which causes problems in sandboxed or otherwise restricted
+environments.
 
-static functions are preferred over macros, please :-)
+Given the desire for a /proc-free fexecve() implementation, HPA
+suggested (https://lkml.org/lkml/2006/7/11/556) that an execveat(2)
+syscall would be an appropriate generalization.
 
-If you want to be sure they are inlined, just mark them inline (but the
-compiler will do it's job for sure).
+Also, having a new syscall means that it can take a flags argument
+without back-compatibility concerns.  The current implementation just
+defines the AT_SYMLINK_NOFOLLOW flag, but other flags could be added
+in future -- for example, flags for new namespaces (as suggested at
+https://lkml.org/lkml/2006/7/11/474).
 
-Just split the function instead so it is more readable:
+Related history:
+ - https://lkml.org/lkml/2006/12/27/123 is an example of someone
+   realizing that fexecve() is likely to fail in a chroot environment.
+ - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=514043 covered
+   documenting the /proc requirement of fexecve(3) in its manpage, to
+   "prevent other people from wasting their time".
+ - https://bugzilla.kernel.org/show_bug.cgi?id=74481 documented that
+   it's not possible to fexecve() a file descriptor for a script with
+   close-on-exec set (which is possible with the implementation here).
+ - https://bugzilla.redhat.com/show_bug.cgi?id=241609 described a
+   problem where a process that did setuid() could not fexecve()
+   because it no longer had access to /proc/self/fd; this has since
+   been fixed.
 
-static void __crystalcove_irq_type(int gpio, int type)
-{
-      u8 ctli;
 
-      if (gpio < 8)
-                ctli = GPIO0P0CTLI + gpio;
-      else
-                ctli = GPIO1P0CTLI + (gpio - 8);
+Changes since Meredydd's v3 patch:
+ - Added a selftest.
+ - Added a man page.
+ - Left open_exec() signature untouched to reduce patch impact
+   elsewhere (as suggested by Al Viro).
+ - Filled in bprm->filename with d_path() into a buffer, to avoid use
+   of potentially-ephemeral dentry->d_name.
+ - Patch against v3.14 (455c6fdbd21916).
 
-But I think this can be simplified with the % operator as stated
-elsewhere.
 
-Yours,
-Linus Walleij
+David Drysdale (2):
+  syscalls,x86: implement execveat() system call
+  syscalls,x86: add selftest for execveat(2)
+
+ arch/x86/ia32/audit.c                   |   1 +
+ arch/x86/ia32/ia32entry.S               |   1 +
+ arch/x86/kernel/audit_64.c              |   1 +
+ arch/x86/kernel/entry_64.S              |  28 ++++
+ arch/x86/syscalls/syscall_32.tbl        |   1 +
+ arch/x86/syscalls/syscall_64.tbl        |   2 +
+ arch/x86/um/sys_call_table_64.c         |   1 +
+ fs/exec.c                               | 153 ++++++++++++++++---
+ include/linux/compat.h                  |   3 +
+ include/linux/sched.h                   |   4 +
+ include/linux/syscalls.h                |   4 +
+ include/uapi/asm-generic/unistd.h       |   4 +-
+ kernel/sys_ni.c                         |   3 +
+ lib/audit.c                             |   3 +
+ tools/testing/selftests/Makefile        |   1 +
+ tools/testing/selftests/exec/.gitignore |   6 +
+ tools/testing/selftests/exec/Makefile   |  32 ++++
+ tools/testing/selftests/exec/execveat.c | 251 ++++++++++++++++++++++++++++++++
+ 18 files changed, 476 insertions(+), 23 deletions(-)
+ create mode 100644 tools/testing/selftests/exec/.gitignore
+ create mode 100644 tools/testing/selftests/exec/Makefile
+ create mode 100644 tools/testing/selftests/exec/execveat.c
+
+--
+1.9.1.423.g4596e3a
