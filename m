@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596AbaE0N3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:29:06 -0400
-Received: from smtp7.sms.unimo.it ([155.185.44.150]:56380 "EHLO
+	id S1752642AbaE0N35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:29:57 -0400
+Received: from smtp7.sms.unimo.it ([155.185.44.150]:56405 "EHLO
 	smtp7.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaE0N3D (ORCPT
+	with ESMTP id S1752608AbaE0N3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 09:29:03 -0400
+	Tue, 27 May 2014 09:29:54 -0400
 From: paolo <paolo.valente@unimore.it>
 To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
         Li Zefan <lizefan@huawei.com>
@@ -15,9 +15,9 @@ Cc: Fabio Checconi <fchecconi@gmail.com>,
         Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         Paolo Valente <paolo.valente@unimore.it>
-Subject: [PATCH RFC RESEND 03/14] block: add hierarchical-support option to kconfig
-Date: Tue, 27 May 2014 14:42:27 +0200
-Message-Id: <1401194558-5283-4-git-send-email-paolo.valente@unimore.it>
+Subject: [PATCH RFC RESEND 11/14] block, bfq: reduce latency during request-pool saturation
+Date: Tue, 27 May 2014 14:42:35 +0200
+Message-Id: <1401194558-5283-12-git-send-email-paolo.valente@unimore.it>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
 References: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
@@ -26,43 +26,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Checconi <fchecconi@gmail.com>
+From: Paolo Valente <paolo.valente@unimore.it>
 
-Add the CGROUP_BFQIO option to Kconfig.iosched. This option allows
-full hierarchical support to be enabled in BFQ, and the bfqio
-controller to be added to the cgroups interface.
+This patch introduces an heuristic that reduces latency when the
+I/O-request pool is saturated. This goal is achieved by disabling
+device idling, for non-weight-raised queues, when there are weight-
+raised queues with pending or in-flight requests. In fact, as
+explained in more detail in the comment to the function
+bfq_bfqq_must_not_expire(), this reduces the rate at which processes
+associated with non-weight-raised queues grab requests from the pool,
+thereby increasing the probability that processes associated with
+weight-raised queues get a request immediately (or at least soon) when
+they need one.
 
-Signed-off-by: Fabio Checconi <fchecconi@gmail.com>
 Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
 Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
 ---
- block/Kconfig.iosched | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ block/bfq-iosched.c | 67 +++++++++++++++++++++++++++++++++++++++++++----------
+ block/bfq-sched.c   |  6 +++++
+ block/bfq.h         |  2 ++
+ 3 files changed, 63 insertions(+), 12 deletions(-)
 
-diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
-index 8f98cc7..a3675cb 100644
---- a/block/Kconfig.iosched
-+++ b/block/Kconfig.iosched
-@@ -46,7 +46,18 @@ config IOSCHED_BFQ
- 	  The BFQ I/O scheduler tries to distribute bandwidth among all
- 	  processes according to their weights.
- 	  It aims at distributing the bandwidth as desired, regardless
--	  of the disk parameters and with any workload.
-+	  of the disk parameters and with any workload. If compiled
-+	  built-in (saying Y here), BFQ can be configured to support
-+	  hierarchical scheduling.
-+
-+config CGROUP_BFQIO
-+	bool "BFQ hierarchical scheduling support"
-+	depends on CGROUPS && IOSCHED_BFQ=y
-+	default n
-+	---help---
-+	  Enable hierarchical scheduling in BFQ, using the cgroups
-+	  filesystem interface.  The name of the subsystem will be
-+	  bfqio.
+diff --git a/block/bfq-iosched.c b/block/bfq-iosched.c
+index 0b24130..5988c70 100644
+--- a/block/bfq-iosched.c
++++ b/block/bfq-iosched.c
+@@ -511,6 +511,7 @@ add_bfqq_busy:
+ 			bfqq->wr_coeff = bfqd->bfq_wr_coeff;
+ 			bfqq->wr_cur_max_time = bfq_wr_duration(bfqd);
  
- choice
- 	prompt "Default I/O scheduler"
++			bfqd->wr_busy_queues++;
+ 			entity->ioprio_changed = 1;
+ 			bfq_log_bfqq(bfqd, bfqq,
+ 			    "non-idle wrais starting at %lu, rais_max_time %u",
+@@ -655,6 +656,8 @@ static void bfq_merged_requests(struct request_queue *q, struct request *rq,
+ /* Must be called with bfqq != NULL */
+ static inline void bfq_bfqq_end_wr(struct bfq_queue *bfqq)
+ {
++	if (bfq_bfqq_busy(bfqq))
++		bfqq->bfqd->wr_busy_queues--;
+ 	bfqq->wr_coeff = 1;
+ 	bfqq->wr_cur_max_time = 0;
+ 	/* Trigger a weight change on the next activation of the queue */
+@@ -1401,22 +1404,61 @@ static inline int bfq_may_expire_for_budg_timeout(struct bfq_queue *bfqq)
+ /*
+  * Device idling is allowed only for the queues for which this function
+  * returns true. For this reason, the return value of this function plays a
+- * critical role for both throughput boosting and service guarantees.
++ * critical role for both throughput boosting and service guarantees. The
++ * return value is computed through a logical expression. In this rather
++ * long comment, we try to briefly describe all the details and motivations
++ * behind the components of this logical expression.
+  *
+- * The return value is computed through a logical expression, which may
+- * be true only if bfqq is sync and at least one of the following two
+- * conditions holds:
+- * - the queue has a non-null idle window;
+- * - the queue is being weight-raised.
+- * In fact, waiting for a new request for the queue, in the first case,
+- * is likely to boost the disk throughput, whereas, in the second case,
+- * is necessary to preserve fairness and latency guarantees
+- * (see [1] for details).
++ * First, the expression may be true only for sync queues. Besides, if
++ * bfqq is also being weight-raised, then the expression always evaluates
++ * to true, as device idling is instrumental for preserving low-latency
++ * guarantees (see [1]). Otherwise, the expression evaluates to true only
++ * if bfqq has a non-null idle window and at least one of the following
++ * two conditions holds. The first condition is that the device is not
++ * performing NCQ, because idling the device most certainly boosts the
++ * throughput if this condition holds and bfqq has been granted a non-null
++ * idle window.
++ *
++ * The second condition is that there is no weight-raised busy queue,
++ * which guarantees that the device is not idled for a sync non-weight-
++ * raised queue when there are busy weight-raised queues. The former is
++ * then expired immediately if empty. Combined with the timestamping rules
++ * of BFQ (see [1] for details), this causes sync non-weight-raised queues
++ * to get a lower number of requests served, and hence to ask for a lower
++ * number of requests from the request pool, before the busy weight-raised
++ * queues get served again.
++ *
++ * This is beneficial for the processes associated with weight-raised
++ * queues, when the request pool is saturated (e.g., in the presence of
++ * write hogs). In fact, if the processes associated with the other queues
++ * ask for requests at a lower rate, then weight-raised processes have a
++ * higher probability to get a request from the pool immediately (or at
++ * least soon) when they need one. Hence they have a higher probability to
++ * actually get a fraction of the disk throughput proportional to their
++ * high weight. This is especially true with NCQ-capable drives, which
++ * enqueue several requests in advance and further reorder internally-
++ * queued requests.
++ *
++ * In the end, mistreating non-weight-raised queues when there are busy
++ * weight-raised queues seems to mitigate starvation problems in the
++ * presence of heavy write workloads and NCQ, and hence to guarantee a
++ * higher application and system responsiveness in these hostile scenarios.
+  */
+ static inline bool bfq_bfqq_must_not_expire(struct bfq_queue *bfqq)
+ {
+-	return bfq_bfqq_sync(bfqq) &&
+-	       (bfqq->wr_coeff > 1 || bfq_bfqq_idle_window(bfqq));
++	struct bfq_data *bfqd = bfqq->bfqd;
++/*
++ * Condition for expiring a non-weight-raised queue (and hence not idling
++ * the device).
++ */
++#define cond_for_expiring_non_wr  (bfqd->hw_tag && \
++				   bfqd->wr_busy_queues > 0)
++
++	return bfq_bfqq_sync(bfqq) && (
++		bfqq->wr_coeff > 1 ||
++		(bfq_bfqq_idle_window(bfqq) &&
++		 !cond_for_expiring_non_wr)
++	);
+ }
+ 
+ /*
+@@ -2556,6 +2598,7 @@ static int bfq_init_queue(struct request_queue *q, struct elevator_type *e)
+ 					      * high-definition compressed
+ 					      * video.
+ 					      */
++	bfqd->wr_busy_queues = 0;
+ 
+ 	/*
+ 	 * Begin by assuming, optimistically, that the device peak rate is
+diff --git a/block/bfq-sched.c b/block/bfq-sched.c
+index f6491d5..73f453b 100644
+--- a/block/bfq-sched.c
++++ b/block/bfq-sched.c
+@@ -975,6 +975,9 @@ static void bfq_del_bfqq_busy(struct bfq_data *bfqd, struct bfq_queue *bfqq,
+ 	bfqd->busy_queues--;
+ 
+ 	bfq_deactivate_bfqq(bfqd, bfqq, requeue);
++
++	if (bfqq->wr_coeff > 1)
++		bfqd->wr_busy_queues--;
+ }
+ 
+ /*
+@@ -988,4 +991,7 @@ static void bfq_add_bfqq_busy(struct bfq_data *bfqd, struct bfq_queue *bfqq)
+ 
+ 	bfq_mark_bfqq_busy(bfqq);
+ 	bfqd->busy_queues++;
++
++	if (bfqq->wr_coeff > 1)
++		bfqd->wr_busy_queues++;
+ }
+diff --git a/block/bfq.h b/block/bfq.h
+index 3b5763a7..7d6e4cb 100644
+--- a/block/bfq.h
++++ b/block/bfq.h
+@@ -280,6 +280,7 @@ enum bfq_device_speed {
+  * @root_group: root bfq_group for the device.
+  * @busy_queues: number of bfq_queues containing requests (including the
+  *		 queue in service, even if it is idling).
++ * @wr_busy_queues: number of weight-raised busy @bfq_queues.
+  * @queued: number of queued requests.
+  * @rq_in_driver: number of requests dispatched and waiting for completion.
+  * @sync_flight: number of sync requests in the driver.
+@@ -345,6 +346,7 @@ struct bfq_data {
+ 	struct bfq_group *root_group;
+ 
+ 	int busy_queues;
++	int wr_busy_queues;
+ 	int queued;
+ 	int rq_in_driver;
+ 	int sync_flight;
 -- 
 1.9.2
 
