@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaE0Tc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 15:32:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57415 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752142AbaE0Tc5 (ORCPT
+	id S1753542AbaE0Tdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 15:33:41 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38885 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142AbaE0Tdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 15:32:57 -0400
-Date: Tue, 27 May 2014 20:32:19 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 00/18] Cross-architecture definitions of relaxed MMIO
- accessors
-Message-ID: <20140527193219.GB30751@arm.com>
-References: <1400777250-17335-1-git-send-email-will.deacon@arm.com>
- <1401054363.3958.28.camel@pasglop>
+	Tue, 27 May 2014 15:33:40 -0400
+Message-ID: <5384E892.90808@codeaurora.org>
+Date: Tue, 27 May 2014 12:33:38 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401054363.3958.28.camel@pasglop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, Corey Minyard <cminyard@mvista.com>,
+        linux-rt-users@vger.kernel.org, minyard@acm.org,
+        linux-kernel@vger.kernel.org, Stanislav Meduna <stano@meduna.org>
+Subject: Re: [PATCH] arm: Set hardirq tracing to on when idling
+References: <1401045323-7116-1-git-send-email-minyard@acm.org> <4475199.26Fs5MKAfh@wuerfel> <5384DF47.2070904@codeaurora.org> <6082113.tHepRBe99K@wuerfel>
+In-Reply-To: <6082113.tHepRBe99K@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On 05/27/14 12:27, Arnd Bergmann wrote:
+> On Tuesday 27 May 2014 11:53:59 Stephen Boyd wrote:
+>> On 05/27/14 11:49, Arnd Bergmann wrote:
+>>> You also commented in that thread about stop_critical_timings()/
+>>> start_critical_timings(). Corey, can you look at that, too? I
+>>> think it's designed to avoid the issue you are seeing but
+>>> for some reason doesn't.
+>> I sent a patch last week to "solve" this problem. I'm not sure if it's
+>> right but it works for me.
+>>
+>> https://lkml.org/lkml/2014/5/19/607
+> I think that one was also wrong, as the intention of the existing
+> stop_critical_timings() function is already to do the same that
+> Corey's patch does, i.e. stop the trace before we go to idle as
+> if we were turning IRQs on.
 
-On Sun, May 25, 2014 at 10:46:03PM +0100, Benjamin Herrenschmidt wrote:
-> On Thu, 2014-05-22 at 17:47 +0100, Will Deacon wrote:
-> > A corollary to this is that mmiowb() probably needs rethinking. As it currently
-> > stands, an mmiowb() is required to order MMIO writes to a device from multiple
-> > CPUs, even if that device is protected by a lock. However, this isn't often used
-> > in practice, leading to PowerPC implementing both mmiowb() *and* synchronising
-> > I/O in spin_unlock.
-> > 
-> > I would propose making the non-relaxed I/O accessors ordered with respect to
-> > LOCK/UNLOCK, leaving mmiowb() to be used with the relaxed accessors, if
-> > required, but would welcome thoughts/suggestions on this topic.
-> 
-> I agree on the proposed semantics, though for us that does mean we still need
-> that per-cpu flag tracking non-relaxed MMIO stores and corresponding added barrier
-> in unlock. Eventually, if the use of the relaxed accessors becomes pervasive
-> enough I suppose I can just make the ordered ones unconditionally do 2 barriers.
+stop_critical_timings() is called in the generic idle loop. It looks
+like stop_critical_timings() just isn't written correctly. All it does
+is turn off the tracer, but it doesn't prevent future calls to
+spinlocks, etc. from causing the tracer to turn on again between calls
+to stop/start_critical_timings(). It seems better to prevent any more
+tracing from happening between a call to stop_critical_timings() and
+start_critical_timings() so we don't have to litter calls to that
+function throughout the idle path.
 
-Why would you need two barriers? I would have though an mmiowb() inlined
-into writel after the store operation would be sufficient. Or is this to
-ensure a non-relaxed write is ordered with respect to a relaxed write?
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Anyway, we may need something similar for other architectures with mmiowb
-implementations:
-
-  blackfin
-  frv
-  ia64
-  mips
-  sh
-
-so I'm anticipating some more discussion when I try to push that patch :)
-
-Cheers,
-
-Will
