@@ -1,318 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaE0IWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 04:22:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23007 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308AbaE0IWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 04:22:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,917,1392192000"; 
-   d="scan'208";a="545380576"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: [RFC Patch V1 1/4] x86, irq: refine mp_register_ioapic() to prepare for IOAPIC hotplug
-Date: Tue, 27 May 2014 16:24:34 +0800
-Message-Id: <1401179077-2020-2-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1401179077-2020-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1401179077-2020-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752429AbaE0IZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 04:25:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41616 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752074AbaE0IZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 04:25:05 -0400
+Date: Tue, 27 May 2014 10:22:16 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: Re: [PATCH 22/22] ARM: sun8i: dt: Add Ippo-q8h v5 support
+Message-ID: <20140527082216.GD4730@lukather>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
+ <1400831485-28576-23-git-send-email-wens@csie.org>
+ <20140525193955.GB10768@lukather>
+ <CAGb2v64EHLsj-cy13yf28K8vkTJUCv95q=x-7c2yiHQ=uBm-sw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RYJh/3oyKhIjGcML"
+Content-Disposition: inline
+In-Reply-To: <CAGb2v64EHLsj-cy13yf28K8vkTJUCv95q=x-7c2yiHQ=uBm-sw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/io_apic.h |    4 +-
- arch/x86/kernel/apic/io_apic.c |  143 ++++++++++++++++++++++++++--------------
- 2 files changed, 94 insertions(+), 53 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 6b40122bec0c..64379c285435 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -181,8 +181,8 @@ extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
- extern u32 mp_pin_to_gsi(int ioapic, int pin);
- extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
- extern void mp_unmap_irq(int irq);
--extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
--				      ioapic_create_domain_fn cb, void *arg);
-+extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
-+			      ioapic_create_domain_fn cb, void *arg);
- extern struct irq_domain *mp_irqdomain_create(int ioapic,
- 		struct device_node *np, const struct irq_domain_ops *ops);
- extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c7c84d5c0e57..f70fa239f34b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -85,6 +85,7 @@ int sis_apic_bug = -1;
- static DEFINE_RAW_SPINLOCK(ioapic_lock);
- static DEFINE_RAW_SPINLOCK(vector_lock);
- static DEFINE_MUTEX(ioapic_mutex);
-+static int ioapic_initialized;
- 
- struct mp_pin_info {
- 	int trigger;
-@@ -2920,19 +2921,40 @@ out:
-  */
- #define PIC_IRQS	(1UL << PIC_CASCADE_IR)
- 
--static void ioapic_create_irqdomains(void)
-+static int ioapic_create_irqdomain(int idx)
- {
--	int i, size;
--	struct ioapic *ip;
-+	int size;
-+	struct ioapic *ip = &ioapics[idx];
- 
--	for_each_ioapic(i) {
--		ip = &ioapics[i];
--		size = sizeof(struct mp_pin_info) * mp_ioapic_pin_count(i);
--		ip->pin_info = kzalloc(size, GFP_KERNEL);
--		BUG_ON(!ip->pin_info);
--		if (ip->irqdomain_cb)
--			ip->irqdomain = ip->irqdomain_cb(i, ip->irqdomain_arg);
-+	size = sizeof(struct mp_pin_info) * mp_ioapic_pin_count(idx);
-+	ip->pin_info = kzalloc(size, GFP_KERNEL);
-+	if (ip->pin_info == NULL && ioapic_initialized) {
-+		pr_warn("failed to allocate memory IOAPIC pin_info.\n");
-+		return -ENOMEM;
- 	}
-+	BUG_ON(!ip->pin_info);
-+
-+	if (ip->irqdomain_cb) {
-+		ip->irqdomain = ip->irqdomain_cb(idx, ip->irqdomain_arg);
-+		if (ip->irqdomain == NULL && ioapic_initialized) {
-+			pr_warn("failed to create irqdomain for IOAPIC%d\n",
-+				idx);
-+			kfree(ip->pin_info);
-+			ip->pin_info = NULL;
-+			return -ENOMEM;
-+		}
-+		BUG_ON(!ip->irqdomain);
-+	}
-+
-+	return 0;
-+}
-+
-+static void ioapic_create_irqdomains(void)
-+{
-+	int idx;
-+
-+	for_each_ioapic(idx)
-+		ioapic_create_irqdomain(idx);
- }
- 
- void __init setup_IO_APIC(void)
-@@ -2955,6 +2977,8 @@ void __init setup_IO_APIC(void)
- 	init_IO_APIC_traps();
- 	if (legacy_pic->nr_legacy_irqs)
- 		check_timer();
-+
-+	ioapic_initialized = 1;
- }
- 
- /*
-@@ -3408,7 +3432,7 @@ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
- 	return ret;
- }
- 
--static int __init io_apic_get_redir_entries(int ioapic)
-+static int io_apic_get_redir_entries(int ioapic)
- {
- 	union IO_APIC_reg_01	reg_01;
- 	unsigned long flags;
-@@ -3455,7 +3479,7 @@ int __init arch_probe_nr_irqs(void)
- }
- 
- #ifdef CONFIG_X86_32
--static int __init io_apic_get_unique_id(int ioapic, int apic_id)
-+static int io_apic_get_unique_id(int ioapic, int apic_id)
- {
- 	union IO_APIC_reg_00 reg_00;
- 	static physid_mask_t apic_id_map = PHYSID_MASK_NONE;
-@@ -3530,7 +3554,7 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
- 	return apic_id;
- }
- 
--static u8 __init io_apic_unique_id(u8 id)
-+static u8 io_apic_unique_id(u8 id)
- {
- 	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
- 	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
-@@ -3539,7 +3563,7 @@ static u8 __init io_apic_unique_id(u8 id)
- 		return id;
- }
- #else
--static u8 __init io_apic_unique_id(u8 id)
-+static u8 io_apic_unique_id(u8 id)
- {
- 	int i;
- 	DECLARE_BITMAP(used, 256);
-@@ -3553,7 +3577,7 @@ static u8 __init io_apic_unique_id(u8 id)
- }
- #endif
- 
--static int __init io_apic_get_version(int ioapic)
-+static int io_apic_get_version(int ioapic)
- {
- 	union IO_APIC_reg_01	reg_01;
- 	unsigned long flags;
-@@ -3757,21 +3781,7 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
- 	return gsi - gsi_cfg->gsi_base;
- }
- 
--static __init int bad_ioapic(unsigned long address)
--{
--	if (nr_ioapics >= MAX_IO_APICS) {
--		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
--			MAX_IO_APICS, nr_ioapics);
--		return 1;
--	}
--	if (!address) {
--		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
--		return 1;
--	}
--	return 0;
--}
--
--static __init int bad_ioapic_register(int idx)
-+static int bad_ioapic_register(int idx)
- {
- 	union IO_APIC_reg_00 reg_00;
- 	union IO_APIC_reg_01 reg_01;
-@@ -3790,30 +3800,43 @@ static __init int bad_ioapic_register(int idx)
- 	return 0;
- }
- 
--void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
--			       ioapic_create_domain_fn cb, void *arg)
-+static int find_free_ioapic_entry(void)
-+{
-+	return nr_ioapics;
-+}
-+
-+int mp_register_ioapic(int id, u32 address, u32 gsi_base,
-+		       ioapic_create_domain_fn cb, void *arg)
- {
--	int idx = 0;
--	int entries;
-+	u32 gsi_end;
-+	int idx, ioapic, entries;
- 	struct mp_ioapic_gsi *gsi_cfg;
- 
--	if (bad_ioapic(address))
--		return;
-+	if (!address) {
-+		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
-+		return -EINVAL;
-+	}
-+	for_each_ioapic(ioapic)
-+		if (ioapics[ioapic].mp_config.apicaddr == address) {
-+			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
-+				address, ioapic);
-+			return -EEXIST;
-+		}
- 
--	idx = nr_ioapics;
-+	idx = find_free_ioapic_entry();
-+	if (idx >= MAX_IO_APICS) {
-+		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
-+			MAX_IO_APICS, idx);
-+		return -ENOSPC;
-+	}
- 
- 	ioapics[idx].mp_config.type = MP_IOAPIC;
- 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
- 	ioapics[idx].mp_config.apicaddr = address;
--	ioapics[idx].irqdomain_cb = cb;
--	ioapics[idx].irqdomain_arg = arg;
--	ioapics[idx].irqdomain = NULL;
--
- 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
--
- 	if (bad_ioapic_register(idx)) {
- 		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
--		return;
-+		return -ENODEV;
- 	}
- 
- 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
-@@ -3824,24 +3847,43 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
- 	 */
- 	entries = io_apic_get_redir_entries(idx);
-+	gsi_end = gsi_base + entries - 1;
-+	for_each_ioapic(ioapic) {
-+		gsi_cfg = mp_ioapic_gsi_routing(idx);
-+		if ((gsi_base >= gsi_cfg->gsi_base &&
-+		     gsi_base <= gsi_cfg->gsi_end) ||
-+		    (gsi_end >= gsi_cfg->gsi_base &&
-+		     gsi_end <= gsi_cfg->gsi_end)) {
-+			pr_warn("GSI range [%u-%u] for new IOAPIC conflicts with GSI[%u-%u]\n",
-+				gsi_base, gsi_end,
-+				gsi_cfg->gsi_base, gsi_cfg->gsi_end);
-+			clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
-+			return -EEXIST;
-+		}
-+	}
- 	gsi_cfg = mp_ioapic_gsi_routing(idx);
- 	gsi_cfg->gsi_base = gsi_base;
--	gsi_cfg->gsi_end = gsi_base + entries - 1;
-+	gsi_cfg->gsi_end = gsi_end;
- 
--	/*
--	 * The number of IO-APIC IRQ registers (== #pins):
--	 */
--	ioapics[idx].nr_registers = entries;
-+	ioapics[idx].irqdomain_cb = cb;
-+	ioapics[idx].irqdomain_arg = arg;
-+	ioapics[idx].irqdomain = NULL;
- 
- 	if (gsi_cfg->gsi_end >= gsi_top)
- 		gsi_top = gsi_cfg->gsi_end + 1;
- 
-+	if (nr_ioapics <= idx)
-+		nr_ioapics = idx + 1;
-+
-+	/* Set nr_registers to mark entry present */
-+	ioapics[idx].nr_registers = entries;
-+
- 	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
- 		idx, mpc_ioapic_id(idx),
- 		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
- 		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
- 
--	nr_ioapics++;
-+	return 0;
- }
- 
- struct irq_domain *mp_irqdomain_create(int ioapic, struct device_node *np,
-@@ -3852,8 +3894,7 @@ struct irq_domain *mp_irqdomain_create(int ioapic, struct device_node *np,
- 	int hwirqs = mp_ioapic_pin_count(ioapic);
- 
- 	domain = irq_domain_add_linear(np, hwirqs, ops, (void *)(long)ioapic);
--	BUG_ON(!domain);
--	if (gsi_cfg->gsi_base == 0)
-+	if (domain && gsi_cfg->gsi_base == 0)
- 		irq_set_default_host(domain);
- 
- 	return domain;
--- 
-1.7.10.4
+--RYJh/3oyKhIjGcML
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, May 26, 2014 at 12:23:09PM +0800, Chen-Yu Tsai wrote:
+> On Mon, May 26, 2014 at 3:39 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Fri, May 23, 2014 at 03:51:25PM +0800, Chen-Yu Tsai wrote:
+> >> The Ippo-q8h is a tablet circiut board commonly found in cheap Android
+> >> tablets with A23 SoCs. There are at least 2 versions of the board, with
+> >> different peripherals, such as WiFi chips.
+> >>
+> >> This patch add supports for v5 of such boards, which has a ESP8089 WiFi
+> >> chip (not supported) connected to mmc1.
+> >>
+> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> >> ---
+> >>  arch/arm/boot/dts/Makefile                  |  2 ++
+> >>  arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts | 51 ++++++++++++++++++++=
++++++++++
+> >>  2 files changed, 53 insertions(+)
+> >>  create mode 100644 arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts
+> >>
+> >> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> >> index 6967393..f809a53 100644
+> >> --- a/arch/arm/boot/dts/Makefile
+> >> +++ b/arch/arm/boot/dts/Makefile
+> >> @@ -354,6 +354,8 @@ dtb-$(CONFIG_MACH_SUN7I) +=3D \
+> >>       sun7i-a20-cubietruck.dtb \
+> >>       sun7i-a20-i12-tvbox.dtb \
+> >>       sun7i-a20-olinuxino-micro.dtb
+> >> +dtb-$(CONFIG_MACH_SUN8I) +=3D \
+> >> +     sun8i-a23-ippo-q8h-v5.dtb
+> >>  dtb-$(CONFIG_ARCH_TEGRA) +=3D tegra20-harmony.dtb \
+> >>       tegra20-iris-512.dtb \
+> >>       tegra20-medcom-wide.dtb \
+> >> diff --git a/arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts b/arch/arm/bo=
+ot/dts/sun8i-a23-ippo-q8h-v5.dts
+> >> new file mode 100644
+> >> index 0000000..7d0bd97
+> >> --- /dev/null
+> >> +++ b/arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts
+> >> @@ -0,0 +1,51 @@
+> >> +/*
+> >> + * Copyright 2014 Chen-Yu Tsai
+> >> + *
+> >> + * Chen-Yu Tsai <wens@csie.org>
+> >> + *
+> >> + * The code contained herein is licensed under the GNU General Public
+> >> + * License. You may obtain a copy of the GNU General Public License
+> >> + * Version 2 or later at the following locations:
+> >> + *
+> >> + * http://www.opensource.org/licenses/gpl-license.html
+> >> + * http://www.gnu.org/copyleft/gpl.html
+> >> + */
+> >> +
+> >> +/dts-v1/;
+> >> +/include/ "sun8i-a23.dtsi"
+> >> +
+> >> +/ {
+> >> +     model =3D "Ippo Q8H Dual Core Tablet (v5)";
+> >> +     compatible =3D "ippo,q8h-v5", "allwinner,sun8i-a23";
+> >> +
+> >> +     chosen {
+> >> +             bootargs =3D "earlyprintk console=3DttyS0,115200";
+> >> +     };
+> >
+> > You should probably add the memory node here too.
+>=20
+> OK.
+>=20
+> >> +
+> >> +     soc@01c00000 {
+> >> +             uart0: serial@01c28000 {
+> >> +                     pinctrl-names =3D "default";
+> >> +                     pinctrl-0 =3D <&uart0_pins_a>;
+> >> +                     status =3D "okay";
+> >> +             };
+> >> +
+> >> +             i2c0: i2c@01c2ac00 {
+> >> +                     pinctrl-names =3D "default";
+> >> +                     pinctrl-0 =3D <&i2c0_pins_a>;
+> >> +                     status =3D "okay";
+> >> +             };
+> >> +
+> >> +             i2c1: i2c@01c2b000 {
+> >> +                     pinctrl-names =3D "default";
+> >> +                     pinctrl-0 =3D <&i2c1_pins_a>;
+> >> +                     status =3D "okay";
+> >> +             };
+> >
+> > What are the two i2c busses wired to?
+>=20
+> i2c0 has the capacitive touch panel controller gsl1680 @ 0x40.
+>=20
+> i2c1 has something (gsensor maybe) connected @ 0x15.
+> The FEX file lists the gsensor on i2c1, but with the address as 0x18.
+> I may need to boot back to stock Android to figure it out.
+>=20
+> i2c2 has the camera sensor (GC0309) control connected to it @ 0x66.
+> I didn't list it because I overlooked it, and i2cdetect hangs.
+> It seems to need AXP PMIC support to activate the regulators.
+>=20
+> AFAIK, the kernel doesn't have drivers for these devices,
+> so how would we list them?
+
+We don't need to list them yet. We can just wait for the drivers, it
+was just out of curiosity.
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--RYJh/3oyKhIjGcML
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJThEs4AAoJEBx+YmzsjxAgfpYP/R0OjC8+UkOsZ/SuC/cGmS2Z
+ocnz0z1qkoRwCv3dNV93lo5OhFBjyDrgioXYHVzQ2dzjZDcxfGkJvKfnvGJAF12J
+8WS3g2+D7QOTAKfVWxOQcO4Fd+t0S+hZmQOAU6IVYSQjnKCoJAXVCCxfYKF8WH3W
+olYWjR1NxLr5FoAyOZfcngHInKDujT+yyrtHnLhSZ/3CWYYva0YqQUuhgf+niEDc
+L3ZyYphq8h05E2VXlTEHtMq+M4S0Iaa1WdRPZkFQsjZSvIvqR12yGDSXURyJIKiz
+gMnszdbh6ufMAic/xffOzJtyacSGecPdpjyNxGKq6nQbmnE5evaSuSqqvbMAGrHh
+KuixGccvNjklsMb8li8EIPaoZ3X/uVXghirHqsl96gyucXbbAtj12SYlI4OIgVWV
+wkKbHR/TefukV3Zcz1Vn8bCXBh6JLosTBwuVWmJeCF8S0b2BiFD78/+HKUb4vSSR
+qI3vGCfYqJ9HuvL2/gLM/iBKkeyiMusDBZE4fH/0aUC4bsuvPzWQYO5DP8dgpMhj
+PYJR39PnbkAAzLFnaKN2k/6XQ+DCLF7LgWv+zW8zHuVfX1mPBjLFEfRUzJd55Jai
+W6IC1uST3g3r1fo8Q7ik5ubYsLV3KDyvFH/psfG9JIx8XSzA5EyJ70ey1HEfBRa+
+L+d+2x1Ypu7ZjcoHfMd4
+=MJF0
+-----END PGP SIGNATURE-----
+
+--RYJh/3oyKhIjGcML--
