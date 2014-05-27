@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaE0Grw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:47:52 -0400
-Received: from mail.southpole.se ([37.247.8.11]:51315 "EHLO mail.southpole.se"
+	id S1751854AbaE0Gxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:53:47 -0400
+Received: from ozlabs.org ([103.22.144.67]:55071 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540AbaE0Grv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:47:51 -0400
-Message-ID: <53843508.7060007@southpole.se>
-Date: Tue, 27 May 2014 08:47:36 +0200
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751472AbaE0Gxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 02:53:45 -0400
+Date: Tue, 27 May 2014 16:53:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Finn Thain <fthain@telegraphics.com.au>, Rob Herring <robh@kernel.org>
+Subject: linux-next: manual merge of the tty tree with the m68k tree
+Message-ID: <20140527165337.5c7d4fa4@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux <linux@openrisc.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] openrisc: irq: use irqchip framework
-References: <1401136302-27654-1-git-send-email-stefan.kristiansson@saunalahti.fi> <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
-In-Reply-To: <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.4.1(14132) on assp.southpole.se
-X-Assp-ID: assp.southpole.se 73251-13799
-X-Assp-Session: 7F61235C55C8 (mail 1)
-X-Assp-Client-TLS: yes
-X-Assp-Server-TLS: yes
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/7BpmMSANPORTr6BvVQpx_f3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2014 10:52 PM, Geert Uytterhoeven wrote:
-> CC devicetree for the bindings
-> 
-> On Mon, May 26, 2014 at 10:31 PM, Stefan Kristiansson
-> <stefan.kristiansson@saunalahti.fi> wrote:
->> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
->> @@ -0,0 +1,23 @@
->> +OpenRISC 1000 Programmable Interrupt Controller
->> +
->> +Required properties:
->> +
->> +- compatible : should be "opencores,or1k-pic-level" for variants with
->> +  level triggered interrupt lines, "opencores,or1k-pic-edge" for variants with
->> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
->> +  with the non-spec compliant or1200 type implementation.
->> +
->> +  "opencores,or1k-pic" is also provided as an alias to "opencores,or1200-pic",
->> +  but this is only for backwards compatibility.
+--Sig_/7BpmMSANPORTr6BvVQpx_f3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I still think this identifier needs to be versioned.  Use the same
-version number as we have on the cpu identifier since the OR1200 PIC
-hasn't changed since then; i.e. opencores,or1200-pic-rtlsvnXYZ.
+Hi Greg,
 
-/Jonas
+Today's linux-next merge of the tty tree got a conflict in
+Documentation/kernel-parameters.txt between commit d5ebf7cc86a7 ("m68k:
+Multi-platform EARLY_PRINTK") from the m68k tree and commit
+0d3c673e7881 ("tty/serial: pl011: add generic earlycon support") from
+the tty tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).  Thanks Geert for the heads up.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc Documentation/kernel-parameters.txt
+index 73368ca1339c,4946d8e58d53..000000000000
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@@ -910,7 -893,15 +911,15 @@@ bytes respectively. Such letter suffixe
+  			(mmio) or 32-bit (mmio32).
+  			The options are the same as for ttyS, above.
+ =20
++ 		pl011,<addr>
++ 			Start an early, polled-mode console on a pl011 serial
++ 			port at the specified address. The pl011 serial port
++ 			must already be setup and configured. Options are not
++ 			yet supported.
++=20
++ 		smh	Use ARM semihosting calls for early console.
++=20
+ -	earlyprintk=3D	[X86,SH,BLACKFIN,ARM]
+ +	earlyprintk=3D	[X86,SH,BLACKFIN,ARM,M68k]
+  			earlyprintk=3Dvga
+  			earlyprintk=3Defi
+  			earlyprintk=3Dxen
+
+--Sig_/7BpmMSANPORTr6BvVQpx_f3
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJThDZ1AAoJEMDTa8Ir7ZwVeiYP/i1ysWXmRzJGfteasnyhaDap
+mJRZQTL7j8EGbx7Ii2Wj3Ta98wAmnEqNAjDquL0tt4bdoGnWjB+yEKdwO6xWnuYd
+QZbAEX73cn4nEJUTiLFH1nQQJ3YekmDhNEdQf4I8tsV35eypMOPn/s9Z+qO7Op6N
+Dqh5zx9aPMLP7nBsvZQSE3PN0dP/TNhKbtqbGSSFB6b/K9c+IEdHOwPUYzbQb4zi
+AAkw4+7uJ8/su1Eph2pMe0ooU5uFtI1cgQLphf2eaRaLWG0htkG8yS2EqiATv5QU
+psNw77TH7FMJ/UPDmJTxRadPMMA8o+CfiEU2Uu9bvmbiR3vFQLOP/AOJYX/RY2j9
+InOiKPsFVvU6x2KGC3Qdu86f7HIy0/ketVvQwq2e2VmtSIBQrmDtb0z1KEXpsEAr
+y08OHMsobiwueok1ee1+a18NXzAxWHCrlVthB9V7Mu64/N5Yf8ZlLq3+4PWwY4MC
+MZzq0RkSB9TtLa+Zcgm3+7afENZX3w/UbbgN+/4eeNzCdp7XoOGMMiJkaZnRYiwo
+s/cy3teLN4wef3oEK/+gzfLGRVQL40/ScC9apNinzpHKXGrEGIvNU0y5kxvSQ5C8
+XsSFbaWhUExr08cGwifW2KWLmZkYqkd7HHFq5NBuew45OFc/6BWMQOIkJSmZ68ZL
+IoAC0NCfh5caPd5cE0+y
+=K01c
+-----END PGP SIGNATURE-----
+
+--Sig_/7BpmMSANPORTr6BvVQpx_f3--
