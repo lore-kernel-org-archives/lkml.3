@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765AbaE0VSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 17:18:42 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:57708 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaE0VSk (ORCPT
+	id S1753818AbaE0VTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 17:19:19 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:47100 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaE0VTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 17:18:40 -0400
-From: Marcin Kostrzewa <marckostrzewa@gmail.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fred Akers <knivey@botops.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Marcin Kostrzewa <marckostrzewa@gmail.com>
-Subject: [PATCH] remove duplicated comment and fix brace placement in drivers/staging/comedi/drivers/addi-data/hwdrv_acpi3501.c
-Date: Tue, 27 May 2014 14:17:35 +0000
-Message-Id: <1401200257-790-1-git-send-email-marckostrzewa@gmail.com>
-X-Mailer: git-send-email 1.9.2
+	Tue, 27 May 2014 17:19:17 -0400
+Date: Tue, 27 May 2014 14:17:59 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Chinner <david@fromorbit.com>
+cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Shrinkers and proportional reclaim
+In-Reply-To: <20140527023751.GB8554@dastard>
+Message-ID: <alpine.LSU.2.11.1405271406520.4317@eggly.anvils>
+References: <1400749779-24879-1-git-send-email-mgorman@suse.de> <alpine.LSU.2.11.1405261441320.7154@eggly.anvils> <20140527023751.GB8554@dastard>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marcin Kostrzewa <marckostrzewa@gmail.com>
----
- drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+On Tue, 27 May 2014, Dave Chinner wrote:
+> On Mon, May 26, 2014 at 02:44:29PM -0700, Hugh Dickins wrote:
+> > 
+> > [PATCH 4/3] fs/superblock: Avoid counting without __GFP_FS
+> > 
+> > Don't waste time counting objects in super_cache_count() if no __GFP_FS:
+> > super_cache_scan() would only back out with SHRINK_STOP in that case.
+> > 
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> 
+> While you might think that's a good thing, it's not.  The act of
+> shrinking is kept separate from the accounting of how much shrinking
+> needs to take place.  The amount of work the shrinker can't do due
+> to the reclaim context is deferred until the shrinker is called in a
+> context where it can do work (eg. kswapd)
+> 
+> Hence not accounting for work that can't be done immediately will
+> adversely impact the balance of the system under memory intensive
+> filesystem workloads. In these worklaods, almost all allocations are
+> done in the GFP_NOFS or GFP_NOIO contexts so not deferring the work
+> will will effectively stop superblock cache reclaim entirely....
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-index 20e89b0..8add8d8 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c
-@@ -104,9 +104,7 @@ static int apci3501_write_insn_timer(struct comedi_device *dev,
- 			outl(ul_Command1, dev->iobase + APCI3501_TIMER_CTRL_REG);
- 		}
- 
--		else if (data[1] == 0)	/* Stop The Watchdog */
--		{
--			/* Stop The Watchdog */
-+		else if (data[1] == 0) { /* Stop The Watchdog */
- 			ul_Command1 = inl(dev->iobase + APCI3501_TIMER_CTRL_REG);
- 			ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
- 			outl(0x0, dev->iobase + APCI3501_TIMER_CTRL_REG);
--- 
-1.9.2
+Thanks for filling me in on that.  At first I misunderstood you,
+and went off looking in the wrong direction.  Now I see what you're
+referring to: the quantity that shrink_slab_node() accumulates in
+and withdraws from shrinker->nr_deferred[nid].
 
+Right: forget my super_cache_count() __GFP_FS patch!
+
+Hugh
