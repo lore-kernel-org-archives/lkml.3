@@ -1,138 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaE0WtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 18:49:23 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:51459 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaE0WtW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 18:49:22 -0400
+	id S1753495AbaE0Wtc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 18:49:32 -0400
+Received: from ozlabs.org ([103.22.144.67]:43159 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751966AbaE0Wta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 18:49:30 -0400
+Date: Wed, 28 May 2014 08:49:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: dedekind1@gmail.com
+Cc: Brian Norris <computersforpeace@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Vincenzo Aliberti <vincenzo.aliberti@gmail.com>
+Subject: Re: linux-next: build failure after merge of the l2-mtd tree
+Message-ID: <20140528084916.4e05cf26@canb.auug.org.au>
+In-Reply-To: <1401187203.1304.125.camel@sauron.fi.intel.com>
+References: <20140522153047.62c1721c@canb.auug.org.au>
+	<20140526174225.GC5241@norris-Latitude-E6410>
+	<20140527095942.0a071e63@canb.auug.org.au>
+	<1401187203.1304.125.camel@sauron.fi.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140522031950.280830190@linutronix.de>
-References: <20140522031841.797415507@linutronix.de>
-	<20140522031950.280830190@linutronix.de>
-Date: Tue, 27 May 2014 15:49:21 -0700
-X-Google-Sender-Auth: 3D_YIl8yl3FLcCghq8SKXqjRmbA
-Message-ID: <CAGQ1y=6DOs0hcdV+NvOdA9hxf6kwu-R0M-c6R2iUK4ufr=pwEg@mail.gmail.com>
-Subject: Re: [patch 6/6] rtmutex: Avoid pointless requeueing in the deadlock
- detection chain walk
-From: Jason Low <jason.low2@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/s0JmTu3E.mEWT=h25Qc2W6d"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 8:25 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+--Sig_/s0JmTu3E.mEWT=h25Qc2W6d
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> @@ -440,32 +452,41 @@ static int rt_mutex_adjust_prio_chain(st
->         get_task_struct(task);
->         raw_spin_lock_irqsave(&task->pi_lock, flags);
+Hi Artem,
+
+On Tue, 27 May 2014 13:40:03 +0300 Artem Bityutskiy <dedekind1@gmail.com> w=
+rote:
 >
-> -       if (waiter == rt_mutex_top_waiter(lock)) {
-> -               /*
-> -                * The waiter became the top waiter on the
-> -                * lock. Remove the previous top waiter from the tasks
-> -                * pi waiters list and add waiter to it.
-> -                */
-> -               rt_mutex_dequeue_pi(task, prerequeue_top_waiter);
-> -               rt_mutex_enqueue_pi(task, waiter);
-> -               __rt_mutex_adjust_prio(task);
-> -
-> -       } else if (prerequeue_top_waiter == waiter) {
-> -               /*
-> -                * The waiter was the top waiter on the lock. Remove
-> -                * waiter from the tasks pi waiters list and add the
-> -                * new top waiter to it.
-> -                */
-> -               rt_mutex_dequeue_pi(task, waiter);
-> -               waiter = rt_mutex_top_waiter(lock);
-> -               rt_mutex_enqueue_pi(task, waiter);
-> -               __rt_mutex_adjust_prio(task);
-> -
-> -       } else {
-> -               /*
-> -                * Nothing changed. No need to do any priority
-> -                * adjustment.
-> -                */
-> +       /*
-> +        * In case we are just following the lock chain for deadlock
-> +        * detection we can avoid the whole requeue and priority
-> +        * adjustment business.
-> +        */
-> +       if (requeue) {
-> +               if (waiter == rt_mutex_top_waiter(lock)) {
-> +                       /*
-> +                        * The waiter became the top waiter on the
-> +                        * lock. Remove the previous top waiter from
-> +                        * the tasks pi waiters list and add waiter to
-> +                        * it.
-> +                        */
-> +                       rt_mutex_dequeue_pi(task, prerequeue_top_waiter);
-> +                       rt_mutex_enqueue_pi(task, waiter);
-> +                       __rt_mutex_adjust_prio(task);
-> +
-> +               } else if (prerequeue_top_waiter == waiter) {
-> +                       /*
-> +                        * The waiter was the top waiter on the
-> +                        * lock. Remove waiter from the tasks pi
-> +                        * waiters list and add the new top waiter to
-> +                        * it.
-> +                        */
-> +                       rt_mutex_dequeue_pi(task, waiter);
-> +                       waiter = rt_mutex_top_waiter(lock);
-> +                       rt_mutex_enqueue_pi(task, waiter);
-> +                       __rt_mutex_adjust_prio(task);
-> +
-> +               } else {
-> +                       /*
-> +                        * Nothing changed. No need to do any priority
-> +                        * adjustment.
-> +                        */
-> +               }
->         }
->
->         raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> apologies for not informing you about the onwership changes in time. But
+> yes, Brian takes care of this tree now.
 
-In the above case, could we go 1 step further and avoid taking the pi
-lock as well?
+OK, thanks.
 
-        if (requeue) {
-                raw_spin_lock_irqsave(&task->pi_lock, flags);
+> The URL you have is technically correct, but it is better to use this
+> instead:
+>=20
+> git://git.infradead.org/l2-mtd.git#master
 
-                if (waiter == rt_mutex_top_waiter(lock)) {
-                        /*
-                         * The waiter became the top waiter on the
-                         * lock. Remove the previous top waiter from
-                         * the tasks pi waiters list and add waiter to
-                         * it.
-                         */
-                        rt_mutex_dequeue_pi(task, prerequeue_top_waiter);
-                        rt_mutex_enqueue_pi(task, waiter);
-                        __rt_mutex_adjust_prio(task);
+I have changed to use that.
 
-                } else if (prerequeue_top_waiter == waiter) {
-                        /*
-                         * The waiter was the top waiter on the
-                         * lock. Remove waiter from the tasks pi
-                         * waiters list and add the new top waiter to
-                         * it.
-                         */
-                        rt_mutex_dequeue_pi(task, waiter);
-                        waiter = rt_mutex_top_waiter(lock);
-                        rt_mutex_enqueue_pi(task, waiter);
-                        __rt_mutex_adjust_prio(task);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-                } else {
-                        /*
-                         * Nothing changed. No need to do any priority
-                         * adjustment.
-                         */
-                }
+--Sig_/s0JmTu3E.mEWT=h25Qc2W6d
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-                raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-        }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJThRZ4AAoJEMDTa8Ir7ZwVUjMP/3AhMPUU9PmRv/vPIe/hMmck
+0k1NUXxQaa0/HtvYMVj08LU0aKal+dxJ+jbQp+XQJcAJE1nD3B6F8V+Q2WOTeJNM
+2lBKERIksWYXFYR1wJVC9HqYm+OwmLOkXNSkkku5ZZK9tk7qrHUk0SNxjlOGJxz2
+FyxTckyQXcdB+aXdFZHXAyHRXJSp13L0XdYPfnP3IC9lxwoxa2FxG+TUIdUvz1dF
+AJgb9Wr92qU3LdsF4BQlg+fX2Dj+FE/ztltckvSkewkESDENKZx9Mjh5IN2RWIph
+e7eaof+CzEBf1A0XgyVelOMWMt3EWKpEXG2qrQqctb75TrjIiLdTAx11j2dGfoCL
+XZn15ADRDqV3zMFRDTOLP8FfYiDAn6AcgbzgC/IqKZE4uQiZbKvdkCqkBbNkEK1A
+0n7g0zVwBt43OliOPZxsEYrJPJ8fo9qfY7UW+25m7iCJ2qRujHLaTZPMeizrnA3/
+zyldnbxbATttECYZpC3slc6QPW0CdX8cFjg/nDoHxWCjrbholy6SdQIhQAzPVS7B
+zNgUXuzqRJtxgEfwFMYKx+mlA+4CLwxSbve9GwyAHJWVDOpLhqskDvw4hAZwDUMp
+aHOlZGc/IVfpRGC399GktIWXY62y4bxeSgMUCRX/5wz/oMZ6UCYA4rklCglTGtSV
+3kV6HHz8uPi7bQ1nLfLq
+=h9VV
+-----END PGP SIGNATURE-----
+
+--Sig_/s0JmTu3E.mEWT=h25Qc2W6d--
