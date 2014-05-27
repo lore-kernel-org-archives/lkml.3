@@ -1,132 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaE0KWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 06:22:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37902 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015AbaE0KWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 06:22:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,918,1392192000"; 
-   d="scan'208";a="518242682"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, x86@kernel.org, benh@kernel.crashing.org,
-        paulus@samba.org, riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
-        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com
-In-Reply-To: <53842FB1.7090909@linux.vnet.ibm.com>
-References: <1399541296-18810-1-git-send-email-maddy@linux.vnet.ibm.com>
- <537479E7.90806@linux.vnet.ibm.com>
- <alpine.LSU.2.11.1405151026540.4664@eggly.anvils>
- <87wqdik4n5.fsf@rustcorp.com.au>
- <53797511.1050409@linux.vnet.ibm.com>
- <alpine.LSU.2.11.1405191531150.1317@eggly.anvils>
- <20140519164301.eafd3dd288ccb88361ddcfc7@linux-foundation.org>
- <20140520004429.E660AE009B@blue.fi.intel.com>
- <87oaythsvk.fsf@rustcorp.com.au>
- <20140520102738.7F096E009B@blue.fi.intel.com>
- <53842FB1.7090909@linux.vnet.ibm.com>
-Subject: Re: [PATCH V4 0/2] mm: FAULT_AROUND_ORDER patchset performance data
- for powerpc
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140527102200.012BBE009B@blue.fi.intel.com>
-Date: Tue, 27 May 2014 13:21:59 +0300 (EEST)
+	id S1752339AbaE0KXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 06:23:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50980 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaE0KXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 06:23:17 -0400
+Message-ID: <53846779.4070204@ti.com>
+Date: Tue, 27 May 2014 13:22:49 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Dan Williams <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>, Sekhar Nori <nsekhar@ti.com>,
+        Joel Fernandes <joelf@ti.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH v3 01/10] platform_data: edma: Be precise with the paRAM
+ struct
+References: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>	<1397475725-5036-2-git-send-email-peter.ujfalusi@ti.com> <CAOesGMg43jT6D_ot2tKfRXXgAgwqs5Pu_tAFKc35yxLAczrzGQ@mail.gmail.com>
+In-Reply-To: <CAOesGMg43jT6D_ot2tKfRXXgAgwqs5Pu_tAFKc35yxLAczrzGQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Madhavan Srinivasan wrote:
-> On Tuesday 20 May 2014 03:57 PM, Kirill A. Shutemov wrote:
-> > Rusty Russell wrote:
-> >> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> writes:
-> >>> Andrew Morton wrote:
-> >>>> On Mon, 19 May 2014 16:23:07 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
-> >>>>
-> >>>>> Shouldn't FAULT_AROUND_ORDER and fault_around_order be changed to be
-> >>>>> the order of the fault-around size in bytes, and fault_around_pages()
-> >>>>> use 1UL << (fault_around_order - PAGE_SHIFT)
-> >>>>
-> >>>> Yes.  And shame on me for missing it (this time!) at review.
-> >>>>
-> >>>> There's still time to fix this.  Patches, please.
-> >>>
-> >>> Here it is. Made at 3.30 AM, build tested only.
-> >>
-> >> Prefer on top of Maddy's patch which makes it always a variable, rather
-> >> than CONFIG_DEBUG_FS.  It's got enough hair as it is.
-> > 
-> > Something like this?
-> > 
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > Date: Tue, 20 May 2014 13:02:03 +0300
-> > Subject: [PATCH] mm: nominate faultaround area in bytes rather then page order
-> > 
-> > There are evidences that faultaround feature is less relevant on
-> > architectures with page size bigger then 4k. Which makes sense since
-> > page fault overhead per byte of mapped area should be less there.
-> > 
-> > Let's rework the feature to specify faultaround area in bytes instead of
-> > page order. It's 64 kilobytes for now.
-> > 
-> > The patch effectively disables faultaround on architectures with
-> > page size >= 64k (like ppc64).
-> > 
-> > It's possible that some other size of faultaround area is relevant for a
-> > platform. We can expose `fault_around_bytes' variable to arch-specific
-> > code once such platforms will be found.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  mm/memory.c | 62 +++++++++++++++++++++++--------------------------------------
-> >  1 file changed, 23 insertions(+), 39 deletions(-)
-> > 
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 037b812a9531..252b319e8cdf 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -3402,63 +3402,47 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
-> >  	update_mmu_cache(vma, address, pte);
-> >  }
-> > 
-> > -#define FAULT_AROUND_ORDER 4
-> > +static unsigned long fault_around_bytes = 65536;
-> > +
-> > +static inline unsigned long fault_around_pages(void)
-> > +{
-> > +	return rounddown_pow_of_two(fault_around_bytes) / PAGE_SIZE;
-> > +}
-> > +
-> > +static inline unsigned long fault_around_mask(void)
-> > +{
-> > +	return ~(rounddown_pow_of_two(fault_around_bytes) - 1) & PAGE_MASK;
-> > +}
-> > 
-> > -#ifdef CONFIG_DEBUG_FS
-> > -static unsigned int fault_around_order = FAULT_AROUND_ORDER;
-> > 
-> > -static int fault_around_order_get(void *data, u64 *val)
-> > +#ifdef CONFIG_DEBUG_FS
-> > +static int fault_around_bytes_get(void *data, u64 *val)
-> >  {
-> > -	*val = fault_around_order;
-> > +	*val = fault_around_bytes;
-> >  	return 0;
-> >  }
-> > 
-> > -static int fault_around_order_set(void *data, u64 val)
-> > +static int fault_around_bytes_set(void *data, u64 val)
-> >  {
+On 05/27/2014 12:32 AM, Olof Johansson wrote:
+> Hi,
 > 
-> Kindly ignore the question if not relevant. Even though we need root
-> access to alter the value, will we be fine with
-> negative value?.
+> On Mon, Apr 14, 2014 at 4:41 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+>> The edmacc_param struct should follow the layout of the paRAM area in the
+>> HW. Be explicit on the size of the fields (u32) and also mark the struct
+>> as packed to avoid any padding on non 32bit architectures.
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> Acked-by: Joel Fernandes <joelf@ti.com>
+>> ---
+>>  include/linux/platform_data/edma.h | 18 +++++++++---------
+>>  1 file changed, 9 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
+>> index f50821cb64be..923f8a3e4ce0 100644
+>> --- a/include/linux/platform_data/edma.h
+>> +++ b/include/linux/platform_data/edma.h
+>> @@ -43,15 +43,15 @@
+>>
+>>  /* PaRAM slots are laid out like this */
+>>  struct edmacc_param {
+>> -       unsigned int opt;
+>> -       unsigned int src;
+>> -       unsigned int a_b_cnt;
+>> -       unsigned int dst;
+>> -       unsigned int src_dst_bidx;
+>> -       unsigned int link_bcntrld;
+>> -       unsigned int src_dst_cidx;
+>> -       unsigned int ccnt;
+>> -};
+>> +       u32 opt;
+>> +       u32 src;
+>> +       u32 a_b_cnt;
+>> +       u32 dst;
+>> +       u32 src_dst_bidx;
+>> +       u32 link_bcntrld;
+>> +       u32 src_dst_cidx;
+>> +       u32 ccnt;
+>> +} __packed;
+>>
+>>  /* fields in edmacc_param.opt */
+>>  #define SAM            BIT(0)
+> 
+> I came across this patch when I was looking at a pull request from
+> Sekhar for EDMA cleanups, and it made me look closer at the contents
+> of this file.
+> 
+> The include/linux/platform_data/ directory is meant to hold
+> platform_data definitions for drivers, and nothing more.
+> platform_data/edma.h also contains a whole bunch of interface
+> definitions for the driver. They do not belong there, and should be
+> moved to a different include file.
+> 
+> That also includes the above struct, because as far as I can tell it's
+> a runtime state structure, not something that is passed in with
+> platform data.
+> 
+> Can someone please clean this up? Thanks.
 
-val is u64. or I miss something?
+I think Joel is working on to move/merge the code from arch/arm/common/edma.c
+to drivers/dma/edma.c
+I'm sure within this work he is going to clean up the header file as well.
+As a first step I think the non platform_data content can be moved as
+include/linux/edma.h or probably as ti-edma.h?
 
 -- 
- Kirill A. Shutemov
+Péter
