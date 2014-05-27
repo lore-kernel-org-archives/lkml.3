@@ -1,176 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaE0Np6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 09:45:58 -0400
-Received: from verein.lst.de ([213.95.11.211]:59920 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141AbaE0Npy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752657AbaE0Npz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 09:45:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53470 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaE0Npy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 May 2014 09:45:54 -0400
-Date: Tue, 27 May 2014 15:45:52 +0200
-From: Torsten Duwe <duwe@lst.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: [Patch v5 02/03]: hwrng: create filler thread
-Message-ID: <20140527134552.GC14099@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de> <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com> <20140415085126.GA17327@lst.de> <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com> <20140527134156.GA14099@lst.de>
+Date: Tue, 27 May 2014 15:45:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org
+Subject: Re: [PATCH v2 02/11] sched: remove a wake_affine condition
+Message-ID: <20140527134542.GB11074@laptop.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-3-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140527134156.GA14099@lst.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1400860385-14555-3-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This can be viewed as the in-kernel equivalent of hwrngd;
-like FUSE it is a good thing to have a mechanism in user land,
-but for some reasons (simplicity, secrecy, integrity, speed)
-it may be better to have it in kernel space.
+On Fri, May 23, 2014 at 05:52:56PM +0200, Vincent Guittot wrote:
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9587ed1..30240ab 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4238,7 +4238,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  {
+>  	s64 this_load, load;
+>  	int idx, this_cpu, prev_cpu;
+> -	unsigned long tl_per_task;
+>  	struct task_group *tg;
+>  	unsigned long weight;
+>  	int balanced;
+> @@ -4296,32 +4295,22 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  		balanced = this_eff_load <= prev_eff_load;
+>  	} else
+>  		balanced = true;
+> +	schedstat_inc(p, se.statistics.nr_wakeups_affine_attempts);
+>  
+> +	if (!balanced)
+> +		return 0;
+>  	/*
+>  	 * If the currently running task will sleep within
+>  	 * a reasonable amount of time then attract this newly
+>  	 * woken task:
+>  	 */
+> +	if (sync)
+>  		return 1;
+>  
+> +	schedstat_inc(sd, ttwu_move_affine);
+> +	schedstat_inc(p, se.statistics.nr_wakeups_affine);
+>  
+> +	return 1;
+>  }
 
-This patch creates a thread once a hwrng registers, and uses
-the previously established add_hwgenerator_randomness() to feed
-its data to the input pool as long as needed. A derating factor
-is used to bias the entropy estimation and to disable this
-mechanism entirely when set to zero.
+So I'm not usually one for schedstat nitpicking, but should we fix it in
+the sync case? That is, for sync we return 1 but do no inc
+nr_wakeups_affine, even though its going to be an affine wakeup.
 
-Signed-off-by: Torsten Duwe <duwe@suse.de>
 
----
- drivers/char/hw_random/core.c |   65 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 62 insertions(+), 3 deletions(-)
-
---- linux/drivers/char/hw_random/core.c.orig
-+++ linux/drivers/char/hw_random/core.c
-@@ -39,6 +39,7 @@
- #include <linux/fs.h>
- #include <linux/sched.h>
- #include <linux/miscdevice.h>
-+#include <linux/kthread.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/random.h>
-@@ -50,10 +51,18 @@
- 
- 
- static struct hwrng *current_rng;
-+static struct task_struct *hwrng_fill;
- static LIST_HEAD(rng_list);
- static DEFINE_MUTEX(rng_mutex);
- static int data_avail;
--static u8 *rng_buffer;
-+static u8 *rng_buffer, *rng_fillbuf;
-+static unsigned short current_quality = 700; /* an arbitrary 70% */
-+
-+module_param(current_quality, ushort, 0644);
-+MODULE_PARM_DESC(current_quality,
-+		 "current hwrng entropy estimation per mill");
-+
-+static void start_khwrngd(void);
- 
- static size_t rng_buffer_size(void)
- {
-@@ -62,9 +71,18 @@ static size_t rng_buffer_size(void)
- 
- static inline int hwrng_init(struct hwrng *rng)
- {
-+	int err;
-+
- 	if (!rng->init)
- 		return 0;
--	return rng->init(rng);
-+	err = rng->init(rng);
-+	if (err)
-+		return err;
-+
-+	if (current_quality > 0 && !hwrng_fill)
-+		start_khwrngd();
-+
-+	return 0;
- }
- 
- static inline void hwrng_cleanup(struct hwrng *rng)
-@@ -300,6 +318,36 @@ err_misc_dereg:
- 	goto out;
- }
- 
-+static int hwrng_fillfn(void *unused)
-+{
-+	long rc;
-+
-+	while (!kthread_should_stop()) {
-+		if (!current_rng)
-+			break;
-+		rc = rng_get_data(current_rng, rng_fillbuf,
-+				  rng_buffer_size(), 1);
-+		if (rc <= 0) {
-+			pr_warn("hwrng: no data available\n");
-+			msleep_interruptible(10000);
-+			continue;
-+		}
-+		add_hwgenerator_randomness((void *)rng_fillbuf, rc,
-+					   (rc*current_quality)>>10);
-+	}
-+	hwrng_fill = 0;
-+	return 0;
-+}
-+
-+static void start_khwrngd(void)
-+{
-+	hwrng_fill = kthread_run(hwrng_fillfn, NULL, "hwrng");
-+	if (hwrng_fill == ERR_PTR(-ENOMEM)) {
-+		pr_err("hwrng_fill thread creation failed");
-+		hwrng_fill = NULL;
-+	}
-+}
-+
- int hwrng_register(struct hwrng *rng)
- {
- 	int err = -EINVAL;
-@@ -319,6 +367,13 @@ int hwrng_register(struct hwrng *rng)
- 		if (!rng_buffer)
- 			goto out_unlock;
- 	}
-+	if (!rng_fillbuf) {
-+		rng_fillbuf = kmalloc(rng_buffer_size(), GFP_KERNEL);
-+		if (!rng_fillbuf) {
-+			kfree(rng_buffer);
-+			goto out_unlock;
-+		}
-+	}
- 
- 	/* Must not register two RNGs with the same name. */
- 	err = -EEXIST;
-@@ -373,8 +428,11 @@ void hwrng_unregister(struct hwrng *rng)
- 				current_rng = NULL;
- 		}
- 	}
--	if (list_empty(&rng_list))
-+	if (list_empty(&rng_list)) {
- 		unregister_miscdev();
-+		if (hwrng_fill)
-+			kthread_stop(hwrng_fill);
-+	}
- 
- 	mutex_unlock(&rng_mutex);
- }
-@@ -385,6 +443,7 @@ static void __exit hwrng_exit(void)
- 	mutex_lock(&rng_mutex);
- 	BUG_ON(current_rng);
- 	kfree(rng_buffer);
-+	kfree(rng_fillbuf);
- 	mutex_unlock(&rng_mutex);
- }
- 
