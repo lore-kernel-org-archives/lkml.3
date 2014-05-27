@@ -1,94 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaE0GbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 02:31:00 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:40600 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaE0Ga6 (ORCPT
+	id S1752153AbaE0Gbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 02:31:40 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40754 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaE0Gbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 02:30:58 -0400
+	Tue, 27 May 2014 02:31:34 -0400
+Subject: [RFT PATCH -next v2] [BUGFIX] kprobes: Fix "Failed to find
+ blacklist" error on ia64 and ppc64
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Tue, 27 May 2014 15:31:21 +0900
+Message-ID: <20140527063121.4399.38014.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <5383249A.6060407@in.ibm.com>
+References: <5383249A.6060407@in.ibm.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <1401110423-5647-3-git-send-email-k.kozlowski@samsung.com>
-References: <1401110423-5647-1-git-send-email-k.kozlowski@samsung.com>
-	<1401110423-5647-3-git-send-email-k.kozlowski@samsung.com>
-Date: Tue, 27 May 2014 12:00:57 +0530
-Message-ID: <CAKew6eXdmif5-A+sb7-HEd3fP739RNy8SbzpCVRJ6uDgkyFvoQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] regulator: s2mps11: Merge S2MPA01 driver
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Sangbeom Kim <sbkim73@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        devicetree <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 6:50 PM, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> Add S2MPA01 support to the s2mps11 regulator driver. This obsoletes the
-> s2mpa01 regulator driver.
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+On ia64 and ppc64, the function pointer does not point the
+entry address of the function, but the address of function
+discriptor (which contains the entry address and misc
+data.) Since the kprobes passes the function pointer stored
+by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+initalizing its blacklist, it fails and reports many errors
+as below.
 
-> @@ -216,30 +250,20 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
->                         ramp_delay = s2mps11->ramp_delay16;
->                 break;
->         case S2MPX_BUCK2:
-> -               if (!ramp_delay) {
-> -                       ramp_enable = 0;
-> -                       break;
-> -               }
-> -
+  Failed to find blacklist 0001013168300000
+  Failed to find blacklist 0001013000f0a000
+  Failed to find blacklist 000101315f70a000
+  Failed to find blacklist 000101324c80a000
+  Failed to find blacklist 0001013063f0a000
+  Failed to find blacklist 000101327800a000
+  Failed to find blacklist 0001013277f0a000
+  Failed to find blacklist 000101315a70a000
+  Failed to find blacklist 0001013277e0a000
+  Failed to find blacklist 000101305a20a000
+  Failed to find blacklist 0001013277d0a000
+  Failed to find blacklist 00010130bdc0a000
+  Failed to find blacklist 00010130dc20a000
+  Failed to find blacklist 000101309a00a000
+  Failed to find blacklist 0001013277c0a000
+  Failed to find blacklist 0001013277b0a000
+  Failed to find blacklist 0001013277a0a000
+  Failed to find blacklist 000101327790a000
+  Failed to find blacklist 000101303140a000
+  Failed to find blacklist 0001013a3280a000
 
-What if we want to disable ramp_delay from DT ?
+To fix this bug, this introduces function_entry() macro to
+retrieve the entry address from the given function pointer,
+and uses for kallsyms_lookup_size_offset() while initializing
+blacklist.
 
-> -               s2mps11->ramp_delay2 = ramp_delay;
-> +               if (s2mps11->dev_type == S2MPS11X ||
-> +                               ramp_delay > s2mps11->ramp_delay2)
-> +                       s2mps11->ramp_delay2 = ramp_delay;
-> +               else /* S2MPA01 && ramp_delay <= s2mpa01->ramp_delay24 */
-> +                       ramp_delay = s2mps11->ramp_delay2;
+Changes in V2:
+ - Use function_entry() macro when lookin up symbols instead
+   of storing it.
+ - Update for the latest -next.
 
-Here ramp_delay = 0(ramp_disable case) is also getting over written,
-if required to take care of it later.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Tony Luck <tony.luck@gmail.com>
+Cc: Suzuki K. Poulose <suzuki@in.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Kevin Hao <haokexin@gmail.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+---
+ arch/ia64/include/asm/types.h    |    2 ++
+ arch/powerpc/include/asm/types.h |   11 +++++++++++
+ include/linux/types.h            |    4 ++++
+ kernel/kprobes.c                 |    4 +++-
+ 4 files changed, 20 insertions(+), 1 deletion(-)
 
->                 break;
->         case S2MPX_BUCK3:
-> -               if (!ramp_delay) {
-> -                       ramp_enable = 0;
-> -                       break;
-> -               }
+diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
+index 4c351b1..95279dd 100644
+--- a/arch/ia64/include/asm/types.h
++++ b/arch/ia64/include/asm/types.h
+@@ -27,5 +27,7 @@ struct fnptr {
+ 	unsigned long gp;
+ };
+ 
++#define function_entry(fn) (((struct fnptr *)(fn))->ip)
++
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_IA64_TYPES_H */
+diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+index bfb6ded..8b89d65 100644
+--- a/arch/powerpc/include/asm/types.h
++++ b/arch/powerpc/include/asm/types.h
+@@ -25,6 +25,17 @@ typedef struct {
+ 	unsigned long env;
+ } func_descr_t;
+ 
++#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
++/*
++ * On PPC64 ABIv1 the function pointer actually points to the
++ * function's descriptor. The first entry in the descriptor is the
++ * address of the function text.
++ */
++#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
++#else
++#define function_entry(fn)	((unsigned long)(fn))
++#endif
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* _ASM_POWERPC_TYPES_H */
+diff --git a/include/linux/types.h b/include/linux/types.h
+index a0bb704..3b95369 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -213,5 +213,9 @@ struct callback_head {
+ };
+ #define rcu_head callback_head
+ 
++#ifndef function_entry
++#define function_entry(fn)	((unsigned long)(fn))
++#endif
++
+ #endif /*  __ASSEMBLY__ */
+ #endif /* _LINUX_TYPES_H */
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 2ac9f13..3859c88 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -32,6 +32,7 @@
+  *		<prasanna@in.ibm.com> added function-return probes.
+  */
+ #include <linux/kprobes.h>
++#include <linux/types.h>
+ #include <linux/hash.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+@@ -2042,7 +2043,8 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
+ 	unsigned long offset = 0, size = 0;
+ 
+ 	for (iter = start; iter < end; iter++) {
+-		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
++		if (!kallsyms_lookup_size_offset(function_entry(*iter),
++						 &size, &offset)) {
+ 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+ 			continue;
+ 		}
 
-[snip]
 
->
-> -       if (!ramp_enable)
-> -               goto ramp_disable;
-> -
-> -       /* Ramp delay can be enabled/disabled only for buck[2346] */
->         if (ramp_reg->enable_supported) {
-> +               if (ramp_disable)
-
-typo ?    if (!ramp_enable) / if (!ramp_delay) ?
-
-> +                       goto ramp_disable;
-> +
-
-
-Also TBH, I can't get rationale behind this merge, As i can't see
-considerable reduction in no of C code lines in comp of added
-complexity.
- Is there considerable advantage in binary stats of single driver as
-compare to independent drivers?
-
-
-Regards,
-Yadwinder
