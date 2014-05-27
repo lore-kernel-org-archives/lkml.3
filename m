@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaE0LUn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 07:20:43 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44137 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaE0LUm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 07:20:42 -0400
-Date: Tue, 27 May 2014 12:20:24 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Message-ID: <20140527112024.GS12304@sirena.org.uk>
-References: <1400805629-10322-1-git-send-email-lejun.zhu@linux.intel.com>
- <1400805629-10322-2-git-send-email-lejun.zhu@linux.intel.com>
- <20140523174925.GH22111@sirena.org.uk>
- <5382D8A7.7010704@linux.intel.com>
- <20140526145127.GM22111@sirena.org.uk>
- <5383E0FA.5060509@linux.intel.com>
+	id S1752022AbaE0LZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:25:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750904AbaE0LZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 07:25:09 -0400
+Date: Tue, 27 May 2014 13:24:59 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, jet.chen@intel.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [jet.chen@intel.com: [bio] kernel BUG at
+ drivers/block/virtio_blk.c:166!]
+Message-ID: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
+References: <20140526194347.GB2271@dhcp-27-189.brq.redhat.com>
+ <CACVXFVOaF-EOioE38sy9=2f-+rKECJnzUCSHrL-VZJi1Ycj_wA@mail.gmail.com>
+ <20140527084359.GD2205@dhcp-27-189.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WEs1Fi1/lVc+yikr"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5383E0FA.5060509@linux.intel.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RESEND v2 1/4] mfd: intel_soc_pmic: Core driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140527084359.GD2205@dhcp-27-189.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 27, 2014 at 10:43:59AM +0200, Maurizio Lombardi wrote:
+> 
+> But now I'm suspicious of this part of commit 3979ef4dcf:
+> 
+>  failed:
+>         bvec->bv_page = NULL;
+>         bvec->bv_len = 0;
+>         bvec->bv_offset = 0;
+>         bio->bi_vcnt--;  <----------------
+>         blk_recount_segments(q, bio);
+>         return 0;
+> 
+> Is decreasing bi_vcnt sufficient to guarantee that blk_recount_segments()
+> recalculates the correct number of physical segments?
+> Looking at the __blk_recalc_rq_segments() it appears it may not be the case.
+> 
+> The question is how can we restore the correct number of physical segments in case
+> of failure without breaking anything...
+>
 
---WEs1Fi1/lVc+yikr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If my hypothesis is correct, the following patch should trigger a kernel panic,
+Jet Chen, can you try it and let me know whether the BUG_ON is hit or not?
 
-On Tue, May 27, 2014 at 08:48:58AM +0800, Zhu, Lejun wrote:
-> On 5/26/2014 10:51 PM, Mark Brown wrote:
+diff --git a/block/bio.c b/block/bio.c
+index 0443694..763868f 100644
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -701,6 +701,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 			  unsigned int max_sectors)
+ {
+ 	int retried_segments = 0;
++	unsigned int phys_segments_orig;
+ 	struct bio_vec *bvec;
+ 
+ 	/*
+@@ -751,6 +752,9 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 	if (bio->bi_vcnt >= bio->bi_max_vecs)
+ 		return 0;
+ 
++	blk_recount_segments(q, bio);
++	phys_segments_orig = bio->bi_phys_segments;
++
+ 	/*
+ 	 * setup the new entry, we might clear it again later if we
+ 	 * cannot add the page
+@@ -811,6 +815,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 	bvec->bv_offset = 0;
+ 	bio->bi_vcnt--;
+ 	blk_recount_segments(q, bio);
++	BUG_ON(phys_segments_orig != bio->bi_phys_segments);
+ 	return 0;
+ }
 
-> >> We created these names to hide the implementation of how read/write is
-> >> done from other platform specific patches interacting with this driver.
-> >> So when we change the implementation, e.g. from I2C read/write to
-> >> regmap, we don't have to touch all these patches.
 
-> > This sort of HAL is frowned upon in the upstream kernel.
-
-> We want to do what other MFD drivers' been doing, and make it easier for
-> the callers. A couple of similar examples are intel_msic_reg_read() and
-> lp3943_read_byte(). We want to do the same with intel_soc_pmic_readb(),
-> and I don't think it's too odd.
-
-The odd and problematic bit is the global variable part of things -
-these wrappers are usually just doing lookup of the underlying I/O
-handle in the struct for the device and can be implemented as static
-inlines in the header.
-
---WEs1Fi1/lVc+yikr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThHT0AAoJELSic+t+oim9JQ0P/j2bCvyDTX1xleXx7CDa3osQ
-YsW68yWc3tyVHxvABrp7iOlBCD/rfaxF6VieDze/Dt0FyXKFw8GzpDUhFU7KtC0N
-zuZAp8XgDZULcYOAfjomyuPc3T5KSdgNSCwQovVVHJyDNyshIjaiLYcX0TaZN34Y
-N/nTsuyHbZqGk+kCbMeo01o6Y0XE7/PYCNPddR7sR+xo5AflnlR7JiZJQk3XlfZD
-JapUcdXj4O9sPMBmqDjhke+KLsPEAmie9gLCMxJzPIcS4HxETKXkUWsOqjsxYlEt
-f4BzeUjFvM879yDKBGaps+2BD7t+4QLbaHBcTsHRXLnmjFbHC8RCzLEFxvd0Hhr4
-6pngxk+8LzLwqMZLVBz71MsdJklTgjKCU7IFJgs5F/cv4ZjxrqmuojLvjC/+5MqC
-OmOSnGx8UqZW23Y30dRglsmJC0mpLtIAO7/ar0eXg8nalYsnO1UDqX5hx8jqlwjq
-VmcnZ80JCXG91OIpPn2yYDvzh4wm4mYxl9ywsIP8zMVYfdTFUEqa9NmwSilo+hbw
-DVjjf9AlUoz6SKXMv+g4u6FjY686Ku2eWNyvYi6lAfIA7gytB6atDygX9pmt29kH
-npkZP01ik7mPvLqwSLov50otbtU00g7xNWClPPm6dhFx5921LvUHKGX7ysgDZ8U7
-jasVkBVOWDa3E3S7Zzq9
-=oUNV
------END PGP SIGNATURE-----
-
---WEs1Fi1/lVc+yikr--
+Regards,
+Maurizio Lombardi 
