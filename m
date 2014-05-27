@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaE0K7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 06:59:30 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:6826 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655AbaE0K72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 06:59:28 -0400
-X-IronPort-AV: E=Sophos;i="4.98,918,1392163200"; 
-   d="scan'208";a="136076862"
-Message-ID: <5384700E.1030501@citrix.com>
-Date: Tue, 27 May 2014 11:59:26 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1751991AbaE0LFb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 07:05:31 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44111 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaE0LF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 07:05:26 -0400
+Date: Tue, 27 May 2014 12:05:04 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Alban Bedel <alban.bedel@avionic-design.de>,
+        Stefan Agner <stefan@agner.ch>, Mike Rapoport <mike@compulab.co.il>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140527110504.GO12304@sirena.org.uk>
+References: <1401180180.7221.0.camel@phoenix>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>, <boris.ostrovsky@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [V1 PATCH] dom0 pvh: map foreign pfns in our p2m
- for toolstack
-References: <1400898824-18769-1-git-send-email-mukesh.rathor@oracle.com> <1400898824-18769-2-git-send-email-mukesh.rathor@oracle.com> <53846C4C.1080701@citrix.com>
-In-Reply-To: <53846C4C.1080701@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XhCG2ItGfl13yqyv"
+Content-Disposition: inline
+In-Reply-To: <1401180180.7221.0.camel@phoenix>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: tps6586x: Remove unused to_tps6586x_dev()
+ function
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/14 11:43, Roger Pau Monné wrote:
-> On 24/05/14 03:33, Mukesh Rathor wrote:
->> When running as dom0 in pvh mode, foreign pfns that are accessed must be
->> added to our p2m which is managed by xen. This is done via
->> XENMEM_add_to_physmap_range hypercall. This is needed for toolstack
->> building guests and mapping guest memory, xentrace mapping xen pages,
->> etc..
 
-Thanks.
+--XhCG2ItGfl13yqyv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Applied to devel/for-linus-3.16, but see comments below.
+On Tue, May 27, 2014 at 04:43:00PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
->> +static int xlate_add_to_p2m(unsigned long lpfn, unsigned long fgmfn,
->> +			    unsigned int domid)
+Applied, thanks.
 
-The preferred abbreviation is GFN not GMFN.  I fixed this up.
+--XhCG2ItGfl13yqyv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->> +{
->> +	int rc, err = 0;
->> +	xen_pfn_t gpfn = lpfn;
->> +	xen_ulong_t idx = fgmfn;
->> +
->> +	struct xen_add_to_physmap_range xatp = {
->> +		.domid = DOMID_SELF,
->> +		.foreign_domid = domid,
->> +		.size = 1,
->> +		.space = XENMAPSPACE_gmfn_foreign,
->> +	};
->> +	set_xen_guest_handle(xatp.idxs, &idx);
->> +	set_xen_guest_handle(xatp.gpfns, &gpfn);
->> +	set_xen_guest_handle(xatp.errs, &err);
->> +
->> +	rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap_range, &xatp);
->> +	return rc;
-> 
-> Thanks for the patches, I see two problems with this approach, the first
-> one is that you are completely ignoring the error in the variable "err",
-> which means that you can end up with a pfn that Linux thinks it's valid,
-> but it's not mapped to any mfn, so when you try to access it you will
-> trigger the vioapic crash.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-I spotted this and fixed this up by adding:
+iQIcBAEBAgAGBQJThHFdAAoJELSic+t+oim9TXUP/3F3aWN9DIXZS3IMEXA+sCkh
+Ml/GflbekjFMQrm00IM7ruNHR0Jrk6O8u+zHXmFEfrdIfOAA0+mdsBuuR1ebxopT
+Pkjxpm/NRY4CSkWOcxZYEv1kZumYIlaCOvfVJB+MiwaOS365LW401xaq5ZzopUff
+2HV/7Jpb6WodmmTrSqBfMBlFA6eeRr00h9uxo1Y/Fe6Y9MbpWhBcBRfAvD+e0H+7
+bEcnGtfwc7ZDiQ59KwVIjN1D3lFKkCNxFApxCKECKkEiwGCIcV6Ia5KYj+9rkFlz
+HgZoepvzIOePbmiw5koO94jefDjMb3xetAr+nrjDH7yQFcMCiAixOhCWt2uM0Urd
+q+YGA3SogWfu9VgRCKWa0Yk+Zzf6Q1CwWjleP6AaI719UwQjugMGCem4z/EDHeSu
+nmXJOxcC5aZwUU3OJeP+8KDijt1K24p4UCMxVZDooDqoX2GH5Wv5gniyUTmd5rPn
+39QEUHVLskGG1sOWkBIkkM2pTn50bRzQ5fk4YhoTpBFZUC9Gb3knicfwX9SnYrMB
+NxINpqNArh8aBOwbP97a3oWN7tMrRXRC4W1Y3A+g0/+3v+8OkxcVnU1HuZRmo5eK
+cAzUtAgqV+N7iuHso1h4bkSjDxedrmVr2nPlf5sHEJeeAddOkVUZmwwhKGumZHmj
+7UDd5UKeE+tWN1RhpwiX
+=upZq
+-----END PGP SIGNATURE-----
 
-+       if (rc < 0)
-+               return rc;
-+       return err;
-
-> The second one is that this seems extremely inefficient, you are issuing
-> one hypercall for each memory page, when you could instead batch all the
-> pages into a single hypercall and map them in one shot.
-
-I agree, but the 3.16 merge window is nearly here so I've applied it
-as-is.  Note that the privcmd driver calls this function once per page,
-so the lack of batching doesn't really hurt here.
-
-David
+--XhCG2ItGfl13yqyv--
