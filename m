@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073AbaE0XXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 19:23:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56027 "EHLO
+	id S1753323AbaE0X0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 19:26:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaE0XXl (ORCPT
+	with ESMTP id S1751916AbaE0X0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 19:23:41 -0400
-Date: Tue, 27 May 2014 16:27:15 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Cc: Mathias Nyman <mathias.nyman@intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru
-Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
- on ULI hw
-Message-ID: <20140527232715.GA26228@kroah.com>
-References: <1401166602-26379-1-git-send-email-nyushchenko@dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401166602-26379-1-git-send-email-nyushchenko@dev.rtsoft.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 27 May 2014 19:26:47 -0400
+Date: Tue, 27 May 2014 16:26:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Valdis.Kletnieks@vt.edu, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
+        Kees Cook <keescook@chromium.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] printk: Use symbolic defines for console loglevels
+Message-Id: <20140527162644.cda2f5c93e2c73aa6c2d7328@linux-foundation.org>
+In-Reply-To: <20140527225956.GF4366@pd.tnic>
+References: <1400524052-25625-1-git-send-email-bp@alien8.de>
+	<20140527151728.64e8cf59@gandalf.local.home>
+	<20140527194359.GD4366@pd.tnic>
+	<34707.1401230184@turing-police.cc.vt.edu>
+	<20140527225956.GF4366@pd.tnic>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 08:56:42AM +0400, Nikita Yushchenko wrote:
-> This access causes hang on Freescale P2020DS board (that has OHCI
-> provided by ULI 1533 chip).
+On Wed, 28 May 2014 00:59:57 +0200 Borislav Petkov <bp@alien8.de> wrote:
+
+> @Andrew: can you please replace the sentence:
 > 
-> Since preserving OHCI_FMINTERVAL was originally done only for NVIDIA
-> hardware and only later (in c6187597) was turned unconditional, and
-> c6187597 commit message again mentions only NVIDIA, I think it should be
-> safe to disable preserving OHCI_FMINTERVAL if device vendor is ULI.
-
-Have you tested this?
-
-> Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-> ---
->  drivers/usb/host/pci-quirks.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
+> "There should be no functionality change resulting from this patch."
 > 
-> diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-> index 00661d3..5acbd5b 100644
-> --- a/drivers/usb/host/pci-quirks.c
-> +++ b/drivers/usb/host/pci-quirks.c
-> @@ -571,7 +571,7 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
->  {
->  	void __iomem *base;
->  	u32 control;
-> -	u32 fminterval;
-> +	u32 uninitialized_var(fminterval);
+> with
+> 
+> "Also, correct the check in x86_64_start_kernel which should be >= as
+> we're clearly issuing the string there for all debug levels, not only
+> the magical 10."
 
-Why is this change needed?  Sounds like a compiler bug to me :)
+Done.
 
-thanks,
+> so that Steve can sleep tonight? :-)
 
-greg k-h
+I think Steve only comes out at night.
