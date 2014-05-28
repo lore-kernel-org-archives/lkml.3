@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692AbaE1Pgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:36:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43430 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaE1Pgj (ORCPT
+	id S1754171AbaE1Pm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:42:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41555 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430AbaE1Pm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:36:39 -0400
-Date: Wed, 28 May 2014 17:36:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, eranian@google.com
-Subject: Re: [RFC PATCH 5/7] perf, x86: use the PEBS auto reload mechanism
- when possible
-Message-ID: <20140528153633.GZ11096@twins.programming.kicks-ass.net>
-References: <1401257890-30535-1-git-send-email-zheng.z.yan@intel.com>
- <1401257890-30535-6-git-send-email-zheng.z.yan@intel.com>
- <20140528075937.GO11096@twins.programming.kicks-ass.net>
- <20140528144643.GG29957@tassilo.jf.intel.com>
+	Wed, 28 May 2014 11:42:56 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fXCyug6VAL2FbtaR"
-Content-Disposition: inline
-In-Reply-To: <20140528144643.GG29957@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
+References: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
+	<1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
+Date: Wed, 28 May 2014 23:42:55 +0800
+Message-ID: <CACVXFVO6uW3KoVPoeb+O0txuY2Ji6BO1Sob1e-g7NmZBv9MPBQ@mail.gmail.com>
+Subject: Re: [PATCH] bio: decrease bi_iter.bi_size by len in the fail path
+From: Ming Lei <tom.leiming@gmail.com>
+To: Dongsu Park <dongsu.park@profitbricks.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jet Chen <jet.chen@intel.com>,
+        Maurizio Lombardi <mlombard@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dongsu,
 
---fXCyug6VAL2FbtaR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 28, 2014 at 11:09 PM, Dongsu Park
+<dongsu.park@profitbricks.com> wrote:
+> From: Dongsu Park <dongsu.park@profitbricks.com>
+>
+> Commit 3979ef4dcf3d1de55a560a3a4016c30a835df44d ("bio-modify-
+> __bio_add_page-to-accept-pages-that-dont-start-a-new-segment-v3")
+> introduced a regression as reported by Jet Chen.
+> That results in a kernel BUG at drivers/block/virtio_blk.c:166.
+>
+> To fix that, bi_iter.bi_size must be decreased by len, before
+> recounting the number of physical segments.
+>
+> Tested on with kernel 3.15.0-rc7-next-20140527 on qemu guest,
+> by running xfstests/ext4/271.
+>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Jet Chen <jet.chen@intel.com>
+> Cc: Maurizio Lombardi <mlombard@redhat.com>
+> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
+> ---
+>  block/bio.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/block/bio.c b/block/bio.c
+> index 0443694ccbb4..67d7cba1e5fd 100644
+> --- a/block/bio.c
+> +++ b/block/bio.c
+> @@ -810,6 +810,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>         bvec->bv_len = 0;
+>         bvec->bv_offset = 0;
+>         bio->bi_vcnt--;
+> +       bio->bi_iter.bi_size -= len;
 
-On Wed, May 28, 2014 at 07:46:43AM -0700, Andi Kleen wrote:
-> On Wed, May 28, 2014 at 09:59:37AM +0200, Peter Zijlstra wrote:
-> > On Wed, May 28, 2014 at 02:18:08PM +0800, Yan, Zheng wrote:
-> > > When a fixed period is specified, this patch make perf use the PEBS
-> > > auto reload mechanism. This makes normal profiling faster, because
-> > > it avoids one costly MSR write in the PMI handler.
-> > >=20
-> >=20
-> > You can't do this unconditionally. Like I think you mention in the next
-> > patch, we need the PMI to fix up lots of cases.
->=20
-> There are two cases:
->=20
-> (1) Fixed period specified with PEBS.
-> The PMI still runs with threshold=3D1, but we can use the PEBS
-> auto-reload mechanism to automatically rewrite the counter which is
-> faster.
->=20
-> (2) Free running mode with more constraints
->=20
-> This is case (1)
+Would you mind explaining why bi_iter.bi_size need to be
+decreased by 'len'? In the failure path, it wasn't added by
+'len', was it?
 
-Sounds like something that should've been made clear in the Changelog.
 
---fXCyug6VAL2FbtaR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThgKBAAoJEHZH4aRLwOS6pdIQAKQx3coUboLjlJwBCKapS99M
-UdGeUzEY1m/RIIWm7jGWgomWiE46xQa4PUT1pUw7xnFEVE8USlc5vshoJ5Ym2S3D
-fw41DfVY+2MThybgJWFL3whU3a1QCkGwSIWahSQZ0gk0X+xKa2RLVI+u14Tfjhpb
-tOfgKE74B2pyL5e8gal67LU+W79uTCVh9KQtnlbSjN3u8BJioRZdEpmATzUI5p82
-lriZA3pRRmRtAMiTURGjSTLENpg7VBgxOQH2nzFmW18FunkNbUuuE+lQeb1FVITJ
-JtK8a33eC+wbjZETEKDPTiJRDwIFa1DQW12OxXKlaB+JraXX1UlHVLfnnN73/6hk
-1sZENze2Wcb54iHCopuKA2l3WOPhEtequakVgS6WI3bwY93Ek9+l6cSY6R28QyHc
-WsYkQjUZ4Y5t+1FQjCQo7ZPxhYVAosRHJa9W+qM03n/CABO411CzKiqxEkk3G8SP
-Z/DWMGi02hv85Bbo4sMHwmpUPnv6L7wlNpu1RXBPVlANT9Dw7RRHEixIC5oM1irz
-sOwqq9x+9y0dNoXWsBFmCrZGBOURIUvwiJmJE1wpELHNA1lTUaqYwKCO32M1cqhi
-Ni+B/Sms7DrQ5QYV/IVUJmmjy3RUgakwSKFT8gM6lgQdAKUaK8sT3x60+haiO0FL
-HZqKM8n2cBqNAGUlBcuo
-=9uEu
------END PGP SIGNATURE-----
-
---fXCyug6VAL2FbtaR--
+Thanks,
+-- 
+Ming Lei
