@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaE1MrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:47:10 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57037 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaE1MrH (ORCPT
+	id S1753321AbaE1Mq7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:46:59 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:59605 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaE1Mqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:47:07 -0400
+	Wed, 28 May 2014 08:46:55 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -28,9 +28,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v5 6/9] OF: i2c: Add OF notifier handler
-Date: Wed, 28 May 2014 15:46:30 +0300
-Message-Id: <1401281193-27146-7-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v5 3/9] OF: DT-Overlay configfs interface
+Date: Wed, 28 May 2014 15:46:27 +0300
+Message-Id: <1401281193-27146-4-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
 References: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
@@ -38,113 +38,316 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OF notifier handler needed for creating/destroying i2c devices
-according to dynamic runtime changes in the DT live tree.
+Add a runtime interface to using configfs for generic device tree overlay
+usage.
+
+A device-tree configfs entry is created in /config/device-tree/overlays
+
+To create an overlay you mkdir the directory and then echo the overlay
+firmware file to the path property file.
+
+	# mkdir /config/device-tree/overlays/foo
+	# echo foo.dtbo >/config/device-tree/overlays/foo/path
+
+The overlay file will be loaded using the standard firmware loader
+and will be applied.
+
+To remove it simply rmdir the directory.
+
+	# rmdir /config/device-tree/overlays/foo
 
 Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/i2c/i2c-core.c | 66 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 64 insertions(+), 2 deletions(-)
+ drivers/of/Kconfig    |   7 ++
+ drivers/of/Makefile   |   1 +
+ drivers/of/configfs.c | 251 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 259 insertions(+)
+ create mode 100644 drivers/of/configfs.c
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 6e47f73..ce78388 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1083,7 +1083,6 @@ struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
- 	return i2c_verify_client(dev);
- }
- EXPORT_SYMBOL(of_find_i2c_device_by_node);
--
- /* must call put_device() when done with returned i2c_adapter device */
- struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
- {
-@@ -1097,6 +1096,7 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
- 	return i2c_verify_adapter(dev);
- }
- EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-+
- #else
- static void of_i2c_register_devices(struct i2c_adapter *adap) { }
- #endif /* CONFIG_OF */
-@@ -1675,6 +1675,57 @@ void i2c_clients_command(struct i2c_adapter *adap, unsigned int cmd, void *arg)
- }
- EXPORT_SYMBOL(i2c_clients_command);
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index 5ebde98..1a2ff48 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -91,4 +91,11 @@ config OF_OVERLAY
+ 	select OF_DEVICE
+ 	select OF_RESOLVE
  
-+#if IS_ENABLED(CONFIG_OF)
++config OF_CONFIGFS
++	bool "OpenFirmware Overlay ConfigFS interface"
++	select CONFIGFS_FS
++	select OF_OVERLAY
++	help
++	  Enable a simple user-space driver DT overlay interface.
 +
-+static int of_i2c_notify(struct notifier_block *nb,
-+				unsigned long action, void *arg)
+ endmenu # OF
+diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+index e1f864a..46b3308 100644
+--- a/drivers/of/Makefile
++++ b/drivers/of/Makefile
+@@ -12,5 +12,6 @@ obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+ obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
+ obj-$(CONFIG_OF_RESOLVE)  += resolver.o
+ obj-$(CONFIG_OF_OVERLAY) += overlay.o
++obj-$(CONFIG_OF_CONFIGFS) += configfs.o
+ 
+ CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
+diff --git a/drivers/of/configfs.c b/drivers/of/configfs.c
+new file mode 100644
+index 0000000..2f5584f
+--- /dev/null
++++ b/drivers/of/configfs.c
+@@ -0,0 +1,251 @@
++/*
++ * Configfs entries for device-tree
++ *
++ * Copyright (C) 2013 - Pantelis Antoniou <panto@antoniou-consulting.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++#include <linux/ctype.h>
++#include <linux/cpu.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/spinlock.h>
++#include <linux/slab.h>
++#include <linux/proc_fs.h>
++#include <linux/configfs.h>
++#include <linux/types.h>
++#include <linux/stat.h>
++#include <linux/limits.h>
++#include <linux/file.h>
++#include <linux/vmalloc.h>
++#include <linux/firmware.h>
++
++#include "of_private.h"
++
++#ifdef CONFIG_OF_OVERLAY
++
++struct cfs_overlay_item {
++	struct config_item	item;
++
++	char			path[PATH_MAX];
++
++	const struct firmware	*fw;
++	struct device_node	*overlay;
++	int			ov_id;
++};
++
++static inline struct cfs_overlay_item *to_cfs_overlay_item(
++		struct config_item *item)
 +{
-+	struct device_node *dn;
-+	struct i2c_adapter *adap;
-+	struct i2c_client *client;
-+
-+	if (action == OF_RECONFIG_DYNAMIC_CREATE_DEV) {
-+
-+		dn = arg;
-+
-+		adap = of_find_i2c_adapter_by_node(dn->parent);
-+		if (adap == NULL)
-+			return NOTIFY_OK;	/* not for us */
-+
-+		client = of_i2c_register_device(adap, dn);
-+		put_device(&adap->dev);
-+
-+		if (IS_ERR(client)) {
-+			pr_err("%s: failed to create for '%s'\n",
-+					__func__, dn->full_name);
-+			return notifier_from_errno(PTR_ERR(client));
-+		}
-+
-+	} else if (action == OF_RECONFIG_DYNAMIC_DESTROY_DEV) {
-+
-+		dn = arg;
-+
-+		/* find our device by node */
-+		client = of_find_i2c_device_by_node(dn);
-+		if (client == NULL)
-+			return NOTIFY_OK;	/* no? not meant for us */
-+
-+		/* unregister takes one ref away */
-+		i2c_unregister_device(client);
-+
-+		/* and put the reference of the find */
-+		put_device(&client->dev);
-+
-+	} else
-+		return NOTIFY_OK;
-+
-+	return NOTIFY_STOP;
++	return item ? container_of(item, struct cfs_overlay_item, item) : NULL;
 +}
 +
-+static struct notifier_block i2c_of_notifier;
++CONFIGFS_ATTR_STRUCT(cfs_overlay_item);
++#define CFS_OVERLAY_ITEM_ATTR(_name, _mode, _show, _store)	\
++struct cfs_overlay_item_attribute cfs_overlay_item_attr_##_name = \
++	__CONFIGFS_ATTR(_name, _mode, _show, _store)
++#define CFS_OVERLAY_ITEM_ATTR_RO(_name, _show)	\
++struct cfs_overlay_item_attribute cfs_overlay_item_attr_##_name = \
++	__CONFIGFS_ATTR_RO(_name, _show)
 +
++static ssize_t cfs_overlay_item_path_show(struct cfs_overlay_item *overlay,
++		char *page)
++{
++	return sprintf(page, "%s\n", overlay->path);
++}
++
++static ssize_t cfs_overlay_item_path_store(struct cfs_overlay_item *overlay,
++		const char *page, size_t count)
++{
++	const char *p = page;
++	char *s;
++	int err;
++
++	/* if it's set do not allow changes */
++	if (overlay->path[0] != '\0')
++		return -EPERM;
++
++	/* copy to path buffer (and make sure it's always zero terminated */
++	count = snprintf(overlay->path, sizeof(overlay->path) - 1, "%s", p);
++	overlay->path[sizeof(overlay->path) - 1] = '\0';
++
++	/* strip trailing newlines */
++	s = overlay->path + strlen(overlay->path);
++	while (s > overlay->path && *--s == '\n')
++		*s = '\0';
++
++	pr_debug("%s: path is '%s'\n", __func__, overlay->path);
++
++	err = request_firmware(&overlay->fw, overlay->path, NULL);
++	if (err != 0)
++		goto out_err;
++
++	/* unflatten the tree */
++	of_fdt_unflatten_tree((void *)overlay->fw->data, &overlay->overlay);
++	if (overlay->overlay == NULL) {
++		pr_err("%s: failed to unflatten tree\n", __func__);
++		err = -EINVAL;
++		goto out_err;
++	}
++	pr_debug("%s: unflattened OK\n", __func__);
++
++	/* mark it as detached */
++	of_node_set_flag(overlay->overlay, OF_DETACHED);
++
++	/* perform resolution */
++	err = of_resolve(overlay->overlay);
++	if (err != 0) {
++		pr_err("%s: Failed to resolve tree\n", __func__);
++		goto out_err;
++	}
++	pr_debug("%s: resolved OK\n", __func__);
++
++	err = of_overlay_create(overlay->overlay);
++	if (err < 0) {
++		pr_err("%s: Failed to create overlay (err=%d)\n",
++				__func__, err);
++		goto out_err;
++	}
++	overlay->ov_id = err;
++
++	return count;
++
++out_err:
++
++	release_firmware(overlay->fw);
++	overlay->fw = NULL;
++
++	overlay->path[0] = '\0';
++	return err;
++}
++
++static ssize_t cfs_overlay_item_status_show(struct cfs_overlay_item *overlay,
++		char *page)
++{
++	return sprintf(page, "%s\n",
++			overlay->ov_id >= 0 ? "applied" : "unapplied");
++}
++
++CFS_OVERLAY_ITEM_ATTR(path, S_IRUGO | S_IWUSR,
++		cfs_overlay_item_path_show, cfs_overlay_item_path_store);
++CFS_OVERLAY_ITEM_ATTR_RO(status, cfs_overlay_item_status_show);
++
++static struct configfs_attribute *cfs_overlay_attrs[] = {
++	&cfs_overlay_item_attr_path.attr,
++	&cfs_overlay_item_attr_status.attr,
++	NULL,
++};
++
++static void cfs_overlay_release(struct config_item *item)
++{
++	struct cfs_overlay_item *overlay = to_cfs_overlay_item(item);
++
++	if (overlay->ov_id >= 0)
++		of_overlay_destroy(overlay->ov_id);
++	if (overlay->fw)
++		release_firmware(overlay->fw);
++	kfree(overlay);
++}
++
++CONFIGFS_ATTR_OPS(cfs_overlay_item);
++static struct configfs_item_operations cfs_overlay_item_ops = {
++	.release		= cfs_overlay_release,
++	.show_attribute		= cfs_overlay_item_attr_show,
++	.store_attribute	= cfs_overlay_item_attr_store,
++};
++
++static struct config_item_type cfs_overlay_type = {
++	.ct_item_ops	= &cfs_overlay_item_ops,
++	.ct_attrs	= cfs_overlay_attrs,
++	.ct_owner	= THIS_MODULE,
++};
++
++static struct config_item *cfs_overlay_group_make_item(
++		struct config_group *group, const char *name)
++{
++	struct cfs_overlay_item *overlay;
++
++	overlay = kzalloc(sizeof(*overlay), GFP_KERNEL);
++	if (!overlay)
++		return ERR_PTR(-ENOMEM);
++	overlay->ov_id = -1;
++
++	config_item_init_type_name(&overlay->item, name, &cfs_overlay_type);
++	return &overlay->item;
++}
++
++static void cfs_overlay_group_drop_item(struct config_group *group,
++		struct config_item *item)
++{
++	struct cfs_overlay_item *overlay = to_cfs_overlay_item(item);
++
++	config_item_put(&overlay->item);
++}
++
++static struct configfs_group_operations overlays_ops = {
++	.make_item	= cfs_overlay_group_make_item,
++	.drop_item	= cfs_overlay_group_drop_item,
++};
++
++static struct config_item_type overlays_type = {
++	.ct_group_ops   = &overlays_ops,
++	.ct_owner       = THIS_MODULE,
++};
++
++#endif /* CONFIG_OF_OVERLAY */
++
++static struct configfs_group_operations of_cfs_ops = {
++	/* empty - we don't allow anything to be created */
++};
++
++static struct config_item_type of_cfs_type = {
++	.ct_group_ops   = &of_cfs_ops,
++	.ct_owner       = THIS_MODULE,
++};
++
++struct config_group of_cfs_overlay_group;
++
++struct config_group *of_cfs_def_groups[] = {
++#ifdef CONFIG_OF_OVERLAY
++	&of_cfs_overlay_group,
++#endif
++	NULL
++};
++
++static struct configfs_subsystem of_cfs_subsys = {
++	.su_group = {
++		.cg_item = {
++			.ci_namebuf = "device-tree",
++			.ci_type = &of_cfs_type,
++		},
++		.default_groups = of_cfs_def_groups,
++	},
++	.su_mutex = __MUTEX_INITIALIZER(of_cfs_subsys.su_mutex),
++};
++
++static int __init of_cfs_init(void)
++{
++	int ret;
++
++	pr_info("%s\n", __func__);
++
++	config_group_init(&of_cfs_subsys.su_group);
++#ifdef CONFIG_OF_OVERLAY
++	config_group_init_type_name(&of_cfs_overlay_group, "overlays",
++			&overlays_type);
 +#endif
 +
- static int __init i2c_init(void)
- {
- 	int retval;
-@@ -1692,8 +1743,19 @@ static int __init i2c_init(void)
- 	retval = i2c_add_driver(&dummy_driver);
- 	if (retval)
- 		goto class_err;
--	return 0;
- 
-+#if IS_ENABLED(CONFIG_OF)
-+	i2c_of_notifier.notifier_call = of_i2c_notify;
-+	retval = of_reconfig_notifier_register(&i2c_of_notifier);
-+	if (retval)
-+		goto notifier_err;
-+#endif
-+
-+	return 0;
-+#if IS_ENABLED(CONFIG_OF)
-+notifier_err:
-+	i2c_del_driver(&dummy_driver);
-+#endif
- class_err:
- #ifdef CONFIG_I2C_COMPAT
- 	class_compat_unregister(i2c_adapter_compat_class);
++	ret = configfs_register_subsystem(&of_cfs_subsys);
++	if (ret != 0) {
++		pr_err("%s: failed to register subsys\n", __func__);
++		goto out;
++	}
++	pr_info("%s: OK\n", __func__);
++out:
++	return ret;
++}
++late_initcall(of_cfs_init);
 -- 
 1.7.12
 
