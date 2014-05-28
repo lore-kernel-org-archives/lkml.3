@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176AbaE1PRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:17:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54976 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735AbaE1PRE (ORCPT
+	id S1754712AbaE1PRl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:17:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43320 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058AbaE1PRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:17:04 -0400
-Date: Wed, 28 May 2014 17:16:46 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mark Brown <broonie@kernel.org>, "David S . Miller" <davem@davemloft.net>,
-        Nishanth Menon <nm@ti.com>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
- ks8851 SPI chips
-Message-ID: <20140528151646.GU20155@pengutronix.de>
-References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
- <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
- <20140524124858.GR22111@sirena.org.uk>
- <5385063F.30407@codeaurora.org>
+	Wed, 28 May 2014 11:17:39 -0400
+Date: Wed, 28 May 2014 17:17:30 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+Message-ID: <20140528151730.GW11096@twins.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <20140528121001.GI19967@e103034-lin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EzoGi9kFQAnUjl0a"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5385063F.30407@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20140528121001.GI19967@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
 
-On Tue, May 27, 2014 at 02:40:15PM -0700, Stephen Boyd wrote:
-> On 05/24/14 05:48, Mark Brown wrote:
-> > On Fri, May 23, 2014 at 12:57:17PM -0700, Stephen Boyd wrote:
-> >
-> >>  Optional properties:
-> >> -- vdd-supply:	supply for Ethernet mac
-> >> +- vdd-supply: analog 3.3V supply for Ethernet mac
-> >> +- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
-> > So, according to the datasheet I managed to find this device has a
-> > supply VDD_IO (so normally written vdd-io-supply here), some other
-> > supplies which are tied to VDD_IO (so can probably be omitted) and a
-> > supply VDD_A3.3 none of which are optional.  There is an internal
-> > regulator which can be used to drop a higher voltage VDD_IO down for
-> > some of the supplies tied to it but that's essentially a noop from
-> > software as far as I can tell.  None of these supplies are obviously
-> > optional, though I've not read the datasheet in detail so I may have
-> > missed something here.
-There is a difference between the supply being optional for the hardware
-to work and the need to specify it in the device tree, isn't it? My
-expectation is that when it's not specified there is just nothing the
-the software needs to care for. 
+--EzoGi9kFQAnUjl0a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > That said it looks like this is intended to be a supply for an external
-> > PHY rather than the device itself, but even so my original question
-> > about it being able to operate without power still applies.  Looking at
-> > the code it's certainly not doing any of the handling of a missing
-> > supply that I would associate with using _optional().
-> 
-> I agree, both supplies don't look optional. Unfortunately
-> efm32gg-dk3750.dts doesn't look to be listing any supply, and this
-> driver only recently got support for the VDD_A3.3 supply that the omap
-> board uses (adding Uwe for any comments on efm setup). I presume on
-If I read the schematic correctly there is nothing to regulate on the
-efm32 dev board. If you want to take a look on the schematic yourself,
-it's contained in the documentation package available at
-http://www.silabs.com/products/mcu/lowpower/pages/efm32gg-dk3750.aspx .
-BDR3201A_A02_sch.pdf, page 3 of 22.
+On Wed, May 28, 2014 at 01:10:01PM +0100, Morten Rasmussen wrote:
+> The basic problem is that worst case: sum starting from 0 and period
+> already at LOAD_AVG_MAX =3D 47742, it takes LOAD_AVG_MAX_N =3D 345 periods
+> (ms) for sum to reach 47742.=20
 
-Best regards
-Uwe
+But it takes only 4 periods (4*32ms) to get ~94% of the way there,=20
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+So our half-time is 32 * 1024 ms, now look at \Sum_i=3D1,4 1/(2^i) =3D
+0.9375. So 4 periods (4*32*1024=3D131072 ms) gets us ~94% of the way
+there.
+
+Now, granted, 4 periods of 32-ish ms is still very long, but nowhere
+near as horrid as the full convergence.
+
+--EzoGi9kFQAnUjl0a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThf4KAAoJEHZH4aRLwOS6920P/3Mo61XO0U0+Yp4uw5kGaWAp
+GVUQZY/Eio38+gIM8E8a6QNmBJET6QXMWwRvQTe2rZljRhnWeb+wzDzcyyFF2DzA
+fI8dJd8iD6x+ZGtVsIiDQcgdft6fSiiZdSEvYmSuH9SJL1NqRljYeJsg2X6X5ATT
+ZNRCnzlwN+ynyepJ8VUMzW265aUYlPB/iSuUqOqsVWInVAOxJv2bih7LyHRL/nvc
+BgFtKNHZKDGQoUbCvVKpIoube+EKrpY78ILK0spKFIzGLD/7Wm+uR30fupm/jvUT
+3UL+DOhv6M1Qi7ftCaahbN9ew/CXZkCRZ2++z0/KdC3Zzo5mkVnH9Ue0ieNrmHTX
++ajxJEanjLyf2+ixh+D94OfYsjwuRYkwGVXPbdWoZm392VJzem0M1C0G3yhynr3G
+r/av3Jaf0viXKBQJ1l2kTL+DOLRI2iuG9yyCfqYXjGKhEw2FuIYnSvsNksfQ7jnA
+WAyHx9+D/0xlwwVAeelsV7rVdOKtgvmj3vDaVV7jF/SeI6kjGhecKfVC4TTT5ZKb
+UgqCEukVmm74K6Wl3bdOo1K/wZqecQhiS9nU1sx/7/H7OsKHK8AtQorW1NbpBXgP
+gvHP1pIpR8yybm2Jx87n0I+evWAy0Zz+EjRKl1+ahvE1HfPRoxfYqOiH4p9SL1Cy
+9JkYhNIbIyztfTszt1Ac
+=tD/y
+-----END PGP SIGNATURE-----
+
+--EzoGi9kFQAnUjl0a--
