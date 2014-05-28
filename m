@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaE1X2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:28:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55566 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaE1X2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:28:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,931,1392192000"; 
-   d="scan'208";a="519327612"
-Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink
- K_table
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: George Spelvin <linux@horizon.com>
-Cc: herbert@gondor.apana.org.au, james.guilford@intel.com, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, sandyw@twitter.com
-In-Reply-To: <20140528230147.3263.qmail@ns.horizon.com>
-References: <20140528230147.3263.qmail@ns.horizon.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 May 2014 16:28:14 -0700
-Message-ID: <1401319694.2970.411.camel@schen9-DESK>
+	id S1755276AbaE1X3Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:29:25 -0400
+Received: from smtprelay0125.hostedemail.com ([216.40.44.125]:50140 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754948AbaE1X3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 19:29:24 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 64,4,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2332:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3867:3870:3874:4321:4605:5007:7652:8957:10004:10400:10848:11026:11473:11658:11914:12043:12291:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: slave01_6ef94744fcf53
+X-Filterd-Recvd-Size: 2082
+Message-ID: <1401319761.19335.21.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Prefer kstrto<foo> to sscanf(buf, "%<lhuidx>",
+ &bar);
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 28 May 2014 16:29:21 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 19:01 -0400, George Spelvin wrote:
-> Thanks for the reply!
-> 
-> > Changing from the aligned move (movdqa) to unaligned move and zeroing
-> > (pmovzxdq), is going to make things slower.  If the table is aligned
-> > on 8 byte boundary, some of the table can span 2 cache lines, which
-> > can slow things further.
-> 
-> Um, two notes:
-> 1) This load is performed once per 3072-byte block, which
->    is a minimum of 128 cycles just for the crc32q instructions,
->    never mind all the pcmulqdq folderol.
-> 
->    Is it really more than 2 cycles?  Heck, is it *any* overall
->    time given that it's preceded by a stretch of 384 instructions
->    that it's not data-dependent on?
-> 
->    I'll do some benchmarking to find out.
-> 
-> 2) The shrunk table entries are 8 bytes long, and so can't
->    span a cache line.  Is there any benefit to using a
->    larger alignment, other than the very small issue of the
->    full table needing 1 more cache line to be fully cached?
+Use the kstrto<foo> functions in preference to sscanf.
 
-I think you are fine.  Each entry should fit in a cache line
-entirely.  With the reduced entry size, we will be fitting
-twice as many entries per cache line so it may help to reduce
-the cache miss.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
->    
-> > We are trading speed for only 4096 bytes of memory save,
-> > which is likely not a good trade for most systems except for 
-> > those really constrained of memory.  For this kind of non-performance
-> > critical system, it may as well use the generic crc32c algorithm and
-> > compile out this module.
-> 
-> I hadn't intended to cause any speed penalty at all.
-> Do you really think there will be one?
-
-If you can do some benchmarking to find out the change's
-speed impact, that will help to eliminate concerns about
-speed penalty.  
-
-Thanks.
-
-Tim
-
-Tim
-
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 7774025..862cc7a 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4314,6 +4314,27 @@ sub process {
+ 			     "unchecked sscanf return value\n" . "$here\n$stat_real\n");
+ 		}
+ 
++# check for simple sscanf that should be kstrto<foo>
++		if ($^V && $^V ge 5.10.0 &&
++		    defined $stat &&
++		    $line =~ /\bsscanf\b/) {
++			my $lc = $stat =~ tr@\n@@;
++			$lc = $lc + $linenr;
++			my $stat_real = raw_line($linenr, 0);
++		        for (my $count = $linenr + 1; $count <= $lc; $count++) {
++				$stat_real = $stat_real . "\n" . raw_line($count, 0);
++			}
++			if ($stat_real =~ /\bsscanf\b\s*\(\s*$FuncArg\s*,\s*("[^"]+")/) {
++				my $format = $6;
++				my $count = $format =~ tr@%@%@;
++				if ($count == 1 &&
++				    $format =~ /^"\%(?i:ll[udxi]|[udxi]ll|ll|[hl]h?[udxi]|[udxi][hl]h?|[hl]h?|[udxi])"$/) {
++					WARN("SSCANF_TO_KSTRTO",
++					     "Prefer kstrto<type> to single variable sscanf\n" . "$here\n$stat_real\n");
++				}
++			}
++		}
++
+ # check for new externs in .h files.
+ 		if ($realfile =~ /\.h$/ &&
+ 		    $line =~ /^\+\s*(extern\s+)$Type\s*$Ident\s*\(/s) {
 
 
