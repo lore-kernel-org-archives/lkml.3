@@ -1,381 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaE1HCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:02:18 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:37609 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaE1HBc (ORCPT
+	id S1754268AbaE1HCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:02:30 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57909 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972AbaE1HC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:01:32 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] CMA: aggressively allocate the pages on cma reserved memory when not used
-Date: Wed, 28 May 2014 16:04:31 +0900
-Message-Id: <1401260672-28339-3-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Wed, 28 May 2014 03:02:29 -0400
+Date: Wed, 28 May 2014 09:01:33 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Alan Tull <delicious.quinoa@gmail.com>
+Cc: Thor Thayer <tthayer.linux@gmail.com>, Thor Thayer <tthayer@altera.com>,
+        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
+        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
+        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Alan Tull <atull@altera.com>
+Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
+ controller
+Message-ID: <20140528070133.GD13172@pengutronix.de>
+References: <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
+ <20140519191206.GH949@pengutronix.de>
+ <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
+ <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
+ <20140520144446.GJ949@pengutronix.de>
+ <CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
+ <20140527071157.GC20695@pengutronix.de>
+ <CANk1AXTMHuWeaxn_hVi+AH=aXbbSNov=894YmSYfvfvpWM+eSg@mail.gmail.com>
+ <20140527194228.GB13172@pengutronix.de>
+ <CANk1AXRMZrNWr4FR6KYAkN3JwVA1d9qdn00UY3OaYurz6DNvmA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANk1AXRMZrNWr4FR6KYAkN3JwVA1d9qdn00UY3OaYurz6DNvmA@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:50:56 up 35 days, 22 min, 34 users,  load average: 0,08, 0,11,
+ 0,13
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CMA is introduced to provide physically contiguous pages at runtime.
-For this purpose, it reserves memory at boot time. Although it reserve
-memory, this reserved memory can be used for movable memory allocation
-request. This usecase is beneficial to the system that needs this CMA
-reserved memory infrequently and it is one of main purpose of
-introducing CMA.
+On Tue, May 27, 2014 at 03:57:47PM -0500, Alan Tull wrote:
+> On Tue, May 27, 2014 at 2:42 PM, Steffen Trumtrar
+> <s.trumtrar@pengutronix.de> wrote:
+> > On Tue, May 27, 2014 at 02:12:17PM -0500, Alan Tull wrote:
+> >> On Tue, May 27, 2014 at 2:11 AM, Steffen Trumtrar
+> >> <s.trumtrar@pengutronix.de> wrote:
+> >> > On Wed, May 21, 2014 at 10:38:34AM -0500, Thor Thayer wrote:
+> >> >> On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
+> >> >> <s.trumtrar@pengutronix.de> wrote:
+> >> >> > Hi!
+> >> >> >
+> >> >> > On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
+> >> >> >> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
+> >> >> >>
+> >> >> >> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> >> >> >> >>> >> new file mode 100644
+> >> >> >> >>> >> index 0000000..8f8746b
+> >> >> >> >>> >> --- /dev/null
+> >> >> >> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+> >> >> >> >>> >> @@ -0,0 +1,11 @@
+> >> >> >> >>> >> +Altera SOCFPGA SDRAM Controller
+> >> >> >> >>> >> +
+> >> >> >> >>> >> +Required properties:
+> >> >> >> >>> >> +- compatible : "altr,sdr-ctl";
+> >> >> >> >>> >> +- reg : Should contain 1 register ranges(address and length)
+> >> >> >> >>> >> +
+> >> >> >> >>> >> +Example:
+> >> >> >> >>> >> +     sdrctl@ffc25000 {
+> >> >> >> >>> >> +             compatible = "altr,sdr-ctl";
+> >> >> >> >>> >> +             reg = <0xffc25000 0x1000>;
+> >> >> >> >>> >> +     };
+> >> >> >> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> >> >> >> >>> >> index df43702..6ce912e 100644
+> >> >> >> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
+> >> >> >> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> >> >> >> >>> >> @@ -676,6 +676,11 @@
+> >> >> >> >>> >>                       clocks = <&l4_sp_clk>;
+> >> >> >> >>> >>               };
+> >> >> >> >>> >>
+> >> >> >> >>> >> +             sdrctl@ffc25000 {
+> >> >> >> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
+> >> >> >> >>> >                                                    ^^^^^^^^^^
+> >> >> >> >>> >
+> >> >> >> >>> > Get rid of that, too, please.
+> >> >> >> >>>
+> >> >> >> >>> Hi Steffan,
+> >> >> >> >>>
+> >> >> >> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
+> >> >> >> >>> that has the ECC enable bitfield also includes the DRAM configuration
+> >> >> >> >>> bitfields that other drivers will want to access (specifically the
+> >> >> >> >>> FPGA bridge needs this information). Since this register will be
+> >> >> >> >>> shared between drivers,  syscon seems like the best solution.
+> >> >> >> >>>
+> >> >> >> >>
+> >> >> >> >> Hm, from looking at the documentation of the ctrlcfg I can't really
+> >> >> >> >> understand which bits you would need for the FPGA brigde and why.
+> >> >> >>
+> >> >> >> Hi Steffen,
+> >> >> >>
+> >> >> >> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
+> >> >> >> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
+> >> >> >> allows an FPGA port to come out of reset (enables that port).  Has no
+> >> >> >> other effect on SDRAM configuration.
+> >> >> >>
+> >> >> >> >> That all sounds like stuff you would want to set for the specific
+> >> >> >> >> RAM you are dealing with on a specific board.
+> >> >> >> >> What bridge are you talking about? The SDRAM bridge?
+> >> >> >>
+> >> >> >> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
+> >> >> >> register the only register in the sdr that the bridge driver needs.
+> >> >> >>
+> >> >> >
+> >> >> > So, what I suggested down ...
+> >> >> >
+> >> >> >> >>
+> >> >> >> >> I can see the problem with the ECC enable, though.
+> >> >> >> >>
+> >> >> >> >> Regards,
+> >> >> >> >> Steffen
+> >> >> >> >>
+> >> >> >> >
+> >> >> >> >>> >                 sdrctl@ffc25000 {
+> >> >> >> >>> >                         compatible = "altr,sdr-ctl";
+> >> >> >> >>> >                         reg = <0xffc25000 0x1000>;
+> >> >> >> >>> >                         ranges;
+> >> >> >> >>> >
+> >> >> >> >>> >                         edac@ffc2502c {
+> >> >> >> >>> >                                 compatible = "altr,sdram-edac";
+> >> >> >> >>> >                                 reg = <0xffc2502c 0x50>;
+> >> >> >> >>> >                                 interrupts = <0 39 4>;
+> >> >> >> >>> >                         };
+> >> >> >> >>> >                 };
+> >> >> >> >>> >
+> >> >> >> >>> > Then we can later add:
+> >> >> >> >>> >
+> >> >> >> >>> >                         sdr-ports: ports@ffc2507c {
+> >> >> >> >>> >                                 #reset-cells = <1>;
+> >> >> >> >>> >                                 compatible = "altr,sdr-ports";
+> >> >> >> >>> >                                 reg = <0xffc2507c 0x10>;
+> >> >> >> >>> >                                 clocks = <&ddr_dqs_clk>;
+> >> >> >> >>> >                                 ...
+> >> >> >> >>> >                         };
+> >> >> >>
+> >> >> >
+> >> >> > ... here should work. No?! Just a simple driver that registers with the
+> >> >> > reset-framework. I would add 0x7c to that driver and than that driver could
+> >> >> > "configure" the port and let it out of reset.
+> >> >> >
+> >> >> > I have done the same thing for the other 3 bridges, but am not finished yet.
+> >> >> > Especially the GPV-stuff needs to at least be able to be added later if not now.
+> >> >> >
+> >> >
+> >> > Hi Thor!
+> >> >
+> >> >> I'm not clear on how the EDAC driver will interact with the registers
+> >> >> allocated to the SDRAM controller. If the group of registers from
+> >> >> 0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
+> >> >> controller, how does the EDAC driver cleanly access that single
+> >> >> register inside this range?
+> >> >>
+> >> >
+> >> > The compatible in the example is wrong. I didn't mean to map the whole address space
+> >> > to some driver.
+> >> > I think for the configuration register syscon is the right approach. It is a
+> >> > bag of bits that don't necessitate an own driver, so syscon is perfect.
+> >> >
+> >> > So, let me change my proposal to
+> >> >
+> >> >         sdr-ctl: sdram@ffc25000 {
+> >> >                 compatible = "altr,sdr-ctl", "syscon";
+> >> >                 reg = <0xffc25000 0x1>;
+> >> >         };
+> >> >
+> >> >         edac: edac@ffc2502c {
+> >> >                 compatible = "altr,sdram-edac";
+> >> >                 reg = <0xffc2502c 0x50>;
+> >> >                 interrupts = <0 39 4>;
+> >> >                 config = <&sdr-ctl>;
+> >> >                 ...
+> >> >         };
+> >> >
+> >> >         sdr-ports: ports@ffc2507c {
+> >> >                 compatible = "altr,sdr-ports";
+> >> >                 reg = <0xffc2507c 0x10>;
+> >> >                 clocks = <&ddr_dqs_clk>;
+> >> >                 ...
+> >> >         };
+> >> >
+> >> > Maybe we can just skip the outer node that combines all the others.
+> >> > So, if we do it like that, you can still use syscon, but only for the register
+> >> > that needs it. And the EDAC definitely needs access to the config register, so
+> >> > all is good.
+> >> >
+> >> >> Is the solution that I don't use request_region() (and therefore not
+> >> >> request exclusive access) when setting up the SDRAM controller?
+> >> >>
+> >> >> If you could point me to your drivers for the other bridges that you
+> >> >> reference, your code may answer my question.
+> >> >>
+> >> >
+> >> > The other bridges don't need access to any SDRAM controller registers and
+> >> > I haven't even started to implement the GPV-stuff with the lw2hps-bridge :-(
+> >> >
+> >> > Regards,
+> >> > Steffen
+> >> >
+> >> > --
+> >> > Pengutronix e.K.                           |                             |
+> >> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> >> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> >> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> >>
+> >> OK now I understand.  For register offset 0x0, that's all stuff set up
+> >> in the bootloader.  We won't be touching that register except for the
+> >> EDAC.  So syscon isn't needed here.
+> >>
+> >> Each driver that uses some sdr registers can specify which registers
+> >> it uses in the device tree.  So far we don't have any cases of two
+> >> drivers that share a register.
+> >>
+> >> The ECC driver will need two ranges: offset 0x00 and 0x38 through 0x50.
+> >> The fpga bridges just needs offset 0x80.
+> >>
+> >
+> > Well, almost ;-)
+> > Use syscon for 0x0 and reference that in the ECC driver, which only is
+> > responsible for 0x38 to 0x50. Then flip the two EDAC bits via the syscon-phandle.
+> > Then a bootloader can probe with the same dts and have a driver match on the
+> > config-register and one for all the DRAM setup (< 0x38), which we don't need in
+> > the kernel. On the other hand the EDAC seems unneccessary for the bootloader.
+> > And this all matches the partitioning of the SDR register space, so I think it
+> > is also a correct hardware description.
+> >
+> > Regards,
+> > Steffen
+> >
+> > --
+> > Pengutronix e.K.                           |                             |
+> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> 
+> We could do that.  But is syscon a concept the bootloader will know about?
+> 
 
-But, there is a problem in current implementation. The problem is that
-it works like as just reserved memory approach. The pages on cma reserved
-memory are hardly used for movable memory allocation. This is caused by
-combination of allocation and reclaim policy.
+Depends on the bootloader. I guess u-boot doesn't, but barebox does.
+Alternative would be to have the bootloader know that it has to look for an
+ECC node when it instead is looking for DRAM timing/width/... setup.
+Sounds wrong to me.
 
-The pages on cma reserved memory are allocated if there is no movable
-memory, that is, as fallback allocation. So the time this fallback
-allocation is started is under heavy memory pressure. Although it is under
-memory pressure, movable allocation easily succeed, since there would be
-many pages on cma reserved memory. But this is not the case for unmovable
-and reclaimable allocation, because they can't use the pages on cma
-reserved memory. These allocations regard system's free memory as
-(free pages - free cma pages) on watermark checking, that is, free
-unmovable pages + free reclaimable pages + free movable pages. Because
-we already exhausted movable pages, only free pages we have are unmovable
-and reclaimable types and this would be really small amount. So watermark
-checking would be failed. It will wake up kswapd to make enough free
-memory for unmovable and reclaimable allocation and kswapd will do.
-So before we fully utilize pages on cma reserved memory, kswapd start to
-reclaim memory and try to make free memory over the high watermark. This
-watermark checking by kswapd doesn't take care free cma pages so many
-movable pages would be reclaimed. After then, we have a lot of movable
-pages again, so fallback allocation doesn't happen again. To conclude,
-amount of free memory on meminfo which includes free CMA pages is moving
-around 512 MB if I reserve 512 MB memory for CMA.
+> Actually it is a bit messier than what I originally said:
+>  ECC driver needs two ranges: offset 0x00 and 0x38 through 0x50.
+>  Machine layer needs control of 0x10, 0x14, 0x54, and 0x58 for putting
+> SDRAM into self-refresh.
 
-I found this problem on following experiment.
+I didn't get that. Does the ECC driver need access to this "machine layer"?
 
-4 CPUs, 1024 MB, VIRTUAL MACHINE
-make -j16
+Regards,
+Steffen
 
-CMA reserve:            0 MB            512 MB
-Elapsed-time:           225.2           472.5
-Average-MemFree:        322490 KB       630839 KB
 
-To solve this problem, I can think following 2 possible solutions.
-1. allocate the pages on cma reserved memory first, and if they are
-   exhausted, allocate movable pages.
-2. interleaved allocation: try to allocate specific amounts of memory
-   from cma reserved memory and then allocate from free movable memory.
-
-I tested #1 approach and found the problem. Although free memory on
-meminfo can move around low watermark, there is large fluctuation on free
-memory, because too many pages are reclaimed when kswapd is invoked.
-Reason for this behaviour is that successive allocated CMA pages are
-on the LRU list in that order and kswapd reclaim them in same order.
-These memory doesn't help watermark checking from kwapd, so too many
-pages are reclaimed, I guess.
-
-So, I implement #2 approach.
-One thing I should note is that we should not change allocation target
-(movable list or cma) on each allocation attempt, since this prevent
-allocated pages to be in physically succession, so some I/O devices can
-be hurt their performance. To solve this, I keep allocation target
-in at least pageblock_nr_pages attempts and make this number reflect
-ratio, free pages without free cma pages to free cma pages. With this
-approach, system works very smoothly and fully utilize the pages on
-cma reserved memory.
-
-Following is the experimental result of this patch.
-
-4 CPUs, 1024 MB, VIRTUAL MACHINE
-make -j16
-
-<Before>
-CMA reserve:            0 MB            512 MB
-Elapsed-time:           225.2           472.5
-Average-MemFree:        322490 KB       630839 KB
-nr_free_cma:            0               131068
-pswpin:                 0               261666
-pswpout:                75              1241363
-
-<After>
-CMA reserve:            0 MB            512 MB
-Elapsed-time:           222.7           224
-Average-MemFree:        325595 KB       393033 KB
-nr_free_cma:            0               61001
-pswpin:                 0               6
-pswpout:                44              502
-
-There is no difference if we don't have cma reserved memory (0 MB case).
-But, with cma reserved memory (512 MB case), we fully utilize these
-reserved memory through this patch and the system behaves like as
-it doesn't reserve any memory.
-
-With this patch, we aggressively allocate the pages on cma reserved memory
-so latency of CMA can arise. Below is the experimental result about
-latency.
-
-4 CPUs, 1024 MB, VIRTUAL MACHINE
-CMA reserve: 512 MB
-Backgound Workload: make -jN
-Real Workload: 8 MB CMA allocation/free 20 times with 5 sec interval
-
-N:                    1        4       8        16
-Elapsed-time(Before): 4309.75  9511.09 12276.1  77103.5
-Elapsed-time(After):  5391.69 16114.1  19380.3  34879.2
-
-So generally we can see latency increase. Ratio of this increase
-is rather big - up to 70%. But, under the heavy workload, it shows
-latency decrease - up to 55%. This may be worst-case scenario, but
-reducing it would be important for some system, so, I can say that
-this patch have advantages and disadvantages in terms of latency.
-
-Although I think that this patch is right direction for CMA, there is
-side-effect in following case. If there is small memory zone and CMA
-occupys most of them, LRU for this zone would have many CMA pages. When
-reclaim is started, these CMA pages would be reclaimed, but not counted
-for watermark checking, so too many CMA pages could be reclaimed
-unnecessarily. Until now, this can't happen because free CMA pages aren't
-used easily. But, with this patch, free CMA pages are used easily so
-this problem can be possible. I will handle it on another patchset
-after some investigating.
-
-v2: In fastpath, just replenish counters. Calculation is done whenver
-    cma area is varied
-
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/arch/powerpc/kvm/book3s_hv_cma.c b/arch/powerpc/kvm/book3s_hv_cma.c
-index d9d3d85..84a7582 100644
---- a/arch/powerpc/kvm/book3s_hv_cma.c
-+++ b/arch/powerpc/kvm/book3s_hv_cma.c
-@@ -132,6 +132,8 @@ struct page *kvm_alloc_cma(unsigned long nr_pages, unsigned long align_pages)
- 		if (ret == 0) {
- 			bitmap_set(cma->bitmap, pageno, nr_chunk);
- 			page = pfn_to_page(pfn);
-+			adjust_managed_cma_page_count(page_zone(page),
-+								nr_pages);
- 			memset(pfn_to_kaddr(pfn), 0, nr_pages << PAGE_SHIFT);
- 			break;
- 		} else if (ret != -EBUSY) {
-@@ -180,6 +182,7 @@ bool kvm_release_cma(struct page *pages, unsigned long nr_pages)
- 		     (pfn - cma->base_pfn) >> (KVM_CMA_CHUNK_ORDER - PAGE_SHIFT),
- 		     nr_chunk);
- 	free_contig_range(pfn, nr_pages);
-+	adjust_managed_cma_page_count(page_zone(pages), nr_pages);
- 	mutex_unlock(&kvm_cma_mutex);
- 
- 	return true;
-@@ -210,6 +213,8 @@ static int __init kvm_cma_activate_area(unsigned long base_pfn,
- 		}
- 		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
- 	} while (--i);
-+	adjust_managed_cma_page_count(zone, count);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 165c2c2..c578d5a 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -160,6 +160,7 @@ static int __init cma_activate_area(struct cma *cma)
- 		}
- 		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
- 	} while (--i);
-+	adjust_managed_cma_page_count(zone, cma->count);
- 
- 	return 0;
- }
-@@ -307,6 +308,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
- 		if (ret == 0) {
- 			bitmap_set(cma->bitmap, pageno, count);
- 			page = pfn_to_page(pfn);
-+			adjust_managed_cma_page_count(page_zone(page), count);
- 			break;
- 		} else if (ret != -EBUSY) {
- 			break;
-@@ -353,6 +355,7 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
- 	mutex_lock(&cma_mutex);
- 	bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
- 	free_contig_range(pfn, count);
-+	adjust_managed_cma_page_count(page_zone(pages), count);
- 	mutex_unlock(&cma_mutex);
- 
- 	return true;
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 39b81dc..51cffc1 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -415,6 +415,7 @@ extern int alloc_contig_range(unsigned long start, unsigned long end,
- extern void free_contig_range(unsigned long pfn, unsigned nr_pages);
- 
- /* CMA stuff */
-+extern void adjust_managed_cma_page_count(struct zone *zone, long count);
- extern void init_cma_reserved_pageblock(struct page *page);
- 
- #endif
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index fac5509..f52cb96 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -389,6 +389,20 @@ struct zone {
- 	int			compact_order_failed;
- #endif
- 
-+#ifdef CONFIG_CMA
-+	unsigned long managed_cma_pages;
-+	/*
-+	 * Number of allocation attempt on each movable/cma type
-+	 * without switching type. max_try(movable/cma) maintain
-+	 * predefined calculated counter and replenish nr_try_(movable/cma)
-+	 * with each of them whenever both of them are 0.
-+	 */
-+	int nr_try_movable;
-+	int nr_try_cma;
-+	int max_try_movable;
-+	int max_try_cma;
-+#endif
-+
- 	ZONE_PADDING(_pad1_)
- 
- 	/* Fields commonly accessed by the page reclaim scanner */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 674ade7..ca678b6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -788,6 +788,56 @@ void __init __free_pages_bootmem(struct page *page, unsigned int order)
- }
- 
- #ifdef CONFIG_CMA
-+void adjust_managed_cma_page_count(struct zone *zone, long count)
-+{
-+	unsigned long flags;
-+	long total, cma, movable;
-+
-+	spin_lock_irqsave(&zone->lock, flags);
-+	zone->managed_cma_pages += count;
-+
-+	total = zone->managed_pages;
-+	cma = zone->managed_cma_pages;
-+	movable = total - cma - high_wmark_pages(zone);
-+
-+	/* No cma pages, so do only movable allocation */
-+	if (cma <= 0) {
-+		zone->max_try_movable = pageblock_nr_pages;
-+		zone->max_try_cma = 0;
-+		goto out;
-+	}
-+
-+	/*
-+	 * We want to consume cma pages with well balanced ratio so that
-+	 * we have consumed enough cma pages before the reclaim. For this
-+	 * purpose, we can use the ratio, movable : cma. And we doesn't
-+	 * want to switch too frequently, because it prevent allocated pages
-+	 * from beging successive and it is bad for some sorts of devices.
-+	 * I choose pageblock_nr_pages for the minimum amount of successive
-+	 * allocation because it is the size of a huge page and fragmentation
-+	 * avoidance is implemented based on this size.
-+	 *
-+	 * To meet above criteria, I derive following equation.
-+	 *
-+	 * if (movable > cma) then; movable : cma = X : pageblock_nr_pages
-+	 * else (movable <= cma) then; movable : cma = pageblock_nr_pages : X
-+	 */
-+	if (movable > cma) {
-+		zone->max_try_movable =
-+			(movable * pageblock_nr_pages) / cma;
-+		zone->max_try_cma = pageblock_nr_pages;
-+	} else {
-+		zone->max_try_movable = pageblock_nr_pages;
-+		zone->max_try_cma = cma * pageblock_nr_pages / movable;
-+	}
-+
-+out:
-+	zone->nr_try_movable = zone->max_try_movable;
-+	zone->nr_try_cma = zone->max_try_cma;
-+
-+	spin_unlock_irqrestore(&zone->lock, flags);
-+}
-+
- /* Free whole pageblock and set its migration type to MIGRATE_CMA. */
- void __init init_cma_reserved_pageblock(struct page *page)
- {
-@@ -1136,6 +1186,36 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 	return NULL;
- }
- 
-+#ifdef CONFIG_CMA
-+static struct page *__rmqueue_cma(struct zone *zone, unsigned int order)
-+{
-+	struct page *page;
-+
-+	if (zone->nr_try_movable > 0)
-+		goto alloc_movable;
-+
-+	if (zone->nr_try_cma > 0) {
-+		/* Okay. Now, we can try to allocate the page from cma region */
-+		zone->nr_try_cma -= 1 << order;
-+		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
-+
-+		/* CMA pages can vanish through CMA allocation */
-+		if (unlikely(!page && order == 0))
-+			zone->nr_try_cma = 0;
-+
-+		return page;
-+	}
-+
-+	/* Reset counter */
-+	zone->nr_try_movable = zone->max_try_movable;
-+	zone->nr_try_cma = zone->max_try_cma;
-+
-+alloc_movable:
-+	zone->nr_try_movable -= 1 << order;
-+	return NULL;
-+}
-+#endif
-+
- /*
-  * Do the hard work of removing an element from the buddy allocator.
-  * Call me with the zone->lock already held.
-@@ -1143,10 +1223,15 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- static struct page *__rmqueue(struct zone *zone, unsigned int order,
- 						int migratetype)
- {
--	struct page *page;
-+	struct page *page = NULL;
-+
-+	if (IS_ENABLED(CONFIG_CMA) &&
-+		migratetype == MIGRATE_MOVABLE && zone->managed_cma_pages)
-+		page = __rmqueue_cma(zone, order);
- 
- retry_reserve:
--	page = __rmqueue_smallest(zone, order, migratetype);
-+	if (!page)
-+		page = __rmqueue_smallest(zone, order, migratetype);
- 
- 	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
- 		page = __rmqueue_fallback(zone, order, migratetype);
-@@ -4849,6 +4934,8 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone_seqlock_init(zone);
- 		zone->zone_pgdat = pgdat;
- 		zone_pcp_init(zone);
-+		if (IS_ENABLED(CONFIG_CMA))
-+			zone->managed_cma_pages = 0;
- 
- 		/* For bootup, initialized properly in watermark setup */
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH, zone->managed_pages);
 -- 
-1.7.9.5
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
