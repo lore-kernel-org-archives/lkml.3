@@ -1,246 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaE1Ocn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:32:43 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:62855 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127AbaE1OcZ (ORCPT
+	id S1754382AbaE1Oie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:38:34 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:47201 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705AbaE1Oib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:32:25 -0400
-From: Chaitanya Hazarey <c@24.io>
-To: gregkh@linuxfoundation.org, burzalodowa@gmail.com,
-        andrea.merello@gmail.com, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chaitanya Hazarey <c@24.io>
-Subject: [PATCH 2/2] Staging: rtl8192u: r8192U_wx.c Added {} braces and newlines
-Date: Wed, 28 May 2014 07:32:39 -0700
-Message-Id: <1401287559-7692-2-git-send-email-c@24.io>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401287559-7692-1-git-send-email-c@24.io>
-References: <1401287559-7692-1-git-send-email-c@24.io>
+	Wed, 28 May 2014 10:38:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140528070133.GD13172@pengutronix.de>
+References: <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
+	<20140519191206.GH949@pengutronix.de>
+	<CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
+	<CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
+	<20140520144446.GJ949@pengutronix.de>
+	<CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
+	<20140527071157.GC20695@pengutronix.de>
+	<CANk1AXTMHuWeaxn_hVi+AH=aXbbSNov=894YmSYfvfvpWM+eSg@mail.gmail.com>
+	<20140527194228.GB13172@pengutronix.de>
+	<CANk1AXRMZrNWr4FR6KYAkN3JwVA1d9qdn00UY3OaYurz6DNvmA@mail.gmail.com>
+	<20140528070133.GD13172@pengutronix.de>
+Date: Wed, 28 May 2014 09:38:30 -0500
+Message-ID: <CANk1AXRMGu8W1WNGDpcuahhZ9GUfs04iigEcDJFDYfqUR4C2CA@mail.gmail.com>
+Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM controller
+From: Alan Tull <delicious.quinoa@gmail.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Cc: Thor Thayer <tthayer.linux@gmail.com>, Thor Thayer <tthayer@altera.com>,
+        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
+        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
+        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Alan Tull <atull@altera.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added {} braces and newlines to address the following:
+On Wed, May 28, 2014 at 2:01 AM, Steffen Trumtrar
+<s.trumtrar@pengutronix.de> wrote:
+> On Tue, May 27, 2014 at 03:57:47PM -0500, Alan Tull wrote:
+>> On Tue, May 27, 2014 at 2:42 PM, Steffen Trumtrar
+>> <s.trumtrar@pengutronix.de> wrote:
+>> > On Tue, May 27, 2014 at 02:12:17PM -0500, Alan Tull wrote:
+>> >> On Tue, May 27, 2014 at 2:11 AM, Steffen Trumtrar
+>> >> <s.trumtrar@pengutronix.de> wrote:
+>> >> > On Wed, May 21, 2014 at 10:38:34AM -0500, Thor Thayer wrote:
+>> >> >> On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
+>> >> >> <s.trumtrar@pengutronix.de> wrote:
+>> >> >> > Hi!
+>> >> >> >
+>> >> >> > On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
+>> >> >> >> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
+>> >> >> >>
+>> >> >> >> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+>> >> >> >> >>> >> new file mode 100644
+>> >> >> >> >>> >> index 0000000..8f8746b
+>> >> >> >> >>> >> --- /dev/null
+>> >> >> >> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
+>> >> >> >> >>> >> @@ -0,0 +1,11 @@
+>> >> >> >> >>> >> +Altera SOCFPGA SDRAM Controller
+>> >> >> >> >>> >> +
+>> >> >> >> >>> >> +Required properties:
+>> >> >> >> >>> >> +- compatible : "altr,sdr-ctl";
+>> >> >> >> >>> >> +- reg : Should contain 1 register ranges(address and length)
+>> >> >> >> >>> >> +
+>> >> >> >> >>> >> +Example:
+>> >> >> >> >>> >> +     sdrctl@ffc25000 {
+>> >> >> >> >>> >> +             compatible = "altr,sdr-ctl";
+>> >> >> >> >>> >> +             reg = <0xffc25000 0x1000>;
+>> >> >> >> >>> >> +     };
+>> >> >> >> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+>> >> >> >> >>> >> index df43702..6ce912e 100644
+>> >> >> >> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
+>> >> >> >> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
+>> >> >> >> >>> >> @@ -676,6 +676,11 @@
+>> >> >> >> >>> >>                       clocks = <&l4_sp_clk>;
+>> >> >> >> >>> >>               };
+>> >> >> >> >>> >>
+>> >> >> >> >>> >> +             sdrctl@ffc25000 {
+>> >> >> >> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
+>> >> >> >> >>> >                                                    ^^^^^^^^^^
+>> >> >> >> >>> >
+>> >> >> >> >>> > Get rid of that, too, please.
+>> >> >> >> >>>
+>> >> >> >> >>> Hi Steffan,
+>> >> >> >> >>>
+>> >> >> >> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
+>> >> >> >> >>> that has the ECC enable bitfield also includes the DRAM configuration
+>> >> >> >> >>> bitfields that other drivers will want to access (specifically the
+>> >> >> >> >>> FPGA bridge needs this information). Since this register will be
+>> >> >> >> >>> shared between drivers,  syscon seems like the best solution.
+>> >> >> >> >>>
+>> >> >> >> >>
+>> >> >> >> >> Hm, from looking at the documentation of the ctrlcfg I can't really
+>> >> >> >> >> understand which bits you would need for the FPGA brigde and why.
+>> >> >> >>
+>> >> >> >> Hi Steffen,
+>> >> >> >>
+>> >> >> >> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
+>> >> >> >> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
+>> >> >> >> allows an FPGA port to come out of reset (enables that port).  Has no
+>> >> >> >> other effect on SDRAM configuration.
+>> >> >> >>
+>> >> >> >> >> That all sounds like stuff you would want to set for the specific
+>> >> >> >> >> RAM you are dealing with on a specific board.
+>> >> >> >> >> What bridge are you talking about? The SDRAM bridge?
+>> >> >> >>
+>> >> >> >> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
+>> >> >> >> register the only register in the sdr that the bridge driver needs.
+>> >> >> >>
+>> >> >> >
+>> >> >> > So, what I suggested down ...
+>> >> >> >
+>> >> >> >> >>
+>> >> >> >> >> I can see the problem with the ECC enable, though.
+>> >> >> >> >>
+>> >> >> >> >> Regards,
+>> >> >> >> >> Steffen
+>> >> >> >> >>
+>> >> >> >> >
+>> >> >> >> >>> >                 sdrctl@ffc25000 {
+>> >> >> >> >>> >                         compatible = "altr,sdr-ctl";
+>> >> >> >> >>> >                         reg = <0xffc25000 0x1000>;
+>> >> >> >> >>> >                         ranges;
+>> >> >> >> >>> >
+>> >> >> >> >>> >                         edac@ffc2502c {
+>> >> >> >> >>> >                                 compatible = "altr,sdram-edac";
+>> >> >> >> >>> >                                 reg = <0xffc2502c 0x50>;
+>> >> >> >> >>> >                                 interrupts = <0 39 4>;
+>> >> >> >> >>> >                         };
+>> >> >> >> >>> >                 };
+>> >> >> >> >>> >
+>> >> >> >> >>> > Then we can later add:
+>> >> >> >> >>> >
+>> >> >> >> >>> >                         sdr-ports: ports@ffc2507c {
+>> >> >> >> >>> >                                 #reset-cells = <1>;
+>> >> >> >> >>> >                                 compatible = "altr,sdr-ports";
+>> >> >> >> >>> >                                 reg = <0xffc2507c 0x10>;
+>> >> >> >> >>> >                                 clocks = <&ddr_dqs_clk>;
+>> >> >> >> >>> >                                 ...
+>> >> >> >> >>> >                         };
+>> >> >> >>
+>> >> >> >
+>> >> >> > ... here should work. No?! Just a simple driver that registers with the
+>> >> >> > reset-framework. I would add 0x7c to that driver and than that driver could
+>> >> >> > "configure" the port and let it out of reset.
+>> >> >> >
+>> >> >> > I have done the same thing for the other 3 bridges, but am not finished yet.
+>> >> >> > Especially the GPV-stuff needs to at least be able to be added later if not now.
+>> >> >> >
+>> >> >
+>> >> > Hi Thor!
+>> >> >
+>> >> >> I'm not clear on how the EDAC driver will interact with the registers
+>> >> >> allocated to the SDRAM controller. If the group of registers from
+>> >> >> 0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
+>> >> >> controller, how does the EDAC driver cleanly access that single
+>> >> >> register inside this range?
+>> >> >>
+>> >> >
+>> >> > The compatible in the example is wrong. I didn't mean to map the whole address space
+>> >> > to some driver.
+>> >> > I think for the configuration register syscon is the right approach. It is a
+>> >> > bag of bits that don't necessitate an own driver, so syscon is perfect.
+>> >> >
+>> >> > So, let me change my proposal to
+>> >> >
+>> >> >         sdr-ctl: sdram@ffc25000 {
+>> >> >                 compatible = "altr,sdr-ctl", "syscon";
+>> >> >                 reg = <0xffc25000 0x1>;
+>> >> >         };
+>> >> >
+>> >> >         edac: edac@ffc2502c {
+>> >> >                 compatible = "altr,sdram-edac";
+>> >> >                 reg = <0xffc2502c 0x50>;
+>> >> >                 interrupts = <0 39 4>;
+>> >> >                 config = <&sdr-ctl>;
+>> >> >                 ...
+>> >> >         };
+>> >> >
+>> >> >         sdr-ports: ports@ffc2507c {
+>> >> >                 compatible = "altr,sdr-ports";
+>> >> >                 reg = <0xffc2507c 0x10>;
+>> >> >                 clocks = <&ddr_dqs_clk>;
+>> >> >                 ...
+>> >> >         };
+>> >> >
+>> >> > Maybe we can just skip the outer node that combines all the others.
+>> >> > So, if we do it like that, you can still use syscon, but only for the register
+>> >> > that needs it. And the EDAC definitely needs access to the config register, so
+>> >> > all is good.
+>> >> >
+>> >> >> Is the solution that I don't use request_region() (and therefore not
+>> >> >> request exclusive access) when setting up the SDRAM controller?
+>> >> >>
+>> >> >> If you could point me to your drivers for the other bridges that you
+>> >> >> reference, your code may answer my question.
+>> >> >>
+>> >> >
+>> >> > The other bridges don't need access to any SDRAM controller registers and
+>> >> > I haven't even started to implement the GPV-stuff with the lw2hps-bridge :-(
+>> >> >
+>> >> > Regards,
+>> >> > Steffen
+>> >> >
+>> >> > --
+>> >> > Pengutronix e.K.                           |                             |
+>> >> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>> >> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+>> >> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>> >>
+>> >> OK now I understand.  For register offset 0x0, that's all stuff set up
+>> >> in the bootloader.  We won't be touching that register except for the
+>> >> EDAC.  So syscon isn't needed here.
+>> >>
+>> >> Each driver that uses some sdr registers can specify which registers
+>> >> it uses in the device tree.  So far we don't have any cases of two
+>> >> drivers that share a register.
+>> >>
+>> >> The ECC driver will need two ranges: offset 0x00 and 0x38 through 0x50.
+>> >> The fpga bridges just needs offset 0x80.
+>> >>
+>> >
+>> > Well, almost ;-)
+>> > Use syscon for 0x0 and reference that in the ECC driver, which only is
+>> > responsible for 0x38 to 0x50. Then flip the two EDAC bits via the syscon-phandle.
+>> > Then a bootloader can probe with the same dts and have a driver match on the
+>> > config-register and one for all the DRAM setup (< 0x38), which we don't need in
+>> > the kernel. On the other hand the EDAC seems unneccessary for the bootloader.
+>> > And this all matches the partitioning of the SDR register space, so I think it
+>> > is also a correct hardware description.
+>> >
+>> > Regards,
+>> > Steffen
+>> >
+>> > --
+>> > Pengutronix e.K.                           |                             |
+>> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+>> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>>
+>> We could do that.  But is syscon a concept the bootloader will know about?
+>>
+>
+> Depends on the bootloader. I guess u-boot doesn't, but barebox does.
 
-ERROR: else should follow close brace '}'
-ERROR: space required before the open brace '{'
-ERROR: trailing statements should be on next line
-ERROR: space required before the open parenthesis '('
-ERROR: that open brace { should be on the previous line
+OK then we will want offset 0 to be 'syscon'.
 
-Signed-off-by: Chaitanya Hazarey <c@24.io>
----
- drivers/staging/rtl8192u/r8192U_wx.c | 84 ++++++++++++++++++++----------------
- 1 file changed, 46 insertions(+), 38 deletions(-)
+> Alternative would be to have the bootloader know that it has to look for an
+> ECC node when it instead is looking for DRAM timing/width/... setup.
+> Sounds wrong to me.
+>
+>> Actually it is a bit messier than what I originally said:
+>>  ECC driver needs two ranges: offset 0x00 and 0x38 through 0x50.
+>>  Machine layer needs control of 0x10, 0x14, 0x54, and 0x58 for putting
+>> SDRAM into self-refresh.
+>
+> I didn't get that. Does the ECC driver need access to this "machine layer"?
 
-diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index 1ba03ad..1af7c5d 100644
---- a/drivers/staging/rtl8192u/r8192U_wx.c
-+++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -315,7 +315,7 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 		}
- 
- 		if (val == IW_MAX_FREQUENCIES)
--		break;
-+			break;
- 	}
- 	range->num_frequency = val;
- 	range->num_channels = val;
-@@ -333,15 +333,14 @@ static int r8192_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
- 	struct ieee80211_device *ieee = priv->ieee80211;
- 	int ret = 0;
- 
--	if (!priv->up) return -ENETDOWN;
-+	if (!priv->up)
-+		return -ENETDOWN;
- 
- 	if (priv->ieee80211->LinkDetectInfo.bBusyTraffic == true)
- 		return -EAGAIN;
--	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)
--	{
-+	if (wrqu->data.flags & IW_SCAN_THIS_ESSID) {
- 		struct iw_scan_req *req = (struct iw_scan_req *)b;
--		if (req->essid_len)
--		{
-+		if (req->essid_len) {
- 			//printk("==**&*&*&**===>scan set ssid:%s\n", req->essid);
- 			ieee->current_network.ssid_len = req->essid_len;
- 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
-@@ -354,9 +353,9 @@ static int r8192_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
- 		priv->ieee80211->scanning = 0;
- 		ieee80211_softmac_scan_syncro(priv->ieee80211);
- 		ret = 0;
-+	} else {
-+		ret = ieee80211_wx_set_scan(priv->ieee80211, a, wrqu, b);
- 	}
--	else
--	ret = ieee80211_wx_set_scan(priv->ieee80211, a, wrqu, b);
- 	up(&priv->wx_sem);
- 	return ret;
- }
-@@ -369,7 +368,8 @@ static int r8192_wx_get_scan(struct net_device *dev, struct iw_request_info *a,
- 	int ret;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 
--	if (!priv->up) return -ENETDOWN;
-+	if (!priv->up)
-+		return -ENETDOWN;
- 
- 	down(&priv->wx_sem);
- 
-@@ -530,7 +530,8 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 				{0x00, 0x00, 0x00, 0x00, 0x00, 0x03} };
- 	int i;
- 
--	if (!priv->up) return -ENETDOWN;
-+	if (!priv->up)
-+		return -ENETDOWN;
- 
- 	down(&priv->wx_sem);
- 
-@@ -546,8 +547,10 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 
- 		for (i = 0; i < 4; i++) {
- 			hwkey[i] |=  key[4*i+0]&mask;
--			if (i == 1 && (4*i+1) == wrqu->encoding.length) mask = 0x00;
--			if (i == 3 && (4*i+1) == wrqu->encoding.length) mask = 0x00;
-+			if (i == 1 && (4*i+1) == wrqu->encoding.length)
-+				mask = 0x00;
-+			if (i == 3 && (4*i+1) == wrqu->encoding.length)
-+				mask = 0x00;
- 			hwkey[i] |= (key[4*i+1]&mask)<<8;
- 			hwkey[i] |= (key[4*i+2]&mask)<<16;
- 			hwkey[i] |= (key[4*i+3]&mask)<<24;
-@@ -557,12 +560,23 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 		#define CONF_WEP104 0x14
- 
- 		switch (wrqu->encoding.flags & IW_ENCODE_INDEX) {
--		case 0: key_idx = ieee->tx_keyidx; break;
--		case 1:	key_idx = 0; break;
--		case 2:	key_idx = 1; break;
--		case 3:	key_idx = 2; break;
--		case 4:	key_idx	= 3; break;
--		default: break;
-+		case 0:
-+			key_idx = ieee->tx_keyidx;
-+			break;
-+		case 1:
-+			key_idx = 0;
-+			break;
-+		case 2:
-+			key_idx = 1;
-+			break;
-+		case 3:
-+			key_idx = 2;
-+			break;
-+		case 4:
-+			key_idx	= 3;
-+			break;
-+		default:
-+			break;
- 		}
- 
- 		if (wrqu->encoding.length == 0x5) {
-@@ -591,8 +605,9 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 				0,                      //DefaultKey
- 				hwkey);                 //KeyContent
- 
-+		} else {
-+			printk("wrong type in WEP, not WEP40 and WEP104\n");
- 		}
--		else printk("wrong type in WEP, not WEP40 and WEP104\n");
- 
- 	}
- 
-@@ -600,8 +615,8 @@ static int r8192_wx_set_enc(struct net_device *dev,
- }
- 
- 
--static int r8192_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa, union
--					iwreq_data *wrqu, char *p){
-+static int r8192_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa,
-+					union iwreq_data *wrqu, char *p){
- 
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 	int *parms = (int *)p;
-@@ -751,18 +766,18 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 		struct iw_encode_ext *ext = (struct iw_encode_ext *)extra;
- 		struct iw_point *encoding = &wrqu->encoding;
- 		u8 idx = 0, alg = 0, group = 0;
--		if ((encoding->flags & IW_ENCODE_DISABLED) ||
--		ext->alg == IW_ENCODE_ALG_NONE) //none is not allowed to use hwsec WB 2008.07.01
-+		if ((encoding->flags & IW_ENCODE_DISABLED) || ext->alg == IW_ENCODE_ALG_NONE)
-+			//none is not allowed to use hwsec WB 2008.07.01
- 			goto end_hw_sec;
- 
--		alg =  (ext->alg == IW_ENCODE_ALG_CCMP)?KEY_TYPE_CCMP:ext->alg; // as IW_ENCODE_ALG_CCMP is defined to be 3 and KEY_TYPE_CCMP is defined to 4;
-+		// as IW_ENCODE_ALG_CCMP is defined to be 3 and KEY_TYPE_CCMP is defined to 4;
-+		alg =  (ext->alg == IW_ENCODE_ALG_CCMP)?KEY_TYPE_CCMP:ext->alg;
- 		idx = encoding->flags & IW_ENCODE_INDEX;
- 		if (idx)
- 			idx--;
- 		group = ext->ext_flags & IW_ENCODE_EXT_GROUP_KEY;
- 
--		if ((!group) || (IW_MODE_ADHOC == ieee->iw_mode) || (alg ==  KEY_TYPE_WEP40))
--		{
-+		if ((!group) || (IW_MODE_ADHOC == ieee->iw_mode) || (alg ==  KEY_TYPE_WEP40)) {
- 			if ((ext->key_len == 13) && (alg == KEY_TYPE_WEP40))
- 				alg = KEY_TYPE_WEP104;
- 			ieee->pairwise_key_type = alg;
-@@ -770,8 +785,7 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 		}
- 		memcpy((u8 *)key, ext->key, 16); //we only get 16 bytes key.why? WB 2008.7.1
- 
--		if ((alg & KEY_TYPE_WEP40) && (ieee->auth_mode != 2))
--		{
-+		if ((alg & KEY_TYPE_WEP40) && (ieee->auth_mode != 2)) {
- 
- 			setKey(dev,
- 					idx,//EntryNo
-@@ -780,9 +794,7 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 					zero, //MacAddr
- 					0,              //DefaultKey
- 					key);           //KeyContent
--		}
--		else if (group)
--		{
-+		} else if (group) {
- 			ieee->group_key_type = alg;
- 			setKey(dev,
- 					idx,//EntryNo
-@@ -791,9 +803,7 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 					broadcast_addr, //MacAddr
- 					0,              //DefaultKey
- 					key);           //KeyContent
--		}
--		else //pairwise key
--		{
-+		} else {//pairwise key
- 			setKey(dev,
- 					4,//EntryNo
- 					idx, //KeyIndex
-@@ -863,8 +873,7 @@ static int dummy(struct net_device *dev, struct iw_request_info *a,
- }
- 
- 
--static iw_handler r8192_wx_handlers[] =
--{
-+static iw_handler r8192_wx_handlers[] = {
- 	NULL,                     /* SIOCSIWCOMMIT */
- 	r8192_wx_get_name,	  /* SIOCGIWNAME */
- 	dummy,                    /* SIOCSIWNWID */
-@@ -971,8 +980,7 @@ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
- 	int tmp_level = 0;
- 	int tmp_qual = 0;
- 	int tmp_noise = 0;
--	if (ieee->state < IEEE80211_LINKED)
--	{
-+	if (ieee->state < IEEE80211_LINKED) {
- 		wstats->qual.qual = 0;
- 		wstats->qual.level = 0;
- 		wstats->qual.noise = 0;
--- 
-1.9.1
+Nope.  Now that I think about it this machine layer will only need
+access to 0x54, 0x58 and nobody else will need them.
 
+So I agree with your suggestion.  I think that besides offset 0, these
+registers will be not be shared between drivers.
+
+Thanks!
+Alan Tull
+
+>
+> Regards,
+> Steffen
+>
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
