@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715AbaE1JAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:00:16 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:64033 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707AbaE1JAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:00:12 -0400
-Message-ID: <5385A5AA.8070402@linaro.org>
-Date: Wed, 28 May 2014 11:00:26 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932165AbaE1JAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:00:23 -0400
+Received: from ozlabs.org ([103.22.144.67]:46300 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754707AbaE1JAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 05:00:18 -0400
+Date: Wed, 28 May 2014 19:00:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Welling <mwelling@ieee.org>, Michael Stickel <ms@mycable.de>
+Subject: linux-next: manual merge of the gpio tree with Linus' tree
+Message-ID: <20140528190011.302a2e52@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
-        rjw@rjwysocki.net, kgene.kim@samsung.com, tomasz.figa@gmail.com,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: Re: [PATCH v6 3/6] cpuidle: config: Add ARCH_EXYNOS entry to select
- cpuidle-big-little driver
-References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com> <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org> <1400227438-27155-4-git-send-email-chander.kashyap@linaro.org>
-In-Reply-To: <1400227438-27155-4-git-send-email-chander.kashyap@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/TPwkKhNGZJT+1fBOMj5nWa/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2014 10:03 AM, Chander Kashyap wrote:
-> Add support to select generic big-little cpuidle driver for Samsung Exynos
-> series SoC's. This is required for Exynos big-llittle SoC's eg, Exynos5420.
->
-> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+--Sig_/TPwkKhNGZJT+1fBOMj5nWa/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Hi Linus,
 
-> ---
-> Changes in v4:
-> 	1. Typo fixed from SOC_EXYNOS5420 to ARCH_EXYNOS
-> 	2. Commit message updated
-> Changes in v3: None
-> Changes in v2:
-> 	1. Changed config macro from SOC_EXYNOS5420 to ARCH_EXYNOS
->   drivers/cpuidle/Kconfig.arm |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpuidle/Kconfig.arm b/drivers/cpuidle/Kconfig.arm
-> index 97ccc31..d9596e7 100644
-> --- a/drivers/cpuidle/Kconfig.arm
-> +++ b/drivers/cpuidle/Kconfig.arm
-> @@ -4,7 +4,7 @@
->
->   config ARM_BIG_LITTLE_CPUIDLE
->   	bool "Support for ARM big.LITTLE processors"
-> -	depends on ARCH_VEXPRESS_TC2_PM
-> +	depends on ARCH_VEXPRESS_TC2_PM || ARCH_EXYNOS
->   	select ARM_CPU_SUSPEND
->   	select CPU_IDLE_MULTIPLE_DRIVERS
->   	help
->
+Today's linux-next merge of the gpio tree got a conflict in
+drivers/gpio/gpio-mcp23s08.c between commit 99e4b98dbe3a ("gpio:
+mcp23s08: Bug fix of SPI device tree registration") from Linus' tree
+and commit 3e3bed913e8b ("gpio: mcp23s08: fixed count variable for
+devicetree probing") from the gpio tree.
 
+I fixed it up (one way - see below) and can carry the fix as necessary
+(no action is required).
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+diff --cc drivers/gpio/gpio-mcp23s08.c
+index 3d53fd6880d1,00fbb30b9b10..000000000000
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@@ -894,11 -894,14 +894,12 @@@ static int mcp23s08_probe(struct spi_de
+  			dev_err(&spi->dev, "invalid spi-present-mask\n");
+  			return -ENODEV;
+  		}
++=20
+  		for (addr =3D 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
+- 			if ((spi_present_mask & (1 << addr)))
+- 				chips++;
+  			pullups[addr] =3D 0;
++ 			if (spi_present_mask & (1 << addr))
++ 				chips++;
+  		}
+ -		if (!chips)
+ -			return -ENODEV;
+  	} else {
+  		type =3D spi_get_device_id(spi)->driver_data;
+  		pdata =3D dev_get_platdata(&spi->dev);
 
+--Sig_/TPwkKhNGZJT+1fBOMj5nWa/
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJThaWfAAoJEMDTa8Ir7ZwV0UEQAIBo6nZspFPtG7jMR8swlkL9
+kKZcam2RgJ4Q0RGu+M4BOuQA2aUEmyqLOlY0xVy8eZT9e/HETfxbFBnS8bTd+ZxG
+g/7VjZaM2OSuJxrcvfRRVjCy8IXm0tK/HUjLLwntmk79U4nK/kUTadNOUYD60BxU
+jwmSKAyoiDliOo4IeBsllYn0fbsQvl5vnESfTG4t8v8gEOoBbxnSEqPgq5XAp5fn
+vRRqmM7uPFr5ijep2D+AcpxOQeJywM0qtesgtvoJRp5FElERQQMNbvzrZHcPpDEF
+EchQECEF8zBPP5pqDKjLnPZBI5qkbBKC5yBy5hHqRYEm3asFlOfdqgZhes7t0M/U
+Tw1lf+CK60tZg9PjKTkSsesYSjbq+wv/d5GJvm1Lc6taUNyiXwaQjZGz7jv7f9sC
+P9oUFxZGwRWlxeXlWsJ9rTGOF6uyo40x1CPDLvu2DO/DKaly5FIbwXDHmf7jEgzD
+zPVcBjGVbsepuOLZG0Vmo8jlnQ0Uuc0hcjdwpiOUJR0IzIUtz40phnuerRmHyJZk
+hpVRjg8zMgLYXde8CSIpZBBydu+eqOymM+c9mxnrEr+xv/tKEFOYXj2z5g7W5jDN
+XtgdpxMlLNXJHC1bfWtdtnrtGWRHhjR0HhD8pH7J0+hzmpdrOuYnwjn0awEmM6n9
+QYwR9Ri+BNSj/vWAAZ+V
+=tc7a
+-----END PGP SIGNATURE-----
+
+--Sig_/TPwkKhNGZJT+1fBOMj5nWa/--
