@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaE1RWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:22:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27362 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751757AbaE1RWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:22:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,929,1392192000"; 
-   d="scan'208";a="519159880"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
-        Chen Yucong <slaoub@gmail.com>
-CC: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-edac <linux-edac@vger.kernel.org>, X86 ML <x86@kernel.org>
-Subject: RE: [RFC PATCH 0/3] RAS: Correctable Errors Collector thing
-Thread-Topic: [RFC PATCH 0/3] RAS: Correctable Errors Collector thing
-Thread-Index: AQHPea9uzw0xsNMixkSji90xyCLmY5tVwNSAgADr4ID//5Gj4A==
-Date: Wed, 28 May 2014 17:21:57 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3282054D@ORSMSX114.amr.corp.intel.com>
-References: <1401197235-13440-1-git-send-email-bp@alien8.de>
-	 <1401245361.5049.6.camel@cyc>
- <1401296015.4361.12.camel@oc3432500282.ibm.com>
-In-Reply-To: <1401296015.4361.12.camel@oc3432500282.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1754676AbaE1RWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:22:41 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:36656 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaE1RWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 13:22:40 -0400
+Message-ID: <53861B5D.2040406@linaro.org>
+Date: Wed, 28 May 2014 10:22:37 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Minyard <cminyard@mvista.com>,
+        Stanislav Meduna <stano@meduna.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with irqsoff
+ tracers
+References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org> <17051981.niWmA6MIgX@wuerfel> <20140527174847.7b405b5c@gandalf.local.home> <53850FF3.8050107@codeaurora.org> <20140527193050.4606a014@gandalf.local.home> <53852999.7060907@codeaurora.org> <1401237734.23277.1.camel@pippen.local.home> <20140528072457.GM11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140528072457.GM11096@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4SHMPpb000397
 
-> A possible alternative would be to soft-offline the page. This is
-> currently done in APEI code when corrected memory error thresholds are
-> exceeded and reported by UEFI via a generic hardware error source
-> (GHES). 
+On 05/28/2014 12:24 AM, Peter Zijlstra wrote:
+> On Tue, May 27, 2014 at 08:42:14PM -0400, Steven Rostedt wrote:
+>> On Tue, 2014-05-27 at 17:11 -0700, Stephen Boyd wrote:
+>>
+>>> cpuidle_enter_state() calls ktime_get() which on lockdep enabled builds
+>>> calls seqcount_lockdep_reader_access() which calls local_irq_save() that
+>>
+>> seqcount_lockdep_reader_access()?? Ug, I wonder if that should call
+>> raw_local_irq_save/restore() as it's a lockdep helper to begin with. If
+>> it's wrong then it's the lockdep infrastructure that broke, not the core
+>> kernel.
+>>
+>> Peter?
+>
+> Hurm,.. don't know actually.. so from a lockdep pov it doesn't need to
+> do that and we can simply remove the local_irq_{save,restore}() from
+> that function.
+>
+> It could be John did it to avoid some IRQ recursion warning, but if so,
+> he failed to mention it.
+>
+> John, remember why you typed those characters?
 
-+1
+So.. With seqlocks, we're trying to just make sure reads and writes
+don't nest under a write. However we don't care if a write nests in a
+read, because the read will be restarted. An example is someone hitting
+gettimeofday over and over taking a read, and then an IRQ lands mid-read
+and we take the write and update the data. This is expected normal
+behavior.  So this was trying to make the read side lockdep
+aquire/release combo atomic, so we don't create false warnings if an IRQ
+landed right in-between.
 
-This is what the existing mcelog(8) daemon does when it sees an excessive
-number of corrected errors on a page (using /sys/devices/system/memory/soft_offline_page
-as the user->kernel interface to get to this function).
+Does that make sense?
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+thanks
+-john
+
