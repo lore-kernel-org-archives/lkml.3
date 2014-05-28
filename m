@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182AbaE1JAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:00:34 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17791 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168AbaE1JA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:00:26 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-ad-5385a5a575d9
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] ARM: multi_v7_defconfig: Enable clock and RTC driver for S2M
- and S5M
-Date: Wed, 28 May 2014 11:00:13 +0200
-Message-id: <1401267613-8232-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4Zd2lS1uDDR6uVbH4O+kYu8XGGetZ
-	LV6/MLToXXCVzeJs0xt2i02Pr7FaXN41h81ixvl9TBa3L/NarD1yl93i1PXPbBYn//QyOvB4
-	tDT3sHn8/jWJ0ePOtT1sHpuX1HtcOdHE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZ51b+
-	YSo4zl4xf9EBxgbGk2xdjJwcEgImEo8vt7BC2GISF+6tB4pzcQgJLGWUaF43iwXC6WOSeNJ7
-	kxmkik3AWGLz8iVgVSICUxglfny8B1bFLHCVSeL41hOMIFXCAuESDybfAbNZBFQlfi5cAraP
-	V8BN4vvL6ewQ++QkTh6bzDqBkXsBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJBQ+7KD
-	cfExq0OMAhyMSjy8C2Rbg4VYE8uKK3MPMUpwMCuJ8DZ3AoV4UxIrq1KL8uOLSnNSiw8xMnFw
-	SjUwslUxN7gcTv139Pr0L3aM2YoS83fYOkVpyO14Gtf6KMTqstOhsrKqGQ0PU1q6+Kuze1J7
-	Lly5c1dBI9Nk/W7RfO87Nm/CNm7qyBAwmOZqfLv1SGrpuZub/Re9meh/SDrkresfRf2IR0tv
-	6v3N99waUse2PCRnP/NVwbLGq7UMQWvm7a718Z6kxFKckWioxVxUnAgA5FVIPhMCAAA=
+	id S932215AbaE1JAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:00:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58920 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752013AbaE1JAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 05:00:39 -0400
+Message-ID: <5385B10D.3020207@ti.com>
+Date: Wed, 28 May 2014 12:49:01 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Rob Herring <robh@kernel.org>, Kevin Hilman <khilman@linaro.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v1] of/irq: do irq resolution in platform_get_irq_byname()
+References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>	<20140523080333.66720C4176E@trevor.secretlab.ca>	<CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com> <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+In-Reply-To: <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The config enables already Samsung's PMIC-s MFD driver and regulators
-(S2MPS11 and S5M8767). Enable also drivers for rest of these PMIC-s
-features: clock and RTC.
+Hi All,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/configs/multi_v7_defconfig | 2 ++
- 1 file changed, 2 insertions(+)
+On 05/28/2014 03:37 AM, Rob Herring wrote:
+> On Tue, May 27, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>> On Fri, May 23, 2014 at 1:03 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>>> On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+>>>> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
+>>>> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
+>>>> moves resolving of the interrupt resources in platform_get_irq().
+>>>> But this solution isn't complete because platform_get_irq_byname()
+>>>> need to be modified the same way.
+>>>>
+>>>> Hence, fix it by adding interrupt resolution code at the
+>>>> platform_get_irq_byname() function too.
+>>>>
+>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>> Cc: Rob Herring <robh@kernel.org>
+>>>> Cc: Tony Lindgren <tony@atomide.com>
+>>>> Cc: Grant Likely <grant.likely@linaro.org>
+>>>> Cc: Thierry Reding <thierry.reding@gmail.com>
+>>>>
+>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>
+>>> Applied, Thanks.
+>>
+>> As of next-20150526, the ST u8500 Snowball board has been failing boot
+>> in linux-next, and was bisected down to this patch (commit
+>> ad69674e73a1 in -next).   Full boot failure attached.
+>>
+>> I have not dug any deeper, but can confirm that next-20140526 with
+>> this patch reverted boots again on the snowball board.
+> 
+> There's a patch on the list which fixes it. The problem is stmmac
+> driver was expecting only one error code.
+> 
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 839d16ab7b81..71f2e42978d7 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -321,6 +321,7 @@ CONFIG_RTC_DRV_PL031=y
- CONFIG_RTC_DRV_VT8500=y
- CONFIG_RTC_DRV_MV=y
- CONFIG_RTC_DRV_TEGRA=y
-+CONFIG_RTC_DRV_S5M=y
- CONFIG_DMADEVICES=y
- CONFIG_DW_DMAC=y
- CONFIG_MV_XOR=y
-@@ -341,6 +342,7 @@ CONFIG_KEYBOARD_NVEC=y
- CONFIG_SERIO_NVEC_PS2=y
- CONFIG_NVEC_POWER=y
- CONFIG_COMMON_CLK_QCOM=y
-+CONFIG_COMMON_CLK_S2MPS11=y
- CONFIG_MSM_GCC_8660=y
- CONFIG_MSM_MMCC_8960=y
- CONFIG_MSM_MMCC_8974=y
--- 
-1.9.1
+Seems root cause of problem is hidden inside MFD ab8500-core.c :(
+And it's related to simulations supporting of DT and non-DT devices.
+
+For example:
+----- Log file contains lines
+[    0.919677] ab8500-debug ab8500-debug.0: First irq not found, err -22
+[    0.926147] ab8500-debug: probe of ab8500-debug.0 failed with error -22
+
+DT definition of ab8500-debug is specified as following (ste-dbx5x0.dtsi):
+	ab8500-debugfs {
+		compatible = "stericsson,ab8500-debug";
+	};
+
+In code ab8500-debug is created using mfd_add_devices() API which fills
+device's resources manually, but, in same time, It links ab8500-debug device
+to DT node because MFD cell has of_compatible property set to:
+ 		.of_compatible = "stericsson,ab8500-debug",
+
+
+Problem: both new versions of APIs platform_get_irq_byname() and
+platform_get_irq() will fail to get IRQ.
+
+
+Another problem is:
+[    1.038909] abx5x0-usb ab8500-usb.0: Link status irq not found
+- looking on it now - it should work
+
+
+Best regards,
+-grygorii
+
+
+
+
+
 
