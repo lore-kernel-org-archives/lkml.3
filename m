@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596AbaE1TJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 15:09:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22803 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338AbaE1TJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 15:09:39 -0400
-Message-ID: <1401304172.2412.65.camel@ul30vt.home>
-Subject: Re: [PATCH v4 06/16] PCI: Quirk pci_for_each_dma_alias() for bridges
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        acooks@gmail.com, linux-kernel@vger.kernel.org, eddy0596@gmail.com,
-        linux@horizon.com
-Date: Wed, 28 May 2014 13:09:32 -0600
-In-Reply-To: <20140528180018.GS11907@google.com>
-References: <20140522230230.2856.40017.stgit@bling.home>
-	 <20140522230801.2856.18629.stgit@bling.home>
-	 <20140528180018.GS11907@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755157AbaE1TLl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 15:11:41 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:53726 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaE1TLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 15:11:39 -0400
+Date: Wed, 28 May 2014 20:11:26 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 1/9] procfs: use flags to deny or allow access to
+ /proc/<pid>/$entry
+Message-ID: <20140528191126.GA3722@dztty>
+References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
+ <1401110850-3552-2-git-send-email-tixxdz@opendz.org>
+ <CAGXu5jK_VkS7MPD4seQ2Bfqzi3+=ggfU3JOh6bkgu-YOxZCyhg@mail.gmail.com>
+ <20140528114248.GA2893@dztty>
+ <CAGXu5jLtinFUuXr2UN0k3BvM5ge4_DfhfKVb8v2SLTbnsMPnOQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jLtinFUuXr2UN0k3BvM5ge4_DfhfKVb8v2SLTbnsMPnOQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 12:00 -0600, Bjorn Helgaas wrote:
-> On Thu, May 22, 2014 at 05:08:01PM -0600, Alex Williamson wrote:
-> > Several PCIe-to-PCI bridges fail to provide a PCIe capability, causing
-> > us to handle them as conventional PCI devices.  In some cases, this
-> > may be correct, in others it's not.  Add a dev_flag bit to identify
-> > devices to be handled as standard PCIe-to-PCI bridges.
+On Wed, May 28, 2014 at 09:59:54AM -0700, Kees Cook wrote:
+> On Wed, May 28, 2014 at 4:42 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> > On Tue, May 27, 2014 at 11:38:54AM -0700, Kees Cook wrote:
+> >> On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> > Add the deny or allow flags, so we can perform proper permission checks
+> >> > and set the result accordingly. These flags are needed in case we have
+> >> > to cache the result of permission checks that are done during ->open()
+> >> > time. Later during ->read(), we can decide to allow or deny the read().
+> >> >
+> >> > The pid entries that need these flags are:
+> >> > /proc/<pid>/stat
+> >> > /proc/<pid>/wchan
+> >> > /proc/<pid>/maps  (will be handled in next patches).
+> >> >
+> >> > These files are world readable, userspace depend on that. To prevent
+> >> > ASLR leaks and to avoid breaking userspace, we follow this scheme:
+> >> >
+> >> > a) Perform permission checks during ->open()
+> >> > b) Cache the result of a) and return success
+> >> > c) Recheck the cached result during ->read()
+> >> > d) If cached == PID_ENTRY_DENY:
+> >> >    then we replace the sensitive fields with zeros, userspace won't
+> >> >    break and sensitive fields are protected.
+> >> >
+> >> > These flags are internal to /proc/<pid>/*
+> >>
+> >> Since this complex area of behavior has seen a lot of changes, I think
+> >> I'd really like to see some tests in tools/testsing/selftests/
+> >> somewhere that actually codify what the expected behaviors should be.
+> > Ok, sounds good!
+> >
+> >> We have a lot of corner cases, a lot of userspace behaviors to retain,
+> >> and given how fragile this area has been, I'd love to avoid seeing
+> >> regressions. It seems like we need to test file permissions, open/read
+> >> permissions, contents, etc, under many different cases (priv, unpriv,
+> >> passing between priv/unpriv and unpriv/priv, ptrace checks, etc).
+> > Yes, nice.
+> >
+> >> If we could do a "make run_tests" in a selftests subdirectory, it'd be
+> >> much easier to a) validate these fixes, and b) avoid regressions.
+> > Ok!
+> >
+> > Since I'm working on this on my free time and when time permits, please
+> > give me some days! I'll try to handle the cases I've discussed here.
+> >
+> > Now Kees, some of these files are still world readable and affected:
+> > smaps, maps ... I know, it's a matter of suid binary on your distro, and
+> > every one can exploit it. So what to do: make the tests public or write
+> > the tests and fix these entries then at last make the tests public ?
 > 
-> Can you expand on the "in some cases, this may be correct, in others it's
-> not"?  Do you mean that for some *devices* it's correct to handle them as
-> conventional PCI, or in some *situations* it's correct?  Something else?
+> I expect these tests to be public -- there is nothing secret about how
+> things are currently vulnerable. I think the priv vs unpriv tests can
+> be emulated (without root setuid) using a prctl(PR_SET_DUMPABLE, 0)
+> call which should give you similar protections.
+Ok, thanks for the hint!
 
-Yes, the example that I know of is the PCI bridge found on the root
-complex of many Intel chipsets.  Older generations do not have a PCIe
-capability and the requester ID behaves as a conventional PCI device,
-using the bridge itself as the requester ID, newer version include a
-PCIe capability and use the secondary bus as the requester ID.  Those
-devices work correctly without this quirk.  The bridges in the next
-patch obviously don't.
+> > Where should I send the tests ?
+> 
+> They should be part of the patch series, and live in the
+> tools/testing/selftests/ tree of the kernel. There are plenty of
+> examples in there. If you have the tests as the first set of patches,
+> then you can show which tests start passing with each additional fix.
+> I would break the tests up into "what is expected to work now" that
+> all pass, and then add all the cases that are currently a problem that
+> will all fail. Then as more of the fixes land from your series, more
+> of those tests will pass until everything is passing.
+Ok, will follow and do that. Thank you Kees!
 
-> I'd like to either remove that sentence or add a little more information to
-> make it useful.
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
 
-Ok, I'll note some of the above in a new commit log.
-
-> I guess this probably goes along with the tests in
-> quirk_use_pcie_bridge_dma_alias().
-
-Yep.  For that, we need to look at the upstream device of the bridge, so
-it won't flag any root complex bridges like those above, which is why it
-could probably be applied to any bridge.  Thanks,
-
-Alex
-
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >  drivers/pci/search.c |   10 ++++++++--
-> >  include/linux/pci.h  |    2 ++
-> >  2 files changed, 10 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/pci/search.c b/drivers/pci/search.c
-> > index 2c19f3f..df38f73 100644
-> > --- a/drivers/pci/search.c
-> > +++ b/drivers/pci/search.c
-> > @@ -88,8 +88,14 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
-> >  				continue;
-> >  			}
-> >  		} else {
-> > -			ret = fn(tmp, PCI_DEVID(tmp->bus->number, tmp->devfn),
-> > -				 data);
-> > +			if (tmp->dev_flags & PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS)
-> > +				ret = fn(tmp,
-> > +					 PCI_DEVID(tmp->subordinate->number,
-> > +						   PCI_DEVFN(0, 0)), data);
-> > +			else
-> > +				ret = fn(tmp,
-> > +					 PCI_DEVID(tmp->bus->number,
-> > +						   tmp->devfn), data);
-> >  			if (ret)
-> >  				return ret;
-> >  		}
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index 9d4035c..85ab35e 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -173,6 +173,8 @@ enum pci_dev_flags {
-> >  	PCI_DEV_FLAGS_ACS_ENABLED_QUIRK = (__force pci_dev_flags_t) (1 << 3),
-> >  	/* Flag to indicate the device uses dma_alias_devfn */
-> >  	PCI_DEV_FLAGS_DMA_ALIAS_DEVFN = (__force pci_dev_flags_t) (1 << 4),
-> > +	/* Use a PCIe-to-PCI bridge alias even if !pci_is_pcie */
-> > +	PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS = (__force pci_dev_flags_t) (1 << 5),
-> >  };
-> >  
-> >  enum pci_irq_reroute_variant {
-> > 
-
-
-
+-- 
+Djalal Harouni
+http://opendz.org
