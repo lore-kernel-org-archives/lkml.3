@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaE1Hjv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:39:51 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:58655 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaE1Hjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:39:48 -0400
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-To: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
-        m.chehab@samsung.com, bp@suse.de
-Cc: linux-edac@vger.kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: [PATCH v2 0/5] APEI: Make APEI architecture independent.
-Date: Wed, 28 May 2014 09:39:25 +0200
-Message-Id: <1401262770-25343-1-git-send-email-tomasz.nowicki@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754199AbaE1HoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:44:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49318 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752004AbaE1HoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 03:44:12 -0400
+Date: Wed, 28 May 2014 09:44:09 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH mmotm/next] memcg-mm-introduce-lowlimit-reclaim-fix2.patch
+Message-ID: <20140528074409.GA9895@dhcp22.suse.cz>
+References: <alpine.LSU.2.11.1405271432400.4485@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1405271432400.4485@eggly.anvils>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-APEI is currently implemented so that it depends on x86 hardware.
-The primary dependency is that GHES uses the x86 NMI for hardware
-error notification and MCE for memory error handling. These patches
-remove that dependency.
+On Tue 27-05-14 14:36:04, Hugh Dickins wrote:
+> mem_cgroup_within_guarantee() oopses in _raw_spin_lock_irqsave() when
+> booted with cgroup_disable=memory.  Fix that in the obvious inelegant
+> way for now - though I hope we are moving towards a world in which
+> almost all of the mem_cgroup_disabled() tests will vanish, with a
+> root_mem_cgroup which can handle the basics even when disabled.
+> 
+> I bet there's a neater way of doing this, rearranging the loop (and we
+> shall want to avoid spinlocking on root_mem_cgroup when we reach that
+> new world), but that's the kind of thing I'd get wrong in a hurry!
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Other APEI features such as error reporting via external IRQ, error
-serialization, or error injection, do not require changes to use them
-on non-x86 architectures.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-The following patch set eliminates the APEI Kconfig x86 dependency
-by making these changes:
-- treat NMI notification as GHES feature - CONFIG_ACPI_APEI_NMI
-- reorganize GHES notification type init/deinitialization
-  so that we can decide in run time whether NMI is supported or not
-- identify architectural boxes and abstract it accordingly (NMI and MCE)
-- rework ioremap for both IRQ and NMI context
+Thanks!
 
-NMI code is kept in ghes.c file since NMI and IRQ context are tightly coupled.
-
-Note, these patches introduce no functional changes for x86. The NMI notification
-feature is selected for x86 by default. Architectures that want to use this
-feature should also provide NMI code infrastructure.
-
-V1->V2
-- address Borislav comment
-- abstract arch-specific calls instead of wrapping into the #ifdef
-
-Tomasz Nowicki (5):
-  apei, mce: Factor out APEI architecture specific MCE calls.
-  acpi, apei, ghes: Introduce ACPI_APEI_NMI to make NMI error
-    notification a GHES feature.
-  acpi, apei, ghes: Introduce more generic mechanism to init/deinit
-    GHES error notifications.
-  apei, ghes, nmi: Factor out NMI arch-specific calls.
-  acpi, apei, ghes: Factor out ioremap virtual memory for IRQ and NMI
-    context.
-
- arch/x86/kernel/acpi/Makefile |    1 +
- arch/x86/kernel/acpi/apei.c   |   87 ++++++++++++
- drivers/acpi/apei/Kconfig     |   10 +-
- drivers/acpi/apei/apei-base.c |   32 +++++
- drivers/acpi/apei/ghes.c      |  301 +++++++++++++++++++++++++----------------
- drivers/acpi/apei/hest.c      |   26 +---
- include/acpi/apei.h           |   11 ++
- 7 files changed, 328 insertions(+), 140 deletions(-)
- create mode 100644 arch/x86/kernel/acpi/apei.c
+> ---
+> 
+>  mm/memcontrol.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> --- mmotm/mm/memcontrol.c	2014-05-21 18:12:18.072022438 -0700
+> +++ linux/mm/memcontrol.c	2014-05-21 19:34:30.608546905 -0700
+> @@ -2793,6 +2793,9 @@ static struct mem_cgroup *mem_cgroup_loo
+>  bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+>  		struct mem_cgroup *root)
+>  {
+> +	if (mem_cgroup_disabled())
+> +		return false;
+> +
+>  	do {
+>  		if (!res_counter_low_limit_excess(&memcg->res))
+>  			return true;
 
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
