@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156AbaE1PJv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:09:51 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:32888 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710AbaE1PJu convert rfc822-to-8bit (ORCPT
+	id S932187AbaE1PJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:09:57 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:37456 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710AbaE1PJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:09:50 -0400
-Message-ID: <5385FC38.3050201@arm.com>
-Date: Wed, 28 May 2014 16:09:44 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "npiggin@gmail.com" <npiggin@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 02/11] sched: remove a wake_affine condition
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org> <1400860385-14555-3-git-send-email-vincent.guittot@linaro.org> <20140527124848.GQ30445@twins.programming.kicks-ass.net> <CAKfTPtAbnDdQ=C6oABtwUPr7ADhHo1qsdzt5GFsuVMncA9Q=Qw@mail.gmail.com> <20140527153937.GE19143@laptop.programming.kicks-ass.net> <CAKfTPtCZx4i5HFnma3EFYjxVHojUAkezSS7jL7KDTgwvKEVFwQ@mail.gmail.com> <CAKfTPtB_4bQxBOUJ4tCFRVqzHDRVXj3YPkyzyTv_h-sgm8NwEQ@mail.gmail.com>
-In-Reply-To: <CAKfTPtB_4bQxBOUJ4tCFRVqzHDRVXj3YPkyzyTv_h-sgm8NwEQ@mail.gmail.com>
-X-OriginalArrivalTime: 28 May 2014 15:09:43.0142 (UTC) FILETIME=[DAC28060:01CF7A86]
-X-MC-Unique: 114052816094617401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 May 2014 11:09:54 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module <linux-security-module@vger.kernel.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH v4 0/4] ima: extending secure boot certificate chain
+Date: Wed, 28 May 2014 11:09:40 -0400
+Message-Id: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052815-0928-0000-0000-0000023BF79E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent & Peter,
+The original patches extended the secure boot signature chain of trust
+to IMA-appraisal, by allowing only certificates signed by a 'trusted'
+key on the system_trusted_keyring to be added to the IMA keyring.
 
-On 28/05/14 07:49, Vincent Guittot wrote:
-[...]
-> 
-> Nick,
-> 
-> While doing some rework on the wake affine part of the scheduler, i
-> failed to catch the use case that takes advantage of a condition that
-> you added some while ago with the commit
-> a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
-> 
-> Could you help us to clarify the 2 first lines of the test that you added ?
-> +                       if ((tl <= load &&
-> +                               tl + target_load(cpu, idx) <=
-> SCHED_LOAD_SCALE) ||
-> +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
-> 
-> Regards,
-> Vincent
->>
->>>
->>>>> commit a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
->>>>>
->>>>>
->>>>> +                       if ((tl <= load &&
->>>>> +                               tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
->>>>> +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
->>>>>
->>>>>
->>>>> So back when the code got introduced, it read:
->>>>>
->>>>>         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE < source_load(this_cpu, idx) &&
->>>>>         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(this_cpu, idx) < SCHED_LOAD_SCALE
->>>>>
+There were a number of issues with the original patch set, including
+kbuild issues, which have been resolved, and with the special dot
+prefixed keyrings.  The function key_get_type_from_user(), verfies
+the '_type', not the '_description', is dot prefixed.  The previous
+version added an additional test, but left the existing check in
+key_get_type_from_user().  This patch set removes the unnecessary
+dot check.
 
-Shouldn't this be 
+Previous versions attempted to verify a certificate is signed by a
+trusted key, but not necessarily by any key on the system_trusted_keyring.
+The first attempt, permitted any key on the targeted trusted keyring
+to verify a certificate. This introduced concerns of transitive trust.
+The subsequent attempt defined a separate keyring, associated with
+each targeted trusted keyring.  This patch set defines a single new
+owner_trusted_keyring.
 
-target_load(this_cpu, idx) - sync*SCHED_LOAD_SCALE <= source_load(prev_cpu, idx) &&
-target_load(this_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(prev_cpu, idx) <= SCHED_LOAD_SCALE
+thanks,
 
-"[PATCH] sched: implement smpnice" (2dd73a4f09beacadde827a032cf15fd8b1fa3d48)
-mentions that SCHED_LOAD_BALANCE (IMHO, should be SCHED_LOAD_SCALE) represents
-the load contribution of a single task. So I read the second part as if
-the sum of the load of this_cpu and prev_cpu is smaller or equal to the
-(maximal) load contribution (maximal possible effect) of a single task.
+Mimi
 
-There is even a comment in "[PATCH] sched: tweak affine wakeups"
-(a3f21bce1fefdf92a4d1705e888d390b10f3ac6f) in try_to_wake_up() when
-SCHED_LOAD_SCALE gets subtracted from tl = this_load =
-target_load(this_cpu, idx):
+Mimi Zohar (4):
+  KEYS: special dot prefixed keyring name bug fix
+  KEYS: verify a certificate is signed by a 'trusted' key
+  ima: define '.ima' as a builtin 'trusted' keyring
+  KEYS: define an owner trusted keyring
 
-+ * If sync wakeup then subtract the (maximum possible)
-+ * effect of the currently running task from the load
-+ * of the current CPU:
+ crypto/asymmetric_keys/x509_public_key.c | 85 +++++++++++++++++++++++++++++++-
+ include/keys/system_keyring.h            | 13 +++++
+ include/linux/key.h                      |  4 ++
+ kernel/system_keyring.c                  | 85 ++++++++++++++++++++++++++++++++
+ security/integrity/digsig.c              | 26 +++++++++-
+ security/integrity/ima/Kconfig           |  8 +++
+ security/integrity/ima/ima_appraise.c    | 11 +++++
+ security/integrity/integrity.h           |  5 ++
+ security/keys/key.c                      | 20 ++++++++
+ security/keys/keyctl.c                   |  6 ++-
+ 10 files changed, 259 insertions(+), 4 deletions(-)
 
-"[PATCH] sched: implement smpnice" then replaces SCHED_LOAD_SCALE w/ 
-
-+static inline unsigned long cpu_avg_load_per_task(int cpu)
-+{
-+       runqueue_t *rq = cpu_rq(cpu);
-+       unsigned long n = rq->nr_running;
-+
-+       return n ?  rq->raw_weighted_load / n : SCHED_LOAD_SCALE;
-
--- Dietmar
-
->>>>> So while the first line makes some sense, the second line is still
->>>>> somewhat challenging.
->>>>>
->>>>> I read the second line something like: if there's less than one full
->>>>> task running on the combined cpus.
->>>>
->>>> ok. your explanation makes sense
->>>
->>> Maybe, its still slightly weird :-)
->>>
->>>>>
-[...]
+-- 
+1.8.1.4
 
