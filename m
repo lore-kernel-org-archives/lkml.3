@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340AbaE1U01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:26:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40686 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaE1U00 (ORCPT
+	id S1755355AbaE1U1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:27:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40170 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaE1U1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:26:26 -0400
-Date: Wed, 28 May 2014 13:30:01 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 0/6] DT early console initialization
-Message-ID: <20140528203001.GA14334@kroah.com>
-References: <1399587823-17701-1-git-send-email-robherring2@gmail.com>
- <20140514142644.1C922C4153D@trevor.secretlab.ca>
- <CAL_JsqK9nifPWW5jnzYifsMuvRjhD9wTT+YbE0sPM6N4xaj1yA@mail.gmail.com>
+	Wed, 28 May 2014 16:27:03 -0400
+Date: Wed, 28 May 2014 22:26:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Kirill Tkhai <tkhai@yandex.ru>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Subject: Re: [RFC] rtmutex: Do not boost fair tasks each other
+In-Reply-To: <1399314660.6978.3.camel@localhost.localdomain>
+Message-ID: <alpine.DEB.2.10.1405282157100.3952@nanos>
+References: <5362122B.8060305@yandex.ru>  <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de> <1399314660.6978.3.camel@localhost.localdomain>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqK9nifPWW5jnzYifsMuvRjhD9wTT+YbE0sPM6N4xaj1yA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1162344849-1401308817=:3952"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 11:30:04AM -0500, Rob Herring wrote:
-> On Wed, May 14, 2014 at 9:26 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> > On Thu,  8 May 2014 17:23:37 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> >> From: Rob Herring <robh@kernel.org>
-> >>
-> >> This series adds support for early serial console initialization using
-> >> DT. This enables determining the serial port type and address using the
-> >> FDT and allows enabling the console before platform specific
-> >> initialization runs. I've tested this on arm64. ARM support is dependent
-> >> on adding fixmap support.
-> >>
-> >> Currently, the earlycon is only enabled if "earlycon" is present on the
-> >> kernel command line. The FDT needs to have /chosen/stdout-path set to
-> >> the path of the serial port.
-> >>
-> >> This series is dependent on generic earlycon[1], libfdt support[2], and
-> >> vmlinux.lds.h clean-ups[3]. The first 2 are in linux-next already. A git
-> >> branch is available here:
-> >>
-> >> git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git earlycon-dt
-> >
-> > Nice. For the whole series:
-> >
-> > Acked-by: Grant Likely <grant.likely@linaro.org>
-> >
-> > I haven't tested it though.
-> >>
-> >> Rob
-> >>
-> >> [1] https://lkml.org/lkml/2014/4/18/573
-> >> [2] https://lkml.org/lkml/2014/4/22/1202
-> >> [3] https://lkml.org/lkml/2014/3/27/285
-> >>
-> >> Rob Herring (6):
-> >>   of: align RESERVEDMEM_OF_DECLARE function callbacks to other callbacks
-> >>   of: consolidate linker section OF match table declarations
-> >>   serial: earlycon: add DT support
-> >>   of/fdt: add FDT address translation support
-> >>   of/fdt: add FDT serial scanning for earlycon
-> >>   tty/serial: pl011: add DT based earlycon support
-> 
-> Greg, I plan to take this series thru the DT tree for 3.16 unless you
-> have any objections. It has dependencies on both the tty-next and the
-> DT trees.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-No objection from me at all, feel free to do so.
+--8323329-1162344849-1401308817=:3952
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-greg k-h
+On Mon, 5 May 2014, Kirill Tkhai wrote:
+> В Сб, 03/05/2014 в 20:54 +0200, Thomas Gleixner пишет:
+> > Though exercising that code path as much as we can is not a bad thing
+> > either. So I'd like to see that made compile time conditional on one
+> > of the lock testing CONFIG items.
+>  
+> +#ifndef CONFIG_RT_MUTEX_BOOST_ALL
+
+No, not another pointless config option. Read what I said. What's
+wrong with using an existing config item, e.g DEBUG_RT_MUTEXES?
+
+> +#define heritable_prio(prio)		(rt_prio(prio) || dl_prio(prio))
+
+inheritable please. It's not priority heritance and never will be.
+
+Thanks,
+
+	tglx
+--8323329-1162344849-1401308817=:3952--
