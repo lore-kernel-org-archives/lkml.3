@@ -1,224 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973AbaE1FWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 01:22:47 -0400
-Received: from verein.lst.de ([213.95.11.211]:33739 "EHLO newverein.lst.de"
+	id S1753846AbaE1F3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 01:29:21 -0400
+Received: from erley.org ([97.107.129.9]:46191 "EHLO remote.erley.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155AbaE1FWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 01:22:46 -0400
-Date: Wed, 28 May 2014 07:22:41 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Ming Lei <tom.leiming@gmail.com>, Christoph Hellwig <hch@lst.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] block: mq flush: fix race between IPI handler and mq
-	flush worker
-Message-ID: <20140528052241.GB21566@lst.de>
-References: <5384DB97.70606@kernel.dk> <20140527185301.GA8466@lst.de> <5384DF5E.3020304@kernel.dk> <20140527191510.GA9274@lst.de> <5384E4D4.6040101@kernel.dk> <20140527192130.GA9850@lst.de> <5384E8FA.8080201@kernel.dk> <CACVXFVM6YYW8N0wpKGchAVpLk72qJiqHwiUg4S4Yv+M+o-B=9g@mail.gmail.com> <5385494E.1070803@kernel.dk> <53854A76.1050807@kernel.dk>
+	id S1750878AbaE1F3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 01:29:20 -0400
+X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 01:29:19 EDT
+Message-ID: <538572E2.5030909@erley.org>
+Date: Wed, 28 May 2014 00:23:46 -0500
+From: Pat Erley <pat-lkml@erley.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="xHFwDpU9dbj6ez1V"
-Content-Disposition: inline
-In-Reply-To: <53854A76.1050807@kernel.dk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org
+CC: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
+        eddy0596@gmail.com, linux@horizon.com
+Subject: Re: [PATCH v4 00/16] PCI/iommu: Fix DMA alias problems
+References: <20140522230230.2856.40017.stgit@bling.home>
+In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/22/2014 06:07 PM, Alex Williamson wrote:
+> For testing, this version can be found in my git tree:
+>
+> git://github.com/awilliam/linux-vfio.git dma-alias-v4
+>
+> Please report any issues.
+>
+> v4:
+>   - Change dma_func_alias to dma_alias_devfn, holding a single
+>     devfn to alias, thereby supporting aliases to the wrong slot.
+>     The DMA alias iterator is easily changed, but IOMMU grouping
+>     requires significant rework.  This is now done in IOMMU code
+>     rather than PCI code.
+>
+>   - AMD-Vi - try to incorporate IVRS aliases dynamically into
+>     PCI alias quirks to make sure that our grouping remains the
+>     same.  Potentially this could end up reporting BIOS aliases
+>     that we can add to our list of quirks.
+>
+> v3:
+>   - Found several instances where I had PCI_SLOT when I meant
+>     PCI_FUNC.  Thanks to Andrew for spotting this.  This should
+>     fix the problem he was having with Ricoh quirks.  We also
+>     pruned down the func0 quirks to only those that we know are
+>     needed.  We can always add them back later.
+>
+>   - Found a case in intel-iommu of using dev_is_pci() where I
+>     really wanted !dev_is_pci().  Fixed.
+>
+> v2:
+>   - Several new Marvell controllers added to quirks.  There's been
+>     a lot of success reported with this series in
+>     https://bugzilla.kernel.org/show_bug.cgi?id=42679
+>
+>   - Add quirk for ASMedia and Tundra PCIe-to-PCI bridges that do
+>     not expose a PCIe capability.  These have been shown to use
+>     the standard PCIe-to-PCI bridge requester ID.
+>
+>   - Fix copy/paste duplicate Ricoh quirk ID
+>
+>   - Fixed AMD IOMMU for the "ghost" function case where the DMA
+>     alias is for an absent device.  The iommu rlookup table and
+>     data fields need to be initializes.
+>
+>   - Fixed Intel interrupt remapping, I wasn't passing the target
+>     bus number, only the alias bus number.
+>
+> These patches are split across PCI and IOMMU, but I've front-loaded
+> all of the PCI infrastructure so that the first 7 patches can be
+> applied to PCI-core, the IOMMU maintainers can pickup their patches,
+> then we can finish with dead code removal.  Bjorn might also be
+> willing to carry the IOMMU changes if the maintainers want to ack
+> them.
+>
+> Original description:
+>
+> This series attempts to fix a couple issues we've had outstanding in
+> the PCI/IOMMU code for a while.  The first issue is with devices that
+> use the wrong requester ID for DMA transactions.  We already have a
+> sort of half-baked attempt to fix this for several Ricoh devices, but
+> the fix only helps them be useful through IOMMU groups, not the
+> general DMA case.  There are also several Marvell devices which use
+> use a different wrong requester ID and don't even fit into the DMA
+> source idea.  This series creates a DMA alias iterator that will
+> step through each possible alias of a device, allowing IOMMUs to
+> insert mappings for both the device and its aliases.
+>
+> Hand-in-hand with this is our broken pci_find_upstream_pcie_bridge()
+> function, which is known to blowup when it finds itself suddenly at
+> a PCIe device without crossing a PCIe-to-PCI bridge (as identified by
+> the PCIe capability).  It also likes to make the invalid assumption
+> that a PCIe device never has its requester ID masked by any usptream
+> bus.  We can fix this using the above new DMA alias iterator, since
+> that's effectively what this function was meant to do.
+>
+> Finally, with all these helpers, it makes sense to consolidate code
+> for determining IOMMU groups.  The first step in finding the root
+> of a group is finding the final upstream DMA alias for the device,
+> then applying additional ACS rules and incorporating device specific
+> aliases.  As this is all common to PCI, create a single implementation
+> and remove piles of code from the individual IOMMU drivers.
+>
+> This series allows devices like the Marvell 88SE9123 to finally work
+> on Linux with either AMD-Vi or VT-d enabled on the box.  I've
+> collected device IDs from various bugs to support as many SKUs of
+> these devices as possible, but I'm sure there are others that I've
+> missed.
+>
+> This should also enable motherboards with an onboard ASmedia
+> ASM1083/1085 PCIe-to-PCI bridge to work with VT-d enabled.  I've
+> acquired an adapter board with this chip, but it actually exposes
+> a PCIe capability, unlike most of the onboard controllers.  Therefore
+> I expect this series will fix the WARN_ON currently hit during boot,
+> but there's a 50/50 chance whether the device behaves like a PCI
+> bridge or a PCIe bridge with regard to the requester ID that it uses
+> to take ownership of the transaction.  If it turns out to use the
+> PCIe bridge model, I expect we can quirk it using a dev_flags bit
+> to identify a PCI bridge that takes ownership as if it was a PCIe
+> bridge.
+>
+> Please test and provide feedback.  I expect IOMMU group topology
+> should not change from this series, but if a case is found where it
+> does, please share.  Also, if there are additional quirks we need
+> to add, please either file new or add to the existing bugs.  Thanks,
+>
+> Alex
+>
+> ---
+>
+> Alex Williamson (16):
+>        PCI: Add DMA alias iterator
+>        PCI: define pci_dev_flags as bit shifts
+>        PCI: quirk pci_for_each_dma_alias()
+>        PCI: quirk dma_alias_devfn for Ricoh devices
+>        PCI: quirk dma_alias_devfn for Marvell devices
+>        PCI: Quirk pci_for_each_dma_alias() for bridges
+>        PCI: Add quirks for ASMedia and Tundra bridges
+>        iommu: Create central IOMMU group lookup/creation interface
+>        iommu/amd: Update to use PCI DMA aliases
+>        iommu/amd: Use iommu_group_get_for_dev()
+>        iommu/intel: Use iommu_group_get_for_dev()
+>        iommu/intel: Update to use PCI DMA aliases
+>        iommu/fsl: Use iommu_group_get_for_dev() for IOMMU groups
+>        iommu: Remove pci.h
+>        PCI: Remove pci_find_upstream_pcie_bridge()
+>        PCI: Remove pci_get_dma_source()
+>
+>
+This series allows my W510 to boot with firewire and VT-d enabled.  I've 
+been working around this issue for 2 years.  Feel free to CC me on any 
+further iterations of this series.
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+17:00.0 SD Host controller: Ricoh Co Ltd MMC/SD Host Controller (rev 01)
+17:00.3 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 PCIe IEEE 1394
+         Controller (rev 01)
 
-On Tue, May 27, 2014 at 08:31:18PM -0600, Jens Axboe wrote:
-> Christoph, I'll just run a few tests and then queue it up in the morning. 
-> Can you send a properly signed-off patch with a commit message as well? I 
-> was writing one up, but I still need the signed-off-by.
+17:00.0 0805: 1180:e822 (rev 01)
+17:00.3 0c00: 1180:e832 (rev 01)
 
-Attached.
-
-
---xHFwDpU9dbj6ez1V
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-blk-mq-add-helper-to-insert-requests-from-irq-contex.patch"
-
->From 125823de325211c3e96dad884b0d1a52ec04947d Mon Sep 17 00:00:00 2001
-From: Christoph Hellwig <hch@lst.de>
-Date: Wed, 21 May 2014 19:37:11 +0200
-Subject: blk-mq: add helper to insert requests from irq context
-
-Both the cache flush state machine and the SCSI midlayer want to submit
-requests from irq context, and the current per-request requeue_work
-unfortunately causes corruption due to sharing with the csd field for
-flushes.  Replace them with a per-request_queue list of requests to
-be requeued.
-
-Based on an earlier test by Ming Lei.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Ming Lei <tom.leiming@gmail.com>
-Tested-by: Ming Lei <tom.leiming@gmail.com>
----
- block/blk-flush.c      |   16 +++---------
- block/blk-mq.c         |   64 +++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/blk-mq.h |    3 +++
- include/linux/blkdev.h |    5 +++-
- 4 files changed, 74 insertions(+), 14 deletions(-)
-
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index ec7a224..ef608b3 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -130,21 +130,13 @@ static void blk_flush_restore_request(struct request *rq)
- 	blk_clear_rq_complete(rq);
- }
- 
--static void mq_flush_run(struct work_struct *work)
--{
--	struct request *rq;
--
--	rq = container_of(work, struct request, requeue_work);
--
--	memset(&rq->csd, 0, sizeof(rq->csd));
--	blk_mq_insert_request(rq, false, true, false);
--}
--
- static bool blk_flush_queue_rq(struct request *rq, bool add_front)
- {
- 	if (rq->q->mq_ops) {
--		INIT_WORK(&rq->requeue_work, mq_flush_run);
--		kblockd_schedule_work(&rq->requeue_work);
-+		struct request_queue *q = rq->q;
-+
-+		blk_mq_add_to_requeue_list(rq, add_front);
-+		blk_mq_kick_requeue_list(q);
- 		return false;
- 	} else {
- 		if (add_front)
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 62082c5..0457010 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -510,10 +510,68 @@ void blk_mq_requeue_request(struct request *rq)
- 	blk_clear_rq_complete(rq);
- 
- 	BUG_ON(blk_queued_rq(rq));
--	blk_mq_insert_request(rq, true, true, false);
-+	blk_mq_add_to_requeue_list(rq, true);
- }
- EXPORT_SYMBOL(blk_mq_requeue_request);
- 
-+static void blk_mq_requeue_work(struct work_struct *work)
-+{
-+	struct request_queue *q =
-+		container_of(work, struct request_queue, requeue_work);
-+	LIST_HEAD(rq_list);
-+	struct request *rq, *next;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&q->requeue_lock, flags);
-+	list_splice_init(&q->requeue_list, &rq_list);
-+	spin_unlock_irqrestore(&q->requeue_lock, flags);
-+
-+	list_for_each_entry_safe(rq, next, &rq_list, queuelist) {
-+		if (!(rq->cmd_flags & REQ_SOFTBARRIER))
-+			continue;
-+
-+		rq->cmd_flags &= ~REQ_SOFTBARRIER;
-+		list_del_init(&rq->queuelist);
-+		blk_mq_insert_request(rq, true, false, false);
-+	}
-+
-+	while (!list_empty(&rq_list)) {
-+		rq = list_entry(rq_list.next, struct request, queuelist);
-+		list_del_init(&rq->queuelist);
-+		blk_mq_insert_request(rq, false, false, false);
-+	}
-+
-+	blk_mq_run_queues(q, false);
-+}
-+
-+void blk_mq_add_to_requeue_list(struct request *rq, bool at_head)
-+{
-+	struct request_queue *q = rq->q;
-+	unsigned long flags;
-+
-+	/*
-+	 * We abuse this flag that is otherwise used by the I/O scheduler to
-+	 * request head insertation from the workqueue.
-+	 */
-+	BUG_ON(rq->cmd_flags & REQ_SOFTBARRIER);
-+
-+	spin_lock_irqsave(&q->requeue_lock, flags);
-+	if (at_head) {
-+		rq->cmd_flags |= REQ_SOFTBARRIER;
-+		list_add(&rq->queuelist, &q->requeue_list);
-+	} else {
-+		list_add_tail(&rq->queuelist, &q->requeue_list);
-+	}
-+	spin_unlock_irqrestore(&q->requeue_lock, flags);
-+}
-+EXPORT_SYMBOL(blk_mq_add_to_requeue_list);
-+
-+void blk_mq_kick_requeue_list(struct request_queue *q)
-+{
-+	kblockd_schedule_work(&q->requeue_work);
-+}
-+EXPORT_SYMBOL(blk_mq_kick_requeue_list);
-+
- struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
- {
- 	return tags->rqs[tag];
-@@ -1777,6 +1835,10 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
- 
- 	q->sg_reserved_size = INT_MAX;
- 
-+	INIT_WORK(&q->requeue_work, blk_mq_requeue_work);
-+	INIT_LIST_HEAD(&q->requeue_list);
-+	spin_lock_init(&q->requeue_lock);
-+
- 	if (q->nr_hw_queues > 1)
- 		blk_queue_make_request(q, blk_mq_make_request);
- 	else
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index f76bb18..81bb7f1 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -173,6 +173,9 @@ void __blk_mq_end_io(struct request *rq, int error);
- 
- void blk_mq_requeue_request(struct request *rq);
- 
-+void blk_mq_add_to_requeue_list(struct request *rq, bool at_head);
-+void blk_mq_kick_requeue_list(struct request_queue *q);
-+
- void blk_mq_complete_request(struct request *rq);
- 
- void blk_mq_stop_hw_queue(struct blk_mq_hw_ctx *hctx);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index b0104ba..e90e169 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -99,7 +99,6 @@ struct request {
- 	struct list_head queuelist;
- 	union {
- 		struct call_single_data csd;
--		struct work_struct requeue_work;
- 		unsigned long fifo_time;
- 	};
- 
-@@ -463,6 +462,10 @@ struct request_queue {
- 	struct request		*flush_rq;
- 	spinlock_t		mq_flush_lock;
- 
-+	struct list_head	requeue_list;
-+	spinlock_t		requeue_lock;
-+	struct work_struct	requeue_work;
-+
- 	struct mutex		sysfs_lock;
- 
- 	int			bypass_depth;
--- 
-1.7.10.4
+Tested-by: Pat Erley <pat-lkml@erley.org>
 
 
---xHFwDpU9dbj6ez1V--
