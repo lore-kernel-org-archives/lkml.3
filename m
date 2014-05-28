@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234AbaE1JBP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:01:15 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:59869 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372AbaE1JBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:01:10 -0400
+	id S932200AbaE1JAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:00:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56931 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754477AbaE1JAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 05:00:39 -0400
+Message-ID: <5385A596.4040508@ti.com>
+Date: Wed, 28 May 2014 14:30:06 +0530
+From: Satish Patel <satish.patel@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <5384BD93.6030502@linutronix.de>
-References: <CACRpkdY=oVyBCwRkppq11B0tkn2bMw+-h_fDhy538eatVUJ=pQ@mail.gmail.com>
-	<1401137894-6096-1-git-send-email-bigeasy@linutronix.de>
-	<CACRpkdYx9Zwoig5QZmpF1w_Gcyoga8erPZd0RwvHsiC3prjNTA@mail.gmail.com>
-	<5384BD93.6030502@linutronix.de>
-Date: Wed, 28 May 2014 11:01:09 +0200
-Message-ID: <CACRpkdaO+_d_WTE_Or0R1KXqoHyyviFP9eVSHKZ_pB8E8wKoOQ@mail.gmail.com>
-Subject: Re: [PATCH v3] gpio: dwapb: use a second irq chip
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Jamie Iles <jamie@jamieiles.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <rob@landley.net>, <tony@atomide.com>, <grant.likely@linaro.org>,
+        <robh+dt@kernel.org>
+Subject: Re: [PATCH v2 0/5] Smart Card(SC) interface, TI USIM & NxP SC phy
+ driver
+References: <1390192434-19386-1-git-send-email-satish.patel@ti.com> <52E9E8B0.2020000@ti.com> <20140130130515.GC23970@kroah.com> <537589A2.8060802@ti.com> <20140528004147.GA9699@kroah.com>
+In-Reply-To: <20140528004147.GA9699@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 6:30 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
 
-> What remains in my queue is:
+
+On 5/28/2014 6:11 AM, Greg KH wrote:
+> On Fri, May 16, 2014 at 09:14:34AM +0530, Satish Patel wrote:
+>>
+>> On 1/30/2014 6:35 PM, Greg KH wrote:
+>>> On Thu, Jan 30, 2014 at 11:22:48AM +0530, Satish Patel wrote:
+>>>> On 1/20/2014 10:03 AM, Satish Patel wrote:
+>>>>> Changes from v1:
+>>>>> * RFC(v1) comments are fixed
+>>>>>
+>>>>> ** removed "gpio_to_irq" as GPIO controller process  cell from DT and
+>>>>> give it to DT node
+>>>>> ** comments on documentation
+>>>>> ** few other comments on null checks are resolved
+>>>>>
+>>>>> * BWT timing configuration is added to ti-usim driver
+>>>>>
+>>>>> v1 cover letter link#
+>>>>> https://lkml.org/lkml/2014/1/6/250
+>>>>>
+>>>>> Satish Patel (5):
+>>>>>    sc_phy:SmartCard(SC) PHY interface to SC controller
+>>>>>    misc: tda8026: Add NXP TDA8026 PHY driver
+>>>>>    char: ti-usim: Add driver for USIM module on AM43xx
+>>>>>    ARM: dts: AM43xx: DT entries added for ti-usim
+>>>>>    ARM: dts: AM43xx-epos-evm: DT entries  for ti-usim and phy
+>>>>>
+>>>>>   Documentation/devicetree/bindings/misc/tda8026.txt |   19 +
+>>>>>   .../devicetree/bindings/ti-usim/ti-usim.txt        |   31 +
+>>>>>   Documentation/sc_phy.txt                           |  171 ++
+>>>>>   arch/arm/boot/dts/am4372.dtsi                      |   10 +
+>>>>>   arch/arm/boot/dts/am43x-epos-evm.dts               |   43 +
+>>>>>   drivers/char/Kconfig                               |    7 +
+>>>>>   drivers/char/Makefile                              |    1 +
+>>>>>   drivers/char/ti-usim-hw.h                          |  863 +++++++++
+>>>>>   drivers/char/ti-usim.c                             | 1859 ++++++++++++++++++++
+>>>>>   drivers/misc/Kconfig                               |    7 +
+>>>>>   drivers/misc/Makefile                              |    1 +
+>>>>>   drivers/misc/tda8026.c                             | 1255 +++++++++++++
+>>>>>   include/linux/sc_phy.h                             |  132 ++
+>>>>>   include/linux/ti-usim.h                            |   98 +
+>>>>>   14 files changed, 4497 insertions(+), 0 deletions(-)
+>>>>>   create mode 100644 Documentation/devicetree/bindings/misc/tda8026.txt
+>>>>>   create mode 100644 Documentation/devicetree/bindings/ti-usim/ti-usim.txt
+>>>>>   create mode 100644 Documentation/sc_phy.txt
+>>>>>   create mode 100644 drivers/char/ti-usim-hw.h
+>>>>>   create mode 100644 drivers/char/ti-usim.c
+>>>>>   create mode 100644 drivers/misc/tda8026.c
+>>>>>   create mode 100644 include/linux/sc_phy.h
+>>>>>   create mode 100644 include/linux/ti-usim.h
+>>>> Any comments on this patch series ?
+>>>>
+>>>> If not,
+>>>> Can you accept these patches for next merge window
+>>> It's the middle of this merge window, and I can't accept any patches
+>>> until after 3.14-rc1 is out, at which point I'll start to work on my
+>>> patch backlog.
+>> Are these to be consider for next submission ? Or you want me to start
+>> review cycle one more time.
 >
-> * gpio: dwapb: use irq_linear_revmap() for the faster lookup
-> * gpio: dwapb: use irq_gc_lock() for locking instead bc's lock
-> * gpio: dwapb: use d->mask instead of BIT(bit)
+> I don't have them in my queue, so please resend.
+I have resent patches for review. could you consider the same for next 
+merge window ?
 >
-> what do we do about those?
-
-Rebase on my devel branch and resend please ... but for linear
-revmap I'd much prefer some effort being put into using the
-gpiolib irqchip helpers with generic chips instead.
-
-Yours,
-Linus Walleij
