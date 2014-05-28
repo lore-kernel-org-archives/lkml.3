@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaE1HMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:12:31 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:46732 "EHLO dev.rtsoft.ru"
+	id S1754137AbaE1HNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:13:13 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:27525 "EHLO smtp2-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397AbaE1HMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:12:30 -0400
-Message-ID: <53858C5B.6030604@dev.rtsoft.ru>
-Date: Wed, 28 May 2014 11:12:27 +0400
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Organization: RTSoft Software Development Center
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Mathias Nyman <mathias.nyman@intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru
-Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
- on ULI hw
-References: <1401166602-26379-1-git-send-email-nyushchenko@dev.rtsoft.ru> <20140527232715.GA26228@kroah.com>
-In-Reply-To: <20140527232715.GA26228@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754066AbaE1HNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 03:13:12 -0400
+From: Mathieu Souchaud <mattieu.souchaud@free.fr>
+To: tony.luck@intel.com, bp@alien8.de, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Cc: Mathieu Souchaud <mattieu.souchaud@free.fr>
+Subject: [PATCH v3] x86/mce: Improve mcheck_init_device() error handling
+Date: Wed, 28 May 2014 09:12:37 +0200
+Message-Id: <1401261157-1165-1-git-send-email-mattieu.souchaud@free.fr>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-28.05.2014 03:27, Greg Kroah-Hartman пишет:
-> On Tue, May 27, 2014 at 08:56:42AM +0400, Nikita Yushchenko wrote:
->> This access causes hang on Freescale P2020DS board (that has OHCI
->> provided by ULI 1533 chip).
->>
->> Since preserving OHCI_FMINTERVAL was originally done only for NVIDIA
->> hardware and only later (in c6187597) was turned unconditional, and
->> c6187597 commit message again mentions only NVIDIA, I think it should be
->> safe to disable preserving OHCI_FMINTERVAL if device vendor is ULI.
-> 
-> Have you tested this?
+Check return code of every function called by mcheck_init_device().
 
-With this applied, board boots ok.
-With this not applied, board hangs on boot.
+Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |   47 ++++++++++++++++++++++++++++++++------
+ 1 file changed, 40 insertions(+), 7 deletions(-)
 
-As for OHCI functionality - this was tested by other people here, but with
-older kernel. Will retest myself with 3.15-rc as soon as get physical access
-to board.
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68317c8..e361681 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2437,32 +2437,65 @@ static __init int mcheck_init_device(void)
+ 	int err;
+ 	int i = 0;
+ 
+-	if (!mce_available(&boot_cpu_data))
+-		return -EIO;
++	if (!mce_available(&boot_cpu_data)) {
++		err = -EIO;
++		goto err_out;
++	}
+ 
+-	zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL);
++	if (!zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL)) {
++		err = -ENOMEM;
++		goto err_out;
++	}
+ 
+ 	mce_init_banks();
+ 
+ 	err = subsys_system_register(&mce_subsys, NULL);
+ 	if (err)
+-		return err;
++		goto err_out_mem;
+ 
+ 	cpu_notifier_register_begin();
+ 	for_each_online_cpu(i) {
+ 		err = mce_device_create(i);
+ 		if (err) {
+ 			cpu_notifier_register_done();
+-			return err;
++			goto err_device_create;
+ 		}
+ 	}
+ 
+-	register_syscore_ops(&mce_syscore_ops);
+ 	__register_hotcpu_notifier(&mce_cpu_notifier);
+ 	cpu_notifier_register_done();
+ 
++	register_syscore_ops(&mce_syscore_ops);
++
+ 	/* register character device /dev/mcelog */
+-	misc_register(&mce_chrdev_device);
++	err = misc_register(&mce_chrdev_device);
++	if (err)
++		goto err_register;
++
++	return 0;
++
++err_register:
++	unregister_syscore_ops(&mce_syscore_ops);
++
++	cpu_notifier_register_begin();
++	__unregister_hotcpu_notifier(&mce_cpu_notifier);
++	cpu_notifier_register_done();
++
++err_device_create:
++	/*
++	 * We didn't keep track of which devices were created above, but
++	 * even if we had, the set of online cpus might have changed.
++	 * Play safe and remove for every possible cpu, since
++	 * mce_device_remove() will do the right thing.
++	 */
++	for_each_possible_cpu(i)
++		mce_device_remove(i);
++
++err_out_mem:
++	free_cpumask_var(mce_device_initialized);
++
++err_out:
++	pr_err("Unable to init device /dev/mcelog (rc: %d)\n", err);
+ 
+ 	return err;
+ }
+-- 
+1.7.9.5
 
->> -	u32 fminterval;
->> +	u32 uninitialized_var(fminterval);
-> 
-> Why is this change needed?  Sounds like a compiler bug to me :)
-
-  CC      drivers/usb/host/pci-quirks.o
-In file included from include/linux/io.h:22:0,
-                 from include/linux/pci.h:31,
-                 from drivers/usb/host/pci-quirks.c:14:
-drivers/usb/host/pci-quirks.c: In function 'quirk_usb_early_handoff':
-/home/cge7/nikita/kernel-u/arch/powerpc/include/asm/io.h:180:1: warning: 'fminterval' may be used uninitialized in this function [-Wmaybe-uninitialized]
-drivers/usb/host/pci-quirks.c:574:6: note: 'fminterval' was declared here
-
-gcc version 4.7.0 (MontaVista Linux G++ 4.7-140519214821)
-
-
-Nikita
