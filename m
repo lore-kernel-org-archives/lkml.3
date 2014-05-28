@@ -1,123 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaE1QGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:06:52 -0400
-Received: from cmta7.telus.net ([209.171.16.80]:48959 "EHLO cmta7.telus.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753425AbaE1QGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:06:50 -0400
-X-Authority-Analysis: v=2.0 cv=JPrlRb2b c=1 sm=2
- a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=wC_tZcyTK_MA:10 a=LGgl8L9ij00A:10
- a=kj9zAlcOel0A:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
- a=D19gQVrFAAAA:8 a=VwQbUJbxAAAA:8 a=z7FW5Oor5zB5G4pvPMgA:9 a=CjuIK1q_8ugA:10
- a=TyNiYCGxJotRh7XF:21 a=yCggSeVB3T8-4yk1:21 a=zJWegnE7BH9C0Gl4FFgQyA==:117
-X-Telus-Outbound-IP: 173.180.45.4
-From: "Doug Smythies" <dsmythies@telus.net>
-To: "'Yuyang Du'" <yuyang.du@intel.com>, "'Johan Hovold'" <jhovold@gmail.com>
-Cc: "'Dirk Brandewie'" <dirk.brandewie@gmail.com>,
-        "'Viresh Kumar'" <viresh.kumar@linaro.org>,
-        <dirk.j.brandewie@intel.com>,
-        "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Stratos Karafotis'" <stratosk@semaphore.gr>,
-        "Doug Smythies" <dsmythies@telus.net>
-References: <20140506163559.GA5308@localhost> <CAKohpokYEvazxm0-JJXPzq-4OgLXmROfaCMcgHDZwugChOxtsQ@mail.gmail.com> <536A3EE9.5050409@intel.com> <20140521090051.GO21412@localhost> <20140528075945.GA21705@localhost> <20140528003540.GA2296@intel.com>
-In-Reply-To: <20140528003540.GA2296@intel.com>
-Subject: RE: Performance regression in v3.14
-Date: Wed, 28 May 2014 09:00:43 -0700
-Message-ID: <002401cf7a8d$fc6d9090$f548b1b0$@net>
+	id S1754843AbaE1QHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:07:08 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:53069 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021AbaE1QHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 12:07:03 -0400
+Date: Wed, 28 May 2014 18:06:53 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. R. Okajima" <hooanon05g@gmail.com>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@gmail.com,
+        mszeredi@suse.cz
+Subject: Re: [PATCH 00/13] overlay filesystem v22
+Message-ID: <20140528160653.GL17233@tucsk.piliscsaba.szeredi.hu>
+References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
+ <25513.1401069402@jrobl>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac96UGghk9YVnWftS4iVA1U5o2bnUwANbbTg
-Content-Language: en-ca
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <25513.1401069402@jrobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 26, 2014 at 10:56:42AM +0900, J. R. Okajima wrote:
 
-On 2014.05.27 01:40 Yuyang Du wrote:
->> On 2014.05.27 01:00, Johan Hovold wrote:
->> I tried applying your (rejected) patch "intel_pstate: Remove C0
->> tracking" posted here:
->> 
->> 	https://lkml.org/lkml/2014/5/8/574
->> 
->> to v3.14.4 and it fixes the problem as expected.
->> 
->> So we have a commit fcb6a15c2e7e ("intel_pstate: Take core C0 time into
->> account for core busy calculation") that went into v3.14-rc2 (and was
->> even marked for *stable*) that first broke Greg KH's system:
->> 
->> 	https://lkml.org/lkml/2014/2/19/626
->> 
->> That was apparently fixed by e66c17683746 ("intel_pstate: Change
->> busy calculation to use fixed point math."), but still left v3.14
->> basically unusable for lower-intensity workloads such as my
->> bash-completion example and other reported regressions:
->> 
->> 	https://bugzilla.kernel.org/show_bug.cgi?id=75121
->> 
->> Sure there may be issues with v3.13 not hitting the lowest frequencies
->> but at least the system was *usable*.
->> 
->> In my opinion there's really no other option than to restore the 3.13
->> behaviour by effectively reverting fcb6a15c2e7e ("intel_pstate: Take
->> core C0 time into account for core busy calculation") until you have
->> figured out a way to take C0 into account without breaking things too
->> badly.
+> 
+> Here are some comments.
 
-> Hi all,
+Thanks for the review.
 
-> My posts before and now are only relevant to why C0 tracking can't be
-> removed. Maybe I need to elaborate on it a little bit more.
+> 
+> - I have no objection about the 0:0 char-dev whiteout, but you don't
+>   have to have the inode for each whiteout. The hardlink is better.
+>   In this version, you have <workdir> now. How about creating a "base"
+>   whiteout under workdir at the mount-time? Maybe it is possible by
+>   user-space "mount.overlayfs" or kernel-space. When the whiteout meets
+>   EMLINK, create a non-hardlink for that target synchronously and
+>   re-create the "base" asynchronously.
 
-> In a nutshell, without C0 tracking, the intel_pstate is effectively
-> performance governor in terms of frequency control.
+The reason I don't do this is complexity.  If ever this becomes a problem, then
+we could add hardlinked whiteouts in the future.
 
-That is not true. The CPU Frequency Verses Load response curve
-is different and considerably more aggressive for performance mode
-when compared to powersave mode with C0 tracking removed.
+> 
+> - Is <workdir>/work always visible to users? If a user accidentally
+>   removes it or its children, then some operations will fail. And he
+>   cannot recover it anymore. I know it cannot easily happen since its
+>   mode is 0. But I am afraid it will be a source of troubles. For
+>   example, find(1) or "ls -R /overlayfs" will almost always fail.
 
-I'll add a relevant graph to the bugzilla report referenced above.
-(but it will be a few hours before I do.)
+Perfect solution would be an invisible temp directory.  This needs filesystem
+support, but perhaps not so difficult.  Again could be done later without
+backward compatibility issues.
 
-> Why? Without C0 trakcing, the machinery of the freq control
-> is as I formed:
-> last_freq_average / last_requested_freq ==> setpoint
-> which can be virtually formed into:
-> last_freq_average / last_requested_freq * last_C0_pct ==>
-> setpoint * last_C0_pct
+> 
+> - If I remember correctly, the length of the dir mutex is held time has
+>   been pointed out. This version has still a long mutex held time, a whole
+>   copy-up operation includeing lookup, create, copy filedata, copy
+>   xattr/attr, and then rename. How about unlock the dir before copying
+>   filedata and re-lock and confirm after copying attr?
 
-> which said, the control machinery will increase the frequency
-> at ANY frequency at ANY C0_pct (which is the CPU utilization),
-> since setpoint is less then 100 percent.
+Possibly doable, but again this would add complexity and I'd rather leave it
+until somebody complains.
 
-That is not true. Yes, and due to the setpoint being less than
-100, which is needed or the driver won't work at all, there is
-a tendency to drive the target pstate upwards.
-However that is tempered by both the PID proportional gain,
-and ultimately integer math. More importantly, the CPU
-itself tells the driver when it is operating below the target
-pstate and driver responds.
+> 
+> - When two processes copy-up a similar dir hierarcy, for example
+>   /dirA/dirB/fileC and /dirA/dirB/dirC/fileD, may a race condition
+>   happen? Two processes begin copying-up dirA, first processA succeeds
+>   it and second processB fails and returns EIO?
 
-Additionally, the tendency to drive up the target pstate
-too much is exasperated by some extra rounding up at a
-couple of spots. Dirk has a pending fix.
+No, we check the state with the parent lock held and skip the copy up if sombody
+else won the race.
 
-> And a few iterations
-> later, we will reach max (possible) frequency,
-> then we are effectively performance governor
-> (highest frequency all the time).
+> 
+> - All copy-up operations will be serialized due to <workdir> lock.
 
-Please do not confuse highest target pstate with
-highest frequency. They are not the same. The processor
-itself can back off.
+Yes.  Trivially fixable by creating a separate dir for each temp file.
 
-... Doug
+> 
+> - In fstat(2) for a dir, is nlink set to 1 even it is removed?
+
+Probably.  I think right fix is to check if dentry is hashed and set nlink to
+zero otherwise.  Will look into it.
+
+> 
+> - In readdir, it lookup or getattr to determine whether the found char
+>   dev entry is a whiteout or not. I know a char dev is not so many, so
+>   this overhead won't be large. But if its name represented "I am a
+>   whiteout", then the extra lookup or getattr would be unnecessary.
+
+At the cost of namespace issues.  I wouldn't consider that a good trade.
 
 
+Thanks,
+Miklos
