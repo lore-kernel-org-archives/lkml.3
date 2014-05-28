@@ -1,121 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaE1K7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:59:33 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.117]:13911 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752502AbaE1K7b (ORCPT
+	id S1752479AbaE1LG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:06:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40237 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751778AbaE1LGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 06:59:31 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-15.tower-193.messagelabs.com!1401274767!16512042!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 28 May 2014 12:59:28 +0200
-Date: Wed, 28 May 2014 13:51:59 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
-        <sameo@linux.intel.com>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140528115159.GA2090@awelinux>
-References: <cover.1401181010.git.andreas.werner@men.de>
- <a3cd43562effd2580d0174c56eff5584791217ac.1401181010.git.andreas.werner@men.de>
- <20140527150547.GA4227@lee--X1>
- <20140528070222.GA24101@jtlinux>
- <20140528082404.GA10803@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140528082404.GA10803@lee--X1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+	Wed, 28 May 2014 07:06:25 -0400
+X-Sasl-enc: sD9RAXpWNnoJDCmfk9/SSJ6+hcgfU1G01qO5m5sn8o9R 1401275183
+Message-ID: <1401275180.2497.5.camel@perseus.fritz.box>
+Subject: Re: [PATCH 1/2] fs: proc/stat: use num_online_cpus() for buffer size
+From: Ian Kent <raven@themaw.net>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Date: Wed, 28 May 2014 19:06:20 +0800
+In-Reply-To: <20140528085954.GB4219@osiris>
+References: <20140521122521.GB7471@osiris>
+	 <20140521143229.GA32011@infradead.org> <20140528085841.GA4219@osiris>
+	 <20140528085954.GB4219@osiris>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-aOn Wed, May 28, 2014 at 09:24:05AM +0100, Lee Jones wrote:
-> > > > The MEN 14F021P00 Board Management Controller provides an
-> > > > I2C interface to the host to access the feature implemented in the BMC.
-> > > > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> > > > and on a few Box/Display Computer.
-> > > >
-> > > > Added MFD Core driver, supporting the I2C communication to the device.
-> > > >
-> > > > The MFD driver currently supports the following features:
-> > > > 	- Watchdog
-> > > > 	- LEDs
-> > > >
-> > > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > > > ---
-> > > >  drivers/mfd/Kconfig           |  12 +++
-> > > >  drivers/mfd/Makefile          |   1 +
-> > > >  drivers/mfd/menf21bmc.c       | 220 ++++++++++++++++++++++++++++++++++++++++++
-> > > >  include/linux/mfd/menf21bmc.h |  31 ++++++
-> > > >  4 files changed, 264 insertions(+)
-> > > >  create mode 100644 drivers/mfd/menf21bmc.c
-> > > >  create mode 100644 include/linux/mfd/menf21bmc.h
+On Wed, 2014-05-28 at 10:59 +0200, Heiko Carstens wrote:
+> The number of bytes contained 'within' /proc/stat depends on the number
+> of online cpus and not of the numbe of possible cpus.
 > 
+> This reduces the number of bytes requested for the initial buffer allocation
+> within stat_open(). Which is usually way too high and for nr_possible_cpus()
+> == 256 cpus would result in an order 4 allocation.
+> 
+> Order 4 allocations however may fail if memory is fragmented and we would
+> end up with an unreadable /proc/stat file:
+> 
+> 62129.701569] sadc: page allocation failure: order:4, mode:0x1040d0
+> [62129.701573] CPU: 1 PID: 192063 Comm: sadc Not tainted 3.10.0-123.el7.s390x #1
 > [...]
+> [62129.701586] Call Trace:
+> [62129.701588] ([<0000000000111fbe>] show_trace+0xe6/0x130)
+> [62129.701591] [<0000000000112074>] show_stack+0x6c/0xe8
+> [62129.701593] [<000000000020d356>] warn_alloc_failed+0xd6/0x138
+> [62129.701596] [<00000000002114d2>] __alloc_pages_nodemask+0x9da/0xb68
+> [62129.701598] [<000000000021168e>] __get_free_pages+0x2e/0x58
+> [62129.701599] [<000000000025a05c>] kmalloc_order_trace+0x44/0xc0
+> [62129.701602] [<00000000002f3ffa>] stat_open+0x5a/0xd8
+> [62129.701604] [<00000000002e9aaa>] proc_reg_open+0x8a/0x140
+> [62129.701606] [<0000000000273b64>] do_dentry_open+0x1bc/0x2c8
+> [62129.701608] [<000000000027411e>] finish_open+0x46/0x60
+> [62129.701610] [<000000000028675a>] do_last+0x382/0x10d0
+> [62129.701612] [<0000000000287570>] path_openat+0xc8/0x4f8
+> [62129.701614] [<0000000000288bde>] do_filp_open+0x46/0xa8
+> [62129.701616] [<000000000027541c>] do_sys_open+0x114/0x1f0
+> [62129.701618] [<00000000005b1c1c>] sysc_tracego+0x14/0x1a
 > 
-> > > > +static int menf21bmc_write_byte(struct i2c_client *client, u8 val)
-> > > > +{
-> > > > +	int ret;
-> > > > +	struct menf21bmc *data = i2c_get_clientdata(client);
-> > > > +
-> > > > +	mutex_lock(&data->lock);
-> > > > +	ret = i2c_smbus_write_byte(client, val);
-> > > > +	mutex_unlock(&data->lock);
-> > > > +
-> > > > +	return ret;
-> > > > +}
-> > >
-> > > Didn't we ask you to remove these?  Just make the i2c_smbus_* calls
-> > > from within the driver.  The I2C subsystem conducts its own locking.
-> > > I'm really starting to frown on aggregation for the sake of
-> > > aggregation.  It's just overhead.
-> > >
-> > 
-> > Correct me if I'm wrong but as far as I remember Guenther asked to retain the
-> > original API, not the remove the "abstraction layer". Once we build a board with
-> > one of these BMCs attached via e.g. SPI we would have to reintroduce it anyways,
-> > in order to re-use these drivers.
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+>  fs/proc/stat.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> If there are two or more possible interfaces then I agree, these
-> aggregations would be the best approach.  However, as it stands, that's
-> not currently the case.
-> 
-> Genuine question; are Men on the verge of building such a board, or
-> are we talking about 'ifs' and 'maybes'?
->
+> diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+> index 9d231e9e5f0e..3898ca5f1e92 100644
+> --- a/fs/proc/stat.c
+> +++ b/fs/proc/stat.c
+> @@ -184,7 +184,7 @@ static int show_stat(struct seq_file *p, void *v)
+>  
+>  static int stat_open(struct inode *inode, struct file *file)
+>  {
+> -	size_t size = 1024 + 128 * num_possible_cpus();
+> +	size_t size = 1024 + 128 * num_online_cpus();
 
-I think it was a missunderstanding. I also thought that i just
-have to adapt the wrapper to the original API, that is what I did in the patch,
-and not to delete the functions completly.
+Yes, I thought of this too when I was looking at the problem but was
+concerned about the number of online cpus changing during the read.
 
-Anayway, we currently have another project which use a STM32 MCR connected to USB.
-A nice feature of this STM is to update the firmware using the USB interface.
-This is easy to implement and fast.
+If a system can hotplug cpus then I guess we don't care much about the
+number of cpus increasing during the read, we'll just see incorrect data
+once, but what would happen if some cpus were removed? Do we even care
+about that case?
 
-We want to use such a functionality in all of our MCRs to easily update the firmware
-at the customer if we found a bug.
+>  	char *buf;
+>  	struct seq_file *m;
+>  	int res;
 
-We also plan to have a BMC connected to USB. Then we have i2c and USB.
 
-Regards
-Andy
-
- 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
