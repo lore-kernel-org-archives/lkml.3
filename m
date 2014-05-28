@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018AbaE1LzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 07:55:22 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:40872 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696AbaE1LzU (ORCPT
+	id S1753183AbaE1L5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:57:08 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53246 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289AbaE1L5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 07:55:20 -0400
-Message-ID: <1401278112.9793.45.camel@marge.simpson.net>
-Subject: Re: balance storm
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, mingo@elte.hu,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
-        peterz@infradead.org, Huang Qiang <h.huangqiang@huawei.com>,
-        Borislav Petkov <bp@alien8.de>
-Date: Wed, 28 May 2014 13:55:12 +0200
-In-Reply-To: <5385CBCE.9040507@huawei.com>
-References: <5382AF2E.1040407@huawei.com>
-	 <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com>
-	 <1401113960.23186.41.camel@marge.simpson.net> <53844510.1040502@huawei.com>
-	 <1401184553.5134.115.camel@marge.simpson.net> <53848A2C.5010209@huawei.com>
-	 <1401196807.5134.132.camel@marge.simpson.net> <53853604.50500@huawei.com>
-	 <1401242038.4721.14.camel@marge.simpson.net> <5385881D.4090601@huawei.com>
-	 <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
-	 <5385CBCE.9040507@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 28 May 2014 07:57:06 -0400
+Date: Wed, 28 May 2014 12:57:01 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140528115701.GY18016@ZenIV.linux.org.uk>
+References: <20140526152703.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+ <20140526182644.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
+ <20140527014054.GR18016@ZenIV.linux.org.uk>
+ <20140527031415.GS18016@ZenIV.linux.org.uk>
+ <20140527040026.GT18016@ZenIV.linux.org.uk>
+ <20140527070409.GA1801@lahna.fi.intel.com>
+ <20140528031955.GW18016@ZenIV.linux.org.uk>
+ <20140528073751.GB1757@lahna.fi.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528073751.GB1757@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 19:43 +0800, Libo Chen wrote: 
-> On 2014/5/28 17:08, Thomas Gleixner wrote:
-> > On Wed, 28 May 2014, Libo Chen wrote:
-> > 
-> >> On 2014/5/28 9:53, Mike Galbraith wrote:
-> >>> On Wed, 2014-05-28 at 09:04 +0800, Libo Chen wrote:
-> >>>
-> >>>> oh yes, no tsc only hpet in my box.
-> >>>
-> >>> Making poor E5-2658 box a crippled wreck.
-> >>
-> >> yes,it is. But cpu usage will be down from 15% to 5% when binding
-> >> cpu, so maybe read_hpet is not the root cause.
-> > 
-> > Definitely hpet _IS_ the root cause on a machine as large as this,
-> > simply because everything gets serialized on the hpet access.
-> > 
-> > Binding stuff to cpus just makes the timing behaviour different, so
-> > the hpet serialization is not that prominent, but still bad enough.
-> > 
-> > Talk to your HW/BIOS vendor. The kernel cannot do anything about
-> > defunct hardware.
+On Wed, May 28, 2014 at 10:37:51AM +0300, Mika Westerberg wrote:
+
+> I sent you the whole log privately so that I don't spam everyone.
 > 
-> thank you for your reply.but suse sp2 is very good in this scene.
-> Can it be said there has a bug, then community fix it later,
-> so it's just a coincidence?
+> Summary is here:
+> 
+> May 28 10:24:23 lahna kernel: scsi 14:0:0:0: Direct-Access     JetFlash Transcend 4GB    8.07 PQ: 0 ANSI: 4
+> May 28 10:24:23 lahna kernel: sd 14:0:0:0: Attached scsi generic sg4 type 0
+> May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] 7864320 512-byte logical blocks: (4.02 GB/3.75 GiB)
+> May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write Protect is off
+> May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Mode Sense: 23 00 00 00
+> May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+> May 28 10:24:23 lahna kernel:  sdc: sdc1
+> May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Attached SCSI removable disk
+> 
+> Here I detached the USB stick:
+> 
+> May 28 10:24:32 lahna kernel: usb 3-10.4: USB disconnect, device number 6
+> May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: dput[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: check_submounts_and_drop[3-10/3-10.4/3-10.4:1.0/host14]; CPU 1 PID 1683 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: shrink[3-10.4:1.0/host14/target14:0:0/subsystem]; CPU 1 PID 1683 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/rev]; CPU 1 PID 1683 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/vendor]; CPU 1 PID 1683 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/model]; CPU 1 PID 1683 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:32]; CPU 4 PID 576 [systemd-udevd]
+> ...
+> May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 6 PID 1684 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 7 PID 1685 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
+> May 28 10:24:32 lahna kernel: A
+...
 
-I'm quite sure it's because of the patches I mentioned.
+Hmm...  As it is, we have d_walk() trying _very_ hard in those situations.
+Could you add that on top of the previous and see if livelock changes?
 
--Mike
-
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 42ae01e..4ce58d3 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1209,7 +1209,7 @@ static enum d_walk_ret select_collect(void *_data, struct dentry *dentry)
+ 	 * ensures forward progress). We'll be coming back to find
+ 	 * the rest.
+ 	 */
+-	if (!list_empty(&data->dispose))
++	if (data->found)
+ 		ret = need_resched() ? D_WALK_QUIT : D_WALK_NORETRY;
+ out:
+ 	return ret;
