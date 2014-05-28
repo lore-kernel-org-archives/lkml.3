@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832AbaE1WoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:44:07 -0400
-Received: from smtp.pobox.com ([208.72.237.35]:50114 "EHLO smtp.pobox.com"
+	id S1754222AbaE1WpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:45:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42860 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755778AbaE1WoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:44:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=e5d9txEmd1lM7nLkIDmQszwhrrhJ+Zkv
-	qdiukBYXqQHBHnrZ0JQRore7dr9+1wk9Fci6dnGjVz8roAn6XqWl52G/dXYmBbWq
-	6dymhfm1jaADb6gM18Qkm/QRcD+d/mA3CAZ2qSkWgiaMPQq/sYw6KPe5Mo29l2cY
-	2Mjwp8ae6hA=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v2.0.0
-References: <xmqqr43dbkni.fsf@gitster.dls.corp.google.com>
-Date: Wed, 28 May 2014 15:43:16 -0700
-In-Reply-To: <xmqqr43dbkni.fsf@gitster.dls.corp.google.com> (Junio C. Hamano's
-	message of "Wed, 28 May 2014 15:31:13 -0700")
-Message-ID: <xmqqmwe1bk3f.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1751264AbaE1WpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 18:45:06 -0400
+Message-ID: <5386664A.5060304@zytor.com>
+Date: Wed, 28 May 2014 15:42:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 76792B8C-E6B9-11E3-BBB7-9903E9FBB39C-77302942!pb-smtp0.pobox.com
+To: Dave Chinner <david@fromorbit.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Minchan Kim <minchan@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au, mst@redhat.com,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org> <1401260039-18189-2-git-send-email-minchan@kernel.org> <20140528101401.43853563@gandalf.local.home> <f00f9b56-704d-4d03-ad0e-ec3ba2d122fd@email.android.com> <20140528221118.GN8554@dastard>
+In-Reply-To: <20140528221118.GN8554@dastard>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano <gitster@pobox.com> writes:
+On 05/28/2014 03:11 PM, Dave Chinner wrote:
+> On Wed, May 28, 2014 at 07:23:23AM -0700, H. Peter Anvin wrote:
+>> We tried for 4K on x86-64, too, for b quite a while as I recall.
+>> The kernel stack is a one of the main costs for a thread.  I would
+>> like to decouple struct thread_info from the kernel stack (PJ
+>> Waskewicz was working on that before he left Intel) but that
+>> doesn't buy us all that much.
+>>
+>> 8K additional per thread is a huge hit.  XFS has indeed always
+>> been a canary, or troublespot, I suspect because it originally
+>> came from another kernel where this was not an optimization
+>> target.
+> 
+> <sigh>
+> 
+> Always blame XFS for stack usage problems.
+> 
+> Even when the reported problem is from IO to an ext4 filesystem.
+> 
 
-> The tarballs are found at:
->
->     https://www.kernel.org/pub/software/scm/git/testing/
+You were the one calling it a canary.
 
-Heh, I do not know how this slipped in, but the real release tarball
-is not in git/testing/ but found at:
+	-hpa
 
-     https://www.kernel.org/pub/software/scm/git/
 
