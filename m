@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaE1OTz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:19:55 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:52935 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992AbaE1OTw (ORCPT
+	id S1754310AbaE1OUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:20:49 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:30320 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753310AbaE1OUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:19:52 -0400
-Message-ID: <5385F089.9080608@cogentembedded.com>
-Date: Wed, 28 May 2014 18:19:53 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 28 May 2014 10:20:48 -0400
+Message-ID: <5385F0BB.7080406@fb.com>
+Date: Wed, 28 May 2014 08:20:43 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Jon Maxwell <jmaxwell37@gmail.com>, stephen@networkplumber.org
-CC: davem@davemloft.net, makita.toshiaki@lab.ntt.co.jp, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jpirko@redhat.com, jmaxwell@redhat.com
-Subject: Re: [PATCH net] bridge: notify user space after fdb update
-References: <1401230749-19507-1-git-send-email-jmaxwell37@gmail.com>
-In-Reply-To: <1401230749-19507-1-git-send-email-jmaxwell37@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Christoph Hellwig <hch@lst.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: blk-mq: refactor request allocation
+References: <1401217190-32453-1-git-send-email-hch@lst.de> <5384FC60.1070103@fb.com> <20140528051919.GA21566@lst.de>
+In-Reply-To: <20140528051919.GA21566@lst.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-28_04:2014-05-28,2014-05-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.08638653628645e-11 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.994525499955221
+ urlsuspect_oldscore=0.994525499955221 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.994525499955221 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1405280186
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 05/28/2014 02:45 AM, Jon Maxwell wrote:
-
-> There has been a number incidents recently where customers running KVM have
-> reported that VM hosts on different Hypervisors are unreachable. Based on
-> pcap traces we found that the bridge was broadcasting the ARP request out
-> onto the network. However some NICs have an inbuilt switch which on occasions
-> were broadcasting the VMs ARP request back through the physical NIC on the
-> Hypervisor. This resulted in the bridge changing ports and incorrectly learning
-> that the VMs mac address was external. As a result the ARP reply was directed
-> back onto the external network and VM never updated it's ARP cache. This patch
-> will notify the bridge command, after a fdb has been updated to identify such
-> port toggling.
-
-> Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
-> ---
->   net/bridge/br_fdb.c | 8 +++++++-
->   1 file changed, 7 insertions(+), 1 deletion(-)
-
-> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-> index 9203d5a..f3ee2da 100644
-> --- a/net/bridge/br_fdb.c
-> +++ b/net/bridge/br_fdb.c
-> @@ -487,6 +487,7 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
->   {
->   	struct hlist_head *head = &br->hash[br_mac_hash(addr, vid)];
->   	struct net_bridge_fdb_entry *fdb;
-> +	bool fdb_modified = 0;
-
-    s/0/false/.
-
+On 2014-05-27 23:19, Christoph Hellwig wrote:
+> On Tue, May 27, 2014 at 02:58:08PM -0600, Jens Axboe wrote:
+>> On 05/27/2014 12:59 PM, Christoph Hellwig wrote:
+>>> This series streamlines the request allocation path.
+>>>
+>>
+>> Series looks innocuous enough to me, but it's about a 1.5% performance
+>> drop here with an actual device. These tests are very stable, anything
+>> over ~0.1% is definitely outside of noise. I repeated and rebooted a few
+>> times and tested both, it's persistent. No smoking guns in the profile.
 >
->   	/* some users want to always flood. */
->   	if (hold_time(br) == 0)
-> @@ -507,10 +508,15 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
->   					source->dev->name);
->   		} else {
->   			/* fastpath: update of existing entry */
-> -			fdb->dst = source;
-> +			if (unlikely(source != fdb->dst)) {
-> +					fdb->dst = source;
-> +					fdb_modified = 1;
+> Can you do a bisect to narrow it down to one of the patches?
 
-   s/1/true/.
+Sure, I'll give it a whirl.
 
-> +				}
->   			fdb->updated = jiffies;
->   			if (unlikely(added_by_user))
->   				fdb->added_by_user = 1;
-> +			if (unlikely(fdb_modified))
-> +				fdb_notify(br, fdb, RTM_NEWNEIGH);
->   		}
->   	} else {
->   		spin_lock(&br->hash_lock);
-
-WBR, Sergei
-
+-- 
+Jens Axboe
 
