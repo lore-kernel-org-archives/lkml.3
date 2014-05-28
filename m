@@ -1,92 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751AbaE1W2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:28:52 -0400
-Received: from 19.mo5.mail-out.ovh.net ([46.105.35.78]:56058 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751833AbaE1W2v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:28:51 -0400
-X-Greylist: delayed 23400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 18:28:51 EDT
-From: Joel Porquet <joel@porquet.org>
-To: arnd@arndb.de
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joel Porquet <joel@porquet.org>
-Subject: [PATCH] asm-generic: uaccess: avoid name conflicts for strncpy and str(n)len
-Date: Wed, 28 May 2014 17:21:51 +0200
-Message-Id: <1401290511-10211-1-git-send-email-joel@porquet.org>
-X-Mailer: git-send-email 1.9.3
-X-Ovh-Tracer-Id: 18385382529745186820
-X-Ovh-Remote: 132.227.92.188 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+	id S1755844AbaE1W3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:29:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54605 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755804AbaE1W3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 18:29:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,930,1392192000"; 
+   d="scan'208";a="519301463"
+Subject: [PATCH 1/2] pci: Add pci_walk_vbus for walking virtual busses
+ associated with SR-IOV
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+To: bhelgaas@google.com, ddutile@redhat.com
+Cc: linux-pci@vger.kernel.org, alex.williamson@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 28 May 2014 15:29:09 -0700
+Message-ID: <20140528222901.18898.48031.stgit@ahduyck-cp2.jf.intel.com>
+User-Agent: StGit/0.17.1-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-asm-generic/uaccess.h defines 'strncpy_from_user', 'strnlen_user' and
-'strlen_user' as static inline functions. It makes it impossible for an
-arch to include asm-generic/uaccess.h and benefits from its content, in
-addition to defining GENERIC_STRNCPY_FROM_USER and GENERIC_STRNLEN_USER.
+This function provides a simple means for applying a given function to all
+devices on bus and all of it's children, including virtual busses.  To do
+this the function begins by processing all devices on the bus, then it will
+proceed through bus->children and process each of the child busses.
 
-Both configuration tokens respectively enable lib/strncpy_from_user.c
-and lib/strnlen_user.c which redefine the same symbols, causing
-redefinition errors at compilation.
-
-This patch modifies asm-generic/uaccess.h so that strncpy_from_user is
-not defined when GENERIC_STRNCPY_FROM_USER is, and strnlen_user and
-strlen_user are not defined when GENERIC_STRNLEN_USER is, thus avoiding
-any name conflict.
-
-At the moment, numerous archs, which make use of
-GENERIC_STRNCPY_FROM_USER and GENERIC_STRNLEN_USER, are forced to
-rewrite an entire asm/uaccess.h header because of this issue.
-
-To the best of my knowledge, the following list of archs could benefit
-from this patch: x86, sh, openrisc, powerpc, arm64, arm, alpha, parisc,
-sparc, m68k.
-
-Signed-off-by: Joel Porquet <joel@porquet.org>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
- include/asm-generic/uaccess.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/pci/bus.c   |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    2 ++
+ 2 files changed, 46 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
-index 72d8803..4198d84 100644
---- a/include/asm-generic/uaccess.h
-+++ b/include/asm-generic/uaccess.h
-@@ -272,6 +272,7 @@ static inline long copy_to_user(void __user *to,
- 		return n;
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index fb8aed3..769bbcb 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -336,6 +336,50 @@ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
  }
+ EXPORT_SYMBOL_GPL(pci_walk_bus);
  
-+#ifndef CONFIG_GENERIC_STRNCPY_FROM_USER
- /*
-  * Copy a null terminated string from userspace.
-  */
-@@ -294,7 +295,9 @@ strncpy_from_user(char *dst, const char __user *src, long count)
- 		return -EFAULT;
- 	return __strncpy_from_user(dst, src, count);
- }
-+#endif
- 
-+#ifndef CONFIG_GENERIC_STRNLEN_USER
- /*
-  * Return the size of a string (including the ending 0)
-  *
-@@ -320,6 +323,7 @@ static inline long strlen_user(const char __user *src)
++/** pci_walk_vbus - walk devices on/under bus, calling callback.
++ *  @top      bus whose devices should be walked
++ *  @cb       callback to be called for each device found
++ *  @userdata arbitrary pointer to be passed to callback.
++ *
++ *  Walk the given bus, including any child buses under this bus.
++ *  Call the provided callback on each device found.
++ *
++ *  We check the return of @cb each time. If it returns anything
++ *  other than 0, we break out.
++ *
++ */
++void pci_walk_vbus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
++		   void *userdata)
++{
++	struct list_head *bus_next;
++	struct pci_bus *bus;
++	struct pci_dev *dev;
++
++	down_read(&pci_bus_sem);
++	bus_next = &top->node;
++	for (;;) {
++		/* prep bus for next iteration */
++		bus = list_entry(bus_next, struct pci_bus, node);
++
++		/* process each device on this bus */
++		list_for_each_entry(dev, &bus->devices, bus_list) {
++			if (cb(dev, userdata))
++				goto release_semaphore;
++		}
++
++		/* end of this bus, go to child, next bus, or finish */
++		for (bus_next = bus->children.next;
++		     bus_next == &bus->children;
++		     bus_next = bus->node.next, bus = bus->parent) {
++			if (bus == top)
++				goto release_semaphore;
++		}
++	}
++release_semaphore:
++	up_read(&pci_bus_sem);
++}
++EXPORT_SYMBOL_GPL(pci_walk_vbus);
++
+ struct pci_bus *pci_bus_get(struct pci_bus *bus)
  {
- 	return strnlen_user(src, 32767);
- }
-+#endif
+ 	if (bus)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index aab57b4..1fb18a8 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1118,6 +1118,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
  
- /*
-  * Zero Userspace
--- 
-1.9.3
+ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+ 		  void *userdata);
++void pci_walk_vbus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
++		   void *userdata);
+ int pci_cfg_space_size(struct pci_dev *dev);
+ unsigned char pci_bus_max_busnr(struct pci_bus *bus);
+ void pci_setup_bridge(struct pci_bus *bus);
 
