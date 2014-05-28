@@ -1,146 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaE1NVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:21:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39947 "EHLO mx1.redhat.com"
+	id S1753815AbaE1NVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:21:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14512 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753735AbaE1NVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:21:41 -0400
+	id S1753391AbaE1NVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:21:45 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 1/9] perf: Pass protection and flags bits through mmap2 interface
-Date: Wed, 28 May 2014 15:20:54 +0200
-Message-Id: <1401283262-16035-2-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 5/9] perf trace: Warn the user when not available
+Date: Wed, 28 May 2014 15:20:58 +0200
+Message-Id: <1401283262-16035-6-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 References: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The mmap2 interface was missing the protection and flags bits needed to
-accurately determine if a mmap memory area was shared or private and
-if it was readable or not.
+When the audit-libs devel package is not found at build time we disable
+the 'trace' command, as we are not able to map syscall numbers to
+strings, but then the message the user is presented is cryptic:
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-[tweaked patch to compile and wrote changelog]
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1400526833-141779-2-git-send-email-dzickus@redhat.com
+  [root@zoo linux]# trace ls
+  perf: 'ls' is not a perf-command. See 'perf --help'.
+
+Fix it by presenting a more helpful message:
+
+  [root@zoo linux]# trace l
+  trace command not available: missing audit-libs devel package at build time.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-uxeunqetd0sgxyibusapen9a@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- include/uapi/linux/perf_event.h |  1 +
- kernel/events/core.c            | 33 +++++++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
+ tools/perf/perf.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index e3fc8f0..0d18ded 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -699,6 +699,7 @@ enum perf_event_type {
- 	 *	u32				min;
- 	 *	u64				ino;
- 	 *	u64				ino_generation;
-+	 *	u32				prot, flags;
- 	 *	char				filename[];
- 	 * 	struct sample_id		sample_id;
- 	 * };
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ed50b09..cd68f49 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -40,6 +40,7 @@
- #include <linux/mm_types.h>
- #include <linux/cgroup.h>
- #include <linux/module.h>
-+#include <linux/mman.h>
- 
- #include "internal.h"
- 
-@@ -5116,6 +5117,7 @@ struct perf_mmap_event {
- 	int			maj, min;
- 	u64			ino;
- 	u64			ino_generation;
-+	u32			prot, flags;
- 
- 	struct {
- 		struct perf_event_header	header;
-@@ -5157,6 +5159,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
- 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
- 		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
-+		mmap_event->event_id.header.size += sizeof(mmap_event->prot);
-+		mmap_event->event_id.header.size += sizeof(mmap_event->flags);
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 431798a..78f7b92 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -481,14 +481,18 @@ int main(int argc, const char **argv)
+ 		fprintf(stderr, "cannot handle %s internally", cmd);
+ 		goto out;
  	}
- 
- 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
-@@ -5175,6 +5179,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- 		perf_output_put(&handle, mmap_event->min);
- 		perf_output_put(&handle, mmap_event->ino);
- 		perf_output_put(&handle, mmap_event->ino_generation);
-+		perf_output_put(&handle, mmap_event->prot);
-+		perf_output_put(&handle, mmap_event->flags);
- 	}
- 
- 	__output_copy(&handle, mmap_event->file_name,
-@@ -5193,6 +5199,7 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 	struct file *file = vma->vm_file;
- 	int maj = 0, min = 0;
- 	u64 ino = 0, gen = 0;
-+	u32 prot = 0, flags = 0;
- 	unsigned int size;
- 	char tmp[16];
- 	char *buf = NULL;
-@@ -5223,6 +5230,28 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 		gen = inode->i_generation;
- 		maj = MAJOR(dev);
- 		min = MINOR(dev);
-+
-+		if (vma->vm_flags & VM_READ)
-+			prot |= PROT_READ;
-+		if (vma->vm_flags & VM_WRITE)
-+			prot |= PROT_WRITE;
-+		if (vma->vm_flags & VM_EXEC)
-+			prot |= PROT_EXEC;
-+
-+		if (vma->vm_flags & VM_MAYSHARE)
-+			flags = MAP_SHARED;
-+		else
-+			flags = MAP_PRIVATE;
-+
-+		if (vma->vm_flags & VM_DENYWRITE)
-+			flags |= MAP_DENYWRITE;
-+		if (vma->vm_flags & VM_MAYEXEC)
-+			flags |= MAP_EXECUTABLE;
-+		if (vma->vm_flags & VM_LOCKED)
-+			flags |= MAP_LOCKED;
-+		if (vma->vm_flags & VM_HUGETLB)
-+			flags |= MAP_HUGETLB;
-+
- 		goto got_name;
- 	} else {
- 		name = (char *)arch_vma_name(vma);
-@@ -5263,6 +5292,8 @@ got_name:
- 	mmap_event->min = min;
- 	mmap_event->ino = ino;
- 	mmap_event->ino_generation = gen;
-+	mmap_event->prot = prot;
-+	mmap_event->flags = flags;
- 
- 	if (!(vma->vm_flags & VM_EXEC))
- 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
-@@ -5303,6 +5334,8 @@ void perf_event_mmap(struct vm_area_struct *vma)
- 		/* .min (attr_mmap2 only) */
- 		/* .ino (attr_mmap2 only) */
- 		/* .ino_generation (attr_mmap2 only) */
-+		/* .prot (attr_mmap2 only) */
-+		/* .flags (attr_mmap2 only) */
- 	};
- 
- 	perf_event_mmap_event(&mmap_event);
+-#ifdef HAVE_LIBAUDIT_SUPPORT
+ 	if (!prefixcmp(cmd, "trace")) {
++#ifdef HAVE_LIBAUDIT_SUPPORT
+ 		set_buildid_dir();
+ 		setup_path();
+ 		argv[0] = "trace";
+ 		return cmd_trace(argc, argv, NULL);
+-	}
++#else
++		fprintf(stderr,
++			"trace command not available: missing audit-libs devel package at build time.\n");
++		goto out;
+ #endif
++	}
+ 	/* Look for flags.. */
+ 	argv++;
+ 	argc--;
 -- 
 1.8.3.1
 
