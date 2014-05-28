@@ -1,95 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbaE1Q43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:56:29 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:2981 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751626AbaE1Q41 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:56:27 -0400
-Date: Wed, 28 May 2014 12:56:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com,
-        m.chehab@samsung.com, linux-acpi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
-Message-ID: <20140528125625.6f6dcf7f@gandalf.local.home>
-In-Reply-To: <20140528163452.GF17196@pd.tnic>
-References: <1400142646-10127-1-git-send-email-gong.chen@linux.intel.com>
-	<1401247938-22125-1-git-send-email-gong.chen@linux.intel.com>
-	<1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
-	<20140528112832.5f83c66b@gandalf.local.home>
-	<20140528163452.GF17196@pd.tnic>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751924AbaE1Q6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:58:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22016 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751625AbaE1Q6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 12:58:52 -0400
+Date: Wed, 28 May 2014 13:57:54 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, yang.z.zhang@intel.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: lapic: sync highest ISR to hardware apic on EOI
+Message-ID: <20140528165623.GA10861@amt.cnet>
+References: <1400856713-18628-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400856713-18628-1-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014 18:34:52 +0200
-Borislav Petkov <bp@alien8.de> wrote:
- 
-> Well, they're constructed from a bunch of values which are checked for
-> validity first:
+On Fri, May 23, 2014 at 04:51:53PM +0200, Paolo Bonzini wrote:
+> When Hyper-V enlightenments are in effect, Windows prefers to issue an
+> Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
+> The Hyper-V MSR write is not handled by the processor, and besides
+> being slower, this also causes bugs with APIC virtualization.  The
+> reason is that on EOI the processor will modify the highest in-service
+> interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
+> the SDM.
 > 
-> http://lkml.kernel.org/r/1400142646-10127-4-git-send-email-gong.chen@linux.intel.com
-
-OK, looks like you are saving a bunch of integers.
-
+> We need to do the same, and be careful not to muck with the isr_count
+> and highest_isr_cache fields that are unused when virtual interrupt
+> delivery is enabled.
 > 
-> We probably could get rid of the fru* things by reading them out from
-> ACPI and enumerating them and issuing only an index here which the slow
-> path decodes.
-> 
-> The others we can split into fields again which should definitely make
-> the record smaller. Fields are defined in struct cper_sec_mem_err.
-> 
-> The thing is, this TP needs to be designed properly before we expose it
-> to the world and so that hoperfully most future uses are covered.
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/lapic.c |   62 ++++++++++++++++++++++++++++++++++---------------
+>  1 files changed, 43 insertions(+), 19 deletions(-)
 
-My concern is passing in a large string and wasting a lot of the ring
-buffer space. The max you can hold per event is just under a page size
-(4k). And all these strings add up. If it happens to be 512bytes, then
-you end up with one event per page.
+Why not disable Hyper-V APIC enlightenment if APIC-V is available ?
 
-Instead of making that a huge string, what about a dynamic array of
-special structures?
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index 9736529..0069118 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -360,6 +360,8 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+>  
+>  static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+>  {
+> +	/* Note that we never get here with APIC virtualization enabled.  */
+> +
+>  	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+>  		++apic->isr_count;
+>  	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+> @@ -371,12 +373,48 @@ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+>  	apic->highest_isr_cache = vec;
+>  }
+>  
+> +static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+> +{
+> +	int result;
+> +
+> +	/*
+> +	 * Note that isr_count is always 1, and highest_isr_cache
+> +	 * is always -1, with APIC virtualization enabled.
+> +	 */
+> +	if (!apic->isr_count)
+> +		return -1;
+> +	if (likely(apic->highest_isr_cache != -1))
+> +		return apic->highest_isr_cache;
+> +
+> +	result = find_highest_vector(apic->regs + APIC_ISR);
+> +	ASSERT(result == -1 || result >= 16);
+> +
+> +	return result;
+> +}
+> +
+>  static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+>  {
+> -	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
+> +	struct kvm_vcpu *vcpu;
+> +	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
+> +		return;
+> +
+> +	vcpu = apic->vcpu;
+> +
+> +	/*
+> +	 * We do get here for APIC virtualization enabled if the guest
+> +	 * uses the Hyper-V APIC enlightenment.  In this case we may need
+> +	 * to trigger a new interrupt delivery by writing the SVI field;
+> +	 * on the other hand isr_count and highest_isr_cache are unused
+> +	 * and must be left alone.
+> +	 */
+> +	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
+> +		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
+> +					       apic_find_highest_isr(apic));
+> +	else {
+>  		--apic->isr_count;
+> -	BUG_ON(apic->isr_count < 0);
+> -	apic->highest_isr_cache = -1;
+> +		BUG_ON(apic->isr_count < 0);
+> +		apic->highest_isr_cache = -1;
+> +	}
+>  }
+>  
+>  int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
+> @@ -456,22 +494,6 @@ static void pv_eoi_clr_pending(struct kvm_vcpu *vcpu)
+>  	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
+>  }
+>  
+> -static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+> -{
+> -	int result;
+> -
+> -	/* Note that isr_count is always 1 with vid enabled */
+> -	if (!apic->isr_count)
+> -		return -1;
+> -	if (likely(apic->highest_isr_cache != -1))
+> -		return apic->highest_isr_cache;
+> -
+> -	result = find_highest_vector(apic->regs + APIC_ISR);
+> -	ASSERT(result == -1 || result >= 16);
+> -
+> -	return result;
+> -}
+> -
+>  void kvm_apic_update_tmr(struct kvm_vcpu *vcpu, u32 *tmr)
+>  {
+>  	struct kvm_lapic *apic = vcpu->arch.apic;
+> @@ -1605,6 +1627,8 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+>  	int vector = kvm_apic_has_interrupt(vcpu);
+>  	struct kvm_lapic *apic = vcpu->arch.apic;
+>  
+> +	/* Note that we never get here with APIC virtualization enabled.  */
+> +
+>  	if (vector == -1)
+>  		return -1;
+>  
+> -- 
+> 1.7.1
 
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-struct __attribute__((__packed__)) cper_sec_mem_rec {
-	short type;
-	int data;
-};
-
-
-static struct cper_sec_mem_rec mem_location[CPER_REC_LEN];
-
-then have the:
-
- 	if (mem->validation_bits & CPER_MEM_VALID_NODE) {
-		msg[n].type = CPER_MEM_VALID_NODE_TYPE;
-		msg[n++].data = mem->node;
-	}
-	if (mem->validation_bits & CPER_MEM_VALID_CARD) {
-		msg[n].type = CPER_MEM_VALID_CARD_TYPE;
-		msg[n++].data = mem->card;
-	}
-	if (mem->validation_bits & CPER_MEM_VALID_MODULE) {
-[ and so on ]
-
-
-Then return the array of msg and the length and you can record this
-into the dynamic array in the tracepoint.
-
-Then you have the type and data saved, the TP_printk() can parse it.
-You can create your own handler for it to do it nicely (see the ftrace
-version of __print_symbol() and friends).
-
-Makes the tracepoint much more compact.
-
--- Steve
