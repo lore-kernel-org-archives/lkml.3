@@ -1,199 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380AbaE1Upd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:45:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaE1Upc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:45:32 -0400
-Message-ID: <1401309923.2412.71.camel@ul30vt.home>
-Subject: Re: [PATCH v4 00/16] PCI/iommu: Fix DMA alias problems
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        acooks@gmail.com, linux-kernel@vger.kernel.org, eddy0596@gmail.com,
-        linux@horizon.com
-Date: Wed, 28 May 2014 14:45:23 -0600
-In-Reply-To: <20140528202922.GT11907@google.com>
-References: <20140522230230.2856.40017.stgit@bling.home>
-	 <20140528202922.GT11907@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755422AbaE1UrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:47:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40941 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399AbaE1UrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 16:47:14 -0400
+Date: Wed, 28 May 2014 13:50:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH char-misc-next 2/8] misc: mic: add a bus driver for
+ virtual MIC devices
+Message-ID: <20140528205049.GA10468@kroah.com>
+References: <cover.1401239759.git.sudeep.dutt@intel.com>
+ <07b374763197000963b1161e0fce0c3254ce8a0d.1401239759.git.sudeep.dutt@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <07b374763197000963b1161e0fce0c3254ce8a0d.1401239759.git.sudeep.dutt@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 14:29 -0600, Bjorn Helgaas wrote:
-> On Thu, May 22, 2014 at 05:07:23PM -0600, Alex Williamson wrote:
-> > For testing, this version can be found in my git tree:
-> > 
-> > git://github.com/awilliam/linux-vfio.git dma-alias-v4
-> > 
-> > Please report any issues.
-> > 
-> > v4:
-> >  - Change dma_func_alias to dma_alias_devfn, holding a single
-> >    devfn to alias, thereby supporting aliases to the wrong slot.
-> >    The DMA alias iterator is easily changed, but IOMMU grouping
-> >    requires significant rework.  This is now done in IOMMU code
-> >    rather than PCI code.
-> > 
-> >  - AMD-Vi - try to incorporate IVRS aliases dynamically into
-> >    PCI alias quirks to make sure that our grouping remains the
-> >    same.  Potentially this could end up reporting BIOS aliases
-> >    that we can add to our list of quirks.
-> > 
-> > v3:
-> >  - Found several instances where I had PCI_SLOT when I meant
-> >    PCI_FUNC.  Thanks to Andrew for spotting this.  This should
-> >    fix the problem he was having with Ricoh quirks.  We also
-> >    pruned down the func0 quirks to only those that we know are
-> >    needed.  We can always add them back later.
-> > 
-> >  - Found a case in intel-iommu of using dev_is_pci() where I
-> >    really wanted !dev_is_pci().  Fixed.
-> > 
-> > v2:
-> >  - Several new Marvell controllers added to quirks.  There's been
-> >    a lot of success reported with this series in
-> >    https://bugzilla.kernel.org/show_bug.cgi?id=42679
-> > 
-> >  - Add quirk for ASMedia and Tundra PCIe-to-PCI bridges that do
-> >    not expose a PCIe capability.  These have been shown to use
-> >    the standard PCIe-to-PCI bridge requester ID.
-> > 
-> >  - Fix copy/paste duplicate Ricoh quirk ID
-> > 
-> >  - Fixed AMD IOMMU for the "ghost" function case where the DMA
-> >    alias is for an absent device.  The iommu rlookup table and
-> >    data fields need to be initializes.
-> > 
-> >  - Fixed Intel interrupt remapping, I wasn't passing the target
-> >    bus number, only the alias bus number.
-> > 
-> > These patches are split across PCI and IOMMU, but I've front-loaded
-> > all of the PCI infrastructure so that the first 7 patches can be
-> > applied to PCI-core, the IOMMU maintainers can pickup their patches,
-> > then we can finish with dead code removal.  Bjorn might also be
-> > willing to carry the IOMMU changes if the maintainers want to ack
-> > them.
-> 
-> I put 1-7 on a pci/iommu branch for v3.16.  I'm happy to include the rest,
-> too, given acks from Joerg and David.  Or if they prefer to take them all,
-> which might be easier than coordinating two trees, especially since there's
-> PCI stuff at the beginning and end, here's my ack for the PCI bits (patches
-> 1-7 and 15-16):
-> 
->     Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+On Tue, May 27, 2014 at 07:36:11PM -0700, Sudeep Dutt wrote:
+> +int register_mbus_driver(struct mbus_driver *driver)
+> +{
+> +	driver->driver.bus = &mic_bus;
+> +	return driver_register(&driver->driver);
+> +}
+> +EXPORT_SYMBOL_GPL(register_mbus_driver);
 
-Awesome, thanks!
+mbus_register_driver()?
 
-> If you want to send me updated changelogs for patches 5 & 6, I'll drop
-> those in.
+> +void unregister_mbus_driver(struct mbus_driver *driver)
+> +{
+> +	driver_unregister(&driver->driver);
+> +}
+> +EXPORT_SYMBOL_GPL(unregister_mbus_driver);
 
-Yep, I'll send changelog updates for 5 & 6 in a few minutes.
+mbus_unregister_driver()?
 
-> Didn't you have more testing reports?  I see George's, but I thought there
-> were some others, too.
+> +int register_mbus_device(struct mbus_device *dev)
 
-I also see:
+mbus_register_device()?
 
-https://lkml.org/lkml/2014/5/28/24
-Tested-by: Pat Erley <pat-lkml@erley.org>
+Trying to keep the kernel namespace sane.
 
-There are several reports of success in the bzs, but I don't see any
-official tested-by tags there.  Thanks,
+Why doesn't this function create the device structure?
 
-Alex
+> +{
+> +	int err;
+> +
+> +	dev->dev.bus = &mic_bus;
+> +
+> +	/* Assign a unique device index and hence name. */
+> +	err = ida_simple_get(&mbus_index_ida, 0, 0, GFP_KERNEL);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	dev->index = err;
+> +	dev_set_name(&dev->dev, "mbus-dev%u", dev->index);
+> +	/*
+> +	 * device_register() causes the bus infrastructure to look for a
+> +	 * matching driver.
+> +	 */
+> +	err = device_register(&dev->dev);
+> +	return err;
+> +}
+> +EXPORT_SYMBOL_GPL(register_mbus_device);
+> +
+> +void unregister_mbus_device(struct mbus_device *dev)
+> +{
+> +	int index = dev->index; /* save for after device release */
+> +
+> +	device_unregister(&dev->dev);
+> +	ida_simple_remove(&mbus_index_ida, index);
+> +}
+> +EXPORT_SYMBOL_GPL(unregister_mbus_device);
+> +
+> +static int __init mbus_init(void)
+> +{
+> +	return bus_register(&mic_bus);
+> +}
+> +
+> +static void __exit mbus_exit(void)
+> +{
+> +	bus_unregister(&mic_bus);
+> +}
+> +
+> +core_initcall(mbus_init);
+> +module_exit(mbus_exit);
+> +
+> +MODULE_AUTHOR("Intel Corporation");
+> +MODULE_DESCRIPTION("Intel(R) MIC Bus driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/mic_bus.h b/include/linux/mic_bus.h
+> new file mode 100644
+> index 0000000..8297573
+> --- /dev/null
+> +++ b/include/linux/mic_bus.h
+> @@ -0,0 +1,148 @@
+> +/*
+> + * Intel MIC Platform Software Stack (MPSS)
+> + *
+> + * Copyright(c) 2014 Intel Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+> + * General Public License for more details.
+> + *
+> + * The full GNU General Public License is included in this distribution in
+> + * the file called "COPYING".
+> + *
+> + * Intel MIC Bus driver.
+> + *
+> + * This implementation is very similar to the the virtio bus driver
+> + * implementation @ include/linux/virtio.h.
+> + */
+> +#ifndef _MIC_BUS_H_
+> +#define _MIC_BUS_H_
+> +/*
+> + * Everything a mbus driver needs to work with any particular mbus
+> + * implementation.
+> + */
+> +#include <linux/types.h>
+> +#include <linux/device.h>
+> +#include <linux/mod_devicetable.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/dma-mapping.h>
+> +
+> +struct mbus_device_id {
+> +	__u32 device;
+> +	__u32 vendor;
+> +};
+> +
+> +#define MBUS_DEV_DMA_HOST 2
+> +#define MBUS_DEV_DMA_MIC 3
+> +#define MBUS_DEV_ANY_ID 0xffffffff
+> +
+> +/**
+> + * mbus_device - representation of a device using mbus
+> + * @priv: private pointer for the driver's use.
+> + * @mmio_va: virtual address of mmio space
+> + * @hw_ops: the hardware ops supported by this device.
+> + * @id: the device type identification (used to match it with a driver).
+> + * @dev: underlying device.
+> + * be used to communicate with.
+> + * @index: unique position on the mbus bus
+> + */
+> +struct mbus_device {
+> +	void *priv;
+> +	void __iomem *mmio_va;
+> +	struct mbus_hw_ops *hw_ops;
+> +	struct mbus_device_id id;
+> +	struct device dev;
+> +	int index;
+> +};
+> +
+> +/**
+> + * mbus_driver - operations for a mbus I/O driver
+> + * @driver: underlying device driver (populate name and owner).
+> + * @id_table: the ids serviced by this driver.
+> + * @probe: the function to call when a device is found.  Returns 0 or -errno.
+> + * @remove: the function to call when a device is removed.
+> + */
+> +struct mbus_driver {
+> +	struct device_driver driver;
+> +	const struct mbus_device_id *id_table;
+> +	int (*probe)(struct mbus_device *dev);
+> +	void (*scan)(struct mbus_device *dev);
+> +	void (*remove)(struct mbus_device *dev);
+> +};
+> +
+> +/**
+> + * struct mic_irq - opaque pointer used as cookie
+> + */
+> +struct mic_irq;
+> +
+> +/**
+> + * mbus_hw_ops - Hardware operations for accessing a MIC device on the MIC bus.
+> + */
+> +struct mbus_hw_ops {
+> +	struct mic_irq* (*request_threaded_irq)(struct mbus_device *mbdev,
+> +			irq_handler_t handler, irq_handler_t thread_fn,
+> +			const char *name, void *data, int intr_src);
+> +	void (*free_irq)(struct mbus_device *mbdev,
+> +			struct mic_irq *cookie, void *data);
+> +	void (*ack_interrupt)(struct mbus_device *mbdev, int num);
+> +};
+> +
+> +int register_mbus_device(struct mbus_device *dev);
+> +void unregister_mbus_device(struct mbus_device *dev);
+> +
+> +int register_mbus_driver(struct mbus_driver *drv);
+> +void unregister_mbus_driver(struct mbus_driver *drv);
+> +
+> +static inline struct mbus_device *dev_to_mbus(struct device *_dev)
+> +{
+> +	return container_of(_dev, struct mbus_device, dev);
+> +}
+> +
+> +static inline struct mbus_driver *drv_to_mbus(struct device_driver *drv)
+> +{
+> +	return container_of(drv, struct mbus_driver, driver);
+> +}
+> +
+> +static inline void mbus_release_dev(struct device *d)
+> +{
+> +}
 
-> > Original description:
-> > 
-> > This series attempts to fix a couple issues we've had outstanding in
-> > the PCI/IOMMU code for a while.  The first issue is with devices that
-> > use the wrong requester ID for DMA transactions.  We already have a
-> > sort of half-baked attempt to fix this for several Ricoh devices, but
-> > the fix only helps them be useful through IOMMU groups, not the
-> > general DMA case.  There are also several Marvell devices which use
-> > use a different wrong requester ID and don't even fit into the DMA
-> > source idea.  This series creates a DMA alias iterator that will
-> > step through each possible alias of a device, allowing IOMMUs to
-> > insert mappings for both the device and its aliases.
-> > 
-> > Hand-in-hand with this is our broken pci_find_upstream_pcie_bridge()
-> > function, which is known to blowup when it finds itself suddenly at
-> > a PCIe device without crossing a PCIe-to-PCI bridge (as identified by
-> > the PCIe capability).  It also likes to make the invalid assumption
-> > that a PCIe device never has its requester ID masked by any usptream
-> > bus.  We can fix this using the above new DMA alias iterator, since
-> > that's effectively what this function was meant to do.
-> > 
-> > Finally, with all these helpers, it makes sense to consolidate code
-> > for determining IOMMU groups.  The first step in finding the root
-> > of a group is finding the final upstream DMA alias for the device,
-> > then applying additional ACS rules and incorporating device specific
-> > aliases.  As this is all common to PCI, create a single implementation
-> > and remove piles of code from the individual IOMMU drivers.
-> > 
-> > This series allows devices like the Marvell 88SE9123 to finally work
-> > on Linux with either AMD-Vi or VT-d enabled on the box.  I've
-> > collected device IDs from various bugs to support as many SKUs of
-> > these devices as possible, but I'm sure there are others that I've
-> > missed.
-> > 
-> > This should also enable motherboards with an onboard ASmedia
-> > ASM1083/1085 PCIe-to-PCI bridge to work with VT-d enabled.  I've
-> > acquired an adapter board with this chip, but it actually exposes
-> > a PCIe capability, unlike most of the onboard controllers.  Therefore
-> > I expect this series will fix the WARN_ON currently hit during boot,
-> > but there's a 50/50 chance whether the device behaves like a PCI
-> > bridge or a PCIe bridge with regard to the requester ID that it uses
-> > to take ownership of the transaction.  If it turns out to use the
-> > PCIe bridge model, I expect we can quirk it using a dev_flags bit
-> > to identify a PCI bridge that takes ownership as if it was a PCIe
-> > bridge.
-> > 
-> > Please test and provide feedback.  I expect IOMMU group topology
-> > should not change from this series, but if a case is found where it
-> > does, please share.  Also, if there are additional quirks we need
-> > to add, please either file new or add to the existing bugs.  Thanks,
-> > 
-> > Alex
-> > 
-> > ---
-> > 
-> > Alex Williamson (16):
-> >       PCI: Add DMA alias iterator
-> >       PCI: define pci_dev_flags as bit shifts
-> >       PCI: quirk pci_for_each_dma_alias()
-> >       PCI: quirk dma_alias_devfn for Ricoh devices
-> >       PCI: quirk dma_alias_devfn for Marvell devices
-> >       PCI: Quirk pci_for_each_dma_alias() for bridges
-> >       PCI: Add quirks for ASMedia and Tundra bridges
-> >       iommu: Create central IOMMU group lookup/creation interface
-> >       iommu/amd: Update to use PCI DMA aliases
-> >       iommu/amd: Use iommu_group_get_for_dev()
-> >       iommu/intel: Use iommu_group_get_for_dev()
-> >       iommu/intel: Update to use PCI DMA aliases
-> >       iommu/fsl: Use iommu_group_get_for_dev() for IOMMU groups
-> >       iommu: Remove pci.h
-> >       PCI: Remove pci_find_upstream_pcie_bridge()
-> >       PCI: Remove pci_get_dma_source()
-> > 
-> > 
-> >  drivers/iommu/amd_iommu.c           |  214 +++++++-----------------
-> >  drivers/iommu/amd_iommu_types.h     |    1 
-> >  drivers/iommu/fsl_pamu_domain.c     |   66 --------
-> >  drivers/iommu/intel-iommu.c         |  307 +++++++++++++----------------------
-> >  drivers/iommu/intel_irq_remapping.c |   55 ++++--
-> >  drivers/iommu/iommu.c               |  181 +++++++++++++++++++++
-> >  drivers/iommu/pci.h                 |   29 ---
-> >  drivers/pci/quirks.c                |  116 ++++++++-----
-> >  drivers/pci/search.c                |  104 +++++++++---
-> >  include/linux/iommu.h               |    1 
-> >  include/linux/pci.h                 |   31 +---
-> >  11 files changed, 557 insertions(+), 548 deletions(-)
-> >  delete mode 100644 drivers/iommu/pci.h
+As per the kernel documentation rules, I get to publicly make fun of you
+for doing this half-hearted attempt to get around the kernel providing
+you with a valid kernel message as to why you always need to provide a
+proper release function :(
+
+Consider yourself mocked.
+
+And go read the kernel documentation for why.
+
+An inline function?  Why?
 
 
+> +static inline int
+> +mbus_add_device(struct mbus_device *mbdev, struct device *pdev, int id,
+> +		struct dma_map_ops *dma_ops, struct mbus_hw_ops *hw_ops,
+> +		void __iomem *mmio_va)
+
+inline?  Why?
+
+> +{
+> +	int ret;
+> +
+> +	mbdev->mmio_va = mmio_va;
+> +	mbdev->dev.parent = pdev;
+> +	mbdev->id.device = id;
+> +	mbdev->id.vendor = MBUS_DEV_ANY_ID;
+> +	mbdev->dev.archdata.dma_ops = dma_ops;
+> +	mbdev->dev.dma_mask = &mbdev->dev.coherent_dma_mask;
+> +	dma_set_mask(&mbdev->dev, DMA_BIT_MASK(64));
+> +	mbdev->dev.release = mbus_release_dev;
+> +	mbdev->hw_ops = hw_ops;
+> +	dev_set_drvdata(&mbdev->dev, mbdev);
+> +
+> +	ret = register_mbus_device(mbdev);
+> +	if (ret) {
+> +		dev_err(mbdev->dev.parent,
+> +			"Failed to register mbus device type %u\n", id);
+> +		return ret;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static inline void mbus_remove_device(struct mbus_device *mbdev)
+> +{
+> +	unregister_mbus_device(mbdev);
+> +	memset(mbdev, 0x0, sizeof(*mbdev));
+
+Why are you doing this?  (hint, I think I know why, and it's totally and
+unacceptably wrong.)
+
+Also, inline?
 
