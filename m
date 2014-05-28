@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaE1A1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:27:00 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:59275 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871AbaE1A06 (ORCPT
+	id S1753930AbaE1A1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:27:12 -0400
+Received: from mail-yk0-f182.google.com ([209.85.160.182]:53966 "EHLO
+	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481AbaE1A1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:26:58 -0400
+	Tue, 27 May 2014 20:27:07 -0400
 From: Cody P Schafer <dev@codyps.com>
 To: LKML <linux-kernel@vger.kernel.org>,
         Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Cody P Schafer <dev@codyps.com>, Michael Ellerman <mpe@ellerman.id.au>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH 05/16] perf Documentation: add event parameters
-Date: Tue, 27 May 2014 17:22:00 -0700
-Message-Id: <1401236684-10579-6-git-send-email-dev@codyps.com>
+        Cody P Schafer <dev@codyps.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 06/16] tools/perf: annotate list_head with type info
+Date: Tue, 27 May 2014 17:22:01 -0700
+Message-Id: <1401236684-10579-7-git-send-email-dev@codyps.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401236684-10579-1-git-send-email-dev@codyps.com>
 References: <1401236684-10579-1-git-send-email-dev@codyps.com>
@@ -27,48 +30,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Event parameters are a basic way for partial events to be specified in
-sysfs with per-event names given to the fields that need to be filled in
-when using a particular event.
-
-It is intended for supporting cases where the single 'cpu' parameter is
-insufficient. For example, POWER 8 has events for physical
-sockets/cores/cpus that are accessible from with virtual machines. To
-keep using the single 'cpu' parameter we'd need to perform a mapping
-between Linux's cpus and the physical machine's cpus (in this case
-Linux is running under a hypervisor). This isn't possible because
-bindings between our cpus and physical cpus may not be fixed, and we
-probably won't have a "cpu" on each physical cpu.
-
 CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Signed-off-by: Cody P Schafer <dev@codyps.com>
 ---
- Documentation/ABI/testing/sysfs-bus-event_source-devices-events | 6 ++++++
- 1 file changed, 6 insertions(+)
+ tools/perf/util/pmu.c | 4 ++--
+ tools/perf/util/pmu.h | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-index 20979f8..c1f9850 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -52,12 +52,18 @@ Description:	Per-pmu performance monitoring events specific to the running syste
- 			event=0x2abc
- 			event=0x423,inv,cmask=0x3
- 			domain=0x1,offset=0x8,starting_index=0xffff
-+			domain=0x1,offset=0x8,starting_index=phys_cpu
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 00a7dcb..906ae40 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -14,8 +14,8 @@
  
- 		Each of the assignments indicates a value to be assigned to a
- 		particular set of bits (as defined by the format file
- 		corresponding to the <term>) in the perf_event structure passed
- 		to the perf_open syscall.
+ struct perf_pmu_alias {
+ 	char *name;
+-	struct list_head terms;
+-	struct list_head list;
++	struct list_head terms; /* HEAD struct parse_events_term -> list */
++	struct list_head list;  /* ELEM */
+ 	char unit[UNIT_MAX_LEN+1];
+ 	double scale;
+ };
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 8b64125..4a85230 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -17,9 +17,9 @@ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
+ 	struct cpu_map *cpus;
+-	struct list_head format;
+-	struct list_head aliases;
+-	struct list_head list;
++	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
++	struct list_head aliases; /* HEAD struct perf_pmu_alias -> list */
++	struct list_head list;    /* ELEM */
+ };
  
-+		In the case of the last example, a value replacing "phys_cpu"
-+		would need to be provided by the user selecting the particular
-+		event. This is refered to as "event parameterization". All
-+		non-numerical values indicate an event parameter.
-+
- What: /sys/bus/event_source/devices/<pmu>/events/<event>.unit
- Date: 2014/02/24
- Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+ struct perf_pmu *perf_pmu__find(const char *name);
 -- 
 1.9.3
 
