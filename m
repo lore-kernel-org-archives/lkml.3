@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaE1IYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:24:16 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:52931 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381AbaE1IYL (ORCPT
+	id S1754542AbaE1IZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:25:12 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:39635 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228AbaE1IZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:24:11 -0400
-Date: Wed, 28 May 2014 09:24:05 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
-        cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140528082404.GA10803@lee--X1>
-References: <cover.1401181010.git.andreas.werner@men.de>
- <a3cd43562effd2580d0174c56eff5584791217ac.1401181010.git.andreas.werner@men.de>
- <20140527150547.GA4227@lee--X1>
- <20140528070222.GA24101@jtlinux>
+	Wed, 28 May 2014 04:25:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140528070222.GA24101@jtlinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140528071855.GJ4227@lee--X1>
+References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
+	<20140523080333.66720C4176E@trevor.secretlab.ca>
+	<CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com>
+	<CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+	<20140528071855.GJ4227@lee--X1>
+Date: Wed, 28 May 2014 10:25:08 +0200
+Message-ID: <CACRpkdYgkEOjLamYu5uKSgs3iTNJ-w5XkbeygKjRdR-bNdETfg@mail.gmail.com>
+Subject: Re: [PATCH v1] of/irq: do irq resolution in platform_get_irq_byname()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > The MEN 14F021P00 Board Management Controller provides an
-> > > I2C interface to the host to access the feature implemented in the BMC.
-> > > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> > > and on a few Box/Display Computer.
-> > >
-> > > Added MFD Core driver, supporting the I2C communication to the device.
-> > >
-> > > The MFD driver currently supports the following features:
-> > > 	- Watchdog
-> > > 	- LEDs
-> > >
-> > > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > > ---
-> > >  drivers/mfd/Kconfig           |  12 +++
-> > >  drivers/mfd/Makefile          |   1 +
-> > >  drivers/mfd/menf21bmc.c       | 220 ++++++++++++++++++++++++++++++++++++++++++
-> > >  include/linux/mfd/menf21bmc.h |  31 ++++++
-> > >  4 files changed, 264 insertions(+)
-> > >  create mode 100644 drivers/mfd/menf21bmc.c
-> > >  create mode 100644 include/linux/mfd/menf21bmc.h
+On Wed, May 28, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, 27 May 2014, Rob Herring wrote:
+>
+>> On Tue, May 27, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>> > On Fri, May 23, 2014 at 1:03 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>> >> On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+>> >>> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
+>> >>> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
+>> >>> moves resolving of the interrupt resources in platform_get_irq().
+>> >>> But this solution isn't complete because platform_get_irq_byname()
+>> >>> need to be modified the same way.
+>> >>>
+>> >>> Hence, fix it by adding interrupt resolution code at the
+>> >>> platform_get_irq_byname() function too.
+>> >>>
+>> >>> Cc: Russell King <linux@arm.linux.org.uk>
+>> >>> Cc: Rob Herring <robh@kernel.org>
+>> >>> Cc: Tony Lindgren <tony@atomide.com>
+>> >>> Cc: Grant Likely <grant.likely@linaro.org>
+>> >>> Cc: Thierry Reding <thierry.reding@gmail.com>
+>> >>>
+>> >>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> >>
+>> >> Applied, Thanks.
+>> >
+>> > As of next-20150526, the ST u8500 Snowball board has been failing boot
+>> > in linux-next, and was bisected down to this patch (commit
+>> > ad69674e73a1 in -next).   Full boot failure attached.
+>> >
+>> > I have not dug any deeper, but can confirm that next-20140526 with
+>> > this patch reverted boots again on the snowball board.
+>>
+>> There's a patch on the list which fixes it. The problem is stmmac
+>> driver was expecting only one error code.
+>
+> Does Snowball even use stmmac?
 
-[...]
+No.
 
-> > > +static int menf21bmc_write_byte(struct i2c_client *client, u8 val)
-> > > +{
-> > > +	int ret;
-> > > +	struct menf21bmc *data = i2c_get_clientdata(client);
-> > > +
-> > > +	mutex_lock(&data->lock);
-> > > +	ret = i2c_smbus_write_byte(client, val);
-> > > +	mutex_unlock(&data->lock);
-> > > +
-> > > +	return ret;
-> > > +}
-> >
-> > Didn't we ask you to remove these?  Just make the i2c_smbus_* calls
-> > from within the driver.  The I2C subsystem conducts its own locking.
-> > I'm really starting to frown on aggregation for the sake of
-> > aggregation.  It's just overhead.
-> >
-> 
-> Correct me if I'm wrong but as far as I remember Guenther asked to retain the
-> original API, not the remove the "abstraction layer". Once we build a board with
-> one of these BMCs attached via e.g. SPI we would have to reintroduce it anyways,
-> in order to re-use these drivers.
+I don't get this...
 
-If there are two or more possible interfaces then I agree, these
-aggregations would be the best approach.  However, as it stands, that's
-not currently the case.
-
-Genuine question; are Men on the verge of building such a board, or
-are we talking about 'ifs' and 'maybes'?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
