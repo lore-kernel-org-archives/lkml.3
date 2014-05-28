@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaE1HAD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:00:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48141 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaE1HAB (ORCPT
+	id S1754143AbaE1HB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:01:26 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:50594 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927AbaE1HBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:00:01 -0400
-Date: Wed, 28 May 2014 08:59:51 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, eranian@google.com,
-        ak@linux.intel.com
-Subject: Re: [RFC PATCH 1/7] perf, core: Add all PMUs to pmu_idr
-Message-ID: <20140528065951.GL11096@twins.programming.kicks-ass.net>
-References: <1401257890-30535-1-git-send-email-zheng.z.yan@intel.com>
- <1401257890-30535-2-git-send-email-zheng.z.yan@intel.com>
+	Wed, 28 May 2014 03:01:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YgBy8fL35x4aZQ30"
-Content-Disposition: inline
-In-Reply-To: <1401257890-30535-2-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140527173229.GF19143@laptop.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org> <20140527173229.GF19143@laptop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 28 May 2014 09:01:04 +0200
+Message-ID: <CAKfTPtBVuoXKa02OCGgzNZ0Dx5gwY6AywYNP=i5izcBxpuzM1A@mail.gmail.com>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 27 May 2014 19:32, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, May 23, 2014 at 05:53:02PM +0200, Vincent Guittot wrote:
+>> Monitor the activity level of each group of each sched_domain level. The
+>> activity is the amount of cpu_power that is currently used on a CPU or group
+>> of CPUs. We use the runnable_avg_sum and _period to evaluate this activity
+>> level. In the special use case where the CPU is fully loaded by more than 1
+>> task, the activity level is set above the cpu_power in order to reflect the
+>> overload of the CPU
+>>
+>
+>> +static int get_cpu_activity(int cpu)
+>> +{
+>> +     struct rq *rq = cpu_rq(cpu);
+>> +     u32 sum = rq->avg.runnable_avg_sum;
+>> +     u32 period = rq->avg.runnable_avg_period;
+>> +
+>> +     if (sum >= period)
+>> +             return power_orig_of(cpu) + rq->nr_running - 1;
+>> +
+>> +     return (sum * power_orig_of(cpu)) / period;
+>> +}
+>
+> While I appreciate the need to signify the overload situation, I don't
+> think adding nr_running makes sense. The amount of tasks has no bearing
+> on the amount of overload.
 
---YgBy8fL35x4aZQ30
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I agree that it's not the best way to evaluate overload but it's the
+only simple one that is available without additional computation. I'm
+going to try to find a better metric or come back the solution which
+only adds +1  and compute the overload somewhere else
 
-On Wed, May 28, 2014 at 02:18:04PM +0800, Yan, Zheng wrote:
-> Currently, the build-in PMUs are not added to pmu_idr. This makes
-> a inconvenience for finding PMU by type.
->=20
-This was done because of the horrid mess that we have with the software
-pmus, some of which alias the same id.
+>
+> Also, and note I've not yet seen the use, it strikes me as odd to use
+> the orig power here. I would've thought the current capacity (not the
+> max capacity) is relevant to balancing.
 
-I've not through about how this will or will not break things, but since
-you didn't either, I'll leave you to sort it out.
+activity also measures the non cfs tasks activity whereas current
+capacity removes the capacity used by non cfs tasks. So as long as
+arch_scale_cpu_freq is not used (which is the case for now), original
+capacity is ok but we might need a 3rd metric so we would have:
+original capacity (max capacity that can provide a CPU)
+usable capacity (new value that reflects current capacity available
+for any kind of processing rt tasks, irq, cfs tasks)
+current capacity (capacity available for cfs tasks)
 
---YgBy8fL35x4aZQ30
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThYlnAAoJEHZH4aRLwOS6IkQP/2Bo8gETvM7jpifQjE98vhW5
-4yi9I+23wFvBd+WNRQwnnZ9MRo/Y0axtAVRdLjWFpQHXM7X3vgHH7odueAYF9vZA
-PD2rUjWfEg6/H8AGQ1HTZ8BRjwjlLu6cYZOWZRZnNm9YpdvNMtpz9TMPg4aqal+N
-JBQEL1b3x7EPe727EfZiY6hywoq7YF7fJdVMvnxahZlw1qgKLk9AWFD3ewLY3/5E
-aoHUPEct24zu03sWRd8yOy6iymiWMTBqbcuE6YoMmF727y2CFcLJbr52/D/W4kTA
-ye7ro/84Do8NQEwAds+71vq8c/Nyy8Uas1g83rq+V5G1/Ob3i+TeT2p4SJi1dOV9
-7MhWv1yQq50JB55aHDCjNvfi2hszwWenXjgWSW3iM5vLmJuP6+BH1+BMnNHlZmEl
-ziFG6fw+g43GWb5Zwtq0CswOrMVOmqxNjis1HUgoh4OHCvOaZ8dfcSC6u6x0fqvF
-qSwtOEioovvB4r1dDZIcmYzFcr4sUOCOkuY54D0tiVAJKflWZnwqR88i9ACgfsqz
-Hr3wccNeVnVYuXUDYnL59QNT1j1THURo9UAKdKS4ZJtvgvkhBihWyzTbegVYWX6D
-DhC35q3K8HZOSqM/jsoZA99MVlIJRLd9S1yxOVTNcfKXtswyFwlGQMaVEgYE5FrE
-lvpECOOuWeqkPYtL02ay
-=hWmF
------END PGP SIGNATURE-----
-
---YgBy8fL35x4aZQ30--
+Vincent
