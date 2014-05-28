@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085AbaE1XpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:45:09 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:45834 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753144AbaE1XpH (ORCPT
+	id S1754150AbaE1Xqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:46:42 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:48406 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaE1Xql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:45:07 -0400
-Date: Wed, 28 May 2014 18:45:04 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
- allocations (v3)
-In-Reply-To: <20140528224324.GA1132@amt.cnet>
-Message-ID: <alpine.DEB.2.10.1405281838370.6096@gentwo.org>
-References: <20140523193706.GA22854@amt.cnet> <20140526185344.GA19976@amt.cnet> <53858A06.8080507@huawei.com> <20140528224324.GA1132@amt.cnet>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 28 May 2014 19:46:41 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/26] perf tools: Introduce struct hist_entry_iter
+References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
+	<1400839463-21933-2-git-send-email-namhyung@kernel.org>
+	<20140526184425.GC9699@krava.brq.redhat.com>
+Date: Thu, 29 May 2014 08:46:38 +0900
+In-Reply-To: <20140526184425.GC9699@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Mon, 26 May 2014 20:44:25 +0200")
+Message-ID: <874n09ii01.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014, Marcelo Tosatti wrote:
+Hi Jiri,
 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5dba293..dfea3dc 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2698,6 +2698,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  	unsigned int cpuset_mems_cookie;
->  	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
->  	struct mem_cgroup *memcg = NULL;
-> +	nodemask_t *cpuset_mems_allowed = &cpuset_current_mems_allowed;
-
-Why do you need this one?
-
->  	gfp_mask &= gfp_allowed_mask;
+On Mon, 26 May 2014 20:44:25 +0200, Jiri Olsa wrote:
+> On Fri, May 23, 2014 at 07:03:58PM +0900, Namhyung Kim wrote:
+>> There're some duplicate code when adding hist entries.  They are
+>> different in that some have branch info or mem info but generally do
+>> same thing.  So introduce new struct hist_entry_iter and add callbacks
+>> to customize each case in general way.
+>> 
+>> The new perf_evsel__add_entry() function will look like:
+>> 
+>>   iter->prepare_entry();
+>>   iter->add_single_entry();
+>> 
+>>   while (iter->next_entry())
+>>     iter->add_next_entry();
+>> 
+>>   iter->finish_entry();
+>> 
+>> This will help further work like the cumulative callchain patchset.
+>> 
+>> Tested-by: Arun Sharma <asharma@fb.com>
+>> Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
+>> Acked-by: Jiri Olsa <jolsa@redhat.com>
+>> Cc: David Ahern <dsahern@gmail.com>
+>> Cc: Stephane Eranian <eranian@google.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/perf/builtin-report.c     | 194 +++----------------------
+>>  tools/perf/tests/hists_filter.c |  18 +--
+>>  tools/perf/tests/hists_output.c |  11 +-
+>>  tools/perf/util/hist.c          | 303 ++++++++++++++++++++++++++++++++++++++++
+>>  tools/perf/util/hist.h          |  33 +++++
+>>  5 files changed, 371 insertions(+), 188 deletions(-)
+>> 
+>> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+>> index bc0eec1ce4be..d224f5961faa 100644
+>> --- a/tools/perf/builtin-report.c
+>> +++ b/tools/perf/builtin-report.c
+>> @@ -76,165 +76,6 @@ static int report__config(const char *var, const char *value, void *cb)
+>>  	return perf_default_config(var, value, cb);
+>>  }
+>>  
+>> -static void report__inc_stats(struct report *rep, struct hist_entry *he)
+>> -{
+>> -	/*
+>> -	 * The @he is either of a newly created one or an existing one
+>> -	 * merging current sample.  We only want to count a new one so
+>> -	 * checking ->nr_events being 1.
+>> -	 */
+>> -	if (he->stat.nr_events == 1)
+>> -		rep->nr_entries++;
+>> -
 >
-> @@ -2726,9 +2727,14 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  retry_cpuset:
->  	cpuset_mems_cookie = read_mems_allowed_begin();
+> hm.. above is report specific counter update
 >
-> +#ifdef CONFIG_NUMA
-> +	if (gfp_zone(gfp_mask) < policy_zone)
-> +		cpuset_mems_allowed = NULL;
+> while below code is repeated for each iterator in finish_entry,
+> maybe we should separated this and put below into a function
+> called from generic part
 
-nodemask = &node_states[N_ONLINE];
+Right.  I'll separate the generic part into a function.
 
-> +#endif
+The problem of calling report__inc_stats() in process_sample_event() is
+that the hist_entry is no longer available.  And each mode has slightly
+different behavior when accounting entries so it's inaccurate at this
+stage.  Once we have the callback mechanism later in this series, it'll
+be solved.
 
+Thanks,
+Namhyung
 
-> +
->  	/* The preferred zone is used for statistics later */
->  	first_zones_zonelist(zonelist, high_zoneidx,
-> -				nodemask ? : &cpuset_current_mems_allowed,
-> +				nodemask ? : cpuset_mems_allowed,
-
-Skip this?
-
->  				&preferred_zone);
->  	if (!preferred_zone)
->  		goto out;
 >
-
-Why call __alloc_pages_nodemask at all if you want to skip the node
-handling? Punt to alloc_pages()
+>> -	/*
+>> -	 * Only counts number of samples at this stage as it's more
+>> -	 * natural to do it here and non-sample events are also
+>> -	 * counted in perf_session_deliver_event().  The dump_trace
+>> -	 * requires this info is ready before going to the output tree.
+>> -	 */
+>> -	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
+>> -	if (!he->filtered)
+>> -		he->hists->stats.nr_non_filtered_samples++;
+>> -}
+>
+> jirka
