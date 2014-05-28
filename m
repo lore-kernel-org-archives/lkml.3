@@ -1,216 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791AbaE1QIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:08:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43570 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970AbaE1QIx (ORCPT
+	id S1754901AbaE1QJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:09:25 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:48991 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970AbaE1QJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:08:53 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@fb.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] blk-mq: remove alloc_hctx and free_hctx methods
-Date: Wed, 28 May 2014 18:11:06 +0200
-Message-Id: <1401293466-24155-1-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 28 May 2014 12:09:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1401260039-18189-2-git-send-email-minchan@kernel.org>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+	<1401260039-18189-2-git-send-email-minchan@kernel.org>
+Date: Wed, 28 May 2014 09:09:23 -0700
+X-Google-Sender-Auth: nPsU2pL7_2lBluwWXw9BK0Q59gc
+Message-ID: <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need for drivers to control hardware context allocation
-now that we do the context to node mapping in common code.
+On Tue, May 27, 2014 at 11:53 PM, Minchan Kim <minchan@kernel.org> wrote:
+>
+> So, my stupid idea is just let's expand stack size and keep an eye
+> toward stack consumption on each kernel functions via stacktrace of ftrace.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/blk-mq.c                    |   26 +++++---------------------
- drivers/block/mtip32xx/mtip32xx.c |    2 --
- drivers/block/null_blk.c          |   28 +---------------------------
- drivers/block/virtio_blk.c        |    2 --
- include/linux/blk-mq.h            |   10 ----------
- 5 files changed, 6 insertions(+), 62 deletions(-)
+We probably have to do this at some point, but that point is not -rc7.
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 67066ec..fc3331a 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1360,21 +1360,6 @@ struct blk_mq_hw_ctx *blk_mq_map_queue(struct request_queue *q, const int cpu)
- }
- EXPORT_SYMBOL(blk_mq_map_queue);
- 
--struct blk_mq_hw_ctx *blk_mq_alloc_single_hw_queue(struct blk_mq_tag_set *set,
--						   unsigned int hctx_index,
--						   int node)
--{
--	return kzalloc_node(sizeof(struct blk_mq_hw_ctx), GFP_KERNEL, node);
--}
--EXPORT_SYMBOL(blk_mq_alloc_single_hw_queue);
--
--void blk_mq_free_single_hw_queue(struct blk_mq_hw_ctx *hctx,
--				 unsigned int hctx_index)
--{
--	kfree(hctx);
--}
--EXPORT_SYMBOL(blk_mq_free_single_hw_queue);
--
- static void blk_mq_free_rq_map(struct blk_mq_tag_set *set,
- 		struct blk_mq_tags *tags, unsigned int hctx_idx)
- {
-@@ -1615,7 +1600,7 @@ static void blk_mq_free_hw_queues(struct request_queue *q,
- 
- 	queue_for_each_hw_ctx(q, hctx, i) {
- 		free_cpumask_var(hctx->cpumask);
--		set->ops->free_hctx(hctx, i);
-+		kfree(hctx);
- 	}
- }
- 
-@@ -1836,7 +1821,8 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
- 	for (i = 0; i < set->nr_hw_queues; i++) {
- 		int node = blk_mq_hw_queue_to_node(map, i);
- 
--		hctxs[i] = set->ops->alloc_hctx(set, i, node);
-+		hctxs[i] = kzalloc_node(sizeof(struct blk_mq_hw_ctx),
-+					GFP_KERNEL, node);
- 		if (!hctxs[i])
- 			goto err_hctxs;
- 
-@@ -1923,7 +1909,7 @@ err_hctxs:
- 		if (!hctxs[i])
- 			break;
- 		free_cpumask_var(hctxs[i]->cpumask);
--		set->ops->free_hctx(hctxs[i], i);
-+		kfree(hctxs[i]);
- 	}
- err_map:
- 	kfree(hctxs);
-@@ -2008,9 +1994,7 @@ int blk_mq_alloc_tag_set(struct blk_mq_tag_set *set)
- 	if (set->queue_depth < set->reserved_tags + BLK_MQ_TAG_MIN)
- 		return -EINVAL;
- 
--	if (!set->nr_hw_queues ||
--	    !set->ops->queue_rq || !set->ops->map_queue ||
--	    !set->ops->alloc_hctx || !set->ops->free_hctx)
-+	if (!set->nr_hw_queues || !set->ops->queue_rq || !set->ops->map_queue)
- 		return -EINVAL;
- 
- 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index ae331ab..ea975ee 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -3832,8 +3832,6 @@ static int mtip_init_cmd(void *data, struct request *rq, unsigned int hctx_idx,
- static struct blk_mq_ops mtip_mq_ops = {
- 	.queue_rq	= mtip_queue_rq,
- 	.map_queue	= blk_mq_map_queue,
--	.alloc_hctx	= blk_mq_alloc_single_hw_queue,
--	.free_hctx	= blk_mq_free_single_hw_queue,
- 	.init_request	= mtip_init_cmd,
- 	.exit_request	= mtip_free_cmd,
- };
-diff --git a/drivers/block/null_blk.c b/drivers/block/null_blk.c
-index 5a80811..77087a2 100644
---- a/drivers/block/null_blk.c
-+++ b/drivers/block/null_blk.c
-@@ -321,18 +321,6 @@ static int null_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *rq)
- 	return BLK_MQ_RQ_QUEUE_OK;
- }
- 
--static struct blk_mq_hw_ctx *null_alloc_hctx(struct blk_mq_tag_set *set,
--					     unsigned int hctx_index,
--					     int node)
--{
--	return kzalloc_node(sizeof(struct blk_mq_hw_ctx), GFP_KERNEL, node);
--}
--
--static void null_free_hctx(struct blk_mq_hw_ctx *hctx, unsigned int hctx_index)
--{
--	kfree(hctx);
--}
--
- static void null_init_queue(struct nullb *nullb, struct nullb_queue *nq)
- {
- 	BUG_ON(!nullb);
-@@ -360,17 +348,6 @@ static struct blk_mq_ops null_mq_ops = {
- 	.map_queue      = blk_mq_map_queue,
- 	.init_hctx	= null_init_hctx,
- 	.complete	= null_softirq_done_fn,
--	.alloc_hctx	= blk_mq_alloc_single_hw_queue,
--	.free_hctx	= blk_mq_free_single_hw_queue,
--};
--
--static struct blk_mq_ops null_mq_ops_pernode = {
--	.queue_rq       = null_queue_rq,
--	.map_queue      = blk_mq_map_queue,
--	.init_hctx	= null_init_hctx,
--	.complete	= null_softirq_done_fn,
--	.alloc_hctx	= null_alloc_hctx,
--	.free_hctx	= null_free_hctx,
- };
- 
- static void null_del_dev(struct nullb *nullb)
-@@ -496,10 +473,7 @@ static int null_add_dev(void)
- 		goto out_free_nullb;
- 
- 	if (queue_mode == NULL_Q_MQ) {
--		if (use_per_node_hctx)
--			nullb->tag_set.ops = &null_mq_ops_pernode;
--		else
--			nullb->tag_set.ops = &null_mq_ops;
-+		nullb->tag_set.ops = &null_mq_ops;
- 		nullb->tag_set.nr_hw_queues = submit_queues;
- 		nullb->tag_set.queue_depth = hw_queue_depth;
- 		nullb->tag_set.numa_node = home_node;
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 9f340fa..c8f286e 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -497,8 +497,6 @@ static int virtblk_init_request(void *data, struct request *rq,
- static struct blk_mq_ops virtio_mq_ops = {
- 	.queue_rq	= virtio_queue_rq,
- 	.map_queue	= blk_mq_map_queue,
--	.alloc_hctx	= blk_mq_alloc_single_hw_queue,
--	.free_hctx	= blk_mq_free_single_hw_queue,
- 	.complete	= virtblk_request_done,
- 	.init_request	= virtblk_init_request,
- };
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index b9a74a3..50a1ea0 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -79,9 +79,6 @@ struct blk_mq_tag_set {
- 
- typedef int (queue_rq_fn)(struct blk_mq_hw_ctx *, struct request *);
- typedef struct blk_mq_hw_ctx *(map_queue_fn)(struct request_queue *, const int);
--typedef struct blk_mq_hw_ctx *(alloc_hctx_fn)(struct blk_mq_tag_set *,
--		unsigned int, int);
--typedef void (free_hctx_fn)(struct blk_mq_hw_ctx *, unsigned int);
- typedef int (init_hctx_fn)(struct blk_mq_hw_ctx *, void *, unsigned int);
- typedef void (exit_hctx_fn)(struct blk_mq_hw_ctx *, unsigned int);
- typedef int (init_request_fn)(void *, struct request *, unsigned int,
-@@ -108,12 +105,6 @@ struct blk_mq_ops {
- 	softirq_done_fn		*complete;
- 
- 	/*
--	 * Override for hctx allocations (should probably go)
--	 */
--	alloc_hctx_fn		*alloc_hctx;
--	free_hctx_fn		*free_hctx;
--
--	/*
- 	 * Called when the block layer side of a hardware queue has been
- 	 * set up, allowing the driver to allocate/init matching structures.
- 	 * Ditto for exit/teardown.
-@@ -166,7 +157,6 @@ struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag);
- 
- struct blk_mq_hw_ctx *blk_mq_map_queue(struct request_queue *, const int ctx_index);
- struct blk_mq_hw_ctx *blk_mq_alloc_single_hw_queue(struct blk_mq_tag_set *, unsigned int, int);
--void blk_mq_free_single_hw_queue(struct blk_mq_hw_ctx *, unsigned int);
- 
- void blk_mq_end_io(struct request *rq, int error);
- void __blk_mq_end_io(struct request *rq, int error);
--- 
-1.7.10.4
+And quite frankly, from the backtrace, I can only say: there is some
+bad shit there. The current VM stands out as a bloated pig:
 
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   0)     7696      16   lookup_address+0x28/0x30
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   1)     7680      16   _lookup_address_cpa.isra.3+0x3b/0x40
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   2)     7664      24   __change_page_attr_set_clr+0xe0/0xb50
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   3)     7640     392   kernel_map_pages+0x6c/0x120
+> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   4)     7248     256   get_page_from_freelist+0x489/0x920
+> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   5)     6992     352   __alloc_pages_nodemask+0x5e1/0xb20
+
+> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  23)     4672     160   __swap_writepage+0x150/0x230
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  24)     4512      32   swap_writepage+0x42/0x90
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  25)     4480     320   shrink_page_list+0x676/0xa80
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  26)     4160     208   shrink_inactive_list+0x262/0x4e0
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  27)     3952     304   shrink_lruvec+0x3e1/0x6a0
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  28)     3648      80   shrink_zone+0x3f/0x110
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  29)     3568     128   do_try_to_free_pages+0x156/0x4c0
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  30)     3440     208   try_to_free_pages+0xf7/0x1e0
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  31)     3232     352   __alloc_pages_nodemask+0x783/0xb20
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  32)     2880       8   alloc_pages_current+0x10f/0x1f0
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  33)     2872     200   __page_cache_alloc+0x13f/0x160
+
+That __alloc_pages_nodemask() thing in particular looks bad. It
+actually seems not to be the usual "let's just allocate some
+structures on the stack" disease, it looks more like "lots of
+inlining, horrible calling conventions, and lots of random stupid
+variables".
+
+>From a quick glance at the frame usage, some of it seems to be gcc
+being rather bad at stack allocation, but lots of it is just nasty
+spilling around the disgusting call-sites with tons or arguments. A
+_lot_ of the stack slots are marked as "%sfp" (which is gcc'ese for
+"spill frame pointer", afaik).
+
+Avoiding some inlining, and using a single flag value rather than the
+collection of "bool"s would probably help. But nothing really
+trivially obvious stands out.
+
+But what *does* stand out (once again) is that we probably shouldn't
+do swap-out in direct reclaim. This came up the last time we had stack
+issues (XFS) too. I really do suspect that direct reclaim should only
+do the kind of reclaim that does not need any IO at all.
+
+I think we _do_ generally avoid IO in direct reclaim, but swap is
+special. And not for a good reason, afaik. DaveC, remind me, I think
+you said something about the swap case the last time this came up..
+
+                  Linus
