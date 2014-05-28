@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635AbaE1WG2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:06:28 -0400
-Received: from smtp310.phy.lolipop.jp ([210.157.22.78]:34557 "EHLO
-	smtp310.phy.lolipop.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920AbaE1WG0 (ORCPT
+	id S1755728AbaE1WH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:07:28 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:57608 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043AbaE1WH1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:06:26 -0400
-X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 18:06:25 EDT
-Message-ID: <53865BE3.3010602@sakamocchi.jp>
-Date: Thu, 29 May 2014 06:57:55 +0900
-From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 28 May 2014 18:07:27 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Clemens Ladisch <clemens@ladisch.de>
-CC: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [patch 2/2] ALSA: fireworks: small leak on error
- path
-References: <20140528164246.GC1824@mwanda>
-In-Reply-To: <20140528164246.GC1824@mwanda>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:7:1680:338::529]
+In-Reply-To: <1401237869.20587.12.camel@joe-AO725>
+References: <1401236684-10579-1-git-send-email-dev@codyps.com>
+	<1401236684-10579-12-git-send-email-dev@codyps.com>
+	<1401237869.20587.12.camel@joe-AO725>
+Date: Wed, 28 May 2014 17:07:25 -0500
+Message-ID: <CAPoQQ-0Zdva0HiAB9yJ2CWCWtQNvYpfXW7BjNoc0CQ-m=6m3xA@mail.gmail.com>
+Subject: Re: [PATCH 11/16] byteorder: provide a linux/byteorder.h with
+ {be,le}_to_cpu() and cpu_to_{be,le}() macros
+From: Cody P Schafer <dev@codyps.com>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(May 29 2014 01:42), Dan Carpenter wrote:
-> There was a typo here so we return directly instead of freeing "hwinfo".
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Tue, May 27, 2014 at 7:44 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2014-05-27 at 17:22 -0700, Cody P Schafer wrote:
+>> Rather manually specifying the size of the integer to be converted, key
+>> off of the type size. Reduces duplicate size info and the occurance of
+>> certain types of bugs (using the wrong sized conversion).
+> []
+>> diff --git a/include/linux/byteorder.h b/include/linux/byteorder.h
+> []
+>> @@ -0,0 +1,34 @@
+>> +#ifndef LINUX_BYTEORDER_H_
+>> +#define LINUX_BYTEORDER_H_
+>> +
+>> +#include <asm/byteorder.h>
+>> +
+>> +#define be_to_cpu(v) \
+>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v, \
+>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint16_t), be16_to_cpu(v), \
+>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint32_t), be32_to_cpu(v), \
+>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint64_t), be64_to_cpu(v), \
+>> +             (void)0))))
+>
+> probably better to use BUILD_BUG instead of these 0 returns
+>
 
-Reviewd-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-Tested-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+They aren't 0 returns.
 
-> diff --git a/sound/firewire/fireworks/fireworks.c b/sound/firewire/fireworks/fireworks.c
-> index 8e856cc..996fdc4 100644
-> --- a/sound/firewire/fireworks/fireworks.c
-> +++ b/sound/firewire/fireworks/fireworks.c
-> @@ -157,7 +157,7 @@ get_hardware_info(struct snd_efw *efw)
->  	/* Hardware metering. */
->  	if (hwinfo->phys_in_grp_count  > HWINFO_MAX_CAPS_GROUPS ||
->  	    hwinfo->phys_out_grp_count > HWINFO_MAX_CAPS_GROUPS) {
-> -		return -EIO;
-> +		err = -EIO;
->  		goto end;
->  	}
->  	efw->phys_in = hwinfo->phys_in;
-
+$ echo "int main(void) { int x = (void)0; return x; }" | gcc -x c -
+<stdin>: In function ‘main’:
+<stdin>:1:26: error: void value not ignored as it ought to be
