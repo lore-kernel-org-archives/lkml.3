@@ -1,83 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbaE1EoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 00:44:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:34463 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009AbaE1EoO (ORCPT
+	id S1753903AbaE1Enb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 00:43:31 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40240 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591AbaE1En3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 00:44:14 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-8a-538569826f16
-Message-id: <53856981.5010802@samsung.com>
-Date: Wed, 28 May 2014 13:43:45 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH] extcon: palmas: Make of_device_id array const
-References: <1400835785-26947-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1400835785-26947-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsWyRsSkULcpszXYoP8Gu0X/FheL1y8MLS7v
-	msNmcbtxBZsDi0ffllWMHlOn/GX0+LxJLoA5issmJTUnsyy1SN8ugSvj5uN77AVf2Ct2T13O
-	1MB4jq2LkZNDQsBEor3nPiOELSZx4d56oDgXh5DAUkaJCdvWwxW92vqSCSIxnVHi2+QnLBDO
-	a0aJ6ZuPsoNU8QpoSfz7v5MJxGYRUJXY0X8NLM4GFN//4gbYJFGBMImV06+wQNQLSvyYfA/M
-	FhEwlDi4eztYL7NAgcSkg9PAbGEBJ4nv576C2UIC7hJnJj4Cm8kp4CHxccceNoh6HYn9rdOg
-	bHmJzWveMoMcJyEwj13izulFbBAHCQBdfQhoGQdQQlZi0wFmiM8kJQ6uuMEygVFsFpKTZiEZ
-	OwvJ2AWMzKsYRVMLkguKk9KLDPWKE3OLS/PS9ZLzczcxAmPo9L9nvTsYbx+wPsSYDLRyIrOU
-	aHI+MAbzSuINjc2MLExNTI2NzC3NSBNWEudNepgUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNT
-	qoExYOK7S/kLj7izy4vfTNz4P8zuRIjG9B6bu/z5My7+cI8S8/rMUC7nu+mPbZzup9uT54VF
-	28ddrG26ydup9bXHVtPjf4Y6t5Taou95qSJX5DT3qBSzXw4Rc5d/w++aJKytv7/jTf6zrLV3
-	pJ9KvXT/9Pdl55TPvjqWwYy7Lme0tShn8y+9qK3EUpyRaKjFXFScCACrz3WctwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgleLIzCtJLcpLzFFi42I5/e+xoG5TZmuwwSldi/4tLhavXxhaXN41
-	h83iduMKNgcWj74tqxg9pk75y+jxeZNcAHNUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZ
-	gaGuoaWFuZJCXmJuqq2Si0+ArltmDtAuJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFw
-	PUYGaCBhDWPGzcf32Au+sFfsnrqcqYHxHFsXIyeHhICJxKutL5kgbDGJC/fWA8W5OIQEpjNK
-	fJv8hAXCec0oMX3zUXaQKl4BLYl//3eCdbAIqErs6L8GFmcDiu9/cQNsqqhAmMTK6VdYIOoF
-	JX5MvgdmiwgYShzcvR2sl1mgQGLSwWlgtrCAk8T3c1/BbCEBd4kzEx+BzeQU8JD4uGMPG0S9
-	jsT+1mlQtrzE5jVvmScwCsxCsmIWkrJZSMoWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
-	xAiOz2dSOxhXNlgcYhTgYFTi4T2wuCVYiDWxrLgy9xCjBAezkgjvn4DWYCHelMTKqtSi/Pii
-	0pzU4kOMycAQmMgsJZqcD0wdeSXxhsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1I
-	LYLZwsTBKdXAeNZlXebbD7GWb3de9Qpa9+DB2/Tv/lUJ+eatFzq8Z+sc8zVbyBBk2Rhe1rEx
-	e321yRyZZz+CP57hvRwUo8+5r+XkpjM1N7J3txb4X9vN+bmeVe1NOpM0tzrPrsV12WZOQYsO
-	Tf8YNXurpvqlgPXmyvb9PitNZ8x2sWBbeXee8+nkXQmde74vVWIpzkg01GIuKk4EANWdRhgT	AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 28 May 2014 00:43:29 -0400
+Subject: [PATCH 2/6] powerpc, powernv,
+ CPU hotplug: Put offline CPUs in Fast-Sleep instead of Nap
+To: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        svaidyan@in.ibm.com, paulus@samba.org,
+        srivatsa.bhat@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Date: Wed, 28 May 2014 10:08:56 +0530
+Message-ID: <20140528043856.15676.35844.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140528043703.15676.58580.stgit@preeti.in.ibm.com>
+References: <20140528043703.15676.58580.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.16-38-g167d
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052804-9332-0000-0000-000000EB1E0F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 06:03 PM, Krzysztof Kozlowski wrote:
-> Array of struct of_device_id may be be const as expected by
-> of_match_table field.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Graeme Gregory <gg@slimlogic.co.uk>
-> ---
->  drivers/extcon/extcon-palmas.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
-> index ddff2b72f0a8..eb59fe564fd1 100644
-> --- a/drivers/extcon/extcon-palmas.c
-> +++ b/drivers/extcon/extcon-palmas.c
-> @@ -273,7 +273,7 @@ static int palmas_usb_resume(struct device *dev)
->  
->  static SIMPLE_DEV_PM_OPS(palmas_pm_ops, palmas_usb_suspend, palmas_usb_resume);
->  
-> -static struct of_device_id of_palmas_match_tbl[] = {
-> +static const struct of_device_id of_palmas_match_tbl[] = {
->  	{ .compatible = "ti,palmas-usb", },
->  	{ .compatible = "ti,palmas-usb-vid", },
->  	{ .compatible = "ti,twl6035-usb", },
-> 
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Applied.
+The offline cpus are put to fast sleep if the idle state is discovered in the
+device tree. This is to gain maximum powersavings in the offline state.
 
-Thanks,
-Chanwoo Choi
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+[ Changelog added by <preeti@linux.vnet.ibm.com> ]
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
+
+ arch/powerpc/include/asm/processor.h |    8 +++++
+ arch/powerpc/kernel/idle.c           |   52 ++++++++++++++++++++++++++++++++++
+ arch/powerpc/platforms/powernv/smp.c |   12 +++++++-
+ 3 files changed, 71 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
+index d922e5c..c5256db 100644
+--- a/arch/powerpc/include/asm/processor.h
++++ b/arch/powerpc/include/asm/processor.h
+@@ -449,6 +449,14 @@ static inline unsigned long get_clean_sp(unsigned long sp, int is_32)
+ #define IDLE_INST_NAP	0x00010000 /* nap instruction can be used */
+ #define IDLE_INST_SLEEP	0x00020000 /* sleep instruction can be used */
+ 
++/* Flags to indicate which of the CPU idle states are available for use */
++
++#define IDLE_USE_NAP		(1UL << 0)
++#define IDLE_USE_SLEEP		(1UL << 1)
++
++extern unsigned int supported_cpuidle_states;
++extern unsigned int pnv_get_supported_cpuidle_states(void);
++
+ extern unsigned long cpuidle_disable;
+ enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
+ 
+diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+index d7216c9..e51d574 100644
+--- a/arch/powerpc/kernel/idle.c
++++ b/arch/powerpc/kernel/idle.c
+@@ -25,6 +25,7 @@
+ #include <linux/cpu.h>
+ #include <linux/sysctl.h>
+ #include <linux/tick.h>
++#include <linux/of.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/cputable.h>
+@@ -32,6 +33,7 @@
+ #include <asm/machdep.h>
+ #include <asm/runlatch.h>
+ #include <asm/smp.h>
++#include <asm/firmware.h>
+ 
+ 
+ unsigned long cpuidle_disable = IDLE_NO_OVERRIDE;
+@@ -79,6 +81,56 @@ void arch_cpu_idle(void)
+ 	ppc64_runlatch_on();
+ }
+ 
++#ifdef CONFIG_PPC_POWERNV
++
++unsigned int supported_cpuidle_states = 0;
++
++unsigned int pnv_get_supported_cpuidle_states(void)
++{
++	return supported_cpuidle_states;
++}
++
++static int __init pnv_probe_idle_states(void)
++{
++	struct device_node *power_mgt;
++	struct property *prop;
++	int dt_idle_states;
++	u32 *flags;
++	int i;
++
++	if (!firmware_has_feature(FW_FEATURE_OPALv3))
++		return 0;
++
++	power_mgt = of_find_node_by_path("/ibm,opal/power-mgt");
++	if (!power_mgt) {
++		pr_warn("opal: PowerMgmt Node not found\n");
++		return 0;
++	}
++
++	prop = of_find_property(power_mgt, "ibm,cpu-idle-state-flags", NULL);
++	if (!prop) {
++		pr_warn("DT-PowerMgmt: missing ibm,cpu-idle-state-flags\n");
++		return 0;
++	}
++
++	dt_idle_states = prop->length / sizeof(u32);
++	flags = (u32 *) prop->value;
++
++	for (i = 0; i < dt_idle_states; i++) {
++		if (flags[i] & IDLE_INST_NAP)
++			supported_cpuidle_states |= IDLE_USE_NAP;
++
++		if (flags[i] & IDLE_INST_SLEEP)
++			supported_cpuidle_states |= IDLE_USE_SLEEP;
++	}
++
++	return 0;
++}
++
++__initcall(pnv_probe_idle_states);
++#endif
++
++
+ int powersave_nap;
+ 
+ #ifdef CONFIG_SYSCTL
+diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
+index bf5fcd4..fc83006 100644
+--- a/arch/powerpc/platforms/powernv/smp.c
++++ b/arch/powerpc/platforms/powernv/smp.c
+@@ -31,6 +31,7 @@
+ #include <asm/xics.h>
+ #include <asm/opal.h>
+ #include <asm/runlatch.h>
++#include <asm/processor.h>
+ 
+ #include "powernv.h"
+ 
+@@ -142,6 +143,7 @@ static int pnv_smp_cpu_disable(void)
+ static void pnv_smp_cpu_kill_self(void)
+ {
+ 	unsigned int cpu;
++	unsigned long idle_states;
+ 
+ 	/* Standard hot unplug procedure */
+ 	local_irq_disable();
+@@ -152,13 +154,21 @@ static void pnv_smp_cpu_kill_self(void)
+ 	generic_set_cpu_dead(cpu);
+ 	smp_wmb();
+ 
++	idle_states = pnv_get_supported_cpuidle_states();
++
+ 	/* We don't want to take decrementer interrupts while we are offline,
+ 	 * so clear LPCR:PECE1. We keep PECE2 enabled.
+ 	 */
+ 	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) & ~(u64)LPCR_PECE1);
+ 	while (!generic_check_cpu_restart(cpu)) {
+ 		ppc64_runlatch_off();
+-		power7_nap();
++
++		/* If sleep is supported, go to sleep, instead of nap */
++		if (idle_states & IDLE_USE_SLEEP)
++			power7_sleep();
++		else
++			power7_nap();
++
+ 		ppc64_runlatch_on();
+ 		if (!generic_check_cpu_restart(cpu)) {
+ 			DBG("CPU%d Unexpected exit while offline !\n", cpu);
+
