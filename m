@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428AbaE1XVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:21:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47871 "EHLO
+	id S932448AbaE1XVp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:21:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47877 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932397AbaE1XVc (ORCPT
+	with ESMTP id S932397AbaE1XVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:21:32 -0400
+	Wed, 28 May 2014 19:21:40 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-leds@vger.kernel.org, linux-pwm@vger.kernel.org,
         linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 10/15] avr32: merisc: use generic leds_pwm driver
-Date: Thu, 29 May 2014 01:20:13 +0200
-Message-Id: <1401319218-16772-11-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 11/15] avr32: favr-32: use generic pwm_bl driver
+Date: Thu, 29 May 2014 01:20:14 +0200
+Message-Id: <1401319218-16772-12-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -28,81 +28,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to the generic leds_pwm driver instead of leds-atmel-pwm.
+Switch to the generic pwm_bl driver instead of atmel-pwm-bl.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 ---
- arch/avr32/boards/merisc/setup.c | 34 +++++++++++++++++++++-------------
- 1 file changed, 21 insertions(+), 13 deletions(-)
+ arch/avr32/boards/favr-32/setup.c    | 48 ++++++++++++++++++++++--------------
+ arch/avr32/configs/favr-32_defconfig |  6 ++---
+ 2 files changed, 33 insertions(+), 21 deletions(-)
 
-diff --git a/arch/avr32/boards/merisc/setup.c b/arch/avr32/boards/merisc/setup.c
-index ed137e335796..83d896cc2aed 100644
---- a/arch/avr32/boards/merisc/setup.c
-+++ b/arch/avr32/boards/merisc/setup.c
-@@ -22,6 +22,8 @@
- #include <linux/irq.h>
- #include <linux/fb.h>
+diff --git a/arch/avr32/boards/favr-32/setup.c b/arch/avr32/boards/favr-32/setup.c
+index 1f121497b517..234cb071c601 100644
+--- a/arch/avr32/boards/favr-32/setup.c
++++ b/arch/avr32/boards/favr-32/setup.c
+@@ -18,7 +18,10 @@
+ #include <linux/gpio.h>
+ #include <linux/leds.h>
  #include <linux/atmel-mci.h>
+-#include <linux/atmel-pwm-bl.h>
 +#include <linux/pwm.h>
-+#include <linux/leds_pwm.h>
++#include <linux/pwm_backlight.h>
++#include <linux/regulator/fixed.h>
++#include <linux/regulator/machine.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/ads7846.h>
  
- #include <asm/io.h>
- #include <asm/setup.h>
-@@ -167,24 +169,29 @@ static struct i2c_board_info __initdata i2c_info[] = {
- 	},
+@@ -33,6 +36,8 @@
+ #include <mach/board.h>
+ #include <mach/portmux.h>
+ 
++#define PWM_BL_CH 2
++
+ /* Oscillator frequencies. These are board-specific */
+ unsigned long at32_board_osc_rates[3] = {
+ 	[0] = 32768,	/* 32.768 kHz on RTC osc */
+@@ -227,29 +232,36 @@ void __init favr32_setup_leds(void)
+ 	platform_device_register(&favr32_led_dev);
+ }
+ 
+-static struct atmel_pwm_bl_platform_data atmel_pwm_bl_pdata = {
+-	.pwm_channel		= 2,
+-	.pwm_frequency		= 200000,
+-	.pwm_compare_max	= 345,
+-	.pwm_duty_max		= 345,
+-	.pwm_duty_min		= 90,
+-	.pwm_active_low		= 1,
+-	.gpio_on		= GPIO_PIN_PA(28),
+-	.on_active_low		= 0,
++static struct pwm_lookup pwm_lookup[] = {
++	PWM_LOOKUP("at91sam9rl-pwm", PWM_BL_CH, "pwm-backlight.0", NULL,
++		   5000, PWM_POLARITY_INVERSED),
  };
  
--#ifdef CONFIG_LEDS_ATMEL_PWM
--static struct gpio_led stk_pwm_led[] = {
-+#if IS_ENABLED(CONFIG_LEDS_PWM)
-+static struct pwm_lookup pwm_lookup[] = {
-+	PWM_LOOKUP("at91sam9rl-pwm", 0, "leds_pwm", "backlight",
-+		   5000, PWM_POLARITY_NORMAL),
+-static struct platform_device atmel_pwm_bl_dev = {
+-	.name		= "atmel-pwm-bl",
+-	.id		= 0,
+-	.dev		= {
+-		.platform_data = &atmel_pwm_bl_pdata,
++static struct regulator_consumer_supply fixed_power_consumers[] = {
++	REGULATOR_SUPPLY("power", "pwm-backlight.0"),
 +};
 +
-+static struct led_pwm pwm_leds[] = {
- 	{
- 		.name	= "backlight",
--		.gpio	= 0,		/* PWM channel 0 (LCD backlight) */
-+		.max_brightness = 255,
++static struct platform_pwm_backlight_data pwm_bl_data = {
++	.enable_gpio		= GPIO_PIN_PA(28),
++	.max_brightness		= 255,
++	.dft_brightness		= 255,
++	.lth_brightness		= 50,
++};
++
++static struct platform_device pwm_bl_device = {
++	.name = "pwm-backlight",
++	.dev = {
++		.platform_data = &pwm_bl_data,
  	},
  };
  
--static struct gpio_led_platform_data stk_pwm_led_data = {
--	.num_leds	= ARRAY_SIZE(stk_pwm_led),
--	.leds		= stk_pwm_led,
-+static struct led_pwm_platform_data pwm_data = {
-+	.num_leds       = ARRAY_SIZE(pwm_leds),
-+	.leds           = pwm_leds,
- };
- 
--static struct platform_device stk_pwm_led_dev = {
--	.name	= "leds-atmel-pwm",
--	.id	= -1,
--	.dev	= {
--		.platform_data	= &stk_pwm_led_data,
-+static struct platform_device leds_pwm = {
-+	.name   = "leds_pwm",
-+	.id     = -1,
-+	.dev    = {
-+		.platform_data = &pwm_data,
- 	},
- };
- #endif
-@@ -278,9 +285,10 @@ static int __init merisc_init(void)
- 
- 	at32_add_device_mci(0, &mci0_data);
- 
--#ifdef CONFIG_LEDS_ATMEL_PWM
-+#if IS_ENABLED(CONFIG_LEDS_PWM)
+ static void __init favr32_setup_atmel_pwm_bl(void)
+ {
+-	platform_device_register(&atmel_pwm_bl_dev);
+-	at32_select_gpio(atmel_pwm_bl_pdata.gpio_on, 0);
 +	pwm_add_table(pwm_lookup, ARRAY_SIZE(pwm_lookup));
- 	at32_add_device_pwm((1 << 0) | (1 << 2));
--	platform_device_register(&stk_pwm_led_dev);
-+	platform_device_register(&leds_pwm);
- #else
- 	at32_add_device_pwm((1 << 2));
- #endif
++	regulator_register_always_on(0, "fixed", fixed_power_consumers,
++				    ARRAY_SIZE(fixed_power_consumers), 3300000);
++	platform_device_register(&pwm_bl_device);
++	at32_select_gpio(pwm_bl_data.enable_gpio, 0);
+ }
+ 
+ void __init setup_board(void)
+@@ -339,7 +351,7 @@ static int __init favr32_init(void)
+ 
+ 	set_abdac_rate(at32_add_device_abdac(0, &abdac0_data));
+ 
+-	at32_add_device_pwm(1 << atmel_pwm_bl_pdata.pwm_channel);
++	at32_add_device_pwm(1 << PWM_BL_CH);
+ 	at32_add_device_spi(1, spi1_board_info, ARRAY_SIZE(spi1_board_info));
+ 	at32_add_device_mci(0, &mci0_data);
+ 	at32_add_device_usba(0, NULL);
+diff --git a/arch/avr32/configs/favr-32_defconfig b/arch/avr32/configs/favr-32_defconfig
+index 07bed3f7eb5e..b3eb67dc05ac 100644
+--- a/arch/avr32/configs/favr-32_defconfig
++++ b/arch/avr32/configs/favr-32_defconfig
+@@ -67,7 +67,6 @@ CONFIG_MTD_PHYSMAP=y
+ CONFIG_BLK_DEV_LOOP=m
+ CONFIG_BLK_DEV_NBD=m
+ CONFIG_BLK_DEV_RAM=m
+-CONFIG_ATMEL_PWM=m
+ CONFIG_ATMEL_TCLIB=y
+ CONFIG_ATMEL_SSC=m
+ CONFIG_NETDEVICES=y
+@@ -108,7 +107,7 @@ CONFIG_FB=y
+ CONFIG_FB_ATMEL=y
+ CONFIG_BACKLIGHT_LCD_SUPPORT=y
+ # CONFIG_LCD_CLASS_DEVICE is not set
+-CONFIG_BACKLIGHT_ATMEL_PWM=m
++CONFIG_BACKLIGHT_PWM=m
+ CONFIG_SOUND=m
+ CONFIG_SOUND_PRIME=m
+ # CONFIG_HID_SUPPORT is not set
+@@ -123,7 +122,6 @@ CONFIG_MMC=y
+ CONFIG_MMC_ATMELMCI=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+-CONFIG_LEDS_ATMEL_PWM=m
+ CONFIG_LEDS_GPIO=y
+ CONFIG_LEDS_TRIGGERS=y
+ CONFIG_LEDS_TRIGGER_TIMER=y
+@@ -132,6 +130,8 @@ CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_AT32AP700X=y
+ CONFIG_DMADEVICES=y
++CONFIG_PWM=y
++CONFIG_PWM_ATMEL=y
+ CONFIG_EXT2_FS=y
+ CONFIG_EXT3_FS=y
+ # CONFIG_EXT3_FS_XATTR is not set
 -- 
 1.9.1
 
