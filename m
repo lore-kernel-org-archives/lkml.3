@@ -1,180 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaE1UKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:10:24 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:43745 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248AbaE1UKW (ORCPT
+	id S1755295AbaE1UKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:10:40 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37678 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754899AbaE1UKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:10:22 -0400
-Date: Thu, 29 May 2014 01:40:14 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Input: max8925_onkey :Allocate resources using managed
- interfaces
-Message-ID: <20140528201014.GA10607@himangi-Dell>
+	Wed, 28 May 2014 16:10:36 -0400
+Date: Wed, 28 May 2014 21:10:21 +0100
+From: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+To: walter harms <wharms@bfs.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] perf/x86/uncore: Remove unnecessary assignment to "box"
+ in uncore_pci_remove(...)
+Message-ID: <20140528200609.GA1901@vaio>
+References: <1401268294-28634-1-git-send-email-giedrius.rekasius@gmail.com>
+ <5385B764.6090301@bfs.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5385B764.6090301@bfs.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves most data allocated in the probe function from
-unmanaged interfaces to managed interfaces. The kfrees and error
-handling code is done away with. The unnecesary labels are removed
-and the function max8925_onkey_remove is removed as it becomes empty
-after removing the no longer required function calls. Also,
-linux/device.h is added to make sure the devm_*() routine declarations
-are unambiguously available.
+On Wed, May 28, 2014 at 12:16:04PM +0200, walter harms wrote:
+> 
+> 
+> Am 28.05.2014 11:11, schrieb Giedrius Rekasius:
+> > Local variable "box" gets assigned correct value when it is initialized.
+> > There is no need to assign the same value again.
+> > 
+> > Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > index 65bbbea..8cbbb1b 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > @@ -3817,7 +3817,6 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+> >  	struct intel_uncore_pmu *pmu;
+> >  	int i, cpu, phys_id = pcibus_to_physid[pdev->bus->number];
+> >  
+> > -	box = pci_get_drvdata(pdev);
+> >  	if (!box) {
+> >  		for (i = 0; i < UNCORE_EXTRA_PCI_DEV_MAX; i++) {
+> >  			if (extra_pci_dev[phys_id][i] == pdev) {
+> 
+> Just a remark,
+> for readability it is better to remove the other one.
 
-The following Coccinelle semantic patch was used for making a part of
-the change:
+I could move the declaration itself closer to the if statement while
+still keeping whole statement in one line.
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
+On the other hand I'm not so sure if it makes any real difference to
+have assignment right next to the if statement compared to a few lines
+above it.
 
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
-
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-To send to: Dmitry Torokhov <dmitry.torokhov@gmail.com>,linux-input@vger.kernel.org,linux-kernel@vger.kernel.org
- drivers/input/misc/max8925_onkey.c | 52 +++++++++++---------------------------
- 1 file changed, 15 insertions(+), 37 deletions(-)
-
-diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
-index eef41cf..62899e5 100644
---- a/drivers/input/misc/max8925_onkey.c
-+++ b/drivers/input/misc/max8925_onkey.c
-@@ -26,6 +26,7 @@
- #include <linux/interrupt.h>
- #include <linux/mfd/max8925.h>
- #include <linux/slab.h>
-+#include <linux/device.h>
- 
- #define SW_INPUT		(1 << 7)	/* 0/1 -- up/down */
- #define HARDRESET_EN		(1 << 7)
-@@ -81,12 +82,11 @@ static int max8925_onkey_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	info = kzalloc(sizeof(struct max8925_onkey_info), GFP_KERNEL);
--	input = input_allocate_device();
--	if (!info || !input) {
--		error = -ENOMEM;
--		goto err_free_mem;
--	}
-+	info = devm_kzalloc(&pdev->dev, sizeof(struct max8925_onkey_info),
-+			    GFP_KERNEL);
-+	input = devm_input_allocate_device(&pdev->dev);
-+	if (!info || !input)
-+		return -ENOMEM;
- 
- 	info->idev = input;
- 	info->i2c = chip->i2c;
-@@ -100,55 +100,34 @@ static int max8925_onkey_probe(struct platform_device *pdev)
- 	input->dev.parent = &pdev->dev;
- 	input_set_capability(input, EV_KEY, KEY_POWER);
- 
--	error = request_threaded_irq(irq[0], NULL, max8925_onkey_handler,
--				     IRQF_ONESHOT, "onkey-down", info);
-+	error = devm_request_threaded_irq(&pdev->dev, irq[0], NULL,
-+					  max8925_onkey_handler, IRQF_ONESHOT,
-+					  "onkey-down", info);
- 	if (error < 0) {
- 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
- 			irq[0], error);
--		goto err_free_mem;
-+		return error;
- 	}
- 
--	error = request_threaded_irq(irq[1], NULL, max8925_onkey_handler,
--				     IRQF_ONESHOT, "onkey-up", info);
-+	error = devm_request_threaded_irq(&pdev->dev, irq[1], NULL,
-+					  max8925_onkey_handler, IRQF_ONESHOT,
-+					  "onkey-up", info);
- 	if (error < 0) {
- 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
- 			irq[1], error);
--		goto err_free_irq0;
-+		return error;
- 	}
- 
- 	error = input_register_device(info->idev);
- 	if (error) {
- 		dev_err(chip->dev, "Can't register input device: %d\n", error);
--		goto err_free_irq1;
-+		return error;
- 	}
- 
- 	platform_set_drvdata(pdev, info);
- 	device_init_wakeup(&pdev->dev, 1);
- 
- 	return 0;
--
--err_free_irq1:
--	free_irq(irq[1], info);
--err_free_irq0:
--	free_irq(irq[0], info);
--err_free_mem:
--	input_free_device(input);
--	kfree(info);
--
--	return error;
--}
--
--static int max8925_onkey_remove(struct platform_device *pdev)
--{
--	struct max8925_onkey_info *info = platform_get_drvdata(pdev);
--	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
--
--	free_irq(info->irq[0] + chip->irq_base, info);
--	free_irq(info->irq[1] + chip->irq_base, info);
--	input_unregister_device(info->idev);
--	kfree(info);
--
--	return 0;
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -190,7 +169,6 @@ static struct platform_driver max8925_onkey_driver = {
- 		.pm	= &max8925_onkey_pm_ops,
- 	},
- 	.probe		= max8925_onkey_probe,
--	.remove		= max8925_onkey_remove,
- };
- module_platform_driver(max8925_onkey_driver);
- 
--- 
-1.9.1
-
+Regards,
+Giedrius
