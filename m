@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099AbaE1HVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:21:30 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:41551 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545AbaE1HV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:21:29 -0400
+	id S932134AbaE1HVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:21:49 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:46799 "EHLO dev.rtsoft.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545AbaE1HVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 03:21:48 -0400
+Message-ID: <53858E89.9040102@dev.rtsoft.ru>
+Date: Wed, 28 May 2014 11:21:45 +0400
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Organization: RTSoft Software Development Center
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1400824647-2525-2-git-send-email-george.cherian@ti.com>
-References: <1400824647-2525-1-git-send-email-george.cherian@ti.com>
-	<1400824647-2525-2-git-send-email-george.cherian@ti.com>
-Date: Wed, 28 May 2014 09:21:28 +0200
-Message-ID: <CACRpkdaDTeBhCaxeO0F8EMH7H5dZy1-mdiwgfVB-vXUU_Df=hA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: pcf857x: Add IRQF_SHARED when request irq
-From: Linus Walleij <linus.walleij@linaro.org>
-To: George Cherian <george.cherian@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lugovskoy@dev.rtsoft.ru
+Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
+ on ULI hw
+References: <1401166602-26379-1-git-send-email-nyushchenko@dev.rtsoft.ru> <5384BFC8.9060800@cogentembedded.com>
+In-Reply-To: <5384BFC8.9060800@cogentembedded.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 7:57 AM, George Cherian <george.cherian@ti.com> wrote:
+27.05.2014 20:39, Sergei Shtylyov пишет:
+> Hello.
+> 
+> On 05/27/2014 08:56 AM, Nikita Yushchenko wrote:
+> 
+>> This access causes hang on Freescale P2020DS board (that has OHCI
+>> provided by ULI 1533 chip).
+> 
+>> Since preserving OHCI_FMINTERVAL was originally done only for NVIDIA
+>> hardware and only later (in c6187597) was turned unconditional, and
+>> c6187597 commit message again mentions only NVIDIA, I think it should be
+> 
+>    Please also specify that commit's summary line in parens.
 
-> It's quite possible that multiple pcf857x can be hooked up
-> to the same interrupt line with the processor. So add IRQF_SHARED
-> in request irq..
->
-> Signed-off-by: George Cherian <george.cherian@ti.com>
+Sorry but can't get what you mean. Could you please be a bit more verbose?
 
-Patch applied.
+Nikita
 
-Yours,
-Linus Walleij
