@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaE1Rzn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:55:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46557 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751158AbaE1Rzl (ORCPT
+	id S1752039AbaE1Rzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:55:36 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:35749 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaE1Rze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:55:41 -0400
-Date: Wed, 28 May 2014 19:55:35 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] misc: atmel_pwm: only build for supported platforms
-Message-ID: <20140528175439.GA18470@piout.net>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-17-git-send-email-arnd@arndb.de>
- <536CA80A.60201@atmel.com>
- <1401279867.22486.6.camel@x220>
- <20140528155916.GA9793@piout.net>
- <1401293383.22486.18.camel@x220>
+	Wed, 28 May 2014 13:55:34 -0400
+Date: Wed, 28 May 2014 11:55:30 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
+        acooks@gmail.com, linux-kernel@vger.kernel.org, eddy0596@gmail.com,
+        linux@horizon.com
+Subject: Re: [PATCH v4 05/16] PCI: quirk dma_alias_devfn for Marvell devices
+Message-ID: <20140528175530.GR11907@google.com>
+References: <20140522230230.2856.40017.stgit@bling.home>
+ <20140522230755.2856.19714.stgit@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401293383.22486.18.camel@x220>
+In-Reply-To: <20140522230755.2856.19714.stgit@bling.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/05/2014 at 18:09:43 +0200, Paul Bolle wrote :
-> On Wed, 2014-05-28 at 17:59 +0200, Alexandre Belloni wrote:
-> > On 28/05/2014 at 14:24:27 +0200, Paul Bolle wrote :
-> > > > >  config ATMEL_PWM
-> > > > >  	tristate "Atmel AT32/AT91 PWM support"
-> > > > > -	depends on HAVE_CLK && (AVR32 || ARCH_AT91 || COMPILE_TEST)
-> > > > > +	depends on HAVE_CLK
-> > > > > +	depends on AVR32 || AT91SAM9263 || AT91SAM9RL || AT91SAM9G45
-> > > 
-> > > Symbols AT91SAM9263, AT91SAM9RL, and AT91SAM9G45 do not seem to exist in
-> > > next-20140528. Should these perhaps be SOC_AT91SAM9263, SOC_AT91SAM9RL,
-> > > and SOC_AT91SAM9G45 and/or ARCH_AT91SAM9263, ARCH_AT91SAM9RL, and
-> > > ARCH_AT91SAM9G45?
-> > 
-> > I wouldn't bother too much fixing that, this will definitely be remove
-> > in 3.17. 
-> 
-> Are you talking about: 1) the problem this patch tried to fix; or 2) the
-> problem it created?
-> 
+On Thu, May 22, 2014 at 05:07:55PM -0600, Alex Williamson wrote:
+> Several Marvell devices and a JMicron device have a similar DMA
+> requester ID problem to Ricoh, except they use function 1 as the
+> PCIe requester ID.  Add a quirk for these to populate the DMA
+> function alias bitmap.
 
-I'm removing the whole atmel_pwm driver so the CONFIG_ATMEL_PWM symbol
-will be gone.
+What's the DMA function alias bitmap?
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/pci/quirks.c |   36 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index bc8ebd9..923689f 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3349,6 +3349,42 @@ static void quirk_dma_func0_alias(struct pci_dev *dev)
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe832, quirk_dma_func0_alias);
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe476, quirk_dma_func0_alias);
+>  
+> +static void quirk_dma_func1_alias(struct pci_dev *dev)
+> +{
+> +	if (PCI_FUNC(dev->devfn) != 1) {
+> +		dev->dma_alias_devfn = PCI_DEVFN(PCI_SLOT(dev->devfn), 1);
+> +		dev->dev_flags |= PCI_DEV_FLAGS_DMA_ALIAS_DEVFN;
+> +	}
+> +}
+> +
+> +/*
+> + * Marvell 88SE9123 uses function 1 as the requester ID for DMA.  In some
+> + * SKUs function 1 is present and is a legacy IDE controller, in other
+> + * SKUs this function is not present, making this a ghost requester.
+> + * https://bugzilla.kernel.org/show_bug.cgi?id=42679
+> + */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9123,
+> +			 quirk_dma_func1_alias);
+> +/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c14 */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9130,
+> +			 quirk_dma_func1_alias);
+> +/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c47 + c57 */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9172,
+> +			 quirk_dma_func1_alias);
+> +/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c59 */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x917a,
+> +			 quirk_dma_func1_alias);
+> +/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c46 */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x91a0,
+> +			 quirk_dma_func1_alias);
+> +/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c49 */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9230,
+> +			 quirk_dma_func1_alias);
+> +/* https://bugs.gentoo.org/show_bug.cgi?id=497630 */
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
+> +			 PCI_DEVICE_ID_JMICRON_JMB388_ESD,
+> +			 quirk_dma_func1_alias);
+> +
+>  static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
+>  {
+>  	if (!PCI_FUNC(dev->devfn))
+> 
