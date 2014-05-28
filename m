@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaE1LoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 07:44:16 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:46694 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074AbaE1LoP (ORCPT
+	id S1753204AbaE1LpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:45:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55226 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751363AbaE1LpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 07:44:15 -0400
-Message-ID: <5385CBCE.9040507@huawei.com>
-Date: Wed, 28 May 2014 19:43:10 +0800
-From: Libo Chen <libo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 28 May 2014 07:45:08 -0400
+Date: Wed, 28 May 2014 12:44:38 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Larry Bassel <larry.bassel@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: [PATCH v5 2/2] arm64: enable context tracking
+Message-ID: <20140528114438.GF15222@arm.com>
+References: <1401130573-7443-1-git-send-email-larry.bassel@linaro.org>
+ <1401130573-7443-3-git-send-email-larry.bassel@linaro.org>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Mike Galbraith <umgwanakikbuti@gmail.com>, <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, "Li Zefan" <lizefan@huawei.com>,
-        <peterz@infradead.org>, Huang Qiang <h.huangqiang@huawei.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Borislav Petkov" <bp@alien8.de>, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: balance storm
-References: <5382AF2E.1040407@huawei.com>  <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com>  <1401113960.23186.41.camel@marge.simpson.net> <53844510.1040502@huawei.com>  <1401184553.5134.115.camel@marge.simpson.net> <53848A2C.5010209@huawei.com>  <1401196807.5134.132.camel@marge.simpson.net> <53853604.50500@huawei.com> <1401242038.4721.14.camel@marge.simpson.net> <5385881D.4090601@huawei.com> <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401130573-7443-3-git-send-email-larry.bassel@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/28 17:08, Thomas Gleixner wrote:
-> On Wed, 28 May 2014, Libo Chen wrote:
-> 
->> On 2014/5/28 9:53, Mike Galbraith wrote:
->>> On Wed, 2014-05-28 at 09:04 +0800, Libo Chen wrote:
->>>
->>>> oh yes, no tsc only hpet in my box.
->>>
->>> Making poor E5-2658 box a crippled wreck.
->>
->> yes,it is. But cpu usage will be down from 15% to 5% when binding
->> cpu, so maybe read_hpet is not the root cause.
-> 
-> Definitely hpet _IS_ the root cause on a machine as large as this,
-> simply because everything gets serialized on the hpet access.
-> 
-> Binding stuff to cpus just makes the timing behaviour different, so
-> the hpet serialization is not that prominent, but still bad enough.
-> 
-> Talk to your HW/BIOS vendor. The kernel cannot do anything about
-> defunct hardware.
+Hi Larry,
 
-thank you for your reply.but suse sp2 is very good in this scene.
-Can it be said there has a bug, then community fix it later,
-so it's just a coincidence?
-
-Libo
-
+On Mon, May 26, 2014 at 07:56:13PM +0100, Larry Bassel wrote:
+> Make calls to ct_user_enter when the kernel is exited
+> and ct_user_exit when the kernel is entered (in el0_da,
+> el0_ia, el0_svc, el0_irq and all of the "error" paths).
 > 
-> Thanks,
+> These macros expand to function calls which will only work
+> properly if el0_sync and related code has been rearranged
+> (in a previous patch of this series).
 > 
-> 	tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> The calls to ct_user_exit are made after hw debugging has been
+> enabled (enable_dbg_and_irq).
 > 
+> The call to ct_user_enter is made at the beginning of the
+> kernel_exit macro.
 > 
+> This patch is based on earlier work by Kevin Hilman.
+> Save/restore optimizations were also done by Kevin.
 
+Apologies if we've discussed this before (it rings a bell), but why are we
+penalising the fast syscall path with this? Shouldn't TIF_NOHZ contribute to
+out _TIF_WORK_MASK, then we could do the tracking on the syscall slow path?
 
+I think that would tidy up your mov into x19 too.
+
+Also -- how do you track ret_from_fork in the child with these patches?
+
+Will
