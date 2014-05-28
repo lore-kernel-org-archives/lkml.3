@@ -1,83 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594AbaE1Nbi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:31:38 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:35777 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188AbaE1Nbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:31:36 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: [PATCH v2] platform: x86: dell-smo8800: Dell Latitude freefall driver (ACPI SMO8800/SMO8810)
-Date: Wed, 28 May 2014 15:31:30 +0200
-User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc3-generic; KDE/4.13.0; x86_64; ; )
-Cc: Randy Dunlap <rdunlap@infradead.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Sonal Santan <sonal.santan@gmail.com>
-References: <1399114077-19314-2-git-send-email-pali.rohar@gmail.com> <1400757348-5351-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1400757348-5351-1-git-send-email-pali.rohar@gmail.com>
+	id S1753649AbaE1Nc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:32:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752670AbaE1Nc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:32:28 -0400
+Date: Wed, 28 May 2014 09:31:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: benh@kernel.crashing.org, paulus@samba.org, ebiederm@xmission.com,
+        mahesh@linux.vnet.ibm.com, ananth@in.ibm.com, suzuki@in.ibm.com,
+        ego@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc, kexec: Fix "Processor X is stuck" issue during
+ kexec from ST mode
+Message-ID: <20140528133143.GK14863@redhat.com>
+References: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart26952221.1NgYzGFUGV";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201405281531.30298@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart26952221.1NgYzGFUGV
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thursday 22 May 2014 13:15:48 Pali Roh=C3=A1r wrote:
-> This acpi driver provide supports for freefall sensors
-> SMO8800/SMO8810 which can be found on Dell Latitude laptops.
-> Driver register /dev/freefall misc device which has same
-> interface as driver hp_accel freefall driver. So any existing
-> applications for HP freefall sensor /dev/freefall will work
-> for with this new driver for Dell Latitude laptops too.
->=20
-> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> Cc: Sonal Santan <sonal.santan@gmail.com>
-> Tested-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-> Acked-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+On Tue, May 27, 2014 at 04:25:34PM +0530, Srivatsa S. Bhat wrote:
+> If we try to perform a kexec when the machine is in ST (Single-Threaded) mode
+> (ppc64_cpu --smt=off), the kexec operation doesn't succeed properly, and we
+> get the following messages during boot:
+> 
+> [    0.089866] POWER8 performance monitor hardware support registered
+> [    0.089985] power8-pmu: PMAO restore workaround active.
+> [    5.095419] Processor 1 is stuck.
+> [   10.097933] Processor 2 is stuck.
+> [   15.100480] Processor 3 is stuck.
+> [   20.102982] Processor 4 is stuck.
+> [   25.105489] Processor 5 is stuck.
+> [   30.108005] Processor 6 is stuck.
+> [   35.110518] Processor 7 is stuck.
+> [   40.113369] Processor 9 is stuck.
+> [   45.115879] Processor 10 is stuck.
+> [   50.118389] Processor 11 is stuck.
+> [   55.120904] Processor 12 is stuck.
+> [   60.123425] Processor 13 is stuck.
+> [   65.125970] Processor 14 is stuck.
+> [   70.128495] Processor 15 is stuck.
+> [   75.131316] Processor 17 is stuck.
+> 
+> Note that only the sibling threads are stuck, while the primary threads (0, 8,
+> 16 etc) boot just fine. Looking closer at the previous step of kexec, we observe
+> that kexec tries to wakeup (bring online) the sibling threads of all the cores,
+> before performing kexec:
+> 
+> [ 9464.131231] Starting new kernel
+> [ 9464.148507] kexec: Waking offline cpu 1.
+> [ 9464.148552] kexec: Waking offline cpu 2.
+> [ 9464.148600] kexec: Waking offline cpu 3.
+> [ 9464.148636] kexec: Waking offline cpu 4.
+> [ 9464.148671] kexec: Waking offline cpu 5.
+> [ 9464.148708] kexec: Waking offline cpu 6.
+> [ 9464.148743] kexec: Waking offline cpu 7.
+> [ 9464.148779] kexec: Waking offline cpu 9.
+> [ 9464.148815] kexec: Waking offline cpu 10.
+> [ 9464.148851] kexec: Waking offline cpu 11.
+> [ 9464.148887] kexec: Waking offline cpu 12.
+> [ 9464.148922] kexec: Waking offline cpu 13.
+> [ 9464.148958] kexec: Waking offline cpu 14.
+> [ 9464.148994] kexec: Waking offline cpu 15.
+> [ 9464.149030] kexec: Waking offline cpu 17.
+> 
+> Instrumenting this piece of code revealed that the cpu_up() operation actually
+> fails with -EBUSY. Thus, only the primary threads of all the cores are online
+> during kexec, and hence this is a sure-shot receipe for disaster, as explained
+> in commit e8e5c2155b (powerpc/kexec: Fix orphaned offline CPUs across kexec),
+> as well as in the comment above wake_offline_cpus().
+> 
+> It turns out that cpu_up() was returning -EBUSY because the variable
+> 'cpu_hotplug_disabled' was set to 1; and this disabling of CPU hotplug was done
+> by migrate_to_reboot_cpu() inside kernel_kexec().
+> 
+> Now, migrate_to_reboot_cpu() was originally written with the assumption that
+> any further code will not need to perform CPU hotplug, since we are anyway in
+> the reboot path. However, kexec is clearly not such a case, since we depend on
+> onlining CPUs, atleast on powerpc.
+> 
+> So re-enable cpu-hotplug after returning from migrate_to_reboot_cpu() in the
+> kexec path, to fix this regression in kexec on powerpc.
+> 
+> Also, wrap the cpu_up() in powerpc kexec code within a WARN_ON(), so that we
+> can catch such issues more easily in the future.
+> 
+> Fixes: c97102ba963 (kexec: migrate to reboot cpu)
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > ---
-> Changes since v1:
-> * Fixed warnings: Missing a blank line after declarations
-> * Fixed Lowercase ON in Kconfig
-> * Fixed Alan's review problems by Sonal Santan
-> ---
->  drivers/platform/x86/Kconfig        |   10 ++
->  drivers/platform/x86/Makefile       |    1 +
->  drivers/platform/x86/dell-smo8800.c |  233
-> +++++++++++++++++++++++++++++++++++ 3 files changed, 244
-> insertions(+)
->  create mode 100644 drivers/platform/x86/dell-smo8800.c
->=20
+> 
+>  arch/powerpc/kernel/machine_kexec_64.c |    2 +-
+>  kernel/kexec.c                         |    8 ++++++++
+>  2 files changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
+> index 59d229a..879b3aa 100644
+> --- a/arch/powerpc/kernel/machine_kexec_64.c
+> +++ b/arch/powerpc/kernel/machine_kexec_64.c
+> @@ -237,7 +237,7 @@ static void wake_offline_cpus(void)
+>  		if (!cpu_online(cpu)) {
+>  			printk(KERN_INFO "kexec: Waking offline cpu %d.\n",
+>  			       cpu);
+> -			cpu_up(cpu);
+> +			WARN_ON(cpu_up(cpu));
+>  		}
+>  	}
+>  }
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index c8380ad..28c5706 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1683,6 +1683,14 @@ int kernel_kexec(void)
+>  		kexec_in_progress = true;
+>  		kernel_restart_prepare(NULL);
+>  		migrate_to_reboot_cpu();
+> +
+> +		/*
+> +		 * migrate_to_reboot_cpu() disables CPU hotplug assuming that
+> +		 * no further code needs to use CPU hotplug (which is true in
+> +		 * the reboot case). However, the kexec path depends on using
+> +		 * CPU hotplug again; so re-enable it here.
+> +		 */
+> +		cpu_hotplug_enable();
+>  		printk(KERN_EMERG "Starting new kernel\n");
+>  		machine_shutdown();
 
-After week there are no other objections.
+After migrate_to_reboot_cpu(), we are calling machine_shutdown() which
+calls disable_nonboot_cpus() and which in turn calls _cpu_down().
 
-Matthew Garrett, can you apply driver into platform tree?
+So it is kind of odd that we first migrate to boot cpu, and then disable
+all non-boot cpus and after that powerpc goes ahead and onlines all
+cpus.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+I think this is not a good idea. For whatever reason if powerpc has to
+online all cpus, then it should happne earlier and not in machine_kexec().
 
---nextPart26952221.1NgYzGFUGV
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+In fact I think generic code expects that all non-boot cpus are disabled
+so that generic code can use all the RAM as it wants to. Now if powerpc
+breaks that assumption, it will lead to various kind of issues.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+So I think we need to go back and see if we can find a way where we
+don't have to online all cpus in first kernel. And second kernel needs
+to have a way to detect it and online things.
 
-iEYEABECAAYFAlOF5TIACgkQi/DJPQPkQ1LVHQCggizIR7a3qXLfb/CJ2HaRaNCo
-A3QAn2Is1eoeo/zPF+ptenm6x5zu7q4i
-=ScWp
------END PGP SIGNATURE-----
-
---nextPart26952221.1NgYzGFUGV--
+Thanks
+Vivek
