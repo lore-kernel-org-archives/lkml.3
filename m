@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaE1HxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:53:14 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:35812 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaE1HxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:53:12 -0400
+	id S1754002AbaE1Hzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:55:40 -0400
+Received: from ozlabs.org ([103.22.144.67]:37252 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750912AbaE1Hzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 03:55:39 -0400
+Date: Wed, 28 May 2014 17:55:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Joerg Roedel <joro@8bytes.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean Delvare <jdelvare@suse.de>, Cho KyongHo <pullip.cho@samsung.com>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>
+Subject: linux-next: manual merge of the driver-core tree with the iommu
+ tree
+Message-ID: <20140528175531.4ce48afd@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <53858FE3.9040207@linaro.org>
-References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400849527-7384-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<CAPDyKFruVPo-k+19pQ4zGrVBH0gqszQ5vphsTAm6HTXUX5riFg@mail.gmail.com>
-	<53858FE3.9040207@linaro.org>
-Date: Wed, 28 May 2014 09:53:11 +0200
-Message-ID: <CACRpkdaXr99W+ckN11p7K22j4z0ikNFyZE6HUsU4gKhXrm2XPA@mail.gmail.com>
-Subject: Re: [PATCH v3 08/13] mmc: mmci: add 8bit bus support in variant data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/B=P+xlFUy+oHLya+Tx2d/OR"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 9:27 AM, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> Hi Linus W,
-> On 26/05/14 11:07, Ulf Hansson wrote:
->>>
->>>          unsigned int            fifosize;
->>> >         unsigned int            fifohalfsize;
->>> >@@ -116,6 +118,7 @@ static struct variant_data variant_u300 = {
->>> >         .fifosize               = 16 * 4,
->>> >         .fifohalfsize           = 8 * 4,
->>> >         .clkreg_enable          = MCI_ST_U300_HWFCEN,
->>> >+       .clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
->>
->> Linus, will have to confirm this. I don't know if the u300 variant
->> support 8-bit.
->>
->
-> Do you know if u300 supports 8BIT bus?
+--Sig_/B=P+xlFUy+oHLya+Tx2d/OR
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes it does actually.
+Hi Greg,
 
-Yours,
-Linus Walleij
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/iommu/exynos-iommu.c between commit 7222e8db2d50
+("iommu/exynos: Fix build errors") from the iommu tree and commit
+8283b4919e00 ("driver core: dev_set_drvdata can no longer fail") from
+the driver-core tree.
+
+I fixed it up (the former removed the code changed by the latter) and
+can carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/B=P+xlFUy+oHLya+Tx2d/OR
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJThZZ3AAoJEMDTa8Ir7ZwVfZQP/0OF9VrjcAIhJkrRKBdaACB1
+nHPy0OhaCxMNwtYUXN+qcilW9z6f9vA5fubbkyXNzMlIwMhEZ8eqdylk0bbFhMbr
+Ot5FlEkqYnsEhNCjYSzYbAwMLcEL+v5r3YCbdCE07llm4d8zI4Tz0AkrGbwQrN+k
+vbu12RIu0TdhvPZUWCeMsCg9QXp7CzonGQhHI3O+tq0zSXSZDYTvag8Gc4OZZLJU
+UzFm0x2JcxCUSmq1ArWe1mkGaRmva4pZluriCMgasoRRCuUrdQg9+poKprB1iIl4
+tifrYVp2LPNv3PMn42Z+pVpn0whE8ELpdA8CoZYoNERCS7bQ02I0TnZPdtX26VYj
+0dK3XtzRAEGovAXKkJqT63U1GfS0/E/NtD4hjcyZMjn1r5xFe+XnmMKusz5tiuRA
+kmtn3KPeO/m6zDHHAamae/qL4km1huTPKSW2hqKyAtt2Zk7S+5HpNL4GodPBgCBe
+ok2mLdgISWF55KI4ce1oMVC+TQobZuJKKj7cv9hTtKOMq1mbwv/SonFIxLN7Hr6/
+nKeBKekt3R+IKIRMYr+nx1zV+f2rFoMOauD+CBhMztj5ZmnfFvg9AyXBYzvfwqzz
+CQ1Q8gt3c6pw1X8KSlF9n8GVSejNezmGRUk1biHDq4v5LT/GP8aKLzY6uDv6BsSY
+tS3Lq6LYBM6piT+xjrZP
+=EADr
+-----END PGP SIGNATURE-----
+
+--Sig_/B=P+xlFUy+oHLya+Tx2d/OR--
