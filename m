@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaE1PKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:10:55 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:44059 "EHLO
+	id S932249AbaE1PLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:11:23 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:43984 "EHLO
 	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219AbaE1PKJ (ORCPT
+	with ESMTP id S1754130AbaE1PKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:10:09 -0400
+	Wed, 28 May 2014 11:10:00 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module <linux-security-module@vger.kernel.org>
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -14,250 +14,174 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
         keyrings <keyrings@linux-nfs.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH v4 4/4] KEYS: define an owner trusted keyring
-Date: Wed, 28 May 2014 11:09:44 -0400
-Message-Id: <1401289784-31340-5-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [RFC PATCH v4 2/4] KEYS: verify a certificate is signed by a 'trusted' key
+Date: Wed, 28 May 2014 11:09:42 -0400
+Message-Id: <1401289784-31340-3-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052815-1344-0000-0000-000001D96056
+x-cbid: 14052815-1344-0000-0000-000001D9602E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(UEFI) secure boot provides a signature chain of trust rooted in
-hardware. The signature chain of trust includes the Machine Owner
-Keys(MOKs), which cannot be modified without physical presence.
+Only public keys, with certificates signed by an existing
+'trusted' key on the system trusted keyring, should be added
+to a trusted keyring.  This patch adds support for verifying
+a certificate's signature.
 
-Instead of allowing public keys, with certificates signed by any
-key on the system trusted keyring, to be added to a trusted
-keyring, this patch further restricts the certificates to those
-signed by the machine owner's key or chosen key.
+This is derived from David Howells pkcs7_request_asymmetric_key() patch.
 
-This patch defines an owner trusted keyring, defines a new boot
-command line option 'keyring=' to designate the machine owner's
-chosen key, and renames the function get_system_trusted_keyring()
-to get_system_or_owner_trusted_keyring().
+Changelog:
+- define get_system_trusted_keyring() to fix kbuild issues
 
-This patch permits the machine owner to safely identify their own
-or chosen key, without requiring it to be builtin the kernel.
-
-Signed-off-by: Mimi Zohar<zohar@linux.vnet.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- crypto/asymmetric_keys/x509_public_key.c |  3 +-
- include/keys/system_keyring.h            | 15 ++++--
- include/linux/key.h                      |  4 ++
- kernel/system_keyring.c                  | 85 ++++++++++++++++++++++++++++++++
- security/keys/key.c                      | 20 ++++++++
- 5 files changed, 121 insertions(+), 6 deletions(-)
+ crypto/asymmetric_keys/x509_public_key.c | 84 +++++++++++++++++++++++++++++++-
+ include/keys/system_keyring.h            | 10 +++-
+ 2 files changed, 92 insertions(+), 2 deletions(-)
 
 diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 1af8a30..6d52790 100644
+index 382ef0d..1af8a30 100644
 --- a/crypto/asymmetric_keys/x509_public_key.c
 +++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -237,7 +237,8 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+@@ -18,12 +18,60 @@
+ #include <linux/asn1_decoder.h>
+ #include <keys/asymmetric-subtype.h>
+ #include <keys/asymmetric-parser.h>
++#include <keys/system_keyring.h>
+ #include <crypto/hash.h>
+ #include "asymmetric_keys.h"
+ #include "public_key.h"
+ #include "x509_parser.h"
+ 
+ /*
++ * Find a key in the given keyring by issuer and authority.
++ */
++static struct key *x509_request_asymmetric_key(
++	struct key *keyring,
++	const char *signer, size_t signer_len,
++	const char *authority, size_t auth_len)
++{
++	key_ref_t key;
++	char *id;
++
++	/* Construct an identifier. */
++	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
++	if (!id)
++		return ERR_PTR(-ENOMEM);
++
++	memcpy(id, signer, signer_len);
++	id[signer_len + 0] = ':';
++	id[signer_len + 1] = ' ';
++	memcpy(id + signer_len + 2, authority, auth_len);
++	id[signer_len + 2 + auth_len] = 0;
++
++	pr_debug("Look up: \"%s\"\n", id);
++
++	key = keyring_search(make_key_ref(keyring, 1),
++			     &key_type_asymmetric, id);
++	if (IS_ERR(key))
++		pr_debug("Request for module key '%s' err %ld\n",
++			 id, PTR_ERR(key));
++	kfree(id);
++
++	if (IS_ERR(key)) {
++		switch (PTR_ERR(key)) {
++			/* Hide some search errors */
++		case -EACCES:
++		case -ENOTDIR:
++		case -EAGAIN:
++			return ERR_PTR(-ENOKEY);
++		default:
++			return ERR_CAST(key);
++		}
++	}
++
++	pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
++	return key_ref_to_ptr(key);
++}
++
++/*
+  * Set up the signature parameters in an X.509 certificate.  This involves
+  * digesting the signed data and extracting the signature.
+  */
+@@ -103,6 +151,36 @@ int x509_check_signature(const struct public_key *pub,
+ EXPORT_SYMBOL_GPL(x509_check_signature);
+ 
+ /*
++ * Check the new certificate against the ones in the trust keyring.  If one of
++ * those is the signing key and validates the new certificate, then mark the
++ * new certificate as being trusted.
++ *
++ * Return 0 if the new certificate was successfully validated, 1 if we couldn't
++ * find a matching parent certificate in the trusted list and an error if there
++ * is a matching certificate but the signature check fails.
++ */
++static int x509_validate_trust(struct x509_certificate *cert,
++			       struct key *trust_keyring)
++{
++	const struct public_key *pk;
++	struct key *key;
++	int ret = 1;
++
++	if (!trust_keyring)
++		return -EOPNOTSUPP;
++
++	key = x509_request_asymmetric_key(trust_keyring,
++					  cert->issuer, strlen(cert->issuer),
++					  cert->authority,
++					  strlen(cert->authority));
++	if (!IS_ERR(key))  {
++		pk = key->payload.data;
++		ret = x509_check_signature(pk, cert);
++	}
++	return ret;
++}
++
++/*
+  * Attempt to parse a data blob for a key as an X509 certificate.
+  */
+ static int x509_key_preparse(struct key_preparsed_payload *prep)
+@@ -155,9 +233,13 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 	/* Check the signature on the key if it appears to be self-signed */
+ 	if (!cert->authority ||
+ 	    strcmp(cert->fingerprint, cert->authority) == 0) {
+-		ret = x509_check_signature(cert->pub, cert);
++		ret = x509_check_signature(cert->pub, cert); /* self-signed */
  		if (ret < 0)
  			goto error_free_cert;
- 	} else {
--		ret = x509_validate_trust(cert, get_system_trusted_keyring());
-+		ret = x509_validate_trust(cert,
-+					  get_system_or_owner_trusted_keyring());
- 		if (!ret)
- 			prep->trusted = 1;
++	} else {
++		ret = x509_validate_trust(cert, get_system_trusted_keyring());
++		if (!ret)
++			prep->trusted = 1;
  	}
+ 
+ 	/* Propose a description */
 diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-index 72665eb..f665c33 100644
+index 8dabc39..72665eb 100644
 --- a/include/keys/system_keyring.h
 +++ b/include/keys/system_keyring.h
-@@ -17,15 +17,20 @@
+@@ -17,7 +17,15 @@
  #include <linux/key.h>
  
  extern struct key *system_trusted_keyring;
--static inline struct key *get_system_trusted_keyring(void)
--{
--	return system_trusted_keyring;
--}
-+extern struct key *owner_trusted_keyring;
-+
-+extern struct key *get_system_or_owner_trusted_keyring(void);
-+extern void load_owner_identified_uefi_key(key_ref_t key);
-+
- #else
--static inline struct key *get_system_trusted_keyring(void)
-+static inline struct key *get_system_or_owner_trusted_keyring(void)
- {
- 	return NULL;
- }
-+
-+static void load_owner_identified_uefi_key(key_ref_t key)
+-
++static inline struct key *get_system_trusted_keyring(void)
 +{
++	return system_trusted_keyring;
++}
++#else
++static inline struct key *get_system_trusted_keyring(void)
++{
++	return NULL;
 +}
  #endif
  
  #endif /* _KEYS_SYSTEM_KEYRING_H */
-diff --git a/include/linux/key.h b/include/linux/key.h
-index cd0abb8..861843a 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -267,6 +267,10 @@ extern int wait_for_key_construction(struct key *key, bool intr);
- 
- extern int key_validate(const struct key *key);
- 
-+extern int key_match(key_ref_t key,
-+		     const char *type,
-+		     const char *description);
-+
- extern key_ref_t key_create_or_update(key_ref_t keyring,
- 				      const char *type,
- 				      const char *description,
-diff --git a/kernel/system_keyring.c b/kernel/system_keyring.c
-index 52ebc70..e9b14ac 100644
---- a/kernel/system_keyring.c
-+++ b/kernel/system_keyring.c
-@@ -19,11 +19,75 @@
- #include "module-internal.h"
- 
- struct key *system_trusted_keyring;
-+struct key *owner_trusted_keyring;
- EXPORT_SYMBOL_GPL(system_trusted_keyring);
- 
- extern __initconst const u8 system_certificate_list[];
- extern __initconst const unsigned long system_certificate_list_size;
- 
-+static int use_owner_trusted_keyring;
-+
-+static char *owner_keyid;
-+static int builtin_keyring;
-+static int __init default_keyring_set(char *str)
-+{
-+	if (!str)	/* default: builtin */
-+		return 1;
-+
-+	if (strcmp(str, "system") == 0)  /* use system keyring */
-+		;
-+	else if (strcmp(str, "builtin") == 0)  /* only builtin keys */
-+		builtin_keyring = 1;	
-+	else 
-+		owner_keyid = str;   /* owner local key 'id:xxxxxx' */
-+	return 1;
-+}
-+__setup("keyring=", default_keyring_set);
-+
-+/*
-+ * Load the owner identified key on the 'owner' trusted keyring.
-+ */
-+void load_owner_identified_uefi_key(key_ref_t key)
-+{
-+	if (!owner_keyid || use_owner_trusted_keyring)
-+		return;
-+
-+	if (!key_match(key, "asymmetric", owner_keyid))
-+		return;
-+
-+	if (key_link(owner_trusted_keyring, key_ref_to_ptr(key)) == 0) {
-+		set_bit(KEY_FLAG_TRUSTED_ONLY, &owner_trusted_keyring->flags);
-+		use_owner_trusted_keyring = 1;
-+		pr_notice("Loaded X.509 cert '%s' on .owner_keyring\n",
-+				  key_ref_to_ptr(key)->description);
-+	}
-+}
-+
-+static void load_owner_identified_builtin_key(key_ref_t key)
-+{
-+	if (!owner_keyid && !builtin_keyring)
-+		return;
-+
-+	if (!builtin_keyring && !key_match(key, "asymmetric", owner_keyid))
-+		return;
-+
-+	if (key_link(owner_trusted_keyring, key_ref_to_ptr(key)) == 0) {
-+		set_bit(KEY_FLAG_TRUSTED_ONLY, &owner_trusted_keyring->flags);
-+		use_owner_trusted_keyring = 1;
-+		pr_notice("Loaded X.509 cert '%s' on .owner_keyring\n",
-+				  key_ref_to_ptr(key)->description);
-+	}
-+}
-+
-+/*
-+ * Use the owner_trusted_keyring if available
-+ */
-+struct key *get_system_or_owner_trusted_keyring(void)
-+{
-+	return use_owner_trusted_keyring ? owner_trusted_keyring :
-+		system_trusted_keyring;
-+}
-+
- /*
-  * Load the compiled-in keys
-  */
-@@ -50,6 +114,25 @@ static __init int system_trusted_keyring_init(void)
- device_initcall(system_trusted_keyring_init);
- 
- /*
-+ * Load the owner trusted key
-+ */
-+static __init int owner_trusted_keyring_init(void)
-+{
-+	pr_notice("Initialize the owner trusted keyring\n");
-+
-+	owner_trusted_keyring =
-+		keyring_alloc(".owner_keyring",
-+			      KUIDT_INIT(0), KGIDT_INIT(0), current_cred(),
-+			      ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			      KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH),
-+			      KEY_ALLOC_NOT_IN_QUOTA, NULL);
-+	if (IS_ERR(owner_trusted_keyring))
-+		panic("Can't allocate owner trusted keyring\n");
-+	return 0;
-+}
-+device_initcall(owner_trusted_keyring_init);
-+
-+/*
-  * Load the compiled-in list of X.509 certificates.
-  */
- static __init int load_system_certificate_list(void)
-@@ -91,6 +174,8 @@ static __init int load_system_certificate_list(void)
- 		} else {
- 			pr_notice("Loaded X.509 cert '%s'\n",
- 				  key_ref_to_ptr(key)->description);
-+
-+			load_owner_identified_builtin_key(key);
- 			key_ref_put(key);
- 		}
- 		p += plen;
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 2048a11..b448ab1 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -701,6 +701,26 @@ void key_type_put(struct key_type *ktype)
- 	up_read(&key_types_sem);
- }
- 
-+/* 
-+ * Use the key type's match function to compare the key's id.
-+ */
-+int key_match(key_ref_t key, const char *type, const char *description)
-+{
-+	struct keyring_index_key index_key;
-+	int ret = 0;
-+
-+	index_key.type = key_type_lookup(type);
-+	if (IS_ERR(index_key.type))
-+		goto out;
-+
-+	if (index_key.type->match &&
-+	    index_key.type->match(key_ref_to_ptr(key), description))
-+		ret = 1;	
-+	key_type_put(index_key.type);
-+out:
-+	return ret;
-+}
-+
- /*
-  * Attempt to update an existing key.
-  *
 -- 
 1.8.1.4
 
