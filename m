@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaE1Ide (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:33:34 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44481 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754225AbaE1Idb convert rfc822-to-8bit (ORCPT
+	id S1754524AbaE1Ig5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:36:57 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41745 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754219AbaE1Igy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:33:31 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] pinctrl: Enable "power-source" to be extracted from DT files
-Date: Wed, 28 May 2014 10:36:17 +0200
-Message-ID: <1943407.eJZOu7V4pT@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CACRpkdbaWYgku0_n5CqGU8DAFnn-5jEJ64Mfh9fixB4mRPnfwg@mail.gmail.com>
-References: <CACRpkdZyLxMTSygRP6pD-mxghQ_D6tQ821tvn8GYw0Rnh9hZoQ@mail.gmail.com> <2480893.UEqfxe8meR@phil> <CACRpkdbaWYgku0_n5CqGU8DAFnn-5jEJ64Mfh9fixB4mRPnfwg@mail.gmail.com>
+	Wed, 28 May 2014 04:36:54 -0400
+Date: Wed, 28 May 2014 09:36:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ARM: ux500: Staticize ux500_soc_attr
+Message-ID: <20140528083649.GB10803@lee--X1>
+References: <1401248417-10146-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401248417-10146-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 28. Mai 2014, 10:15:43 schrieb Linus Walleij:
-> On Tue, May 27, 2014 at 3:09 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> > Am Dienstag, 27. Mai 2014, 09:27:36 schrieb Ivan T. Ivanov:
-> >> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >> 
-> >> Add "power-source" property to generic options used for DT parsing files.
-> >> This  enables drivers, which use generic pin configurations, to get the
-> >> value passed to this property.
-> > 
-> > I think the main problem here is, that pinconf-generic.h defines the
-> > power-
-> > source as having a "custom format". With DT as a hardware description,
-> > implementaton specific values do not work well - instead it should have a
-> > regular unit-value.
-> > 
-> > For the power-source I think volts could work well - as this is the main
-> > use- case for pinctrl I know. The regulator-binding uses microvolts,
-> > maybe it would be good use a similar unit.
+On Wed, 28 May 2014, Sachin Kamat wrote:
+
+> 'ux500_soc_attr' is local to this file. While at it also make it
+> const to match the argument list of device_create_file.
+
+What's going on Sachin?  I Acked v2 of this patch an hour ago, yet
+you've resent it as a v1 and without the Ack?
+
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  arch/arm/mach-ux500/cpu.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> (...)
-> 
-> >         pcfg_1v8 {
-> >         
-> >                 power-source = <1800000>;
-> >         
-> >         };
-> 
-> I don't think this is what it's meant for actually. In this case the thing
-> would be modeled as a regulator rather than some pin control option I
-> guess?
-> 
-> I think it's more like a selector, such as found on old amplifiers,
-> input source A, B or C? So it's just some discrete number.
+> diff --git a/arch/arm/mach-ux500/cpu.c b/arch/arm/mach-ux500/cpu.c
+> index db16b5a04ad5..dbb2970ee7da 100644
+> --- a/arch/arm/mach-ux500/cpu.c
+> +++ b/arch/arm/mach-ux500/cpu.c
+> @@ -125,7 +125,7 @@ static void __init soc_info_populate(struct soc_device_attribute *soc_dev_attr,
+>  	soc_dev_attr->revision = ux500_get_revision();
+>  }
+>  
+> -struct device_attribute ux500_soc_attr =
+> +static const struct device_attribute ux500_soc_attr =
+>  	__ATTR(process,  S_IRUGO, ux500_get_process,  NULL);
+>  
+>  struct device * __init ux500_soc_device_init(const char *soc_id)
 
-as I said, you know this better than me ;-)
-
-I was thinking more of these io-voltages, where one can select between say 1.8 
-and 3.3V for the pins.
-
-I have this somewhere on my todo list for the rockchips too.
-
-So essentially the pinctrl driver [as it is a pin-group specific setting] 
-should just export regulators for these voltage settings, without touching the 
-pinconfig itself, right?
-
-
-Thanks
-Heiko
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
