@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171AbaE1Pm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:42:57 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41555 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430AbaE1Pm4 (ORCPT
+	id S1754404AbaE1Pnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:43:47 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:62958 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358AbaE1Pnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:42:56 -0400
+	Wed, 28 May 2014 11:43:46 -0400
+Date: Wed, 28 May 2014 19:43:43 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Vince Weaver <vincent.weaver@maine.edu>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+Message-ID: <20140528154343.GI2570@moon>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+ <20140528135617.GA25750@amd.pavel.ucw.cz>
+ <20140528140632.GH2570@moon>
+ <20140528152011.GX11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
-References: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
-	<1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
-Date: Wed, 28 May 2014 23:42:55 +0800
-Message-ID: <CACVXFVO6uW3KoVPoeb+O0txuY2Ji6BO1Sob1e-g7NmZBv9MPBQ@mail.gmail.com>
-Subject: Re: [PATCH] bio: decrease bi_iter.bi_size by len in the fail path
-From: Ming Lei <tom.leiming@gmail.com>
-To: Dongsu Park <dongsu.park@profitbricks.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Jet Chen <jet.chen@intel.com>,
-        Maurizio Lombardi <mlombard@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528152011.GX11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dongsu,
+On Wed, May 28, 2014 at 05:20:11PM +0200, Peter Zijlstra wrote:
+> > > 
+> > > Pentium 4 's were not 64bit, were they?
+> > 
+> > Not all, but there were 64bit varians (Xeons iirc).
+> 
+> http://en.wikipedia.org/wiki/Pentium_d
+> 
+> consumer netburst chip with x86_64.
 
-On Wed, May 28, 2014 at 11:09 PM, Dongsu Park
-<dongsu.park@profitbricks.com> wrote:
-> From: Dongsu Park <dongsu.park@profitbricks.com>
->
-> Commit 3979ef4dcf3d1de55a560a3a4016c30a835df44d ("bio-modify-
-> __bio_add_page-to-accept-pages-that-dont-start-a-new-segment-v3")
-> introduced a regression as reported by Jet Chen.
-> That results in a kernel BUG at drivers/block/virtio_blk.c:166.
->
-> To fix that, bi_iter.bi_size must be decreased by len, before
-> recounting the number of physical segments.
->
-> Tested on with kernel 3.15.0-rc7-next-20140527 on qemu guest,
-> by running xfstests/ext4/271.
->
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Jet Chen <jet.chen@intel.com>
-> Cc: Maurizio Lombardi <mlombard@redhat.com>
-> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
-> ---
->  block/bio.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/block/bio.c b/block/bio.c
-> index 0443694ccbb4..67d7cba1e5fd 100644
-> --- a/block/bio.c
-> +++ b/block/bio.c
-> @@ -810,6 +810,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->         bvec->bv_len = 0;
->         bvec->bv_offset = 0;
->         bio->bi_vcnt--;
-> +       bio->bi_iter.bi_size -= len;
-
-Would you mind explaining why bi_iter.bi_size need to be
-decreased by 'len'? In the failure path, it wasn't added by
-'len', was it?
-
-
-Thanks,
--- 
-Ming Lei
+Yeah, thanks.
