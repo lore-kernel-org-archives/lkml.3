@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaE1J5C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:57:02 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33708 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaE1J47 (ORCPT
+	id S1753094AbaE1J5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:57:25 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:60715 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753065AbaE1J5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:56:59 -0400
-Date: Wed, 28 May 2014 11:57:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [patch 1/6] rtmutex: Fix deadlock detector for real
-In-Reply-To: <20140527180930.1e9b020e@gandalf.local.home>
-Message-ID: <alpine.DEB.2.02.1405281144150.21720@ionos.tec.linutronix.de>
-References: <20140522031841.797415507@linutronix.de> <20140522031949.725272460@linutronix.de> <20140527180930.1e9b020e@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 28 May 2014 05:57:23 -0400
+Message-ID: <1401271041.28714.22.camel@x220>
+Subject: Re: linux-next: build failure after merge of the final tree
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 28 May 2014 11:57:21 +0200
+In-Reply-To: <20140528194629.0757af1b@canb.auug.org.au>
+References: <20140528194629.0757af1b@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 May 2014 09:57:21.0504 (UTC) FILETIME=[37DF7E00:01CF7A5B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Steven Rostedt wrote:
-> On Thu, 22 May 2014 03:25:39 -0000
-> Thomas Gleixner <tglx@linutronix.de> wrote:
+On Wed, 2014-05-28 at 19:46 +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> >  	 * When deadlock detection is off then we check, if further
-> >  	 * priority adjustment is necessary.
-> >  	 */
-> > -	if (!detect_deadlock && waiter->prio == task->prio)
-> > -		goto out_unlock_pi;
-> > +	if (waiter->prio == task->prio) {
-> > +		if (!detect_deadlock)
-> > +			goto out_unlock_pi;
-> > +	}
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 > 
-> This too.
+> drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c:203:34: error: 'struct ieee80211_hdr' has no member named 'addr1'
+>            ieee->dev->name, header->addr1);
+>                                   ^
 > 
-> Although! if you want to micro-optimize the detect_deadlock case
-> where !detect_deadlock is false. You might want to reverse the order.
-> That way we don't need to dereference the ->prio for both waiter and
-> task before seeing that we don't go to the out_unlock_pi.
-> 
-> 	if (!detect_deadlock) {
-> 		if (waiter->prio == task->prio)
-> 			goto out_unlock_pi;
-> 	}
-> 
-> Hmm, or you did it this way for your "don't requeue" patch? Looking at
-> that one, it seems you did.
-> 
-> 	if (waiter->prio == task->prio) {
-> 		if (!detect_deadlock)
-> 			goto out_unlock_pi;
-> 		requeue = false;
-> 	}
-> 
-> Oh well. But for stable maybe have the optimized way? And change it
-> back when you add the requeue patch?
+> I can't easily see what caused this, so I just disabled the staging
+> tree driver:
 
-Right.
+That may be related to my "staging: rtl8192u: rename
+CONFIG_IEEE80211_CRYPT_TKIP" (see https://lkml.org/lkml/2014/5/26/531 .)
+My message states it was compile tested, but that would be on x86_64.
+Did it only break on powerpc or did powerpc hit this first?
 
-> > @@ -527,6 +538,10 @@ static int task_blocks_on_rt_mutex(struc
-> >  	unsigned long flags;
-> >  	int chain_walk = 0, res;
-> >  
-> > +	/* Early deadlock detection */
-> > +	if (detect_deadlock && owner == task)
-> > +		return -EDEADLK;
-> > +
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 28 May 2014 19:43:17 +1000
+> Subject: [PATCH] staging: rtl8192u: diable broken driver
 > 
-> This is an optimization, right? Does it belong for stable?
-
-It's kind of an optimization, but we really want to avoid enqueueing
-the task on its own pi waiter list in the first place. So I rather
-keep it for stable as well.
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/staging/rtl8192u/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/staging/rtl8192u/Kconfig b/drivers/staging/rtl8192u/Kconfig
+> index 3ee9d0d00fb6..ea5d02d8cca2 100644
+> --- a/drivers/staging/rtl8192u/Kconfig
+> +++ b/drivers/staging/rtl8192u/Kconfig
+> @@ -2,6 +2,7 @@ config RTL8192U
+>  	tristate "RealTek RTL8192U Wireless LAN NIC driver"
+>  	depends on PCI && WLAN && USB
+>  	depends on m
+> +	depends on BROKEN
+>  	select WIRELESS_EXT
+>  	select WEXT_PRIV
+>  	select CRYPTO
+> -- 
+> 2.0.0.rc4
 
 Thanks,
 
-	tglx
+
+Paul Bolle
+
