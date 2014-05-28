@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275AbaE1W5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:57:55 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:62151 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbaE1W5x (ORCPT
+	id S1751739AbaE1XAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:00:20 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:36630 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaE1XAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:57:53 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Brian Norris <computersforpeace@gmail.com>, linux-sh@vger.kernel.org
-Subject: [PATCH] SH: annotate code after BUG() as unreachable
-Date: Wed, 28 May 2014 15:57:32 -0700
-Message-Id: <1401317852-32386-1-git-send-email-computersforpeace@gmail.com>
+	Wed, 28 May 2014 19:00:18 -0400
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [PATCH V3] basic conversion to blk-mq
+Date: Thu, 29 May 2014 00:59:57 +0200
+Message-Id: <1401317998-8980-1-git-send-email-m@bjorling.me>
 X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This squashes some warnings:
+Hi Matthew and Keith,
 
-  CC      mm/bootmem.o
-mm/bootmem.c: In function 'mark_bootmem':
-mm/bootmem.c:379:1: warning: control reaches end of non-void function [-Wreturn-type]
+Here is an updated patch with most of the feedback fixed.
 
-  CC      kernel/sched/core.o
-kernel/sched/core.c: In function 'pick_next_task':
-kernel/sched/core.c:2610:1: warning: control reaches end of non-void function [-Wreturn-type]
+The patch is against Jens' 3.16/core tree. You may use the nvmemq_wip_review
+branch at:
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-sh@vger.kernel.org
----
- arch/sh/include/asm/bug.h | 1 +
- 1 file changed, 1 insertion(+)
+https://github.com/MatiasBjorling/linux-collab nvmemq_wip_review
 
-diff --git a/arch/sh/include/asm/bug.h b/arch/sh/include/asm/bug.h
-index dcf278075429..1ae948f309f2 100644
---- a/arch/sh/include/asm/bug.h
-+++ b/arch/sh/include/asm/bug.h
-@@ -48,6 +48,7 @@ do {							\
- 		   "i" (__FILE__),			\
- 		   "i" (__LINE__), "i" (0),		\
- 		   "i" (sizeof(struct bug_entry)));	\
-+	unreachable();					\
- } while (0)
- 
- #define __WARN_TAINT(taint)				\
+from v2:
+ * rebased on top of current 3.16/core.
+ * use blk-mq queue management for spreading io queues
+ * removed rcu handling and allocated all io queues up front for mgmt by blk-mq
+ * removed the need for hotplugging notification
+ * fixed flush data handling
+ * fixed double free of spinlock
+ * various cleanup
+
+Missing work on abortion and timeouts.
+
+Matias Bjørling (1):
+  NVMe: basic conversion to blk-mq
+
+ drivers/block/nvme-core.c | 1143 +++++++++++++++++++--------------------------
+ include/linux/nvme.h      |   11 +-
+ 2 files changed, 486 insertions(+), 668 deletions(-)
+
 -- 
 1.9.1
 
