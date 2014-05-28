@@ -1,106 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbaE1HC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:02:57 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:15377 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294AbaE1HCz (ORCPT
+	id S1754383AbaE1HDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:03:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60021 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754358AbaE1HDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:02:55 -0400
-Message-ID: <53858A06.8080507@huawei.com>
-Date: Wed, 28 May 2014 15:02:30 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone allocations
- (v2)
-References: <20140523193706.GA22854@amt.cnet> <20140526185344.GA19976@amt.cnet>
-In-Reply-To: <20140526185344.GA19976@amt.cnet>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 28 May 2014 03:03:07 -0400
+Message-ID: <1401260579.428.8.camel@dabdike>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Marian Marinov <mm@1h.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Richard Weinberger <richard@nod.at>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Jens Axboe <axboe@kernel.dk>
+Date: Wed, 28 May 2014 11:02:59 +0400
+In-Reply-To: <20140525222443.GA18410@mail.hallyn.com>
+References: <CAFLxGvwfbVdLUq0NrSrQNYH+bTzYLuCE2moooHH319qRfDkS6Q@mail.gmail.com>
+	 <20140515195010.GA22317@ubuntumail> <53751FFA.5040103@nod.at>
+	 <20140515202628.GB25896@mail.hallyn.com>
+	 <CALCETrWE72G86QKVZT2aqWsEmjwOPwsWMUNz5-JkDvbqaGbrvw@mail.gmail.com>
+	 <20140520141931.GH26600@ubuntumail> <537F04BF.3000301@1h.com>
+	 <1400850960.2332.4.camel@dabdike> <20140524222535.GD4232@ubuntumail>
+	 <1401005530.2322.43.camel@dabdike.int.hansenpartnership.com>
+	 <20140525222443.GA18410@mail.hallyn.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/27 2:53, Marcelo Tosatti wrote:
+On Mon, 2014-05-26 at 00:24 +0200, Serge E. Hallyn wrote:
+> Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> > On Sat, 2014-05-24 at 22:25 +0000, Serge Hallyn wrote:
+> > > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> > > > On Fri, 2014-05-23 at 11:20 +0300, Marian Marinov wrote:
+> > > > > On 05/20/2014 05:19 PM, Serge Hallyn wrote:
+> > > > > > Quoting Andy Lutomirski (luto@amacapital.net):
+> > > > > >> On May 15, 2014 1:26 PM, "Serge E. Hallyn" <serge@hallyn.com> wrote:
+> > > > > >>> 
+> > > > > >>> Quoting Richard Weinberger (richard@nod.at):
+> > > > > >>>> Am 15.05.2014 21:50, schrieb Serge Hallyn:
+> > > > > >>>>> Quoting Richard Weinberger (richard.weinberger@gmail.com):
+> > > > > >>>>>> On Thu, May 15, 2014 at 4:08 PM, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > > > > >>>>>>> Then don't use a container to build such a thing, or fix the build scripts to not do that :)
+> > > > > >>>>>> 
+> > > > > >>>>>> I second this. To me it looks like some folks try to (ab)use Linux containers for purposes where KVM
+> > > > > >>>>>> would much better fit in. Please don't put more complexity into containers. They are already horrible
+> > > > > >>>>>> complex and error prone.
+> > > > > >>>>> 
+> > > > > >>>>> I, naturally, disagree :)  The only use case which is inherently not valid for containers is running a
+> > > > > >>>>> kernel.  Practically speaking there are other things which likely will never be possible, but if someone 
+> > > > > >>>>> offers a way to do something in containers, "you can't do that in containers" is not an apropos response.
+> > > > > >>>>> 
+> > > > > >>>>> "That abstraction is wrong" is certainly valid, as when vpids were originally proposed and rejected,
+> > > > > >>>>> resulting in the development of pid namespaces.  "We have to work out (x) first" can be valid (and I can
+> > > > > >>>>> think of examples here), assuming it's not just trying to hide behind a catch-22/chicken-egg problem.
+> > > > > >>>>> 
+> > > > > >>>>> Finally, saying "containers are complex and error prone" is conflating several large suites of userspace
+> > > > > >>>>> code and many kernel features which support them.  Being more precise would, if the argument is valid, lend
+> > > > > >>>>> it a lot more weight.
+> > > > > >>>> 
+> > > > > >>>> We (my company) use Linux containers since 2011 in production. First LXC, now libvirt-lxc. To understand the
+> > > > > >>>> internals better I also wrote my own userspace to create/start containers. There are so many things which can
+> > > > > >>>> hurt you badly. With user namespaces we expose a really big attack surface to regular users. I.e. Suddenly a
+> > > > > >>>> user is allowed to mount filesystems.
+> > > > > >>> 
+> > > > > >>> That is currently not the case.  They can mount some virtual filesystems and do bind mounts, but cannot mount
+> > > > > >>> most real filesystems.  This keeps us protected (for now) from potentially unsafe superblock readers in the 
+> > > > > >>> kernel.
+> > > > > >>> 
+> > > > > >>>> Ask Andy, he found already lots of nasty things...
+> > > > > >> 
+> > > > > >> I don't think I have anything brilliant to add to this discussion right now, except possibly:
+> > > > > >> 
+> > > > > >> ISTM that Linux distributions are, in general, vulnerable to all kinds of shenanigans that would happen if an
+> > > > > >> untrusted user can cause a block device to appear.  That user doesn't need permission to mount it
+> > > > > > 
+> > > > > > Interesting point.  This would further suggest that we absolutely must ensure that a loop device which shows up in
+> > > > > > the container does not also show up in the host.
+> > > > > 
+> > > > > Can I suggest the usage of the devices cgroup to achieve that?
+> > > > 
+> > > > Not really ... cgroups impose resource limits, it's namespaces that
+> > > > impose visibility separations.  In theory this can be done with the
+> > > > device namespace that's been proposed; however, a simpler way is simply
+> > > > to rm the device node in the host and mknod it in the guest.  I don't
+> > > > really see host visibility as a huge problem: in a shared OS
+> > > > virtualisation it's not really possible securely to separate the guest
+> > > > from the host (only vice versa).
+> > > > 
+> > > > But I really don't think we want to do it this way.  Giving a container
+> > > > the ability to do a mount is too dangerous.  What we want to do is
+> > > > intercept the mount in the host and perform it on behalf of the guest as
+> > > > host root in the guest's mount namespace.  If you do it that way, it
+> > > 
+> > > That doesn't help the problem of guests being able to provide bad input
+> > > for (basically fuzz) the in-kernel filesystem code.  So apparently I'm
+> > > suffering a failure of the imagination - what problem exactly does it solve?
+> > 
+> > Well, there's two types of fuzzing, one is on sys_mount, which this
+> > would help with because the host filters the mount including all
+> > parameters and may even redo the mount (from direct to bind etc).
 > 
-> Zone specific allocations, such as GFP_DMA32, should not be restricted
-> to cpusets allowed node list: the zones which such allocations demand
-> might be contained in particular nodes outside the cpuset node list.
+> Sorry - I'm not *trying* to be dense, but am still not seeing it.
 > 
-> The alternative would be to not perform such allocations from
-> applications which are cpuset restricted, which is unrealistic.
+> Let's assume that we continue to be strict about what a container may
+> mount - let's say they can only mount using loopdev from blockdev images.
+> They have to own the file, as well as the mount target.  Whatever they
+> do with sys_mount, the only danger I see is the one where the filesystem
+> data is bad and causes a DOS or privilege escalation in some bad fs
+> reading code in the kernel.
 > 
-> Fixes KVM's alloc_page(gfp_mask=GFP_DMA32) with cpuset as explained.
-> 
+> What else is there?  Are you thinking of the sys_mount flags?  I guess
+> the void *data?  (Though I see that as the same problem;  we're just
+> not trusting the fs code to deal with badly formed data)
 
-Could you add the use case that you described in a previous email to
-the changelog?
+OK, so the problem you're worrying about is allowing the user to modify
+a block device and then mount it?  In that case, I agree, it doesn't
+matter who does the mount, because a hostile user is looking to exploit
+bad data on the device.  By and large, filesystems are tolerant to this
+type of fuzzing, but the strict solution is not to allow a container to
+mount any block devices it has direct access to.
 
-> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-> 
-> v2: fix slowpath as well (David Rientjes)
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 3d54c41..b70a336 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -2392,6 +2392,10 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
->  
+James
 
-Add a comment accordingly?
-
-	 *      in_interrupt - any node ok (current task context irrelevant)
-	 *      GFP_ATOMIC   - any node ok
-	 *      TIF_MEMDIE   - any node ok
-	 *      GFP_KERNEL   - any node in enclosing hardwalled cpuset ok
-	 *      GFP_USER     - only nodes in current tasks mems allowed ok.
-
->  	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
->  		return 1;
-> +#ifdef CONFIG_NUMA
-> +	if (gfp_zone(gfp_mask) < policy_zone)
-> +		return 1;
-> +#endif
->  	might_sleep_if(!(gfp_mask & __GFP_HARDWALL));
->  	if (node_isset(node, current->mems_allowed))
->  		return 1;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5dba293..dfea3dc 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2698,6 +2698,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  	unsigned int cpuset_mems_cookie;
->  	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
->  	struct mem_cgroup *memcg = NULL;
-> +	nodemask_t *cpuset_mems_allowed = &cpuset_current_mems_allowed;
->  
->  	gfp_mask &= gfp_allowed_mask;
->  
-> @@ -2726,9 +2727,14 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  retry_cpuset:
->  	cpuset_mems_cookie = read_mems_allowed_begin();
->  
-> +#ifdef CONFIG_NUMA
-> +	if (gfp_zone(gfp_mask) < policy_zone)
-> +		cpuset_mems_allowed = NULL;
-> +#endif
-> +
->  	/* The preferred zone is used for statistics later */
->  	first_zones_zonelist(zonelist, high_zoneidx,
-> -				nodemask ? : &cpuset_current_mems_allowed,
-> +				nodemask ? : cpuset_mems_allowed,
->  				&preferred_zone);
->  	if (!preferred_zone)
->  		goto out;
-> .
-> 
 
