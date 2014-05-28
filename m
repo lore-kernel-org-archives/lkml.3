@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaE1QnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:43:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25382 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503AbaE1QnN (ORCPT
+	id S1754923AbaE1Qnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:43:33 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:47084 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851AbaE1Qnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:43:13 -0400
-Date: Wed, 28 May 2014 19:42:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Takashi Sakamoto <o-takashi@sakamocchi.jp>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch 2/2] ALSA: fireworks: small leak on error path
-Message-ID: <20140528164246.GC1824@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 28 May 2014 12:43:31 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH v2] mfd: fix unintentional NULL check in menelaus_set_voltage()
+Date: Wed, 28 May 2014 18:43:51 +0200
+Message-Id: <1401295431-23833-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a typo here so we return directly instead of freeing "hwinfo".
+The struct menelaus_vtg pointer vtg cannot be NULL here
+so the condition is never true and if it ever was true
+it would lead to a NULL pointer dereference when we goto
+label set_voltage.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Before the below patch was applied the code was:
 
-diff --git a/sound/firewire/fireworks/fireworks.c b/sound/firewire/fireworks/fireworks.c
-index 8e856cc..996fdc4 100644
---- a/sound/firewire/fireworks/fireworks.c
-+++ b/sound/firewire/fireworks/fireworks.c
-@@ -157,7 +157,7 @@ get_hardware_info(struct snd_efw *efw)
- 	/* Hardware metering. */
- 	if (hwinfo->phys_in_grp_count  > HWINFO_MAX_CAPS_GROUPS ||
- 	    hwinfo->phys_out_grp_count > HWINFO_MAX_CAPS_GROUPS) {
--		return -EIO;
-+		err = -EIO;
- 		goto end;
- 	}
- 	efw->phys_in = hwinfo->phys_in;
+if (vtg == 0)
+
+The intention was to check if vtg_val is 0.
+
+commit 59a9f7a32adf6537b4e4db8ca204eeb77d7a634e
+("mfd: menelaus: Use NULL instead of 0")
+
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+v2: Changed (vtg_val == 0) to (!vtg_val)
+
+ drivers/mfd/menelaus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+index ad25bfa..40df76a 100644
+--- a/drivers/mfd/menelaus.c
++++ b/drivers/mfd/menelaus.c
+@@ -466,7 +466,7 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
+ 	struct i2c_client *c = the_menelaus->client;
+ 
+ 	mutex_lock(&the_menelaus->lock);
+-	if (!vtg)
++	if (!vtg_val)
+ 		goto set_voltage;
+ 
+ 	ret = menelaus_read_reg(vtg->vtg_reg);
+-- 
+1.7.10.4
+
