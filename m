@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaE1R7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:59:12 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:57371 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751158AbaE1R7K (ORCPT
+	id S1754701AbaE1SAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 14:00:23 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:58851 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407AbaE1SAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:59:10 -0400
-Message-ID: <1401299948.22486.51.camel@x220>
-Subject: Re: [PATCH] misc: atmel_pwm: only build for supported platforms
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Wed, 28 May 2014 19:59:08 +0200
-In-Reply-To: <20140528175439.GA18470@piout.net>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
-	 <1399560990-1402858-1-git-send-email-arnd@arndb.de>
-	 <1399560990-1402858-17-git-send-email-arnd@arndb.de>
-	 <536CA80A.60201@atmel.com> <1401279867.22486.6.camel@x220>
-	 <20140528155916.GA9793@piout.net> <1401293383.22486.18.camel@x220>
-	 <20140528175439.GA18470@piout.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 May 2014 17:59:09.0420 (UTC) FILETIME=[86556AC0:01CF7A9E]
-X-RcptDomain: vger.kernel.org
+	Wed, 28 May 2014 14:00:21 -0400
+Date: Wed, 28 May 2014 12:00:18 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
+        acooks@gmail.com, linux-kernel@vger.kernel.org, eddy0596@gmail.com,
+        linux@horizon.com
+Subject: Re: [PATCH v4 06/16] PCI: Quirk pci_for_each_dma_alias() for bridges
+Message-ID: <20140528180018.GS11907@google.com>
+References: <20140522230230.2856.40017.stgit@bling.home>
+ <20140522230801.2856.18629.stgit@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140522230801.2856.18629.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 19:55 +0200, Alexandre Belloni wrote:
-> On 28/05/2014 at 18:09:43 +0200, Paul Bolle wrote :
-> > On Wed, 2014-05-28 at 17:59 +0200, Alexandre Belloni wrote:
-> > > On 28/05/2014 at 14:24:27 +0200, Paul Bolle wrote :
-> > > > > >  config ATMEL_PWM
-> > > > > >  	tristate "Atmel AT32/AT91 PWM support"
-> > > > > > -	depends on HAVE_CLK && (AVR32 || ARCH_AT91 || COMPILE_TEST)
-> > > > > > +	depends on HAVE_CLK
-> > > > > > +	depends on AVR32 || AT91SAM9263 || AT91SAM9RL || AT91SAM9G45
-> > > > 
-> > > > Symbols AT91SAM9263, AT91SAM9RL, and AT91SAM9G45 do not seem to exist in
-> > > > next-20140528. Should these perhaps be SOC_AT91SAM9263, SOC_AT91SAM9RL,
-> > > > and SOC_AT91SAM9G45 and/or ARCH_AT91SAM9263, ARCH_AT91SAM9RL, and
-> > > > ARCH_AT91SAM9G45?
-> > > 
-> > > I wouldn't bother too much fixing that, this will definitely be remove
-> > > in 3.17. 
-> > 
-> > Are you talking about: 1) the problem this patch tried to fix; or 2) the
-> > problem it created?
-> > 
+On Thu, May 22, 2014 at 05:08:01PM -0600, Alex Williamson wrote:
+> Several PCIe-to-PCI bridges fail to provide a PCIe capability, causing
+> us to handle them as conventional PCI devices.  In some cases, this
+> may be correct, in others it's not.  Add a dev_flag bit to identify
+> devices to be handled as standard PCIe-to-PCI bridges.
+
+Can you expand on the "in some cases, this may be correct, in others it's
+not"?  Do you mean that for some *devices* it's correct to handle them as
+conventional PCI, or in some *situations* it's correct?  Something else?
+
+I'd like to either remove that sentence or add a little more information to
+make it useful.
+
+I guess this probably goes along with the tests in
+quirk_use_pcie_bridge_dma_alias().
+
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/pci/search.c |   10 ++++++++--
+>  include/linux/pci.h  |    2 ++
+>  2 files changed, 10 insertions(+), 2 deletions(-)
 > 
-> I'm removing the whole atmel_pwm driver so the CONFIG_ATMEL_PWM symbol
-> will be gone.
-
-So the patch we're discussing here will never be included in a release?
-
-
-Paul Bolle
-
+> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> index 2c19f3f..df38f73 100644
+> --- a/drivers/pci/search.c
+> +++ b/drivers/pci/search.c
+> @@ -88,8 +88,14 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
+>  				continue;
+>  			}
+>  		} else {
+> -			ret = fn(tmp, PCI_DEVID(tmp->bus->number, tmp->devfn),
+> -				 data);
+> +			if (tmp->dev_flags & PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS)
+> +				ret = fn(tmp,
+> +					 PCI_DEVID(tmp->subordinate->number,
+> +						   PCI_DEVFN(0, 0)), data);
+> +			else
+> +				ret = fn(tmp,
+> +					 PCI_DEVID(tmp->bus->number,
+> +						   tmp->devfn), data);
+>  			if (ret)
+>  				return ret;
+>  		}
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 9d4035c..85ab35e 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -173,6 +173,8 @@ enum pci_dev_flags {
+>  	PCI_DEV_FLAGS_ACS_ENABLED_QUIRK = (__force pci_dev_flags_t) (1 << 3),
+>  	/* Flag to indicate the device uses dma_alias_devfn */
+>  	PCI_DEV_FLAGS_DMA_ALIAS_DEVFN = (__force pci_dev_flags_t) (1 << 4),
+> +	/* Use a PCIe-to-PCI bridge alias even if !pci_is_pcie */
+> +	PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS = (__force pci_dev_flags_t) (1 << 5),
+>  };
+>  
+>  enum pci_irq_reroute_variant {
+> 
