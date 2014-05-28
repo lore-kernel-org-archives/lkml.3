@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaE1D3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 23:29:16 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39190 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000AbaE1D3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 23:29:15 -0400
-Message-ID: <1401247741.8262.21.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Wed, 28 May 2014 13:29:01 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753918AbaE1DaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 23:30:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57819 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaE1DaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 23:30:21 -0400
+Date: Tue, 27 May 2014 20:30:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
+        kvm@vger.kernel.org, konrad.wilk@oracle.com, kim.phillips@linaro.org,
+        stuart.yoder@freescale.com, agraf@suse.de, libvir-list@redhat.com,
+        iommu@lists.linux-foundation.org, christoffer.dall@linaro.org,
+        tech@virtualopensystems.com, kvmarm@lists.cs.columbia.edu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] PCI: Introduce new device binding path using
+ pci_dev.driver_override
+Message-ID: <20140528033019.GA11547@kroah.com>
+References: <20140520145136.28232.90707.stgit@bling.home>
+ <20140528030742.GO11907@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528030742.GO11907@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Tue, May 27, 2014 at 09:07:42PM -0600, Bjorn Helgaas wrote:
+> On Tue, May 20, 2014 at 08:53:21AM -0600, Alex Williamson wrote:
+> > The driver_override field allows us to specify the driver for a device
+> > rather than relying on the driver to provide a positive match of the
+> > device.  This shortcuts the existing process of looking up the vendor
+> > and device ID, adding them to the driver new_id, binding the device,
+> > then removing the ID, but it also provides a couple advantages.
+> > 
+> > First, the above existing process allows the driver to bind to any
+> > device matching the new_id for the window where it's enabled.  This is
+> > often not desired, such as the case of trying to bind a single device
+> > to a meta driver like pci-stub or vfio-pci.  Using driver_override we
+> > can do this deterministically using:
+> > 
+> > echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
+> > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
+> > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
+> > 
+> > Previously we could not invoke drivers_probe after adding a device
+> > to new_id for a driver as we get non-deterministic behavior whether
+> > the driver we intend or the standard driver will claim the device.
+> > Now it becomes a deterministic process, only the driver matching
+> > driver_override will probe the device.
+> > 
+> > To return the device to the standard driver, we simply clear the
+> > driver_override and reprobe the device:
+> > 
+> > echo > /sys/bus/pci/devices/0000:03:00.0/driver_override
+> > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
+> > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
+> > 
+> > Another advantage to this approach is that we can specify a driver
+> > override to force a specific binding or prevent any binding.  For
+> > instance when an IOMMU group is exposed to userspace through VFIO
+> > we require that all devices within that group are owned by VFIO.
+> > However, devices can be hot-added into an IOMMU group, in which case
+> > we want to prevent the device from binding to any driver (override
+> > driver = "none") or perhaps have it automatically bind to vfio-pci.
+> > With driver_override it's a simple matter for this field to be set
+> > internally when the device is first discovered to prevent driver
+> > matches.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> Greg, are you going to weigh in on this?  It does seem to solve some real
+> problems.  ISTR you had an opinion once, but I don't know your current
+> thoughts.
 
-Here's a pair of powerpc fixes for 3.15 which are also going to stable.
+Give me a few more days, still digging through my patch backlog...
 
-One's a fix for building with newer binutils (the problem currently only
-affects the BookE kernels but the affected macro might come back into
-use on BookS platforms at any time). Unfortunately, the binutils maintainer
-did a backward incompatible change to a construct that we use so we have
-to add Makefile check.
+thanks,
 
-The other one is a fix for CPUs getting stuck in kexec when running single
-threaded. Since we routinely use kexec on power (including in our newer
-bootloaders), I deemed that important enough.
-
-Cheers,
-Ben.
-
-The following changes since commit 8050936caf125fbe54111ba5e696b68a360556ba:
-
-  powerpc: irq work racing with timer interrupt can result in timer interrupt hang (2014-05-12 14:29:28 +1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to 011e4b02f1da156ac7fea28a9da878f3c23af739:
-
-  powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode (2014-05-28 13:24:26 +1000)
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      powerpc: Fix 64 bit builds with binutils 2.24
-
-Srivatsa S. Bhat (1):
-      powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode
-
- arch/powerpc/Makefile                  | 4 +++-
- arch/powerpc/include/asm/ppc_asm.h     | 7 ++++++-
- arch/powerpc/kernel/machine_kexec_64.c | 2 +-
- kernel/kexec.c                         | 8 ++++++++
- 4 files changed, 18 insertions(+), 3 deletions(-)
-
-
+greg k-h
