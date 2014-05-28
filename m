@@ -1,97 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaE1IkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:40:06 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29934 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754252AbaE1Ij6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:39:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,926,1392192000"; 
-   d="scan'208";a="437944179"
-Date: Wed, 28 May 2014 08:35:40 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, dirk.j.brandewie@intel.com,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Doug Smythies <dsmythies@telus.net>,
-        Stratos Karafotis <stratosk@semaphore.gr>
-Subject: Re: Performance regression in v3.14
-Message-ID: <20140528003540.GA2296@intel.com>
-References: <20140506163559.GA5308@localhost>
- <CAKohpokYEvazxm0-JJXPzq-4OgLXmROfaCMcgHDZwugChOxtsQ@mail.gmail.com>
- <536A3EE9.5050409@intel.com>
- <20140521090051.GO21412@localhost>
- <20140528075945.GA21705@localhost>
+	id S1754539AbaE1InS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:43:18 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:38511 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754245AbaE1InP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:43:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528075945.GA21705@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5EB3BFCD089AD643B9BB63439F5FD5E9012BF02A09@SHAASIEXM01.ASIA.ROOT.PRI>
+References: <1398287792-19831-1-git-send-email-linus.walleij@linaro.org>
+	<1398287792-19831-2-git-send-email-linus.walleij@linaro.org>
+	<CAGsJ_4wOdD53Fkf+_CtDqSg5Yvz-1kwaWzMJb357uq5BL9_-7Q@mail.gmail.com>
+	<CACRpkdbieXh8iHSCqai03vNbBZ2_2zV1SscXLY+4T9ZprWJEvQ@mail.gmail.com>
+	<CAGsJ_4ygjo_cUFR8bUoWsGrZYHSubam4WWcb-TjQJNjgy9rvKQ@mail.gmail.com>
+	<CACRpkdbQeJwoP7oOzbuhJeuFWxbB5RjFvzqqp8E_1x3=6p-hnQ@mail.gmail.com>
+	<5EB3BFCD089AD643B9BB63439F5FD5E9012BF02A09@SHAASIEXM01.ASIA.ROOT.PRI>
+Date: Wed, 28 May 2014 10:43:15 +0200
+Message-ID: <CACRpkdYng8+Y9jg1qMpwCgqT0SPeM8kr23c1bCQ5Rnvb+wm63g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] RFT: pinctrl: sirf: switch to using allocated state container
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Barry Song <Barry.Song@csr.com>
+Cc: Barry Song <baohua@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linux GPIO List <linux-gpio@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <DL-SHA-WorkGroupLinux@internal.csr.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I tried applying your (rejected) patch "intel_pstate: Remove C0
-> tracking" posted here:
-> 
-> 	https://lkml.org/lkml/2014/5/8/574
-> 
-> to v3.14.4 and it fixes the problem as expected.
-> 
-> So we have a commit fcb6a15c2e7e ("intel_pstate: Take core C0 time into
-> account for core busy calculation") that went into v3.14-rc2 (and was
-> even marked for *stable*) that first broke Greg KH's system:
-> 
-> 	https://lkml.org/lkml/2014/2/19/626
-> 
-> That was apparently fixed by e66c17683746 ("intel_pstate: Change
-> busy calculation to use fixed point math."), but still left v3.14
-> basically unusable for lower-intensity workloads such as my
-> bash-completion example and other reported regressions:
-> 
-> 	https://bugzilla.kernel.org/show_bug.cgi?id=75121
-> 
-> Sure there may be issues with v3.13 not hitting the lowest frequencies
-> but at least the system was *usable*.
-> 
-> In my opinion there's really no other option than to restore the 3.13
-> behaviour by effectively reverting fcb6a15c2e7e ("intel_pstate: Take
-> core C0 time into account for core busy calculation") until you have
-> figured out a way to take C0 into account without breaking things too
-> badly.
+On Tue, May 27, 2014 at 5:10 PM, Barry Song <Barry.Song@csr.com> wrote:
 
-Hi all,
+>>> after moving pinctrl name from sirfsoc-gpio* to dev_name(&pdev->dev) as below:
+>>> - err = gpiochip_add_pin_range(&sgpio->chip.gc, "sirfsoc-gpio*",
+>>> + err = gpiochip_add_pin_range(&sgpio->chip.gc, dev_name(&pdev->dev),
+>>>
+>>> Acked-by: Barry Song <Baohua.Song@csr.com>
+>
+>>Does this mean it works with that change so it's a Tested-by?
+>
+> yes. with the above change.
 
-My posts before and now are only relevant to why C0 tracking can't be
-removed. Maybe I need to elaborate on it a little bit more.
+OK applied to devel with that change, THANKS Barry, I really like
+the looks of the driver better after this change.
 
-In a nutshell, without C0 tracking, the intel_pstate is effectively performance
-governor in terms of frequency control. Why?
-
-Without C0 trakcing, the machinery of the freq control is as I formed:
-
-last_freq_average / last_requested_freq ==> setpoint
-
-which can be virtually formed into:
-
-last_freq_average / last_requested_freq * last_C0_pct ==> setpoint * last_C0_pct
-
-which said, the control machinery will increase the freuqency at ANY frequency at
-ANY C0_pct (which is the CPU utilization), since setpoint is less then 100
-percent. And a few iterations later, we will reach max (possible) frequency,
-then we are effectively performance governor (highest frequency all the time).
-
-So, sure, without C0 tracking, the performance issues should be fixed. But
-let's simply set highest frequency, that should be better.
-
-It is your decision whether we should remove C0 tracking as a no-other option fix
-right now. I am ok either way.
-
-Thanks,
-Yuyang
+Yours,
+Linus Walleij
