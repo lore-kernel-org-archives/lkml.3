@@ -1,86 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918AbaE1DaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 23:30:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57819 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaE1DaV (ORCPT
+	id S1753950AbaE1Daw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 23:30:52 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:63926 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923AbaE1Dat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 23:30:21 -0400
-Date: Tue, 27 May 2014 20:30:19 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
-        kvm@vger.kernel.org, konrad.wilk@oracle.com, kim.phillips@linaro.org,
-        stuart.yoder@freescale.com, agraf@suse.de, libvir-list@redhat.com,
-        iommu@lists.linux-foundation.org, christoffer.dall@linaro.org,
-        tech@virtualopensystems.com, kvmarm@lists.cs.columbia.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PCI: Introduce new device binding path using
- pci_dev.driver_override
-Message-ID: <20140528033019.GA11547@kroah.com>
-References: <20140520145136.28232.90707.stgit@bling.home>
- <20140528030742.GO11907@google.com>
+	Tue, 27 May 2014 23:30:49 -0400
+Message-ID: <53855867.7050800@linaro.org>
+Date: Tue, 27 May 2014 22:30:47 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528030742.GO11907@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: "mporter@linaro.org" <mporter@linaro.org>,
+        "bcm@fixthebug.org" <bcm@fixthebug.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "rjui@broadcom.com" <rjui@broadcom.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "rvaswani@codeaurora.org" <rvaswani@codeaurora.org>
+Subject: Re: [PATCH v4 1/5] devicetree: bindings: document Broadcom CPU enable
+ method
+References: <1400607830-10989-1-git-send-email-elder@linaro.org> <1400607830-10989-2-git-send-email-elder@linaro.org> <20140527114958.GC18476@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20140527114958.GC18476@e102568-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 09:07:42PM -0600, Bjorn Helgaas wrote:
-> On Tue, May 20, 2014 at 08:53:21AM -0600, Alex Williamson wrote:
-> > The driver_override field allows us to specify the driver for a device
-> > rather than relying on the driver to provide a positive match of the
-> > device.  This shortcuts the existing process of looking up the vendor
-> > and device ID, adding them to the driver new_id, binding the device,
-> > then removing the ID, but it also provides a couple advantages.
-> > 
-> > First, the above existing process allows the driver to bind to any
-> > device matching the new_id for the window where it's enabled.  This is
-> > often not desired, such as the case of trying to bind a single device
-> > to a meta driver like pci-stub or vfio-pci.  Using driver_override we
-> > can do this deterministically using:
-> > 
-> > echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > 
-> > Previously we could not invoke drivers_probe after adding a device
-> > to new_id for a driver as we get non-deterministic behavior whether
-> > the driver we intend or the standard driver will claim the device.
-> > Now it becomes a deterministic process, only the driver matching
-> > driver_override will probe the device.
-> > 
-> > To return the device to the standard driver, we simply clear the
-> > driver_override and reprobe the device:
-> > 
-> > echo > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > 
-> > Another advantage to this approach is that we can specify a driver
-> > override to force a specific binding or prevent any binding.  For
-> > instance when an IOMMU group is exposed to userspace through VFIO
-> > we require that all devices within that group are owned by VFIO.
-> > However, devices can be hot-added into an IOMMU group, in which case
-> > we want to prevent the device from binding to any driver (override
-> > driver = "none") or perhaps have it automatically bind to vfio-pci.
-> > With driver_override it's a simple matter for this field to be set
-> > internally when the device is first discovered to prevent driver
-> > matches.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On 05/27/2014 06:49 AM, Lorenzo Pieralisi wrote:
+> On Tue, May 20, 2014 at 06:43:46PM +0100, Alex Elder wrote:
+>> Broadcom mobile SoCs use a ROM-implemented holding pen for
+>> controlled boot of secondary cores.  A special register is
+>> used to communicate to the ROM that a secondary core should
+>> start executing kernel code.  This enable method is currently
+>> used for members of the bcm281xx and bcm21664 SoC families.
+>>
+>> The use of an enable method also allows the SMP operation vector to
+>> be assigned as a result of device tree content for these SoCs.
+>>
+>> Signed-off-by: Alex Elder <elder@linaro.org>
 > 
-> Greg, are you going to weigh in on this?  It does seem to solve some real
-> problems.  ISTR you had an opinion once, but I don't know your current
-> thoughts.
+> This is getting out of control, it is absolutely ghastly. I wonder how
+> I can manage to keep cpus.txt updated if anyone with a boot method
+> du jour adds into cpus.txt, and honestly in this specific case it is even
+> hard to understand why.
 
-Give me a few more days, still digging through my patch backlog...
+OK, in this message I'll focus on the particulars of this
+proposed binding.
 
-thanks,
+> Can't it be done with bindings for the relative register address space
+> (regmap ?) and platform code just calls the registers driver to set-up the
+> jump address ? It is platform specific code anyway there is no way you
+> can make this generic.
 
-greg k-h
+I want to clarify what you're after here.
+
+My aim is to add SMP support for a class of Broadcom SMP
+machines.  To do so, I'm told I need to use the technique
+of assigning the SMP operations vector as a result of
+identifying an enable method in the DT.
+
+For 32-bit ARM, there are no generic "enable-method" values.
+(I did attempt to create one for "spin-table" but that was
+rejected by Russell King.)  For the machines I'm trying to
+enable, secondary CPUS start out spinning in a ROM-based
+holding pen, and there is no need for a kernel-based one.
+
+However, like a spin-table/holding pen enable method, a
+memory location is required for coordination between the
+boot CPU running kernel code and secondary CPUs running ROM
+code.  My proposal specifies it using a special numeric
+property value named "secondary-boot-reg" in the "cpus"
+node in the DT.
+
+And as I understand it, the issue you have relates to how
+this memory location is specified.
+
+You suggest regmap.  I'm using a single 32-bit register,
+only at very early boot time, and thereafter access to
+it is meaningless.  It seems like overkill if it's only
+used for this purpose.  I could hide the register values
+in the code, but with the exception of that, the code I'm
+using is generic (in the context of this class of Broadcom
+machine).  I could specify the register differently somehow,
+in a different node, or with a different property.
+
+The bottom line here is I'm not sure whether I understand
+what you're suggesting, or perhaps why what you suggest is
+preferable.  I'm very open to suggestions, I just need it
+laid out a bit more detail in order to respond directly.
+
+Thanks.
+
+					-Alex
+
+> I really do not see the point in cluttering cpus.txt with this stuff, it
+> is a platform specific hack, and do not belong in generic bindings in my
+> opinion.
+> 
+> Thanks,
+> Lorenzo
+> 
+>> ---
+>>  Documentation/devicetree/bindings/arm/cpus.txt | 12 ++++++++++++
+>>  1 file changed, 12 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+>> index 333f4ae..c6a2411 100644
+>> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+>> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+>> @@ -185,6 +185,7 @@ nodes to be present and contain the properties described below.
+>>  			    "qcom,gcc-msm8660"
+>>  			    "qcom,kpss-acc-v1"
+>>  			    "qcom,kpss-acc-v2"
+>> +			    "brcm,bcm11351-cpu-method"
+>>  
+>>  	- cpu-release-addr
+>>  		Usage: required for systems that have an "enable-method"
+>> @@ -209,6 +210,17 @@ nodes to be present and contain the properties described below.
+>>  		Value type: <phandle>
+>>  		Definition: Specifies the ACC[2] node associated with this CPU.
+>>  
+>> +	- secondary-boot-reg
+>> +		Usage:
+>> +			Required for systems that have an "enable-method"
+>> +			property value of "brcm,bcm11351-cpu-method".
+>> +		Value type: <u32>
+>> +		Definition:
+>> +			Specifies the physical address of the register used to
+>> +			request the ROM holding pen code release a secondary
+>> +			CPU.  The value written to the register is formed by
+>> +			encoding the target CPU id into the low bits of the
+>> +			physical start address it should jump to.
+>>  
+>>  Example 1 (dual-cluster big.LITTLE system 32-bit):
+>>  
+>> -- 
+>> 1.9.1
+>>
+>>
+> 
+
