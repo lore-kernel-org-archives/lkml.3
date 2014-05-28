@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570AbaE1I54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:57:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47447 "EHLO arroyo.ext.ti.com"
+	id S1754630AbaE1I6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:58:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47451 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397AbaE1I5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:57:54 -0400
+	id S1754471AbaE1I6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:58:03 -0400
 From: Satish Patel <satish.patel@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <rob@landley.net>, <tony@atomide.com>
 CC: <grant.likely@linaro.org>, <robh+dt@kernel.org>,
         Satish Patel <satish.patel@ti.com>
-Subject: [PATCH v3 0/5] Smart Card(SC) interface, TI USIM & NxP SC phy driver
-Date: Wed, 28 May 2014 14:27:12 +0530
-Message-ID: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
+Subject: [PATCH v3 5/5] ARM: dts: AM43xx-epos-evm: DT entries  for ti-usim and phy
+Date: Wed, 28 May 2014 14:27:17 +0530
+Message-ID: <1401267437-22489-6-git-send-email-satish.patel@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
+References: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v2:
-* RFC comments are fixed for all 
+- Board specific DT entries for TI's USIM - smart card controller of AM43xx
+platfrom.These entries are used by USIM driver for various configurations.
 
-* ti-usim:
-** synchronous card support is added
-** Timeout added for ATR 
-** BWT configuration
-** softreset of IP at initialization added
-** PM suspend/resume support added
+- Shutdown line of NXP phy is maped to GPIO5. So enabling same to have support
+for NXP phy.
 
-* sc_phy : sync card support is added
-* ARM: dts: AM43xx: fck clock entry is added to usim
+- i2c2 pinmux configuration -  NxP tda8026 phy is connected to i2c2 lines
 
-v1 cover letter link#
-https://lkml.org/lkml/2014/1/6/250
+Signed-off-by: Satish Patel <satish.patel@ti.com>
+---
+ arch/arm/boot/dts/am43x-epos-evm.dts |   31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
-v2 cover letter link#
-https://lkml.org/lkml/2014/1/19/168
-
-Satish Patel (5):
-  sc_phy:SmartCard(SC) PHY interface to SC controller
-  misc: tda8026: Add NXP TDA8026 PHY driver
-  char: ti-usim: Add driver for USIM module on AM43xx
-  ARM: dts: AM43xx: DT entries added for ti-usim
-  ARM: dts: AM43xx-epos-evm: DT entries  for ti-usim and phy
-
- Documentation/devicetree/bindings/misc/tda8026.txt |   19 +
- .../devicetree/bindings/ti-usim/ti-usim.txt        |   32 +
- Documentation/sc_phy.txt                           |  171 ++
- arch/arm/boot/dts/am4372.dtsi                      |   12 +
- arch/arm/boot/dts/am43x-epos-evm.dts               |   31 +
- drivers/char/Kconfig                               |    7 +
- drivers/char/Makefile                              |    1 +
- drivers/char/ti-usim-hw.h                          |  864 ++++++++
- drivers/char/ti-usim.c                             | 2213 ++++++++++++++++++++
- drivers/misc/Kconfig                               |    7 +
- drivers/misc/Makefile                              |    1 +
- drivers/misc/tda8026.c                             | 1258 +++++++++++
- include/linux/sc_phy.h                             |  136 ++
- include/linux/ti-usim.h                            |  111 +
- 14 files changed, 4863 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/tda8026.txt
- create mode 100644 Documentation/devicetree/bindings/ti-usim/ti-usim.txt
- create mode 100644 Documentation/sc_phy.txt
- create mode 100644 drivers/char/ti-usim-hw.h
- create mode 100644 drivers/char/ti-usim.c
- create mode 100644 drivers/misc/tda8026.c
- create mode 100644 include/linux/sc_phy.h
- create mode 100644 include/linux/ti-usim.h
-
+diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
+index 167dbc8..ecc8b1a 100644
+--- a/arch/arm/boot/dts/am43x-epos-evm.dts
++++ b/arch/arm/boot/dts/am43x-epos-evm.dts
+@@ -115,6 +115,18 @@
+ 			>;
+ 		};
+ 
++		usim0_default: usim0_default {
++		       pinctrl-single,pins = <
++			       /* USIM 0 */
++			       0x1B4 (SLEWCTRL_FAST | PULL_DISABLE | MUX_MODE8)		/* CLK0  */
++			       0x1B0 (SLEWCTRL_FAST | PULL_DISABLE | MUX_MODE8)		/* CLK1  */
++			       0x1B8 (SLEWCTRL_FAST | INPUT_EN | PULL_DISABLE | MUX_MODE8)	/* DATA0 */
++			       0x1BC (SLEWCTRL_FAST | INPUT_EN | PULL_DISABLE | MUX_MODE8)	/* DATA1 */
++			       0x1C8 (SLEWCTRL_FAST | INPUT_EN | PULL_UP | MUX_MODE8)		/* IRQn  */
++			       >;
++	       };
++
++
+ 		spi0_pins: pinmux_spi0_pins {
+ 			pinctrl-single,pins = <
+ 				0x150 (PIN_INPUT | MUX_MODE0)           /* spi0_clk.spi0_clk */
+@@ -238,10 +250,24 @@
+ 	};
+ };
+ 
++&usim0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&usim0_default>;
++	phy = <&tda8026>;
++	phy-slots = <1>;
++	status = "okay";
++};
++
+ &i2c2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&i2c2_pins>;
+ 	status = "okay";
++	tda8026: tda8026@48 {
++		compatible = "nxp,tda8026";
++		reg = <0x48>;
++		shutdown-gpio = <&gpio5 19 GPIO_ACTIVE_HIGH>;   /* Bank5, pin19 */
++		interrupts = <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
++	};
+ };
+ 
+ &gpio0 {
+@@ -260,6 +286,11 @@
+ 	status = "okay";
+ };
+ 
++&gpio5 {
++	status = "okay";
++};
++
++
+ &elm {
+ 	status = "okay";
+ };
 -- 
 1.7.9.5
 
