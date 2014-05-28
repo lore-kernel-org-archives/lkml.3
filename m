@@ -1,162 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161AbaE1R26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:28:58 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:49957 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaE1R24 (ORCPT
+	id S1752060AbaE1RhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:37:22 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:48722 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751550AbaE1RhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:28:56 -0400
-Date: Wed, 28 May 2014 22:58:49 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] bq27x00_battery: Introduce the use of the managed version of
- kzalloc
-Message-ID: <20140528172849.GA5614@himangi-Dell>
+	Wed, 28 May 2014 13:37:21 -0400
+Date: Wed, 28 May 2014 13:37:18 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [RFC][PATCH] tracing: Print nasty banner when trace_printk() is
+ in use
+Message-ID: <20140528133718.160a4754@gandalf.local.home>
+In-Reply-To: <20140528172239.GX30445@twins.programming.kicks-ass.net>
+References: <20140528131440.2283213c@gandalf.local.home>
+	<20140528172239.GX30445@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves data allocated using kzalloc to managed data allocated
-using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
-functions for both platform and i2c drivers. Also, the unecessary
-variable ret and labels batt_failed3, err_free were removed.
+On Wed, 28 May 2014 19:22:39 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-The following Coccinele script was used for making the change:
+> On Wed, May 28, 2014 at 01:14:40PM -0400, Steven Rostedt wrote:
+> > 
+> > trace_printk() is used to debug fast paths within the kernel. Places
+> > that gets called in any context (interrupt or NMI) or thousands of
+> > times a second. Something you do not want to do with a printk().
+> > 
+> > In order to make it completely lockless as it needs a temporary buffer
+> > to handle some of the string formatting, a page is created per cpu for
+> > every context (four per cpu; normal, softirq, irq, NMI).
+> > 
+> > Since trace_printk() should only be used for debugging purposes,
+> > there's no reason to waste memory on these buffers on a production
+> > system. That means, trace_printk() should never be used unless a
+> > developer is debugging their kernel. There's macro magic to allocate
+> > the buffers if trace_printk() is used anywhere in the kernel.
+> > 
+> > To help enforce that trace_printk() isn't used outside of development,
+> > when it is used, a nasty banner is displayed on bootup (or when a module
+> > is loaded that uses trace_printk() and the kernel core does not).
+> > 
+> > Here's the banner:
+> > 
+> >  ****************************************
+> >  ** NOTICE NOTICE NOTICE NOTICE NOTICE **
+> >  ** trace_printk() being used.         **
+> >  ** Allocating extra memory for it     **
+> >  ****************************************
+> > 
+> > Hmm, maybe I should add "Not for production use" to scare people even
+> > more?
+> 
+> Does that really stop people from doing stupid? Wouldn't it be better to
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
+Scary banners usually do. Perhaps this isn't scary enough.
 
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
+> make sure nobody merges a trace_printk() user in mainline? You can set
+> up a commit hook and check for +.*trace_printk or so.
 
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
+Of course, but that requires me to monitory it. It may be too late when
+I notice it.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/power/bq27x00_battery.c | 25 +++++--------------------
- 1 file changed, 5 insertions(+), 20 deletions(-)
+Nothing prevents me from doing both :-)
 
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index b309713..a0f205b 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -25,6 +25,7 @@
-  * http://www.ti.com/product/bq27425-g1
-  */
- 
-+#include <linux/device.h>
- #include <linux/module.h>
- #include <linux/param.h>
- #include <linux/jiffies.h>
-@@ -804,7 +805,7 @@ static int bq27x00_battery_probe(struct i2c_client *client,
- 		goto batt_failed_1;
- 	}
- 
--	di = kzalloc(sizeof(*di), GFP_KERNEL);
-+	di = devm_kzalloc(&client->dev, sizeof(*di), GFP_KERNEL);
- 	if (!di) {
- 		dev_err(&client->dev, "failed to allocate device info data\n");
- 		retval = -ENOMEM;
-@@ -819,14 +820,12 @@ static int bq27x00_battery_probe(struct i2c_client *client,
- 
- 	retval = bq27x00_powersupply_init(di);
- 	if (retval)
--		goto batt_failed_3;
-+		goto batt_failed_2;
- 
- 	i2c_set_clientdata(client, di);
- 
- 	return 0;
- 
--batt_failed_3:
--	kfree(di);
- batt_failed_2:
- 	kfree(name);
- batt_failed_1:
-@@ -849,8 +848,6 @@ static int bq27x00_battery_remove(struct i2c_client *client)
- 	idr_remove(&battery_id, di->id);
- 	mutex_unlock(&battery_mutex);
- 
--	kfree(di);
--
- 	return 0;
- }
- 
-@@ -933,7 +930,6 @@ static int bq27000_battery_probe(struct platform_device *pdev)
- {
- 	struct bq27x00_device_info *di;
- 	struct bq27000_platform_data *pdata = pdev->dev.platform_data;
--	int ret;
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "no platform_data supplied\n");
-@@ -945,7 +941,7 @@ static int bq27000_battery_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	di = kzalloc(sizeof(*di), GFP_KERNEL);
-+	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
- 	if (!di) {
- 		dev_err(&pdev->dev, "failed to allocate device info data\n");
- 		return -ENOMEM;
-@@ -959,16 +955,7 @@ static int bq27000_battery_probe(struct platform_device *pdev)
- 	di->bat.name = pdata->name ?: dev_name(&pdev->dev);
- 	di->bus.read = &bq27000_read_platform;
- 
--	ret = bq27x00_powersupply_init(di);
--	if (ret)
--		goto err_free;
--
--	return 0;
--
--err_free:
--	kfree(di);
--
--	return ret;
-+	return bq27x00_powersupply_init(di);
- }
- 
- static int bq27000_battery_remove(struct platform_device *pdev)
-@@ -977,8 +964,6 @@ static int bq27000_battery_remove(struct platform_device *pdev)
- 
- 	bq27x00_powersupply_unregister(di);
- 
--	kfree(di);
--
- 	return 0;
- }
- 
--- 
-1.9.1
-
+-- Steve
