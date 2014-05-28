@@ -1,93 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaE1SvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 14:51:08 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45861 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795AbaE1SvH (ORCPT
+	id S1755194AbaE1SwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 14:52:15 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:34516 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaE1SwO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 14:51:07 -0400
-Date: Wed, 28 May 2014 19:50:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: carlo@caione.org, Boris Brezillon <boris@free-electrons.com>,
-        lgirdwood@gmail.com, lee.jones@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Message-ID: <20140528185051.GB22488@sirena.org.uk>
-References: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
- <1401297069-7423-4-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 28 May 2014 14:52:14 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BwCQnh7xodEAoBMC"
-Content-Disposition: inline
-In-Reply-To: <1401297069-7423-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Cookie: I'm having an emotional outburst!!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/5] regulator: axp20x: Update the bindings to use a
- local parent regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+To: Saravana Kannan <skannan@codeaurora.org>,
+        "Peter De Schrijver" <pdeschrijver@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <53862142.8080006@codeaurora.org>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1400842772-4862-1-git-send-email-pdeschrijver@nvidia.com>
+ <537FCAA0.6080106@codeaurora.org>
+ <20140526111453.GE5961@tbergstrom-lnx.Nvidia.com>
+ <53862142.8080006@codeaurora.org>
+Message-ID: <20140528185210.10062.16299@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [RFC PATCH] clk: flatten clk tree in debugfs
+Date: Wed, 28 May 2014 11:52:10 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Saravana Kannan (2014-05-28 10:47:46)
+> On 05/26/2014 04:14 AM, Peter De Schrijver wrote:
+> > On Sat, May 24, 2014 at 12:24:32AM +0200, Saravana Kannan wrote:
+> >> On 05/23/2014 03:59 AM, Peter De Schrijver wrote:
+> >>> This patch flattens the clk tree in CCF debugfs. Instead of representing the
+> >>> clocks and their hierarchy as a directory structure under
+> >>> /sys/kernel/debug/clk, each clock gets a single directory directly under
+> >>> /sys/kernel/debug/clk.
+> >>>
+> >>> While this may seem strange, here's way I think this is the right thing to do:
+> >>>
+> >>> 1) a directory structure cannot be 'snapshotted' atomically, therefore it's
+> >>>      not in general possible to get a consistent view of the clocktree, because
+> >>>      clocks can be reparented at any time. This was solved by adding clk_dump
+> >>>      and clk_summary, which do guarantee an atomic snapshot of the tree.
+> >>>      Therefore I think the directory structure doesn't add any value.
+> >>>
+> >>> 2) When writing userspace programs which use the files in the clock
+> >>>      directories (eg. for testing purposes), it's impossible to know for sure
+> >>>      where a certain clock will be, because it might have been reparented by the
+> >>>      time you figured out the path from clk_dump. This makes writing such
+> >>>      programs more difficult than it should be.
+> >>>
+> >>> So because the directory structure doesn't give any information we don't
+> >>> already provide by other means and it makes certain usecases more difficult
+> >>> than the should be, I think we should move to a flat directory containing
+> >>> one subdir per clock.
+> >>
+> >> Completely agree and a huge ACK to this idea.
+> >>
+> >
+> > Thanks.
+> >
+> >>>
+> >>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> >>> ---
+> >>>    drivers/clk/clk.c |   54 +++-------------------------------------------------
+> >>>    1 files changed, 4 insertions(+), 50 deletions(-)
+> >>>
+> >>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> >>> index dff0373..53c6b4f 100644
+> >>> --- a/drivers/clk/clk.c
+> >>> +++ b/drivers/clk/clk.c
+> >>> @@ -306,7 +306,7 @@ static int clk_debug_create_subtree(struct clk *clk, struct dentry *pdentry)
+> >>>             goto out;
+> >>>
+> >>>     hlist_for_each_entry(child, &clk->children, child_node)
+> >>> -           clk_debug_create_subtree(child, clk->dentry);
+> >>> +           clk_debug_create_subtree(child, pdentry);
+> >>>
+> >>>     ret = 0;
+> >>>    out:
+> >>> @@ -326,29 +326,20 @@ out:
+> >>>     */
+> >>>    static int clk_debug_register(struct clk *clk)
+> >>>    {
+> >>> -   struct clk *parent;
+> >>>     struct dentry *pdentry;
+> >>>     int ret = 0;
+> >>>
+> >>>     if (!inited)
+> >>>             goto out;
+> >>>
+> >>> -   parent = clk->parent;
+> >>> -
+> >>>     /*
+> >>>      * Check to see if a clk is a root clk.  Also check that it is
+> >>>      * safe to add this clk to debugfs
+> >>>      */
+> >>> -   if (!parent)
+> >>> -           if (clk->flags & CLK_IS_ROOT)
+> >>> -                   pdentry = rootdir;
+> >>> -           else
+> >>> -                   pdentry = orphandir;
+> >>> +   if (clk->flags & CLK_IS_ROOT)
+> >>> +           pdentry = rootdir;
+> >>>     else
+> >>> -           if (parent->dentry)
+> >>> -                   pdentry = parent->dentry;
+> >>> -           else
+> >>> -                   goto out;
+> >>> +           pdentry = orphandir;
+> >>
+> >> I'm confused by this code. Shouldn't pdentry always be the same? Do we
+> >> need a dir for orphans? Also, I'm not sure the code is actually right?
+> >
+> > Indeed. This code is most likely wrong... I don't have a strong opinion
+> > if we need an orphan dir or if we can just have a file to list orphaned
+> > clocks.
+> I don't have a strong opinion either. A file is probably safer in case 
+> we add debug files that allow changes to the clock. In which case, we 
+> don't want orphan clocks to be modifiable.
+> 
+> > I would still like to be able to see if there are orphaned clocks.
+> Agree
 
---BwCQnh7xodEAoBMC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, easy orphan clock detection should not go away. How about an
+orphan_summary sysfs file? That means that orphan clocks will still get
+their own directory under the newly flattened hierarchy, we can remove
+the orphans directory completely and it is still easy to find orphan
+regressions with a quick `cat /sys/kernel/debug/clk/orphan_summary`.
 
-On Wed, May 28, 2014 at 07:11:07PM +0200, Maxime Ripard wrote:
+> 
+> > You could argue that the same race exists for the orphan dir. It is possible
+> > for the parent to be registered while you're traversing the orphan dir and
+> > cause a clock to move around. In practice this seems rather unlikely to happen
+> > to me?
+> I think you read too much into my comment. I wasn't in any way against 
+> knowing orphaned clocks from debugfs. I was just referring to that 
+> specific point in code, the clock might always need to pick the same 
+> dentry. I might be wrong about the code too (I just looked at the diff).
+> 
+> 
+> >> Looks like you are putting everything but the root into orphandir?
+> >>
+> >
+> > Yes...
+> 
+> Now I'm confused. Does some other code path unorphan and move them into 
+> the clock debug "root" dir later on?
 
->  		axp_vcore_reg: dcdc2 {
-> +			vin-supply = <&axp_ipsout_reg>;
+Yes. See drivers/clk/clk.c, lines 1860-1870 in the clk-next branch.
 
->  		axp_ddr_reg: dcdc3 {
-> +			vin-supply = <&axp_ipsout_reg>;
+> 
+> Mike, others,
+> 
+> Any objections to this idea? If there's not much opposition, then maybe 
+> Peter can actually spend time fixing and testing this patch?
 
->  		axp_rtc_reg: ldo1 {
-> +			vin-supply = <&axp_ipsout_reg>;
+Idea seems fine. I had actually considered removing the hiearchal
+directory structure completely with the advent of clk_dump and
+clk_summary, but if there is value in the flattened directory structure
+then I'm all for it.
 
->  		axp_analog_reg: ldo2 {
-> +			vin-supply = <&axp_ipsout_reg>;
+Regards,
+Mike
 
->  		axp_pll_reg: ldo3 {
-> +			vin-supply = <&axp_ipsout_reg>;
-
->  		axp_hdmi_reg: ldo4 {
-> +			vin-supply = <&axp_ipsout_reg>;
-
->  		axp_mic_reg: ldo5 {
-> +			vin-supply = <&axp_ipsout_reg>;
-
-This is saying that every single regulator on the device is powered by a
-(presumably) single input called "vin".  This would certainly be an
-unusual package design...  As ever the name of the supply should follow
-the name of the pin on the device.
-
---BwCQnh7xodEAoBMC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThjAIAAoJELSic+t+oim90SgP/3Ci9DJGAzupCvPpELYOY5Pi
-tporQczFwME3uxq/YHrDNuFQ01Gj1/1/Vw1AiFrKWVDYbIvc1Jh8XZDTQvJiDBOH
-wXyuE2KsuL/mqfp8hRew9wjTyrqQRLDv+KG/yrxsnj1Xf7vXBb3UrgVe3TJcfNAz
-AGMmJZUoNw8S9h15m5pZSVat0tYppprP8RXz0PvBXOjaPmxcXwpO5Swpm6XObNCz
-5GwFhN/47viFFZaYZZjoCwxT5+UqdAmx1BcN+xGAgOB62zpClcDHyFXZ8nyDARum
-XsvVCr3Q77cDZmpLXJiTOM9Hqu3cmRNopBwCGu0m7r0WLS9mfR/EYf+2vj05uvYQ
-sWn9SIkwhlq11icxnQ6FFuwNwgKWttqXN1Rnl2egGLR2JqeFjkwjLBAExtOY6JFQ
-ni65t/EOInGrr4i3y+y0pSAcflHZHPhQkMGXYDAwQl5vSs1Jy1MiGY1hbrX4xtj0
-ZbT98EHW3udSv4LpTauwrcuogv3MkRNZ30DS5NLYUn53+iJS8wsUaPjIJFTKkIkD
-cyRnblrc+1I2bsQrg0aGlRz0F6Pcc8HXlTl87tXJv2WiLGVM8rXZ9k9xPMQazvJO
-E8I57R4A0AfMoZQoPlkF8q74gmc6hXW1ZI3Yhx8RHj8CXlrOLQiy6gv8dgxPKCTh
-3Vawei3lEKRYj2IEUhP1
-=EKbD
------END PGP SIGNATURE-----
-
---BwCQnh7xodEAoBMC--
+> 
+> -Saravana
+> 
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
