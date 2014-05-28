@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbaE1UsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:48:09 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:52211 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751696AbaE1UsG (ORCPT
+	id S932323AbaE1UsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:48:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40946 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaE1UsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:48:06 -0400
-Message-ID: <1401310082.6186.16.camel@x220>
-Subject: Re: linux-next: build failure after merge of the final tree
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 May 2014 22:48:02 +0200
-In-Reply-To: <20140528204232.GA8224@kroah.com>
-References: <20140528194629.0757af1b@canb.auug.org.au>
-	 <1401271041.28714.22.camel@x220> <1401272095.28714.30.camel@x220>
-	 <1401308488.6186.10.camel@x220> <20140528204232.GA8224@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 May 2014 20:48:03.0271 (UTC) FILETIME=[1E945D70:01CF7AB6]
-X-RcptDomain: vger.kernel.org
+	Wed, 28 May 2014 16:48:10 -0400
+Date: Wed, 28 May 2014 13:51:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fence: Use smp_mb__before_atomic()
+Message-ID: <20140528205145.GB10468@kroah.com>
+References: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 13:42 -0700, Greg KH wrote:
-> Either is fine with me, I can revert it, or apply a fix, which ever you
-> want, just let me know.
+On Wed, May 28, 2014 at 04:26:32PM +0200, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atomic())
+> deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}*()
+> functions in favour of the unified smp_mb__{before,after}_atomic().
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  drivers/base/fence.c | 4 ++--
 
-Well, a proper fix would make this whole episode worthwhile. But if I
-can't come up with anything that actually builds in a day or two it'll
-have to be a revert. If that exceeds your patience you're free to hand
-me a shorter deadline.
+Where does this file come from?  I've not seen it before, and it's not
+in my tree.
 
+confused,
 
-Paul Bolle
-
+greg k-h
