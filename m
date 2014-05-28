@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaE1NM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:12:27 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27877 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188AbaE1NMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:12:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,928,1392192000"; 
-   d="scan'208";a="546151530"
-Date: Wed, 28 May 2014 16:11:36 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140528131136.GA1643@lahna.fi.intel.com>
-References: <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
- <20140526182644.GP18016@ZenIV.linux.org.uk>
- <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
- <20140527014054.GR18016@ZenIV.linux.org.uk>
- <20140527031415.GS18016@ZenIV.linux.org.uk>
- <20140527040026.GT18016@ZenIV.linux.org.uk>
- <20140527070409.GA1801@lahna.fi.intel.com>
- <20140528031955.GW18016@ZenIV.linux.org.uk>
- <20140528073751.GB1757@lahna.fi.intel.com>
- <20140528115701.GY18016@ZenIV.linux.org.uk>
+	id S1753343AbaE1NND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:13:03 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:58040
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230AbaE1NNB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:13:01 -0400
+Date: Wed, 28 May 2014 15:12:59 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140528131259.GA31213@mail.hallyn.com>
+References: <20140516140607.GA23902@ubuntu-hedt>
+ <20140516185749.GA5131@kroah.com>
+ <1400268515.2221.91.camel@dabdike.int.hansenpartnership.com>
+ <20140516201841.GC23902@ubuntu-hedt>
+ <87mwedfh7c.fsf@x220.int.ebiederm.org>
+ <20140520142103.GC137220@ubuntu-hedt>
+ <87y4xubxmm.fsf@x220.int.ebiederm.org>
+ <20140521223319.GF29211@ubuntumail>
+ <87ioow9ls9.fsf@x220.int.ebiederm.org>
+ <20140528092655.GD19433@ubuntu-mba51>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140528115701.GY18016@ZenIV.linux.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140528092655.GD19433@ubuntu-mba51>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 12:57:01PM +0100, Al Viro wrote:
-> On Wed, May 28, 2014 at 10:37:51AM +0300, Mika Westerberg wrote:
+Quoting Seth Forshee (seth.forshee@canonical.com):
+> On Fri, May 23, 2014 at 03:23:50PM -0700, Eric W. Biederman wrote:
+> > Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+> > 
+> > > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> > >> 
+> > >> 
+> > >> >> Ultimately the technical challenge is how do we create a block device
+> > >> >> that is safe for a user who does not have any capabilities to use, and
+> > >> >> what can we do with that block device to make it useful.
+> > >> >
+> > >> > Yes, and I'd like to get started solving those challenges. But I also
+> > >> > don't think we can address these two points (support partition blkdevs,
+> > >> > help prevent more priveleged users from using a namespace's loop
+> > >> > devices) sufficiently while having an implementation completely
+> > >> > contained within the loop driver as Greg is requesting.
+> > >> 
+> > >> My key take away from the conversation is that we should reduce the
+> > >> scope of what is being done to something that makes sense and the
+> > >> propblems are immediately visible.
+> > >> 
+> > >> Part of me would like to suggest that fuse and it's ability to imitate
+> > >> device nodes might be a more appropriate solution, to something that
+> > >
+> > > Do you have a link to more info on this?  Some googling got me to an
+> > > interesting but old thread on CUSE, but nothing specifically about fuse
+> > > doing this.
+> > 
+> > CUSE is probably what I was thinking of.  It is all part of the fuse
+> > code base in the kernel.  And now that I am reminded it is called CUSE
+> > I go Duh that is a character device...
+> > 
+> > Fuse and everything it can do is definitely the filesystem I would like
+> > to see most have the audits to be enabled in user namespace.  Fuse
+> > was built to be sufficiently paranoid to allow this and so it should not
+> > take a lot to take fuse the rest of the way.
 > 
-> > I sent you the whole log privately so that I don't spam everyone.
-> > 
-> > Summary is here:
-> > 
-> > May 28 10:24:23 lahna kernel: scsi 14:0:0:0: Direct-Access     JetFlash Transcend 4GB    8.07 PQ: 0 ANSI: 4
-> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: Attached scsi generic sg4 type 0
-> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] 7864320 512-byte logical blocks: (4.02 GB/3.75 GiB)
-> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write Protect is off
-> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Mode Sense: 23 00 00 00
-> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
-> > May 28 10:24:23 lahna kernel:  sdc: sdc1
-> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Attached SCSI removable disk
-> > 
-> > Here I detached the USB stick:
-> > 
-> > May 28 10:24:32 lahna kernel: usb 3-10.4: USB disconnect, device number 6
-> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: dput[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[3-10/3-10.4/3-10.4:1.0/host14]; CPU 1 PID 1683 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: shrink[3-10.4:1.0/host14/target14:0:0/subsystem]; CPU 1 PID 1683 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/rev]; CPU 1 PID 1683 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/vendor]; CPU 1 PID 1683 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/model]; CPU 1 PID 1683 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:32]; CPU 4 PID 576 [systemd-udevd]
-> > ...
-> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 6 PID 1684 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 7 PID 1685 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-> > May 28 10:24:32 lahna kernel: A
-> ...
-> 
-> Hmm...  As it is, we have d_walk() trying _very_ hard in those situations.
-> Could you add that on top of the previous and see if livelock changes?
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 42ae01e..4ce58d3 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1209,7 +1209,7 @@ static enum d_walk_ret select_collect(void *_data, struct dentry *dentry)
->  	 * ensures forward progress). We'll be coming back to find
->  	 * the rest.
->  	 */
-> -	if (!list_empty(&data->dispose))
-> +	if (data->found)
->  		ret = need_resched() ? D_WALK_QUIT : D_WALK_NORETRY;
->  out:
->  	return ret;
+> I was aware of FUSE but hadn't ever looked at it much. Looking at it
+> now, this isn't going to satisfy any of the use cases I know about,
+> which are wanting to use filesystems supported in-kernel (isofs, ext*).
+> I don't see that any of these have a FUSE implementation, and I think we
+> gain more from figuring out how to use in-kernel filesystems in
+> containers than trying to find a way to shoehorn selected filesystems
+> into FUSE.
 
-I added this on top of your previus patch and unfortunately the livelock
-is still there :-(
+That's why I was wondering how much work it would be to auto-generate
+fuse fs support from the in-kernel source.
 
->From the previous log, it looks like udev is doing exactly same operation
-(check_submounts_and_drop) on 4 of the CPUs in paraller:
-
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 6 PID 1684 [systemd-udevd]
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 1 PID 1683 [systemd-udevd]
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 0 PID 1686 [systemd-udevd]
-
-I wonder why is that.
+-serge
