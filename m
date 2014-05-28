@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758AbaE1V4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 17:56:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41896 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028AbaE1V4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 17:56:21 -0400
-Date: Wed, 28 May 2014 14:59:56 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
-        kvm@vger.kernel.org, konrad.wilk@oracle.com, kim.phillips@linaro.org,
-        stuart.yoder@freescale.com, agraf@suse.de, libvir-list@redhat.com,
-        iommu@lists.linux-foundation.org, christoffer.dall@linaro.org,
-        tech@virtualopensystems.com, kvmarm@lists.cs.columbia.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PCI: Introduce new device binding path using
- pci_dev.driver_override
-Message-ID: <20140528215956.GA7339@kroah.com>
-References: <20140520145136.28232.90707.stgit@bling.home>
- <20140528030742.GO11907@google.com>
+	id S1755789AbaE1V4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 17:56:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55405 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755628AbaE1V4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 17:56:38 -0400
+Message-ID: <53865B53.7050809@redhat.com>
+Date: Wed, 28 May 2014 17:55:31 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528030742.GO11907@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, konrad.wilk@oracle.com,
+        pbonzini@redhat.com, gleb@redhat.com, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com
+CC: torvalds@linux-foundation.org, waiman.long@hp.com, davej@redhat.com,
+        oleg@redhat.com, x86@kernel.org, jeremy@goop.org,
+        paul.gortmaker@windriver.com, ak@linux.intel.com, jasowang@redhat.com,
+        fernando_b1@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, mtosatti@redhat.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC] Implement Batched (group) ticket lock
+References: <1401279399-23854-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+In-Reply-To: <1401279399-23854-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 09:07:42PM -0600, Bjorn Helgaas wrote:
-> On Tue, May 20, 2014 at 08:53:21AM -0600, Alex Williamson wrote:
-> > The driver_override field allows us to specify the driver for a device
-> > rather than relying on the driver to provide a positive match of the
-> > device.  This shortcuts the existing process of looking up the vendor
-> > and device ID, adding them to the driver new_id, binding the device,
-> > then removing the ID, but it also provides a couple advantages.
-> > 
-> > First, the above existing process allows the driver to bind to any
-> > device matching the new_id for the window where it's enabled.  This is
-> > often not desired, such as the case of trying to bind a single device
-> > to a meta driver like pci-stub or vfio-pci.  Using driver_override we
-> > can do this deterministically using:
-> > 
-> > echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > 
-> > Previously we could not invoke drivers_probe after adding a device
-> > to new_id for a driver as we get non-deterministic behavior whether
-> > the driver we intend or the standard driver will claim the device.
-> > Now it becomes a deterministic process, only the driver matching
-> > driver_override will probe the device.
-> > 
-> > To return the device to the standard driver, we simply clear the
-> > driver_override and reprobe the device:
-> > 
-> > echo > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> > echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> > echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> > 
-> > Another advantage to this approach is that we can specify a driver
-> > override to force a specific binding or prevent any binding.  For
-> > instance when an IOMMU group is exposed to userspace through VFIO
-> > we require that all devices within that group are owned by VFIO.
-> > However, devices can be hot-added into an IOMMU group, in which case
-> > we want to prevent the device from binding to any driver (override
-> > driver = "none") or perhaps have it automatically bind to vfio-pci.
-> > With driver_override it's a simple matter for this field to be set
-> > internally when the device is first discovered to prevent driver
-> > matches.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On 05/28/2014 08:16 AM, Raghavendra K T wrote:
+
+This patch looks very promising.
+
+> TODO:
+> - we need an intelligent way to nullify the effect of batching for baremetal
+>  (because extra cmpxchg is not required).
+
+On (larger?) NUMA systems, the unfairness may be a nice performance
+benefit, reducing cache line bouncing through the system, and it
+could well outweigh the extra cmpxchg at times.
+
+> - we may have to make batch size as kernel arg to solve above problem
+>  (to run same kernel for host/guest). Increasing batch size also seem to help
+>  virtualized guest more, so we will have flexibility of tuning depending on vm size.
 > 
-> Greg, are you going to weigh in on this?  It does seem to solve some real
-> problems.  ISTR you had an opinion once, but I don't know your current
-> thoughts.
+> - My kernbench/ebizzy test on baremetal (32 cpu +ht sandybridge) did not seem to
+>   show the impact of extra cmpxchg. but there should be effect of extra cmpxchg.
 
-This looks good to me:
+Canceled out by better NUMA locality?
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Or maybe cmpxchg is cheap once you already own the cache line
+exclusively?
+
+> - virtualized guest had slight impact on 1x cases of some benchmarks but we have got
+>  impressive performance for >1x cases. So overall, patch needs exhaustive tesing.
+> 
+> - we can further add dynamically changing batch_size implementation (inspiration and
+>   hint by Paul McKenney) as necessary.
+
+I could see a larger batch size being beneficial.
+
+Currently the maximum wait time for a spinlock on a system
+with N CPUs is N times the length of the largest critical
+section.
+
+Having the batch size set equal to the number of CPUs would only
+double that, and better locality (CPUs local to the current
+lock holder winning the spinlock operation) might speed things
+up enough to cancel that part of that out again...
+
+>  I have found that increasing  batch size gives excellent improvements for 
+>  overcommitted guests. I understand that we need more exhaustive testing.
+> 
+>  Please provide your suggestion and comments.
+
+I have only nitpicks so far...
+
+> diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+> index 4f1bea1..b04c03d 100644
+> --- a/arch/x86/include/asm/spinlock_types.h
+> +++ b/arch/x86/include/asm/spinlock_types.h
+> @@ -3,15 +3,16 @@
+>  
+>  #include <linux/types.h>
+>  
+> +#define TICKET_LOCK_INC_SHIFT 1
+> +#define __TICKET_LOCK_TAIL_INC (1<<TICKET_LOCK_INC_SHIFT)
+> +
+>  #ifdef CONFIG_PARAVIRT_SPINLOCKS
+> -#define __TICKET_LOCK_INC	2
+>  #define TICKET_SLOWPATH_FLAG	((__ticket_t)1)
+>  #else
+> -#define __TICKET_LOCK_INC	1
+>  #define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
+>  #endif
+
+For the !CONFIG_PARAVIRT case, TICKET_LOCK_INC_SHIFT used to be 0,
+now you are making it one. Probably not an issue, since even people
+who compile with 128 < CONFIG_NR_CPUS <= 256 will likely have their
+spinlocks padded out to 32 or 64 bits anyway in most data structures.
+
+> -#if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+> +#if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_TAIL_INC))
+>  typedef u8  __ticket_t;
+>  typedef u16 __ticketpair_t;
+>  #else
+> @@ -19,7 +20,12 @@ typedef u16 __ticket_t;
+>  typedef u32 __ticketpair_t;
+>  #endif
+>  
+> -#define TICKET_LOCK_INC	((__ticket_t)__TICKET_LOCK_INC)
+> +#define TICKET_LOCK_TAIL_INC ((__ticket_t)__TICKET_LOCK_TAIL_INC)
+> +
+> +#define TICKET_LOCK_HEAD_INC ((__ticket_t)1)
+> +#define TICKET_BATCH    0x4 /* 4 waiters can contend simultaneously */
+> +#define TICKET_LOCK_BATCH_MASK (~(TICKET_BATCH<<TICKET_LOCK_INC_SHIFT) + \
+> +				  TICKET_LOCK_TAIL_INC - 1)
+
+I do not see the value in having TICKET_BATCH declared with a
+hexadecimal number, and it may be worth making sure the code
+does not compile if someone tried a TICKET_BATCH value that
+is not a power of 2.
+
+-- 
+All rights reversed
