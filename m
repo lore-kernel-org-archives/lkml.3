@@ -1,175 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194AbaE1SwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 14:52:15 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:34516 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaE1SwO convert rfc822-to-8bit (ORCPT
+	id S1755205AbaE1Swb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 14:52:31 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45422 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625AbaE1Sw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 14:52:14 -0400
-Content-Type: text/plain; charset="utf-8"
+	Wed, 28 May 2014 14:52:29 -0400
+Message-ID: <53863056.2070405@ahsoftware.de>
+Date: Wed, 28 May 2014 20:52:06 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Saravana Kannan <skannan@codeaurora.org>,
-        "Peter De Schrijver" <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <53862142.8080006@codeaurora.org>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1400842772-4862-1-git-send-email-pdeschrijver@nvidia.com>
- <537FCAA0.6080106@codeaurora.org>
- <20140526111453.GE5961@tbergstrom-lnx.Nvidia.com>
- <53862142.8080006@codeaurora.org>
-Message-ID: <20140528185210.10062.16299@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [RFC PATCH] clk: flatten clk tree in debugfs
-Date: Wed, 28 May 2014 11:52:10 -0700
+To: Brian Norris <computersforpeace@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 01/27] mtd: nand: introduce function to fix a common bug
+ in most nand-drivers not showing a device in sysfs
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de> <1401142372-14148-2-git-send-email-holler@ahsoftware.de> <20140528084344.GB4285@norris-Latitude-E6410>
+In-Reply-To: <20140528084344.GB4285@norris-Latitude-E6410>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Saravana Kannan (2014-05-28 10:47:46)
-> On 05/26/2014 04:14 AM, Peter De Schrijver wrote:
-> > On Sat, May 24, 2014 at 12:24:32AM +0200, Saravana Kannan wrote:
-> >> On 05/23/2014 03:59 AM, Peter De Schrijver wrote:
-> >>> This patch flattens the clk tree in CCF debugfs. Instead of representing the
-> >>> clocks and their hierarchy as a directory structure under
-> >>> /sys/kernel/debug/clk, each clock gets a single directory directly under
-> >>> /sys/kernel/debug/clk.
-> >>>
-> >>> While this may seem strange, here's way I think this is the right thing to do:
-> >>>
-> >>> 1) a directory structure cannot be 'snapshotted' atomically, therefore it's
-> >>>      not in general possible to get a consistent view of the clocktree, because
-> >>>      clocks can be reparented at any time. This was solved by adding clk_dump
-> >>>      and clk_summary, which do guarantee an atomic snapshot of the tree.
-> >>>      Therefore I think the directory structure doesn't add any value.
-> >>>
-> >>> 2) When writing userspace programs which use the files in the clock
-> >>>      directories (eg. for testing purposes), it's impossible to know for sure
-> >>>      where a certain clock will be, because it might have been reparented by the
-> >>>      time you figured out the path from clk_dump. This makes writing such
-> >>>      programs more difficult than it should be.
-> >>>
-> >>> So because the directory structure doesn't give any information we don't
-> >>> already provide by other means and it makes certain usecases more difficult
-> >>> than the should be, I think we should move to a flat directory containing
-> >>> one subdir per clock.
-> >>
-> >> Completely agree and a huge ACK to this idea.
-> >>
-> >
-> > Thanks.
-> >
-> >>>
-> >>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> >>> ---
-> >>>    drivers/clk/clk.c |   54 +++-------------------------------------------------
-> >>>    1 files changed, 4 insertions(+), 50 deletions(-)
-> >>>
-> >>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> >>> index dff0373..53c6b4f 100644
-> >>> --- a/drivers/clk/clk.c
-> >>> +++ b/drivers/clk/clk.c
-> >>> @@ -306,7 +306,7 @@ static int clk_debug_create_subtree(struct clk *clk, struct dentry *pdentry)
-> >>>             goto out;
-> >>>
-> >>>     hlist_for_each_entry(child, &clk->children, child_node)
-> >>> -           clk_debug_create_subtree(child, clk->dentry);
-> >>> +           clk_debug_create_subtree(child, pdentry);
-> >>>
-> >>>     ret = 0;
-> >>>    out:
-> >>> @@ -326,29 +326,20 @@ out:
-> >>>     */
-> >>>    static int clk_debug_register(struct clk *clk)
-> >>>    {
-> >>> -   struct clk *parent;
-> >>>     struct dentry *pdentry;
-> >>>     int ret = 0;
-> >>>
-> >>>     if (!inited)
-> >>>             goto out;
-> >>>
-> >>> -   parent = clk->parent;
-> >>> -
-> >>>     /*
-> >>>      * Check to see if a clk is a root clk.  Also check that it is
-> >>>      * safe to add this clk to debugfs
-> >>>      */
-> >>> -   if (!parent)
-> >>> -           if (clk->flags & CLK_IS_ROOT)
-> >>> -                   pdentry = rootdir;
-> >>> -           else
-> >>> -                   pdentry = orphandir;
-> >>> +   if (clk->flags & CLK_IS_ROOT)
-> >>> +           pdentry = rootdir;
-> >>>     else
-> >>> -           if (parent->dentry)
-> >>> -                   pdentry = parent->dentry;
-> >>> -           else
-> >>> -                   goto out;
-> >>> +           pdentry = orphandir;
-> >>
-> >> I'm confused by this code. Shouldn't pdentry always be the same? Do we
-> >> need a dir for orphans? Also, I'm not sure the code is actually right?
-> >
-> > Indeed. This code is most likely wrong... I don't have a strong opinion
-> > if we need an orphan dir or if we can just have a file to list orphaned
-> > clocks.
-> I don't have a strong opinion either. A file is probably safer in case 
-> we add debug files that allow changes to the clock. In which case, we 
-> don't want orphan clocks to be modifiable.
-> 
-> > I would still like to be able to see if there are orphaned clocks.
-> Agree
+Am 28.05.2014 10:43, schrieb Brian Norris:
+> On Tue, May 27, 2014 at 12:12:26AM +0200, Alexander Holler wrote:
+>> --- a/include/linux/mtd/mtd.h
+>> +++ b/include/linux/mtd/mtd.h
+>> @@ -23,7 +23,7 @@
+>>   #include <linux/types.h>
+>>   #include <linux/uio.h>
+>>   #include <linux/notifier.h>
+>> -#include <linux/device.h>
+>> +#include <linux/platform_device.h>
+>>
+>>   #include <mtd/mtd-abi.h>
+>>
+>> @@ -366,6 +366,15 @@ static inline int mtd_can_have_bb(const struct mtd_info *mtd)
+>>   struct mtd_partition;
+>>   struct mtd_part_parser_data;
+>>
+>> +static inline void mtd_setup_common_members(struct mtd_info *mtd, void *priv,
+>> +						struct platform_device *pdev)
+>
+> Thanks for the diligence on catching these issues, but I'm not sure this
+> helper function is fully the correct approach here.
+>
+>> +{
+>> +	mtd->priv	= priv;
+>
+> I don't think you should hide this one here. It will be quite obvious if
+> a driver didn't stash its private data but tries to access it later. Are
+> there any drivers that missed this?
 
-Yes, easy orphan clock detection should not go away. How about an
-orphan_summary sysfs file? That means that orphan clocks will still get
-their own directory under the newly flattened hierarchy, we can remove
-the orphans directory completely and it is still easy to find orphan
-regressions with a quick `cat /sys/kernel/debug/clk/orphan_summary`.
+No, it just saves a line of source in all drivers and I think it fits 
+there. I don't understand why do you think it is hidden.
 
-> 
-> > You could argue that the same race exists for the orphan dir. It is possible
-> > for the parent to be registered while you're traversing the orphan dir and
-> > cause a clock to move around. In practice this seems rather unlikely to happen
-> > to me?
-> I think you read too much into my comment. I wasn't in any way against 
-> knowing orphaned clocks from debugfs. I was just referring to that 
-> specific point in code, the clock might always need to pick the same 
-> dentry. I might be wrong about the code too (I just looked at the diff).
-> 
-> 
-> >> Looks like you are putting everything but the root into orphandir?
-> >>
-> >
-> > Yes...
-> 
-> Now I'm confused. Does some other code path unorphan and move them into 
-> the clock debug "root" dir later on?
+>
+>> +	mtd->owner	= pdev->dev.driver->owner;
+>> +	mtd->dev.parent	= &pdev->dev;
+>> +	mtd->name	= pdev->dev.driver->name;
+>
+> I think this is a little dangerous. You're potentially clobbering the
+> name that a driver already chose here. And why did you pick to use the
+> driver name? This gives non-unique names if there is more than one
+> device instantiated for a driver. That's why some drivers already use
+> the device name, not the driver name:
+>
+> 	mtd->name = dev_name(&pev->dev);
+>
+> And in fact, if any drivers are missing mtd->name, perhaps it's best to
+> just modify the MTD registration to give them a default:
+>
+> 	if (!mtd->name)
+> 		mtd->name = dev_name(&pdev->dev);
+>
+>> +}
 
-Yes. See drivers/clk/clk.c, lines 1860-1870 in the clk-next branch.
+I don't clobber any name. The name is set as default before drivers 
+might do this. And the common pattern I've seen wasn't dev_name(foo) but 
+the drivers name. And those drivers which do use dev_name(), still do so 
+by overwriting the default I put into that function. But feel free to 
+change this. I will not go again and again through the 26 drivers until 
+all maintainers and other people are happy.
 
-> 
-> Mike, others,
-> 
-> Any objections to this idea? If there's not much opposition, then maybe 
-> Peter can actually spend time fixing and testing this patch?
+>
+> BTW, nothing in this function actually makes sense to require a
+> platform_device, does it? And it's possible to have non-platform drivers
+> that want to do basic MTD initialization. So (if we still keep this
+> helper function at all), I'd recommend just a 'struct device *dev'
+> parameter.
+>
 
-Idea seems fine. I had actually considered removing the hiearchal
-directory structure completely with the advent of clk_dump and
-clk_summary, but if there is value in the flattened directory structure
-then I'm all for it.
+Feel free to chgange it.
+
+
+>> +
+>>   extern int mtd_device_parse_register(struct mtd_info *mtd,
+>>   				     const char * const *part_probe_types,
+>>   				     struct mtd_part_parser_data *parser_data,
+>
+> How about we rethink the "helper" approach, and instead just do
+> validation in the core code? This would cover most of the important
+> parts of your helper, I think:
+
+Feel free to change all drivers. I like my approach with fixing 21 bugs 
+by reducing code by 44 lines.
+
+And it offers a common function where future similiarities can be put 
+into too. Of course you can just add 21 lines, but that is not how I do 
+such stuff.
+
+And I did the patches. If you don't like them, feel free to ignore them. 
+I'm not playing remote keyboard but I do patches like I would do them, 
+not like some arbitrary maintainer would do them. Sorry for the harsh words.
 
 Regards,
-Mike
 
-> 
-> -Saravana
-> 
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+Alexander Holler
