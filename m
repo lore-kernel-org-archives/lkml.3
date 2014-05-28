@@ -1,130 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaE1RMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:12:55 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45739 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaE1RMw (ORCPT
+	id S1754379AbaE1ROn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:14:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:17532 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751518AbaE1ROm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:12:52 -0400
-Date: Wed, 28 May 2014 18:12:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140528171219.GD5099@sirena.org.uk>
-References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
- <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
- <20140524124858.GR22111@sirena.org.uk>
- <5385063F.30407@codeaurora.org>
- <20140528151646.GU20155@pengutronix.de>
+	Wed, 28 May 2014 13:14:42 -0400
+Date: Wed, 28 May 2014 13:14:40 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [RFC][PATCH] tracing: Print nasty banner when trace_printk() is in
+ use
+Message-ID: <20140528131440.2283213c@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uxuisgdDHaNETlh8"
-Content-Disposition: inline
-In-Reply-To: <20140528151646.GU20155@pengutronix.de>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
- ks8851 SPI chips
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---uxuisgdDHaNETlh8
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+trace_printk() is used to debug fast paths within the kernel. Places
+that gets called in any context (interrupt or NMI) or thousands of
+times a second. Something you do not want to do with a printk().
 
-On Wed, May 28, 2014 at 05:16:46PM +0200, Uwe Kleine-K=F6nig wrote:
-> On Tue, May 27, 2014 at 02:40:15PM -0700, Stephen Boyd wrote:
-> > On 05/24/14 05:48, Mark Brown wrote:
+In order to make it completely lockless as it needs a temporary buffer
+to handle some of the string formatting, a page is created per cpu for
+every context (four per cpu; normal, softirq, irq, NMI).
 
-> > > So, according to the datasheet I managed to find this device has a
-> > > supply VDD_IO (so normally written vdd-io-supply here), some other
-> > > supplies which are tied to VDD_IO (so can probably be omitted) and a
-> > > supply VDD_A3.3 none of which are optional.  There is an internal
-> > > regulator which can be used to drop a higher voltage VDD_IO down for
-> > > some of the supplies tied to it but that's essentially a noop from
-> > > software as far as I can tell.  None of these supplies are obviously
-> > > optional, though I've not read the datasheet in detail so I may have
-> > > missed something here.
+Since trace_printk() should only be used for debugging purposes,
+there's no reason to waste memory on these buffers on a production
+system. That means, trace_printk() should never be used unless a
+developer is debugging their kernel. There's macro magic to allocate
+the buffers if trace_printk() is used anywhere in the kernel.
 
-> There is a difference between the supply being optional for the hardware
-> to work and the need to specify it in the device tree, isn't it? My
-> expectation is that when it's not specified there is just nothing the
-> the software needs to care for.=20
+To help enforce that trace_printk() isn't used outside of development,
+when it is used, a nasty banner is displayed on bootup (or when a module
+is loaded that uses trace_printk() and the kernel core does not).
 
-If the supply must always be physically present the bindings should be
-specified as it being mandatory and the code written in that fashion; as
-an extension Linux will put a dummy in but this is attempting to handle
-incorrect DTs.  This means we have functional error handling in cases
-where there is something to worry about and simplifies the code using
-the regulator.
+Here's the banner:
 
-regulator_get_optional() should *only* be used if the supply may be
-omitted from the physical design and should generally always be
-accompanied by code which does something substantially different such as
-using an internal regulator or changing the source for a reference
-voltage instead.
+ ****************************************
+ ** NOTICE NOTICE NOTICE NOTICE NOTICE **
+ ** trace_printk() being used.         **
+ ** Allocating extra memory for it     **
+ ****************************************
 
-> > > That said it looks like this is intended to be a supply for an extern=
-al
-> > > PHY rather than the device itself, but even so my original question
-> > > about it being able to operate without power still applies.  Looking =
-at
-> > > the code it's certainly not doing any of the handling of a missing
-> > > supply that I would associate with using _optional().
+Hmm, maybe I should add "Not for production use" to scare people even
+more?
 
-> > I agree, both supplies don't look optional. Unfortunately
-> > efm32gg-dk3750.dts doesn't look to be listing any supply, and this
-> > driver only recently got support for the VDD_A3.3 supply that the omap
-> > board uses (adding Uwe for any comments on efm setup). I presume on
+Not-yet-signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
 
-> If I read the schematic correctly there is nothing to regulate on the
-> efm32 dev board. If you want to take a look on the schematic yourself,
-> it's contained in the documentation package available at
-> http://www.silabs.com/products/mcu/lowpower/pages/efm32gg-dk3750.aspx .
-> BDR3201A_A02_sch.pdf, page 3 of 22.
+Ted,
 
-That shows all the supplies connected to fixed voltage regulators
-(including the internal 1.8V LDO); the device tree should represent this
-accurately though the internal 1.8V regulator could be omitted for
-simplicity.  It would be a remarkable device that was able to operate
-without power.
+I noticed that in fs/ext4/inline.c you use trace_printk() if
+INLINE_DIR_DEBUG is defined. I'm assuming that this is not a production
+setting and this banner should not affect you at all. Am I correct?
 
---uxuisgdDHaNETlh8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+There's some other places that use it, but those are obviously debug
+only.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThhjwAAoJELSic+t+oim9UZMP+gIUErotQjc3rwuMwlYzLDNs
-lKkRj1LfCKyl1tzmLxhNwf/cJw2OA1p8/3mLYn8yPx4lamm3iMZzsURDVCE98U0H
-uZVv7pzwweBMfi1qX9zp3DsSUycbGliSkKWG9QdB+TRYQNd92IKYuhWemVmcKzxF
-xTQ36t2xsGC9dpb+9WWapnx2EOg7j4fifECax1c4WJFUsihlntRV/dAHCUWDpE3X
-ppfxkstYJcfnL/xqwNM7GOAvJFKg/fTneCEzuKJ2s/fo/MbdmRHWt4X53it974Y0
-WpmUCR6as6al0ZHshda4qvzhs8ElAdL6C7KUbRW4WvvpVSu6h2bRtvKMm/6fMuSd
-awUIslyqU9ObPY8nh/8I5SuTvYlvy4iO9C5HVlxLtfSB0T26Ei7MaT3PitEe7d2C
-L/Nj19MEkoahWgW2pu7M9yGpw1iUFPI6vxFDqaeA/omb7LF4E34QhB/AwbtNXK9o
-/FqeD+UrsTgXeoh2vnV6S7RvH4tTcyIX4xryr6g3xtjxji0wa3me02G3zvjLYLcp
-MQUF4oCElBrchGU6/urKxtWPLUi2X2PiXBOlJ8PBsbdgO/TGUTPRplHM1BebTADm
-DWgPisiq9DEm/gVPmkwW9L6QLBgVx6SShNNSPz6lbjhWr8oZi7Gzbnh6PwWjAQ7Y
-LciNhsSYfhqHf0gfN/dp
-=TSUP
------END PGP SIGNATURE-----
-
---uxuisgdDHaNETlh8--
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 0543169..068f453 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1975,7 +1975,11 @@ void trace_printk_init_buffers(void)
+ 	if (alloc_percpu_trace_buffer())
+ 		return;
+ 
+-	pr_info("ftrace: Allocated trace_printk buffers\n");
++	pr_warning("****************************************\n");
++	pr_warning("** NOTICE NOTICE NOTICE NOTICE NOTICE **\n");
++	pr_warning("** trace_printk() being used.         **\n");
++	pr_warning("** Allocating extra memory for it     **\n");
++	pr_warning("****************************************\n");
+ 
+ 	/* Expand the buffers to set size */
+ 	tracing_update_buffers();
