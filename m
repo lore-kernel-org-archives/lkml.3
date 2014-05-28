@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaE1EUX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 00:20:23 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:44725 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaE1EUV (ORCPT
+	id S1751971AbaE1E2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 00:28:18 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57880 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaE1E2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 00:20:21 -0400
+	Wed, 28 May 2014 00:28:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140521172701.GV12304@sirena.org.uk>
-References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
-	<1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
-	<20140521172701.GV12304@sirena.org.uk>
-Date: Wed, 28 May 2014 09:50:21 +0530
-Message-ID: <CABb+yY0G9Rn4mzA7Cn4__tR02WE4Q6-RQfQ06U6Kiiayey+RXA@mail.gmail.com>
-Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Suman Anna <s-anna@ti.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>, Girish K S <ks.giri@samsung.com>,
-        Jassi Brar <jaswinder.singh@linaro.org>
+In-Reply-To: <53831795.9070006@gmail.com>
+References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
+	<1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+	<53831795.9070006@gmail.com>
+Date: Wed, 28 May 2014 09:58:15 +0530
+Message-ID: <CANuQgHH284A9QY7M5zGbSE-mXjm2KDqr54VWmtKVkbma3zZvvw@mail.gmail.com>
+Subject: Re: [PATCH v6 0/6] add cpuidle support for Exynos5420
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 10:57 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, May 15, 2014 at 11:41:00AM +0530, Jassi Brar wrote:
->> Introduce common framework for client/protocol drivers and
->> controller drivers of Inter-Processor-Communication (IPC).
+On 26 May 2014 15:59, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Hi Chander,
 >
-> This looks pretty nice, though I do have a few *very* small nits beyond
-> those Arnd had.
+> On 16.05.2014 10:03, Chander Kashyap wrote:
+>> Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7 cores.
+>>
+>> This patchset adds cpuidle support for Exynos5420 SoC based on
+>> generic big.little cpuidle driver.
+>>
+>> Tested on SMDK5420.
+>>
+>> This patch set depends on:
+>>       1. [PATCH 0/5] MCPM backend for Exynos5420
+>>          http://www.spinics.net/lists/arm-kernel/msg331100.html
+>> Changelog is in respective patches.
+>> Chander Kashyap (5):
+>>   driver: cpuidle-big-little: add of_device_id structure
+>>   arm: exynos: add generic function to calculate cpu number
+>>   cpuidle: config: Add ARCH_EXYNOS entry to select cpuidle-big-little
+>>     driver
+>>   driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
+>>   exynos: cpuidle: do not allow cpuidle registration for Exynos5420
+>>   mcpm: exynos: populate suspend and powered_up callbacks
+>>
+>>  arch/arm/mach-exynos/exynos.c        |    4 +++-
+>>  arch/arm/mach-exynos/mcpm-exynos.c   |   36 ++++++++++++++++++++++++++++++++++
+>>  arch/arm/mach-exynos/regs-pmu.h      |    9 +++++++++
+>>  drivers/cpuidle/Kconfig.arm          |    2 +-
+>>  drivers/cpuidle/cpuidle-big_little.c |   12 +++++++++++-
+>>  5 files changed, 60 insertions(+), 3 deletions(-)
+>>
 >
->> +     if (chan->cl->tx_block && chan->active_req) {
->> +             int ret;
->> +             init_completion(&chan->tx_complete);
+> For the whole series,
 >
-> reinit_completion().
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+
+Thanks Tomasz.
+
+Dear Kukjin,
+Can you take these patches.
 >
->> +     if (!cl->tx_tout) /* wait for ever */
->> +             cl->tx_tout = msecs_to_jiffies(3600000);
->> +     else
->> +             cl->tx_tout = msecs_to_jiffies(cl->tx_tout);
->
-> Is the default wait for ever the best timeout - I'm not sure it's best
-> from a defensiveness point of view.  It should be fine either way,
-> it's just a matter of taste.
->
-The client wants the call to be blocking. Out of 'zero', 'infinity'
-and some 'valid' delay, it makes better sense to have 'infinity' than
-zero or another value that might be valid for some platform. I assume
-1hr to be 'infinity', though I am open to better suggestions. Maybe
-put a WARN() ?
+> Best regards,
+> Tomasz
 
 
->> +     ret = chan->mbox->ops->startup(chan);
->> +     if (ret) {
->> +             pr_err("Unable to startup the chan\n");
->
-> Perhaps print the error codes?  Might be helpful to users.
->
-OK.
 
-
-BTW, I have not converted Highbank's PL320 and OMAP's controller and
-client drivers. I believe Highbank's can't be converted to DT now and
-Suman would want to convert the OMAP himself.
-
-Also, maybe mailbox patches could be upstreamed via, say, arm-soc tree?
-
-Regards,
-Jassi
+-- 
+with warm regards,
+Chander Kashyap
