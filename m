@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaE1Ij4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:39:56 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:56209 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754252AbaE1Ijx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:39:53 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v1] of/irq: do irq resolution in
- platform_get_irq_byname()
-To: Rob Herring <robh@kernel.org>, Kevin Hilman <khilman@linaro.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+	id S1754577AbaE1IkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:40:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29934 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754252AbaE1Ij6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:39:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,926,1392192000"; 
+   d="scan'208";a="437944179"
+Date: Wed, 28 May 2014 08:35:40 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, dirk.j.brandewie@intel.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-In-Reply-To: <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
-References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
-	<20140523080333.66720C4176E@trevor.secretlab.ca>
-	<CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com>
-	<CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
-Date: Wed, 28 May 2014 09:39:45 +0100
-Message-Id: <20140528083945.7C86CC4089D@trevor.secretlab.ca>
+        Doug Smythies <dsmythies@telus.net>,
+        Stratos Karafotis <stratosk@semaphore.gr>
+Subject: Re: Performance regression in v3.14
+Message-ID: <20140528003540.GA2296@intel.com>
+References: <20140506163559.GA5308@localhost>
+ <CAKohpokYEvazxm0-JJXPzq-4OgLXmROfaCMcgHDZwugChOxtsQ@mail.gmail.com>
+ <536A3EE9.5050409@intel.com>
+ <20140521090051.GO21412@localhost>
+ <20140528075945.GA21705@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528075945.GA21705@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014 19:37:00 -0500, Rob Herring <robh@kernel.org> wrote:
-> On Tue, May 27, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> > On Fri, May 23, 2014 at 1:03 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> >> On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
-> >>> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
-> >>> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
-> >>> moves resolving of the interrupt resources in platform_get_irq().
-> >>> But this solution isn't complete because platform_get_irq_byname()
-> >>> need to be modified the same way.
-> >>>
-> >>> Hence, fix it by adding interrupt resolution code at the
-> >>> platform_get_irq_byname() function too.
-> >>>
-> >>> Cc: Russell King <linux@arm.linux.org.uk>
-> >>> Cc: Rob Herring <robh@kernel.org>
-> >>> Cc: Tony Lindgren <tony@atomide.com>
-> >>> Cc: Grant Likely <grant.likely@linaro.org>
-> >>> Cc: Thierry Reding <thierry.reding@gmail.com>
-> >>>
-> >>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> >>
-> >> Applied, Thanks.
-> >
-> > As of next-20150526, the ST u8500 Snowball board has been failing boot
-> > in linux-next, and was bisected down to this patch (commit
-> > ad69674e73a1 in -next).   Full boot failure attached.
-> >
-> > I have not dug any deeper, but can confirm that next-20140526 with
-> > this patch reverted boots again on the snowball board.
+> I tried applying your (rejected) patch "intel_pstate: Remove C0
+> tracking" posted here:
 > 
-> There's a patch on the list which fixes it. The problem is stmmac
-> driver was expecting only one error code.
+> 	https://lkml.org/lkml/2014/5/8/574
+> 
+> to v3.14.4 and it fixes the problem as expected.
+> 
+> So we have a commit fcb6a15c2e7e ("intel_pstate: Take core C0 time into
+> account for core busy calculation") that went into v3.14-rc2 (and was
+> even marked for *stable*) that first broke Greg KH's system:
+> 
+> 	https://lkml.org/lkml/2014/2/19/626
+> 
+> That was apparently fixed by e66c17683746 ("intel_pstate: Change
+> busy calculation to use fixed point math."), but still left v3.14
+> basically unusable for lower-intensity workloads such as my
+> bash-completion example and other reported regressions:
+> 
+> 	https://bugzilla.kernel.org/show_bug.cgi?id=75121
+> 
+> Sure there may be issues with v3.13 not hitting the lowest frequencies
+> but at least the system was *usable*.
+> 
+> In my opinion there's really no other option than to restore the 3.13
+> behaviour by effectively reverting fcb6a15c2e7e ("intel_pstate: Take
+> core C0 time into account for core busy calculation") until you have
+> figured out a way to take C0 into account without breaking things too
+> badly.
 
-Can you send me a link to this patch? I cannot find it in my inbox.
+Hi all,
 
-g.
+My posts before and now are only relevant to why C0 tracking can't be
+removed. Maybe I need to elaborate on it a little bit more.
 
+In a nutshell, without C0 tracking, the intel_pstate is effectively performance
+governor in terms of frequency control. Why?
+
+Without C0 trakcing, the machinery of the freq control is as I formed:
+
+last_freq_average / last_requested_freq ==> setpoint
+
+which can be virtually formed into:
+
+last_freq_average / last_requested_freq * last_C0_pct ==> setpoint * last_C0_pct
+
+which said, the control machinery will increase the freuqency at ANY frequency at
+ANY C0_pct (which is the CPU utilization), since setpoint is less then 100
+percent. And a few iterations later, we will reach max (possible) frequency,
+then we are effectively performance governor (highest frequency all the time).
+
+So, sure, without C0 tracking, the performance issues should be fixed. But
+let's simply set highest frequency, that should be better.
+
+It is your decision whether we should remove C0 tracking as a no-other option fix
+right now. I am ok either way.
+
+Thanks,
+Yuyang
