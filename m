@@ -1,168 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967AbaE1UBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:01:33 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:64437 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbaE1UBb (ORCPT
+	id S1755192AbaE1UC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:02:26 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:34690 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaE1UCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:01:31 -0400
-Date: Thu, 29 May 2014 01:31:23 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Input: 88pm860x_onkey : Introduce the use of the managed
- version of  kzalloc
-Message-ID: <20140528200123.GA9946@himangi-Dell>
+	Wed, 28 May 2014 16:02:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFwmoevoA3h5AZhqtHC0kEJegb0crT_jYvXWWD3UWZt9Aw@mail.gmail.com>
+References: <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
+	<20140527014054.GR18016@ZenIV.linux.org.uk>
+	<20140527031415.GS18016@ZenIV.linux.org.uk>
+	<20140527040026.GT18016@ZenIV.linux.org.uk>
+	<20140527070409.GA1801@lahna.fi.intel.com>
+	<20140528031955.GW18016@ZenIV.linux.org.uk>
+	<20140528073751.GB1757@lahna.fi.intel.com>
+	<20140528115701.GY18016@ZenIV.linux.org.uk>
+	<20140528131136.GA1643@lahna.fi.intel.com>
+	<20140528141937.GZ18016@ZenIV.linux.org.uk>
+	<20140528183954.GA18016@ZenIV.linux.org.uk>
+	<CA+55aFwmoevoA3h5AZhqtHC0kEJegb0crT_jYvXWWD3UWZt9Aw@mail.gmail.com>
+Date: Wed, 28 May 2014 13:02:23 -0700
+X-Google-Sender-Auth: KQBkHwUSS8U_xzKorbJXJRxYnOA
+Message-ID: <CA+55aFy6-bga8LumLKO8Yc_83vA=p-g8sqUE-aGP-uF3Xb6e4w@mail.gmail.com>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves most data allocated in the probe function from
-unmanaged interfaces to managed interfaces. The kfrees and error
-handling code is done away with. Also, the unnecesary labels are
-removed and the function pm860x_onkey_remove is removed as it becomes
-empty after removing the no longer required function calls. Also,
-linux/device.h include is added to make sure the devm_*() routine
-declarations are unambiguously available.
+On Wed, May 28, 2014 at 12:43 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>  - the shrinker list logic depends on the actual freeing of the dentry
+> to be delayed until the RCU grace period (already true for RCU-lookup
+> dentries)
 
-The following Coccinelle semantic patch was used for making a part of
-the change:
+Side note: I just unconditionally removed the immediate __d_free()
+case, but it could as well have become
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
+-       if (!(dentry->d_flags & DCACHE_RCUACCESS))
++       if (!(dentry->d_flags & (DCACHE_RCUACCESS|DCACHE_SHRINK_LIST))
+                __d_free(&dentry->d_u.d_rcu);
+        else
+                call_rcu(&dentry->d_u.d_rcu, __d_free);
 
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
+instead.
 
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
+Anyway, one reason I looked at this is that most of the threads in
+Mika's NMI watchdog traces were stuck on _raw_spin_lock() in the whole
+d_walk() thing, and I had a *really* hard time convincing myself that
+this was all safe without the RCU lock. I'm wondering if Mika perhaps
+has CONFIG_PREEMPT_RCU set, which means that spinlocks (or the
+rename_lock sequence lock) do not end up being RCU-safe points.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/input/misc/88pm860x_onkey.c | 40 ++++++++++---------------------------
- 1 file changed, 10 insertions(+), 30 deletions(-)
+And once I started worrying about that, the whole "ok, who calls
+dentry_kill() when shrinking races with dput()" question started just
+making me worry about that whole DCACHE_MAY_FREE thing.  Because one
+of the things that Miklos/Al's series of patches did was to drop some
+of the RCU locking, since it wasn't "necessary" any more as far as the
+lru list itself was concerned..
 
-diff --git a/drivers/input/misc/88pm860x_onkey.c b/drivers/input/misc/88pm860x_onkey.c
-index abd8453..220ce0f 100644
---- a/drivers/input/misc/88pm860x_onkey.c
-+++ b/drivers/input/misc/88pm860x_onkey.c
-@@ -26,6 +26,7 @@
- #include <linux/interrupt.h>
- #include <linux/mfd/88pm860x.h>
- #include <linux/slab.h>
-+#include <linux/device.h>
- 
- #define PM8607_WAKEUP		0x0b
- 
-@@ -68,7 +69,8 @@ static int pm860x_onkey_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	info = kzalloc(sizeof(struct pm860x_onkey_info), GFP_KERNEL);
-+	info = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_onkey_info),
-+			    GFP_KERNEL);
- 	if (!info)
- 		return -ENOMEM;
- 	info->chip = chip;
-@@ -76,11 +78,10 @@ static int pm860x_onkey_probe(struct platform_device *pdev)
- 	info->dev = &pdev->dev;
- 	info->irq = irq;
- 
--	info->idev = input_allocate_device();
-+	info->idev = devm_input_allocate_device(&pdev->dev);
- 	if (!info->idev) {
- 		dev_err(chip->dev, "Failed to allocate input dev\n");
--		ret = -ENOMEM;
--		goto out;
-+		return -ENOMEM;
- 	}
- 
- 	info->idev->name = "88pm860x_on";
-@@ -93,42 +94,22 @@ static int pm860x_onkey_probe(struct platform_device *pdev)
- 	ret = input_register_device(info->idev);
- 	if (ret) {
- 		dev_err(chip->dev, "Can't register input device: %d\n", ret);
--		goto out_reg;
-+		return ret;
- 	}
- 
--	ret = request_threaded_irq(info->irq, NULL, pm860x_onkey_handler,
--				   IRQF_ONESHOT, "onkey", info);
-+	ret = devm_request_threaded_irq(&pdev->dev, info->irq, NULL,
-+					pm860x_onkey_handler, IRQF_ONESHOT,
-+					"onkey", info);
- 	if (ret < 0) {
- 		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
- 			info->irq, ret);
--		goto out_irq;
-+		return ret;
- 	}
- 
- 	platform_set_drvdata(pdev, info);
- 	device_init_wakeup(&pdev->dev, 1);
- 
- 	return 0;
--
--out_irq:
--	input_unregister_device(info->idev);
--	kfree(info);
--	return ret;
--
--out_reg:
--	input_free_device(info->idev);
--out:
--	kfree(info);
--	return ret;
--}
--
--static int pm860x_onkey_remove(struct platform_device *pdev)
--{
--	struct pm860x_onkey_info *info = platform_get_drvdata(pdev);
--
--	free_irq(info->irq, info);
--	input_unregister_device(info->idev);
--	kfree(info);
--	return 0;
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -161,7 +142,6 @@ static struct platform_driver pm860x_onkey_driver = {
- 		.pm	= &pm860x_onkey_pm_ops,
- 	},
- 	.probe		= pm860x_onkey_probe,
--	.remove		= pm860x_onkey_remove,
- };
- module_platform_driver(pm860x_onkey_driver);
- 
--- 
-1.9.1
-
+             Linus
