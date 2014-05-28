@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467AbaE1VLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 17:11:54 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:50685 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418AbaE1VLw (ORCPT
+	id S932264AbaE1VLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 17:11:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43950 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751418AbaE1VLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 17:11:52 -0400
+	Wed, 28 May 2014 17:11:50 -0400
+X-Sasl-enc: uux+QQiAoHhTeF6ZT1crc/j2Txbgryi901K4pseXCerE 1401311507
+Date: Wed, 28 May 2014 14:15:22 -0700
+From: Greg KH <greg@kroah.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20140528211522.GA18268@kroah.com>
+References: <20140528194629.0757af1b@canb.auug.org.au>
+ <1401271041.28714.22.camel@x220>
+ <1401272095.28714.30.camel@x220>
+ <1401308488.6186.10.camel@x220>
+ <20140528204232.GA8224@kroah.com>
+ <1401310082.6186.16.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <20140528201440.GB18016@ZenIV.linux.org.uk>
-References: <20140527031415.GS18016@ZenIV.linux.org.uk>
-	<20140527040026.GT18016@ZenIV.linux.org.uk>
-	<20140527070409.GA1801@lahna.fi.intel.com>
-	<20140528031955.GW18016@ZenIV.linux.org.uk>
-	<20140528073751.GB1757@lahna.fi.intel.com>
-	<20140528115701.GY18016@ZenIV.linux.org.uk>
-	<20140528131136.GA1643@lahna.fi.intel.com>
-	<20140528141937.GZ18016@ZenIV.linux.org.uk>
-	<20140528183954.GA18016@ZenIV.linux.org.uk>
-	<CA+55aFwmoevoA3h5AZhqtHC0kEJegb0crT_jYvXWWD3UWZt9Aw@mail.gmail.com>
-	<20140528201440.GB18016@ZenIV.linux.org.uk>
-Date: Wed, 28 May 2014 14:11:51 -0700
-X-Google-Sender-Auth: W4jVrEucTb75VLEpXIGkBuvsrvw
-Message-ID: <CA+55aFyUFjcGPOyfC+CuYyA8x0=ffnzjscRrgz5ZcVmX4k-Jqg@mail.gmail.com>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401310082.6186.16.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 1:14 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Unless I'm badly misreading your patch, you are calling dentry_kill()
-> with rcu_read_lock() held.  And that can trigger all sorts of interesting
-> things, starting with iput() and tons of disk IO...
+On Wed, May 28, 2014 at 10:48:02PM +0200, Paul Bolle wrote:
+> On Wed, 2014-05-28 at 13:42 -0700, Greg KH wrote:
+> > Either is fine with me, I can revert it, or apply a fix, which ever you
+> > want, just let me know.
+> 
+> Well, a proper fix would make this whole episode worthwhile. But if I
+> can't come up with anything that actually builds in a day or two it'll
+> have to be a revert. If that exceeds your patience you're free to hand
+> me a shorter deadline.
 
-Yes, right you are.
+How about I revert it now, that way you can provide a proper fix
+whenever you get the chance.
 
-As to my worry:
+thanks,
 
-> d_walk() covers its arse with ->d_lock (and it wants the starting point
-> to be pinned, obviously).  So AFAICS RCU is not a problem.
-
-It's not RCU itself, it's that DCACHE_MAY_FREE bit. Yes, d_walk() gets
-->d_lock, but dentry_kill() drops d_lock in the middle, and the whole
-"dentry_kill() can get called multiple times for the same dentry" just
-makes me go "Hmm". It is *not* obvious what happens the second vs
-third time that gets called. If it can get called two times, why not
-three times? And if it can get called three times, why can't _two_ of
-them set "can_free" to true? That is absolutely *not* obvious to me.
-
-The aim of my patch (and I agree that sadly holding the rcu lock is
-not viable) was to make that "if it gets called twice" case _much_
-more obvious. Because any but the first time will be very obviously a
-no-op (apart from taking and releasing the lock, which is ok for a
-rcu-delayed data structure). That's very much not the case with
-DCACHE_MAY_FREE. The behavior of that things os very much non-obvious,
-because different callers into dentry_kill() all do different things.
-
-                Linus
+greg k-h
