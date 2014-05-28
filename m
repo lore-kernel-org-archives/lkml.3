@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223AbaE1PyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:54:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60450 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544AbaE1PyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:54:16 -0400
-Date: Wed, 28 May 2014 17:54:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-Message-ID: <20140528155414.GN9895@dhcp22.suse.cz>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <20140528121023.GA10735@dhcp22.suse.cz>
- <20140528134905.GF2878@cmpxchg.org>
- <20140528142144.GL9895@dhcp22.suse.cz>
- <20140528152854.GG2878@cmpxchg.org>
+	id S1754557AbaE1Pzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:55:43 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:33425 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662AbaE1Pzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 11:55:42 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: larry.bassel@linaro.org, Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel\@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "khilman\@linaro.org" <khilman@linaro.org>
+Subject: Re: [PATCH v5 2/2] arm64: enable context tracking
+References: <1401130573-7443-1-git-send-email-larry.bassel@linaro.org>
+	<1401130573-7443-3-git-send-email-larry.bassel@linaro.org>
+	<20140528114438.GF15222@arm.com>
+Date: Wed, 28 May 2014 08:55:39 -0700
+In-Reply-To: <20140528114438.GF15222@arm.com> (Will Deacon's message of "Wed,
+	28 May 2014 12:44:38 +0100")
+Message-ID: <7hegzd99tw.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528152854.GG2878@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-05-14 11:28:54, Johannes Weiner wrote:
-> On Wed, May 28, 2014 at 04:21:44PM +0200, Michal Hocko wrote:
-> > On Wed 28-05-14 09:49:05, Johannes Weiner wrote:
-> > > On Wed, May 28, 2014 at 02:10:23PM +0200, Michal Hocko wrote:
-[...]
-> > > > My main motivation for the weaker model is that it is hard to see all
-> > > > the corner case right now and once we hit them I would like to see a
-> > > > graceful fallback rather than fatal action like OOM killer. Besides that
-> > > > the usaceses I am mostly interested in are OK with fallback when the
-> > > > alternative would be OOM killer. I also feel that introducing a knob
-> > > > with a weaker semantic which can be made stronger later is a sensible
-> > > > way to go.
-> > > 
-> > > We can't make it stronger, but we can make it weaker. 
-> > 
-> > Why cannot we make it stronger by a knob/configuration option?
-> 
-> Why can't we make it weaker by a knob?
+Hi Will,
 
-I haven't said we couldn't.
+Will Deacon <will.deacon@arm.com> writes:
 
-> Why should we design the default for unforeseeable cornercases
-> rather than make the default make sense for existing cases and give
-> cornercases a fallback once they show up?
+> On Mon, May 26, 2014 at 07:56:13PM +0100, Larry Bassel wrote:
+>> Make calls to ct_user_enter when the kernel is exited
+>> and ct_user_exit when the kernel is entered (in el0_da,
+>> el0_ia, el0_svc, el0_irq and all of the "error" paths).
+>> 
+>> These macros expand to function calls which will only work
+>> properly if el0_sync and related code has been rearranged
+>> (in a previous patch of this series).
+>> 
+>> The calls to ct_user_exit are made after hw debugging has been
+>> enabled (enable_dbg_and_irq).
+>> 
+>> The call to ct_user_enter is made at the beginning of the
+>> kernel_exit macro.
+>> 
+>> This patch is based on earlier work by Kevin Hilman.
+>> Save/restore optimizations were also done by Kevin.
+>
+> Apologies if we've discussed this before (it rings a bell), but why are we
+> penalising the fast syscall path with this? Shouldn't TIF_NOHZ contribute to
+> out _TIF_WORK_MASK, then we could do the tracking on the syscall slow path?
 
-Sure we can do that but it would be little bit lame IMO. We are
-promising something and once we find out it doesn't work we will make
-it weaker to workaround that.
+I'll answer here since Larry inherited this design decision from me.
 
-Besides that the default should reflect the usecases, no? Do we have any
-use case for the hard guarantee?
+I considered (and even implemented) forcing the slow syscall path
+based on TIF_NOHZ but decided (perhaps wrongly) not to.  I guess the
+choice is between:
 
-> > > Stronger is the simpler definition, it's simpler code,
-> > 
-> > The code is not really that much simpler. The one you have posted will
-> > not work I am afraid. I haven't tested it yet but I remember I had to do
-> > some tweaks to the reclaim path to not end up in an endless loop in the
-> > direct reclaim (http://marc.info/?l=linux-mm&m=138677140828678&w=2 and
-> > http://marc.info/?l=linux-mm&m=138677141328682&w=2).
-> 
-> That's just a result of do_try_to_free_pages being stupid and using
-> its own zonelist loop to check reclaimability by duplicating all the
-> checks instead of properly using returned state of shrink_zones().
-> Something that would be worth fixing regardless of memcg guarantees.
-> 
-> Or maybe we could add the guaranteed lru pages to sc->nr_scanned.
+- forcing the overhead of syscall tracing path on all
+  TIF_NOHZ processes
 
-Fixes might be different than what I was proposing previously. I was
-merely pointing out that removing the retry loop is not sufficient.
+- forcing the (much smaller) ct_user_exit overhead on all syscalls,
+  (including the fast syscall path)
 
-> > > your usecases are fine with it,
-> > 
-> > my usecases do not overcommit low_limit on the available memory, so far
-> > so good, but once we hit a corner cases when limits are set properly but
-> > we end up not being able to reclaim anybody in a zone then OOM sounds
-> > too brutal.
-> 
-> What cornercases?
+I had decided that the former was better, but as I write this, I'm
+thinking that the NOHZ tasks should probably eat the extra overhead
+since we expect their interactions with the kernel to be minimal anyways
+(part of the goal of full NOHZ.)
 
-I have mentioned a case where NUMA placement and specific node bindings
-interfering with other allocators can end up in unreclaimable zones.
-While you might disagree about the setup I have seen different things
-done out there.
+Ultimately, I'm OK with either way and have the other version ready.
 
-Besides that the reclaim logic is complex enough and history thought me
-that little buggers are hidden at places where you do not expect them.
+> I think that would tidy up your mov into x19 too.
 
-So call me a chicken but I would sleep calmer if we start weaker and add
-an additional guarantees later when somebody really insists on rseeing
-an OOM rather than get reclaimed.
-The proposed counter can tell us more how good we are at not touching
-groups with the limit and we can eventually debug those corner cases
-without affecting the loads too much.
--- 
-Michal Hocko
-SUSE Labs
+That's correct.  If we force the syscall_trace path, the ct_user_enter
+wouldn't have to do any context save/restore.
+
+> Also -- how do you track ret_from_fork in the child with these patches?
+
+Not sure I follow the question, but ret_from_fork calls
+ret_to_user, which calls kernel_exit, which calls ct_user_enter.
+
+Kevin
