@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaE1JCi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:02:38 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60663 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264AbaE1JCe (ORCPT
+	id S1754753AbaE1JCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:02:50 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:59912 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132AbaE1JCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:02:34 -0400
-Message-ID: <5385A638.2000001@linaro.org>
-Date: Wed, 28 May 2014 11:02:48 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 28 May 2014 05:02:46 -0400
+Date: Wed, 28 May 2014 10:02:41 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] ARM: ux500: Staticize ux500_soc_attr
+Message-ID: <20140528090241.GC10803@lee--X1>
+References: <1401248417-10146-1-git-send-email-sachin.kamat@linaro.org>
+ <20140528083649.GB10803@lee--X1>
+ <CAK9yfHwHO_WPaGqJLVxOZrzFCRqBKi+zJPF2-8cDPokcdkb2dA@mail.gmail.com>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>,
-        "'Chander Kashyap'" <chander.kashyap@linaro.org>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'Lorenzo Pieralisi'" <lorenzo.pieralisi@arm.com>,
-        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>
-Subject: Re: [PATCH v6 0/6] add cpuidle support for Exynos5420
-References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com> <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org> <53831795.9070006@gmail.com> <CANuQgHH284A9QY7M5zGbSE-mXjm2KDqr54VWmtKVkbma3zZvvw@mail.gmail.com> <015f01cf7a2e$3b141590$b13c40b0$@samsung.com>
-In-Reply-To: <015f01cf7a2e$3b141590$b13c40b0$@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK9yfHwHO_WPaGqJLVxOZrzFCRqBKi+zJPF2-8cDPokcdkb2dA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 06:35 AM, Kukjin Kim wrote:
-> Chander Kashyap wrote:
->>
->> On 26 May 2014 15:59, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->>> Hi Chander,
->>>
->>> On 16.05.2014 10:03, Chander Kashyap wrote:
->>>> Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7
->> cores.
->>>>
->>>> This patchset adds cpuidle support for Exynos5420 SoC based on
->>>> generic big.little cpuidle driver.
->>>>
->>>> Tested on SMDK5420.
->>>>
->>>> This patch set depends on:
->>>>        1. [PATCH 0/5] MCPM backend for Exynos5420
->>>>           http://www.spinics.net/lists/arm-kernel/msg331100.html
->>>> Changelog is in respective patches.
->>>> Chander Kashyap (5):
->>>>    driver: cpuidle-big-little: add of_device_id structure
->>>>    arm: exynos: add generic function to calculate cpu number
->>>>    cpuidle: config: Add ARCH_EXYNOS entry to select cpuidle-big-little
->>>>      driver
->>>>    driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
->>>>    exynos: cpuidle: do not allow cpuidle registration for Exynos5420
->>>>    mcpm: exynos: populate suspend and powered_up callbacks
->>>>
->>>>   arch/arm/mach-exynos/exynos.c        |    4 +++-
->>>>   arch/arm/mach-exynos/mcpm-exynos.c   |   36
->> ++++++++++++++++++++++++++++++++++
->>>>   arch/arm/mach-exynos/regs-pmu.h      |    9 +++++++++
->>>>   drivers/cpuidle/Kconfig.arm          |    2 +-
->>>>   drivers/cpuidle/cpuidle-big_little.c |   12 +++++++++++-
->>>>   5 files changed, 60 insertions(+), 3 deletions(-)
->>>>
->>>
->>> For the whole series,
->>>
->>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
->>
->> Thanks Tomasz.
->>
->> Dear Kukjin,
->> Can you take these patches.
->>>
-> When I looked at this series quickly, looks good to me but I need to get ack from cpuidle maintainer Rafael or Daniel.
+> On 28 May 2014 14:06, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Wed, 28 May 2014, Sachin Kamat wrote:
+> >
+> >> 'ux500_soc_attr' is local to this file. While at it also make it
+> >> const to match the argument list of device_create_file.
+> >
+> > What's going on Sachin?  I Acked v2 of this patch an hour ago, yet
+> > you've resent it as a v1 and without the Ack?
+> 
+> Actually I posted v2 twice almost immediately. The first time I forgot to
+> CC LKML as requested by you. Sorry for the confusion.
 
-Acked the different cpuidle bits.
-
-Thanks
-   -- Daniel
-
+Okay, I see.  Thanks for clarifying.
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
