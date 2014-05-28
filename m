@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaE1PRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:17:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43320 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058AbaE1PRj (ORCPT
+	id S1754644AbaE1PSn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:18:43 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:49301 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753998AbaE1PSm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:17:39 -0400
-Date: Wed, 28 May 2014 17:17:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-Message-ID: <20140528151730.GW11096@twins.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <20140528121001.GI19967@e103034-lin>
+	Wed, 28 May 2014 11:18:42 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Arnaldo Carvalho de Melo'" <acme@kernel.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        =?iso-8859-2?Q?Ondrej_B=EDlka?= <neleai@seznam.cz>,
+        Caitlin Bestler <caitlin.bestler@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Elie De Brauwer" <eliedebrauwer@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        "Steven Whitehouse" <steve@chygwyn.com>,
+        =?iso-8859-2?Q?R=E9mi_Denis-Courmont?= 
+	<remi.denis-courmont@nokia.com>,
+        Paul Moore <paul@paul-moore.com>,
+        "Chris Friesen" <chris.friesen@windriver.com>
+Subject: RE: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
+Thread-Topic: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness
+ [RESEND]
+Thread-Index: AQHPeoaBBF42JoL2CUKh/KaMaW27r5tWGHxA
+Date: Wed, 28 May 2014 15:17:40 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
+References: <20140512143451.GB13801@kernel.org>
+ <20140521210535.GA5414@kernel.org> <537E0961.8040005@gmail.com>
+ <20140526134647.GB8176@kernel.org> <20140526211706.GA25474@kernel.org>
+ <5384BEC5.2080607@gmail.com> <20140527192115.GD25474@kernel.org>
+ <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com>
+ <20140527203010.GA2764@kernel.org> <5385D47A.3070401@gmail.com>
+ <20140528150720.GB2764@kernel.org>
+In-Reply-To: <20140528150720.GB2764@kernel.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EzoGi9kFQAnUjl0a"
-Content-Disposition: inline
-In-Reply-To: <20140528121001.GI19967@e103034-lin>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arnaldo Carvalho de Melo
+...
+> > But, another question...
+> >
+> > In the case that the call is interrupted by a signal handler and some
+> > datagrams have already been received, then the call succeeds, and
+> > returns the number of datagrams received, and 'timeout' is updated with
+> > the remaining time. Maybe that's the right behavior, but I just want to
+> 
+> Note that what the comment in the existing code says should apply here,
+> namely that the next recv (m or mmsg) syscall on this socket will return
+> what is in sock->sk->sk_err, that is the signal:
+> 
+...
+> 
+> So, yes, the user _can_ process the packets already copied to userspace,
+> i.e. no packet loss, and then, on the next call, will receive the signal
+> notification.
 
---EzoGi9kFQAnUjl0a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The application shouldn't need to see an EINTR response, any signal handler
+should be run when the system call returns to user (regardless of the
+system call result code).
+If that doesn't happen Linux is badly broken!
+>From an application point of view this is exactly the same as the signal
+occurring just before/after the kernel entry/exit for the system call.
 
-On Wed, May 28, 2014 at 01:10:01PM +0100, Morten Rasmussen wrote:
-> The basic problem is that worst case: sum starting from 0 and period
-> already at LOAD_AVG_MAX =3D 47742, it takes LOAD_AVG_MAX_N =3D 345 periods
-> (ms) for sum to reach 47742.=20
+The call should just return early with success status.
+No need to preserve the EINTR response for later.
 
-But it takes only 4 periods (4*32ms) to get ~94% of the way there,=20
+The same might be appropriate for other errors - maybe including EFAULT
+copying non-initial messages to userspace.
+Put the message being processed back on the socket queue and return
+success with the (non-zero) partial message count.
 
-So our half-time is 32 * 1024 ms, now look at \Sum_i=3D1,4 1/(2^i) =3D
-0.9375. So 4 periods (4*32*1024=3D131072 ms) gets us ~94% of the way
-there.
+	David
 
-Now, granted, 4 periods of 32-ish ms is still very long, but nowhere
-near as horrid as the full convergence.
 
---EzoGi9kFQAnUjl0a
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThf4KAAoJEHZH4aRLwOS6920P/3Mo61XO0U0+Yp4uw5kGaWAp
-GVUQZY/Eio38+gIM8E8a6QNmBJET6QXMWwRvQTe2rZljRhnWeb+wzDzcyyFF2DzA
-fI8dJd8iD6x+ZGtVsIiDQcgdft6fSiiZdSEvYmSuH9SJL1NqRljYeJsg2X6X5ATT
-ZNRCnzlwN+ynyepJ8VUMzW265aUYlPB/iSuUqOqsVWInVAOxJv2bih7LyHRL/nvc
-BgFtKNHZKDGQoUbCvVKpIoube+EKrpY78ILK0spKFIzGLD/7Wm+uR30fupm/jvUT
-3UL+DOhv6M1Qi7ftCaahbN9ew/CXZkCRZ2++z0/KdC3Zzo5mkVnH9Ue0ieNrmHTX
-+ajxJEanjLyf2+ixh+D94OfYsjwuRYkwGVXPbdWoZm392VJzem0M1C0G3yhynr3G
-r/av3Jaf0viXKBQJ1l2kTL+DOLRI2iuG9yyCfqYXjGKhEw2FuIYnSvsNksfQ7jnA
-WAyHx9+D/0xlwwVAeelsV7rVdOKtgvmj3vDaVV7jF/SeI6kjGhecKfVC4TTT5ZKb
-UgqCEukVmm74K6Wl3bdOo1K/wZqecQhiS9nU1sx/7/H7OsKHK8AtQorW1NbpBXgP
-gvHP1pIpR8yybm2Jx87n0I+evWAy0Zz+EjRKl1+ahvE1HfPRoxfYqOiH4p9SL1Cy
-9JkYhNIbIyztfTszt1Ac
-=tD/y
------END PGP SIGNATURE-----
-
---EzoGi9kFQAnUjl0a--
