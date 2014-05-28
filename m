@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414AbaE1XcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:32:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43888 "EHLO
+	id S1754392AbaE1XdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:33:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaE1Xb7 (ORCPT
+	with ESMTP id S1751739AbaE1XdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:31:59 -0400
-Date: Wed, 28 May 2014 16:35:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        linux-leds@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCHv2 15/15] misc: atmel_pwm: remove obsolete driver
-Message-ID: <20140528233534.GA3580@kroah.com>
-References: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1401319218-16772-16-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 28 May 2014 19:33:11 -0400
+Date: Wed, 28 May 2014 16:36:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chaitanya Hazarey <c@24.io>
+Cc: burzalodowa@gmail.com, andrea.merello@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Staging: rtl8192u: r8192U_wx.c Various Code cleanups
+ and code-style additions
+Message-ID: <20140528233647.GB3580@kroah.com>
+References: <1401319428-20798-1-git-send-email-c@24.io>
+ <1401319428-20798-2-git-send-email-c@24.io>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401319218-16772-16-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1401319428-20798-2-git-send-email-c@24.io>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 01:20:18AM +0200, Alexandre Belloni wrote:
-> The misc/atmel_pwm is not used by any mainlined boards and has been replaced by
-> the pwm-driver using the generic PWM framework.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On Wed, May 28, 2014 at 04:23:48PM -0700, Chaitanya Hazarey wrote:
+> Removed dead code
+> Deleted stray newlines
+> Added newlines for better code readability
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+These should all be broken up into individual patches.
 
+Remember, each patch should just do _one_ thing.
+
+thanks,
+
+greg k-h
