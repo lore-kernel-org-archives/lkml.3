@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaE1OJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:09:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:51750 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753667AbaE1OJN (ORCPT
+	id S1754254AbaE1OKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:10:55 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:33479 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbaE1OKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:09:13 -0400
-Date: Wed, 28 May 2014 10:09:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Minyard <cminyard@mvista.com>,
-        Stanislav Meduna <stano@meduna.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, rjw@rjwysocki.net
-Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with
- irqsoff tracers
-Message-ID: <20140528100910.6035ea7d@gandalf.local.home>
-In-Reply-To: <20140528072852.GN11096@twins.programming.kicks-ass.net>
-References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org>
-	<17051981.niWmA6MIgX@wuerfel>
-	<20140527174847.7b405b5c@gandalf.local.home>
-	<53850FF3.8050107@codeaurora.org>
-	<20140527193050.4606a014@gandalf.local.home>
-	<20140528072852.GN11096@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 28 May 2014 10:10:53 -0400
+Date: Wed, 28 May 2014 19:40:47 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org, kbuild@01.org,
+        julia.lawall@lip6.fr
+Subject: [PATCH] coccinelle/null: solve parse error
+Message-ID: <20140528141047.GA4059@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014 09:28:52 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+This patch solves the parse-error by adding @@ . This is necessary since
+Coccinelle version 1.0.0-rc20. Also, the comment is added to use a
+recent version of Coccinelle.
 
-> On Tue, May 27, 2014 at 07:30:50PM -0400, Steven Rostedt wrote:
-> > Paul, Peter, see anything wrong with this?
-> 
-> You mean, aside from that it won't actually apply due to that code
-> having been massively overhauled?
-> 
-> I suppose the same thing Arnd mentioned, the cpuidle_enter() thing can
-> be huge, but is we're going to have to push this down into all cpuidle
-> drivers we're not going to be happy.
-> 
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ scripts/coccinelle/null/badzero.cocci | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-I believe that the stop/start_critical_timings() can nest. If not, I
-can make them do so. Thus, we could start adding them in the depths of
-the cpuidle drivers. If we miss one, we may not notice until someone
-reports a large latency due to it.  And that is only if the driver
-itself calls local_irq_save/restore().
+diff --git a/scripts/coccinelle/null/badzero.cocci b/scripts/coccinelle/null/badzero.cocci
+index d79baf7..5551da2 100644
+--- a/scripts/coccinelle/null/badzero.cocci
++++ b/scripts/coccinelle/null/badzero.cocci
+@@ -10,7 +10,7 @@
+ // Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
+ // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
+ // URL: http://coccinelle.lip6.fr/
+-// Comments:
++// Comments: Requires Coccinelle version 1.0.0-rc20 or later
+ // Options:
+ 
+ virtual patch
+@@ -19,6 +19,7 @@ virtual org
+ virtual report
+ 
+ @initialize:ocaml@
++@@
+ let negtable = Hashtbl.create 101
+ 
+ @depends on patch@
+-- 
+1.9.1
 
--- Steve
