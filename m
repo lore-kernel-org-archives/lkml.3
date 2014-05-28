@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaE1QRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:17:19 -0400
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:46879 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074AbaE1QRO (ORCPT
+	id S932253AbaE1QRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:17:45 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:47059 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425AbaE1QRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:17:14 -0400
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz> <20140528121023.GA10735@dhcp22.suse.cz> <20140528134905.GF2878@cmpxchg.org> <20140528142144.GL9895@dhcp22.suse.cz> <20140528152854.GG2878@cmpxchg.org>
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Greg Thelen <gthelen@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-In-reply-to: <20140528152854.GG2878@cmpxchg.org>
-Date: Wed, 28 May 2014 09:17:13 -0700
-Message-ID: <xr93ioopyj1y.fsf@gthelen.mtv.corp.google.com>
+	Wed, 28 May 2014 12:17:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1398359576-14668-1-git-send-email-mporter@linaro.org>
+References: <1398359576-14668-1-git-send-email-mporter@linaro.org>
+Date: Wed, 28 May 2014 11:17:41 -0500
+Message-ID: <CAL_JsqKAcV0VEkqgw-ZDcJka2nE3OO2jcBtxRiJW8jr-Rh1qvQ@mail.gmail.com>
+Subject: Re: [PATCH] dt: bindings: dwc2: fix required value for the phy-names property
+From: Rob Herring <robherring2@gmail.com>
+To: Matt Porter <mporter@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Wed, May 28 2014, Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> On Wed, May 28, 2014 at 04:21:44PM +0200, Michal Hocko wrote:
->> On Wed 28-05-14 09:49:05, Johannes Weiner wrote:
->> > On Wed, May 28, 2014 at 02:10:23PM +0200, Michal Hocko wrote:
->> > > Hi Andrew, Johannes,
->> > > 
->> > > On Mon 28-04-14 14:26:41, Michal Hocko wrote:
->> > > > This patchset introduces such low limit that is functionally similar
->> > > > to a minimum guarantee. Memcgs which are under their lowlimit are not
->> > > > considered eligible for the reclaim (both global and hardlimit) unless
->> > > > all groups under the reclaimed hierarchy are below the low limit when
->> > > > all of them are considered eligible.
->> > > > 
->> > > > The previous version of the patchset posted as a RFC
->> > > > (http://marc.info/?l=linux-mm&m=138677140628677&w=2) suggested a
->> > > > hard guarantee without any fallback. More discussions led me to
->> > > > reconsidering the default behavior and come up a more relaxed one. The
->> > > > hard requirement can be added later based on a use case which really
->> > > > requires. It would be controlled by memory.reclaim_flags knob which
->> > > > would specify whether to OOM or fallback (default) when all groups are
->> > > > bellow low limit.
->> > > 
->> > > It seems that we are not in a full agreement about the default behavior
->> > > yet. Johannes seems to be more for hard guarantee while I would like to
->> > > see the weaker approach first and move to the stronger model later.
->> > > Johannes, is this absolutely no-go for you? Do you think it is seriously
->> > > handicapping the semantic of the new knob?
->> > 
->> > Well we certainly can't start OOMing where we previously didn't,
->> > that's called a regression and automatically limits our options.
->> > 
->> > Any unexpected OOMs will be much more acceptable from a new feature
->> > than from configuration that previously "worked" and then stopped.
->> 
->> Yes and we are not talking about regressions, are we?
->> 
->> > > My main motivation for the weaker model is that it is hard to see all
->> > > the corner case right now and once we hit them I would like to see a
->> > > graceful fallback rather than fatal action like OOM killer. Besides that
->> > > the usaceses I am mostly interested in are OK with fallback when the
->> > > alternative would be OOM killer. I also feel that introducing a knob
->> > > with a weaker semantic which can be made stronger later is a sensible
->> > > way to go.
->> > 
->> > We can't make it stronger, but we can make it weaker. 
->> 
->> Why cannot we make it stronger by a knob/configuration option?
+On Thu, Apr 24, 2014 at 12:12 PM, Matt Porter <mporter@linaro.org> wrote:
+> "7408484 usb: gadget: s3c-hsotg: enable generic phy support" introduces
+> generic phy support to the dwc2.txt binding and the s3c-hsotg driver
+> which implements support for the binding. The binding documentation
+> incorrectly states that the phy-names property will be "device". The
+> binding example, driver, and one dts user all implement the phy-names
+> property as requiring "usb2-phy".
 >
-> Why can't we make it weaker by a knob?  Why should we design the
-> default for unforeseeable cornercases rather than make the default
-> make sense for existing cases and give cornercases a fallback once
-> they show up?
+> Fix the dwc2.txt binding documentation to correctly specify "usb2-phy"
+> as the appropriate value for phy-names.
+>
+> Reported-by: Tomasz Figa <t.figa@samsung.com>
+> Signed-off-by: Matt Porter <mporter@linaro.org>
 
-My 2c...  The following works for my use cases:
-1) introduce memory.low_limit_in_bytes (default=0 thus no default change
-   from older kernels)
-2) interested users will set low_limit_in_bytes to non-zero value.
-   Memory protected by low limit should be as migratable/reclaimable as
-   mlock memory.  If a zone full of mlock memory causes oom kills, then
-   so should the low limit.
+Applied for 3.16.
 
-If we find corner cases where low_limit_in_bytes is too strict, then we
-could discuss a new knob to relax it.  But I think we should start with
-a strict low-limit.  If the oom killer gets tied in knots due to low
-limit, then I'd like to explore fixing the oom killer before relaxing
-low limit.
+Rob
 
-Disclaimer: new use cases will certainly appear with various
-requirements.  But an oom-killing low_limit_in_bytes seems like a
-generic opt-in feature, so I think it's worthwhile.
+> ---
+>  Documentation/devicetree/bindings/usb/dwc2.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/Documentation/devicetree/bindings/usb/dwc2.txt b/Documentation/devicetree/bindings/usb/dwc2.txt
+> index b8b6871..467ddd1 100644
+> --- a/Documentation/devicetree/bindings/usb/dwc2.txt
+> +++ b/Documentation/devicetree/bindings/usb/dwc2.txt
+> @@ -13,7 +13,7 @@ Refer to clk/clock-bindings.txt for generic clock consumer properties
+>
+>  Optional properties:
+>  - phys: phy provider specifier
+> -- phy-names: shall be "device"
+> +- phy-names: shall be "usb2-phy"
+>  Refer to phy/phy-bindings.txt for generic phy consumer properties
+>
+>  Example:
+> --
+> 1.8.4
+>
