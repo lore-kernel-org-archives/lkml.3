@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaE1R0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:26:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44384 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752153AbaE1R0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:26:23 -0400
-Date: Wed, 28 May 2014 19:26:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [RFC][PATCH] tracing: Print nasty banner when trace_printk() is
- in use
-Message-ID: <20140528172618.GB17220@pd.tnic>
-References: <20140528131440.2283213c@gandalf.local.home>
+	id S1754575AbaE1R1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:27:35 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:48590 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaE1R1e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 13:27:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140528131440.2283213c@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <201405280839.00973.linux@rainbow-software.org>
+References: <1401226727-5508-1-git-send-email-linux@rainbow-software.org>
+ <1401226727-5508-6-git-send-email-linux@rainbow-software.org>
+ <CAGVrzcbD=OhzuWRuxJVG1SJeYDsOYaV2AozsWafBtX6gcF08vw@mail.gmail.com> <201405280839.00973.linux@rainbow-software.org>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 28 May 2014 10:26:53 -0700
+Message-ID: <CAGVrzcY2anVgKaghKYM_A=Qke854byc=uGn2dvbOm-+vQk9bFA@mail.gmail.com>
+Subject: Re: [PATCH 5/9] tlan: Restart autonegotiation on link loss
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Samuel Chessman <chessman@tux.org>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 01:14:40PM -0400, Steven Rostedt wrote:
-> Here's the banner:
-> 
->  ****************************************
->  ** NOTICE NOTICE NOTICE NOTICE NOTICE **
->  ** trace_printk() being used.         **
->  ** Allocating extra memory for it     **
->  ****************************************
-> 
-> Hmm, maybe I should add "Not for production use" to scare people even
-> more?
+2014-05-27 23:39 GMT-07:00 Ondrej Zary <linux@rainbow-software.org>:
+> On Wednesday 28 May 2014, Florian Fainelli wrote:
+>> Hi,
+>>
+>> 2014-05-27 14:38 GMT-07:00 Ondrej Zary <linux@rainbow-software.org>:
+>> > When link is lost on a card which uses internal PHY for 10 Mbit speeds,
+>> > restart autonegotiation to allow switching between 10 and 100 Mbps
+>> > speeds.
+>>
+>> I think you should take a look at implementing libphy read/write stubs
+>> for this driver, that would allow you not to open-code such things.
+>
+> Yes, that would be good. However, I don't want to do any major PHY-related
+> changes to the driver because it supports cards with various PHY
+> configurations and I don't have all the different hardware to test.
 
-Yes, and at least some swearing - this is the linux kernel for
-chrissake. Or are you gone soft too?
+That is completely fair, this is a fairly old driver, if it is not
+broken, let's keep it as-is.
+
+>
+>> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>> > ---
+>> >  drivers/net/ethernet/ti/tlan.c |   14 ++++++++++++++
+>> >  1 file changed, 14 insertions(+)
+>> >
+>> > diff --git a/drivers/net/ethernet/ti/tlan.c
+>> > b/drivers/net/ethernet/ti/tlan.c index 31d4a96..1047b3f 100644
+>> > --- a/drivers/net/ethernet/ti/tlan.c
+>> > +++ b/drivers/net/ethernet/ti/tlan.c
+>> > @@ -2721,6 +2721,7 @@ static void tlan_phy_finish_auto_neg(struct
+>> > net_device *dev) else if (!(mode & 0x0080) && (mode & 0x0040))
+>> >                 priv->tlan_full_duplex = true;
+>> >
+>> > +       /* switch to internal PHY for 10 Mbps */
+>> >         if ((!(mode & 0x0180)) &&
+>> >             (priv->adapter->flags & TLAN_ADAPTER_USE_INTERN_10) &&
+>> >             (priv->phy_num != 0)) {
+>> > @@ -2788,6 +2789,19 @@ static void tlan_phy_monitor(unsigned long data)
+>> >                                dev->name);
+>> >                         tlan_dio_write8(dev->base_addr, TLAN_LED_REG, 0);
+>> >                         netif_carrier_off(dev);
+>> > +                       if (priv->adapter->flags &
+>> > TLAN_ADAPTER_USE_INTERN_10) { +                               /* power
+>> > down internal PHY */
+>> > +                               u16 data = MII_GC_PDOWN | MII_GC_LOOPBK
+>> > +                                       | MII_GC_ISOLATE;
+>> > +                               tlan_mii_sync(dev->base_addr);
+>> > +                               tlan_mii_write_reg(dev, priv->phy[0],
+>> > +                                       MII_GEN_CTL, data);
+>> > +                               /* set to external PHY */
+>> > +                               priv->phy_num = 1;
+>> > +                               /* restart autonegotiation */
+>> > +                               tlan_set_timer(dev, (4*HZ/10),
+>> > TLAN_TIMER_PHY_PDOWN); +                               return;
+>> > +                       }
+>> >                 }
+>> >         }
+>> >
+>> > --
+>> > Ondrej Zary
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> > in the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
+> --
+> Ondrej Zary
+
+
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Florian
