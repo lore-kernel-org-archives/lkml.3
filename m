@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaE1IwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:52:07 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:53333 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaE1IwE (ORCPT
+	id S1754060AbaE1IxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:53:25 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:34901 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaE1IxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:52:04 -0400
-Message-ID: <5385A3AF.7060302@linaro.org>
-Date: Wed, 28 May 2014 09:51:59 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v3 13/13] mmc: mmci: Add Qcom specific pio_read function.
-References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>	<1400849589-7626-1-git-send-email-srinivas.kandagatla@linaro.org> <CACRpkdb+pUn=9UkEVhK_2nL8C2wq_6qOuuRV52TRnj1hJiHvSg@mail.gmail.com>
-In-Reply-To: <CACRpkdb+pUn=9UkEVhK_2nL8C2wq_6qOuuRV52TRnj1hJiHvSg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 28 May 2014 04:53:22 -0400
+From: Scott Weir <sjw0410@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: android: fix Missing a blank line after declarations warnings
+Date: Wed, 28 May 2014 18:52:51 +1000
+Message-Id: <1401267171-4106-1-git-send-email-sjw0410@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch corrects coding style issue:
+WARNING: Missing a black line after declarations
 
+Signed-off-by: Scott Weir <sjw0410@gmail.com>
+---
+ drivers/staging/android/sync_debug.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-On 28/05/14 09:08, Linus Walleij wrote:
-> On Fri, May 23, 2014 at 2:53 PM,  <srinivas.kandagatla@linaro.org> wrote:
->
->> +       if (unlikely(bytes)) {
->> +               unsigned char buf[4];
-> (...)
+diff --git a/drivers/staging/android/sync_debug.c b/drivers/staging/android/sync_debug.c
+index 00efaf9..2dd3fcc 100644
+--- a/drivers/staging/android/sync_debug.c
++++ b/drivers/staging/android/sync_debug.c
+@@ -95,12 +95,14 @@ static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
+ 
+ 	if (status <= 0) {
+ 		struct timeval tv = ktime_to_timeval(pt->base.timestamp);
++
+ 		seq_printf(s, "@%ld.%06ld", tv.tv_sec, tv.tv_usec);
+ 	}
+ 
+ 	if (parent->ops->timeline_value_str &&
+ 	    parent->ops->pt_value_str) {
+ 		char value[64];
++
+ 		parent->ops->pt_value_str(pt, value, sizeof(value));
+ 		seq_printf(s, ": %s", value);
+ 		if (fence) {
+@@ -122,6 +124,7 @@ static void sync_print_obj(struct seq_file *s, struct sync_timeline *obj)
+ 
+ 	if (obj->ops->timeline_value_str) {
+ 		char value[64];
++
+ 		obj->ops->timeline_value_str(obj, value, sizeof(value));
+ 		seq_printf(s, ": %s", value);
+ 	}
+@@ -234,6 +237,7 @@ void sync_dump(void)
+ 	for (i = 0; i < s.count; i += DUMP_CHUNK) {
+ 		if ((s.count - i) > DUMP_CHUNK) {
+ 			char c = s.buf[i + DUMP_CHUNK];
++
+ 			s.buf[i + DUMP_CHUNK] = 0;
+ 			pr_cont("%s", s.buf + i);
+ 			s.buf[i + DUMP_CHUNK] = c;
+-- 
+1.9.1
 
->
-> Please think twice about this.
-> http://lwn.net/Articles/70473/
-> http://lwn.net/Articles/420019/
-> http://lwn.net/Articles/182369/
->
-Thanks for the warning.
-
-You are right. I think having likely/unlikely is not always right here.
-
-thanks,
-srini
-> Yours,
-> Linus Walleij
->
