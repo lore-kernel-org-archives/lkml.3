@@ -1,145 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaE1JnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:43:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33477 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaE1JnI (ORCPT
+	id S1752169AbaE1Jp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:45:28 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45184 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaE1Jp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:43:08 -0400
-Date: Wed, 28 May 2014 11:43:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jason Low <jason.low2@hp.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [patch 6/6] rtmutex: Avoid pointless requeueing in the deadlock
- detection chain walk
-In-Reply-To: <CAGQ1y=6DOs0hcdV+NvOdA9hxf6kwu-R0M-c6R2iUK4ufr=pwEg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1405281143000.21720@ionos.tec.linutronix.de>
-References: <20140522031841.797415507@linutronix.de> <20140522031950.280830190@linutronix.de> <CAGQ1y=6DOs0hcdV+NvOdA9hxf6kwu-R0M-c6R2iUK4ufr=pwEg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 28 May 2014 05:45:26 -0400
+Date: Wed, 28 May 2014 10:44:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Message-ID: <20140528094454.GH12304@sirena.org.uk>
+References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
+ <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
+ <20140524124858.GR22111@sirena.org.uk>
+ <5385063F.30407@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="F+GrfnmevXhaz2Un"
+Content-Disposition: inline
+In-Reply-To: <5385063F.30407@codeaurora.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
+ ks8851 SPI chips
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Jason Low wrote:
-> On Wed, May 21, 2014 at 8:25 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > @@ -440,32 +452,41 @@ static int rt_mutex_adjust_prio_chain(st
-> >         get_task_struct(task);
-> >         raw_spin_lock_irqsave(&task->pi_lock, flags);
-> >
-> > -       if (waiter == rt_mutex_top_waiter(lock)) {
-> > -               /*
-> > -                * The waiter became the top waiter on the
-> > -                * lock. Remove the previous top waiter from the tasks
-> > -                * pi waiters list and add waiter to it.
-> > -                */
-> > -               rt_mutex_dequeue_pi(task, prerequeue_top_waiter);
-> > -               rt_mutex_enqueue_pi(task, waiter);
-> > -               __rt_mutex_adjust_prio(task);
-> > -
-> > -       } else if (prerequeue_top_waiter == waiter) {
-> > -               /*
-> > -                * The waiter was the top waiter on the lock. Remove
-> > -                * waiter from the tasks pi waiters list and add the
-> > -                * new top waiter to it.
-> > -                */
-> > -               rt_mutex_dequeue_pi(task, waiter);
-> > -               waiter = rt_mutex_top_waiter(lock);
-> > -               rt_mutex_enqueue_pi(task, waiter);
-> > -               __rt_mutex_adjust_prio(task);
-> > -
-> > -       } else {
-> > -               /*
-> > -                * Nothing changed. No need to do any priority
-> > -                * adjustment.
-> > -                */
-> > +       /*
-> > +        * In case we are just following the lock chain for deadlock
-> > +        * detection we can avoid the whole requeue and priority
-> > +        * adjustment business.
-> > +        */
-> > +       if (requeue) {
-> > +               if (waiter == rt_mutex_top_waiter(lock)) {
-> > +                       /*
-> > +                        * The waiter became the top waiter on the
-> > +                        * lock. Remove the previous top waiter from
-> > +                        * the tasks pi waiters list and add waiter to
-> > +                        * it.
-> > +                        */
-> > +                       rt_mutex_dequeue_pi(task, prerequeue_top_waiter);
-> > +                       rt_mutex_enqueue_pi(task, waiter);
-> > +                       __rt_mutex_adjust_prio(task);
-> > +
-> > +               } else if (prerequeue_top_waiter == waiter) {
-> > +                       /*
-> > +                        * The waiter was the top waiter on the
-> > +                        * lock. Remove waiter from the tasks pi
-> > +                        * waiters list and add the new top waiter to
-> > +                        * it.
-> > +                        */
-> > +                       rt_mutex_dequeue_pi(task, waiter);
-> > +                       waiter = rt_mutex_top_waiter(lock);
-> > +                       rt_mutex_enqueue_pi(task, waiter);
-> > +                       __rt_mutex_adjust_prio(task);
-> > +
-> > +               } else {
-> > +                       /*
-> > +                        * Nothing changed. No need to do any priority
-> > +                        * adjustment.
-> > +                        */
-> > +               }
-> >         }
-> >
-> >         raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-> 
-> In the above case, could we go 1 step further and avoid taking the pi
-> lock as well?
-> 
->         if (requeue) {
->                 raw_spin_lock_irqsave(&task->pi_lock, flags);
-> 
->                 if (waiter == rt_mutex_top_waiter(lock)) {
->                         /*
->                          * The waiter became the top waiter on the
->                          * lock. Remove the previous top waiter from
->                          * the tasks pi waiters list and add waiter to
->                          * it.
->                          */
->                         rt_mutex_dequeue_pi(task, prerequeue_top_waiter);
->                         rt_mutex_enqueue_pi(task, waiter);
->                         __rt_mutex_adjust_prio(task);
-> 
->                 } else if (prerequeue_top_waiter == waiter) {
->                         /*
->                          * The waiter was the top waiter on the
->                          * lock. Remove waiter from the tasks pi
->                          * waiters list and add the new top waiter to
->                          * it.
->                          */
->                         rt_mutex_dequeue_pi(task, waiter);
->                         waiter = rt_mutex_top_waiter(lock);
->                         rt_mutex_enqueue_pi(task, waiter);
->                         __rt_mutex_adjust_prio(task);
-> 
->                 } else {
->                         /*
->                          * Nothing changed. No need to do any priority
->                          * adjustment.
->                          */
->                 }
-> 
->                 raw_spin_unlock_irqrestore(&task->pi_lock, flags);
->         }
 
-Indeed.
+--F+GrfnmevXhaz2Un
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- 
+On Tue, May 27, 2014 at 02:40:15PM -0700, Stephen Boyd wrote:
+> On 05/24/14 05:48, Mark Brown wrote:
+
+> > That said it looks like this is intended to be a supply for an external
+> > PHY rather than the device itself, but even so my original question
+> > about it being able to operate without power still applies.  Looking at
+> > the code it's certainly not doing any of the handling of a missing
+> > supply that I would associate with using _optional().
+
+> I agree, both supplies don't look optional. Unfortunately
+> efm32gg-dk3750.dts doesn't look to be listing any supply, and this
+> driver only recently got support for the VDD_A3.3 supply that the omap
+> board uses (adding Uwe for any comments on efm setup). I presume on
+> these boards VDD_IO is tied to some always on power source that software
+> doesn't want to deal with. Nishant, what's VDD_IO connected to on omap?
+
+> What's the proper solution here? Should we use regulator_get() and check
+> for EPROBE_DEFER and ignore other errors?
+
+As an implementation extension if no supply is specified at all the
+regulator API will happily substitute in a dummy if the board is using
+DT or ACPI, or if it has specified full constraints.
+
+> Should the get_optional() variant just drop the "Other consumers will
+> be... " part and should the get_exclusive() variant say "obtain this
+> regulator while this reference is held" ?
+
+Yes.
+
+> From: Stephen Boyd <sboyd@codeaurora.org>
+> Subject: [PATCH] regulator: Fix regulator_get_{optional,exclusive}()
+>  documentation
+
+Documentation/SubmittingPatches.
+
+--F+GrfnmevXhaz2Un
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThbATAAoJELSic+t+oim9Hv8P/0wo8aYnBoyFv+R9/tAAkqM3
+cqFew+QnqKruZ0h4Joc8Q21tawR80Qeu2/QXkf+Kq0c7b0C+ILjC3SXHA8vULfYD
+gnc6JXEo2mw4AhKVeXt4JzhVBGr83hAVH8ccGlRVXxfBcb9DEA/v5d/vc2W95bs9
+LwqPH8J+sdAk1iPNoGsVQFp6e+9SlRUZCJyXx6aBu14ENjkR53SmkJL53xjTweon
+yZMfSYmTE2s4CUdQ0IBifu7JnJfhyL+Dg6bKtczoZpcRPb1v+WdZBI3ANy/qTyuw
+wTHMCuWZAXGSYSDH+WpTletN5w0t6ZVF3oOmhHzzdzZpR9nHxxCdtCwLW/k6ma1f
+QqS2a7FOSImO21uCdWVEYzBOPy72sT9lNJ4F3lQxJ53WwdvmIdv63twpny+/O3Ee
+AoAeeCVghoFhUpwVz+fSH/5fiEN7xFD/FDqQYlEZg6zw0W/uyYLPbxd0xpHAR9aY
+zeHlnpf4r7XznBAY/C7NFhkWSW0ir+eg7kv1Lu5b85pAfc7GMLHQgeC8eOZP73mR
+OCdNuO5jeyZ6/JNV6xW5VTvJ/RbQvlA51hRj9aiRoQST6yiUexSo4KQAweOZd1Di
+t/iAtDe3nJXmyAC7WGnDoxjXubSHtqE/eY9aNeDmODyu6pz3tgFxPGRTj7JRRfz3
+nulng4GPP+jN6DuaMF/U
+=gxsH
+-----END PGP SIGNATURE-----
+
+--F+GrfnmevXhaz2Un--
