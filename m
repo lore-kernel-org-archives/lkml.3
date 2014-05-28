@@ -1,145 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaE1MU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:20:26 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:41240 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaE1MUY (ORCPT
+	id S1752978AbaE1MWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:22:10 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:35093 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971AbaE1MWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:20:24 -0400
-Message-ID: <5385D47A.3070401@gmail.com>
-Date: Wed, 28 May 2014 14:20:10 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+	Wed, 28 May 2014 08:22:08 -0400
+Message-ID: <5385D4EE.2040304@linaro.org>
+Date: Wed, 28 May 2014 07:22:06 -0500
+From: Alex Elder <elder@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Elie De Brauwer <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <steve@chygwyn.com>,
-        =?UTF-8?B?UsOpbWkgRGVuaXMtQ291cm1v?= =?UTF-8?B?bnQ=?= 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Chris Friesen <chris.friesen@windriver.com>
-Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
-References: <536101C9.9090601@gmail.com> <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com> <20140512143451.GB13801@kernel.org> <20140521210535.GA5414@kernel.org> <537E0961.8040005@gmail.com> <20140526134647.GB8176@kernel.org> <20140526211706.GA25474@kernel.org> <5384BEC5.2080607@gmail.com> <20140527192115.GD25474@kernel.org> <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com> <20140527203010.GA2764@kernel.org>
-In-Reply-To: <20140527203010.GA2764@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: "mporter@linaro.org" <mporter@linaro.org>,
+        "bcm@fixthebug.org" <bcm@fixthebug.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "rjui@broadcom.com" <rjui@broadcom.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "rvaswani@codeaurora.org" <rvaswani@codeaurora.org>
+Subject: Re: [PATCH v4 1/5] devicetree: bindings: document Broadcom CPU enable
+ method
+References: <1400607830-10989-1-git-send-email-elder@linaro.org> <1400607830-10989-2-git-send-email-elder@linaro.org> <20140527114958.GC18476@e102568-lin.cambridge.arm.com> <53855867.7050800@linaro.org> <20140528103625.GA29219@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20140528103625.GA29219@e102568-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 10:30 PM, Arnaldo Carvalho de Melo wrote:
-> Em Tue, May 27, 2014 at 09:28:37PM +0200, Michael Kerrisk (man-pages) escreveu:
->> On Tue, May 27, 2014 at 9:21 PM, Arnaldo Carvalho de Melo
->> <acme@ghostprotocols.net> wrote:
->>> Em Tue, May 27, 2014 at 06:35:17PM +0200, Michael Kerrisk (man-pages) escreveu:
->>>> On 05/26/2014 11:17 PM, Arnaldo Carvalho de Melo wrote:
->>>>> Can you try the attached patch on top of the first one?
+On 05/28/2014 05:36 AM, Lorenzo Pieralisi wrote:
+> On Wed, May 28, 2014 at 04:30:47AM +0100, Alex Elder wrote:
+>> On 05/27/2014 06:49 AM, Lorenzo Pieralisi wrote:
+>>> On Tue, May 20, 2014 at 06:43:46PM +0100, Alex Elder wrote:
+>>>> Broadcom mobile SoCs use a ROM-implemented holding pen for
+>>>> controlled boot of secondary cores.  A special register is
+>>>> used to communicate to the ROM that a secondary core should
+>>>> start executing kernel code.  This enable method is currently
+>>>> used for members of the bcm281xx and bcm21664 SoC families.
+>>>>
+>>>> The use of an enable method also allows the SMP operation vector to
+>>>> be assigned as a result of device tree content for these SoCs.
+>>>>
+>>>> Signed-off-by: Alex Elder <elder@linaro.org>
 >>>
->>>> Patches on patches is a way to make your testers work unnecessarily
->>>> harder. Also, it means that anyone else who was interested in this
->>>
->>> It was meant to highlight the changes with regard to the previous patch,
->>> i.e. to make things easier for reviewing.
+>>> This is getting out of control, it is absolutely ghastly. I wonder how
+>>> I can manage to keep cpus.txt updated if anyone with a boot method
+>>> du jour adds into cpus.txt, and honestly in this specific case it is even
+>>> hard to understand why.
 >>
->> (I don't think that works...)
+>> OK, in this message I'll focus on the particulars of this
+>> proposed binding.
+>>
+>>> Can't it be done with bindings for the relative register address space
+>>> (regmap ?) and platform code just calls the registers driver to set-up the
+>>> jump address ? It is platform specific code anyway there is no way you
+>>> can make this generic.
+>>
+>> I want to clarify what you're after here.
+>>
+>> My aim is to add SMP support for a class of Broadcom SMP
+>> machines.  To do so, I'm told I need to use the technique
+>> of assigning the SMP operations vector as a result of
+>> identifying an enable method in the DT.
+>>
+>> For 32-bit ARM, there are no generic "enable-method" values.
+>> (I did attempt to create one for "spin-table" but that was
+>> rejected by Russell King.)  For the machines I'm trying to
+>> enable, secondary CPUS start out spinning in a ROM-based
+>> holding pen, and there is no need for a kernel-based one.
+>>
+>> However, like a spin-table/holding pen enable method, a
+>> memory location is required for coordination between the
+>> boot CPU running kernel code and secondary CPUs running ROM
+>> code.  My proposal specifies it using a special numeric
+>> property value named "secondary-boot-reg" in the "cpus"
+>> node in the DT.
+>>
+>> And as I understand it, the issue you have relates to how
+>> this memory location is specified.
 > 
-> Lets try both then, 
+> The issue I have relates to cluttering cpus.txt with all
+> sorts of platform specific SMP boot hacks.
 
-That's better!
+OK, as I mentioned in my other message, I totally
+agree with you here.  It's a total (and building)
+mess.  I discussed this with Mark Rutland at ELC
+last month and suggested splitting that stuff out
+of "cpus.txt", which I have now proposed with a
+patch.
+    https://lkml.org/lkml/2014/5/8/545
 
-> attached goes the updated patch, and this is the
-> diff to the last combined one:
+>> You suggest regmap.  I'm using a single 32-bit register,
+>> only at very early boot time, and thereafter access to
+>> it is meaningless.  It seems like overkill if it's only
+>> used for this purpose.  I could hide the register values
+>> in the code, but with the exception of that, the code I'm
+>> using is generic (in the context of this class of Broadcom
+>> machine).  I could specify the register differently somehow,
+>> in a different node, or with a different property.
 > 
-> diff --git a/net/socket.c b/net/socket.c
-> index 310a50971769..379be43879db 100644
-> --- a/net/socket.c
-> +++ b/net/socket.c
-> @@ -2478,8 +2478,7 @@ SYSCALL_DEFINE5(recvmmsg, int, fd, struct mmsghdr __user *, mmsg,
->  
->  	datagrams = __sys_recvmmsg(fd, mmsg, vlen, flags, &timeout_sys);
->  
-> -	if (datagrams > 0 &&
-> -	    copy_to_user(timeout, &timeout_sys, sizeof(timeout_sys)))
-> +	if (copy_to_user(timeout, &timeout_sys, sizeof(timeout_sys)))
->  		datagrams = -EFAULT;
->  
->  	return datagrams;
->  
-> ------------------------------------------
+> Is that register part of a larger registers block ? What I wanted
+> to say is that you can use a driver "API" (we wish) to write that
+> register, something like eg vexpress does with sysflags:
 > 
-> This is a quick thing just to show where the problem lies, need to think
-> how to report an -EFAULT at this point properly, i.e. look at
-> __sys_recvmmsg for something related (returning the number of
-> successfully copied datagrams to userspace while storing the error for
-> subsequent reporting):
+> drivers/mfd/vexpress-sysreg.c
 > 
->         if (err == 0)
->                 return datagrams;
+> vexpress_flags_set()
 > 
->         if (datagrams != 0) {
->                 /*
->                  * We may return less entries than requested (vlen) if
->                  * the
->                  * sock is non block and there aren't enough
->                  * datagrams...
->                  */
->                 if (err != -EAGAIN) {
->                         /*
->                          * ... or  if recvmsg returns an error after we
->                          * received some datagrams, where we record the
->                          * error to return on the next call or if the
->                          * app asks about it using getsockopt(SO_ERROR).
->                          */
->                         sock->sk->sk_err = -err;
->                 }
+> instead of grabbing the reg address from a platform specific boot
+> method DT entry.
+
+I had this exact thought when I was working on this.  Yes,
+this register *is* part of a register block, "ChipRegs", and
+I wanted to have a separate driver/library/API to manage access
+to registers in that block.  But the block is sort of a dumping
+ground for many unrelated things, and lots of them aren't going
+to be used for normal operation (lots of debug and diagnostic
+functionality, for example).  After some discussion with others
+on my team I made the explicit decision to *not* have any sort
+of API in this case, and just specify the register.  We decided
+that if and when we had a need for multiple users of addresses
+in this range we'd figure out how to do best what was required.
+
+> I doubt that register exists on its own, even though I have to say this
+> would force you to write yet another platform specific driver to control
+> a bunch of registers, I do not see any other solution.
+
+Yes, exactly, and I was prepared to do that.  But doing a whole
+driver for that one address seemed to make less sense.
+
+> One thing is for certain: I really do not see the point in adding a boot
+> method per-SoC, and I do not want to end up having a cpus.txt file with a
+
+I'd love to see common, "standard" boot methods.  For ARM32
+it seems each one was done separately, and in many cases,
+slightly differently.  The one I saw the most was "spin table,"
+but making that "standard" was deemed unacceptable.
+
+> gazillion entries just because every given platform reinvents the wheel when
+> it comes to booting an SMP system, cpus.txt would become a document that
+> describes platform quirks, not a proper binding anymore.
+
+Agreed.
+
+> At least all platform specific quirks must be moved out of cpus.txt and
+> in platform documentation, I understand it is just a cosmetic change but
+> I want to prevent cpus.txt to become an abomination.
+
+Agreed.
+
+>> The bottom line here is I'm not sure whether I understand
+>> what you're suggesting, or perhaps why what you suggest is
+>> preferable.  I'm very open to suggestions, I just need it
+>> laid out a bit more detail in order to respond directly.
 > 
->                 return datagrams;
->         }
+> See above.
+
+I really appreciate your responses.  One problem with this
+process is you don't get the benefit of the discussion and
+design process that went on prior to posting this stuff
+publicly.
+
+If you still feel strongly we should have a custom driver
+to manage this "ChipRegs" address space, say so, and I can
+put one together.  If my explanations above mitigate your
+concerns, please say that as well.  Either way I just want
+to make progress toward getting this support upstream.
+
+Thanks a lot.
+
+					-Alex
+
 > 
-> I.e. userspace would have to use getsockopt(SO_ERROR)... need to think
-> more about it, sidetracked now, will be back to this.
+> Thanks !
+> Lorenzo
 > 
-> Anyway, attached goes the current combined patch.
+>>
+>> Thanks.
+>>
+>> 					-Alex
+>>
+>>> I really do not see the point in cluttering cpus.txt with this stuff, it
+>>> is a platform specific hack, and do not belong in generic bindings in my
+>>> opinion.
+>>>
+>>> Thanks,
+>>> Lorenzo
+>>>
+>>>> ---
+>>>>  Documentation/devicetree/bindings/arm/cpus.txt | 12 ++++++++++++
+>>>>  1 file changed, 12 insertions(+)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+>>>> index 333f4ae..c6a2411 100644
+>>>> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+>>>> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+>>>> @@ -185,6 +185,7 @@ nodes to be present and contain the properties described below.
+>>>>  			    "qcom,gcc-msm8660"
+>>>>  			    "qcom,kpss-acc-v1"
+>>>>  			    "qcom,kpss-acc-v2"
+>>>> +			    "brcm,bcm11351-cpu-method"
+>>>>  
+>>>>  	- cpu-release-addr
+>>>>  		Usage: required for systems that have an "enable-method"
+>>>> @@ -209,6 +210,17 @@ nodes to be present and contain the properties described below.
+>>>>  		Value type: <phandle>
+>>>>  		Definition: Specifies the ACC[2] node associated with this CPU.
+>>>>  
+>>>> +	- secondary-boot-reg
+>>>> +		Usage:
+>>>> +			Required for systems that have an "enable-method"
+>>>> +			property value of "brcm,bcm11351-cpu-method".
+>>>> +		Value type: <u32>
+>>>> +		Definition:
+>>>> +			Specifies the physical address of the register used to
+>>>> +			request the ROM holding pen code release a secondary
+>>>> +			CPU.  The value written to the register is formed by
+>>>> +			encoding the target CPU id into the low bits of the
+>>>> +			physical start address it should jump to.
+>>>>  
+>>>>  Example 1 (dual-cluster big.LITTLE system 32-bit):
+>>>>  
+>>>> -- 
+>>>> 1.9.1
+>>>>
+>>>>
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
 
-So, I applied against net-next as you suggested offlist.
-Builds and generally tests fine. Some observations:
-
-* In the case that the call is interrupted by a signal handler and no
-  datagrams have been received, the call fails with EINTR, as expected.
-
-* The call always updates 'timeout', both in the success case and in the
-  EINTR case. (That seems fine.)
-
-But, another question...
-
-In the case that the call is interrupted by a signal handler and some
-datagrams have already been received, then the call succeeds, and
-returns the number of datagrams received, and 'timeout' is updated with
-the remaining time. Maybe that's the right behavior, but I just want to
-check. There is at least one other possibility:
-
-* Fetch no datagrams (i.e., the datagrams are left to receive in a
-  future call), and the call fails with EINTR, and 'timeout' is updated.
-
-Maybe that possibility is hard to implement (not sure). But my main point
-is to make the current behavior clear, note the alternative, and ask:
-is the current behavior the best choice. (I'm not saying it's not, but I
-do want the choice to be a conscious one.)
-
-Cheers,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
