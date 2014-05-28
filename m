@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaE1RWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:22:41 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:36656 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbaE1RWk (ORCPT
+	id S1754943AbaE1RWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:22:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43924 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756AbaE1RWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:22:40 -0400
-Message-ID: <53861B5D.2040406@linaro.org>
-Date: Wed, 28 May 2014 10:22:37 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 28 May 2014 13:22:49 -0400
+Date: Wed, 28 May 2014 19:22:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [RFC][PATCH] tracing: Print nasty banner when trace_printk() is
+ in use
+Message-ID: <20140528172239.GX30445@twins.programming.kicks-ass.net>
+References: <20140528131440.2283213c@gandalf.local.home>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Minyard <cminyard@mvista.com>,
-        Stanislav Meduna <stano@meduna.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with irqsoff
- tracers
-References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org> <17051981.niWmA6MIgX@wuerfel> <20140527174847.7b405b5c@gandalf.local.home> <53850FF3.8050107@codeaurora.org> <20140527193050.4606a014@gandalf.local.home> <53852999.7060907@codeaurora.org> <1401237734.23277.1.camel@pippen.local.home> <20140528072457.GM11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140528072457.GM11096@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6PH4sE4TNvTKzKhJ"
+Content-Disposition: inline
+In-Reply-To: <20140528131440.2283213c@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 12:24 AM, Peter Zijlstra wrote:
-> On Tue, May 27, 2014 at 08:42:14PM -0400, Steven Rostedt wrote:
->> On Tue, 2014-05-27 at 17:11 -0700, Stephen Boyd wrote:
->>
->>> cpuidle_enter_state() calls ktime_get() which on lockdep enabled builds
->>> calls seqcount_lockdep_reader_access() which calls local_irq_save() that
->>
->> seqcount_lockdep_reader_access()?? Ug, I wonder if that should call
->> raw_local_irq_save/restore() as it's a lockdep helper to begin with. If
->> it's wrong then it's the lockdep infrastructure that broke, not the core
->> kernel.
->>
->> Peter?
->
-> Hurm,.. don't know actually.. so from a lockdep pov it doesn't need to
-> do that and we can simply remove the local_irq_{save,restore}() from
-> that function.
->
-> It could be John did it to avoid some IRQ recursion warning, but if so,
-> he failed to mention it.
->
-> John, remember why you typed those characters?
 
-So.. With seqlocks, we're trying to just make sure reads and writes
-don't nest under a write. However we don't care if a write nests in a
-read, because the read will be restarted. An example is someone hitting
-gettimeofday over and over taking a read, and then an IRQ lands mid-read
-and we take the write and update the data. This is expected normal
-behavior.  So this was trying to make the read side lockdep
-aquire/release combo atomic, so we don't create false warnings if an IRQ
-landed right in-between.
+--6PH4sE4TNvTKzKhJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Does that make sense?
+On Wed, May 28, 2014 at 01:14:40PM -0400, Steven Rostedt wrote:
+>=20
+> trace_printk() is used to debug fast paths within the kernel. Places
+> that gets called in any context (interrupt or NMI) or thousands of
+> times a second. Something you do not want to do with a printk().
+>=20
+> In order to make it completely lockless as it needs a temporary buffer
+> to handle some of the string formatting, a page is created per cpu for
+> every context (four per cpu; normal, softirq, irq, NMI).
+>=20
+> Since trace_printk() should only be used for debugging purposes,
+> there's no reason to waste memory on these buffers on a production
+> system. That means, trace_printk() should never be used unless a
+> developer is debugging their kernel. There's macro magic to allocate
+> the buffers if trace_printk() is used anywhere in the kernel.
+>=20
+> To help enforce that trace_printk() isn't used outside of development,
+> when it is used, a nasty banner is displayed on bootup (or when a module
+> is loaded that uses trace_printk() and the kernel core does not).
+>=20
+> Here's the banner:
+>=20
+>  ****************************************
+>  ** NOTICE NOTICE NOTICE NOTICE NOTICE **
+>  ** trace_printk() being used.         **
+>  ** Allocating extra memory for it     **
+>  ****************************************
+>=20
+> Hmm, maybe I should add "Not for production use" to scare people even
+> more?
 
-thanks
--john
+Does that really stop people from doing stupid? Wouldn't it be better to
+make sure nobody merges a trace_printk() user in mainline? You can set
+up a commit hook and check for +.*trace_printk or so.
 
+--6PH4sE4TNvTKzKhJ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThhtfAAoJEHZH4aRLwOS6haIP+wfmP+jTl88GUoUr2AbbE1ht
+wv4Fd4t1A2tGUyKHLTieryaLCmxvmx22nIbqnIm+c+ICXLxz6m009uw0dIZzsitR
+fx2R1yGF5sJaZBKQUPbyHCsPLymVrFfHxLSdBRvwx5dZ85VUEX2aG2lRUJku2++G
+qa9bFDuKF3kKLaX/ya7Ect0/N2HYlnTFV/TUhD3kLExsRSeDyMV9G3N6uKjC+I9n
+T5YXGImn/5Yq/5mdSuvsCqToA4mpmw0MF7S1kxUOUQiZC0lu+S3kcXiY/D9qA6sZ
+dv5JXtTXfz3in8/fqNhMvUjuBL77VscFCBKccCcpCMcPRapxc9OmMTgVy1HmsyhQ
+TM1cWi3k0j/+D38iEGC1tXDNjrUaVn9vmEf3C9lj7vAvvpppuD9nRvSjswmXkwk0
+CYo4hYH4SNBP8zIKepVN3kDMQYmXTyvJ6eOwC3kiUzp4M7a0TrVr3koF63mAuH9n
+KV2KWx4wyxX4zP3GnsK8FTd1J3s4xmuQlZWXbQD/rpbKZC/6DW1qlNkSk7h0u7Kg
+RBpuaOXHwr1afs/11jgv4fU0rZQ0zaThVtMgFtUXC4WYb5bb+gTW6117WYDCvA4+
+zS2CrJJwLgcWsIOkDgO9WcLZvMLFYHj9e6Mn51601PHSkIpD2Y4NEPWtIMzu3v7k
+udnouoetURKgu9VuWqfB
+=MW/O
+-----END PGP SIGNATURE-----
+
+--6PH4sE4TNvTKzKhJ--
