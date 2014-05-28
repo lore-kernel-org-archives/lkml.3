@@ -1,390 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaE1AlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:41:22 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:50096 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796AbaE1AlT convert rfc822-to-8bit (ORCPT
+	id S1753855AbaE1AmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:42:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:14004 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753510AbaE1AmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:41:19 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1401074613-29227-3-git-send-email-t.dakhran@samsung.com>
-Cc: "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>, "Rob Landley" <rob@landley.net>,
-        "Kukjin Kim" <kgene.kim@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Ben Dooks" <ben-linux@fluff.org>, "Tomasz Figa" <t.figa@samsung.com>,
-        "Vyacheslav Tyrtov" <v.tyrtov@samsung.com>,
-        "Thomas Abraham" <thomas.abraham@linaro.org>,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Heiko Stuebner" <heiko@sntech.de>,
-        "Romain Naour" <romain.naour@openwide.fr>,
-        "Chander Kashyap" <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        "Tarek Dakhran" <t.dakhran@gmail.com>,
-        "Tarek Dakhran" <t.dakhran@samsung.com>
-References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
- <1401074613-29227-3-git-send-email-t.dakhran@samsung.com>
-Message-ID: <20140528004116.7816.69646@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v11 2/3] clk: exynos5410: register clocks using common clock
- framework
-Date: Tue, 27 May 2014 17:41:16 -0700
+	Tue, 27 May 2014 20:42:17 -0400
+Message-ID: <1401237734.23277.1.camel@pippen.local.home>
+Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with
+ irqsoff tracers
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Minyard <cminyard@mvista.com>,
+        Stanislav Meduna <stano@meduna.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 27 May 2014 20:42:14 -0400
+In-Reply-To: <53852999.7060907@codeaurora.org>
+References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org>
+	 <17051981.niWmA6MIgX@wuerfel> <20140527174847.7b405b5c@gandalf.local.home>
+	 <53850FF3.8050107@codeaurora.org>
+	 <20140527193050.4606a014@gandalf.local.home>
+	 <53852999.7060907@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.1-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tarek Dakhran (2014-05-25 20:23:32)
-> The EXYNOS5410 clocks are statically listed and registered
-> using the Samsung specific common clock helper functions.
+On Tue, 2014-05-27 at 17:11 -0700, Stephen Boyd wrote:
+
+> cpuidle_enter_state() calls ktime_get() which on lockdep enabled builds
+> calls seqcount_lockdep_reader_access() which calls local_irq_save() that
+
+seqcount_lockdep_reader_access()?? Ug, I wonder if that should call
+raw_local_irq_save/restore() as it's a lockdep helper to begin with. If
+it's wrong then it's the lockdep infrastructure that broke, not the core
+kernel.
+
+Peter?
+
+-- Steve
+
+
+> then turns on the tracer again. Perhaps the problem is that irqsoff
+> tracer is triggered even when we aren't transitioning between irqs on
+> and irqs off? What about this patch? I assume there is a reason that
+> this is wrong, but I don't know what it is.
 > 
-> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-> ---
->  .../devicetree/bindings/clock/exynos5410-clock.txt |   45 +++++
->  drivers/clk/samsung/Makefile                       |    1 +
->  drivers/clk/samsung/clk-exynos5410.c               |  209 ++++++++++++++++++++
->  include/dt-bindings/clock/exynos5410.h             |   33 ++++
->  4 files changed, 288 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
->  create mode 100644 drivers/clk/samsung/clk-exynos5410.c
->  create mode 100644 include/dt-bindings/clock/exynos5410.h
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/exynos5410-clock.txt b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
-> new file mode 100644
-> index 0000000..aeab635
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
-> @@ -0,0 +1,45 @@
-> +* Samsung Exynos5410 Clock Controller
-> +
-> +The Exynos5410 clock controller generates and supplies clock to various
-> +controllers within the Exynos5410 SoC.
-> +
-> +Required Properties:
-> +
-> +- compatible: should be "samsung,exynos5410-clock"
-> +
-> +- reg: physical base address of the controller and length of memory mapped
-> +  region.
-> +
-> +- #clock-cells: should be 1.
-> +
-> +All available clocks are defined as preprocessor macros in
-> +dt-bindings/clock/exynos5410.h header and can be used in device
-> +tree sources.
-> +
-> +External clock:
-> +
-> +There is clock that is generated outside the SoC. It
-> +is expected that it is defined using standard clock bindings
-> +with following clock-output-name:
-> +
-> + - "fin_pll" - PLL input clock from XXTI
 
-Does fin_pll feed into the exynos5410-clock controller? If so, should
-the example clock-controller node below have a clocks and clock-names
-property?
 
-Otherwise patch looks good.
-
-Regards,
-Mike
-
-> +
-> +Example 1: An example of a clock controller node is listed below.
-> +
-> +       clock: clock-controller@0x10010000 {
-> +               compatible = "samsung,exynos5410-clock";
-> +               reg = <0x10010000 0x30000>;
-> +               #clock-cells = <1>;
-> +       };
-> +
-> +Example 2: UART controller node that consumes the clock generated by the clock
-> +          controller. Refer to the standard clock bindings for information
-> +          about 'clocks' and 'clock-names' property.
-> +
-> +       serial@12C20000 {
-> +               compatible = "samsung,exynos4210-uart";
-> +               reg = <0x12C00000 0x100>;
-> +               interrupts = <0 51 0>;
-> +               clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
-> +               clock-names = "uart", "clk_uart_baud0";
-> +       };
-> diff --git a/drivers/clk/samsung/Makefile b/drivers/clk/samsung/Makefile
-> index 25646c6..69e8177 100644
-> --- a/drivers/clk/samsung/Makefile
-> +++ b/drivers/clk/samsung/Makefile
-> @@ -7,6 +7,7 @@ obj-$(CONFIG_SOC_EXYNOS3250)    += clk-exynos3250.o
->  obj-$(CONFIG_ARCH_EXYNOS4)     += clk-exynos4.o
->  obj-$(CONFIG_SOC_EXYNOS5250)   += clk-exynos5250.o
->  obj-$(CONFIG_SOC_EXYNOS5260)   += clk-exynos5260.o
-> +obj-$(CONFIG_SOC_EXYNOS5410)   += clk-exynos5410.o
->  obj-$(CONFIG_SOC_EXYNOS5420)   += clk-exynos5420.o
->  obj-$(CONFIG_SOC_EXYNOS5440)   += clk-exynos5440.o
->  obj-$(CONFIG_ARCH_EXYNOS)      += clk-exynos-audss.o
-> diff --git a/drivers/clk/samsung/clk-exynos5410.c b/drivers/clk/samsung/clk-exynos5410.c
-> new file mode 100644
-> index 0000000..c9505ab
-> --- /dev/null
-> +++ b/drivers/clk/samsung/clk-exynos5410.c
-> @@ -0,0 +1,209 @@
-> +/*
-> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-> + * Author: Tarek Dakhran <t.dakhran@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Common Clock Framework support for Exynos5410 SoC.
-> +*/
-> +
-> +#include <dt-bindings/clock/exynos5410.h>
-> +
-> +#include <linux/clk.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +
-> +#include "clk.h"
-> +
-> +#define APLL_LOCK               0x0
-> +#define APLL_CON0               0x100
-> +#define CPLL_LOCK               0x10020
-> +#define CPLL_CON0               0x10120
-> +#define MPLL_LOCK               0x4000
-> +#define MPLL_CON0               0x4100
-> +#define BPLL_LOCK               0x20010
-> +#define BPLL_CON0               0x20110
-> +#define KPLL_LOCK               0x28000
-> +#define KPLL_CON0               0x28100
-> +
-> +#define SRC_CPU                        0x200
-> +#define DIV_CPU0               0x500
-> +#define SRC_CPERI1             0x4204
-> +#define DIV_TOP0               0x10510
-> +#define DIV_TOP1               0x10514
-> +#define DIV_FSYS1              0x1054c
-> +#define DIV_FSYS2              0x10550
-> +#define DIV_PERIC0             0x10558
-> +#define SRC_TOP0               0x10210
-> +#define SRC_TOP1               0x10214
-> +#define SRC_TOP2               0x10218
-> +#define SRC_FSYS               0x10244
-> +#define SRC_PERIC0             0x10250
-> +#define SRC_MASK_FSYS          0x10340
-> +#define SRC_MASK_PERIC0                0x10350
-> +#define GATE_BUS_FSYS0         0x10740
-> +#define GATE_IP_FSYS           0x10944
-> +#define GATE_IP_PERIC          0x10950
-> +#define GATE_IP_PERIS          0x10960
-> +#define SRC_CDREX              0x20200
-> +#define SRC_KFC                        0x28200
-> +#define DIV_KFC0               0x28500
-> +
-> +/* list of PLLs */
-> +enum exynos5410_plls {
-> +       apll, cpll, mpll,
-> +       bpll, kpll,
-> +       nr_plls                 /* number of PLLs */
-> +};
-> +
-> +/* list of all parent clocks */
-> +PNAME(apll_p)          = { "fin_pll", "fout_apll", };
-> +PNAME(bpll_p)          = { "fin_pll", "fout_bpll", };
-> +PNAME(cpll_p)          = { "fin_pll", "fout_cpll" };
-> +PNAME(mpll_p)          = { "fin_pll", "fout_mpll", };
-> +PNAME(kpll_p)          = { "fin_pll", "fout_kpll", };
-> +
-> +PNAME(mout_cpu_p)      = { "mout_apll", "sclk_mpll", };
-> +PNAME(mout_kfc_p)      = { "mout_kpll", "sclk_mpll", };
-> +
-> +PNAME(mpll_user_p)     = { "fin_pll", "sclk_mpll", };
-> +PNAME(bpll_user_p)     = { "fin_pll", "sclk_bpll", };
-> +PNAME(mpll_bpll_p)     = { "sclk_mpll_muxed", "sclk_bpll_muxed", };
-> +
-> +PNAME(group2_p)                = { "fin_pll", "fin_pll", "none", "none",
-> +                       "none", "none", "sclk_mpll_bpll",
-> +                        "none", "none", "sclk_cpll" };
-> +
-> +static struct samsung_mux_clock exynos5410_mux_clks[] __initdata = {
-> +       MUX(0, "mout_apll", apll_p, SRC_CPU, 0, 1),
-> +       MUX(0, "mout_cpu", mout_cpu_p, SRC_CPU, 16, 1),
-> +
-> +       MUX(0, "mout_kpll", kpll_p, SRC_KFC, 0, 1),
-> +       MUX(0, "mout_kfc", mout_kfc_p, SRC_KFC, 16, 1),
-> +
-> +       MUX(0, "sclk_mpll", mpll_p, SRC_CPERI1, 8, 1),
-> +       MUX(0, "sclk_mpll_muxed", mpll_user_p, SRC_TOP2, 20, 1),
-> +
-> +       MUX(0, "sclk_bpll", bpll_p, SRC_CDREX, 0, 1),
-> +       MUX(0, "sclk_bpll_muxed", bpll_user_p, SRC_TOP2, 24, 1),
-> +
-> +       MUX(0, "sclk_cpll", cpll_p, SRC_TOP2, 8, 1),
-> +
-> +       MUX(0, "sclk_mpll_bpll", mpll_bpll_p, SRC_TOP1, 20, 1),
-> +
-> +       MUX(0, "mout_mmc0", group2_p, SRC_FSYS, 0, 4),
-> +       MUX(0, "mout_mmc1", group2_p, SRC_FSYS, 4, 4),
-> +       MUX(0, "mout_mmc2", group2_p, SRC_FSYS, 8, 4),
-> +
-> +       MUX(0, "mout_uart0", group2_p, SRC_PERIC0, 0, 4),
-> +       MUX(0, "mout_uart1", group2_p, SRC_PERIC0, 4, 4),
-> +       MUX(0, "mout_uart2", group2_p, SRC_PERIC0, 8, 4),
-> +
-> +       MUX(0, "mout_aclk200", mpll_bpll_p, SRC_TOP0, 12, 1),
-> +       MUX(0, "mout_aclk400", mpll_bpll_p, SRC_TOP0, 20, 1),
-> +};
-> +
-> +static struct samsung_div_clock exynos5410_div_clks[] __initdata = {
-> +       DIV(0, "div_arm", "mout_cpu", DIV_CPU0, 0, 3),
-> +       DIV(0, "div_arm2", "div_arm", DIV_CPU0, 28, 3),
-> +
-> +       DIV(0, "div_acp", "div_arm2", DIV_CPU0, 8, 3),
-> +       DIV(0, "div_cpud", "div_arm2", DIV_CPU0, 4, 3),
-> +       DIV(0, "div_atb", "div_arm2", DIV_CPU0, 16, 3),
-> +       DIV(0, "pclk_dbg", "div_arm2", DIV_CPU0, 20, 3),
-> +
-> +       DIV(0, "div_kfc", "mout_kfc", DIV_KFC0, 0, 3),
-> +       DIV(0, "div_aclk", "div_kfc", DIV_KFC0, 4, 3),
-> +       DIV(0, "div_pclk", "div_kfc", DIV_KFC0, 20, 3),
-> +
-> +       DIV(0, "aclk66_pre", "sclk_mpll_muxed", DIV_TOP1, 24, 3),
-> +       DIV(0, "aclk66", "aclk66_pre", DIV_TOP0, 0, 3),
-> +
-> +       DIV(0, "div_mmc0", "mout_mmc0", DIV_FSYS1, 0, 4),
-> +       DIV(0, "div_mmc1", "mout_mmc1", DIV_FSYS1, 16, 4),
-> +       DIV(0, "div_mmc2", "mout_mmc2", DIV_FSYS2, 0, 4),
-> +
-> +       DIV_F(0, "div_mmc_pre0", "div_mmc0",
-> +                       DIV_FSYS1, 8, 8, CLK_SET_RATE_PARENT, 0),
-> +       DIV_F(0, "div_mmc_pre1", "div_mmc1",
-> +                       DIV_FSYS1, 24, 8, CLK_SET_RATE_PARENT, 0),
-> +       DIV_F(0, "div_mmc_pre2", "div_mmc2",
-> +                       DIV_FSYS2, 8, 8, CLK_SET_RATE_PARENT, 0),
-> +
-> +       DIV(0, "div_uart0", "mout_uart0", DIV_PERIC0, 0, 4),
-> +       DIV(0, "div_uart1", "mout_uart1", DIV_PERIC0, 4, 4),
-> +       DIV(0, "div_uart2", "mout_uart2", DIV_PERIC0, 8, 4),
-> +       DIV(0, "div_uart3", "mout_uart3", DIV_PERIC0, 12, 4),
-> +
-> +       DIV(0, "aclk200", "mout_aclk200", DIV_TOP0, 12, 3),
-> +       DIV(0, "aclk400", "mout_aclk400", DIV_TOP0, 24, 3),
-> +};
-> +
-> +static struct samsung_gate_clock exynos5410_gate_clks[] __initdata = {
-> +       GATE(CLK_MCT, "mct", "aclk66", GATE_IP_PERIS, 18, 0, 0),
-> +
-> +       GATE(CLK_SCLK_MMC0, "sclk_mmc0", "div_mmc_pre0",
-> +                       SRC_MASK_FSYS, 0, CLK_SET_RATE_PARENT, 0),
-> +       GATE(CLK_SCLK_MMC1, "sclk_mmc1", "div_mmc_pre1",
-> +                       SRC_MASK_FSYS, 4, CLK_SET_RATE_PARENT, 0),
-> +       GATE(CLK_SCLK_MMC2, "sclk_mmc2", "div_mmc_pre2",
-> +                       SRC_MASK_FSYS, 8, CLK_SET_RATE_PARENT, 0),
-> +
-> +       GATE(CLK_MMC0, "sdmmc0", "aclk200", GATE_BUS_FSYS0, 12, 0, 0),
-> +       GATE(CLK_MMC1, "sdmmc1", "aclk200", GATE_BUS_FSYS0, 13, 0, 0),
-> +       GATE(CLK_MMC2, "sdmmc2", "aclk200", GATE_BUS_FSYS0, 14, 0, 0),
-> +
-> +       GATE(CLK_UART0, "uart0", "aclk66", GATE_IP_PERIC, 0, 0, 0),
-> +       GATE(CLK_UART1, "uart1", "aclk66", GATE_IP_PERIC, 1, 0, 0),
-> +       GATE(CLK_UART2, "uart2", "aclk66", GATE_IP_PERIC, 2, 0, 0),
-> +
-> +       GATE(CLK_SCLK_UART0, "sclk_uart0", "div_uart0",
-> +                       SRC_MASK_PERIC0, 0, CLK_SET_RATE_PARENT, 0),
-> +       GATE(CLK_SCLK_UART1, "sclk_uart1", "div_uart1",
-> +                       SRC_MASK_PERIC0, 4, CLK_SET_RATE_PARENT, 0),
-> +       GATE(CLK_SCLK_UART2, "sclk_uart2", "div_uart2",
-> +                       SRC_MASK_PERIC0, 8, CLK_SET_RATE_PARENT, 0),
-> +};
-> +
-> +static struct samsung_pll_clock exynos5410_plls[nr_plls] __initdata = {
-> +       [apll] = PLL(pll_35xx, CLK_FOUT_APLL, "fout_apll", "fin_pll", APLL_LOCK,
-> +               APLL_CON0, NULL),
-> +       [cpll] = PLL(pll_35xx, CLK_FOUT_CPLL, "fout_cpll", "fin_pll", CPLL_LOCK,
-> +               CPLL_CON0, NULL),
-> +       [mpll] = PLL(pll_35xx, CLK_FOUT_MPLL, "fout_mpll", "fin_pll", MPLL_LOCK,
-> +               MPLL_CON0, NULL),
-> +       [bpll] = PLL(pll_35xx, CLK_FOUT_BPLL, "fout_bpll", "fin_pll", BPLL_LOCK,
-> +               BPLL_CON0, NULL),
-> +       [kpll] = PLL(pll_35xx, CLK_FOUT_KPLL, "fout_kpll", "fin_pll", KPLL_LOCK,
-> +               KPLL_CON0, NULL),
-> +};
-> +
-> +/* register exynos5410 clocks */
-> +static void __init exynos5410_clk_init(struct device_node *np)
-> +{
-> +       struct samsung_clk_provider *ctx;
-> +       void __iomem *reg_base;
-> +
-> +       reg_base = of_iomap(np, 0);
-> +       if (!reg_base)
-> +               panic("%s: failed to map registers\n", __func__);
-> +
-> +       ctx = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
-> +
-> +       samsung_clk_register_pll(ctx, exynos5410_plls,
-> +                       ARRAY_SIZE(exynos5410_plls), reg_base);
-> +
-> +       samsung_clk_register_mux(ctx, exynos5410_mux_clks,
-> +                       ARRAY_SIZE(exynos5410_mux_clks));
-> +       samsung_clk_register_div(ctx, exynos5410_div_clks,
-> +                       ARRAY_SIZE(exynos5410_div_clks));
-> +       samsung_clk_register_gate(ctx, exynos5410_gate_clks,
-> +                       ARRAY_SIZE(exynos5410_gate_clks));
-> +
-> +       pr_debug("Exynos5410: clock setup completed.\n");
-> +}
-> +CLK_OF_DECLARE(exynos5410_clk, "samsung,exynos5410-clock", exynos5410_clk_init);
-> diff --git a/include/dt-bindings/clock/exynos5410.h b/include/dt-bindings/clock/exynos5410.h
-> new file mode 100644
-> index 0000000..9b180f0
-> --- /dev/null
-> +++ b/include/dt-bindings/clock/exynos5410.h
-> @@ -0,0 +1,33 @@
-> +#ifndef _DT_BINDINGS_CLOCK_EXYNOS_5410_H
-> +#define _DT_BINDINGS_CLOCK_EXYNOS_5410_H
-> +
-> +/* core clocks */
-> +#define CLK_FIN_PLL 1
-> +#define CLK_FOUT_APLL 2
-> +#define CLK_FOUT_CPLL 3
-> +#define CLK_FOUT_MPLL 4
-> +#define CLK_FOUT_BPLL 5
-> +#define CLK_FOUT_KPLL 6
-> +
-> +/* gate for special clocks (sclk) */
-> +#define CLK_SCLK_UART0 128
-> +#define CLK_SCLK_UART1 129
-> +#define CLK_SCLK_UART2 130
-> +#define CLK_SCLK_UART3 131
-> +#define CLK_SCLK_MMC0 132
-> +#define CLK_SCLK_MMC1 133
-> +#define CLK_SCLK_MMC2 134
-> +
-> +/* gate clocks */
-> +#define CLK_UART0 257
-> +#define CLK_UART1 258
-> +#define CLK_UART2 259
-> +#define CLK_UART3 260
-> +#define CLK_MCT 315
-> +#define CLK_MMC0 351
-> +#define CLK_MMC1 352
-> +#define CLK_MMC2 353
-> +
-> +#define CLK_NR_CLKS 512
-> +
-> +#endif /* _DT_BINDINGS_CLOCK_EXYNOS_5410_H */
-> -- 
-> 1.7.9.5
-> 
