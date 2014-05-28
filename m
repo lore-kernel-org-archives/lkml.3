@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaE1DXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 23:23:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1720 "EHLO mx1.redhat.com"
+	id S1753462AbaE1D3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 23:29:16 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39190 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916AbaE1DXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 23:23:08 -0400
-Message-ID: <53855695.8000106@redhat.com>
-Date: Wed, 28 May 2014 11:23:01 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        linux-kernel@vger.kernel.org
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org
-Subject: Re: [PATCH] hv: use correct order when freeing monitor_pages
-References: <1401210980-2515-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1401210980-2515-1-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752000AbaE1D3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 23:29:15 -0400
+Message-ID: <1401247741.8262.21.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Wed, 28 May 2014 13:29:01 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 01:16 AM, Radim Krčmář wrote:
-> We try to free two pages when only one has been allocated.
-> Cleanup path is unlikely, so I haven't found any trace that would fit,
-> but I hope that free_pages_prepare() does catch it.
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> ---
->  Cc'd stable because the worst-case looks hard to debug.
->  Btw. the module can't get unloaded after we successfully connect?
->
->  drivers/hv/connection.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-> index 7f10c15..e84f452 100644
-> --- a/drivers/hv/connection.c
-> +++ b/drivers/hv/connection.c
-> @@ -224,8 +224,8 @@ cleanup:
->  		vmbus_connection.int_page = NULL;
->  	}
->  
-> -	free_pages((unsigned long)vmbus_connection.monitor_pages[0], 1);
-> -	free_pages((unsigned long)vmbus_connection.monitor_pages[1], 1);
-> +	free_pages((unsigned long)vmbus_connection.monitor_pages[0], 0);
-> +	free_pages((unsigned long)vmbus_connection.monitor_pages[1], 0);
->  	vmbus_connection.monitor_pages[0] = NULL;
->  	vmbus_connection.monitor_pages[1] = NULL;
->  
+Hi Linus !
 
-Acked-by: Jason Wang <jasowang@redhat.com>
+Here's a pair of powerpc fixes for 3.15 which are also going to stable.
+
+One's a fix for building with newer binutils (the problem currently only
+affects the BookE kernels but the affected macro might come back into
+use on BookS platforms at any time). Unfortunately, the binutils maintainer
+did a backward incompatible change to a construct that we use so we have
+to add Makefile check.
+
+The other one is a fix for CPUs getting stuck in kexec when running single
+threaded. Since we routinely use kexec on power (including in our newer
+bootloaders), I deemed that important enough.
+
+Cheers,
+Ben.
+
+The following changes since commit 8050936caf125fbe54111ba5e696b68a360556ba:
+
+  powerpc: irq work racing with timer interrupt can result in timer interrupt hang (2014-05-12 14:29:28 +1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 011e4b02f1da156ac7fea28a9da878f3c23af739:
+
+  powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode (2014-05-28 13:24:26 +1000)
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      powerpc: Fix 64 bit builds with binutils 2.24
+
+Srivatsa S. Bhat (1):
+      powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode
+
+ arch/powerpc/Makefile                  | 4 +++-
+ arch/powerpc/include/asm/ppc_asm.h     | 7 ++++++-
+ arch/powerpc/kernel/machine_kexec_64.c | 2 +-
+ kernel/kexec.c                         | 8 ++++++++
+ 4 files changed, 18 insertions(+), 3 deletions(-)
+
+
