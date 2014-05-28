@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaE1JwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:52:13 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56481 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaE1JwL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:52:11 -0400
-Date: Wed, 28 May 2014 02:52:10 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 08/12] scsi/NCR5380: adopt dprintk()
-Message-ID: <20140528095210.GH26617@infradead.org>
-References: <20140318004212.612472697@telegraphics.com.au>
- <20140318004214.992467108@telegraphics.com.au>
+	id S1752845AbaE1Jwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:52:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39156 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477AbaE1Jwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 05:52:31 -0400
+Date: Wed, 28 May 2014 11:52:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mathieu Souchaud <mattieu.souchaud@free.fr>
+Cc: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v3] x86/mce: Improve mcheck_init_device() error handling
+Message-ID: <20140528095227.GA17196@pd.tnic>
+References: <1401261157-1165-1-git-send-email-mattieu.souchaud@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140318004214.992467108@telegraphics.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1401261157-1165-1-git-send-email-mattieu.souchaud@free.fr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 11:42:20AM +1100, Finn Thain wrote:
-> All NCR5380 drivers already include the NCR5380.h header. Better to
-> adopt those macros rather than have three variations on them.
+On Wed, May 28, 2014 at 09:12:37AM +0200, Mathieu Souchaud wrote:
+> Check return code of every function called by mcheck_init_device().
 > 
-> Moreover, the macros in NCR5380.h are preferable because the atari_NCR5380
-> and sun3_NCR5380 versions are inflexible. For example, they can't accomodate
-> dprintk(NDEBUG_MAIN | NDEBUG_QUEUES, ...)
-> 
-> Replace the *_PRINTK macros from atari_NCR5380.h and sun3_NCR5380.h with
-> the equivalent macros from NCR5380.h.
-> 
-> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+> Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
 
-Looks good,
+Applied, thanks!
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+I'll queue it for 3.17 though since we're very close to the 3.16 merge
+window and this patch hasn't had any linux-next time.
+
+Thanks for your good work, let me know if you want to do more around mce.
+
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
