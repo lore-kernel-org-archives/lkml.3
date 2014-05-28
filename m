@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaE1Mle (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:41:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068AbaE1Mlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:41:32 -0400
-Date: Wed, 28 May 2014 08:40:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] export efi.flags to sysfs
-Message-ID: <20140528124029.GF14863@redhat.com>
-References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
- <20140527133411.GG10994@redhat.com>
- <20140528021359.GC2820@darkstar.nay.redhat.com>
+	id S1752992AbaE1Mow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:44:52 -0400
+Received: from relay.parallels.com ([195.214.232.42]:52647 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaE1Mov (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 08:44:51 -0400
+Message-ID: <5385DA19.2060008@parallels.com>
+Date: Wed, 28 May 2014 16:44:09 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528021359.GC2820@darkstar.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
+ ns
+References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+In-Reply-To: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:13:59AM +0800, Dave Young wrote:
-> On 05/27/14 at 09:34am, Vivek Goyal wrote:
-> > On Mon, May 26, 2014 at 04:39:35PM +0800, Dave Young wrote:
-> > > 
-> > > For efi=old_map and any old_map quirks like SGI UV in current
-> > > tree kexec/kdump will fail because it depends on the new 1:1 mapping.
-> > > 
-> > > Thus export the mapping method to sysfs so kexec tools can switch
-> > > to original way to boot.
-> > > 
-> > > Since we have efi.flags for all efi facilities so let's just export the
-> > > efi.flags itself, it maybe useful for other arches and use cases.
-> > > 
-> > 
-> > Does it require any documentation in Documentation/ABI/..
-> 
-> Yes, it's necessary. Will do in next version.
-> 
-> I'm still discussing with Matt, exporting efi.flags seems not a good way
-> because they are more internal interfaces. 
-> 
-> Probably I should export only a file 'old_map' instead.
+On 05/28/2014 02:24 PM, Chen Hanxiao wrote:
+> We need a direct method of getting the pid inside containers.
 
-How does /sys/firmware/efi/runtime-map/* look like with old mapping? Can't
-we look at it and figure out if it is 1:1 or not.
+But there's more generic issue -- some day we'll need to know not only
+PIDs as seen from different namespaces, but also SIDs and PGIDs.
 
-Thanks
-Vivek
+> If some issues occurred inside container guest, host user
+> could not know which process is in trouble just by guest pid:
+> the users of container guest only knew the pid inside containers.
+> This will bring obstacle for trouble shooting.
+> 
+> This patch adds two fields:
+> 
+> NStgid and NSpid.
+> 
+> a) In init_pid_ns, nothing changed;
+> 
+> b) In one pidns, will tell the pid inside containers:
+> NStgid:	1628 	9 	3
+> NSpid:	1628 	9 	3
+> ** Process id is 1628 in level 0, 9 in level 1, 3 in level 2.
+> 
+> c) If pidns is nested, it depends on which pidns are you in.
+> NStgid:	9 	3
+> NSpid:	9 	3
+> ** Views from level 1
+> 
+> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> ---
+> v2: add two new fields: NStgid and NSpid.
+>     keep fields of Tgid and Pid unchanged for back compatibility.
+> 
+>  fs/proc/array.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/fs/proc/array.c b/fs/proc/array.c
+> index 64db2bc..9b7e65c 100644
+> --- a/fs/proc/array.c
+> +++ b/fs/proc/array.c
+> @@ -193,6 +193,15 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+>  		from_kgid_munged(user_ns, cred->egid),
+>  		from_kgid_munged(user_ns, cred->sgid),
+>  		from_kgid_munged(user_ns, cred->fsgid));
+> +	seq_puts(m, "NStgid:");
+> +	for (g = ns->level; g <= pid->level; g++)
+> +		seq_printf(m, "\t%d ",
+> +			task_tgid_nr_ns(p, pid->numbers[g].ns));
+> +	seq_puts(m, "\nNSpid:");
+> +	for (g = ns->level; g <= pid->level; g++)
+> +		seq_printf(m, "\t%d ",
+> +			task_pid_nr_ns(p, pid->numbers[g].ns));
+> +	seq_putc(m, '\n');
+>  
+>  	task_lock(p);
+>  	if (p->files)
+> 
+
+
