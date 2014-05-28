@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaE1R1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:27:35 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:48590 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaE1R1e (ORCPT
+	id S1755149AbaE1R2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:28:25 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50134 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753960AbaE1R2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:27:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <201405280839.00973.linux@rainbow-software.org>
-References: <1401226727-5508-1-git-send-email-linux@rainbow-software.org>
- <1401226727-5508-6-git-send-email-linux@rainbow-software.org>
- <CAGVrzcbD=OhzuWRuxJVG1SJeYDsOYaV2AozsWafBtX6gcF08vw@mail.gmail.com> <201405280839.00973.linux@rainbow-software.org>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 28 May 2014 10:26:53 -0700
-Message-ID: <CAGVrzcY2anVgKaghKYM_A=Qke854byc=uGn2dvbOm-+vQk9bFA@mail.gmail.com>
-Subject: Re: [PATCH 5/9] tlan: Restart autonegotiation on link loss
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Samuel Chessman <chessman@tux.org>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 May 2014 13:28:24 -0400
+Message-ID: <1401298101.22486.48.camel@x220>
+Subject: Re: [PATCH] acornscsi: remove linked command support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Hannes Reinecke <hare@suse.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 28 May 2014 19:28:21 +0200
+In-Reply-To: <1401003771.2322.33.camel@dabdike.int.hansenpartnership.com>
+References: <1400926433.31526.89.camel@x220> <538075E0.4080001@suse.de>
+	 <1400933617.6956.34.camel@dabdike.int.hansenpartnership.com>
+	 <1400937395.22523.55.camel@x220>
+	 <1401003771.2322.33.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 May 2014 17:28:21.0367 (UTC) FILETIME=[38CEE870:01CF7A9A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-27 23:39 GMT-07:00 Ondrej Zary <linux@rainbow-software.org>:
-> On Wednesday 28 May 2014, Florian Fainelli wrote:
->> Hi,
->>
->> 2014-05-27 14:38 GMT-07:00 Ondrej Zary <linux@rainbow-software.org>:
->> > When link is lost on a card which uses internal PHY for 10 Mbit speeds,
->> > restart autonegotiation to allow switching between 10 and 100 Mbps
->> > speeds.
->>
->> I think you should take a look at implementing libphy read/write stubs
->> for this driver, that would allow you not to open-code such things.
->
-> Yes, that would be good. However, I don't want to do any major PHY-related
-> changes to the driver because it supports cards with various PHY
-> configurations and I don't have all the different hardware to test.
+On Sun, 2014-05-25 at 11:42 +0400, James Bottomley wrote:
+> On Sat, 2014-05-24 at 15:16 +0200, Paul Bolle wrote:
+> > On Sat, 2014-05-24 at 16:13 +0400, James Bottomley wrote:
+> > > Wait, no, that's not a good idea.  We leave obsolete drivers to bitrot.
+> > > Particularly we try not to touch them unless we have to because there
+> > > might be a few people still using them and the more we tamper, the
+> > > greater the risk that something gets broken.
+> > 
+> > Which is also a way to notice whether people still use those obsolete
+> > drivers.
+> 
+> Really, no.  We don't deliberately break old drivers to see if anyone
+> notices.  Usually the feedback loop is months to years for the long tail
+> to notice and by that time fixing the problem becomes a real pain if you
+> allow driver churn.
 
-That is completely fair, this is a fairly old driver, if it is not
-broken, let's keep it as-is.
+Of course I wasn't advocating deliberately breaking old drivers. But
+it's easy to get annoyed by that short remark. It would have been better
+if I hadn't made it.
 
->
->> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
->> > ---
->> >  drivers/net/ethernet/ti/tlan.c |   14 ++++++++++++++
->> >  1 file changed, 14 insertions(+)
->> >
->> > diff --git a/drivers/net/ethernet/ti/tlan.c
->> > b/drivers/net/ethernet/ti/tlan.c index 31d4a96..1047b3f 100644
->> > --- a/drivers/net/ethernet/ti/tlan.c
->> > +++ b/drivers/net/ethernet/ti/tlan.c
->> > @@ -2721,6 +2721,7 @@ static void tlan_phy_finish_auto_neg(struct
->> > net_device *dev) else if (!(mode & 0x0080) && (mode & 0x0040))
->> >                 priv->tlan_full_duplex = true;
->> >
->> > +       /* switch to internal PHY for 10 Mbps */
->> >         if ((!(mode & 0x0180)) &&
->> >             (priv->adapter->flags & TLAN_ADAPTER_USE_INTERN_10) &&
->> >             (priv->phy_num != 0)) {
->> > @@ -2788,6 +2789,19 @@ static void tlan_phy_monitor(unsigned long data)
->> >                                dev->name);
->> >                         tlan_dio_write8(dev->base_addr, TLAN_LED_REG, 0);
->> >                         netif_carrier_off(dev);
->> > +                       if (priv->adapter->flags &
->> > TLAN_ADAPTER_USE_INTERN_10) { +                               /* power
->> > down internal PHY */
->> > +                               u16 data = MII_GC_PDOWN | MII_GC_LOOPBK
->> > +                                       | MII_GC_ISOLATE;
->> > +                               tlan_mii_sync(dev->base_addr);
->> > +                               tlan_mii_write_reg(dev, priv->phy[0],
->> > +                                       MII_GEN_CTL, data);
->> > +                               /* set to external PHY */
->> > +                               priv->phy_num = 1;
->> > +                               /* restart autonegotiation */
->> > +                               tlan_set_timer(dev, (4*HZ/10),
->> > TLAN_TIMER_PHY_PDOWN); +                               return;
->> > +                       }
->> >                 }
->> >         }
->> >
->> > --
->> > Ondrej Zary
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->> > in the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
-> --
-> Ondrej Zary
+Especially because I didn't also point out, as Cristoph did, that the
+code I want removed doesn't get compiled. So removing it can, by
+definition I'd say, not break that old driver.
+
+> We keep old drivers that compile until there's a problem caused usually
+> by something like API changes.
+> 
+> > > On that principle, since
+> > > there's no real reason to remove the code,
+> > 
+> > (Unless one carries the hope that any check, treewide, for a CONFIG_*
+> > macro can be linked to a proper Kconfig symbol.)
+> 
+> The check can be fixed.  If you look at what Fengguang Wu does, he has a
+> list of expected problems which he diffs.  Don't churn the tree to match
+> the checker, make the checker match the tree.
+
+Sure. See my recent patch to scripts/headers_check.pl, which does just
+that. But before one special cases a certain hit for a checker one needs
+to know that this hit really can't or won't be fixed. And in order to
+know that one needs to at least try to fix it first.
+
+> > > it should stay ... until the
+> > > whole driver bitrots to the extent that we can no-longer compile it.
+> > 
+> > I've run into this depreciation policy before. With aic7xxx_old (which I
+> > eventually convinced Fedora to disable, a few relases before it was
+> > removed from the tree). With aic94xx (which I also convinced Fedora to
+> > disable). I also tried multiple times to shut up advansys' compile
+> > time[1]. It seems SCSI might risk not to notice their bitrot, because
+> > eventually everybody stops compiling these obsolete drivers, leaving
+> > SCSI without feedback on their state.
+> 
+> Why would we care?  If it compiles that's fine, it's not causing a
+> problem and it might just be useful to somebody.
+
+Fair point: having code that no one uses doesn't cost a lot.
+
+> The time obsolete drivers cause problems is tree or subsystem wide API
+> changes.  Then we look at the amount of work required and sometimes
+> remove them or do hack fixes. 
+> 
+> > Anyhow, SCSI seems to be the only subsystem that uses this subcategory
+> > of not-really-maintained drivers. Other subsystems appear to allow
+> > anything to be fixed, even trivialities, which are what I tend to fix,
+> > and only stop allowing fixes if the drivers involved are going to be
+> > removed anyway. But maybe I just never ran into that category in other
+> > subsystems.
+> 
+> Try ide ... they have the same policy.
+
+I never really touched IDE. That might explain why I only ran into this
+issue with SCSI.
+
+> Try to understand the reason: we have a long tail of people using
+> obsolete systems who we try not to break.  Any change to an unmaintained
+> driver which can't be tested risks that ... and I'm the one who would
+> have to try to sort out the problem when it's noticed, hence the
+> caution.  If we allow trivial churn, by the time the breakage is noticed
+> (usually months to years later), the driver will have picked up a ton of
+> changes and finding the problem one becomes really hard.  So
+> unmaintained drivers get a default deep freeze maintenance policy.
+
+Thanks for taking the time to explain this to me. I appreciate that.
+This is the first time, I think, that I've seen you explain that policy.
+(I might have missed earlier explanations to other people.) Now I might
+not entirely agree with you, but it does help to know where you're
+coming from.
+
+Thanks,
 
 
+Paul Bolle
 
--- 
-Florian
