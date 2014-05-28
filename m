@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaE1UuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:50:20 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:54393 "EHLO smtp3-g21.free.fr"
+	id S1755415AbaE1UyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:54:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31097 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605AbaE1UuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:50:17 -0400
-Message-ID: <53864BFA.6070103@free.fr>
-Date: Wed, 28 May 2014 22:50:02 +0200
-From: mathieu souchaud <mattieu.souchaud@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751404AbaE1UyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 16:54:05 -0400
+Subject: [PATCH v4.1 05/16] PCI: quirk dma_alias_devfn for Marvell devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
+Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
+        eddy0596@gmail.com, linux@horizon.com
+Date: Wed, 28 May 2014 14:54:00 -0600
+Message-ID: <20140528205242.27872.54432.stgit@bling.home>
+In-Reply-To: <20140522230755.2856.19714.stgit@bling.home>
+References: <20140522230755.2856.19714.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v3] x86/mce: Improve mcheck_init_device() error handling
-References: <1401261157-1165-1-git-send-email-mattieu.souchaud@free.fr> <20140528095227.GA17196@pd.tnic>
-In-Reply-To: <20140528095227.GA17196@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks too, you helped me a lot.
+Several Marvell devices and a JMicron device have a similar DMA
+requester ID problem to Ricoh, except they use function 1 as the
+PCIe requester ID.  Add a quirk for these to populate the DMA
+alias with the correct devfn.
 
-I can do more work, if it's not too difficult for me.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-Mathieu
+v4.1: minor commitlog tweak, no code chage
 
-Le 28/05/2014 11:52, Borislav Petkov a écrit :
-> On Wed, May 28, 2014 at 09:12:37AM +0200, Mathieu Souchaud wrote:
->> Check return code of every function called by mcheck_init_device().
->>
->> Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
-> Applied, thanks!
->
-> I'll queue it for 3.17 though since we're very close to the 3.16 merge
-> window and this patch hasn't had any linux-next time.
->
-> Thanks for your good work, let me know if you want to do more around mce.
->
-> :-)
->
+ drivers/pci/quirks.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index bc8ebd9..923689f 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3349,6 +3349,42 @@ static void quirk_dma_func0_alias(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe832, quirk_dma_func0_alias);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_RICOH, 0xe476, quirk_dma_func0_alias);
+ 
++static void quirk_dma_func1_alias(struct pci_dev *dev)
++{
++	if (PCI_FUNC(dev->devfn) != 1) {
++		dev->dma_alias_devfn = PCI_DEVFN(PCI_SLOT(dev->devfn), 1);
++		dev->dev_flags |= PCI_DEV_FLAGS_DMA_ALIAS_DEVFN;
++	}
++}
++
++/*
++ * Marvell 88SE9123 uses function 1 as the requester ID for DMA.  In some
++ * SKUs function 1 is present and is a legacy IDE controller, in other
++ * SKUs this function is not present, making this a ghost requester.
++ * https://bugzilla.kernel.org/show_bug.cgi?id=42679
++ */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9123,
++			 quirk_dma_func1_alias);
++/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c14 */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9130,
++			 quirk_dma_func1_alias);
++/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c47 + c57 */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9172,
++			 quirk_dma_func1_alias);
++/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c59 */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x917a,
++			 quirk_dma_func1_alias);
++/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c46 */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x91a0,
++			 quirk_dma_func1_alias);
++/* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c49 */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9230,
++			 quirk_dma_func1_alias);
++/* https://bugs.gentoo.org/show_bug.cgi?id=497630 */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
++			 PCI_DEVICE_ID_JMICRON_JMB388_ESD,
++			 quirk_dma_func1_alias);
++
+ static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
+ {
+ 	if (!PCI_FUNC(dev->devfn))
 
