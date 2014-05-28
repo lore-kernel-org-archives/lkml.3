@@ -1,217 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103AbaE1HQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:16:35 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35046 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873AbaE1HQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:16:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,926,1392192000"; 
-   d="scan'208";a="437906348"
-Message-ID: <1401261386.2169.0.camel@rzhang1-toshiba>
-Subject: Re: [PATCH V7 10/11] ACPI: use platform bus as the default bus for
- _HID enumeration
-From: Zhang Rui <rui.zhang@intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
-        Heikki Krogerus <heikki.krogerus@intel.com>
-Date: Wed, 28 May 2014 15:16:26 +0800
-In-Reply-To: <20140526102145.GB1765@lahna.fi.intel.com>
-References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
-	 <1400781753-2682-11-git-send-email-rui.zhang@intel.com>
-	 <20140526102145.GB1765@lahna.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754102AbaE1HTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:19:05 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:59854 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873AbaE1HTC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 03:19:02 -0400
+Date: Wed, 28 May 2014 08:18:55 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Rob Herring <robh@kernel.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Grant Likely <grant.likely@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v1] of/irq: do irq resolution in platform_get_irq_byname()
+Message-ID: <20140528071855.GJ4227@lee--X1>
+References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
+ <20140523080333.66720C4176E@trevor.secretlab.ca>
+ <CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com>
+ <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-26 at 13:21 +0300, Mika Westerberg wrote:
-> On Fri, May 23, 2014 at 02:02:32AM +0800, Zhang Rui wrote:
-> > Because of the growing demand for enumerating ACPI devices to
-> > platform bus, this patch changes the code to enumerate ACPI
-> > devices to platform bus by default, if the device
-> > 1. has _HID.
-> > 2. does not have a scan handler attached.
-> > 3. is not SPB slave device, which should be enumerated by its parent.
-> > 
-> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > ---
-> >  drivers/acpi/acpi_platform.c | 28 ----------------------------
-> >  drivers/acpi/scan.c          | 43 ++++++++++++++++++++++++++++++++++++++++++-
-> >  2 files changed, 42 insertions(+), 29 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-> > index dbfe49e..33376a9 100644
-> > --- a/drivers/acpi/acpi_platform.c
-> > +++ b/drivers/acpi/acpi_platform.c
-> > @@ -22,24 +22,6 @@
-> >  
-> >  ACPI_MODULE_NAME("platform");
-> >  
-> > -/*
-> > - * The following ACPI IDs are known to be suitable for representing as
-> > - * platform devices.
-> > - */
-> > -static const struct acpi_device_id acpi_platform_device_ids[] = {
-> > -
-> > -	{ "PNP0D40" },
-> > -	{ "ACPI0003" },
-> > -	{ "VPC2004" },
-> > -	{ "BCM4752" },
+On Tue, 27 May 2014, Rob Herring wrote:
+
+> On Tue, May 27, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
+> > On Fri, May 23, 2014 at 1:03 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> >> On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+> >>> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
+> >>> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
+> >>> moves resolving of the interrupt resources in platform_get_irq().
+> >>> But this solution isn't complete because platform_get_irq_byname()
+> >>> need to be modified the same way.
+> >>>
+> >>> Hence, fix it by adding interrupt resolution code at the
+> >>> platform_get_irq_byname() function too.
+> >>>
+> >>> Cc: Russell King <linux@arm.linux.org.uk>
+> >>> Cc: Rob Herring <robh@kernel.org>
+> >>> Cc: Tony Lindgren <tony@atomide.com>
+> >>> Cc: Grant Likely <grant.likely@linaro.org>
+> >>> Cc: Thierry Reding <thierry.reding@gmail.com>
+> >>>
+> >>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> >>
+> >> Applied, Thanks.
+> >
+> > As of next-20150526, the ST u8500 Snowball board has been failing boot
+> > in linux-next, and was bisected down to this patch (commit
+> > ad69674e73a1 in -next).   Full boot failure attached.
+> >
+> > I have not dug any deeper, but can confirm that next-20140526 with
+> > this patch reverted boots again on the snowball board.
 > 
-> You can't remove this one as it is bluetooth connected to HS-UART and
-> thus has UARTSerialBus() connector.
+> There's a patch on the list which fixes it. The problem is stmmac
+> driver was expecting only one error code.
 
-refreshed patch attached.
+Does Snowball even use stmmac?
 
->From 50f67c33fc686c8dc86507e478a5e7d6f01805c9 Mon Sep 17 00:00:00 2001
-From: Zhang Rui <rui.zhang@intel.com>
-Date: Thu, 22 May 2014 21:30:37 +0800
-Subject: [PATCH 10/11] ACPI: use platform bus as the default bus for _HID
- enumeration
-
-Because of the growing demand for enumerating ACPI devices to
-platform bus, this patch changes the code to enumerate ACPI
-devices to platform bus by default, if the device
-1. has _HID.
-2. does not have a scan handler attached.
-3. is not SPI/I2C slave device, which should be enumerated
-   to SPI/I2C bus by its parent.
-
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
----
- drivers/acpi/acpi_platform.c | 28 ------------------------
- drivers/acpi/scan.c          | 51 +++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 50 insertions(+), 29 deletions(-)
-
-diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-index dbfe49e..33376a9 100644
---- a/drivers/acpi/acpi_platform.c
-+++ b/drivers/acpi/acpi_platform.c
-@@ -22,24 +22,6 @@
- 
- ACPI_MODULE_NAME("platform");
- 
--/*
-- * The following ACPI IDs are known to be suitable for representing as
-- * platform devices.
-- */
--static const struct acpi_device_id acpi_platform_device_ids[] = {
--
--	{ "PNP0D40" },
--	{ "ACPI0003" },
--	{ "VPC2004" },
--	{ "BCM4752" },
--
--	/* Intel Smart Sound Technology */
--	{ "INT33C8" },
--	{ "80860F28" },
--
--	{ }
--};
--
- /**
-  * acpi_create_platform_device - Create platform device for ACPI device node
-  * @adev: ACPI device node to create a platform device for.
-@@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
- 	kfree(resources);
- 	return 1;
- }
--
--static struct acpi_scan_handler platform_handler = {
--	.ids = acpi_platform_device_ids,
--	.attach = acpi_create_platform_device,
--};
--
--void __init acpi_platform_init(void)
--{
--	acpi_scan_add_handler(&platform_handler);
--}
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 6d50916..73417d6 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -2079,6 +2079,53 @@ static int acpi_scan_handler_dummy_attach(struct acpi_device *device,
- 	return 1;
- }
- 
-+static int acpi_check_spi_i2c_slave(struct acpi_resource *ares, void *data)
-+{
-+	struct acpi_resource_common_serialbus *res;
-+	int *is_spi_i2c_slave = data;
-+
-+	if (ares->type == ACPI_RESOURCE_TYPE_SERIAL_BUS) {
-+		res = &ares->data.common_serial_bus;
-+
-+		/*
-+		 * devices that are connected to UART still need to
-+		 * be enumerated to platform bus
-+		 */
-+		if (res->type != ACPI_RESOURCE_SERIAL_TYPE_UART)
-+			*is_spi_i2c_slave = 1;
-+		 /* no need to do more checking */
-+		return -1;
-+	}
-+	return 1;
-+}
-+
-+static void acpi_do_default_enumeration(struct acpi_device *device)
-+{
-+	struct list_head resource_list;
-+	int is_spi_i2c_slave = 0;
-+
-+	/* Do not do enumeration for device object w/o platform_id */
-+	if (!device->pnp.type.platform_id)
-+		return;
-+
-+	/* Do not do enumeration for device object with scan handler attached */
-+	if (device->handler)
-+		return;
-+
-+	/*
-+	 * Do not do enemeration for SPI/I2C slaves
-+	 * as they will be enuerated to SPI/I2C bus by their parents
-+	 */
-+	INIT_LIST_HEAD(&resource_list);
-+	acpi_dev_get_resources(device, &resource_list,
-+				acpi_check_spi_i2c_slave, &is_spi_i2c_slave);
-+	acpi_dev_free_resource_list(&resource_list);
-+	if (is_spi_i2c_slave)
-+		return;
-+
-+	acpi_create_platform_device(device, NULL);
-+}
-+
- static int acpi_scan_attach_handler(struct acpi_device *device)
- {
- 	struct acpi_hardware_id *hwid;
-@@ -2103,6 +2150,9 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
- 				break;
- 		}
- 	}
-+
-+	acpi_do_default_enumeration(device);
-+
- 	return ret;
- }
- 
-@@ -2262,7 +2312,6 @@ int __init acpi_scan_init(void)
- 	acpi_pci_root_init();
- 	acpi_pci_link_init();
- 	acpi_processor_init();
--	acpi_platform_init();
- 	acpi_lpss_init();
- 	acpi_cmos_rtc_init();
- 	acpi_container_init();
 -- 
-1.8.3.2
-
-
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
