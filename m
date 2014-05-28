@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbaE1Uey (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:34:54 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:39305 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaE1Uex (ORCPT
+	id S1755153AbaE1UjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:39:00 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54752 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751694AbaE1Ui7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:34:53 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, Jens Axboe <axboe@kernel.dk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-References: <20140516140607.GA23902@ubuntu-hedt>
-	<20140516185749.GA5131@kroah.com>
-	<1400268515.2221.91.camel@dabdike.int.hansenpartnership.com>
-	<20140516201841.GC23902@ubuntu-hedt>
-	<87mwedfh7c.fsf@x220.int.ebiederm.org>
-	<20140520142103.GC137220@ubuntu-hedt>
-	<87y4xubxmm.fsf@x220.int.ebiederm.org>
-	<20140521223319.GF29211@ubuntumail>
-	<87ioow9ls9.fsf@x220.int.ebiederm.org>
-	<20140528092655.GD19433@ubuntu-mba51>
-	<20140528131259.GA31213@mail.hallyn.com>
-Date: Wed, 28 May 2014 13:33:51 -0700
-In-Reply-To: <20140528131259.GA31213@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Wed, 28 May 2014 15:12:59 +0200")
-Message-ID: <87tx89od74.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 28 May 2014 16:38:59 -0400
+X-Sasl-enc: TE+R3KNh3/Q5y1KLdpXWf90U2riLx+gqcYHjwXw5PzYE 1401309537
+Date: Wed, 28 May 2014 13:42:32 -0700
+From: Greg KH <greg@kroah.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20140528204232.GA8224@kroah.com>
+References: <20140528194629.0757af1b@canb.auug.org.au>
+ <1401271041.28714.22.camel@x220>
+ <1401272095.28714.30.camel@x220>
+ <1401308488.6186.10.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+xQzTPpHrGvszMgY2w5VdY2dFyZb5a+10=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4997]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user namespaces
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401308488.6186.10.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
->> I was aware of FUSE but hadn't ever looked at it much. Looking at it
->> now, this isn't going to satisfy any of the use cases I know about,
->> which are wanting to use filesystems supported in-kernel (isofs, ext*).
->> I don't see that any of these have a FUSE implementation, and I think we
->> gain more from figuring out how to use in-kernel filesystems in
->> containers than trying to find a way to shoehorn selected filesystems
->> into FUSE.
->
-> That's why I was wondering how much work it would be to auto-generate
-> fuse fs support from the in-kernel source.
+On Wed, May 28, 2014 at 10:21:28PM +0200, Paul Bolle wrote:
+> Greg,
+> 
+> On Wed, 2014-05-28 at 12:14 +0200, Paul Bolle wrote:
+> > I must have compile tested this with CONFIG_LIB80211_CRYPT_TKIP=m while
+> > the code checks for CONFIG_LIB80211_CRYPT_TKIP only (ie, builtin only).
+> > I'll have to have a better look at this.
+> > 
+> > Greg, can the cleaning up of this mess involve an entirely new patch? An
+> > incremental patch would leave this build error in a certain range of
+> > commits.
 
-So at a quick look I have found fuseext2, fuseiso and mountlo-0.5 (which
-claims to have supported all the in-kernel filesystems with the help of
-user mode linux).
+As I already have the patch in my tree, I can't do that, we can live
+with the build issue.
 
-Give that the first two are just an apt-get install away fuse really
-looks like the shortest path to being able to mount an iso, do other
-interesting things.
+> The pieces of the latest linux-next build were handed to me by Stephen
+> as my patch managed to break it.
+> 
+> I'm assuming you'd like to include rtl8192u in linux-next's builds
+> again. Currently I got nothing to offer to you but a request to either
+> drop "staging: rtl8192u: rename CONFIG_IEEE80211_CRYPT_TKIP" from
+> staging-next or, if that's not how staging-next works, a request to
+> revert it. What do you prefer?
 
-We probably want something more but only when performance becomes a
-bottle-neck.
+Either is fine with me, I can revert it, or apply a fix, which ever you
+want, just let me know.
 
-Eric
+thanks,
 
+greg k-h
