@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaE1IXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:23:14 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41167 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471AbaE1IXK (ORCPT
+	id S1754509AbaE1IYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:24:08 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:37624 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754381AbaE1IYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:23:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <5840140.8yGnd4Ycx3@wuerfel>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
-	<5279118.J5305KQNjB@wuerfel>
-	<20140527125655.63A46C40FCB@trevor.secretlab.ca>
-	<5840140.8yGnd4Ycx3@wuerfel>
-Date: Wed, 28 May 2014 10:23:09 +0200
-Message-ID: <CACRpkdZjEVYgq7tKEfmZC0Fu4n=JuUues=pAAtquLahkex=pkA@mail.gmail.com>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 May 2014 04:24:05 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, kvm@vger.kernel.org
+Subject: [GIT PULL RESEND] KVM fixes for 3.15-rc6
+Date: Wed, 28 May 2014 10:23:55 +0200
+Message-Id: <1401265435-1468-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 3:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 27 May 2014 13:56:55 Grant Likely wrote:
+Linus,
 
->> Come to think of it, doesn't PCI DMA have to deal with that situation if
->> the PCI window is not 1:1 mapped into the CPU address space?
->
-> I think all PCI buses we support so far only need a single entry in the
-> dma-ranges property.
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
-Here is the patch I've cooked for the Integrator (PCIv3), identical
-to the keystone:
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
 
-commit b326b94a58ff476fca2b57cf7912b00bec1363c0
-Author: Linus Walleij <linus.walleij@linaro.org>
-Date:   Fri Feb 14 10:26:15 2014 +0100
+are available in the git repository at:
 
-    ARM: integrator: get rid of <mach/memory.h>
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
 
-    The Integrator has a custom <mach/memory.h> header defining the
-    BUS_OFFSET for *_to_bus and bus_to_* operations as offset from
-    0x80000000.
+for you to fetch changes up to a4e91d04b86504f145cc5f766c2609357a68b186:
 
-    This switches the Integrator over to using the mechanism
-    introduced for the Keystone to provide the same offset using
-    the device tree, deletes <mach/memory.h> and augments the
-    Integrator device tree to provide the bus offset.
+  Merge tag 'kvm-s390-for-3.15-1' of git://git.kernel.org/pub/scm/linux/kernel/git/kvms390/linux into kvm-master (2014-05-15 14:46:57 +0200)
 
-    Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-    Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-    Cc: Will Deacon <will.deacon@arm.com>
-    Cc: Jonathan Austin <jonathan.austin@arm.com>
-    Cc: Russell King <linux@arm.linux.org.uk>
-    Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+----------------------------------------------------------------
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ab438cb5af55..2b29a1a7f26f 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -329,7 +329,6 @@ config ARCH_INTEGRATOR
-        select HAVE_TCM
-        select ICST
-        select MULTI_IRQ_HANDLER
--       select NEED_MACH_MEMORY_H
-        select PLAT_VERSATILE
-        select SPARSE_IRQ
-        select USE_OF
-diff --git a/arch/arm/boot/dts/integratorap.dts
-b/arch/arm/boot/dts/integratorap.dts
-index b10e6351da53..f0c397fd45c5 100644
---- a/arch/arm/boot/dts/integratorap.dts
-+++ b/arch/arm/boot/dts/integratorap.dts
-@@ -8,6 +8,7 @@
- / {
-        model = "ARM Integrator/AP";
-        compatible = "arm,integrator-ap";
-+       dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+Small fixes for x86, slightly larger fixes for PPC, and a forgotten s390 patch.
+The PPC fixes are important because they fix breakage that is new in 3.15.
 
-        aliases {
-                arm,timer-primary = &timer2;
-diff --git a/arch/arm/mach-integrator/include/mach/memory.h
-b/arch/arm/mach-integrator/include/mach/memory.h
-deleted file mode 100644
-index 334d5e271889..000000000000
---- a/arch/arm/mach-integrator/include/mach/memory.h
-+++ /dev/null
-(...)
+----------------------------------------------------------------
+Alexander Graf (2):
+      KVM: PPC: Book3S: ifdef on CONFIG_KVM_BOOK3S_32_HANDLER for 32bit
+      KVM guest: Make pv trampoline code executable
 
-Yours,
-Linus Walleij
+Cornelia Huck (1):
+      KVM: s390: announce irqfd capability
+
+Marcelo Tosatti (1):
+      KVM: x86: disable master clock if TSC is reset during suspend
+
+Paolo Bonzini (3):
+      KVM: vmx: disable APIC virtualization in nested guests
+      Merge tag 'signed-for-3.15' of git://github.com/agraf/linux-2.6 into kvm-master
+      Merge tag 'kvm-s390-for-3.15-1' of git://git.kernel.org/.../kvms390/linux into kvm-master
+
+Paul Mackerras (1):
+      KVM: PPC: Book3S HV: Add missing code for transaction reclaim on guest exit
+
+pingfank@linux.vnet.ibm.com (1):
+      KVM: PPC: Book3S: HV: make _PAGE_NUMA take effect
+
+ Documentation/virtual/kvm/api.txt       |   2 +-
+ arch/powerpc/include/asm/sections.h     |  11 ++++
+ arch/powerpc/kernel/kvm.c               |   2 +-
+ arch/powerpc/kvm/book3s.c               |   6 +-
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c     |   2 +-
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S | 104 ++++++++++++++++++++++++++++++++
+ arch/powerpc/kvm/book3s_pr.c            |   6 +-
+ arch/powerpc/mm/hash_utils_64.c         |   4 ++
+ arch/s390/kvm/kvm-s390.c                |   1 +
+ arch/x86/kvm/vmx.c                      |   7 ++-
+ arch/x86/kvm/x86.c                      |   6 +-
+ 11 files changed, 139 insertions(+), 12 deletions(-)
