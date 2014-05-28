@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaE1MrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:47:16 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36026 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325AbaE1MrN (ORCPT
+	id S1753511AbaE1MrX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:47:23 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:45821 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325AbaE1MrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:47:13 -0400
+	Wed, 28 May 2014 08:47:19 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -28,9 +28,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v5 7/9] of: spi: Export single device registration method and accessors
-Date: Wed, 28 May 2014 15:46:31 +0300
-Message-Id: <1401281193-27146-8-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v5 9/9] OF: selftest: Add overlay self-test support.
+Date: Wed, 28 May 2014 15:46:33 +0300
+Message-Id: <1401281193-27146-10-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
 References: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
@@ -38,305 +38,742 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamically inserting spi device nodes requires the use of a single
-device registration method. Rework and export it.
+This patch adds overlay tests to the OF selftest.
 
-Methods to lookup a device/master using a device node are added
-as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
+It tests overlay device addition/removal and whether
+the apply revert sequence is correct.
 
 Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/spi/spi.c | 259 ++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 156 insertions(+), 103 deletions(-)
+ Documentation/devicetree/bindings/selftest.txt |  14 +
+ drivers/of/selftest.c                          | 481 +++++++++++++++++++++++++
+ drivers/of/testcase-data/testcases.dtsi        |   1 +
+ drivers/of/testcase-data/tests-overlay.dtsi    | 180 +++++++++
+ 4 files changed, 676 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/selftest.txt
+ create mode 100644 drivers/of/testcase-data/tests-overlay.dtsi
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index d4f9670..a98d236 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1200,6 +1200,121 @@ err_init_queue:
- /*-------------------------------------------------------------------------*/
+diff --git a/Documentation/devicetree/bindings/selftest.txt b/Documentation/devicetree/bindings/selftest.txt
+new file mode 100644
+index 0000000..0f92a22
+--- /dev/null
++++ b/Documentation/devicetree/bindings/selftest.txt
+@@ -0,0 +1,14 @@
++* OF selftest platform device
++
++** selftest
++
++Required properties:
++- compatible: must be "selftest"
++
++All other properties are optional.
++
++Example:
++	selftest {
++		compatible = "selftest";
++		status = "okay";
++	};
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index 077314e..1c74676 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -15,6 +15,8 @@
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+ #include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/of_platform.h>
  
- #if defined(CONFIG_OF)
-+
-+static struct spi_device *
-+of_register_spi_device(struct spi_master *master, struct device_node *node)
-+{
-+	struct spi_device *spi;
-+	struct device_node *nc;
-+	int err;
-+	u32 value;
-+
-+	/* Alloc an spi_device */
-+	spi = spi_alloc_device(master);
-+	if (!spi) {
-+		dev_err(&master->dev, "spi_device alloc error for %s\n",
-+			nc->full_name);
-+		err = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	/* Select device driver */
-+	err = of_modalias_node(nc, spi->modalias,
-+				sizeof(spi->modalias));
-+	if (err) {
-+		dev_err(&master->dev, "cannot find modalias for %s\n",
-+			nc->full_name);
-+		goto err_out;
-+	}
-+
-+	/* Device address */
-+	err = of_property_read_u32(nc, "reg", &value);
-+	if (err) {
-+		dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
-+			nc->full_name, err);
-+		goto err_out;
-+	}
-+	spi->chip_select = value;
-+
-+	/* Mode (clock phase/polarity/etc.) */
-+	if (of_find_property(nc, "spi-cpha", NULL))
-+		spi->mode |= SPI_CPHA;
-+	if (of_find_property(nc, "spi-cpol", NULL))
-+		spi->mode |= SPI_CPOL;
-+	if (of_find_property(nc, "spi-cs-high", NULL))
-+		spi->mode |= SPI_CS_HIGH;
-+	if (of_find_property(nc, "spi-3wire", NULL))
-+		spi->mode |= SPI_3WIRE;
-+
-+	/* Device DUAL/QUAD mode */
-+	if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
-+		switch (value) {
-+		case 1:
-+			break;
-+		case 2:
-+			spi->mode |= SPI_TX_DUAL;
-+			break;
-+		case 4:
-+			spi->mode |= SPI_TX_QUAD;
-+			break;
-+		default:
-+			dev_warn(&master->dev,
-+				"spi-tx-bus-width %d not supported\n",
-+				value);
-+			break;
-+		}
-+	}
-+
-+	if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
-+		switch (value) {
-+		case 1:
-+			break;
-+		case 2:
-+			spi->mode |= SPI_RX_DUAL;
-+			break;
-+		case 4:
-+			spi->mode |= SPI_RX_QUAD;
-+			break;
-+		default:
-+			dev_warn(&master->dev,
-+				"spi-rx-bus-width %d not supported\n",
-+				value);
-+			break;
-+		}
-+	}
-+
-+	/* Device speed */
-+	err = of_property_read_u32(nc, "spi-max-frequency", &value);
-+	if (err) {
-+		dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
-+			nc->full_name, err);
-+		goto err_out;
-+	}
-+	spi->max_speed_hz = value;
-+
-+	/* IRQ */
-+	spi->irq = irq_of_parse_and_map(nc, 0);
-+
-+	/* Store a pointer to the node in the device structure */
-+	of_node_get(nc);
-+	spi->dev.of_node = nc;
-+
-+	/* Register the new device */
-+	request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
-+	err = spi_add_device(spi);
-+	if (err) {
-+		dev_err(&master->dev, "spi_device register error %s\n",
-+			nc->full_name);
-+		goto err_out;
-+	}
-+
-+	return spi;
-+
-+err_out:
-+	spi_dev_put(spi);
-+	return ERR_PTR(err);
-+}
-+
- /**
-  * of_register_spi_devices() - Register child devices onto the SPI bus
-  * @master:	Pointer to spi_master device
-@@ -1209,120 +1324,58 @@ err_init_queue:
-  */
- static void of_register_spi_devices(struct spi_master *master)
- {
--	struct spi_device *spi;
- 	struct device_node *nc;
--	int rc;
--	u32 value;
- 
- 	if (!master->dev.of_node)
- 		return;
- 
--	for_each_available_child_of_node(master->dev.of_node, nc) {
--		/* Alloc an spi_device */
--		spi = spi_alloc_device(master);
--		if (!spi) {
--			dev_err(&master->dev, "spi_device alloc error for %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
-+	for_each_available_child_of_node(master->dev.of_node, nc)
-+		of_register_spi_device(master, nc);
-+}
- 
--		/* Select device driver */
--		if (of_modalias_node(nc, spi->modalias,
--				     sizeof(spi->modalias)) < 0) {
--			dev_err(&master->dev, "cannot find modalias for %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--			continue;
--		}
-+static int of_dev_node_match(struct device *dev, void *data)
-+{
-+	return dev->of_node == data;
-+}
- 
--		/* Device address */
--		rc = of_property_read_u32(nc, "reg", &value);
--		if (rc) {
--			dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
--				nc->full_name, rc);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->chip_select = value;
--
--		/* Mode (clock phase/polarity/etc.) */
--		if (of_find_property(nc, "spi-cpha", NULL))
--			spi->mode |= SPI_CPHA;
--		if (of_find_property(nc, "spi-cpol", NULL))
--			spi->mode |= SPI_CPOL;
--		if (of_find_property(nc, "spi-cs-high", NULL))
--			spi->mode |= SPI_CS_HIGH;
--		if (of_find_property(nc, "spi-3wire", NULL))
--			spi->mode |= SPI_3WIRE;
--		if (of_find_property(nc, "spi-lsb-first", NULL))
--			spi->mode |= SPI_LSB_FIRST;
--
--		/* Device DUAL/QUAD mode */
--		if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
--			switch (value) {
--			case 1:
--				break;
--			case 2:
--				spi->mode |= SPI_TX_DUAL;
--				break;
--			case 4:
--				spi->mode |= SPI_TX_QUAD;
--				break;
--			default:
--				dev_warn(&master->dev,
--					 "spi-tx-bus-width %d not supported\n",
--					 value);
--				break;
--			}
--		}
-+/* bah; the match functions differ just by const-ness */
-+static int of_dev_node_match_const(struct device *dev, const void *data)
-+{
-+	return dev->of_node == data;
-+}
- 
--		if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
--			switch (value) {
--			case 1:
--				break;
--			case 2:
--				spi->mode |= SPI_RX_DUAL;
--				break;
--			case 4:
--				spi->mode |= SPI_RX_QUAD;
--				break;
--			default:
--				dev_warn(&master->dev,
--					 "spi-rx-bus-width %d not supported\n",
--					 value);
--				break;
--			}
--		}
-+/* must call put_device() when done with returned spi_device device */
-+struct spi_device *of_find_spi_device_by_node(struct device_node *node)
-+{
-+	struct device *dev;
- 
--		/* Device speed */
--		rc = of_property_read_u32(nc, "spi-max-frequency", &value);
--		if (rc) {
--			dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
--				nc->full_name, rc);
--			spi_dev_put(spi);
--			continue;
--		}
--		spi->max_speed_hz = value;
--
--		/* IRQ */
--		spi->irq = irq_of_parse_and_map(nc, 0);
--
--		/* Store a pointer to the node in the device structure */
--		of_node_get(nc);
--		spi->dev.of_node = nc;
--
--		/* Register the new device */
--		request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
--		rc = spi_add_device(spi);
--		if (rc) {
--			dev_err(&master->dev, "spi_device register error %s\n",
--				nc->full_name);
--			spi_dev_put(spi);
--		}
-+	dev = bus_find_device(&spi_bus_type, NULL, node,
-+					 of_dev_node_match);
-+	if (!dev)
-+		return NULL;
- 
--	}
-+	return to_spi_device(dev);
+ static struct selftest_results {
+ 	int passed;
+@@ -517,6 +519,484 @@ static void __init of_selftest_platform_populate(void)
+ 	}
  }
-+EXPORT_SYMBOL(of_find_spi_device_by_node);
+ 
++#ifdef CONFIG_OF_OVERLAY
 +
-+/* forward decl */
-+static struct class spi_master_class;
-+
-+/* the spi masters are not using spi_bus, so we find it with another way */
-+struct spi_master *of_find_spi_master_by_node(struct device_node *node)
++static int selftest_probe(struct platform_device *pdev)
 +{
-+	struct device *dev;
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
 +
-+	dev = class_find_device(&spi_master_class, NULL, node,
-+				of_dev_node_match_const);
-+	if (!dev)
++	if (np == NULL) {
++		dev_err(dev, "No OF data for device\n");
++		return -EINVAL;
++
++	}
++
++	dev_dbg(dev, "%s for node @%s\n", __func__, np->full_name);
++	return 0;
++}
++
++static int selftest_remove(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++
++	dev_dbg(dev, "%s for node @%s\n", __func__, np->full_name);
++	return 0;
++}
++
++static struct of_device_id selftest_match[] = {
++	{ .compatible = "selftest", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, altera_jtaguart_match);
++
++static struct platform_driver selftest_driver = {
++	.probe			= selftest_probe,
++	.remove			= selftest_remove,
++	.driver = {
++		.name		= "selftest",
++		.owner		= THIS_MODULE,
++		.of_match_table	= of_match_ptr(selftest_match),
++	},
++};
++
++/* get the platform device instantiated at the path */
++static struct platform_device *of_path_to_platform_device(const char *path)
++{
++	struct device_node *np;
++	struct platform_device *pdev;
++
++	np = of_find_node_by_path(path);
++	if (np == NULL)
 +		return NULL;
 +
-+	/* reference got in class_find_device */
-+	return container_of(dev, struct spi_master, dev);
-+}
-+EXPORT_SYMBOL(of_find_spi_master_by_node);
++	pdev = of_find_device_by_node(np);
++	of_node_put(np);
 +
- #else
- static void of_register_spi_devices(struct spi_master *master) { }
- #endif
++	return pdev;
++}
++
++/* find out if a platform device exists at that path */
++static int of_path_platform_device_exists(const char *path)
++{
++	struct platform_device *pdev;
++
++	pdev = of_path_to_platform_device(path);
++	platform_device_put(pdev);
++	return pdev != NULL;
++}
++
++static const char *selftest_path(int nr)
++{
++	static char buf[256];
++
++	snprintf(buf, sizeof(buf) - 1,
++		"/testcase-data/overlay-node/test-bus/test-selftest%d", nr);
++	buf[sizeof(buf) - 1] = '\0';
++
++	return buf;
++}
++
++static const char *overlay_path(int nr)
++{
++	static char buf[256];
++
++	snprintf(buf, sizeof(buf) - 1,
++		"/testcase-data/overlay%d", nr);
++	buf[sizeof(buf) - 1] = '\0';
++
++	return buf;
++}
++
++static const char *bus_path = "/testcase-data/overlay-node/test-bus";
++
++static int of_selftest_apply_overlay(int selftest_nr, int overlay_nr,
++		int *overlay_id)
++{
++	struct device_node *np = NULL;
++	int ret, id = -1;
++
++	np = of_find_node_by_path(overlay_path(overlay_nr));
++	if (np == NULL) {
++		selftest(0, "could not find overlay node @\"%s\"\n",
++				overlay_path(overlay_nr));
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = of_overlay_create(np);
++	if (ret < 0) {
++		selftest(0, "could not create overlay from \"%s\"\n",
++				overlay_path(overlay_nr));
++		goto out;
++	}
++	id = ret;
++
++	ret = 0;
++
++out:
++	of_node_put(np);
++
++	if (overlay_id)
++		*overlay_id = id;
++
++	return ret;
++}
++
++/* apply an overlay while checking before and after states */
++static int of_selftest_apply_overlay_check(int overlay_nr, int selftest_nr,
++		int before, int after)
++{
++	int ret;
++
++	/* selftest device must not be in before state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= before) {
++		selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!before ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	ret = of_selftest_apply_overlay(overlay_nr, selftest_nr, NULL);
++	if (ret != 0) {
++		/* of_selftest_apply_overlay already called selftest() */
++		return ret;
++	}
++
++	/* selftest device must be to set to after state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= after) {
++		selftest(0, "overlay @\"%s\" failed to create @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!after ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/* apply an overlay and then revert it while checking before, after states */
++static int of_selftest_apply_revert_overlay_check(int overlay_nr,
++		int selftest_nr, int before, int after)
++{
++	int ret, ov_id;
++
++	/* selftest device must be in before state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= before) {
++		selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!before ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	/* apply the overlay */
++	ret = of_selftest_apply_overlay(overlay_nr, selftest_nr, &ov_id);
++	if (ret != 0) {
++		/* of_selftest_apply_overlay already called selftest() */
++		return ret;
++	}
++
++	/* selftest device must be in after state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= after) {
++		selftest(0, "overlay @\"%s\" failed to create @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!after ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	ret = of_overlay_destroy(ov_id);
++	if (ret != 0) {
++		selftest(0, "overlay @\"%s\" failed to be destroyed @\"%s\"\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr));
++		return ret;
++	}
++
++	/* selftest device must be again in before state */
++	if (of_path_platform_device_exists(selftest_path(selftest_nr))
++			!= before) {
++		selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++				overlay_path(overlay_nr),
++				selftest_path(selftest_nr),
++				!before ? "enabled" : "disabled");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/* test activation of device */
++static void of_selftest_overlay_0(void)
++{
++	int ret;
++
++	/* device should enable */
++	ret = of_selftest_apply_overlay_check(0, 0, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 0);
++}
++
++/* test deactivation of device */
++static void of_selftest_overlay_1(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_overlay_check(1, 1, 1, 0);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 1);
++}
++
++/* test activation of device */
++static void of_selftest_overlay_2(void)
++{
++	int ret;
++
++	/* device should enable */
++	ret = of_selftest_apply_overlay_check(2, 2, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 2);
++}
++
++/* test deactivation of device */
++static void of_selftest_overlay_3(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_overlay_check(3, 3, 1, 0);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 3);
++}
++
++/* test activation of a full device node */
++static void of_selftest_overlay_4(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_overlay_check(4, 4, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 4);
++}
++
++/* test overlay apply/revert sequence */
++static void of_selftest_overlay_5(void)
++{
++	int ret;
++
++	/* device should disable */
++	ret = of_selftest_apply_revert_overlay_check(5, 5, 0, 1);
++	if (ret != 0)
++		return;
++
++	selftest(1, "overlay test %d passed\n", 5);
++}
++
++/* test overlay application in sequence */
++static void of_selftest_overlay_6(void)
++{
++	struct device_node *np;
++	int ret, i, ov_id[2];
++	int overlay_nr = 6, selftest_nr = 6;
++	int before = 0, after = 1;
++
++	/* selftest device must be in before state */
++	for (i = 0; i < 2; i++) {
++		if (of_path_platform_device_exists(
++					selftest_path(selftest_nr + i))
++				!= before) {
++			selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++					overlay_path(overlay_nr + i),
++					selftest_path(selftest_nr + i),
++					!before ? "enabled" : "disabled");
++			return;
++		}
++	}
++
++	/* apply the overlays */
++	for (i = 0; i < 2; i++) {
++
++		np = of_find_node_by_path(overlay_path(overlay_nr + i));
++		if (np == NULL) {
++			selftest(0, "could not find overlay node @\"%s\"\n",
++					overlay_path(overlay_nr + i));
++			return;
++		}
++
++		ret = of_overlay_create(np);
++		if (ret < 0)  {
++			selftest(0, "could not create overlay from \"%s\"\n",
++					overlay_path(overlay_nr + i));
++			return;
++		}
++		ov_id[i] = ret;
++	}
++
++	for (i = 0; i < 2; i++) {
++		/* selftest device must be in after state */
++		if (of_path_platform_device_exists(
++					selftest_path(selftest_nr + i))
++				!= after) {
++			selftest(0, "overlay @\"%s\" failed @\"%s\" %s\n",
++					overlay_path(overlay_nr + i),
++					selftest_path(selftest_nr + i),
++					!after ? "enabled" : "disabled");
++			return;
++		}
++	}
++
++	for (i = 1; i >= 0; i--) {
++		ret = of_overlay_destroy(ov_id[i]);
++		if (ret != 0) {
++			selftest(0, "overlay @\"%s\" failed destroy @\"%s\"\n",
++					overlay_path(overlay_nr + i),
++					selftest_path(selftest_nr + i));
++			return;
++		}
++	}
++
++	for (i = 0; i < 2; i++) {
++		/* selftest device must be again in before state */
++		if (of_path_platform_device_exists(
++					selftest_path(selftest_nr + i))
++				!= before) {
++			selftest(0, "overlay @\"%s\" with device @\"%s\" %s\n",
++					overlay_path(overlay_nr + i),
++					selftest_path(selftest_nr + i),
++					!before ? "enabled" : "disabled");
++			return;
++		}
++	}
++
++	selftest(1, "overlay test %d passed\n", 6);
++}
++
++/* test overlay application in sequence */
++static void of_selftest_overlay_8(void)
++{
++	struct device_node *np;
++	int ret, i, ov_id[2];
++	int overlay_nr = 8, selftest_nr = 8;
++
++	/* we don't care about device state in this test */
++
++	/* apply the overlays */
++	for (i = 0; i < 2; i++) {
++
++		np = of_find_node_by_path(overlay_path(overlay_nr + i));
++		if (np == NULL) {
++			selftest(0, "could not find overlay node @\"%s\"\n",
++					overlay_path(overlay_nr + i));
++			return;
++		}
++
++		ret = of_overlay_create(np);
++		if (ret < 0)  {
++			selftest(0, "could not create overlay from \"%s\"\n",
++					overlay_path(overlay_nr + i));
++			return;
++		}
++		ov_id[i] = ret;
++	}
++
++	/* now try to remove first overlay (it should fail) */
++	ret = of_overlay_destroy(ov_id[0]);
++	if (ret == 0) {
++		selftest(0, "overlay @\"%s\" was destroyed @\"%s\"\n",
++				overlay_path(overlay_nr + 0),
++				selftest_path(selftest_nr));
++		return;
++	}
++
++	/* removing them in order should work */
++	for (i = 1; i >= 0; i--) {
++		ret = of_overlay_destroy(ov_id[i]);
++		if (ret != 0) {
++			selftest(0, "overlay @\"%s\" not destroyed @\"%s\"\n",
++					overlay_path(overlay_nr + i),
++					selftest_path(selftest_nr));
++			return;
++		}
++	}
++
++	selftest(1, "overlay test %d passed\n", 8);
++}
++
++static void __init of_selftest_overlay(void)
++{
++	struct device_node *bus_np = NULL;
++	int ret;
++
++	ret = platform_driver_register(&selftest_driver);
++	if (ret != 0) {
++		selftest(0, "could not register selftest driver\n");
++		goto out;
++	}
++
++	bus_np = of_find_node_by_path(bus_path);
++	if (bus_np == NULL) {
++		selftest(0, "could not find bus_path \"%s\"\n", bus_path);
++		goto out;
++	}
++
++	ret = of_platform_populate(bus_np, of_default_bus_match_table,
++			NULL, NULL);
++	if (ret != 0) {
++		selftest(0, "could not populate bus @ \"%s\"\n", bus_path);
++		goto out;
++	}
++
++	if (!of_path_platform_device_exists(selftest_path(100))) {
++		selftest(0, "could not find selftest0 @ \"%s\"\n",
++				selftest_path(100));
++		goto out;
++	}
++
++	if (of_path_platform_device_exists(selftest_path(101))) {
++		selftest(0, "selftest1 @ \"%s\" should not exist\n",
++				selftest_path(101));
++		goto out;
++	}
++
++	selftest(1, "basic infrastructure of overlays passed");
++
++	/* tests in sequence */
++	of_selftest_overlay_0();
++	of_selftest_overlay_1();
++	of_selftest_overlay_2();
++	of_selftest_overlay_3();
++	of_selftest_overlay_4();
++	of_selftest_overlay_5();
++	of_selftest_overlay_6();
++	of_selftest_overlay_8();
++
++out:
++	of_node_put(bus_np);
++}
++
++#else
++static inline void __init of_selftest_overlay(void) { }
++#endif
++
+ static int __init of_selftest(void)
+ {
+ 	struct device_node *np;
+@@ -537,6 +1017,7 @@ static int __init of_selftest(void)
+ 	of_selftest_parse_interrupts_extended();
+ 	of_selftest_match_node();
+ 	of_selftest_platform_populate();
++	of_selftest_overlay();
+ 	pr_info("end of selftest - %i passed, %i failed\n",
+ 		selftest_results.passed, selftest_results.failed);
+ 	return 0;
+diff --git a/drivers/of/testcase-data/testcases.dtsi b/drivers/of/testcase-data/testcases.dtsi
+index 6d8d980a..a54fd68 100644
+--- a/drivers/of/testcase-data/testcases.dtsi
++++ b/drivers/of/testcase-data/testcases.dtsi
+@@ -2,3 +2,4 @@
+ #include "tests-interrupts.dtsi"
+ #include "tests-match.dtsi"
+ #include "tests-platform.dtsi"
++#include "tests-overlay.dtsi"
+diff --git a/drivers/of/testcase-data/tests-overlay.dtsi b/drivers/of/testcase-data/tests-overlay.dtsi
+new file mode 100644
+index 0000000..75976da
+--- /dev/null
++++ b/drivers/of/testcase-data/tests-overlay.dtsi
+@@ -0,0 +1,180 @@
++
++/ {
++	testcase-data {
++		overlay-node {
++
++			/* test bus */
++			selftestbus: test-bus {
++				compatible = "simple-bus";
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				selftest100: test-selftest100 {
++					compatible = "selftest";
++					status = "okay";
++					reg = <100>;
++				};
++
++				selftest101: test-selftest101 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <101>;
++				};
++
++				selftest0: test-selftest0 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <0>;
++				};
++
++				selftest1: test-selftest1 {
++					compatible = "selftest";
++					status = "okay";
++					reg = <1>;
++				};
++
++				selftest2: test-selftest2 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <2>;
++				};
++
++				selftest3: test-selftest3 {
++					compatible = "selftest";
++					status = "okay";
++					reg = <3>;
++				};
++
++				selftest5: test-selftest5 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <5>;
++				};
++
++				selftest6: test-selftest6 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <6>;
++				};
++
++				selftest7: test-selftest7 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <7>;
++				};
++
++				selftest8: test-selftest8 {
++					compatible = "selftest";
++					status = "disabled";
++					reg = <8>;
++				};
++			};
++		};
++
++		/* test enable using absolute target path */
++		overlay0 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest0";
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++
++		/* test disable using absolute target path */
++		overlay1 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest1";
++				__overlay__ {
++					status = "disabled";
++				};
++			};
++		};
++
++		/* test enable using label */
++		overlay2 {
++			fragment@0 {
++				target = <&selftest2>;
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++
++		/* test disable using label */
++		overlay3 {
++			fragment@0 {
++				target = <&selftest3>;
++				__overlay__ {
++					status = "disabled";
++				};
++			};
++		};
++
++		/* test insertion of a full node */
++		overlay4 {
++			fragment@0 {
++				target = <&selftestbus>;
++				__overlay__ {
++
++					/* suppress DTC warning */
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					test-selftest4 {
++						compatible = "selftest";
++						status = "okay";
++						reg = <4>;
++					};
++				};
++			};
++		};
++
++		/* test overlay apply revert */
++		overlay5 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest5";
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++
++		/* test overlays application and removal in sequence */
++		overlay6 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest6";
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++		overlay7 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest7";
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++
++		/* test overlays application and removal in bad sequence */
++		overlay8 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest8";
++				__overlay__ {
++					status = "okay";
++				};
++			};
++		};
++		overlay9 {
++			fragment@0 {
++				target-path = "/testcase-data/overlay-node/test-bus/test-selftest8";
++				__overlay__ {
++					property-foo = "bar";
++				};
++			};
++		};
++
++	};
++};
 -- 
 1.7.12
 
