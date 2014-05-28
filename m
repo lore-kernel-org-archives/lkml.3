@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790AbaE1E5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 00:57:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41760 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaE1E5x (ORCPT
+	id S1753872AbaE1FAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 01:00:08 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:46019 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaE1FAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 00:57:53 -0400
-From: Vaughan Cao <vaughan.cao@oracle.com>
-To: James.Bottomley@HansenPartnership.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vaughan.cao@oracle.com
-Subject: Re: [PATCH] notify block layer when using temporary change to cache_type
-Date: Wed, 28 May 2014 12:58:27 +0800
-Message-Id: <1401253107-16138-1-git-send-email-vaughan.cao@oracle.com>
-X-Mailer: git-send-email 1.9.0
-References: <1401190754-6822-1-git-send-email-vaughan.cao@oracle.com> <1401207496.14454.90.camel@dabdike>
-In-Reply-To: <1401207496.14454.90.camel@dabdike>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 28 May 2014 01:00:06 -0400
+Message-ID: <53856D51.40304@gmail.com>
+Date: Wed, 28 May 2014 07:00:01 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
+        Caitlin Bestler <caitlin.bestler@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Elie De Brauwer <eliedebrauwer@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Steven Whitehouse <steve@chygwyn.com>,
+        =?UTF-8?B?UsOpbWkgRGVuaXMtQ291cm1v?= =?UTF-8?B?bnQ=?= 
+	<remi.denis-courmont@nokia.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Chris Friesen <chris.friesen@windriver.com>
+Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
+References: <536101C9.9090601@gmail.com> <CAKgNAkgA_xTfRZhpyVwuACpCY7xMK89e0bK4PuVMG9reNV6Skw@mail.gmail.com> <20140512143451.GB13801@kernel.org> <20140521210535.GA5414@kernel.org> <537E0961.8040005@gmail.com> <20140526134647.GB8176@kernel.org> <20140526211706.GA25474@kernel.org> <5384BEC5.2080607@gmail.com> <20140527192115.GD25474@kernel.org> <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com> <20140527203010.GA2764@kernel.org>
+In-Reply-To: <20140527203010.GA2764@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 12:18 AM, James Bottomley wrote:
-> On Tue, 2014-05-27 at 19:39 +0800, Vaughan Cao wrote:
->> This is a fix for commit:
->>   39c60a0948cc06139e2fbfe084f83cb7e7deae3b sd: fix array cache flushing bug causing performance problems
->> We must notify the block layer via q->flush_flags after temporary change the cache_type to write through.
->> If not, SYNCHRONIZE CACHE command will still be generated.
+On 05/27/2014 10:30 PM, Arnaldo Carvalho de Melo wrote:
+> Em Tue, May 27, 2014 at 09:28:37PM +0200, Michael Kerrisk (man-pages) escreveu:
+>> On Tue, May 27, 2014 at 9:21 PM, Arnaldo Carvalho de Melo
+>> <acme@ghostprotocols.net> wrote:
+>>> Em Tue, May 27, 2014 at 06:35:17PM +0200, Michael Kerrisk (man-pages) escreveu:
+>>>> On 05/26/2014 11:17 PM, Arnaldo Carvalho de Melo wrote:
+>>>>> Can you try the attached patch on top of the first one?
+>>>
+>>>> Patches on patches is a way to make your testers work unnecessarily
+>>>> harder. Also, it means that anyone else who was interested in this
+>>>
+>>> It was meant to highlight the changes with regard to the previous patch,
+>>> i.e. to make things easier for reviewing.
 >>
->> Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
->> ---
->>  drivers/scsi/sd.c | 12 ++++++++++++
->>  1 file changed, 12 insertions(+)
->>
->> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
->> index 6146b9d..366e48b 100644
->> --- a/drivers/scsi/sd.c
->> +++ b/drivers/scsi/sd.c
->> @@ -144,6 +144,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
-> This is a weird function name.  The name in the vanilla kernel is
-> cache_type_store().
-Sorry, this patch is created on oracle uek kernel, I just checked it can
-apply to vanilla kernel cleanly and didn't notice they are using
-different device attribute function name.
+>> (I don't think that works...)
+> 
+> Lets try both then, attached goes the updated patch, and this is the
+> diff to the last combined one:
 
->>  	struct scsi_sense_hdr sshdr;
->>  	static const char temp[] = "temporary ";
->>  	int len;
->> +	unsigned flush;
->>  
->>  	if (sdp->type != TYPE_DISK)
->>  		/* no cache control on RBC devices; theoretically they
->> @@ -174,6 +175,17 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
->>  	if (sdkp->cache_override) {
->>  		sdkp->WCE = wce;
->>  		sdkp->RCD = rcd;
->> +
->> +		/* set flush_flags to notify the block layer */
->> +		flush = 0;
->> +		if (sdkp->WCE) {
->> +			flush |= REQ_FLUSH;
->> +			if (sdkp->DPOFUA)
->> +				flush |= REQ_FUA;
->> +		}
->> +
->> +		blk_queue_flush(sdkp->disk->queue, flush);
->> +
-> Is there a reason you cut and paste from sd_revalidate_disk() instead of
-> just calling it directly?
-No, I just want to keep the modification as small as possible. Checked
-the actions of sd_revalidate_disk() again, it seems no harm to call it
-from here. Also actual actions are skipped in sd_read_cache_type() if
-cache_override!=0, so I suppose your original plan is to jump to
-sd_revalidate_disk() from here.
+What tree does this apply to? I tried applying to 3.15-rc7, but a piece 
+was rejected, and the fix was not obvious.
 
-However, that way may not be acceptable after further code review.
-Changing the sdkp->WCE,RCD will cause these real parameters of the
-underlying device *lost*. In sd_shutdown() and sd_suspend_common(), we
-need them to call sd_sync_cache() if necessary. I don't think this
-action is avoidable, just for the performance issue to solve. And we
-can't change the mode just by setting q->flush_flags while leave
-sdkp->WCE,RCD untouched either, because cache_type_show() needs
-sdkp->WCE,RCD to present the temporary config to userspace.
+Cheers,
 
-static void sd_shutdown(struct device *dev)
-{
-...
-	if (sdkp->WCE && sdkp->media_present) {
-		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
-		sd_sync_cache(sdkp);
-	}
+Michael
 
-static int sd_suspend_common(struct device *dev, bool ignore_stop_errors)
-{
-...
-	if (sdkp->WCE && sdkp->media_present) {
-		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
-		ret = sd_sync_cache(sdkp);
 
-So, It seems new fields like realWCE and readRCD in scsi_disk are needed
-to save those configuration. What's your opinion?
+drivers/net/tun.c.rej
 
-Vaughan
->
-> James
->
->
->
+--- drivers/net/tun.c
++++ drivers/net/tun.c
+@@ -1343,7 +1343,7 @@
+ 
+        /* Read frames from queue */
+        skb = __skb_recv_datagram(tfile->socket.sk, noblock ? MSG_DONTWAIT : 0,
+-                                 &peeked, &off, &err);
++                                 &peeked, &off, &err, timeop);
+        if (skb) {
+                ret = tun_put_user(tun, tfile, skb, iv, len);
+                kfree_skb(skb);
