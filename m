@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaE1JxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:53:18 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59659 "EHLO
+	id S1752670AbaE1JyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:54:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34571 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaE1JxR (ORCPT
+	with ESMTP id S1751441AbaE1JyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:53:17 -0400
-Date: Wed, 28 May 2014 11:53:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Dave Jones <davej@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH] perf: Differentiate exec() and non-exec() comm events
-Message-ID: <20140528095308.GS11096@twins.programming.kicks-ass.net>
-References: <1401266704-22572-1-git-send-email-adrian.hunter@intel.com>
- <20140528085538.GR11096@twins.programming.kicks-ass.net>
- <5385A7A9.80702@intel.com>
+	Wed, 28 May 2014 05:54:24 -0400
+Date: Wed, 28 May 2014 02:54:23 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michael Schmitz <schmitz@debian.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-m68k@vger.kernel.org
+Subject: Re: [PATCH 09/12] scsi/NCR5380: fix and standardize NDEBUG macros
+Message-ID: <20140528095423.GI26617@infradead.org>
+References: <20140318004212.612472697@telegraphics.com.au>
+ <20140318004215.292486266@telegraphics.com.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aa1lHgJENwUhkhu9"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5385A7A9.80702@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140318004215.292486266@telegraphics.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 18, 2014 at 11:42:21AM +1100, Finn Thain wrote:
+> All three NCR5380 core driver implementations share the same NCR5380.h
+> header file so they need to agree on certain macro definitions.
+> 
+> The flag bit used by the NDEBUG_MERGING macro in atari_NCR5380 and
+> sun3_NCR5380 collides with the bit used by NDEBUG_LISTS.
+> 
+> Moreover, NDEBUG_ABORT appears in NCR5380.c so it should be defined in
+> NCR5380.h rather than in each of the many drivers using that core.
+> 
+> An undefined NDEBUG_ABORT macro caused compiler errors and led to dodgy
+> workarounds in the core driver that can now be removed.
+> (See commits f566a576bca09de85bf477fc0ab2c8c96405b77b and
+> 185a7a1cd79b9891e3c17abdb103ba1c98d6ca7a.)
+> 
+> Move all of the NDEBUG_ABORT, NDEBUG_TAGS and NDEBUG_MERGING macro
+> definitions into NCR5380.h where all the other NDEBUG macros live.
+> 
+> Also, incorrect "#ifdef NDEBUG" becomes "#if NDEBUG" to fix the warning:
+> drivers/scsi/mac_scsi.c: At top level:
+> drivers/scsi/NCR5380.c:418: warning: 'NCR5380_print' defined but not used
+> drivers/scsi/NCR5380.c:459: warning: 'NCR5380_print_phase' defined but not used
+> 
+> The debugging code is now enabled when NDEBUG != 0.
+> 
+> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 
---aa1lHgJENwUhkhu9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks good,
 
-On Wed, May 28, 2014 at 12:08:57PM +0300, Adrian Hunter wrote:
-> On 05/28/2014 11:55 AM, Peter Zijlstra wrote:
-> > On Wed, May 28, 2014 at 11:45:04AM +0300, Adrian Hunter wrote:
-> >> perf tools like 'perf report' can aggregate samples by comm
-> >> strings, which generally works.  However, there are other
-> >> potential use-cases.  For example, to pair up 'calls'
-> >> with 'returns' accurately (from branch events like Intel BTS)
-> >> it is necessary to identify whether the process has exec'd.
-> >> Although a comm event is generated when an 'exec' happens
-> >> it is also generated whenever the comm string is changed
-> >> on a whim (e.g. by prctl PR_SET_NAME).  This patch adds a
-> >> flag to the comm event to differentiate one case from the
-> >> other.
-> >>
-> >> In order to determine whether the kernel supports the new
-> >> flag, a selection bit named 'exec' is added to struct
-> >> perf_event_attr.  The bit does nothing but will cause
-> >> perf_event_open() to fail if the bit is set on kernels
-> >> that do not have it defined.
-> >>
-> >=20
-> >> --- a/include/uapi/linux/perf_event.h
-> >> +++ b/include/uapi/linux/perf_event.h
-> >> @@ -302,8 +302,8 @@ struct perf_event_attr {
-> >>  				exclude_callchain_kernel : 1, /* exclude kernel callchains */
-> >>  				exclude_callchain_user   : 1, /* exclude user callchains */
-> >>  				mmap2          :  1, /* include mmap with inode data     */
-> >> -
-> >> -				__reserved_1   : 40;
-> >> +				exec           :  1, /* flag comm events that are due to an exec =
-*/
-> >> +				__reserved_1   : 39;
-> >> =20
-> >=20
-> > Yah.. that's just sad :-(
-> >=20
-> > the only capabilities mask we have is in the mmap() page, so without
-> > mmap()ing we have no way to test that.
-> >=20
-> > Would it make sense to call it comm_exec?
->=20
-> Yes, that is better.  Do you want me to resend the patch?
-
-Nah, I'll frob it. Thanks!
-
---aa1lHgJENwUhkhu9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThbIEAAoJEHZH4aRLwOS6aFIQAKBSFSFPcxy/fxmCU13Ggwyu
-RnEWkYWalWWCfOMRZMdT7TEQhS4JRIb5cHkgPhiZ/2Nf/cEx1QheSU8M40ovZOkB
-dRRtBkCooZXDRMWaeQvh7lVPnsVgYkVulgjQSS70GuD8JDrb2BIxj+IatjYgut3c
-E9wfrBJhLbCgjGN03dNJCs2EAAzwpNkXasb0X9P+RJG4tTVNjxoDhE+7eiQpOU5F
-mPiuKynWCNwWZ3V6ukF6ILO9sVK5E8Ma+VAgUfLj9mmOyXEx9H/FzzKOsyPlrHmn
-bVOzTT156kJDi0tOdP6yPUnsU1hxY9n/ggA/UB3ncBr9DKpF2N/NgazLzIHXZ8qy
-QCDfuZKqmJgTPp7YrkUIibbPUC7PHroQY1QSoYQNBOZ8REBolv7it2ZBg+DZ5lhX
-AZeWtJ9L8kAPucrXu/d+sV+kO0D4HlHE4rl3tEn6XXCpLUutmsUDfwX4OFm+9lTg
-ZhliUHYMyznBhueK8mmmy0ri2hx/0Ifo85CnTzskCwlpJD0bu5kFlhFSeEtqafz0
-xfQO1xHi8GXQ9SrJNFlpZcxRvBdh6fbPP8W/mTpaU1ofeoQYCRfJPSgS0ctmHJ+J
-OgDd16PGmDTSsxFBXMfVHBwRuf6GrLKqGkR0TrOI3ePjC4pGpQ5/Nn7k60f+Es1F
-H72Yd5N6kHmhm0hIEse2
-=5IZh
------END PGP SIGNATURE-----
-
---aa1lHgJENwUhkhu9--
+Reviewed-by: Christoph Hellwig <hch@lst.de>
