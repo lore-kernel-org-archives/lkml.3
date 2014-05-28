@@ -1,77 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaE1Kwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:52:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38118 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047AbaE1Kwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 06:52:44 -0400
-Date: Wed, 28 May 2014 12:52:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Libo Chen <libo.chen@huawei.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>, mingo@elte.hu,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>
-Subject: Re: balance storm
-Message-ID: <20140528105238.GB17196@pd.tnic>
-References: <1401113960.23186.41.camel@marge.simpson.net>
- <53844510.1040502@huawei.com>
- <1401184553.5134.115.camel@marge.simpson.net>
- <53848A2C.5010209@huawei.com>
- <1401196807.5134.132.camel@marge.simpson.net>
- <53853604.50500@huawei.com>
- <1401242038.4721.14.camel@marge.simpson.net>
- <5385881D.4090601@huawei.com>
- <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
- <20140528103019.GT11096@twins.programming.kicks-ass.net>
+	id S1752826AbaE1Kye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 06:54:34 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40502 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaE1Kyb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 06:54:31 -0400
+Date: Wed, 28 May 2014 03:54:29 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] scsi patch queue tree
+Message-ID: <20140528105429.GA20549@infradead.org>
+References: <20140519140614.GA12183@infradead.org>
+ <20140520100343.31490551@canb.auug.org.au>
+ <20140520053928.GA1751@infradead.org>
+ <20140521094636.515289e8@canb.auug.org.au>
+ <1400639101.2481.19.camel@dabdike>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140528103019.GT11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400639101.2481.19.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 12:30:19PM +0200, Peter Zijlstra wrote:
-> On Wed, May 28, 2014 at 11:08:40AM +0200, Thomas Gleixner wrote:
-> > On Wed, 28 May 2014, Libo Chen wrote:
-> > 
-> > > On 2014/5/28 9:53, Mike Galbraith wrote:
-> > > > On Wed, 2014-05-28 at 09:04 +0800, Libo Chen wrote:
-> > > > 
-> > > >> oh yes, no tsc only hpet in my box.
-> > > > 
-> > > > Making poor E5-2658 box a crippled wreck.
-> > > 
-> > > yes,it is. But cpu usage will be down from 15% to 5% when binding
-> > > cpu, so maybe read_hpet is not the root cause.
-> > 
-> > Definitely hpet _IS_ the root cause on a machine as large as this,
-> > simply because everything gets serialized on the hpet access.
-> > 
-> > Binding stuff to cpus just makes the timing behaviour different, so
-> > the hpet serialization is not that prominent, but still bad enough.
-> > 
-> > Talk to your HW/BIOS vendor. The kernel cannot do anything about
-> > defunct hardware.
-> 
-> ---
-> Subject: x86: FW_BUG when the TSC goes funny on hardware where it really should be stable
-> 
-> It happens far too often on 'consumer' grade hardware, and sometimes on
-> 'enterprise' too that the TSC gets marked unstable due to FW fuckage,
-> complain more loudly in this case.
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+I've pushed the following changes to the drivers-for-3.16 tree.  I've
+there's anyting matching the rules that I did forget please resend
+and/or ping me.
 
-Acked-by: Borislav Petkov <bp@suse.de>
 
--- 
-Regards/Gruss,
-    Boris.
+----------------------------------------------------------------
+Benoit Taine (2):
+      qla4xxx: Use kmemdup instead of kmalloc + memcpy
+      qla2xxx: Use kmemdup instead of kmalloc + memcpy
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Dan Carpenter (1):
+      qla2xxx: fix incorrect debug printk
+
+Dolev Raviv (4):
+      scsi: ufs: query descriptor API
+      scsi: ufs: device query status and size check
+      scsi: ufs: Logical Unit (LU) command queue depth
+      scsi: ufs: Fix queue depth handling for best effort cases
+
+Finn Thain (12):
+      scsi/NCR5380: remove unused BOARD_NORMAL and BOARD_NCR53C400
+      scsi/NCR5380: remove redundant HOSTS_C macro tests
+      scsi/NCR5380: remove old CVS keywords
+      scsi/NCR5380: use NCR5380_dprint() instead of NCR5380_print()
+      scsi/NCR5380: fix build failures when debugging is enabled
+      scsi/NCR5380: fix dprintk macro usage and definition
+      scsi/NCR5380: adopt NCR5380_dprint() and NCR5380_dprint_phase()
+      scsi/NCR5380: adopt dprintk()
+      scsi/NCR5380: fix and standardize NDEBUG macros
+      scsi/NCR5380: remove unused macro definitions
+      scsi/NCR5380: reduce depth of sun3_scsi nested includes
+      scsi/NCR5380: merge sun3_scsi_vme.c into sun3_scsi.c
+
+Jayamohan Kallickal (8):
+      be2iscsi: Fix retrieving MCCQ_WRB in non-embedded Mbox path
+      be2iscsi: Fix exposing Host in sysfs after adapter initialization is complete
+      be2iscsi: Fix interrupt Coalescing mechanism.
+      be2iscsi: Fix TCP parameters while connection offloading.
+      be2iscsi: Fix memory corruption in MBX path
+      be2iscsi: Fix destroy MCC-CQ before MCC-EQ is destroyed
+      be2iscsi: Fix processing cqe for cxn whose endpoint is freed
+      be2iscsi: Bump the driver version
+
+Joe Handzik (1):
+      hpsa: fix bad comparison of signed with unsigned in hpsa_update_scsi_devices
+
+Matthew Wilcox (7):
+      mpt3sas: Remove uses of serial_number
+      mpt3sas: Remove use of DEF_SCSI_QCMD
+      mpt2sas: Remove uses of serial_number
+      mpt2sas: Remove use of DEF_SCSI_QCMD
+      mpt2sas: Add free smids to the head, not tail of list
+      fusion: Add free msg frames to the head, not tail of list
+      fusion: Remove use of DEF_SCSI_QCMD
+
+Sujit Reddy Thumma (6):
+      scsi: ufs: fix endianness sparse warnings
+      scsi: ufs: make undeclared functions static
+      scsi: ufs: Fix broken task management command implementation
+      scsi: ufs: Fix hardware race conditions while aborting a command
+      scsi: ufs: Fix device and host reset methods
+      scsi: ufs: Improve UFS fatal error handling
+
+ drivers/message/fusion/mptbase.c     |    2 +-
+ drivers/message/fusion/mptfc.c       |   12 +-
+ drivers/message/fusion/mptsas.c      |   10 +-
+ drivers/message/fusion/mptscsih.c    |    8 +-
+ drivers/message/fusion/mptscsih.h    |    2 +-
+ drivers/message/fusion/mptspi.c      |   12 +-
+ drivers/scsi/NCR5380.c               |  137 +++--
+ drivers/scsi/NCR5380.h               |   32 +-
+ drivers/scsi/arm/cumana_1.c          |    3 -
+ drivers/scsi/arm/oak.c               |    3 -
+ drivers/scsi/atari_NCR5380.c         |  162 +++---
+ drivers/scsi/atari_scsi.c            |   22 +-
+ drivers/scsi/atari_scsi.h            |   93 ---
+ drivers/scsi/be2iscsi/be.h           |   11 +
+ drivers/scsi/be2iscsi/be_cmds.h      |   31 +-
+ drivers/scsi/be2iscsi/be_iscsi.c     |   12 +-
+ drivers/scsi/be2iscsi/be_main.c      |   93 ++-
+ drivers/scsi/be2iscsi/be_main.h      |    7 +-
+ drivers/scsi/be2iscsi/be_mgmt.c      |   64 ++-
+ drivers/scsi/be2iscsi/be_mgmt.h      |    2 +
+ drivers/scsi/dtc.c                   |    2 -
+ drivers/scsi/g_NCR5380.c             |    4 -
+ drivers/scsi/g_NCR5380.h             |    7 -
+ drivers/scsi/hpsa.c                  |    2 +-
+ drivers/scsi/mac_scsi.c              |   10 -
+ drivers/scsi/mac_scsi.h              |   10 -
+ drivers/scsi/mpt2sas/mpt2sas_base.c  |    8 +-
+ drivers/scsi/mpt2sas/mpt2sas_base.h  |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c   |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |   24 +-
+ drivers/scsi/mpt3sas/mpt3sas_base.h  |    2 +-
+ drivers/scsi/mpt3sas/mpt3sas_ctl.c   |    2 +-
+ drivers/scsi/mpt3sas/mpt3sas_scsih.c |   24 +-
+ drivers/scsi/pas16.h                 |    3 -
+ drivers/scsi/qla2xxx/qla_mbx.c       |    3 +-
+ drivers/scsi/qla2xxx/qla_os.c        |    3 +-
+ drivers/scsi/qla4xxx/ql4_os.c        |    7 +-
+ drivers/scsi/sun3_NCR5380.c          |  156 +++--
+ drivers/scsi/sun3_scsi.c             |  238 +++++---
+ drivers/scsi/sun3_scsi.h             |  199 +------
+ drivers/scsi/sun3_scsi_vme.c         |  588 +------------------
+ drivers/scsi/t128.c                  |    4 -
+ drivers/scsi/t128.h                  |    7 -
+ drivers/scsi/ufs/ufs.h               |   74 ++-
+ drivers/scsi/ufs/ufshcd.c            | 1032 +++++++++++++++++++++++-----------
+ drivers/scsi/ufs/ufshcd.h            |   22 +-
+ drivers/scsi/ufs/ufshci.h            |   32 +-
+ 47 files changed, 1462 insertions(+), 1723 deletions(-)
