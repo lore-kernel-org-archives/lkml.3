@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153AbaE1UjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:39:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54752 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751694AbaE1Ui7 (ORCPT
+	id S1755336AbaE1UnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:43:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40270 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaE1UnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:38:59 -0400
-X-Sasl-enc: TE+R3KNh3/Q5y1KLdpXWf90U2riLx+gqcYHjwXw5PzYE 1401309537
-Date: Wed, 28 May 2014 13:42:32 -0700
-From: Greg KH <greg@kroah.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20140528204232.GA8224@kroah.com>
-References: <20140528194629.0757af1b@canb.auug.org.au>
- <1401271041.28714.22.camel@x220>
- <1401272095.28714.30.camel@x220>
- <1401308488.6186.10.camel@x220>
+	Wed, 28 May 2014 16:43:10 -0400
+Date: Wed, 28 May 2014 22:42:51 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: walter harms <wharms@bfs.de>
+cc: Giedrius Rekasius <giedrius.rekasius@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] perf/x86/uncore: Remove unnecessary assignment to "box"
+ in uncore_pci_remove(...)
+In-Reply-To: <5385B764.6090301@bfs.de>
+Message-ID: <alpine.DEB.2.10.1405282239190.3952@nanos>
+References: <1401268294-28634-1-git-send-email-giedrius.rekasius@gmail.com> <5385B764.6090301@bfs.de>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401308488.6186.10.camel@x220>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:21:28PM +0200, Paul Bolle wrote:
-> Greg,
-> 
-> On Wed, 2014-05-28 at 12:14 +0200, Paul Bolle wrote:
-> > I must have compile tested this with CONFIG_LIB80211_CRYPT_TKIP=m while
-> > the code checks for CONFIG_LIB80211_CRYPT_TKIP only (ie, builtin only).
-> > I'll have to have a better look at this.
+On Wed, 28 May 2014, walter harms wrote:
+> Am 28.05.2014 11:11, schrieb Giedrius Rekasius:
+> > Local variable "box" gets assigned correct value when it is initialized.
+> > There is no need to assign the same value again.
 > > 
-> > Greg, can the cleaning up of this mess involve an entirely new patch? An
-> > incremental patch would leave this build error in a certain range of
-> > commits.
-
-As I already have the patch in my tree, I can't do that, we can live
-with the build issue.
-
-> The pieces of the latest linux-next build were handed to me by Stephen
-> as my patch managed to break it.
+> > Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > index 65bbbea..8cbbb1b 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> > @@ -3817,7 +3817,6 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+> >  	struct intel_uncore_pmu *pmu;
+> >  	int i, cpu, phys_id = pcibus_to_physid[pdev->bus->number];
+> >  
+> > -	box = pci_get_drvdata(pdev);
+> >  	if (!box) {
+> >  		for (i = 0; i < UNCORE_EXTRA_PCI_DEV_MAX; i++) {
+> >  			if (extra_pci_dev[phys_id][i] == pdev) {
 > 
-> I'm assuming you'd like to include rtl8192u in linux-next's builds
-> again. Currently I got nothing to offer to you but a request to either
-> drop "staging: rtl8192u: rename CONFIG_IEEE80211_CRYPT_TKIP" from
-> staging-next or, if that's not how staging-next works, a request to
-> revert it. What do you prefer?
+> Just a remark,
+> for readability it is better to remove the other one.
 
-Either is fine with me, I can revert it, or apply a fix, which ever you
-want, just let me know.
+I rather have stuff reshuffled a bit more:
 
-thanks,
+static void uncore_pci_remove(struct pci_dev *pdev)
+{
+	int i, cpu, phys_id = pcibus_to_physid[pdev->bus->number];
+	struct intel_uncore_box *box = pci_get_drvdata(pdev);
+	struct intel_uncore_pmu *pmu;
 
-greg k-h
+	if (!box) {
+
+That's less lines and entirely readable.
+
+Thanks,
+
+	tglx
