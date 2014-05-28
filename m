@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329AbaE1Gyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 02:54:55 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:52414 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156AbaE1GxS (ORCPT
+	id S1754310AbaE1Gyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 02:54:54 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56639 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157AbaE1GxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 May 2014 02:53:18 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-56-538587dc7129
+X-AuditID: cbfee68e-b7fb96d000004bfc-3b-538587dd2234
 From: Heesub Shin <heesub.shin@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -19,38 +19,38 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Sunghwan Yun <sunghwan.yun@samsung.com>,
         Dongjun Shin <d.j.shin@samsung.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>
-Subject: [PATCH v2 8/9] staging: ion: shrink highmem pages on kswapd
-Date: Wed, 28 May 2014 15:52:59 +0900
-Message-id: <1401259980-26927-9-git-send-email-heesub.shin@samsung.com>
+Subject: [PATCH v2 9/9] staging: ion: optimize struct ion_system_heap
+Date: Wed, 28 May 2014 15:53:00 +0900
+Message-id: <1401259980-26927-10-git-send-email-heesub.shin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401259980-26927-1-git-send-email-heesub.shin@samsung.com>
 References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
  <1401259980-26927-1-git-send-email-heesub.shin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t8zPd077a3BBrO7DSze/73PZrF94zdW
-	i5eHNC1OXKy1OPjhPovFnjO/2C2aF69nszg4ewmTxZnfuhaXd81hs1g7fxubxY3JhRanOxax
-	OvB6bNu9jdXjcl8vk8e9fYdZPHbOusvucefaHjaP/XPXsHv0bVnF6PF5k1wARxSXTUpqTmZZ
-	apG+XQJXxsIvX1gLHvJVTNj5jrWBcTlPFyMnh4SAicT7a1NZIGwxiQv31rN1MXJxCAksY5Q4
-	+msGM0zRsh9t7BCJRYwS/cdOMIEkhATamSS+n/LvYuTgYBPQlji0LRgkLCJgLNF/dhZYPbPA
-	YWaJrllr2UASwgIuEtt2d4L1sgioSux6/oEJpJdXwF2ie7olxC45iZPHJrOChDkFPCS2vwmB
-	WNvKKDH9+HNGEEdC4B67xN8Ds6DmCEh8m3yIBaRBQkBWYtMBqJslJQ6uuMEygVF4ASPDKkbR
-	1ILkguKk9CJDveLE3OLSvHS95PzcTYyQuOndwXj7gPUhxmSgcROZpUST84Fxl1cSb2hsZmRh
-	amJqbGRuaUaasJI4b9LDpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjGYpSisKe+YefFSR
-	ek1n2SdjvyaxZQf6rA2/V6qczNnRXt3TseHbxu95Ybedl5VeZVzyIGP3hqmqiyOfM6/s3L/v
-	xaeV17VNIxJeTlp4s+fQh5avFh4P2DYFHf68RFYvMf7/PxuV7xYrLzencDenRRq/bbgZvcnw
-	S9Diax2vD7Odm/6gMGbBoQNKLMUZiYZazEXFiQC+tz/KsQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jAd077a3BBguWa1u8/3ufzWL7xm+s
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t8zPd277a3BBusXqFm8/3ufzWL7xm+s
+	Fi8PaVqcuFhrcfDDfRaLPWd+sVs0L17PZnFw9hImizO/dS0u75rDZrF2/jY2ixuTCy1Odyxi
+	deD12LZ7G6vH5b5eJo97+w6zeOycdZfd4861PWwe++euYffo27KK0ePzJrkAjigum5TUnMyy
+	1CJ9uwSujANNHSwFn/grVhz4y9bAuJK3i5GTQ0LAROL38x8sELaYxIV769m6GLk4hASWMUq8
+	2H+ECabo1Yb5YLaQwCJGiV9XYyGK2pkkutftBurm4GAT0JY4tC0YpEZEwFii/+wsdpAaZoHD
+	zBJds9aygSSEBVwlGn7sYwSpZxFQldj40gkkzCvgIdG2+SMjxC45iZPHJrOClHACxbe/CYFY
+	1cooMf34c0YQR0LgFrvEgTs/wA5iERCQ+Db5ENgNEgKyEpsOMEPMkZQ4uOIGywRG4QWMDKsY
+	RVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxQuKmbwfjzQPWhxiTgcZNZJYSTc4Hxl1eSbyhsZmR
+	hamJqbGRuaUZacJK4ryLHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDkLV+2PWailvyH
+	tNyP4hN2v3hqoTAl8Pf22U8Vin5GzZq0OmBJ0Wr9b3+X7plRU9VzPsVdU6m87MIHq2qF8zbt
+	lprzBXzvCutJ+JpummlysVfL3Z9zgsI9p8h2Vr237JFy7bNXbohY7Xb64B5Lw3kLP6z922vp
+	4Ddj2yv3V8WPpb15DXydRDmUWIozEg21mIuKEwGdboFmsQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jAd277a3BBs9OK1q8/3ufzWL7xm+s
 	Fi8PaVqcuFhrcfDDfRaLPWd+sVs0L17PZnFw9hImizO/dS0u75rDZrF2/jY2ixuTCy1Odyxi
 	deD12LZ7G6vH5b5eJo97+w6zeOycdZfd4861PWwe++euYffo27KK0ePzJrkAjqgGRpuM1MSU
 	1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoIOVFMoSc0qBQgGJ
-	xcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBkLv3xhLXjIVzFh5zvWBsblPF2MnBwSAiYS
-	y360sUPYYhIX7q1n62Lk4hASWMQo0X/sBBNIQkignUni+yn/LkYODjYBbYlD24JBwiICxhL9
-	Z2exg9QzCxxmluiatZYNJCEs4CKxbXcnWC+LgKrErucfmEB6eQXcJbqnW0LskpM4eWwyK0iY
-	U8BDYvubEIi1rYwS048/Z5zAyLuAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBUPpPe
-	wbiqweIQowAHoxIP74HFLcFCrIllxZW5hxglOJiVRHhvFrYGC/GmJFZWpRblxxeV5qQWH2JM
-	BjpqIrOUaHI+MGHklcQbGpuYGVkamRmbmBsbkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwen
-	VAOjVcsz//iqfJUPPopMU66+0gi7InNxh6tWMY/Q5l1L9sQsaKo+Gv5bcq7Cu9UyDBHXfxSI
-	7VFZePfpx9Dqd1MtWVq/PDhuo7XLSVHvXcPdzDIdYT8lhQsCxyMPyria7tOrn73kzM8poUdU
-	dmnHbXzx3W9iikeoepfGyZrEzazrOspmxZtFynxXYinOSDTUYi4qTgQAClk7CA4DAAA=
+	xcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBkHmjpYCj7xV6w48JetgXElbxcjJ4eEgInE
+	qw3zmSBsMYkL99azgdhCAosYJX5dje1i5AKy25kkutftZuli5OBgE9CWOLQtGKRGRMBYov/s
+	LHaQGmaBw8wSXbPWgjULC7hKNPzYxwhSzyKgKrHxpRNImFfAQ6Jt80dGiF1yEiePTWYFKeEE
+	im9/EwKxqpVRYvrx54wTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiOymfSOxhX
+	NVgcYhTgYFTi4T2wuCVYiDWxrLgy9xCjBAezkgjvzcLWYCHelMTKqtSi/Pii0pzU4kOMyUBH
+	TWSWEk3OByaMvJJ4Q2MTMyNLIzNjE3NjY9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpg
+	jP3cZ9TgyMmgEKdafM1wk7Ju7+IlC6I/7jn+W27+o2eHdhjKeDY/D3xiyFfnZ8ZSz/Pii9G7
+	rOZbW1YFrHvy4WTRi8cKhutr2y4lXlpXsG03s/b9uqsrdIR7XoXUzpcVUY9SeXXv2KJ/IVxz
+	RfUy3xwve3q1+0nW7Zfil8VOrnliurQ3sMM8UomlOCPRUIu5qDgRAAsBlkMOAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,52 +58,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ION system heap keeps pages in its pool for better performance. When the
-system is under memory pressure, slab shrinker calls the callback
-registered and then the pages pooled get freed.
+struct ion_system_heap has an array for storing pointers to page pools
+and it is allocated separately from the containing structure. There is
+no point in allocating those two small objects individually, bothering
+slab allocator. Using a variable length array simplifies code lines and
+reduces overhead to the slab.
 
-When the shrinker is called, it checks gfp_mask and determines whether
-the pages from highmem need to be freed or the pages from lowmem.
-Usually, slab shrinker is invoked on kswapd context which gfp_mask is
-always GFP_KERNEL, so only lowmem pages are released on kswapd context.
-This means that highmem pages in the pool are never reclaimed until
-direct reclaim occurs. This can be problematic when the page pool holds
-excessive amounts of highmem.
-
-For now, the shrinker callback cannot know exactly which zone should be
-targeted for reclamation, as enough information are not passed to. Thus,
-it makes sense to shrink both lowmem and highmem zone on kswapd context.
-
-Reported-by: Wonseo Choi <wonseo.choi@samsung.com>
 Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
 ---
- drivers/staging/android/ion/ion_page_pool.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/staging/android/ion/ion_system_heap.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index c1cea42b..5864f3d 100644
---- a/drivers/staging/android/ion/ion_page_pool.c
-+++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -21,6 +21,7 @@
- #include <linux/list.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/swap.h>
- #include "ion_priv.h"
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index d78d589e..690d866 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -48,7 +48,7 @@ static inline unsigned int order_to_size(int order)
  
- static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
-@@ -118,7 +119,10 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 	int freed;
- 	bool high;
+ struct ion_system_heap {
+ 	struct ion_heap heap;
+-	struct ion_page_pool **pools;
++	struct ion_page_pool *pools[0];
+ };
  
--	high = !!(gfp_mask & __GFP_HIGHMEM);
-+	if (current_is_kswapd())
-+		high = 1;
-+	else
-+		high = !!(gfp_mask & __GFP_HIGHMEM);
+ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
+@@ -259,16 +259,15 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
+ 	struct ion_system_heap *heap;
+ 	int i;
  
- 	if (nr_to_scan == 0)
- 		return ion_page_pool_total(pool, high);
+-	heap = kzalloc(sizeof(struct ion_system_heap), GFP_KERNEL);
++	heap = kzalloc(sizeof(struct ion_system_heap) +
++			sizeof(struct ion_page_pool *) * num_orders,
++			GFP_KERNEL);
+ 	if (!heap)
+ 		return ERR_PTR(-ENOMEM);
+ 	heap->heap.ops = &system_heap_ops;
+ 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
+ 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
+-	heap->pools = kzalloc(sizeof(struct ion_page_pool *) * num_orders,
+-			      GFP_KERNEL);
+-	if (!heap->pools)
+-		goto free_heap;
++
+ 	for (i = 0; i < num_orders; i++) {
+ 		struct ion_page_pool *pool;
+ 		gfp_t gfp_flags = low_order_gfp_flags;
+@@ -287,8 +286,6 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
+ destroy_pools:
+ 	while (i--)
+ 		ion_page_pool_destroy(heap->pools[i]);
+-	kfree(heap->pools);
+-free_heap:
+ 	kfree(heap);
+ 	return ERR_PTR(-ENOMEM);
+ }
 -- 
 1.9.1
 
