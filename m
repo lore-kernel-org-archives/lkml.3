@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaE1KVo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:21:44 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52620 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206AbaE1KVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752197AbaE1KVm (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 May 2014 06:21:42 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36103 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363AbaE1KVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 06:21:41 -0400
 From: Keerthy <j-keerthy@ti.com>
 To: <linux-omap@vger.kernel.org>
 CC: <lgirdwood@gmail.com>, <broonie@kernel.org>,
         <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
         <lee.jones@linaro.org>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH 1/9] mfd: Add DT bindings for tps65917 PMIC
-Date: Wed, 28 May 2014 15:50:14 +0530
-Message-ID: <1401272423-25761-2-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH 0/9] mfd: tps65917: Add support for for TPS65917 PMIC 
+Date: Wed, 28 May 2014 15:50:13 +0530
+Message-ID: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
-References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DT bindings for tps65917 PMIC.
+The TPS65917 chip is a power management IC for Portable Navigation Systems
+and Tablet Computing devices. It contains the following components:
 
-Signed-off-by: Keerthy <j-keerthy@ti.com>
----
- Documentation/devicetree/bindings/mfd/palmas.txt |    2 ++
- 1 file changed, 2 insertions(+)
+ - Regulators.
+ - GPADC.
+ - Over Temperature warning and Shut down.
 
-diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
-index e5f0f83..eda8989 100644
---- a/Documentation/devicetree/bindings/mfd/palmas.txt
-+++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-@@ -6,6 +6,7 @@ twl6037 (palmas)
- tps65913 (palmas)
- tps65914 (palmas)
- tps659038
-+tps65917
- 
- Required properties:
- - compatible : Should be from the list
-@@ -16,6 +17,7 @@ Required properties:
-   ti,tps65914
-   ti,tps80036
-   ti,tps659038
-+  ti,tps65917
- and also the generic series names
-   ti,palmas
- - interrupt-controller : palmas has its own internal IRQs
+This patch series adds support for TPS65917 mfd device. At this time only
+the regulator functionality is made available.
+
+The closest drivers are PALMAS series drivers. Hence adapted palmas mfd
+driver to support the tps65917 PMIC.
+
+The register set for SMPSs and LDOs are changed and the ramp delay support
+is also changed. Bit-field defenitions are changed.
+Hence added driver data structures for mfd and regulator drivers
+for palmas and added support for tps65917.
+
+The patches are boot tested on DRA72-EVM.
+The patches are boot tested on OMAP5-UEVM board.
+
+Keerthy (9):
+  mfd: Add DT bindings for tps65917 PMIC
+  regulator: palmas: Add tps65917 compatible string
+  mfd: palmas: Add tps65917 specific definitions and enums
+  mfd: palmas: Add tps65917 support
+  regulator: palmas: Shift the reg_info structure definition to the
+    header file
+  mfd: palmas: shift the palmas_sleep_requestor_info structure
+    definition to the header file
+  regulator: palmas: Add palmas_pmic_driver_data structure
+  regulator: palmas: add driver data and modularize the probe
+  regulator: palmas: Add tps65917 PMIC support
+
+ Documentation/devicetree/bindings/mfd/palmas.txt   |    2 +
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |    1 +
+ drivers/mfd/palmas.c                               |  228 +++--
+ drivers/regulator/palmas-regulator.c               | 1006 +++++++++++++++-----
+ include/linux/mfd/palmas.h                         |  837 ++++++++++++++++
+ 5 files changed, 1770 insertions(+), 304 deletions(-)
+
 -- 
 1.7.9.5
 
