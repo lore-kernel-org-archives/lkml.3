@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaE1UeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:34:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46064 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339AbaE1UeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:34:08 -0400
-Message-ID: <5386483C.60506@redhat.com>
-Date: Wed, 28 May 2014 16:34:04 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755328AbaE1Uey (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:34:54 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:39305 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaE1Uex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 16:34:53 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, Jens Axboe <axboe@kernel.dk>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+References: <20140516140607.GA23902@ubuntu-hedt>
+	<20140516185749.GA5131@kroah.com>
+	<1400268515.2221.91.camel@dabdike.int.hansenpartnership.com>
+	<20140516201841.GC23902@ubuntu-hedt>
+	<87mwedfh7c.fsf@x220.int.ebiederm.org>
+	<20140520142103.GC137220@ubuntu-hedt>
+	<87y4xubxmm.fsf@x220.int.ebiederm.org>
+	<20140521223319.GF29211@ubuntumail>
+	<87ioow9ls9.fsf@x220.int.ebiederm.org>
+	<20140528092655.GD19433@ubuntu-mba51>
+	<20140528131259.GA31213@mail.hallyn.com>
+Date: Wed, 28 May 2014 13:33:51 -0700
+In-Reply-To: <20140528131259.GA31213@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Wed, 28 May 2014 15:12:59 +0200")
+Message-ID: <87tx89od74.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-Subject: Re: [PATCH] pci: Save and restore VFs as a part of a reset
-References: <20140505212346.18767.34117.stgit@ahduyck-cp2.jf.intel.com> <20140527222256.GC11907@google.com> <5385255D.5060204@intel.com> <CAErSpo5QU1LsKVqyGbT07mhF-t5L1y3NxD4JhJ6N3AM0XT0c2A@mail.gmail.com> <1401250378.3289.774.camel@ul30vt.home> <53861154.4080402@intel.com> <CAErSpo4htYwi3jfoxdj=W9VjVdd5gDjYcxg_i52VVz1sYQHL5A@mail.gmail.com>
-In-Reply-To: <CAErSpo4htYwi3jfoxdj=W9VjVdd5gDjYcxg_i52VVz1sYQHL5A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+xQzTPpHrGvszMgY2w5VdY2dFyZb5a+10=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4997]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user namespaces
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 04:14 PM, Bjorn Helgaas wrote:
-> On Wed, May 28, 2014 at 10:39 AM, Alexander Duyck
-> <alexander.h.duyck@intel.com> wrote:
->> On 05/27/2014 09:12 PM, Alex Williamson wrote:
->>> On Tue, 2014-05-27 at 19:19 -0600, Bjorn Helgaas wrote:
+"Serge E. Hallyn" <serge@hallyn.com> writes:
+>> I was aware of FUSE but hadn't ever looked at it much. Looking at it
+>> now, this isn't going to satisfy any of the use cases I know about,
+>> which are wanting to use filesystems supported in-kernel (isofs, ext*).
+>> I don't see that any of these have a FUSE implementation, and I think we
+>> gain more from figuring out how to use in-kernel filesystems in
+>> containers than trying to find a way to shoehorn selected filesystems
+>> into FUSE.
 >
->>>> Maybe resetting the PF should just fail if there's an active VF.  If
->>>> you need to reset the PF, you'd have to unbind the VFs first.
->>>
->>> The use case is certainly questionable, personally I'm not going to
->>> expect VFs to continue working after the PF is reset.  Driver binding
->>> gets complicated, especially when KVM doesn't actually bind devices to
->>> use them.  Hopefully we'll get that out of the tree some day though.  I
->>> suppose we could -EBUSY the PF reset as long as VFs are enabled.
->>
->> What I could do is go through and notify the VFs that they are about to
->> get hit by a reset.  What they do with that information would be up to them.
->>
->> So if the VFs are loaded on the host I could then at least allow them to
->> recover by saving and restoring the config space within the driver
->> themselves.
->
-> I really like the idea of punting by failing the PF reset if there are
-> any active VFs.  That's a really easy way of making sure we aren't
-> going to blow up any guests.  What problems would it cause if we went
-> this route?
->
-I think this is the safest route.  PF<->VF interaction isn't architected,
-and resetting the PF with active VFs will probably hang a number of SRIOV
-implementations, requiring a system-level reset to correct the compounded problem.
+> That's why I was wondering how much work it would be to auto-generate
+> fuse fs support from the in-kernel source.
 
->>>> This reminds me about an open problem: VFs can be on "virtual" buses,
->>>> which aren't really connected in the hierarchy, and I don't think we
->>>> have a nice way to iterate over them.  So probably pci_get_device() is
->>>> the best we can do now.
->>>
->>> Yeah, those virtual buses don't have a bus->self, we just have to skip
->>> to bus->parent->self.  pci_walk_bus() goes in the opposite direction,
->>> but without an actual device hosting the bus, I don't see how it finds
->>> it.  Thanks,
->>
->> It seems like we should be able to come up with something like
->> pci_walk_vbus() though or something similar.  All we would need to do is
->> search the VFs on the bus of the PF and all child busses to that bus if
->> I am not mistaken.
->
-> I don't think that's going to work because the virtual buses don't
-> appear as the child bus of anything.
->
-+1.
+So at a quick look I have found fuseext2, fuseiso and mountlo-0.5 (which
+claims to have supported all the in-kernel filesystems with the help of
+user mode linux).
 
-> Bjorn
->
+Give that the first two are just an apt-get install away fuse really
+looks like the shortest path to being able to mount an iso, do other
+interesting things.
+
+We probably want something more but only when performance becomes a
+bottle-neck.
+
+Eric
 
