@@ -1,112 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882AbaE1WaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:30:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62051 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755781AbaE1W36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:29:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,931,1392192000"; 
-   d="scan'208";a="546409366"
-Subject: [PATCH 2/2] iov: Use pci_walk_vbus for tasks where we must search
- for VFs
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-To: bhelgaas@google.com, ddutile@redhat.com
-Cc: linux-pci@vger.kernel.org, alex.williamson@redhat.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 May 2014 15:29:28 -0700
-Message-ID: <20140528222914.18898.42967.stgit@ahduyck-cp2.jf.intel.com>
-In-Reply-To: <20140528222901.18898.48031.stgit@ahduyck-cp2.jf.intel.com>
-References: <20140528222901.18898.48031.stgit@ahduyck-cp2.jf.intel.com>
-User-Agent: StGit/0.17.1-dirty
+	id S1755892AbaE1Wad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:30:33 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:35795 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495AbaE1Waa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 18:30:30 -0400
+Date: Wed, 28 May 2014 16:30:27 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Greg KH <greg@kroah.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 10/15] thunderbolt: Add path setup code.
+Message-ID: <20140528223027.GX11907@google.com>
+References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+ <1401117492-2870-11-git-send-email-andreas.noever@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401117492-2870-11-git-send-email-andreas.noever@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes it so that we use pci_walk_vbus to go though and search
-for all devices that are contained within the local bus of our device.
+On Mon, May 26, 2014 at 05:18:07PM +0200, Andreas Noever wrote:
+> A thunderbolt path is a unidirectional channel between two thunderbolt
+> ports. Two such paths are needed to establish a pci tunnel.
+> 
+> This patch introduces struct tb_path as well as a set of tb_path_*
+> methods which are used do activate & deactive paths.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
- drivers/pci/iov.c |   50 +++++++++++++++++++++++++++-----------------------
- 1 files changed, 27 insertions(+), 23 deletions(-)
+s/do activate & deactive/to activate & deactivate/
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index de7a747..717f202 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -602,6 +602,30 @@ int pci_num_vf(struct pci_dev *dev)
- }
- EXPORT_SYMBOL_GPL(pci_num_vf);
- 
-+struct vfs_assigned {
-+	struct pci_dev *physfn;
-+	unsigned int count;
-+};
-+
-+/**
-+ * pci_vfs_assigned_cb - callback used by pci_vfs_assigned
-+ * @dev: the PCI device
-+ * @data: Pointer to structure used by pci_vfs_assigned
-+ *
-+ * If the device is a virtual function and belongs to the provided PF
-+ * and is assigned this will increment the count by 1.
-+ */
-+static int pci_vfs_assigned_cb(struct pci_dev *dev, void *data)
-+{
-+	struct vfs_assigned *vfa = data;
-+
-+	if (dev->is_virtfn && (dev->physfn == vfa->physfn) &&
-+	    (dev->dev_flags & PCI_DEV_FLAGS_ASSIGNED))
-+		vfa->count++;
-+
-+	return 0;
-+}
-+
- /**
-  * pci_vfs_assigned - returns number of VFs are assigned to a guest
-  * @dev: the PCI device
-@@ -611,35 +635,15 @@ EXPORT_SYMBOL_GPL(pci_num_vf);
-  */
- int pci_vfs_assigned(struct pci_dev *dev)
- {
--	struct pci_dev *vfdev;
--	unsigned int vfs_assigned = 0;
--	unsigned short dev_id;
-+	struct vfs_assigned vfa = { .physfn = dev, .count = 0 };
- 
- 	/* only search if we are a PF */
- 	if (!dev->is_physfn)
- 		return 0;
- 
--	/*
--	 * determine the device ID for the VFs, the vendor ID will be the
--	 * same as the PF so there is no need to check for that one
--	 */
--	pci_read_config_word(dev, dev->sriov->pos + PCI_SRIOV_VF_DID, &dev_id);
--
--	/* loop through all the VFs to see if we own any that are assigned */
--	vfdev = pci_get_device(dev->vendor, dev_id, NULL);
--	while (vfdev) {
--		/*
--		 * It is considered assigned if it is a virtual function with
--		 * our dev as the physical function and the assigned bit is set
--		 */
--		if (vfdev->is_virtfn && (vfdev->physfn == dev) &&
--		    (vfdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED))
--			vfs_assigned++;
--
--		vfdev = pci_get_device(dev->vendor, dev_id, vfdev);
--	}
-+	pci_walk_vbus(dev->bus, pci_vfs_assigned_cb, &vfa);
- 
--	return vfs_assigned;
-+	return vfa.count;
- }
- EXPORT_SYMBOL_GPL(pci_vfs_assigned);
- 
-
+> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+> ---
+>  drivers/thunderbolt/Makefile |   2 +-
+>  drivers/thunderbolt/path.c   | 215 +++++++++++++++++++++++++++++++++++++++++++
+>  drivers/thunderbolt/switch.c |  34 +++++++
+>  drivers/thunderbolt/tb.h     |  62 +++++++++++++
+>  4 files changed, 312 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/thunderbolt/path.c
+> 
+> diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+> index 617b314..3532f36 100644
+> --- a/drivers/thunderbolt/Makefile
+> +++ b/drivers/thunderbolt/Makefile
+> @@ -1,3 +1,3 @@
+>  obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+> -thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
+> +thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o
+>  
+> diff --git a/drivers/thunderbolt/path.c b/drivers/thunderbolt/path.c
+> new file mode 100644
+> index 0000000..8fcf8a7
+> --- /dev/null
+> +++ b/drivers/thunderbolt/path.c
+> @@ -0,0 +1,215 @@
+> +/*
+> + * Thunderbolt Cactus Ridge driver - path/tunnel functionality
+> + *
+> + * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
+> + */
+> +
+> +#include <linux/slab.h>
+> +#include <linux/errno.h>
+> +
+> +#include "tb.h"
+> +
+> +
+> +static void tb_dump_hop(struct tb_port *port, struct tb_regs_hop *hop)
+> +{
+> +	tb_port_info(port, " Hop through port %d to hop %d (%s)\n",
+> +		     hop->out_port, hop->next_hop,
+> +		     hop->enable ? "enabled" : "disabled");
+> +	tb_port_info(port, "  Weight: %d Priority: %d Credits: %d Drop: %d\n",
+> +		     hop->weight, hop->priority,
+> +		     hop->initial_credits, hop->drop_packages);
+> +	tb_port_info(port, "   Counter enabled: %d Counter index: %d\n",
+> +		     hop->counter_enable, hop->counter);
+> +	tb_port_info(port, "  Flow Control (In/Eg): %d/%d Shared Buffer (In/Eg): %d/%d\n",
+> +		     hop->ingress_fc, hop->egress_fc,
+> +		     hop->ingress_shared_buffer, hop->egress_shared_buffer);
+> +	tb_port_info(port, "  Unknown1: %#x Unknown2: %#x Unknown3: %#x\n",
+> +		     hop->unknown1, hop->unknown2, hop->unknown3);
+> +}
+> +
+> +/**
+> + * tb_path_alloc() - allocate a thunderbolt path
+> + *
+> + * Return: Returns a tb_path on success or NULL on failure.
+> + */
+> +struct tb_path *tb_path_alloc(struct tb *tb, int num_hops)
+> +{
+> +	struct tb_path *path = kzalloc(sizeof(*path), GFP_KERNEL);
+> +	if (!path)
+> +		return NULL;
+> +	path->hops = kcalloc(num_hops, sizeof(*path->hops), GFP_KERNEL);
+> +	if (!path->hops) {
+> +		kfree(path);
+> +		return NULL;
+> +	}
+> +	path->tb = tb;
+> +	path->path_length = num_hops;
+> +	return path;
+> +}
+> +
+> +/**
+> + * tb_path_free() - free a deactivated path
+> + */
+> +void tb_path_free(struct tb_path *path)
+> +{
+> +	if (path->activated) {
+> +		tb_WARN(path->tb, "trying to free an activated path\n")
+> +		return;
+> +	}
+> +	kfree(path->hops);
+> +	kfree(path);
+> +}
+> +
+> +static void __tb_path_deallocate_nfc(struct tb_path *path, int first_hop)
+> +{
+> +	int i, res;
+> +	for (i = first_hop; i < path->path_length; i++) {
+> +		res = tb_port_add_nfc_credits(path->hops[i].in_port,
+> +					      -path->nfc_credits);
+> +		if (res)
+> +			tb_port_warn(path->hops[i].in_port,
+> +				     "nfc credits deallocation failed for hop %d\n",
+> +				     i);
+> +	}
+> +}
+> +
+> +static void __tb_path_deactivate_hops(struct tb_path *path, int first_hop)
+> +{
+> +	int i, res;
+> +	struct tb_regs_hop hop = { };
+> +	for (i = first_hop; i < path->path_length; i++) {
+> +		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
+> +				    2 * path->hops[i].in_hop_index, 2);
+> +		if (res)
+> +			tb_port_warn(path->hops[i].in_port,
+> +				     "hop deactivation failed for hop %d, index %d\n",
+> +				     i, path->hops[i].in_hop_index);
+> +	}
+> +}
+> +
+> +void tb_path_deactivate(struct tb_path *path)
+> +{
+> +	if (!path->activated) {
+> +		tb_WARN(path->tb, "trying to deactivate an inactive path\n");
+> +		return;
+> +	}
+> +	tb_info(path->tb,
+> +		"deactivating path from %llx:%x to %llx:%x\n",
+> +		tb_route(path->hops[0].in_port->sw),
+> +		path->hops[0].in_port->port,
+> +		tb_route(path->hops[path->path_length - 1].out_port->sw),
+> +		path->hops[path->path_length - 1].out_port->port);
+> +	__tb_path_deactivate_hops(path, 0);
+> +	__tb_path_deallocate_nfc(path, 0);
+> +	path->activated = false;
+> +}
+> +
+> +/**
+> + * tb_path_activate() - activate a path
+> + *
+> + * Activate a path starting with the last hop and iterating backwards. The
+> + * caller must fill path->hops before calling tb_path_activate().
+> + *
+> + * Return: Returns 0 on success or an error code on failure.
+> + */
+> +int tb_path_activate(struct tb_path *path)
+> +{
+> +	int i, res;
+> +	enum tb_path_port out_mask, in_mask;
+> +	if (path->activated) {
+> +		tb_WARN(path->tb, "trying to activate already activated path\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	tb_info(path->tb,
+> +		"activating path from %llx:%x to %llx:%x\n",
+> +		tb_route(path->hops[0].in_port->sw),
+> +		path->hops[0].in_port->port,
+> +		tb_route(path->hops[path->path_length - 1].out_port->sw),
+> +		path->hops[path->path_length - 1].out_port->port);
+> +
+> +	/* Clear counters. */
+> +	for (i = path->path_length - 1; i >= 0; i--) {
+> +		if (path->hops[i].in_counter_index == -1)
+> +			continue;
+> +		res = tb_port_clear_counter(path->hops[i].in_port,
+> +					    path->hops[i].in_counter_index);
+> +		if (res)
+> +			goto err;
+> +	}
+> +
+> +	/* Add non flow controlled credits. */
+> +	for (i = path->path_length - 1; i >= 0; i--) {
+> +		res = tb_port_add_nfc_credits(path->hops[i].in_port,
+> +					      path->nfc_credits);
+> +		if (res) {
+> +			__tb_path_deallocate_nfc(path, i);
+> +			goto err;
+> +		}
+> +	}
+> +
+> +	/* Activate hops. */
+> +	for (i = path->path_length - 1; i >= 0; i--) {
+> +		struct tb_regs_hop hop;
+> +
+> +		/* dword 0 */
+> +		hop.next_hop = path->hops[i].next_hop_index;
+> +		hop.out_port = path->hops[i].out_port->port;
+> +		/* TODO: figure out why these are good values */
+> +		hop.initial_credits = (i == path->path_length - 1) ? 16 : 7;
+> +		hop.unknown1 = 0;
+> +		hop.enable = 1;
+> +
+> +		/* dword 1 */
+> +		out_mask = (i == path->path_length - 1) ?
+> +				TB_PATH_DESTINATION : TB_PATH_INTERNAL;
+> +		in_mask = (i == 0) ? TB_PATH_SOURCE : TB_PATH_INTERNAL;
+> +		hop.weight = path->weight;
+> +		hop.unknown2 = 0;
+> +		hop.priority = path->priority;
+> +		hop.drop_packages = path->drop_packages;
+> +		hop.counter = path->hops[i].in_counter_index;
+> +		hop.counter_enable = path->hops[i].in_counter_index != -1;
+> +		hop.ingress_fc = path->ingress_fc_enable & in_mask;
+> +		hop.egress_fc = path->egress_fc_enable & out_mask;
+> +		hop.ingress_shared_buffer = path->ingress_shared_buffer
+> +					    & in_mask;
+> +		hop.egress_shared_buffer = path->egress_shared_buffer
+> +					    & out_mask;
+> +		hop.unknown3 = 0;
+> +
+> +		tb_port_info(path->hops[i].in_port, "Writing hop %d, index %d",
+> +			     i, path->hops[i].in_hop_index);
+> +		tb_dump_hop(path->hops[i].in_port, &hop);
+> +		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
+> +				    2 * path->hops[i].in_hop_index, 2);
+> +		if (res) {
+> +			__tb_path_deactivate_hops(path, i);
+> +			__tb_path_deallocate_nfc(path, 0);
+> +			goto err;
+> +		}
+> +	}
+> +	path->activated = true;
+> +	tb_info(path->tb, "path activation complete\n");
+> +	return 0;
+> +err:
+> +	tb_WARN(path->tb, "path activation failed\n");
+> +	return res;
+> +}
+> +
+> +/**
+> + * tb_path_is_invalid() - check whether any ports on the path are invalid
+> + *
+> + * Return: Returns true if the path is invalid, false otherwise.
+> + */
+> +bool tb_path_is_invalid(struct tb_path *path)
+> +{
+> +	int i = 0;
+> +	for (i = 0; i < path->path_length; i++) {
+> +		if (path->hops[i].in_port->sw->is_unplugged)
+> +			return true;
+> +		if (path->hops[i].out_port->sw->is_unplugged)
+> +			return true;
+> +	}
+> +	return false;
+> +}
+> diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+> index c092f7c..a6968cc 100644
+> --- a/drivers/thunderbolt/switch.c
+> +++ b/drivers/thunderbolt/switch.c
+> @@ -139,6 +139,40 @@ int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
+>  }
+>  
+>  /**
+> + * tb_port_add_nfc_credits() - add/remove non flow controlled credits to port
+> + *
+> + * Change the number of NFC credits allocated to @port by @credits. To remove
+> + * NFC credits pass a negative amount of credits.
+> + *
+> + * Return: Returns 0 on success or an error code on failure.
+> + */
+> +int tb_port_add_nfc_credits(struct tb_port *port, int credits)
+> +{
+> +	if (credits == 0)
+> +		return 0;
+> +	tb_port_info(port,
+> +		     "adding %#x NFC credits (%#x -> %#x)",
+> +		     credits,
+> +		     port->config.nfc_credits,
+> +		     port->config.nfc_credits + credits);
+> +	port->config.nfc_credits += credits;
+> +	return tb_port_write(port, &port->config.nfc_credits,
+> +			     TB_CFG_PORT, 4, 1);
+> +}
+> +
+> +/**
+> + * tb_port_clear_counter() - clear a counter in TB_CFG_COUNTER
+> + *
+> + * Return: Returns 0 on success or an error code on failure.
+> + */
+> +int tb_port_clear_counter(struct tb_port *port, int counter)
+> +{
+> +	u32 zero[3] = { 0, 0, 0 };
+> +	tb_port_info(port, "clearing counter %d\n", counter);
+> +	return tb_port_write(port, zero, TB_CFG_COUNTERS, 3 * counter, 3);
+> +}
+> +
+> +/**
+>   * tb_init_port() - initialize a port
+>   *
+>   * This is a helper method for tb_switch_alloc. Does not check or initialize
+> diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+> index 661f182..8bbdc2b 100644
+> --- a/drivers/thunderbolt/tb.h
+> +++ b/drivers/thunderbolt/tb.h
+> @@ -35,6 +35,60 @@ struct tb_port {
+>  };
+>  
+>  /**
+> + * struct tb_path_hop - routing information for a tb_path
+> + *
+> + * Hop configuration is always done on the IN port of a switch.
+> + * in_port and out_port have to be on the same switch. Packets arriving on
+> + * in_port with "hop" = in_hop_index will get routed to through out_port. The
+> + * next hop to take (on out_port->remote) is determined by next_hop_index.
+> + *
+> + * in_counter_index is the index of a counter (in TB_CFG_COUNTERS) on the in
+> + * port.
+> + */
+> +struct tb_path_hop {
+> +	struct tb_port *in_port;
+> +	struct tb_port *out_port;
+> +	int in_hop_index;
+> +	int in_counter_index; /* write -1 to disable counters for this hop. */
+> +	int next_hop_index;
+> +};
+> +
+> +/**
+> + * enum tb_path_port - path options mask
+> + */
+> +enum tb_path_port {
+> +	TB_PATH_NONE = 0,
+> +	TB_PATH_SOURCE = 1, /* activate on the first hop (out of src) */
+> +	TB_PATH_INTERNAL = 2, /* activate on other hops (not the first/last) */
+> +	TB_PATH_DESTINATION = 4, /* activate on the last hop (into dst) */
+> +	TB_PATH_ALL = 7,
+> +};
+> +
+> +/**
+> + * struct tb_path - a unidirectional path between two ports
+> + *
+> + * A path consists of a number of hops (see tb_path_hop). To establish a PCIe
+> + * tunnel two paths have to be created between the two PCIe ports.
+> + *
+> + */
+> +struct tb_path {
+> +	struct tb *tb;
+> +	int nfc_credits; /* non flow controlled credits */
+> +	enum tb_path_port ingress_shared_buffer;
+> +	enum tb_path_port egress_shared_buffer;
+> +	enum tb_path_port ingress_fc_enable;
+> +	enum tb_path_port egress_fc_enable;
+> +
+> +	int priority:3;
+> +	int weight:4;
+> +	bool drop_packages;
+> +	bool activated;
+> +	struct tb_path_hop *hops;
+> +	int path_length; /* number of hops */
+> +};
+> +
+> +
+> +/**
+>   * struct tb - main thunderbolt bus structure
+>   */
+>  struct tb {
+> @@ -165,9 +219,17 @@ void tb_sw_set_unpplugged(struct tb_switch *sw);
+>  struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
+>  
+>  int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
+> +int tb_port_add_nfc_credits(struct tb_port *port, int credits);
+> +int tb_port_clear_counter(struct tb_port *port, int counter);
+>  
+>  int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
+>  
+> +struct tb_path *tb_path_alloc(struct tb *tb, int num_hops);
+> +void tb_path_free(struct tb_path *path);
+> +int tb_path_activate(struct tb_path *path);
+> +void tb_path_deactivate(struct tb_path *path);
+> +bool tb_path_is_invalid(struct tb_path *path);
+> +
+>  
+>  static inline int tb_route_length(u64 route)
+>  {
+> -- 
+> 1.9.3
+> 
