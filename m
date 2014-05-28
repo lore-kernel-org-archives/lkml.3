@@ -1,205 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaE1RDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:03:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878AbaE1RDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:03:16 -0400
-Message-ID: <1401296591.2412.50.camel@ul30vt.home>
-Subject: Re: [PATCH] pci: Save and restore VFs as a part of a reset
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        Don Dutile <ddutile@redhat.com>
-Date: Wed, 28 May 2014 11:03:11 -0600
-In-Reply-To: <53861154.4080402@intel.com>
-References: <20140505212346.18767.34117.stgit@ahduyck-cp2.jf.intel.com>
-		 <20140527222256.GC11907@google.com> <5385255D.5060204@intel.com>
-		 <CAErSpo5QU1LsKVqyGbT07mhF-t5L1y3NxD4JhJ6N3AM0XT0c2A@mail.gmail.com>
-	 <1401250378.3289.774.camel@ul30vt.home> <53861154.4080402@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751795AbaE1RFl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:05:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43853 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250AbaE1RFk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 13:05:40 -0400
+Date: Wed, 28 May 2014 19:05:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, eranian@google.com
+Subject: Re: [RFC PATCH 6/7] perf, x86: large PEBS interrupt threshold
+Message-ID: <20140528170531.GT30445@twins.programming.kicks-ass.net>
+References: <1401257890-30535-1-git-send-email-zheng.z.yan@intel.com>
+ <1401257890-30535-7-git-send-email-zheng.z.yan@intel.com>
+ <20140528081053.GP11096@twins.programming.kicks-ass.net>
+ <20140528145831.GH29957@tassilo.jf.intel.com>
+ <20140528153548.GY11096@twins.programming.kicks-ass.net>
+ <20140528160847.GJ29957@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AA+5rdMLl4Meq7d7"
+Content-Disposition: inline
+In-Reply-To: <20140528160847.GJ29957@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 09:39 -0700, Alexander Duyck wrote:
-> On 05/27/2014 09:12 PM, Alex Williamson wrote:
-> > On Tue, 2014-05-27 at 19:19 -0600, Bjorn Helgaas wrote:
-> >> [+cc Alex, Don]
-> >>
-> >> On Tue, May 27, 2014 at 5:53 PM, Alexander Duyck
-> >> <alexander.h.duyck@intel.com> wrote:
-> >>> On 05/27/2014 03:22 PM, Bjorn Helgaas wrote:
-> >>>> On Mon, May 05, 2014 at 02:25:17PM -0700, Alexander Duyck wrote:
-> >>>>> This fixes an issue I found in which triggering a reset via the PCI sysfs
-> >>>>> reset while SR-IOV was enabled would leave the VFs in a state in which the
-> >>>>> BME and MSI-X enable bits were all cleared.
-> >>>>>
-> >>>>> To correct that I have added code so that the VF state is saved and restored
-> >>>>> as a part of the PF save and restore state functions.  By doing this the VF
-> >>>>> state is restored as well as the IOV state allowing the VFs to resume function
-> >>>>> following a reset.
-> >>>>>
-> >>>>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> >>>>> ---
-> >>>>>  drivers/pci/iov.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++--
-> >>>>>  drivers/pci/pci.c |    2 ++
-> >>>>>  drivers/pci/pci.h |    5 +++++
-> >>>>>  3 files changed, 53 insertions(+), 2 deletions(-)
-> >>>>>
-> >>>>> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> >>>>> index de7a747..645ed71 100644
-> >>>>> --- a/drivers/pci/iov.c
-> >>>>> +++ b/drivers/pci/iov.c
-> >>>>> @@ -521,13 +521,57 @@ resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
-> >>>>>  }
-> >>>>>
-> >>>>>  /**
-> >>>>> + * pci_save_iov_state - Save the state of the VF configurations
-> >>>>> + * @dev: the PCI device
-> >>>>> + */
-> >>>>> +int pci_save_iov_state(struct pci_dev *dev)
-> >>>>> +{
-> >>>>> +    struct pci_dev *vfdev = NULL;
-> >>>>> +    unsigned short dev_id;
-> >>>>> +
-> >>>>> +    /* only search if we are a PF */
-> >>>>> +    if (!dev->is_physfn)
-> >>>>> +            return 0;
-> >>>>> +
-> >>>>> +    /* retrieve VF device ID */
-> >>>>> +    pci_read_config_word(dev, dev->sriov->pos + PCI_SRIOV_VF_DID, &dev_id);
-> >> ...
-> >>
-> >>>>> +    /* loop through all the VFs and save their state information */
-> >>>>> +    while ((vfdev = pci_get_device(dev->vendor, dev_id, vfdev))) {
-> >>>>> +            if (vfdev->is_virtfn && (vfdev->physfn == dev)) {
-> >>>>> +                    int err = pci_save_state(vfdev);
-> >>>>
-> >>>> It makes me uneasy to operate on another device (we're resetting A, and
-> >>>> here we save state for B).  I know B is dependent on A, since B is a VF
-> >>>> related to PF A, but what synchronization is there to serialize this
-> >>>> against any other save/restore operations that may be in progress by B's
-> >>>> driver or by a sysfs operation on B?
-> >>>
-> >>> I don't believe there is any synchronization mechanism in place
-> >>> currently.  I can look into that as well.  Odds are we probably need to
-> >>> have the VFs check the parent lock before they take any independent action.
-> >>
-> >> It's just the whole question of how we manage the single "saved-state"
-> >> area.  Right now, I think almost all use of it is under control of the
-> >> driver that owns the device, in suspend/resume methods.  The
-> >> exceptions are the PM suspend/freeze/etc. routines in
-> >> pci/pci-driver.c, which I assume prevent the driver from running and
-> >> are therefore safe, and the reset path.  I don't know how the
-> > 
-> > Makes me a little uneasy too, what happens to a transaction headed
-> > to/from the VF while the PF is in a reset state?  I suspect not good
-> > things.  OTOH, the reset interface and a good bit of pci-sysfs have
-> > always been at-your-own-risk interfaces and this restores some bits that
-> > might get us closer to it being survivable.
-> > 
-> > We do have a way for drivers to get a long-term save state that they can
-> > keep on their own, pci_save_state(); pci_store_saved_state() along with
-> > pci_load_saved_state(); pci_restore_state().  Both KVM and VFIO use this
-> > for assigning a device so we can attempt to re-load the pre-assigned
-> > saved state.
-> 
-> So it sounds like this patch would interfere with the functioning of KVM
-> and VFIO then.  So perhaps I should just not take the direct approach of
-> saving it myself then.  Perhaps it would be better to just use the
-> notifier provided below to notify the VFs that an event has occurred.
 
-No, I don't think it interferes with KVM/VFIO any more than it does any
-other VF driver.  KVM/VFIO will save off the pre-assigned device state
-into their own buffer to be restored later, so use of the save buffer
-here should be ok unless there's a direct race.  I think you're still
-making the VF more likely to be usable after a PF reset, but maybe the
-question is still whether we should allow it or pretend that we can
-handle continued VF operation after a PF reset.
+--AA+5rdMLl4Meq7d7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >>>> Is there anything in the reset path that pays attention to whether
-> >>>> resetting this PF will clobber VFs?  Do we care whether those VFs are in
-> >>>> use?  I assume they might be in use by guests?
-> >>>
-> >>> The problem I found was that the sysfs reset call doesn't bother to
-> >>> check with the PF driver at all.  It just clobbers the PF and any VFs on
-> >>> it without talking to the PF driver.
-> >>
-> >> There is Keith Busch's recent patch:
-> >> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/hotplug&id=3ebe7f9f7e4a4fd1f6461ecd01ff2961317a483a
-> >> .  I dunno if that's useful to you or not.
-> >>
-> >> And I'm not sure there's actually a requirement to *have* a PF driver.
-> >>  Obviously there has to be a way to enable the VFs, but once they're
-> >> enabled, it might be possible to keep using them via VF drivers even
-> >> without a PF driver in the picture.
-> >>
-> >> Maybe resetting the PF should just fail if there's an active VF.  If
-> >> you need to reset the PF, you'd have to unbind the VFs first.
-> > 
-> > The use case is certainly questionable, personally I'm not going to
-> > expect VFs to continue working after the PF is reset.  Driver binding
-> > gets complicated, especially when KVM doesn't actually bind devices to
-> > use them.  Hopefully we'll get that out of the tree some day though.  I
-> > suppose we could -EBUSY the PF reset as long as VFs are enabled.
-> 
-> What I could do is go through and notify the VFs that they are about to
-> get hit by a reset.  What they do with that information would be up to them.
-> 
-> So if the VFs are loaded on the host I could then at least allow them to
-> recover by saving and restoring the config space within the driver
-> themselves.
+On Wed, May 28, 2014 at 09:08:47AM -0700, Andi Kleen wrote:
+> On Wed, May 28, 2014 at 05:35:48PM +0200, Peter Zijlstra wrote:
+> > On Wed, May 28, 2014 at 07:58:31AM -0700, Andi Kleen wrote:
 
-Maybe if the notifier list had to return some affirmative result for the
-PF reset to proceed.  Thanks,
+> > > When a PEBS counter overflows it clears its respective GLOBAL_STATUS =
+bit
+> > > automatically.
+> >=20
+> > That's an ambiguous statement; did you mean to say a PEBS enabled
+> > counter will not raise its bit in GLOBAL_STATUS on counter overflow?
+>=20
+> Let's revisit how PEBS works:
+>=20
+> - The counter overflows and sets the GLOBAL_STATUS bit
+> - The PEBS assist is armed
+> - The counter triggers again
+> - The PEBS assist fires and delivers a PEBS record
+> - Finally it clears the GLOBAL_STATUS
+> - When the threshold is reached it raises an PMI
+>=20
+> So the GLOBAL_STATUS bit is visible between the first overflow and the en=
+d=20
+> of the PEBS record delivery.
 
-Alex
+OK, so that's something entirely different from what you initially said,
+but it is what I thought it did -- you said that it clears on overflow,
+but it clears after recording.
 
-> >>>> But I'm not really keen on pci_get_device() in the first place.  It works
-> >>>> by iterating over all PCI devices in the system, which seems like a
-> >>>> sledgehammer approach.  It *is* widely used, but mostly in quirk-type code
-> >>>> from which I avert my eyes.
-> >>>>
-> >>>> Maybe you could do something based on pci_walk_bus()?  If you did that, I
-> >>>> think the PCI_SRIOV_VF_DID would become superfluous.
-> >>>>
-> >>>
-> >>> I can look into that, I'm not familiar with the interface.  I'll have to
-> >>> see what the relationship is between the PF and VF in terms of busses as
-> >>> I don't recall it off of the top of my head.
-> >>
-> >> This reminds me about an open problem: VFs can be on "virtual" buses,
-> >> which aren't really connected in the hierarchy, and I don't think we
-> >> have a nice way to iterate over them.  So probably pci_get_device() is
-> >> the best we can do now.
-> > 
-> > Yeah, those virtual buses don't have a bus->self, we just have to skip
-> > to bus->parent->self.  pci_walk_bus() goes in the opposite direction,
-> > but without an actual device hosting the bus, I don't see how it finds
-> > it.  Thanks,
-> > 
-> > Alex
-> 
-> It seems like we should be able to come up with something like
-> pci_walk_vbus() though or something similar.  All we would need to do is
-> search the VFs on the bus of the PF and all child busses to that bus if
-> I am not mistaken.
-> 
-> Thanks,
-> 
-> Alex
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Lets denote the above steps as A-F and then consider the following
+scenario (hmm, while drawing the states I ended up with something
+different than I thought):
+
+	Counter0	Counter1
+
+	 0A
+	 0B
+
+			 1A
+			 1B
+
+	 0C-E
+	 0F
+
+<PMI>
+			 1C-E
+			 1F
 
 
+If we get the PMI (where denoted) we can actually reconstruct which
+event triggered, by looking at which bit(s) flipped between the recorded
+state and the current state (due to E coming before F)
 
+Now, admittedly we don't actually do that, but the below patch
+implements that (I think, its not been near a compiler).
+
+Hmm,.. .oO I think we might be able to do something similar with
+multi-events, look at the next records ->state, and use the current MSR
+value when there's no next record.
+
+Thoughts?
+
+---
+ arch/x86/kernel/cpu/perf_event.h          |  2 +-
+ arch/x86/kernel/cpu/perf_event_intel.c    |  2 +-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 21 +++++++--------------
+ 3 files changed, 9 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_ev=
+ent.h
+index 3b2f9bdd974b..a71f6bd05f19 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -445,7 +445,7 @@ struct x86_pmu {
+ 			pebs_active	:1,
+ 			pebs_broken	:1;
+ 	int		pebs_record_size;
+-	void		(*drain_pebs)(struct pt_regs *regs);
++	void		(*drain_pebs)(struct pt_regs *regs, u64 status);
+ 	struct event_constraint *pebs_constraints;
+ 	void		(*pebs_aliases)(struct perf_event *event);
+ 	int 		max_pebs_events;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/p=
+erf_event_intel.c
+index adb02aa62af5..3371310f200e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1386,7 +1386,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+ 		handled++;
+-		x86_pmu.drain_pebs(regs);
++		x86_pmu.drain_pebs(regs, status);
+ 	}
+=20
+ 	/*
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cp=
+u/perf_event_intel_ds.c
+index 980970cb744d..0ad62addff7f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -953,7 +953,7 @@ static void __intel_pmu_pebs_event(struct perf_event *e=
+vent,
+ 		x86_pmu_stop(event, 0);
+ }
+=20
+-static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
++static void intel_pmu_drain_pebs_core(struct pt_regs *iregs, u64 status)
+ {
+ 	struct cpu_hw_events *cpuc =3D &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds =3D cpuc->ds;
+@@ -994,13 +994,12 @@ static void intel_pmu_drain_pebs_core(struct pt_regs =
+*iregs)
+ 	__intel_pmu_pebs_event(event, iregs, at);
+ }
+=20
+-static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
++static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, u64 status)
+ {
+ 	struct cpu_hw_events *cpuc =3D &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds =3D cpuc->ds;
+ 	struct perf_event *event =3D NULL;
+ 	void *at, *top;
+-	u64 status =3D 0;
+ 	int bit;
+=20
+ 	if (!x86_pmu.pebs_active)
+@@ -1024,28 +1023,22 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs=
+ *iregs)
+=20
+ 	for (; at < top; at +=3D x86_pmu.pebs_record_size) {
+ 		struct pebs_record_nhm *p =3D at;
++		u64 rec_status =3D (p->status ^ status) & (cpuc->pebs_enabled & 0xFFFFFF=
+FF);
+=20
+-		for_each_set_bit(bit, (unsigned long *)&p->status,
++		for_each_set_bit(bit, (unsigned long *)&rec_status,
+ 				 x86_pmu.max_pebs_events) {
+ 			event =3D cpuc->events[bit];
+ 			if (!test_bit(bit, cpuc->active_mask))
+ 				continue;
+=20
+-			WARN_ON_ONCE(!event);
+-
+-			if (!event->attr.precise_ip)
++			if (WARN_ON_ONCE(!event))
+ 				continue;
+=20
+-			if (__test_and_set_bit(bit, (unsigned long *)&status))
++			if (!event->attr.precise_ip)
+ 				continue;
+=20
+-			break;
++			__intel_pmu_pebs_event(event, iregs, at);
+ 		}
+-
+-		if (!event || bit >=3D x86_pmu.max_pebs_events)
+-			continue;
+-
+-		__intel_pmu_pebs_event(event, iregs, at);
+ 	}
+ }
+=20
+
+--AA+5rdMLl4Meq7d7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThhdbAAoJEHZH4aRLwOS6kecP/34TTRA2qL8M9d6ZYCFAhPon
+c/CHPQ0Lue/ij7IVMhGSS5N1x+h44hpZubiWYUeRMYIvmdytLUWVOGunmSKMvpeW
+O0cA71xs4Yg1JCI1xO5yLMBob+py1vOB0vDV0MHBEYmh7kG6NpRy2EDbvHIZNArG
+mVfH5nb687phHCG2rf49DISuXqkc0cNBjmV5UMsClY7IXJy0BSttzGfesAgnIL7u
+dzaSadclCpeL50e2F98iYwU+Sxnw/Dac+qvhSZhS6oRKYkVxPO6TafTeP6/4CTgl
+BzBZGTpHviKy7aAEaRrmdvWtSdHXNyUxeHzwbaw/ySbEHU5kJVwprgkGgnbAHLBB
+RDsMHha/L8GiuTC//HXMWHYiIj/IH71TLzatRYlK3Sc/Jd4suRoRvUc0sfYNDqXt
+M0oyA1+2mZU7YCBzHNBih+Y6qVaD4RbfPeFOrosjNgj6NbvhTv90Q9vpGhV0Ir4c
+CmtKC9FDu1JnclIecoH4B07vnPy0hPQZgLjUQmiGAFTDcZwA6/BNl6sU6uEgFEzN
+hHBx4vkmwzE4t6XKRtWHR88gAvLe3Pas3Knjt6OKO1SMZzsZjKvucSctoi7h/Xbd
+cw9ivTnPjsKHRNpb0omDjzTiZ2riPhgp3gv7PZXJ4wGkamiUv/71EdA2qnpbMOx/
+nG0DyCHsUbGdmL/dShqb
+=wCwt
+-----END PGP SIGNATURE-----
+
+--AA+5rdMLl4Meq7d7--
