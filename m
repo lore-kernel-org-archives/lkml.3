@@ -1,1368 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673AbaE1I7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:59:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58759 "EHLO bear.ext.ti.com"
+	id S1754780AbaE1JFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:05:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29172 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602AbaE1I6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:58:05 -0400
-From: Satish Patel <satish.patel@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rob@landley.net>, <tony@atomide.com>
-CC: <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        Satish Patel <satish.patel@ti.com>
-Subject: [PATCH v3 2/5] misc: tda8026: Add NXP TDA8026 PHY driver
-Date: Wed, 28 May 2014 14:27:14 +0530
-Message-ID: <1401267437-22489-3-git-send-email-satish.patel@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
-References: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
+	id S1752328AbaE1JFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 05:05:46 -0400
+Date: Wed, 28 May 2014 12:04:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140528090409.GA16795@redhat.com>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+ <1401260039-18189-2-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401260039-18189-2-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TDA8026 is a SmartCard PHY from NXP.
+On Wed, May 28, 2014 at 03:53:59PM +0900, Minchan Kim wrote:
+> While I play inhouse patches with much memory pressure on qemu-kvm,
+> 3.14 kernel was randomly crashed. The reason was kernel stack overflow.
+> 
+> When I investigated the problem, the callstack was a little bit deeper
+> by involve with reclaim functions but not direct reclaim path.
+> 
+> I tried to diet stack size of some functions related with alloc/reclaim
+> so did a hundred of byte but overflow was't disappeard so that I encounter
+> overflow by another deeper callstack on reclaim/allocator path.
+> 
+> Of course, we might sweep every sites we have found for reducing
+> stack usage but I'm not sure how long it saves the world(surely,
+> lots of developer start to add nice features which will use stack
+> agains) and if we consider another more complex feature in I/O layer
+> and/or reclaim path, it might be better to increase stack size(
+> meanwhile, stack usage on 64bit machine was doubled compared to 32bit
+> while it have sticked to 8K. Hmm, it's not a fair to me and arm64
+> already expaned to 16K. )
+> 
+> So, my stupid idea is just let's expand stack size and keep an eye
+> toward stack consumption on each kernel functions via stacktrace of ftrace.
+> For example, we can have a bar like that each funcion shouldn't exceed 200K
+> and emit the warning when some function consumes more in runtime.
+> Of course, it could make false positive but at least, it could make a
+> chance to think over it.
+> 
+> I guess this topic was discussed several time so there might be
+> strong reason not to increase kernel stack size on x86_64, for me not
+> knowing so Ccing x86_64 maintainers, other MM guys and virtio
+> maintainers.
+> 
+> [ 1065.604404] kworker/-5766    0d..2 1071625990us : stack_trace_call:         Depth    Size   Location    (51 entries)
+> [ 1065.604404]         -----    ----   --------
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   0)     7696      16   lookup_address+0x28/0x30
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   1)     7680      16   _lookup_address_cpa.isra.3+0x3b/0x40
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   2)     7664      24   __change_page_attr_set_clr+0xe0/0xb50
+> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   3)     7640     392   kernel_map_pages+0x6c/0x120
+> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   4)     7248     256   get_page_from_freelist+0x489/0x920
+> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   5)     6992     352   __alloc_pages_nodemask+0x5e1/0xb20
+> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   6)     6640       8   alloc_pages_current+0x10f/0x1f0
+> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   7)     6632     168   new_slab+0x2c5/0x370
+> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   8)     6464       8   __slab_alloc+0x3a9/0x501
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:   9)     6456      80   __kmalloc+0x1cb/0x200
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  10)     6376     376   vring_add_indirect+0x36/0x200
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  12)     5856     288   __virtblk_add_req+0xda/0x1b0
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  13)     5568      96   virtio_queue_rq+0xd3/0x1d0
 
-The PHY interfaces with the main processor over the
-I2C interface and acts as a slave device.
+virtio stack usage seems very high.
+Here is virtio_ring.su generated using -fstack-usage flag for gcc 4.8.2.
 
-The driver also exposes the phy interface
-(defined@include/linux/sc_phy.h) for SmartCard controller.
-Controller uses this interface to communicate with smart card
-inserted to the phy's slot.
+virtio_ring.c:107:35:sg_next_arr        16      static
 
-Note: gpio irq is not validated as I do not have device with that.
-I have validated interrupt with dedicated interrupt line on my device.
 
-Signed-off-by: Satish Patel <satish.patel@ti.com>
----
- Documentation/devicetree/bindings/misc/tda8026.txt |   19 +
- drivers/misc/Kconfig                               |    7 +
- drivers/misc/Makefile                              |    1 +
- drivers/misc/tda8026.c                             | 1258 ++++++++++++++++++++
- 4 files changed, 1285 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/tda8026.txt
- create mode 100644 drivers/misc/tda8026.c
+<--- this is a surprise, I really expected it to be inlined
+     same for sg_next_chained.
+<--- Rusty: should we force compiler to inline it?
 
-diff --git a/Documentation/devicetree/bindings/misc/tda8026.txt b/Documentation/devicetree/bindings/misc/tda8026.txt
-new file mode 100644
-index 0000000..f115c9c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/tda8026.txt
-@@ -0,0 +1,19 @@
-+TDA8026 smart card slot interface
-+
-+This is an i2c based smart card interface device forming the electrical
-+interface between a microcontroller and smart cards. This device supports
-+asynchronous cards (micro controller-based IC cards) as well as synchronous
-+cards (mainly memory cards)
-+
-+Required properties:
-+- compatible: "nxp,tda8026"
-+- shutdown-gpio = GPIO pin mapping for SDWNN pin
-+- reg = i2c interface address
-+
-+
-+Example:
-+tda8026: tda8026@48 {
-+		 compatible = "nxp,tda8026";
-+		 reg = <0x48>;
-+		 shutdown-gpio = <&gpio5 19 GPIO_ACTIVE_HIGH>;/* Bank5, pin19 */
-+	 };
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 8baff0e..80b21d7 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -515,6 +515,13 @@ config SRAM
- 	  the genalloc API. It is supposed to be used for small on-chip SRAM
- 	  areas found on many SoCs.
- 
-+config NXP_TDA8026_PHY
-+        tristate "NXP PHY Driver for Smart Card PHY"
-+        depends on I2C=y
-+        help
-+          If you say yes here you get support for the TDA8026 Smart card PHY
-+	  with I2C interface.
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 7eb4b69..f262c0b 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -55,3 +55,4 @@ obj-$(CONFIG_SRAM)		+= sram.o
- obj-y				+= mic/
- obj-$(CONFIG_GENWQE)		+= genwqe/
- obj-$(CONFIG_ECHO)		+= echo/
-+obj-$(CONFIG_NXP_TDA8026_PHY)	+= tda8026.o
-diff --git a/drivers/misc/tda8026.c b/drivers/misc/tda8026.c
-new file mode 100644
-index 0000000..38df33e
---- /dev/null
-+++ b/drivers/misc/tda8026.c
-@@ -0,0 +1,1258 @@
-+/*
-+ * tda8026.c - TDA8026 PHY driver for NXP Smart card PHY
-+ *
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/interrupt.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/mfd/core.h>
-+#include <linux/notifier.h>
-+#include <linux/sc_phy.h>
-+#include <linux/of_gpio.h>
-+#include <linux/of_device.h>
-+#include <linux/delay.h>
-+
-+#define TDA8026_MAX_SLOTS		(5)
-+#define TDA8026_NUM_SAM_SLOTS		(4)
-+#define TDA8026_USERCARD_SLOT		(1)
-+
-+#define TDA8026_CSB_ADDR		(0x24)
-+#define TDA8026_REG0_ADDR		(0x20)
-+#define TDA8026_REG1_ADDR		(0x21)
-+#define TDA8026_SLEWRATE_ADDR		(0x20)
-+#define TDA8026_PRODVER_ADDR		(0x20)
-+#define TDA8026_INTSTAT_ADDR		(0x21)
-+
-+#define TDA8026_PHY_PRODUCT_VERSION	(0xC2)
-+
-+/* CSB register values */
-+#define TDA8026_CSB_PV_INTSTAT_VAL	(0x0)
-+#define TDA8026_CSB_SLEWRATE_VAL	(0x6)
-+
-+/* Slot REG0 read mode bit fields */
-+#define TDA8026_REG0_ACTIVE_MASK	(0x80)
-+#define TDA8026_REG0_EARLY_MASK		(0x40)
-+#define TDA8026_REG0_MUTE_MASK		(0x20)
-+#define TDA8026_REG0_PROT_MASK		(0x10)
-+#define TDA8026_REG0_SUPL_MASK		(0x08)
-+#define TDA8026_REG0_CLKSW_MASK		(0x04)
-+#define TDA8026_REG0_PREL_MASK		(0x02)
-+#define TDA8026_REG0_PRES_MASK		(0x01)
-+
-+/* Slot REG0 write mode bit fields */
-+#define TDA8026_REG0_VCC1V8_MASK	(0x80)
-+#define TDA8026_REG0_IOEN_MASK		(0x40)
-+
-+#define TDA8026_REG0_REG10_MASK		(0x30)
-+#define TDA8026_REG0_REG10_SHIFT	(4)
-+#define TDA8026_REG0_REG10_CFG_VAL	(0x0)
-+#define TDA8026_REG0_REG10_D_VAL	(0x1)
-+#define TDA8026_REG0_REG10_CMSB_VAL	(0x2)
-+#define TDA8026_REG0_REG10_CLSB_VAL	(0x3)
-+
-+#define TDA8026_REG0_PDWN_MASK		(0x08)
-+#define TDA8026_REG0_5V3VN_MASK		(0x04)
-+#define TDA8026_REG0_WARM_RESET_MASK	(0x02)
-+#define TDA8026_REG0_START_MASK		(0x01)
-+
-+/* Slot REG1 CFG bit fields REG[1:0] = 00b */
-+#define TDA8026_REG1CFG_CFGP2_MASK	(0x80)
-+#define TDA8026_REG1CFG_RSTIN_MASK	(0x40)
-+#define TDA8026_REG1CFG_C8_MASK		(0x20)
-+#define TDA8026_REG1CFG_C4_MASK		(0x10)
-+#define TDA8026_REG1CFG_CLKPD_MASK	(0x0C)
-+#define TDA8026_REG1CFG_CLKPD_SHIFT	(2)
-+#define TDA8026_REG1CFG_CLKDIV_MASK	(0x03)
-+#define TDA8026_REG1CFG_CLKDIV_SHIFT	(0)
-+
-+/* Slew rate register bit fields */
-+#define TDA8026_SR_CLKSR_SLOT0_MASK	0x0C
-+#define TDA8026_SR_CLKSR_SLOT0_SHIFT	0x2
-+#define TDA8026_SR_IOSR_SLOT0_MASK	0x3
-+#define TDA8026_SR_IOSR_SLOT0_SHIFT	0x0
-+
-+#define TDA8026_SR_CLKSR_SLOT2TO5_MASK	0xC0
-+#define TDA8026_SR_CLKSR_SLOT2TO5_SHIFT	0x6
-+#define TDA8026_SR_IOSR_SLOT2TO5_MASK	0x30
-+#define TDA8026_SR_IOSR_SLOT2TO5_SHIFT	0x4
-+
-+#define TDA8026_MIN_EARLY_CYCLE    (200)
-+
-+struct tda8026 {
-+	/* device pointer */
-+	struct device *dev;
-+
-+	/* For device IO interfaces: I2C or SPI */
-+	void *control_data;
-+	/* Store a shadow of Slot Register 0 as it cannot be read */
-+	u8 reg0[TDA8026_MAX_SLOTS];
-+	int irq;
-+	int notify;
-+	int shutdown_gpio;
-+	int enable;
-+};
-+
-+static BLOCKING_NOTIFIER_HEAD(tda8026_notifier_list);
-+
-+static int tda8026_i2c_read(struct tda8026 *tda8026, u8 reg,
-+		int bytes, u8 *dest)
-+{
-+	struct i2c_client *i2c = tda8026->control_data;
-+	struct i2c_msg xfer;
-+	int ret;
-+
-+	/* We need to read from the slave address itself, as there
-+	 * is no separate register to be accessed in TDA8026
-+	 */
-+
-+	xfer.addr = reg;
-+	xfer.flags = I2C_M_RD;
-+	xfer.len = bytes;
-+	xfer.buf = dest;
-+
-+	ret = i2c_transfer(i2c->adapter, &xfer, 1);
-+	if (ret < 0)
-+		dev_err(tda8026->dev, "Read [0x%x] Error %d\n", reg, ret);
-+
-+	return ret;
-+}
-+
-+static int tda8026_i2c_write(struct tda8026 *tda8026, u8 reg,
-+		int bytes, u8 *src)
-+{
-+	struct i2c_client *i2c = tda8026->control_data;
-+	struct i2c_msg xfer;
-+	int ret;
-+
-+	/* We have to write to the slave address itself, as
-+	 * there is no separate register to be accessed in TDA8026
-+	 */
-+	xfer.addr = reg;
-+	xfer.flags = 0;
-+	xfer.len = bytes;
-+	xfer.buf = src;
-+
-+	ret = i2c_transfer(i2c->adapter, &xfer, 1);
-+	if (ret < 0)
-+		dev_err(tda8026->dev, "Write [0x%x] Error %d\n", reg, ret);
-+
-+	return ret;
-+}
-+
-+/* put the phy in shutdown mode, which in turn deactivate
-+ * all the cards in the slot and card pins are forced to 0V
-+ */
-+static inline void tda8026_disable(struct tda8026 *tda8026)
-+{
-+	dev_dbg(tda8026->dev, "tda8026_disable!!!!");
-+	tda8026->enable = 0;
-+	if (gpio_is_valid(tda8026->shutdown_gpio))
-+		gpio_set_value(tda8026->shutdown_gpio, 0);
-+}
-+
-+/* exit from shutdown mode */
-+static inline void tda8026_enable(struct tda8026 *tda8026)
-+{
-+	dev_dbg(tda8026->dev, "tda8026_enable!!!!");
-+	tda8026->enable = 1;
-+	if (gpio_is_valid(tda8026->shutdown_gpio))
-+		gpio_set_value(tda8026->shutdown_gpio, 1);
-+	/* Added dealy to stabilized phy state after pulling shutdown line */
-+	mdelay(100);
-+}
-+
-+/*
-+ * Select the card slot to communicate with the card
-+ * Note that card slots are numbered from 0 in software.
-+ * However TDA8026 PHY numbers the slot starting 1.
-+ */
-+static inline int tda8026_select_slot(struct tda8026 *tda8026, u8 slot)
-+{
-+	int ret = 0;
-+
-+	/* In SW slot starts from 0, in TDA8026 it starts from 1 */
-+	slot = slot + 1;
-+	ret = tda8026_i2c_write(tda8026, TDA8026_CSB_ADDR, 1, &slot);
-+
-+	return ret;
-+}
-+
-+static int tda8026_clear_interrupts(struct tda8026 *tda8026)
-+{
-+	u8 val;
-+	u8 status;
-+	int ret = 0;
-+
-+	/* Select the Interrupt register bank */
-+	val = TDA8026_CSB_PV_INTSTAT_VAL;
-+	tda8026_i2c_write(tda8026, TDA8026_CSB_ADDR, 1, &val);
-+
-+	/* Read the interrupt status which will tell us the slot */
-+	ret = tda8026_i2c_read(tda8026, TDA8026_INTSTAT_ADDR, 1, &status);
-+	if (ret < 0)
-+		return ret;
-+
-+	for (val = 1; val > TDA8026_MAX_SLOTS; val++) {
-+		/* Program the slot number to the CSB register */
-+		ret = tda8026_i2c_write(tda8026, TDA8026_CSB_ADDR, 1, &val);
-+		if (ret < 0)
-+			return ret;
-+
-+		ret = tda8026_i2c_read(tda8026, TDA8026_REG0_ADDR, 1, &status);
-+		if (ret < 0)
-+			return ret;
-+	}
-+	return ret;
-+}
-+/*
-+ * TDA8026 PHY IRQ handler
-+ */
-+static irqreturn_t tda8026_irq(int irq, void *irq_data)
-+{
-+	struct sc_phy *phy_tda8026 = (struct sc_phy *)irq_data;
-+	struct tda8026 *tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+	u8 slot;
-+	u8 val;
-+	u8 status;
-+	int ret = 0;
-+	int action = 0;
-+
-+	dev_dbg(tda8026->dev, "tda8026_irq!!");
-+
-+	if (tda8026->enable == 0) {
-+		dev_dbg(tda8026->dev, "phy is disable not serving interrputs!!");
-+		/* when, phy is in shutdown mode, it can detect the card insert
-+		 * event. But if phy is not enable (i.e.) there is no consumer
-+		 * of phy then just enable phy, clear the interrupt and disable
-+		 * again
-+		 */
-+		tda8026_enable(tda8026);
-+		tda8026_clear_interrupts(tda8026);
-+		tda8026_disable(tda8026);
-+		return IRQ_HANDLED;
-+	}
-+
-+	/* Select the Interrupt register bank */
-+	val = TDA8026_CSB_PV_INTSTAT_VAL;
-+	tda8026_i2c_write(tda8026, TDA8026_CSB_ADDR, 1, &val);
-+
-+	/* Read the interrupt status which will tell us the slot */
-+	ret = tda8026_i2c_read(tda8026, TDA8026_INTSTAT_ADDR, 1, &status);
-+	if (ret < 0)
-+		return IRQ_HANDLED;
-+
-+
-+	/* find out for which slot interrupt has occur */
-+	slot = 0;
-+	while (val == 0 && slot < TDA8026_MAX_SLOTS) {
-+		val = status & (1 << slot);
-+		slot++;
-+	}
-+
-+	if (slot > TDA8026_MAX_SLOTS) {
-+		dev_err(tda8026->dev, "invalid slot interrput");
-+		return IRQ_HANDLED;
-+	}
-+
-+	/* Program the slot number to the CSB register */
-+	ret = tda8026_i2c_write(tda8026, TDA8026_CSB_ADDR, 1, &slot);
-+	if (ret < 0)
-+		return IRQ_HANDLED;
-+
-+	/* Now read the slot reg0 to find out the cause of interrupt
-+	 * Note that IRQ is raised only when one of the SUPL, PROT,
-+	 * MUTE and EARLY bits are set to logic 1.
-+	 */
-+	ret = tda8026_i2c_read(tda8026, TDA8026_REG0_ADDR, 1, &status);
-+	if (ret < 0)
-+		return IRQ_HANDLED;
-+
-+	if (slot < 3) {
-+		/* slot 1 and slot 2 can be used for user card, it can raise
-+		 * interrupt for card insert and remove.Other slot are for SAM
-+		 * modules. They are either always present or alwyas absent
-+		 */
-+		if (status & TDA8026_REG0_PREL_MASK) {
-+			if (status & TDA8026_REG0_PRES_MASK) {
-+				dev_dbg(tda8026->dev, "card is inserted");
-+				action |= SC_PHY_CARD_INSERTED;
-+			} else {
-+				dev_dbg(tda8026->dev, "card is removed");
-+				action |= SC_PHY_CARD_REMOVED;
-+			}
-+		}
-+	}
-+
-+	if (status & (TDA8026_REG0_EARLY_MASK | TDA8026_REG0_MUTE_MASK)) {
-+		dev_dbg(tda8026->dev, "CARD EARLY INTERRUPT\n");
-+		action |= SC_PHY_CARD_ATR_TIMEOUT;
-+	}
-+
-+	if (status & TDA8026_REG0_PROT_MASK) {
-+		dev_dbg(tda8026->dev, "CARD OVERHEAT/OVERLOAD INTERRUPT\n");
-+		action |= SC_PHY_CARD_OVERHEAT;
-+	}
-+
-+	if (action != 0x0 && tda8026->notify) {
-+		/* add slot information. Pass slot-1 as for controller slot
-+		 * starts from 0,1,2.. */
-+		action |= ((slot-1) << SC_PHY_NOTIFICATION_SLOT_SHIFT);
-+
-+		/* notify action */
-+		blocking_notifier_call_chain(&tda8026_notifier_list, action,
-+					     phy_tda8026->notify_data);
-+	}
-+	return IRQ_HANDLED;
-+}
-+
-+/*
-+ * PDWN bit is set/cleared to apply CLKPD[1:0] bit clock settings to
-+ * the clock pin for the selected card slot.
-+ */
-+static int tda8026_pwdn(struct tda8026 *tda8026, u8 slot, int state)
-+{
-+	u8 reg0 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+
-+	if (state)
-+		reg0 |= TDA8026_REG0_PDWN_MASK;
-+	else
-+		reg0 &= ~(TDA8026_REG0_PDWN_MASK);
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Set the card supply voltage.
-+ * TDA PHY supports supply voltage of 1.8V, 3V and 5V.
-+ */
-+static int tda8026_set_voltage(struct tda8026 *tda8026, u8 slot, int voltage)
-+{
-+	u8 reg0 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+
-+	reg0 &= ~(TDA8026_REG0_VCC1V8_MASK | TDA8026_REG0_5V3VN_MASK);
-+
-+	switch (voltage) {
-+	case SC_PHY_1_8V:
-+		reg0 |= TDA8026_REG0_VCC1V8_MASK;
-+	break;
-+
-+	case SC_PHY_5V:
-+		reg0 |= TDA8026_REG0_5V3VN_MASK;
-+	break;
-+
-+	case SC_PHY_3V:
-+	default:
-+	break;
-+	}
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Enable the I/O line by setting I/OEN bit of slot's main address register.
-+ * The I/O line should be enabled prior to card activation.
-+ */
-+static int tda8026_io_enable(struct tda8026 *tda8026, u8 slot)
-+{
-+	u8 reg0 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 |= TDA8026_REG0_IOEN_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Disable the I/O line by clearing I/OEN bit of slot's main address register.
-+ * The I/O line can be disabled post card activation.
-+ */
-+static int tda8026_io_disable(struct tda8026 *tda8026, u8 slot)
-+{
-+	u8 reg0 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 &= ~(TDA8026_REG0_IOEN_MASK);
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Sets the mute counter in C[15:8] and C[7:0] register
-+ * Write Reg[1:0] = 11 to select C[7:0] register
-+ * Write Reg[1:0] = 10 to select C[15:8] register
-+ */
-+static int tda8026_set_atr_mute_time(struct tda8026 *tda8026, u8 slot,
-+		int mute_counter)
-+{
-+	u8 reg0;
-+	u8 mute_counter_high = (mute_counter & 0xFF00) >> 8;
-+	u8 mute_counter_low = mute_counter & 0xFF;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 |=  TDA8026_REG0_REG10_CLSB_VAL << TDA8026_REG0_REG10_SHIFT;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	/* Write the mute counter value in C[7:0] LSB register */
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG1_ADDR, 1,
-+			&mute_counter_low);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 |=  TDA8026_REG0_REG10_CMSB_VAL << TDA8026_REG0_REG10_SHIFT;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	/* Write the mute counter value in C[15:8] MSB register */
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG1_ADDR, 1,
-+			&mute_counter_high);
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return 0;
-+}
-+
-+/*
-+ * Sets the ATR early time counter.
-+ * Write Reg[1:0] = 01 to select D register
-+ */
-+static int tda8026_set_atr_early_time(struct tda8026 *tda8026, u8 slot,
-+		int early_counter)
-+{
-+	u8 reg0;
-+	int ret = 0;
-+	u8 counter = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 |= TDA8026_REG0_REG10_D_VAL << TDA8026_REG0_REG10_SHIFT;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	/* Write the early atr counter value in D register */
-+	counter = (early_counter - TDA8026_MIN_EARLY_CYCLE) & 0xFF;
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG1_ADDR, 1, &counter);
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return 0;
-+}
-+
-+static int tda8026_set_rstpin(struct tda8026 *tda8026, u8 slot, int state)
-+{
-+	u8 reg0 = 0;
-+	u8 reg1 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Write Reg[1:0] = 00 to select CONFIG register */
-+	reg0 = tda8026->reg0[slot];
-+	reg0 &= ~TDA8026_REG0_REG10_MASK;
-+	reg0 |= (TDA8026_REG0_REG10_CFG_VAL << TDA8026_REG0_REG10_SHIFT) &
-+		TDA8026_REG0_REG10_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	/* Read the Reg1 value */
-+	ret = tda8026_i2c_read(tda8026, TDA8026_REG1_ADDR, 1,
-+			&reg1);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (state)
-+		reg1 |= TDA8026_REG1CFG_RSTIN_MASK;
-+	else
-+		reg1 &= ~TDA8026_REG1CFG_RSTIN_MASK;
-+
-+	/* Write the Reset value to the register  */
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG1_ADDR, 1, &reg1);
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return 0;
-+}
-+
-+/*
-+ * Activate the card by setting START bit of slot's main register.
-+ * Voltage selction and enabling of I/O lines should be done prior
-+ * to activating the card.
-+ */
-+static int tda8026_activate_card(struct sc_phy *phy_tda8026, u8 slot)
-+{
-+	u8 reg0 = 0;
-+	int ret = 0;
-+	struct tda8026 *tda8026;
-+
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+
-+	/* if PHY is used then RSTIN should be 1 for async cards,
-+	 * currently this is applicable only for TDA8026
-+	 */
-+	tda8026_set_rstpin(tda8026, slot, 1);
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 |= TDA8026_REG0_START_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Deactivate the card by clearing the START bit of slot's main register
-+ * We implement normal de-activation here.
-+ * On clearing the START bit with normal deactivation, automatic
-+ * deactivation is initiated and performaed by TDA8026.
-+ */
-+static int tda8026_deactivate_card(struct sc_phy *phy_tda8026, u8 slot)
-+{
-+	u8 reg0 = 0;
-+	int ret = 0;
-+
-+	struct tda8026 *tda8026;
-+
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 &= ~(TDA8026_REG0_START_MASK);
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Warm reset is initiated by setting the WARM bit of slot's main register
-+ */
-+static int tda8026_warm_reset(struct sc_phy *phy_tda8026, u8 slot)
-+{
-+	u8 reg0 = 0;
-+	int ret = 0;
-+
-+	struct tda8026 *tda8026;
-+
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+
-+	/* See section 6.5 in TDA app note */
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 |= TDA8026_REG0_WARM_RESET_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Read and return the TDA8026 PHY product version
-+ */
-+static int tda8026_get_provider_version(struct tda8026 *tda8026)
-+{
-+	u8 val;
-+	u8 version = 0;
-+	int ret = 0;
-+
-+	/* Select Product version bank i.e Write CSB = 00 */
-+	val = TDA8026_CSB_PV_INTSTAT_VAL;
-+	ret = tda8026_i2c_write(tda8026, TDA8026_CSB_ADDR, 1, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = tda8026_i2c_read(tda8026, TDA8026_PRODVER_ADDR, 1, &version);
-+	if (ret < 0)
-+		return ret;
-+	else
-+		dev_info(tda8026->dev, "Product Version = %x\n", version);
-+
-+	return version;
-+}
-+
-+
-+/*
-+ * Set/reset the C4/C8 Pin
-+ * Write Reg[1:0] = 00 to select CONFIG register
-+ */
-+static int tda8026_set_c4c8(struct tda8026 *tda8026,
-+				u8 slot,
-+				int state,
-+				int pin)
-+{
-+	u8 reg0 = 0;
-+	u8 reg1 = 0;
-+	int ret = 0;
-+	int mask = 0;
-+
-+	if (slot != 0) {
-+		/* C4/C8 pin value valid only for slot 1 */
-+		return -EINVAL;
-+	} else {
-+		ret = tda8026_select_slot(tda8026, slot);
-+		if (ret < 0)
-+			return ret;
-+
-+		reg0 = tda8026->reg0[slot];
-+		reg0 &= ~TDA8026_REG0_REG10_MASK;
-+		reg0 |= (TDA8026_REG0_REG10_CFG_VAL <<
-+				TDA8026_REG0_REG10_SHIFT) &
-+			TDA8026_REG0_REG10_MASK;
-+
-+		ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+		if (ret < 0)
-+			return ret;
-+		else if (ret == 1)
-+			tda8026->reg0[slot] = reg0;
-+
-+		ret = tda8026_i2c_read(tda8026, TDA8026_REG1_ADDR, 1,
-+				&reg1);
-+		if (ret < 0)
-+			return ret;
-+		if (pin == SC_PHY_PIN_C8)
-+			mask = TDA8026_REG1CFG_C8_MASK;
-+		else if (pin == SC_PHY_PIN_C4)
-+			mask = TDA8026_REG1CFG_C4_MASK;
-+		else
-+			return -EINVAL;
-+
-+		if (state)
-+			reg1 |= mask;
-+		else
-+			reg1 &= ~mask;
-+
-+		ret = tda8026_i2c_write(tda8026, TDA8026_REG1_ADDR, 1,
-+				&reg1);
-+		if (ret < 0)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Get the state of C4/C8 pin (high/low)
-+ * Write Reg[1:0] = 00 to select CONFIG register
-+ */
-+static int tda8026_get_c4c8(struct tda8026 *tda8026, u8 slot, int pin)
-+{
-+	u8 reg0 = 0;
-+	u8 reg1 = 0;
-+	int ret = 0;
-+	int mask = 0;
-+
-+	if (slot != 0) {
-+		/* C4/C8 pin value valid only for slot 1 */
-+		return -EINVAL;
-+	} else {
-+		ret = tda8026_select_slot(tda8026, slot);
-+		if (ret < 0)
-+			return ret;
-+
-+		reg0 = tda8026->reg0[slot];
-+		reg0 &= ~TDA8026_REG0_REG10_MASK;
-+		reg0 |= (TDA8026_REG0_REG10_CFG_VAL <<
-+				TDA8026_REG0_REG10_SHIFT) &
-+			TDA8026_REG0_REG10_MASK;
-+
-+		ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+		if (ret < 0)
-+			return ret;
-+		else if (ret == 1)
-+			tda8026->reg0[slot] = reg0;
-+
-+		ret = tda8026_i2c_read(tda8026, TDA8026_REG1_ADDR, 1,
-+				&reg1);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (pin == SC_PHY_PIN_C8)
-+			mask = TDA8026_REG1CFG_C8_MASK;
-+		else if (pin == SC_PHY_PIN_C4)
-+			mask = TDA8026_REG1CFG_C4_MASK;
-+		else
-+			return -EINVAL;
-+
-+		return (reg1 &= mask) ? 1 : 0;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Set card clock
-+ * Applicable only for synchronous mode
-+ */
-+static int tda8026_set_cardclk(struct tda8026 *tda8026, u8 slot,
-+		int config)
-+{
-+	u8 reg0 = 0;
-+	u8 reg1 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 &= ~TDA8026_REG0_REG10_MASK;
-+	reg0 |= (TDA8026_REG0_REG10_CFG_VAL << TDA8026_REG0_REG10_SHIFT) &
-+		TDA8026_REG0_REG10_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	ret = tda8026_i2c_read(tda8026, TDA8026_REG1_ADDR, 1, &reg1);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg1 &= ~(TDA8026_REG1CFG_CLKPD_MASK);
-+	reg1 |= (config << TDA8026_REG1CFG_CLKPD_SHIFT) &
-+		TDA8026_REG1CFG_CLKPD_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG1_ADDR, 1, &reg1);
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return 0;
-+}
-+
-+/*
-+ * Set the CLKDIV[1:0] bits.
-+ * CLKDIV[1:0] bits define the card clock frequency
-+ * Write Reg[1:0] = 00 to select CONFIG register
-+ */
-+static int tda8026_set_clkdiv(struct tda8026 *tda8026, u8 slot, int div)
-+{
-+	u8 reg0 = 0;
-+	u8 reg1 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 &= ~TDA8026_REG0_REG10_MASK;
-+	reg0 |= (TDA8026_REG0_REG10_CFG_VAL << TDA8026_REG0_REG10_SHIFT) &
-+		TDA8026_REG0_REG10_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	ret = tda8026_i2c_read(tda8026, TDA8026_REG1_ADDR, 1, &reg1);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg1 &= ~(TDA8026_REG1CFG_CLKDIV_MASK);
-+	reg1 |= (div << TDA8026_REG1CFG_CLKDIV_SHIFT) &
-+		TDA8026_REG1CFG_CLKDIV_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG1_ADDR, 1, &reg1);
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return 0;
-+}
-+
-+/*
-+ * Get the CLKDIV[1:0] bits.
-+ * CLKDIV[1:0] bits define the card clock frequency
-+ * Write Reg[1:0] = 00 to select CONFIG register
-+ */
-+static int tda8026_get_clkdiv(struct tda8026 *tda8026, u8 slot)
-+{
-+	u8 reg0 = 0;
-+	u8 reg1 = 0;
-+	int ret = 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	reg0 = tda8026->reg0[slot];
-+	reg0 &= ~TDA8026_REG0_REG10_MASK;
-+	reg0 |= (TDA8026_REG0_REG10_CFG_VAL << TDA8026_REG0_REG10_SHIFT) &
-+		TDA8026_REG0_REG10_MASK;
-+
-+	ret = tda8026_i2c_write(tda8026, TDA8026_REG0_ADDR, 1, &reg0);
-+	if (ret < 0)
-+		return ret;
-+	else if (ret == 1)
-+		tda8026->reg0[slot] = reg0;
-+
-+	ret = tda8026_i2c_read(tda8026, TDA8026_REG1_ADDR, 1, &reg1);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = reg1 & TDA8026_REG1CFG_CLKDIV_MASK;
-+
-+	return ret;
-+}
-+
-+/*
-+ * Check if card is present in the slot.
-+ */
-+static int tda8026_card_present(struct tda8026 *tda8026, u8 slot)
-+{
-+	int present = 0;
-+	int ret = 0;
-+	u8 status = 0;
-+
-+	if (tda8026->enable == 0)
-+		return 0;
-+
-+	ret = tda8026_select_slot(tda8026, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = tda8026_i2c_read(tda8026, TDA8026_REG0_ADDR, 1, &status);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (status & TDA8026_REG0_PRES_MASK)
-+		present = 1;
-+
-+	return present;
-+}
-+
-+/**
-+ * tda8026_register_notify - register a notifier callback whenever a card
-+ * event happens
-+ * @nb: pointer to the notifier block for the callback events.
-+ */
-+static int tda8026_register_notify(struct sc_phy *phy_tda8026,
-+		struct	notifier_block *nb, void *data)
-+{
-+	struct tda8026 *tda8026;
-+
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	phy_tda8026->notify_data = data;
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+	blocking_notifier_chain_register(&tda8026_notifier_list, nb);
-+	tda8026->notify = 1;
-+	return 0;
-+}
-+
-+/**
-+ * tda8026_unregister_notify - unregister a notifier callback
-+ * event happens
-+ * @nb: pointer to the notifier block for the callback events.
-+ */
-+static int tda8026_unregister_notify(struct sc_phy *phy_tda8026,
-+		struct	notifier_block *nb)
-+{
-+	struct tda8026 *tda8026;
-+
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+	blocking_notifier_chain_unregister(&tda8026_notifier_list, nb);
-+	tda8026->notify = 0;
-+	return 0;
-+}
-+
-+static int tda8026_set_config(struct sc_phy *phy_tda8026, u8 slot, enum
-+		sc_phy_config attr, int value)
-+{
-+	int ret = 0;
-+	struct tda8026 *tda8026;
-+
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+	switch (attr) {
-+	case SC_PHY_CARD_SUPPLY_VOLTAGE:
-+		ret = tda8026_set_voltage(tda8026, slot, value);
-+		break;
-+
-+	case SC_PHY_ATR_MUTE_TIME:
-+		ret = tda8026_set_atr_mute_time(tda8026, slot, value);
-+		break;
-+
-+	case SC_PHY_ATR_EARLY_TIME:
-+		ret = tda8026_set_atr_early_time(tda8026, slot, value);
-+		break;
-+
-+	case SC_PHY_CARD_MODE:
-+		if (value == SC_PHY_SYNC) {
-+			/* set clkdiv to zero, rst pin to low and pwdn bit to
-+			 * logic 0
-+			 */
-+			tda8026_set_clkdiv(tda8026, slot, 0);
-+			tda8026_set_rstpin(tda8026, slot, 0);
-+			tda8026_pwdn(tda8026, slot, 0);
-+		} else {
-+			/* Nothing to do, default mode is async */
-+		}
-+		break;
-+
-+	case SC_PHY_IO:
-+		if (value)
-+			ret = tda8026_io_enable(tda8026, slot);
-+		else
-+			ret = tda8026_io_disable(tda8026, slot);
-+		break;
-+
-+	case SC_PHY_PIN_RST:
-+		ret = tda8026_set_rstpin(tda8026, slot, value);
-+		break;
-+
-+	case SC_PHY_CLKDIV:
-+		ret = tda8026_set_clkdiv(tda8026, slot, value);
-+		break;
-+
-+	case SC_PHY_MODE:
-+		if (value == SC_PHY_ACTIVE)
-+			tda8026_enable(tda8026);
-+		else if (value == SC_PHY_SHUTDOWN)
-+			tda8026_disable(tda8026);
-+		else
-+			ret = -EINVAL;
-+		break;
-+
-+	case SC_PHY_PIN_C4:
-+		ret = tda8026_set_c4c8(tda8026, slot, value, SC_PHY_PIN_C4);
-+		break;
-+
-+	case SC_PHY_PIN_C8:
-+		ret = tda8026_set_c4c8(tda8026, slot, value, SC_PHY_PIN_C8);
-+		break;
-+
-+	case SC_PHY_PIN_CLK:
-+		ret = tda8026_set_cardclk(tda8026, slot, value);
-+		break;
-+
-+	default:
-+		ret = -EINVAL;
-+		dev_err(phy_tda8026->dev, "operation not supported:%d", attr);
-+		break;
-+	}
-+	return ret;
-+}
-+
-+static int tda8026_get_config(struct sc_phy *phy_tda8026, u8 slot, enum
-+		sc_phy_config attr)
-+{
-+	int ret = -1;
-+	struct tda8026 *tda8026;
-+
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+	switch (attr) {
-+	case SC_PHY_CARD_PRESENCE:
-+		ret = tda8026_card_present(tda8026, slot);
-+	break;
-+
-+	case SC_PHY_VERSION:
-+		ret = tda8026_get_provider_version(tda8026);
-+	break;
-+
-+	case SC_PHY_CLKDIV:
-+		ret = tda8026_get_clkdiv(tda8026, slot);
-+	break;
-+
-+	case SC_PHY_PIN_C4:
-+		ret = tda8026_get_c4c8(tda8026, slot, SC_PHY_PIN_C4);
-+	break;
-+
-+	case SC_PHY_PIN_C8:
-+		ret = tda8026_get_c4c8(tda8026, slot, SC_PHY_PIN_C8);
-+	break;
-+
-+	default:
-+		ret = -EINVAL;
-+		dev_err(phy_tda8026->dev, "operation not supported:%d", attr);
-+	break;
-+	}
-+	return ret;
-+}
-+
-+#if defined(CONFIG_OF)
-+static const struct of_device_id tda8026_id_table[];
-+#endif
-+
-+static int tda8026_parse_dt(struct device *dev, struct tda8026 *pdata)
-+{
-+	struct device_node *np = dev->of_node;
-+	int ret = 0;
-+
-+	pdata->shutdown_gpio = of_get_named_gpio(np, "shutdown-gpio", 0);
-+	if (!gpio_is_valid(pdata->shutdown_gpio)) {
-+		dev_err(dev, "Failed to get shutdown gpio\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = devm_gpio_request_one(dev, pdata->shutdown_gpio,
-+			GPIOF_DIR_OUT, "shutdown_gpio");
-+	if (ret) {
-+		dev_err(dev, "Failed to request shutdown_gpio\n");
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+static int tda8026_i2c_probe(struct i2c_client *i2c,
-+		const struct i2c_device_id *id)
-+{
-+	int ret = 0;
-+	struct sc_phy *phy_tda8026;
-+	struct tda8026 *pdata;
-+
-+	struct device *dev = &i2c->dev;
-+	struct device_node *np = dev->of_node;
-+
-+	if (np == NULL)
-+		return -EINVAL;
-+
-+	pdata = devm_kzalloc(dev, sizeof(struct tda8026), GFP_KERNEL);
-+	if (pdata == NULL)
-+		return -ENOMEM;
-+
-+	phy_tda8026 = devm_kzalloc(dev, sizeof(struct sc_phy), GFP_KERNEL);
-+	if (phy_tda8026 == NULL)
-+		return -ENOMEM;
-+
-+	ret = tda8026_parse_dt(dev, pdata);
-+	if (ret != 0)
-+		return ret;
-+
-+	i2c_set_clientdata(i2c, phy_tda8026);
-+	phy_tda8026->dev = &i2c->dev;
-+
-+	phy_tda8026->pdata = (void *)pdata;
-+	pdata->control_data = i2c;
-+	pdata->irq = i2c->irq;
-+	pdata->dev = phy_tda8026->dev;
-+	pdata->notify = 0;
-+
-+	if (pdata->irq == 0)
-+		return -EINVAL;
-+
-+	ret = devm_request_threaded_irq(dev, pdata->irq, NULL, tda8026_irq,
-+			IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-+			"tda8026", phy_tda8026);
-+	if (ret < 0) {
-+		dev_err(phy_tda8026->dev, "can't get irq %d err %d\n",
-+			pdata->irq, ret);
-+		return ret;
-+	}
-+
-+	/* enable phy */
-+	tda8026_enable(pdata);
-+
-+	tda8026_clear_interrupts(pdata);
-+	phy_tda8026->set_config	= tda8026_set_config;
-+	phy_tda8026->get_config	= tda8026_get_config;
-+	phy_tda8026->activate_card	= tda8026_activate_card;
-+	phy_tda8026->deactivate_card	= tda8026_deactivate_card;
-+	phy_tda8026->warm_reset	= tda8026_warm_reset;
-+	phy_tda8026->register_notify	= tda8026_register_notify;
-+	phy_tda8026->unregister_notify	= tda8026_unregister_notify;
-+
-+	/* disable phy */
-+	tda8026_disable(pdata);
-+
-+	return 0;
-+}
-+
-+static int tda8026_i2c_remove(struct i2c_client *i2c)
-+{
-+	struct sc_phy *phy_tda8026;
-+	struct tda8026 *tda8026;
-+	int action = 0;
-+
-+	phy_tda8026 = i2c_get_clientdata(i2c);
-+	if (phy_tda8026 == NULL)
-+		return -EINVAL;
-+
-+	tda8026	= (struct tda8026 *)phy_tda8026->pdata;
-+
-+	/* notify action */
-+	action = SC_PHY_REMOVED;
-+	blocking_notifier_call_chain(&tda8026_notifier_list, action,
-+				     phy_tda8026->notify_data);
-+	tda8026->notify = 0;
-+
-+	/* enable shutdown mode */
-+	tda8026_disable(tda8026);
-+
-+	return 0;
-+}
-+
-+#if defined(CONFIG_OF)
-+static const struct of_device_id tda8026_id_table[] = {
-+	{ .compatible = "nxp,tda8026" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, tda8026_id_table);
-+#endif
-+
-+static const struct i2c_device_id tda8026_i2c_id[] = {
-+	{"tda8026", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, tda8026_i2c_id);
-+
-+static struct i2c_driver tda8026_i2c_driver = {
-+	.driver = {
-+		.name = "tda8026",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(tda8026_id_table),
-+	},
-+	.probe = tda8026_i2c_probe,
-+	.remove = tda8026_i2c_remove,
-+	.id_table = tda8026_i2c_id,
-+};
-+static int __init tda8026_i2c_init(void)
-+{
-+	int ret;
-+	ret = i2c_add_driver(&tda8026_i2c_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register TDA8026 I2C driver: %d\n", ret);
-+	return ret;
-+}
-+/* init early so consumer devices can complete system boot */
-+subsys_initcall(tda8026_i2c_init);
-+
-+static void __exit tda8026_i2c_exit(void)
-+{
-+	i2c_del_driver(&tda8026_i2c_driver);
-+}
-+module_exit(tda8026_i2c_exit);
-+
-+MODULE_AUTHOR("Maulik Mankad <maulik@ti.com>");
-+MODULE_DESCRIPTION("TDA8026 Smart Card NXP PHY driver");
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
 
+virtio_ring.c:584:6:virtqueue_disable_cb        16      static
+virtio_ring.c:604:10:virtqueue_enable_cb_prepare        16      static
+virtio_ring.c:632:6:virtqueue_poll      16      static
+virtio_ring.c:652:6:virtqueue_enable_cb 16      static
+virtio_ring.c:845:14:virtqueue_get_vring_size   16      static
+virtio_ring.c:854:6:virtqueue_is_broken 16      static
+virtio_ring.c:101:35:sg_next_chained    16      static
+virtio_ring.c:436:6:virtqueue_notify    24      static
+virtio_ring.c:672:6:virtqueue_enable_cb_delayed 16      static
+virtio_ring.c:820:6:vring_transport_features    16      static
+virtio_ring.c:472:13:detach_buf 40      static
+virtio_ring.c:518:7:virtqueue_get_buf   32      static
+virtio_ring.c:812:6:vring_del_virtqueue 16      static
+virtio_ring.c:394:6:virtqueue_kick_prepare      16      static
+virtio_ring.c:464:6:virtqueue_kick      32      static
+virtio_ring.c:186:19:4  16      static
+virtio_ring.c:733:13:vring_interrupt    24      static
+virtio_ring.c:707:7:virtqueue_detach_unused_buf 32      static
+virtio_config.h:84:20:7 16      static
+virtio_ring.c:753:19:vring_new_virtqueue        80      static  
+virtio_ring.c:374:5:virtqueue_add_inbuf 56      static
+virtio_ring.c:352:5:virtqueue_add_outbuf        56      static
+virtio_ring.c:314:5:virtqueue_add_sgs   112     static  
+
+
+as you see, vring_add_indirect was inlined within virtqueue_add_sgs by my gcc.
+Taken together, they add up to only 112 bytes: not 1/2K as they do for you.
+Which compiler version and flags did you use?
+
+
+> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  14)     5472     128   __blk_mq_run_hw_queue+0x1ef/0x440
+> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  15)     5344      16   blk_mq_run_hw_queue+0x35/0x40
+> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  16)     5328      96   blk_mq_insert_requests+0xdb/0x160
+> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  17)     5232     112   blk_mq_flush_plug_list+0x12b/0x140
+> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  18)     5120     112   blk_flush_plug_list+0xc7/0x220
+> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  19)     5008      64   io_schedule_timeout+0x88/0x100
+> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  20)     4944     128   mempool_alloc+0x145/0x170
+> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  21)     4816      96   bio_alloc_bioset+0x10b/0x1d0
+> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  22)     4720      48   get_swap_bio+0x30/0x90
+> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  23)     4672     160   __swap_writepage+0x150/0x230
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  24)     4512      32   swap_writepage+0x42/0x90
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  25)     4480     320   shrink_page_list+0x676/0xa80
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  26)     4160     208   shrink_inactive_list+0x262/0x4e0
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  27)     3952     304   shrink_lruvec+0x3e1/0x6a0
+> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  28)     3648      80   shrink_zone+0x3f/0x110
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  29)     3568     128   do_try_to_free_pages+0x156/0x4c0
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  30)     3440     208   try_to_free_pages+0xf7/0x1e0
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  31)     3232     352   __alloc_pages_nodemask+0x783/0xb20
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  32)     2880       8   alloc_pages_current+0x10f/0x1f0
+> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  33)     2872     200   __page_cache_alloc+0x13f/0x160
+> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  34)     2672      80   find_or_create_page+0x4c/0xb0
+> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  35)     2592      80   ext4_mb_load_buddy+0x1e9/0x370
+> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  36)     2512     176   ext4_mb_regular_allocator+0x1b7/0x460
+> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  37)     2336     128   ext4_mb_new_blocks+0x458/0x5f0
+> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  38)     2208     256   ext4_ext_map_blocks+0x70b/0x1010
+> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  39)     1952     160   ext4_map_blocks+0x325/0x530
+> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  40)     1792     384   ext4_writepages+0x6d1/0xce0
+> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  41)     1408      16   do_writepages+0x23/0x40
+> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  42)     1392      96   __writeback_single_inode+0x45/0x2e0
+> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  43)     1296     176   writeback_sb_inodes+0x2ad/0x500
+> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  44)     1120      80   __writeback_inodes_wb+0x9e/0xd0
+> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  45)     1040     160   wb_writeback+0x29b/0x350
+> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  46)      880     208   bdi_writeback_workfn+0x11c/0x480
+> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  47)      672     144   process_one_work+0x1d2/0x570
+> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  48)      528     112   worker_thread+0x116/0x370
+> [ 1065.604404] kworker/-5766    0d..2 1071626001us : stack_trace_call:  49)      416     240   kthread+0xf3/0x110
+> [ 1065.604404] kworker/-5766    0d..2 1071626001us : stack_trace_call:  50)      176     176   ret_from_fork+0x7c/0xb0
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  arch/x86/include/asm/page_64_types.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+> index 8de6d9cf3b95..678205195ae1 100644
+> --- a/arch/x86/include/asm/page_64_types.h
+> +++ b/arch/x86/include/asm/page_64_types.h
+> @@ -1,7 +1,7 @@
+>  #ifndef _ASM_X86_PAGE_64_DEFS_H
+>  #define _ASM_X86_PAGE_64_DEFS_H
+>  
+> -#define THREAD_SIZE_ORDER	1
+> +#define THREAD_SIZE_ORDER	2
+>  #define THREAD_SIZE  (PAGE_SIZE << THREAD_SIZE_ORDER)
+>  #define CURRENT_MASK (~(THREAD_SIZE - 1))
+>  
+> -- 
+> 1.9.2
