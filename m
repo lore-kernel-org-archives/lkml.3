@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380AbaE1WhW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:37:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5267 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932362AbaE1WhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:37:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,931,1392192000"; 
-   d="scan'208";a="438279117"
-Message-ID: <5386651D.9080001@linux.intel.com>
-Date: Wed, 28 May 2014 15:37:17 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932402AbaE1Wh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:37:29 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:43554 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384AbaE1WhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 18:37:23 -0400
 MIME-Version: 1.0
-To: Philipp Kern <pkern@google.com>, Andy Lutomirski <luto@amacapital.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. J. Lu" <hjl.tools@gmail.com>, Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH] x32: Mask away the x32 syscall bit in the ptrace codepath
-References: <1401279583-1027-1-git-send-email-pkern@google.com> <53864B66.8030100@amacapital.net> <53864E91.4060207@linux.intel.com> <CALCETrWd9dbBt03u5cpJx+p3D7NeT-d2_=kTg94CRGMq7ji7kQ@mail.gmail.com> <538652EA.3040606@linux.intel.com> <CALCETrWOOFhusn6MACs=o+TqqjQDXyTwVTe-iE_4bQcJu-ez=w@mail.gmail.com> <CAA2ZrUSzXUp=uipjwCDLsXPOhPwp7m1oSfR8zdKJaQCgg2aoeQ@mail.gmail.com>
-In-Reply-To: <CAA2ZrUSzXUp=uipjwCDLsXPOhPwp7m1oSfR8zdKJaQCgg2aoeQ@mail.gmail.com>
+In-Reply-To: <536BAD05.9070401@samsung.com>
+References: <1399293056-17143-1-git-send-email-gautam.vivek@samsung.com>
+	<536BA9E8.2030306@suse.de>
+	<536BAD05.9070401@samsung.com>
+Date: Wed, 28 May 2014 15:37:23 -0700
+X-Google-Sender-Auth: w7H3BZjjeDMmgR-tUSV64hZcziI
+Message-ID: <CAODwPW8FpsF6vo5Z8_+YXwchwab=7Ltv0nEvP_=907HK232xCg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: dts: Enable USB 3503 hub on exynos5250-snow
+From: Julius Werner <jwerner@chromium.org>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>, arunkk.samsung@gmail.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 02:53 PM, Philipp Kern wrote:
-> On Wed, May 28, 2014 at 11:43 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> However: are you sure that entry_64.S handles this?  It looks like
->> tracesys has higher priority than badsys.  And strace can certainly
->> see out-of-range syscalls. […]
-> 
-> Not only can it see them: It must see that this bit is set as that's
-> the only identifier it has to deduce that the binary is running in x32
-> mode.
+We originally tried using this driver on ChromiumOS and never got it
+to work reliably. IIRC the issue was that if the hub had already been
+initialized by firmware, the USB stack might enumerate it before the
+usb3503 driver is probed and then the later reset will silently
+disrupt that connection. (I think I tried to force the 3503 to probe
+earlier as well, and there was some other issue with that although I
+don't recall the details.)
 
-Yes... keep in mind the ABI is a local property: just because the binary
-is running in x32 mode doesn't mean it can't access x86-64 or i386
-system calls (or similar for x86-64 processes.)  A process started in
-i386 mode can transition to long mode and execute x86-64 or x32 system
-calls, too.
+This will not be an issue for the Snow and Peach_Pi(t) boards (since
+neither of them shipped with firmware that supports this hub), but it
+will be an issue for Spring and Skate. On ChromiumOS we decided to
+carry a local (and admittedly ugly) patch to pull that reset line from
+the USB PHY driver instead, since that's the only way I could get it
+to work in all cases (see http://crosreview.com/58963).
 
-	-hpa
-
+This doesn't mean I'm against this patch per se, just wanted to point
+out the trade-offs.
