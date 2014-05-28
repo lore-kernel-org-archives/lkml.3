@@ -1,122 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaE1Xqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:46:42 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:48406 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbaE1Xql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:46:41 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/26] perf tools: Introduce struct hist_entry_iter
-References: <1400839463-21933-1-git-send-email-namhyung@kernel.org>
-	<1400839463-21933-2-git-send-email-namhyung@kernel.org>
-	<20140526184425.GC9699@krava.brq.redhat.com>
-Date: Thu, 29 May 2014 08:46:38 +0900
-In-Reply-To: <20140526184425.GC9699@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Mon, 26 May 2014 20:44:25 +0200")
-Message-ID: <874n09ii01.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754635AbaE1Xtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:49:32 -0400
+Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:51975
+	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752590AbaE1Xta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 19:49:30 -0400
+X-Originating-IP: [81.106.150.188]
+X-Spam: 0
+X-Authority: v=2.1 cv=FZq5xfO6 c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
+ a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=9WyvZRSfSd8A:10
+ a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=t65-8Jk1EODGNfwejK8A:9
+ a=QEXdDO2ut3YA:10
+Date: Thu, 29 May 2014 00:49:27 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: Resume from suspend broken in 3.15. (bisected)
+Message-ID: <20140528234927.GA18638@milliways>
+References: <20140528172521.GA9945@milliways>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140528172521.GA9945@milliways>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Wed, May 28, 2014 at 06:25:21PM +0100, Ken Moffat wrote:
+> Hi Daniel,
+> 
 
-On Mon, 26 May 2014 20:44:25 +0200, Jiri Olsa wrote:
-> On Fri, May 23, 2014 at 07:03:58PM +0900, Namhyung Kim wrote:
->> There're some duplicate code when adding hist entries.  They are
->> different in that some have branch info or mem info but generally do
->> same thing.  So introduce new struct hist_entry_iter and add callbacks
->> to customize each case in general way.
->> 
->> The new perf_evsel__add_entry() function will look like:
->> 
->>   iter->prepare_entry();
->>   iter->add_single_entry();
->> 
->>   while (iter->next_entry())
->>     iter->add_next_entry();
->> 
->>   iter->finish_entry();
->> 
->> This will help further work like the cumulative callchain patchset.
->> 
->> Tested-by: Arun Sharma <asharma@fb.com>
->> Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
->> Acked-by: Jiri Olsa <jolsa@redhat.com>
->> Cc: David Ahern <dsahern@gmail.com>
->> Cc: Stephane Eranian <eranian@google.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/builtin-report.c     | 194 +++----------------------
->>  tools/perf/tests/hists_filter.c |  18 +--
->>  tools/perf/tests/hists_output.c |  11 +-
->>  tools/perf/util/hist.c          | 303 ++++++++++++++++++++++++++++++++++++++++
->>  tools/perf/util/hist.h          |  33 +++++
->>  5 files changed, 371 insertions(+), 188 deletions(-)
->> 
->> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
->> index bc0eec1ce4be..d224f5961faa 100644
->> --- a/tools/perf/builtin-report.c
->> +++ b/tools/perf/builtin-report.c
->> @@ -76,165 +76,6 @@ static int report__config(const char *var, const char *value, void *cb)
->>  	return perf_default_config(var, value, cb);
->>  }
->>  
->> -static void report__inc_stats(struct report *rep, struct hist_entry *he)
->> -{
->> -	/*
->> -	 * The @he is either of a newly created one or an existing one
->> -	 * merging current sample.  We only want to count a new one so
->> -	 * checking ->nr_events being 1.
->> -	 */
->> -	if (he->stat.nr_events == 1)
->> -		rep->nr_entries++;
->> -
->
-> hm.. above is report specific counter update
->
-> while below code is repeated for each iterator in finish_entry,
-> maybe we should separated this and put below into a function
-> called from generic part
+ [ correcting details, confirming that reverting this does fix the
+problem, adding Cc:s ]
 
-Right.  I'll separate the generic part into a function.
+>  I've only started full testing of 3.15 on one of my machines now
+> that -rc7 has been released (this one had two issues in the radeon
+> code, second was fixed in rc7).  Unfortunately, suspend to RAM
+> (pm-suspend), or rather the wake-up, is broken on this box [ my
+> other two boxes are fine in rc7 ].
+> 
+> Bisection identified one of your commits -
+> 
+> commit 25f397a429dfa43f22c278d0119a60a343aa568f
+> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Date:   Fri Jul 19 18:57:11 2013 +0200
+> 
+>     drm/crtc-helper: explicit DPMS on after modeset
+>     
+>     Atm the crtc helper implementation of set_config has really
+>     inconsisten semantics: If just an fb update is good enough, dpms state
+>     will be left as-is, but if we do a full modeset we force everything to
+>     dpms on.
+>     
+>     This change has already been applied to the i915 modeset code in
+>     
+> ('git show' stops at that point)
 
-The problem of calling report__inc_stats() in process_sample_event() is
-that the hist_entry is no longer available.  And each mode has slightly
-different behavior when accounting entries so it's inaccurate at this
-stage.  Once we have the callback mechanism later in this series, it'll
-be solved.
+ update : I've no idea what was going on there, nor for the problem
+with attempting to revert it.  I've now gone back into git,
+extracted the full commit to a file with 'git show', and then used
+git apply -R to revert it from 3.15-rc7.  That version wakes up from
+suspend to RAM, 3.15-rc7 itself did not.
 
-Thanks,
-Namhyung
+ Maybe I was still in git log when I thought I was on the command
+line.  Anyway, snipping git's view of my failed attempt to revert
+it, and adding Dan and Alex who were CC'd on the commit.
 
->
->> -	/*
->> -	 * Only counts number of samples at this stage as it's more
->> -	 * natural to do it here and non-sample events are also
->> -	 * counted in perf_session_deliver_event().  The dump_trace
->> -	 * requires this info is ready before going to the output tree.
->> -	 */
->> -	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
->> -	if (!he->filtered)
->> -		he->hists->stats.nr_non_filtered_samples++;
->> -}
->
-> jirka
+> 
+>  The processor is an AMD A4 APU.  The symptoms after this commit are
+> that pm-suspend works (I invoke it from my keyboard's sleep key),
+> i.e. the power LED on the case goes out and the monitor goes black
+> and reports no signal.  When I press a key to resume, the power LED
+> comes on but the screen stays black.  Magic-SysRQ does not work and
+> I have to use the case switch to reboot.  That results in filesystem
+> errors which fsck fixes and warns about (probably, just a sign of
+> unclean shutdown).
+> 
+>  The only thing in the log are a couple of messages from EXT4 at the
+> end of putting the box to sleep -
+> May 28 16:19:02 bluesbreaker kernel: [   39.440859] EXT4-fs (sda10): re-mounted. Opts: commit=0
+> May 28 16:19:02 bluesbreaker kernel: [   39.592318] EXT4-fs (sda13): re-mounted. Opts: commit=0
+> May 28 16:20:05 bluesbreaker syslogd 1.5.0: restart.
+> 
+>  What can I do to help debug this ?
+> 
+ĸen
+-- 
+Nanny Ogg usually went to bed early. After all, she was an old lady.
+Sometimes she went to bed as early as 6 a.m.
