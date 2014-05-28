@@ -1,70 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192AbaE1UC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:02:26 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:34690 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaE1UCY (ORCPT
+	id S932140AbaE1UEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:04:33 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34036 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaE1UEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:02:24 -0400
+	Wed, 28 May 2014 16:04:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwmoevoA3h5AZhqtHC0kEJegb0crT_jYvXWWD3UWZt9Aw@mail.gmail.com>
-References: <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
-	<20140527014054.GR18016@ZenIV.linux.org.uk>
-	<20140527031415.GS18016@ZenIV.linux.org.uk>
-	<20140527040026.GT18016@ZenIV.linux.org.uk>
-	<20140527070409.GA1801@lahna.fi.intel.com>
-	<20140528031955.GW18016@ZenIV.linux.org.uk>
-	<20140528073751.GB1757@lahna.fi.intel.com>
-	<20140528115701.GY18016@ZenIV.linux.org.uk>
-	<20140528131136.GA1643@lahna.fi.intel.com>
-	<20140528141937.GZ18016@ZenIV.linux.org.uk>
-	<20140528183954.GA18016@ZenIV.linux.org.uk>
-	<CA+55aFwmoevoA3h5AZhqtHC0kEJegb0crT_jYvXWWD3UWZt9Aw@mail.gmail.com>
-Date: Wed, 28 May 2014 13:02:23 -0700
-X-Google-Sender-Auth: KQBkHwUSS8U_xzKorbJXJRxYnOA
-Message-ID: <CA+55aFy6-bga8LumLKO8Yc_83vA=p-g8sqUE-aGP-uF3Xb6e4w@mail.gmail.com>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
+Date: Wed, 28 May 2014 14:04:29 -0600
+Message-ID: <CALdTtnvTtjKv6NQd=NCZATHnKLURKYMfnQaGR7MA=_kafBP=JQ@mail.gmail.com>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
+From: Dann Frazier <dann.frazier@canonical.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 12:43 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->  - the shrinker list logic depends on the actual freeing of the dentry
-> to be delayed until the RCU grace period (already true for RCU-lookup
-> dentries)
+On Thu, May 1, 2014 at 1:04 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> 8250 uart driver currently supports only software assisted hw flow
+> control. The software assisted hw flow control maintains a hw_stopped
+> flag in the tty structure to stop and start transmission and use modem
+> status interrupt for the event to drive the handshake signals. This is
+> not needed if hw has flow control capabilities. This patch adds a
+> DT attribute for enabling hw flow control for a uart port. Also skip
+> stop and start if this flag is present in flag field of the port
+> structure.
 
-Side note: I just unconditionally removed the immediate __d_free()
-case, but it could as well have become
+ubuntu@hwflow:~$ sudo stty -a --file /dev/ttyS0 |tr ' ' '\n' | grep crtscts
+crtscts
+ubuntu@hwflow:~$ ls /proc/device-tree/soc/serial@1c021000/has-hw-flow-control
+/proc/device-tree/soc/serial@1c021000/has-hw-flow-control
+ubuntu@hwflow:~$ python
+Python 2.7.6 (default, Mar 22 2014, 22:58:30)
+[GCC 4.8.2] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> UPF_HARDWARE_FLOW = 1 << 21
+>>> if 0xB9200000 & UPF_HARDWARE_FLOW:
+...     print "OK"
+...
+OK
 
--       if (!(dentry->d_flags & DCACHE_RCUACCESS))
-+       if (!(dentry->d_flags & (DCACHE_RCUACCESS|DCACHE_SHRINK_LIST))
-                __d_free(&dentry->d_u.d_rcu);
-        else
-                call_rcu(&dentry->d_u.d_rcu, __d_free);
+Hope that's a reasonable test case. Test fails when booted w/o
+has-hw-flow-control attribute.
 
-instead.
+Tested-by: dann frazier <dann.frazier@canonical.com>
 
-Anyway, one reason I looked at this is that most of the threads in
-Mika's NMI watchdog traces were stuck on _raw_spin_lock() in the whole
-d_walk() thing, and I had a *really* hard time convincing myself that
-this was all safe without the RCU lock. I'm wondering if Mika perhaps
-has CONFIG_PREEMPT_RCU set, which means that spinlocks (or the
-rename_lock sequence lock) do not end up being RCU-safe points.
-
-And once I started worrying about that, the whole "ok, who calls
-dentry_kill() when shrinking races with dput()" question started just
-making me worry about that whole DCACHE_MAY_FREE thing.  Because one
-of the things that Miklos/Al's series of patches did was to drop some
-of the RCU locking, since it wasn't "necessary" any more as far as the
-lru list itself was concerned..
-
-             Linus
+>
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>
+> CC: Rob Herring <robh+dt@kernel.org>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Mark Rutland <mark.rutland@arm.com>
+> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> CC: Kumar Gala <galak@codeaurora.org>
+> CC: Randy Dunlap <rdunlap@infradead.org>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: Jiri Slaby <jslaby@suse.cz>
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  .../devicetree/bindings/serial/of-serial.txt       |    1 +
+>  drivers/tty/serial/8250/8250_core.c                |    6 ++++--
+>  drivers/tty/serial/of_serial.c                     |    4 ++++
+>  drivers/tty/serial/serial_core.c                   |   12 +++++++++---
+>  4 files changed, 18 insertions(+), 5 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
+> index 1928a3e..7705477 100644
+> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
+> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
+> @@ -37,6 +37,7 @@ Optional properties:
+>  - auto-flow-control: one way to enable automatic flow control support. The
+>    driver is allowed to detect support for the capability even without this
+>    property.
+> +- has-hw-flow-control: the hardware has flow control capability.
+>
+>  Example:
+>
+> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+> index 0e1bf88..b69aff2 100644
+> --- a/drivers/tty/serial/8250/8250_core.c
+> +++ b/drivers/tty/serial/8250/8250_core.c
+> @@ -2338,9 +2338,11 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+>          * the trigger, or the MCR RTS bit is cleared.  In the case where
+>          * the remote UART is not using CTS auto flow control, we must
+>          * have sufficient FIFO entries for the latency of the remote
+> -        * UART to respond.  IOW, at least 32 bytes of FIFO.
+> +        * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
+> +        * AFE if hw flow control is supported
+>          */
+> -       if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
+> +       if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32)) ||
+> +           (port->flags & UPF_HARD_FLOW)) {
+>                 up->mcr &= ~UART_MCR_AFE;
+>                 if (termios->c_cflag & CRTSCTS)
+>                         up->mcr |= UART_MCR_AFE;
+> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+> index 9924660..77ec6a1 100644
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -182,6 +182,10 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
+>                                           "auto-flow-control"))
+>                         port8250.capabilities |= UART_CAP_AFE;
+>
+> +               if (of_property_read_bool(ofdev->dev.of_node,
+> +                                         "has-hw-flow-control"))
+> +                       port8250.port.flags |= UPF_HARD_FLOW;
+> +
+>                 ret = serial8250_register_8250_port(&port8250);
+>                 break;
+>         }
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index b68550d..851707a 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+>                         if (tty->termios.c_cflag & CBAUD)
+>                                 uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+>                 }
+> -
+> -               if (tty_port_cts_enabled(port)) {
+> +               /*
+> +                * if hw support flow control without software intervention,
+> +                * then skip the below check
+> +                */
+> +               if (tty_port_cts_enabled(port) &&
+> +                   !(uport->flags & UPF_HARD_FLOW)) {
+>                         spin_lock_irq(&uport->lock);
+>                         if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+>                                 tty->hw_stopped = 1;
+> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+>
+>         uport->icount.cts++;
+>
+> -       if (tty_port_cts_enabled(port)) {
+> +       /* skip below code if the hw flow control is supported */
+> +       if (tty_port_cts_enabled(port) &&
+> +           !(uport->flags & UPF_HARD_FLOW)) {
+>                 if (tty->hw_stopped) {
+>                         if (status) {
+>                                 tty->hw_stopped = 0;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
