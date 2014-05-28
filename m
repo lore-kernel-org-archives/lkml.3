@@ -1,293 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaE1NVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:21:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9464 "EHLO mx1.redhat.com"
+	id S1753775AbaE1NVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:21:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39947 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680AbaE1NVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:21:31 -0400
+	id S1753735AbaE1NVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:21:41 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 9/9] tools lib traceevent: Added support for __get_bitmask() macro
-Date: Wed, 28 May 2014 15:21:02 +0200
-Message-Id: <1401283262-16035-10-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 1/9] perf: Pass protection and flags bits through mmap2 interface
+Date: Wed, 28 May 2014 15:20:54 +0200
+Message-Id: <1401283262-16035-2-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 References: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Coming in v3.16, trace events will be able to save bitmasks in raw
-format in the ring buffer and output it with the __get_bitmask() macro.
+The mmap2 interface was missing the protection and flags bits needed to
+accurately determine if a mmap memory area was shared or private and
+if it was readable or not.
 
-In order for userspace tools to parse this, it must be able to handle
-the __get_bitmask() call and be able to convert the data that's in
-the ring buffer into a nice bitmask format. The output is similar to
-what the kernel uses to print bitmasks, with a comma separator every
-4 bytes (8 characters).
-
-This allows for cpumasks to also be saved efficiently.
-
-The first user is the thermal:thermal_power_limit event which has the
-following output:
-
- thermal_power_limit:  cpus=0000000f freq=1900000 cdev_state=0 power=5252
-
-Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
-
-Suggested-by: Javi Merino <javi.merino@arm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Tested-by: Javi Merino <javi.merino@arm.com>
-Link: http://lkml.kernel.org/r/20140516140502.628373326@goodmis.org
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+[tweaked patch to compile and wrote changelog]
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Link: http://lkml.kernel.org/r/1400526833-141779-2-git-send-email-dzickus@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/lib/traceevent/event-parse.c                 | 113 +++++++++++++++++++++
- tools/lib/traceevent/event-parse.h                 |   7 ++
- .../perf/util/scripting-engines/trace-event-perl.c |   1 +
- .../util/scripting-engines/trace-event-python.c    |   1 +
- 4 files changed, 122 insertions(+)
+ include/uapi/linux/perf_event.h |  1 +
+ kernel/events/core.c            | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index b83184f..2d6aa92 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -765,6 +765,9 @@ static void free_arg(struct print_arg *arg)
- 	case PRINT_BSTRING:
- 		free(arg->string.string);
- 		break;
-+	case PRINT_BITMASK:
-+		free(arg->bitmask.bitmask);
-+		break;
- 	case PRINT_DYNAMIC_ARRAY:
- 		free(arg->dynarray.index);
- 		break;
-@@ -2268,6 +2271,7 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
- 	case PRINT_FIELD ... PRINT_SYMBOL:
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 	default:
- 		do_warning("invalid eval type %d", arg->type);
- 		ret = 0;
-@@ -2296,6 +2300,7 @@ static char *arg_eval (struct print_arg *arg)
- 	case PRINT_FIELD ... PRINT_SYMBOL:
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 	default:
- 		do_warning("invalid eval type %d", arg->type);
- 		break;
-@@ -2683,6 +2688,35 @@ process_str(struct event_format *event __maybe_unused, struct print_arg *arg,
- 	return EVENT_ERROR;
- }
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index e3fc8f0..0d18ded 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -699,6 +699,7 @@ enum perf_event_type {
+ 	 *	u32				min;
+ 	 *	u64				ino;
+ 	 *	u64				ino_generation;
++	 *	u32				prot, flags;
+ 	 *	char				filename[];
+ 	 * 	struct sample_id		sample_id;
+ 	 * };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index ed50b09..cd68f49 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -40,6 +40,7 @@
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
+ #include <linux/module.h>
++#include <linux/mman.h>
  
-+static enum event_type
-+process_bitmask(struct event_format *event __maybe_unused, struct print_arg *arg,
-+	    char **tok)
-+{
-+	enum event_type type;
-+	char *token;
-+
-+	if (read_expect_type(EVENT_ITEM, &token) < 0)
-+		goto out_free;
-+
-+	arg->type = PRINT_BITMASK;
-+	arg->bitmask.bitmask = token;
-+	arg->bitmask.offset = -1;
-+
-+	if (read_expected(EVENT_DELIM, ")") < 0)
-+		goto out_err;
-+
-+	type = read_token(&token);
-+	*tok = token;
-+
-+	return type;
-+
-+ out_free:
-+	free_token(token);
-+ out_err:
-+	*tok = NULL;
-+	return EVENT_ERROR;
-+}
-+
- static struct pevent_function_handler *
- find_func_handler(struct pevent *pevent, char *func_name)
- {
-@@ -2797,6 +2831,10 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		free_token(token);
- 		return process_str(event, arg, tok);
+ #include "internal.h"
+ 
+@@ -5116,6 +5117,7 @@ struct perf_mmap_event {
+ 	int			maj, min;
+ 	u64			ino;
+ 	u64			ino_generation;
++	u32			prot, flags;
+ 
+ 	struct {
+ 		struct perf_event_header	header;
+@@ -5157,6 +5159,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
++		mmap_event->event_id.header.size += sizeof(mmap_event->prot);
++		mmap_event->event_id.header.size += sizeof(mmap_event->flags);
  	}
-+	if (strcmp(token, "__get_bitmask") == 0) {
-+		free_token(token);
-+		return process_bitmask(event, arg, tok);
-+	}
- 	if (strcmp(token, "__get_dynamic_array") == 0) {
- 		free_token(token);
- 		return process_dynamic_array(event, arg, tok);
-@@ -3324,6 +3362,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 		return eval_type(val, arg, 0);
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
-+	case PRINT_BITMASK:
- 		return 0;
- 	case PRINT_FUNC: {
- 		struct trace_seq s;
-@@ -3556,6 +3595,60 @@ static void print_str_to_seq(struct trace_seq *s, const char *format,
- 		trace_seq_printf(s, format, str);
- }
  
-+static void print_bitmask_to_seq(struct pevent *pevent,
-+				 struct trace_seq *s, const char *format,
-+				 int len_arg, const void *data, int size)
-+{
-+	int nr_bits = size * 8;
-+	int str_size = (nr_bits + 3) / 4;
-+	int len = 0;
-+	char buf[3];
-+	char *str;
-+	int index;
-+	int i;
+ 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+@@ -5175,6 +5179,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		perf_output_put(&handle, mmap_event->min);
+ 		perf_output_put(&handle, mmap_event->ino);
+ 		perf_output_put(&handle, mmap_event->ino_generation);
++		perf_output_put(&handle, mmap_event->prot);
++		perf_output_put(&handle, mmap_event->flags);
+ 	}
+ 
+ 	__output_copy(&handle, mmap_event->file_name,
+@@ -5193,6 +5199,7 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 	struct file *file = vma->vm_file;
+ 	int maj = 0, min = 0;
+ 	u64 ino = 0, gen = 0;
++	u32 prot = 0, flags = 0;
+ 	unsigned int size;
+ 	char tmp[16];
+ 	char *buf = NULL;
+@@ -5223,6 +5230,28 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 		gen = inode->i_generation;
+ 		maj = MAJOR(dev);
+ 		min = MINOR(dev);
 +
-+	/*
-+	 * The kernel likes to put in commas every 32 bits, we
-+	 * can do the same.
-+	 */
-+	str_size += (nr_bits - 1) / 32;
++		if (vma->vm_flags & VM_READ)
++			prot |= PROT_READ;
++		if (vma->vm_flags & VM_WRITE)
++			prot |= PROT_WRITE;
++		if (vma->vm_flags & VM_EXEC)
++			prot |= PROT_EXEC;
 +
-+	str = malloc(str_size + 1);
-+	if (!str) {
-+		do_warning("%s: not enough memory!", __func__);
-+		return;
-+	}
-+	str[str_size] = 0;
-+
-+	/* Start out with -2 for the two chars per byte */
-+	for (i = str_size - 2; i >= 0; i -= 2) {
-+		/*
-+		 * data points to a bit mask of size bytes.
-+		 * In the kernel, this is an array of long words, thus
-+		 * endianess is very important.
-+		 */
-+		if (pevent->file_bigendian)
-+			index = size - (len + 1);
++		if (vma->vm_flags & VM_MAYSHARE)
++			flags = MAP_SHARED;
 +		else
-+			index = len;
++			flags = MAP_PRIVATE;
 +
-+		snprintf(buf, 3, "%02x", *((unsigned char *)data + index));
-+		memcpy(str + i, buf, 2);
-+		len++;
-+		if (!(len & 3) && i > 0) {
-+			i--;
-+			str[i] = ',';
-+		}
-+	}
++		if (vma->vm_flags & VM_DENYWRITE)
++			flags |= MAP_DENYWRITE;
++		if (vma->vm_flags & VM_MAYEXEC)
++			flags |= MAP_EXECUTABLE;
++		if (vma->vm_flags & VM_LOCKED)
++			flags |= MAP_LOCKED;
++		if (vma->vm_flags & VM_HUGETLB)
++			flags |= MAP_HUGETLB;
 +
-+	if (len_arg >= 0)
-+		trace_seq_printf(s, format, len_arg, str);
-+	else
-+		trace_seq_printf(s, format, str);
-+
-+	free(str);
-+}
-+
- static void print_str_arg(struct trace_seq *s, void *data, int size,
- 			  struct event_format *event, const char *format,
- 			  int len_arg, struct print_arg *arg)
-@@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	case PRINT_BSTRING:
- 		print_str_to_seq(s, format, len_arg, arg->string.string);
- 		break;
-+	case PRINT_BITMASK: {
-+		int bitmask_offset;
-+		int bitmask_size;
-+
-+		if (arg->bitmask.offset == -1) {
-+			struct format_field *f;
-+
-+			f = pevent_find_any_field(event, arg->bitmask.bitmask);
-+			arg->bitmask.offset = f->offset;
-+		}
-+		bitmask_offset = data2host4(pevent, data + arg->string.offset);
-+		bitmask_size = bitmask_offset >> 16;
-+		bitmask_offset &= 0xffff;
-+		print_bitmask_to_seq(pevent, s, format, len_arg,
-+				     data + bitmask_offset, bitmask_size);
-+		break;
-+	}
- 	case PRINT_OP:
- 		/*
- 		 * The only op for string should be ? :
-@@ -4822,6 +4932,9 @@ static void print_args(struct print_arg *args)
- 	case PRINT_BSTRING:
- 		printf("__get_str(%s)", args->string.string);
- 		break;
-+	case PRINT_BITMASK:
-+		printf("__get_bitmask(%s)", args->bitmask.bitmask);
-+		break;
- 	case PRINT_TYPE:
- 		printf("(%s)", args->typecast.type);
- 		print_args(args->typecast.item);
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index feab942..fb3b415 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -208,6 +208,11 @@ struct print_arg_string {
- 	int			offset;
- };
+ 		goto got_name;
+ 	} else {
+ 		name = (char *)arch_vma_name(vma);
+@@ -5263,6 +5292,8 @@ got_name:
+ 	mmap_event->min = min;
+ 	mmap_event->ino = ino;
+ 	mmap_event->ino_generation = gen;
++	mmap_event->prot = prot;
++	mmap_event->flags = flags;
  
-+struct print_arg_bitmask {
-+	char			*bitmask;
-+	int			offset;
-+};
-+
- struct print_arg_field {
- 	char			*name;
- 	struct format_field	*field;
-@@ -274,6 +279,7 @@ enum print_arg_type {
- 	PRINT_DYNAMIC_ARRAY,
- 	PRINT_OP,
- 	PRINT_FUNC,
-+	PRINT_BITMASK,
- };
- 
- struct print_arg {
-@@ -288,6 +294,7 @@ struct print_arg {
- 		struct print_arg_hex		hex;
- 		struct print_arg_func		func;
- 		struct print_arg_string		string;
-+		struct print_arg_bitmask	bitmask;
- 		struct print_arg_op		op;
- 		struct print_arg_dynarray	dynarray;
+ 	if (!(vma->vm_flags & VM_EXEC))
+ 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+@@ -5303,6 +5334,8 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 		/* .min (attr_mmap2 only) */
+ 		/* .ino (attr_mmap2 only) */
+ 		/* .ino_generation (attr_mmap2 only) */
++		/* .prot (attr_mmap2 only) */
++		/* .flags (attr_mmap2 only) */
  	};
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index e108207..af7da56 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -215,6 +215,7 @@ static void define_event_symbols(struct event_format *event,
- 	case PRINT_BSTRING:
- 	case PRINT_DYNAMIC_ARRAY:
- 	case PRINT_STRING:
-+	case PRINT_BITMASK:
- 		break;
- 	case PRINT_TYPE:
- 		define_event_symbols(event, ev_name, args->typecast.item);
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cd9774d..c3de097 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -197,6 +197,7 @@ static void define_event_symbols(struct event_format *event,
- 	case PRINT_BSTRING:
- 	case PRINT_DYNAMIC_ARRAY:
- 	case PRINT_FUNC:
-+	case PRINT_BITMASK:
- 		/* we should warn... */
- 		return;
- 	}
+ 
+ 	perf_event_mmap_event(&mmap_event);
 -- 
 1.8.3.1
 
