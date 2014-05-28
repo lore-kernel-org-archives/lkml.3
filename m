@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141AbaE1Tza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 15:55:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26993 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487AbaE1Tz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 15:55:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,929,1392192000"; 
-   d="scan'208";a="519232582"
-Date: Wed, 28 May 2014 12:55:28 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
+	id S1751598AbaE1T4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 15:56:37 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:48198 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaE1T4g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 15:56:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140528195528.GQ29957@tassilo.jf.intel.com>
+References: <CABPqkBTsiwicZNuU5BW6FZfB4aC=T=w9vFoxLqBTV3-PS4BnoA@mail.gmail.com>
+	<20140528195528.GQ29957@tassilo.jf.intel.com>
+Date: Wed, 28 May 2014 21:56:35 +0200
+Message-ID: <CABPqkBRW8akWWrRgFwatHbui6+0JqXi=8T2N_JHZ_x4zLuq9EQ@mail.gmail.com>
+Subject: Re: [RFC] perf/x86: PMU IRQ handler issues
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         "mingo@elte.hu" <mingo@elte.hu>, Dave Hansen <dave.hansen@intel.com>,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [RFC] perf/x86: PMU IRQ handler issues
-Message-ID: <20140528195528.GQ29957@tassilo.jf.intel.com>
-References: <CABPqkBTsiwicZNuU5BW6FZfB4aC=T=w9vFoxLqBTV3-PS4BnoA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTsiwicZNuU5BW6FZfB4aC=T=w9vFoxLqBTV3-PS4BnoA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 28, 2014 at 9:55 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>
+>> Another explanation is that because we ACK the NMI early, we leave the
+>> door open to other interrupts, incl. NIC, and we are interrupting the execution
+>
+> PMI executes with interrupts off.
+>
+And that's coming from where?
 
-> Another explanation is that because we ACK the NMI early, we leave the
-> door open to other interrupts, incl. NIC, and we are interrupting the execution
-
-PMI executes with interrupts off.
-
-> of the PMU IRQ handler, yet that detour is measured in the PMU handler
-> latency, causing more throttling than needed. Is that a plausible scenario too?
-> And if so, I think we need to narrow the window for timing errors, by
-> acking late
-> on all processors and not just HSW.
-
-If you think there's a concrete problem please show an ftrace.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+>> of the PMU IRQ handler, yet that detour is measured in the PMU handler
+>> latency, causing more throttling than needed. Is that a plausible scenario too?
+>> And if so, I think we need to narrow the window for timing errors, by
+>> acking late
+>> on all processors and not just HSW.
+>
+> If you think there's a concrete problem please show an ftrace.
+>
+> -Andi
+> --
+> ak@linux.intel.com -- Speaking for myself only
