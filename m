@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318AbaE1NFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:05:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14227 "EHLO mx1.redhat.com"
+	id S1753144AbaE1NM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:12:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27877 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775AbaE1NFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:05:31 -0400
-Date: Wed, 28 May 2014 15:04:46 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, tools: Support spark lines in perf stat v4
-Message-ID: <20140528130446.GD1193@krava.brq.redhat.com>
-References: <1401236970-31106-1-git-send-email-andi@firstfloor.org>
+	id S1752188AbaE1NMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:12:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,928,1392192000"; 
+   d="scan'208";a="546151530"
+Date: Wed, 28 May 2014 16:11:36 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140528131136.GA1643@lahna.fi.intel.com>
+References: <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+ <20140526182644.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
+ <20140527014054.GR18016@ZenIV.linux.org.uk>
+ <20140527031415.GS18016@ZenIV.linux.org.uk>
+ <20140527040026.GT18016@ZenIV.linux.org.uk>
+ <20140527070409.GA1801@lahna.fi.intel.com>
+ <20140528031955.GW18016@ZenIV.linux.org.uk>
+ <20140528073751.GB1757@lahna.fi.intel.com>
+ <20140528115701.GY18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401236970-31106-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140528115701.GY18016@ZenIV.linux.org.uk>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 05:29:30PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Wed, May 28, 2014 at 12:57:01PM +0100, Al Viro wrote:
+> On Wed, May 28, 2014 at 10:37:51AM +0300, Mika Westerberg wrote:
+> 
+> > I sent you the whole log privately so that I don't spam everyone.
+> > 
+> > Summary is here:
+> > 
+> > May 28 10:24:23 lahna kernel: scsi 14:0:0:0: Direct-Access     JetFlash Transcend 4GB    8.07 PQ: 0 ANSI: 4
+> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: Attached scsi generic sg4 type 0
+> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] 7864320 512-byte logical blocks: (4.02 GB/3.75 GiB)
+> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write Protect is off
+> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Mode Sense: 23 00 00 00
+> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+> > May 28 10:24:23 lahna kernel:  sdc: sdc1
+> > May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Attached SCSI removable disk
+> > 
+> > Here I detached the USB stick:
+> > 
+> > May 28 10:24:32 lahna kernel: usb 3-10.4: USB disconnect, device number 6
+> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: dput[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[3-10/3-10.4/3-10.4:1.0/host14]; CPU 1 PID 1683 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: shrink[3-10.4:1.0/host14/target14:0:0/subsystem]; CPU 1 PID 1683 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/rev]; CPU 1 PID 1683 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/vendor]; CPU 1 PID 1683 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/model]; CPU 1 PID 1683 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:32]; CPU 4 PID 576 [systemd-udevd]
+> > ...
+> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 6 PID 1684 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 7 PID 1685 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
+> > May 28 10:24:32 lahna kernel: A
+> ...
+> 
+> Hmm...  As it is, we have d_walk() trying _very_ hard in those situations.
+> Could you add that on top of the previous and see if livelock changes?
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 42ae01e..4ce58d3 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -1209,7 +1209,7 @@ static enum d_walk_ret select_collect(void *_data, struct dentry *dentry)
+>  	 * ensures forward progress). We'll be coming back to find
+>  	 * the rest.
+>  	 */
+> -	if (!list_empty(&data->dispose))
+> +	if (data->found)
+>  		ret = need_resched() ? D_WALK_QUIT : D_WALK_NORETRY;
+>  out:
+>  	return ret;
 
-SNIP
+I added this on top of your previus patch and unfortunately the livelock
+is still there :-(
 
-> +/* Print spark lines on outf for numval values in val. */
-> +void print_spark(FILE *outf, unsigned long *val, int numval)
-> +{
-> +	static const char *ticks[NUM_SPARKS] = {
-> +		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
-> +	};
-> +	int i;
-> +	unsigned long min = ULONG_MAX, max = 0, f;
-> +
-> +	for (i = 0; i < numval; i++) {
-> +		if (val[i] < min)
-> +			min = val[i];
-> +		if (val[i] > max)
-> +			max = val[i];
-> +	}
-> +	f = ((max - min) << SPARK_SHIFT) / (NUM_SPARKS - 1);
-> +	if (f < 1)
-> +		f = 1;
-> +	for (i = 0; i < numval; i++)
-> +		fputs(ticks[((val[i] - min) << SPARK_SHIFT) / f], outf);
+>From the previous log, it looks like udev is doing exactly same operation
+(check_submounts_and_drop) on 4 of the CPUs in paraller:
 
-I've got segfault in here on 32 bits, due to above computation overflow.
-When I used attached patch, it works as expected.
+May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 6 PID 1684 [systemd-udevd]
+May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 7 PID 1685 [systemd-udevd]
+May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 1 PID 1683 [systemd-udevd]
+May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 0 PID 1686 [systemd-udevd]
 
-Also please update this with some boundaries checks before
-we access the array.
-
-> +}
-> diff --git a/tools/perf/util/spark.h b/tools/perf/util/spark.h
-> new file mode 100644
-> index 0000000..59b04ad
-> --- /dev/null
-> +++ b/tools/perf/util/spark.h
-> @@ -0,0 +1,4 @@
-> +#ifndef SPARK_H
-> +#define SPARK_H 1
-> +void print_spark(FILE *outf, unsigned long *val, int numval);
-> +#endif
-> diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
-> index 6506b3d..2e76d9c 100644
-> --- a/tools/perf/util/stat.c
-> +++ b/tools/perf/util/stat.c
-> @@ -1,10 +1,16 @@
->  #include <math.h>
-> +#include <stdio.h>
->  
->  #include "stat.h"
-> +#include "spark.h"
->  
->  void update_stats(struct stats *stats, u64 val)
->  {
->  	double delta;
-> +	int n = stats->n;
-> +
-> +	if (n < NUM_SPARK_VALS)
-> +		stats->svals[n] = val;
-
-also I think we need svals to be array of u64 values
-
->  
->  	stats->n++;
->  	delta = val - stats->mean;
-> @@ -61,3 +67,31 @@ double rel_stddev_stats(double stddev, double avg)
->  
->  	return pct;
->  }
-
-thanks,
-jirka
-
-
----
-diff --git a/tools/perf/util/spark.c b/tools/perf/util/spark.c
-index ac5b3a5..eb35592 100644
---- a/tools/perf/util/spark.c
-+++ b/tools/perf/util/spark.c
-@@ -12,7 +12,7 @@ void print_spark(FILE *outf, unsigned long *val, int numval)
- 		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
- 	};
- 	int i;
--	unsigned long min = ULONG_MAX, max = 0, f;
-+	unsigned long long min = LLONG_MAX, max = 0, f;
- 
- 	for (i = 0; i < numval; i++) {
- 		if (val[i] < min)
+I wonder why is that.
