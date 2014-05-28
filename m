@@ -1,81 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaE1HTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:19:05 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:59854 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaE1HTC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:19:02 -0400
-Date: Wed, 28 May 2014 08:18:55 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Rob Herring <robh@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>, Grant Likely <grant.likely@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v1] of/irq: do irq resolution in platform_get_irq_byname()
-Message-ID: <20140528071855.GJ4227@lee--X1>
-References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
- <20140523080333.66720C4176E@trevor.secretlab.ca>
- <CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com>
- <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+	id S1754165AbaE1HUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:20:19 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:46786 "EHLO dev.rtsoft.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752970AbaE1HUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 03:20:18 -0400
+Message-ID: <53858E28.5000403@dev.rtsoft.ru>
+Date: Wed, 28 May 2014 11:20:08 +0400
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Organization: RTSoft Software Development Center
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lugovskoy@dev.rtsoft.ru
+Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
+ on ULI hw
+References: <Pine.LNX.4.44L0.1405271055240.1372-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1405271055240.1372-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014, Rob Herring wrote:
-
-> On Tue, May 27, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> > On Fri, May 23, 2014 at 1:03 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> >> On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
-> >>> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
-> >>> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
-> >>> moves resolving of the interrupt resources in platform_get_irq().
-> >>> But this solution isn't complete because platform_get_irq_byname()
-> >>> need to be modified the same way.
-> >>>
-> >>> Hence, fix it by adding interrupt resolution code at the
-> >>> platform_get_irq_byname() function too.
-> >>>
-> >>> Cc: Russell King <linux@arm.linux.org.uk>
-> >>> Cc: Rob Herring <robh@kernel.org>
-> >>> Cc: Tony Lindgren <tony@atomide.com>
-> >>> Cc: Grant Likely <grant.likely@linaro.org>
-> >>> Cc: Thierry Reding <thierry.reding@gmail.com>
-> >>>
-> >>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> >>
-> >> Applied, Thanks.
-> >
-> > As of next-20150526, the ST u8500 Snowball board has been failing boot
-> > in linux-next, and was bisected down to this patch (commit
-> > ad69674e73a1 in -next).   Full boot failure attached.
-> >
-> > I have not dug any deeper, but can confirm that next-20140526 with
-> > this patch reverted boots again on the snowball board.
+27.05.2014 19:08, Alan Stern пишет:
+> On Tue, 27 May 2014, Nikita Yushchenko wrote:
 > 
-> There's a patch on the list which fixes it. The problem is stmmac
-> driver was expecting only one error code.
+>> This access causes hang on Freescale P2020DS board (that has OHCI
+>> provided by ULI 1533 chip).
+> 
+> Which access, the read or the write?
 
-Does Snowball even use stmmac?
+things are a bit more complex.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+If inserting printk's as below
+
+
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -619,16 +619,23 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+        }
+
+        /* software reset of the controller, preserving HcFmInterval */
++       printk("A1\n");
+        fminterval = readl(base + OHCI_FMINTERVAL);
++       printk("A2\n");
+        writel(OHCI_HCR, base + OHCI_CMDSTATUS);
++       printk("A3\n");
+
+        /* reset requires max 10 us delay */
+        for (cnt = 30; cnt > 0; --cnt) {        /* ... allow extra time */
++               printk("A4\n");
+                if ((readl(base + OHCI_CMDSTATUS) & OHCI_HCR) == 0)
+                        break;
++               printk("A5\n");
+                udelay(1);
+        }
++       printk("A6\n");
+        writel(fminterval, base + OHCI_FMINTERVAL);
++       printk("A7\n");
+
+        /* Now the controller is safely in SUSPEND and nothing can wake it up */
+        iounmap(base);
+
+attempt to boot (using arch/powerpc/configs/mpc85xx_smp_defconfig and deb
+file built by "make p2020ds.dtb" from the same kernel tree) results in
+
+...
+A1
+random: nonblocking pool is initialized
+irq 26: nobody cared (try booting with the "irqpoll" option)
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc6-dirty #5
+Call Trace:
+[effe5ed0] [c000726c] show_stack+0x48/0x15c (unreliable)
+[effe5f10] [c05eece4] dump_stack+0x78/0xa0
+[effe5f20] [c0087acc] __report_bad_irq+0x38/0x100
+[effe5f40] [c0088060] note_interrupt+0x224/0x280
+[effe5f70] [c008563c] handle_irq_event_percpu+0xc8/0x178
+[effe5fa0] [c0085730] handle_irq_event+0x44/0x74
+[effe5fc0] [c0088f88] handle_fasteoi_irq+0xd4/0x1d0
+[effe5fd0] [c0084d20] generic_handle_irq+0x30/0x50
+[effe5fe0] [c00048d0] __do_irq+0x2c/0x70
+[effe5ff0] [c000d9a0] call_do_irq+0x24/0x3c
+[ef047d10] [c00049a0] do_IRQ+0x8c/0xf8
+[ef047d30] [c000f598] ret_from_except+0x0/0x18
+--- Exception: 501 at quirk_usb_early_handoff+0x794/0x85c
+    LR = quirk_usb_early_handoff+0x788/0x85c
+[ef047e30] [c02bd66c] pci_fixup_device+0xe0/0x19c
+[ef047e60] [c07d4e1c] pci_apply_final_quirks+0x60/0x13c
+[ef047e90] [c0002494] do_one_initcall+0x158/0x19c
+[ef047f00] [c07ba928] kernel_init_freeable+0x130/0x1e4
+[ef047f30] [c0002a78] kernel_init+0x14/0x10c
+[ef047f40] [c000f014] ret_from_kernel_thread+0x5c/0x64
+handlers:
+[<c001cc78>] fsl_pci_pme_handle
+Disabling IRQ #26
+A2
+A3
+A4
+A5
+A4
+A5
+A4
+A5
+A4
+A5
+A4
+
+and hang.
+
+with my patch applied, board just boots ok and works.
+
+
+> It looks like you haven't read ohci_shutdown() and ohci_run() in 
+> drivers/usb/host/ohci-hcd.c.  They both access the fminterval register, 
+> and this patch doesn't change them.
+> 
+> So I don't see why this patch should make any difference to the 
+> system's operation.
+
+I think problem is caused by access to OHCI regs from PCI quirks - before
+driver was initialized. ULI1553 southbridge chip could be in strange state
+at this point.
+
+Nikita
