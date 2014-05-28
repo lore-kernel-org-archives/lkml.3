@@ -1,117 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaE1AXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:23:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60009 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaE1AXC (ORCPT
+	id S1753609AbaE1AYz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:24:55 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60461 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071AbaE1AYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:23:02 -0400
-Message-ID: <53852C65.7040504@codeaurora.org>
-Date: Tue, 27 May 2014 17:23:01 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 27 May 2014 20:24:54 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <5384D84B.6000904@yahoo.fr>
+References: <1400621236-20423-1-git-send-email-tremyfr@yahoo.fr> <5383A3BF.1060506@metafoo.de> <5384D84B.6000904@yahoo.fr>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Minyard <cminyard@mvista.com>,
-        Stanislav Meduna <stano@meduna.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with irqsoff
- tracers
-References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org> <17051981.niWmA6MIgX@wuerfel> <20140527174847.7b405b5c@gandalf.local.home> <53850FF3.8050107@codeaurora.org> <20140527193050.4606a014@gandalf.local.home> <53852999.7060907@codeaurora.org>
-In-Reply-To: <53852999.7060907@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH v2] iio: add support of the max1027
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Wed, 28 May 2014 02:24:47 +0200
+To: trem <tremyfr@yahoo.fr>, Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        armadeus-forum@lists.sourceforge.net, knaack.h@gmx.de
+Message-ID: <70f677a6-7561-4038-9ac3-fa2f17087c10@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/14 17:11, Stephen Boyd wrote:
-> On 05/27/14 16:30, Steven Rostedt wrote:
->> On Tue, 27 May 2014 15:21:39 -0700
->> Stephen Boyd <sboyd@codeaurora.org> wrote:
->>
->>
->>>> Arnd brings up a good point. 
->>> Hrm.. still not getting Arnd's mails.
->> Strange. What mail service do you have. Could they be blocking him?
->>
->>>> If we disable irqs off tracing completely,
->>>> we may be missing places in the idle path that disable interrupts for
->>>> long periods of time. We may want to move the stop down further.
->>>>
->>>> The way it works (IIRC), and why tracing can start again is that it can
->>>> nest. Perhaps we need to stop it further down if we can't move it
->>>> completely.
->>>>
->>> I'm not sure how much deeper it can go and I'm afraid it will become a
->>> game of whack-a-mole. I already see two places that disable and reenable
->>> irqs after stop_critical_timings() is called (first in rcu_idle_enter()
->>> and second in clockevents_notify()). Should rcu_idle_enter() move to
->>> raw_local_irq_save()? It looks like that path calls rcu_sched_qs() and
->>> on tiny RCU that again needs the raw_ treatement. We can probably call
->>> stop_critical_timings() after rcu_idle_enter() to fix this.
->> I don't think we need to whack-a-mole. The start stop should be around
->> where it goes to sleep.
->>
->>> What about clockevents_notify? __raw_spin_lock_irqsave() should probably
->>> use raw_local_irqsave().
->> No that solution is even worse. We need lockdep working here.
->>
->>> If we go the raw route, do we even need stop/start_critical_timings()?
->>> Can't we just use raw accessors in the idle paths
->>> (tick_nohz_idle_{enter,exit}(), cpuidle_enter(), etc.) and get rid of
->>> the stop/start stuff completely? I admit this patch is pretty much a big
->>> sledge hammer that tries to make things simple, but if there is some
->>> benefit to the raw accessors I'm willing to send patches to fix all the
->>> call sites.
->>>
->> How about the following. I don't see any reason stop_critical_timings()
->> can't be called from within rcu_idle code, as it doesn't use any rcu.
->>
->> Paul, Peter, see anything wrong with this?
->>
-> cpuidle_enter_state() calls ktime_get() which on lockdep enabled builds
-> calls seqcount_lockdep_reader_access() which calls local_irq_save() that
-> then turns on the tracer again. Perhaps the problem is that irqsoff
-> tracer is triggered even when we aren't transitioning between irqs on
-> and irqs off? What about this patch? I assume there is a reason that
-> this is wrong, but I don't know what it is.
->
-> ---8<-----
->
-> diff --git a/include/linux/irqflags.h b/include/linux/irqflags.h
-> index d176d658fe25..ac8e0a4968bd 100644
-> --- a/include/linux/irqflags.h
-> +++ b/include/linux/irqflags.h
-> @@ -93,7 +93,8 @@
->  #define local_irq_save(flags)				\
->  	do {						\
->  		raw_local_irq_save(flags);		\
-> -		trace_hardirqs_off();			\
-> +		if (!raw_irqs_disabled_flags(flags))	\
-> +			trace_hardirqs_off();		\
->  	} while (0)
->  
->  
-> @@ -101,7 +102,6 @@
->  	do {						\
->  		if (raw_irqs_disabled_flags(flags)) {	\
->  			raw_local_irq_restore(flags);	\
-> -			trace_hardirqs_off();		\
->  		} else {				\
->  			trace_hardirqs_on();		\
->  			raw_local_irq_restore(flags);	\
->
 
-Aha, looks like lockdep wants to know about redundant hardirqs with the
-redundant_hardirqs_off field. Can we use the same field in the irqsoff
-tracer to monitor the hardirq on/off state more accurately?
+
+On May 27, 2014 8:24:11 PM CEST, trem <tremyfr@yahoo.fr> wrote:
+>Hi,
+>
+>
+>On 26/05/14 22:27, Lars-Peter Clausen wrote:
+>> On 05/20/2014 11:27 PM, Philippe Reynes wrote:
+>>> This driver add partial support of the
+>>> maxim 1027/1029/1031. Differential mode is not
+>>> supported.
+>>>
+>>> It was tested on armadeus apf27 board.
+>>>
+>>> Signed-off-by: Philippe Reynes<tremyfr@yahoo.fr>
+>>> ---
+>>>    .../devicetree/bindings/iio/adc/max1027-adc.txt    |   21 +
+>>>    drivers/staging/iio/adc/Kconfig                    |    9 +
+>>>    drivers/staging/iio/adc/Makefile                   |    1 +
+>>>    drivers/staging/iio/adc/max1027.c                  |  553
+>++++++++++++++++++++
+>>
+>> New drivers should go into drivers/iio/
+>
+>I'll be pleased to add this driver in drivers/iio/
+>Everybody agrees ??
+I do. 
+
+Jonathan
+>  
+>>>    4 files changed, 584 insertions(+), 0 deletions(-)
+>>>    create mode 100644
+>Documentation/devicetree/bindings/iio/adc/max1027-adc.txt
+>>>    create mode 100644 drivers/staging/iio/adc/max1027.c
+>> [...]
+>>
+>
+>Regards,
+>Philippe
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
