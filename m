@@ -1,117 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaE1MKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:10:08 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31175 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751994AbaE1MKH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:10:07 -0400
-Date: Wed, 28 May 2014 13:10:01 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-Message-ID: <20140528121001.GI19967@e103034-lin>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+	id S1753008AbaE1MKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:10:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55718 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752870AbaE1MK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 08:10:26 -0400
+Date: Wed, 28 May 2014 14:10:23 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+Message-ID: <20140528121023.GA10735@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 04:53:02PM +0100, Vincent Guittot wrote:
-> Monitor the activity level of each group of each sched_domain level. The
-> activity is the amount of cpu_power that is currently used on a CPU or group
-> of CPUs. We use the runnable_avg_sum and _period to evaluate this activity
-> level. In the special use case where the CPU is fully loaded by more than 1
-> task, the activity level is set above the cpu_power in order to reflect the
-> overload of the CPU
+Hi Andrew, Johannes,
+
+On Mon 28-04-14 14:26:41, Michal Hocko wrote:
+> This patchset introduces such low limit that is functionally similar
+> to a minimum guarantee. Memcgs which are under their lowlimit are not
+> considered eligible for the reclaim (both global and hardlimit) unless
+> all groups under the reclaimed hierarchy are below the low limit when
+> all of them are considered eligible.
 > 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/fair.c | 22 ++++++++++++++++++++++
->  1 file changed, 22 insertions(+)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index b7c51be..c01d8b6 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4044,6 +4044,11 @@ static unsigned long power_of(int cpu)
->  	return cpu_rq(cpu)->cpu_power;
->  }
->  
-> +static unsigned long power_orig_of(int cpu)
-> +{
-> +	return cpu_rq(cpu)->cpu_power_orig;
-> +}
-> +
->  static unsigned long cpu_avg_load_per_task(int cpu)
->  {
->  	struct rq *rq = cpu_rq(cpu);
-> @@ -4438,6 +4443,18 @@ done:
->  	return target;
->  }
->  
-> +static int get_cpu_activity(int cpu)
-> +{
-> +	struct rq *rq = cpu_rq(cpu);
-> +	u32 sum = rq->avg.runnable_avg_sum;
-> +	u32 period = rq->avg.runnable_avg_period;
-> +
-> +	if (sum >= period)
-> +		return power_orig_of(cpu) + rq->nr_running - 1;
-> +
-> +	return (sum * power_orig_of(cpu)) / period;
-> +}
+> The previous version of the patchset posted as a RFC
+> (http://marc.info/?l=linux-mm&m=138677140628677&w=2) suggested a
+> hard guarantee without any fallback. More discussions led me to
+> reconsidering the default behavior and come up a more relaxed one. The
+> hard requirement can be added later based on a use case which really
+> requires. It would be controlled by memory.reclaim_flags knob which
+> would specify whether to OOM or fallback (default) when all groups are
+> bellow low limit.
 
-The rq runnable_avg_{sum, period} give a very long term view of the cpu
-utilization (I will use the term utilization instead of activity as I
-think that is what we are talking about here). IMHO, it is too slow to
-be used as basis for load balancing decisions. I think that was also
-agreed upon in the last discussion related to this topic [1].
+It seems that we are not in a full agreement about the default behavior
+yet. Johannes seems to be more for hard guarantee while I would like to
+see the weaker approach first and move to the stronger model later.
+Johannes, is this absolutely no-go for you? Do you think it is seriously
+handicapping the semantic of the new knob?
 
-The basic problem is that worst case: sum starting from 0 and period
-already at LOAD_AVG_MAX = 47742, it takes LOAD_AVG_MAX_N = 345 periods
-(ms) for sum to reach 47742. In other words, the cpu might have been
-fully utilized for 345 ms before it is considered fully utilized.
-Periodic load-balancing happens much more frequently than that.
+My main motivation for the weaker model is that it is hard to see all
+the corner case right now and once we hit them I would like to see a
+graceful fallback rather than fatal action like OOM killer. Besides that
+the usaceses I am mostly interested in are OK with fallback when the
+alternative would be OOM killer. I also feel that introducing a knob
+with a weaker semantic which can be made stronger later is a sensible
+way to go.
 
-Also, if load-balancing actually moves tasks around it may take quite a
-while before runnable_avg_sum actually reflects this change. The next
-periodic load-balance is likely to happen before runnable_avg_sum has
-reflected the result of the previous periodic load-balance.
+It would be helpful to have a counter which would tell us how many times
+the lowlimit was breached if we go with the weaker semantic.  I guess we
+have touched that already but I haven't posted any patch yet.  So here
+it goes.
+---
+>From 109fbc272b120e70a5d9217abf33a181eb1024f4 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 26 May 2014 10:46:10 +0200
+Subject: [PATCH] memcg, vmscan: count how many times low limit has been
+ breached
 
-To avoid these problems, we need to base utilization on a metric which
-is updated instantaneously when we add/remove tasks to a cpu (or a least
-fast enough that we don't see the above problems). In the previous
-discussion [1] it was suggested that a sum of unweighted task
-runnable_avg_{sum,period} ratio instead. That is, an unweighted
-equivalent to weighted_cpuload(). That isn't a perfect solution either.
-It is fine as long as the cpus are not fully utilized, but when they are
-we need to use weighted_cpuload() to preserve smp_nice. What to do
-around the tipping point needs more thought, but I think that is
-currently the best proposal for a solution for task and cpu utilization.
+The counter is displayed in memory.stat file.
 
-rq runnable_avg_sum is useful for decisions where we need a longer term
-view of the cpu utilization, but I don't see how we can use as cpu
-utilization metric for load-balancing decisions at wakeup or
-periodically.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ Documentation/cgroups/memory.txt | 6 +++++-
+ include/linux/memcontrol.h       | 5 +++++
+ mm/memcontrol.c                  | 7 +++++++
+ mm/vmscan.c                      | 8 ++++++--
+ 4 files changed, 23 insertions(+), 3 deletions(-)
 
-Morten
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 7f3a7414bdf2..ad0f31402d84 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -58,6 +58,9 @@ Brief summary of control files.
+ 				 (See 5.5 for details)
+  memory.limit_in_bytes		 # set/show limit of memory usage
+  memory.low_limit_in_bytes	 # set/show low limit for memory reclaim
++ memory.low_limit_breached	 # number of times low_limit has been
++				 # ignored and the cgroup reclaimed even
++				 # when it was above the limit
+  memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+  memory.failcnt			 # show the number of memory usage hits limits
+  memory.memsw.failcnt		 # show the number of memory+Swap hits limits
+@@ -251,7 +254,8 @@ doesn't include groups (and their subgroups - see 6. Hierarchy support)
+ which are below the low limit if there is other eligible cgroup in the
+ reclaimed hierarchy. If all groups which participate reclaim are under
+ their low limits then all of them are reclaimed and the low limit is
+-ignored.
++ignored. low_limit_breached counter in memory.stat file can be checked
++to see how many times such an event occurred.
+ 
+ Note2: When panic_on_oom is set to "2", the whole system will panic.
+ 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 077a777bd9ff..5e2ca2163b12 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -94,6 +94,8 @@ bool task_in_mem_cgroup(struct task_struct *task,
+ 
+ extern bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+ 		struct mem_cgroup *root);
++
++extern void mem_cgroup_guarantee_breached(struct mem_cgroup *memcg);
+ extern bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root);
+ 
+ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+@@ -297,6 +299,9 @@ static inline bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+ {
+ 	return false;
+ }
++static inline  void mem_cgroup_guarantee_breached(struct mem_cgroup *memcg)
++{
++}
+ static inline bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
+ {
+ 	return false;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 4fd4784d1548..4af05d5f59bc 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -102,6 +102,7 @@ enum mem_cgroup_events_index {
+ 	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
+ 	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
+ 	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
++	MEM_CGROUP_EVENTS_LOW_LIMIT_FALLBACK, /* # of times low limit was breached */
+ 	MEM_CGROUP_EVENTS_NSTATS,
+ };
+ 
+@@ -110,6 +111,7 @@ static const char * const mem_cgroup_events_names[] = {
+ 	"pgpgout",
+ 	"pgfault",
+ 	"pgmajfault",
++	"low_limit_breached",
+ };
+ 
+ static const char * const mem_cgroup_lru_names[] = {
+@@ -2833,6 +2835,11 @@ bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+ 	return false;
+ }
+ 
++void mem_cgroup_guarantee_breached(struct mem_cgroup *memcg)
++{
++	this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_LOW_LIMIT_FALLBACK]);
++}
++
+ bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
+ {
+ 	struct mem_cgroup *iter;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2686e47f04cc..8041b0667673 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2245,10 +2245,11 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+ 		memcg = mem_cgroup_iter(root, NULL, &reclaim);
+ 		do {
+ 			struct lruvec *lruvec;
++			bool within_guarantee;
+ 
+ 			/* Memcg might be protected from the reclaim */
+-			if (honor_memcg_guarantee &&
+-					mem_cgroup_within_guarantee(memcg, root)) {
++			within_guarantee = mem_cgroup_within_guarantee(memcg, root);
++			if (honor_memcg_guarantee && within_guarantee) {
+ 				/*
+ 				 * It would be more optimal to skip the memcg
+ 				 * subtree now but we do not have a memcg iter
+@@ -2258,6 +2259,9 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+ 				continue;
+ 			}
+ 
++			if (within_guarantee)
++				mem_cgroup_guarantee_breached(memcg);
++
+ 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+ 			nr_scanned_groups++;
+ 
+-- 
+2.0.0.rc4
 
-[1] https://lkml.org/lkml/2014/1/8/251
+-- 
+Michal Hocko
+SUSE Labs
