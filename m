@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345AbaE1Gy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 02:54:57 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63449 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155AbaE1GxS (ORCPT
+	id S1754329AbaE1Gyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 02:54:55 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:52414 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156AbaE1GxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 May 2014 02:53:18 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-40-538587dbdc24
+X-AuditID: cbfee68d-b7fd46d000005f36-56-538587dc7129
 From: Heesub Shin <heesub.shin@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -19,39 +19,38 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Sunghwan Yun <sunghwan.yun@samsung.com>,
         Dongjun Shin <d.j.shin@samsung.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Heesub Shin <heesub.shin@samsung.com>
-Subject: [PATCH v2 7/9] staging: ion: remove order argument from
- free_buffer_page()
-Date: Wed, 28 May 2014 15:52:58 +0900
-Message-id: <1401259980-26927-8-git-send-email-heesub.shin@samsung.com>
+Subject: [PATCH v2 8/9] staging: ion: shrink highmem pages on kswapd
+Date: Wed, 28 May 2014 15:52:59 +0900
+Message-id: <1401259980-26927-9-git-send-email-heesub.shin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1401259980-26927-1-git-send-email-heesub.shin@samsung.com>
 References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
  <1401259980-26927-1-git-send-email-heesub.shin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t8zPd3b7a3BBpNPWlq8/3ufzWL7xm+s
-	Fi8PaVqcuFhrcfDDfRaLPWd+sVs0L17PZnFw9hImizO/dS0u75rDZrF2/jY2ixuTCy1Odyxi
-	deD12LZ7G6vH5b5eJo97+w6zeOycdZfd4861PWwe++euYffo27KK0ePzJrkAjigum5TUnMyy
-	1CJ9uwSujBXP+tkL3vJU9Gy5xtTA+Jiri5GTQ0LAROLI5ensELaYxIV769m6GLk4hASWMUr8
-	/N/NClP0++IhdojEIkaJTxcfMEM47UwSy+aCVHFwsAloSxzaFgzSICJgLNF/dhZYA7PAYWaJ
-	rllr2UASwgKhEjOenAGbyiKgKrFn93OwOK+Au8S1TcdZILbJSZw8NhlsJqeAh8T2NyEQu1oZ
-	JaYff84I4kgI3GOX2Hm6kw1ikIDEt8mHWEAaJARkJTYdYIaYIylxcMUNlgmMwgsYGVYxiqYW
-	JBcUJ6UXGeoVJ+YWl+al6yXn525ihMRO7w7G2wesDzEmA42byCwlmpwPjL28knhDYzMjC1MT
-	U2Mjc0sz0oSVxHmTHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamC8xbT54YpPE7//C446
-	OOVKzxOvtBrn9OJf5+7deBT3eWe218pTARo+cevzzYLOFSxKNs3S7n1Ss0tNW8G3k11kc+TL
-	K0GXDYt5NOOUStzEtEReXD/6W49/w5bXP0N1NK6pXDCpjLyp0iR3KTf9U/iSS78DWx6ExB95
-	uSVA9Ybq1jADnSCvLz1KLMUZiYZazEXFiQDCNOk+swIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jAd3b7a3BBuuum1q8/3ufzWL7xm+s
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t8zPd077a3BBrO7DSze/73PZrF94zdW
+	i5eHNC1OXKy1OPjhPovFnjO/2C2aF69nszg4ewmTxZnfuhaXd81hs1g7fxubxY3JhRanOxax
+	OvB6bNu9jdXjcl8vk8e9fYdZPHbOusvucefaHjaP/XPXsHv0bVnF6PF5k1wARxSXTUpqTmZZ
+	apG+XQJXxsIvX1gLHvJVTNj5jrWBcTlPFyMnh4SAicT7a1NZIGwxiQv31rN1MXJxCAksY5Q4
+	+msGM0zRsh9t7BCJRYwS/cdOMIEkhATamSS+n/LvYuTgYBPQlji0LRgkLCJgLNF/dhZYPbPA
+	YWaJrllr2UASwgIuEtt2d4L1sgioSux6/oEJpJdXwF2ie7olxC45iZPHJrOChDkFPCS2vwmB
+	WNvKKDH9+HNGEEdC4B67xN8Ds6DmCEh8m3yIBaRBQkBWYtMBqJslJQ6uuMEygVF4ASPDKkbR
+	1ILkguKk9CJDveLE3OLSvHS95PzcTYyQuOndwXj7gPUhxmSgcROZpUST84Fxl1cSb2hsZmRh
+	amJqbGRuaUaasJI4b9LDpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjGYpSisKe+YefFSR
+	ek1n2SdjvyaxZQf6rA2/V6qczNnRXt3TseHbxu95Ybedl5VeZVzyIGP3hqmqiyOfM6/s3L/v
+	xaeV17VNIxJeTlp4s+fQh5avFh4P2DYFHf68RFYvMf7/PxuV7xYrLzencDenRRq/bbgZvcnw
+	S9Diax2vD7Odm/6gMGbBoQNKLMUZiYZazEXFiQC+tz/KsQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jAd077a3BBguWa1u8/3ufzWL7xm+s
 	Fi8PaVqcuFhrcfDDfRaLPWd+sVs0L17PZnFw9hImizO/dS0u75rDZrF2/jY2ixuTCy1Odyxi
 	deD12LZ7G6vH5b5eJo97+w6zeOycdZfd4861PWwe++euYffo27KK0ePzJrkAjqgGRpuM1MSU
 	1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoIOVFMoSc0qBQgGJ
-	xcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBkrnvWzF7zlqejZco2pgfExVxcjJ4eEgInE
-	74uH2CFsMYkL99azdTFycQgJLGKU+HTxATOE084ksWxuN2sXIwcHm4C2xKFtwSANIgLGEv1n
-	Z7GD1DALHGaW6Jq1lg0kISwQKjHjyRlWEJtFQFViz+7nYHFeAXeJa5uOs0Bsk5M4eWwy2ExO
-	AQ+J7W9CIHa1MkpMP/6ccQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwZH5THoH
-	46oGi0OMAhyMSjy8Bxa3BAuxJpYVV+YeYpTgYFYS4b1Z2BosxJuSWFmVWpQfX1Sak1p8iDEZ
-	6KqJzFKiyfnApJFXEm9obGJmZGlkZmxibmxMmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxS
-	DYy9dun3Nkc3n53V3X5W4JRwEpusQrw7q5PvyzobobJdTbPFo5//fFluMjVNXTCA49iCPw/f
-	sDX+cwk9p3uy/n///xmcb/+3mk9in3lyxcTsw0tu2/MeaUvZXCE/QVlP9WOVg8lUjsUm+xxv
-	Bjw783fWlYadJ0Tln2kXPdmhdfeMUOOkYKmkHblKLMUZiYZazEXFiQApRj0zEAMAAA==
+	xcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBkLv3xhLXjIVzFh5zvWBsblPF2MnBwSAiYS
+	y360sUPYYhIX7q1n62Lk4hASWMQo0X/sBBNIQkignUni+yn/LkYODjYBbYlD24JBwiICxhL9
+	Z2exg9QzCxxmluiatZYNJCEs4CKxbXcnWC+LgKrErucfmEB6eQXcJbqnW0LskpM4eWwyK0iY
+	U8BDYvubEIi1rYwS048/Z5zAyLuAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBUPpPe
+	wbiqweIQowAHoxIP74HFLcFCrIllxZW5hxglOJiVRHhvFrYGC/GmJFZWpRblxxeV5qQWH2JM
+	BjpqIrOUaHI+MGHklcQbGpuYGVkamRmbmBsbkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwen
+	VAOjVcsz//iqfJUPPopMU66+0gi7InNxh6tWMY/Q5l1L9sQsaKo+Gv5bcq7Cu9UyDBHXfxSI
+	7VFZePfpx9Dqd1MtWVq/PDhuo7XLSVHvXcPdzDIdYT8lhQsCxyMPyria7tOrn73kzM8poUdU
+	dmnHbXzx3W9iikeoepfGyZrEzazrOspmxZtFynxXYinOSDTUYi4qTgQAClk7CA4DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,49 +58,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the pages returned from the pool are compound pages, we do not
-need to pass the order information to free_buffer_page().
+ION system heap keeps pages in its pool for better performance. When the
+system is under memory pressure, slab shrinker calls the callback
+registered and then the pages pooled get freed.
 
+When the shrinker is called, it checks gfp_mask and determines whether
+the pages from highmem need to be freed or the pages from lowmem.
+Usually, slab shrinker is invoked on kswapd context which gfp_mask is
+always GFP_KERNEL, so only lowmem pages are released on kswapd context.
+This means that highmem pages in the pool are never reclaimed until
+direct reclaim occurs. This can be problematic when the page pool holds
+excessive amounts of highmem.
+
+For now, the shrinker callback cannot know exactly which zone should be
+targeted for reclamation, as enough information are not passed to. Thus,
+it makes sense to shrink both lowmem and highmem zone on kswapd context.
+
+Reported-by: Wonseo Choi <wonseo.choi@samsung.com>
 Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
 ---
- drivers/staging/android/ion/ion_system_heap.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/staging/android/ion/ion_page_pool.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index f0ae210..d78d589e 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -77,9 +77,9 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
- }
+diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
+index c1cea42b..5864f3d 100644
+--- a/drivers/staging/android/ion/ion_page_pool.c
++++ b/drivers/staging/android/ion/ion_page_pool.c
+@@ -21,6 +21,7 @@
+ #include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/swap.h>
+ #include "ion_priv.h"
  
- static void free_buffer_page(struct ion_system_heap *heap,
--			     struct ion_buffer *buffer, struct page *page,
--			     unsigned int order)
-+			     struct ion_buffer *buffer, struct page *page)
- {
-+	unsigned int order = compound_order(page);
- 	bool cached = ion_buffer_cached(buffer);
+ static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
+@@ -118,7 +119,10 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
+ 	int freed;
+ 	bool high;
  
- 	if (!cached && !(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) {
-@@ -169,7 +169,7 @@ free_table:
- 	kfree(table);
- free_pages:
- 	list_for_each_entry_safe(page, tmp_page, &pages, lru)
--		free_buffer_page(sys_heap, buffer, page, compound_order(page));
-+		free_buffer_page(sys_heap, buffer, page);
- 	return -ENOMEM;
- }
+-	high = !!(gfp_mask & __GFP_HIGHMEM);
++	if (current_is_kswapd())
++		high = 1;
++	else
++		high = !!(gfp_mask & __GFP_HIGHMEM);
  
-@@ -189,8 +189,7 @@ static void ion_system_heap_free(struct ion_buffer *buffer)
- 		ion_heap_buffer_zero(buffer);
- 
- 	for_each_sg(table->sgl, sg, table->nents, i)
--		free_buffer_page(sys_heap, buffer, sg_page(sg),
--				get_order(sg->length));
-+		free_buffer_page(sys_heap, buffer, sg_page(sg));
- 	sg_free_table(table);
- 	kfree(table);
- }
+ 	if (nr_to_scan == 0)
+ 		return ion_page_pool_total(pool, high);
 -- 
 1.9.1
 
