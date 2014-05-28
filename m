@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaE1JAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:00:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:46300 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754707AbaE1JAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:00:18 -0400
-Date: Wed, 28 May 2014 19:00:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Welling <mwelling@ieee.org>, Michael Stickel <ms@mycable.de>
-Subject: linux-next: manual merge of the gpio tree with Linus' tree
-Message-ID: <20140528190011.302a2e52@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/TPwkKhNGZJT+1fBOMj5nWa/"; protocol="application/pgp-signature"
+	id S932182AbaE1JAe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:00:34 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17791 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168AbaE1JA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 05:00:26 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-ad-5385a5a575d9
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] ARM: multi_v7_defconfig: Enable clock and RTC driver for S2M
+ and S5M
+Date: Wed, 28 May 2014 11:00:13 +0200
+Message-id: <1401267613-8232-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4Zd2lS1uDDR6uVbH4O+kYu8XGGetZ
+	LV6/MLToXXCVzeJs0xt2i02Pr7FaXN41h81ixvl9TBa3L/NarD1yl93i1PXPbBYn//QyOvB4
+	tDT3sHn8/jWJ0ePOtT1sHpuX1HtcOdHE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZ51b+
+	YSo4zl4xf9EBxgbGk2xdjJwcEgImEo8vt7BC2GISF+6tB4pzcQgJLGWUaF43iwXC6WOSeNJ7
+	kxmkik3AWGLz8iVgVSICUxglfny8B1bFLHCVSeL41hOMIFXCAuESDybfAbNZBFQlfi5cAraP
+	V8BN4vvL6ewQ++QkTh6bzDqBkXsBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJBQ+7KD
+	cfExq0OMAhyMSjy8C2Rbg4VYE8uKK3MPMUpwMCuJ8DZ3AoV4UxIrq1KL8uOLSnNSiw8xMnFw
+	SjUwslUxN7gcTv139Pr0L3aM2YoS83fYOkVpyO14Gtf6KMTqstOhsrKqGQ0PU1q6+Kuze1J7
+	Lly5c1dBI9Nk/W7RfO87Nm/CNm7qyBAwmOZqfLv1SGrpuZub/Re9meh/SDrkresfRf2IR0tv
+	6v3N99waUse2PCRnP/NVwbLGq7UMQWvm7a718Z6kxFKckWioxVxUnAgA5FVIPhMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TPwkKhNGZJT+1fBOMj5nWa/
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The config enables already Samsung's PMIC-s MFD driver and regulators
+(S2MPS11 and S5M8767). Enable also drivers for rest of these PMIC-s
+features: clock and RTC.
 
-Hi Linus,
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ arch/arm/configs/multi_v7_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Today's linux-next merge of the gpio tree got a conflict in
-drivers/gpio/gpio-mcp23s08.c between commit 99e4b98dbe3a ("gpio:
-mcp23s08: Bug fix of SPI device tree registration") from Linus' tree
-and commit 3e3bed913e8b ("gpio: mcp23s08: fixed count variable for
-devicetree probing") from the gpio tree.
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 839d16ab7b81..71f2e42978d7 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -321,6 +321,7 @@ CONFIG_RTC_DRV_PL031=y
+ CONFIG_RTC_DRV_VT8500=y
+ CONFIG_RTC_DRV_MV=y
+ CONFIG_RTC_DRV_TEGRA=y
++CONFIG_RTC_DRV_S5M=y
+ CONFIG_DMADEVICES=y
+ CONFIG_DW_DMAC=y
+ CONFIG_MV_XOR=y
+@@ -341,6 +342,7 @@ CONFIG_KEYBOARD_NVEC=y
+ CONFIG_SERIO_NVEC_PS2=y
+ CONFIG_NVEC_POWER=y
+ CONFIG_COMMON_CLK_QCOM=y
++CONFIG_COMMON_CLK_S2MPS11=y
+ CONFIG_MSM_GCC_8660=y
+ CONFIG_MSM_MMCC_8960=y
+ CONFIG_MSM_MMCC_8974=y
+-- 
+1.9.1
 
-I fixed it up (one way - see below) and can carry the fix as necessary
-(no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/gpio/gpio-mcp23s08.c
-index 3d53fd6880d1,00fbb30b9b10..000000000000
---- a/drivers/gpio/gpio-mcp23s08.c
-+++ b/drivers/gpio/gpio-mcp23s08.c
-@@@ -894,11 -894,14 +894,12 @@@ static int mcp23s08_probe(struct spi_de
-  			dev_err(&spi->dev, "invalid spi-present-mask\n");
-  			return -ENODEV;
-  		}
-+=20
-  		for (addr =3D 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
-- 			if ((spi_present_mask & (1 << addr)))
-- 				chips++;
-  			pullups[addr] =3D 0;
-+ 			if (spi_present_mask & (1 << addr))
-+ 				chips++;
-  		}
- -		if (!chips)
- -			return -ENODEV;
-  	} else {
-  		type =3D spi_get_device_id(spi)->driver_data;
-  		pdata =3D dev_get_platdata(&spi->dev);
-
---Sig_/TPwkKhNGZJT+1fBOMj5nWa/
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJThaWfAAoJEMDTa8Ir7ZwV0UEQAIBo6nZspFPtG7jMR8swlkL9
-kKZcam2RgJ4Q0RGu+M4BOuQA2aUEmyqLOlY0xVy8eZT9e/HETfxbFBnS8bTd+ZxG
-g/7VjZaM2OSuJxrcvfRRVjCy8IXm0tK/HUjLLwntmk79U4nK/kUTadNOUYD60BxU
-jwmSKAyoiDliOo4IeBsllYn0fbsQvl5vnESfTG4t8v8gEOoBbxnSEqPgq5XAp5fn
-vRRqmM7uPFr5ijep2D+AcpxOQeJywM0qtesgtvoJRp5FElERQQMNbvzrZHcPpDEF
-EchQECEF8zBPP5pqDKjLnPZBI5qkbBKC5yBy5hHqRYEm3asFlOfdqgZhes7t0M/U
-Tw1lf+CK60tZg9PjKTkSsesYSjbq+wv/d5GJvm1Lc6taUNyiXwaQjZGz7jv7f9sC
-P9oUFxZGwRWlxeXlWsJ9rTGOF6uyo40x1CPDLvu2DO/DKaly5FIbwXDHmf7jEgzD
-zPVcBjGVbsepuOLZG0Vmo8jlnQ0Uuc0hcjdwpiOUJR0IzIUtz40phnuerRmHyJZk
-hpVRjg8zMgLYXde8CSIpZBBydu+eqOymM+c9mxnrEr+xv/tKEFOYXj2z5g7W5jDN
-XtgdpxMlLNXJHC1bfWtdtnrtGWRHhjR0HhD8pH7J0+hzmpdrOuYnwjn0awEmM6n9
-QYwR9Ri+BNSj/vWAAZ+V
-=tc7a
------END PGP SIGNATURE-----
-
---Sig_/TPwkKhNGZJT+1fBOMj5nWa/--
