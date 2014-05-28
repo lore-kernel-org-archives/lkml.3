@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173AbaE1QLe (ORCPT <rfc822;w@1wt.eu>);
+	id S932228AbaE1QLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:11:36 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754776AbaE1QLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 May 2014 12:11:34 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:59950 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074AbaE1QLc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:11:32 -0400
-Date: Wed, 28 May 2014 09:11:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Tord Andersson <tord.o.andersson@gmail.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Tord Andersson <tord.andersson@endian.se>
-Subject: Re: [PATCH 1/1] watchdog: imx2: Added ioctl options to
- enable/disable watchdog as wanted by systemd.
-Message-ID: <20140528161115.GB22194@roeck-us.net>
-References: <1401289196-27567-1-git-send-email-tord.andersson@endian.se>
+Message-ID: <53860AAD.3080107@nod.at>
+Date: Wed, 28 May 2014 18:11:25 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401289196-27567-1-git-send-email-tord.andersson@endian.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Minchan Kim <minchan@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        mst@redhat.com, Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>	<1401260039-18189-2-git-send-email-minchan@kernel.org>	<CAFLxGvyV2Upn7+uTtScu2_LGazy9L+HU9DWEC==0qyZphCrauA@mail.gmail.com> <20140528120817.71921d6a@gandalf.local.home>
+In-Reply-To: <20140528120817.71921d6a@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 04:59:56PM +0200, Tord Andersson wrote:
-> When the current imx2 watchdog driver is used with the systemd watchdog feature,
-> we get "Failed to enable hardware watchdog: Inappropriate ioctl for device".
-> This is caused by missing ioctl setoptions to enable the watchdog.
-> This patch will add WDIOC_SETOPTIONS for WDIOS_ENABLECARD and WDIOS_DISABLECARD.
+Am 28.05.2014 18:08, schrieb Steven Rostedt:
+> On Wed, 28 May 2014 17:43:50 +0200
+> Richard Weinberger <richard.weinberger@gmail.com> wrote:
 > 
-> Signed-off-by: Tord Andersson <tord.andersson@endian.se>
-> ---
-
-Hi Tord,
-
-This driver is in the process of being concerted to use the watchdog
-core API. See 'watchdog: imx2_wdt: convert to watchdog core api' [1]
-from Anatolij Gustschin.
-
-With this update, this patch becomes unnecessary.
-
-Guenter
-
-[1] http://patchwork.roeck-us.net/patch/1340/
-
->  drivers/watchdog/imx2_wdt.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
 > 
-> diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-> index dd51d95..180c6a5 100644
-> --- a/drivers/watchdog/imx2_wdt.c
-> +++ b/drivers/watchdog/imx2_wdt.c
-> @@ -196,6 +196,17 @@ static long imx2_wdt_ioctl(struct file *file, unsigned int cmd,
->  		new_value = val & IMX2_WDT_WRSR_TOUT ? WDIOF_CARDRESET : 0;
->  		return put_user(new_value, p);
->  
-> +	case WDIOC_SETOPTIONS:
-> +		if (get_user(new_value, p))
-> +			return -EFAULT;
-> +		if (new_value & WDIOS_ENABLECARD)
-> +			imx2_wdt_start();
-> +		else if (new_value & WDIOS_DISABLECARD)
-> +			imx2_wdt_stop();
-> +		else
-> +			return -EINVAL;
-> +		return 0;
-> +
->  	case WDIOC_KEEPALIVE:
->  		imx2_wdt_ping();
->  		return 0;
-> -- 
-> 1.9.1
+>>> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+>>> index 8de6d9cf3b95..678205195ae1 100644
+>>> --- a/arch/x86/include/asm/page_64_types.h
+>>> +++ b/arch/x86/include/asm/page_64_types.h
+>>> @@ -1,7 +1,7 @@
+>>>  #ifndef _ASM_X86_PAGE_64_DEFS_H
+>>>  #define _ASM_X86_PAGE_64_DEFS_H
+>>>
+>>> -#define THREAD_SIZE_ORDER      1
+>>> +#define THREAD_SIZE_ORDER      2
+>>>  #define THREAD_SIZE  (PAGE_SIZE << THREAD_SIZE_ORDER)
+>>>  #define CURRENT_MASK (~(THREAD_SIZE - 1))
+>>
+>> Do you have any numbers of the performance impact of this?
+>>
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> What performance impact are you looking for? Now if the system is short
+> on memory, it would probably cause issues in creating tasks. But other
+> than that, I'm not sure what you are looking for.
+
+Allocating more continuous memory for every thread is not cheap.
+I'd assume that such a change will cause more pressure on the allocator.
+
+Thanks,
+//richard
