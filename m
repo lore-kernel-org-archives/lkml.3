@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215AbaE1UVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:21:31 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:64920 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751432AbaE1UVa (ORCPT
+	id S1755299AbaE1UXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:23:43 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45943 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaE1UXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:21:30 -0400
-Message-ID: <1401308488.6186.10.camel@x220>
-Subject: Re: linux-next: build failure after merge of the final tree
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 May 2014 22:21:28 +0200
-In-Reply-To: <1401272095.28714.30.camel@x220>
-References: <20140528194629.0757af1b@canb.auug.org.au>
-	 <1401271041.28714.22.camel@x220> <1401272095.28714.30.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 May 2014 20:21:28.0152 (UTC) FILETIME=[67D08580:01CF7AB2]
-X-RcptDomain: vger.kernel.org
+	Wed, 28 May 2014 16:23:41 -0400
+Date: Wed, 28 May 2014 21:23:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "David S . Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org, Nishanth Menon <nm@ti.com>
+Message-ID: <20140528202327.GK5099@sirena.org.uk>
+References: <1401307872-23190-1-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3D7yMlnunRPwJqC7"
+Content-Disposition: inline
+In-Reply-To: <1401307872-23190-1-git-send-email-sboyd@codeaurora.org>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] net: ks8851: Don't use regulator_get_optional()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
 
-On Wed, 2014-05-28 at 12:14 +0200, Paul Bolle wrote:
-> I must have compile tested this with CONFIG_LIB80211_CRYPT_TKIP=m while
-> the code checks for CONFIG_LIB80211_CRYPT_TKIP only (ie, builtin only).
-> I'll have to have a better look at this.
-> 
-> Greg, can the cleaning up of this mess involve an entirely new patch? An
-> incremental patch would leave this build error in a certain range of
-> commits.
+--3D7yMlnunRPwJqC7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The pieces of the latest linux-next build were handed to me by Stephen
-as my patch managed to break it.
+On Wed, May 28, 2014 at 01:11:12PM -0700, Stephen Boyd wrote:
+> We shouldn't be using regulator_get_optional() here. These
+> regulators are always present as part of the physical design and
+> there isn't any way to use an internal regulator or change the
+> source of the reference voltage via software. Given that the only
+> users of this driver in the kernel are DT based, this change
+> should be transparent to them even if they don't specify any
+> supplies because the regulator framework will insert dummy
+> supplies as needed.
 
-I'm assuming you'd like to include rtl8192u in linux-next's builds
-again. Currently I got nothing to offer to you but a request to either
-drop "staging: rtl8192u: rename CONFIG_IEEE80211_CRYPT_TKIP" from
-staging-next or, if that's not how staging-next works, a request to
-revert it. What do you prefer?
+Reviewed-by: Mark Brown <broonie@linaro.org>
 
-Either way I'll see whether I can come up with a fix that allows me to
-take off that brown paper bag.
+--3D7yMlnunRPwJqC7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Paul Bolle
+iQIcBAEBAgAGBQJThkW8AAoJELSic+t+oim9FR0P/jTc6X1DYlh76vwgyJZMiKgI
+CM5aX19PupQpsm5n91NStVNa5ls56GI/Wz+9PiLYxqKZrPRcsm1Iz84Bgozd1MYI
+AeaiBKMPgIsZftYUe5+ap/lZXNq6SWtvSZaqQSVNRsRd9wj3mK300fXbIfw6Jv71
+DENmtsPAtGv/1orSY2uuMJkR3/ZapmEzrZdJ6lmxyq0m5z6TZ/BRwvR5KiBI8dbU
+P9ZQeDG//lYGrZ3hVPsicuPMV+Sv4qDXI7lHmUuefiZAQNNggyLcZ5hNw4xfG4ip
+0dgCK2bfcuLIkrw1Fr5kO/Br6ISzy5ZJeKLeEo+ZtoY00elAnvf3TqfW65w/JVZl
+UPnPmr92nRDv+cryyw63we6BcEnsqpeLspRLK9BaVXZNxW4ZBddurTN6m9prLxCL
+Bc+9n/zImal+RHVDbkJyqKgk5Y9a30mIQC4oI6GAOGVhCqLL2inLIM8YsvO9T/xG
+TAQ0TgQqNZl9UjBmxky5XEpnrFi+/l2xOyWQ3hMzDI1at25YRXOQcN20V6KRAWU8
+gRy8OZOxDD1WI1oxhCMtLIucy+CfYUftv4MR06c0G0vNhK3RMS2EDFsH8WC4SiJx
+kdFlZPLLD2127M3ZbNRSD67VEK16C8UGo/kfRkQaeHSw6m41qgrDvoukmRWRhyqP
+bqj6CcsBZx8Oq5SjBBUy
+=KqNG
+-----END PGP SIGNATURE-----
 
+--3D7yMlnunRPwJqC7--
