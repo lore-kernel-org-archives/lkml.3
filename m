@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaE1N0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:26:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670AbaE1N0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:26:48 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Cody P Schafer <dev@codyps.com>, David Ahern <dsahern@gmail.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Javi Merino <javi.merino@arm.com>, Jiri Olsa <jolsa@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: [GIT PULL 0/9] perf/core improvements and fixes
-Date: Wed, 28 May 2014 15:20:53 +0200
-Message-Id: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
+	id S1753686AbaE1N2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:28:09 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50959 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602AbaE1N2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:28:08 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5385E458.3040601@roeck-us.net>
+Date: Wed, 28 May 2014 06:27:52 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
+        cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+References: <cover.1401181010.git.andreas.werner@men.de> <a3cd43562effd2580d0174c56eff5584791217ac.1401181010.git.andreas.werner@men.de> <20140527150547.GA4227@lee--X1> <20140528070222.GA24101@jtlinux>
+In-Reply-To: <20140528070222.GA24101@jtlinux>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling
+On 05/28/2014 12:02 AM, Johannes Thumshirn wrote:
+[ ... ]
 
-thanks,
-jirka
+>>> +
+>>> +static int menf21bmc_write_byte(struct i2c_client *client, u8 val)
+>>> +{
+>>> +	int ret;
+>>> +	struct menf21bmc *data = i2c_get_clientdata(client);
+>>> +
+>>> +	mutex_lock(&data->lock);
+>>> +	ret = i2c_smbus_write_byte(client, val);
+>>> +	mutex_unlock(&data->lock);
+>>> +
+>>> +	return ret;
+>>> +}
+>>
+>> Didn't we ask you to remove these?  Just make the i2c_smbus_* calls
+>> from within the driver.  The I2C subsystem conducts its own locking.
+>> I'm really starting to frown on aggregation for the sake of
+>> aggregation.  It's just overhead.
+>>
+>
+> Correct me if I'm wrong but as far as I remember Guenther asked to retain the
+> original API, not the remove the "abstraction layer". Once we build a board with
+> one of these BMCs attached via e.g. SPI we would have to reintroduce it anyways,
+> in order to re-use these drivers.
+>
 
+If you introduce boards with SPI support, you'll likely have to change those APIs,
+since some of the functions don't make sense in the SPI world. So I tend to agree
+with Lee. If you need those APIs later on you can introduce them at that time,
+and introduce them such that they truly work for all hardware variants.
 
-The following changes since commit e450f90e8c7d0bf70519223c1b848446ae63f313:
+Guenter
 
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-05-22 11:37:40 +0200)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-
-for you to fetch changes up to 34cfec19bd8496279d283498b97069d9a0f7e130:
-
-  tools lib traceevent: Added support for __get_bitmask() macro (2014-05-28 15:08:26 +0200)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Added support for __get_bitmask() macro to traceevent library (Steven Rostedt)
-
-. Allow overriding sysfs and proc finding with env var (Cody P Schafer)
-
-. Consider header files outside perf directory in tags target (Sebastian Andrzej Siewior)
-
-. Add warning when disabling perl scripting support due to missing devel files (Arnaldo Carvalho de Melo)
-
-. Warn the user when trace command is not available (Arnaldo Carvalho de Melo)
-
-. Pass protection and flags bits through mmap2 interface (Peter Zijlstra)
-
-. Update perf tool mmap2 interface with protection and flag bits (Don Zickus)
-
-. Re-enable mmap interface (Don Zickus)
-
-. Add mem-mode documentation to report command (Don Zickus)
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf trace: Warn the user when not available
-      perf tools: Add warning when disabling perl scripting support due to missing devel files
-
-Cody P Schafer (1):
-      perf tools: Allow overriding sysfs and proc finding with env var
-
-Don Zickus (3):
-      Revert "perf: Disable PERF_RECORD_MMAP2 support"
-      perf tools: Update mmap2 interface with protection and flag bits
-      perf report: Add mem-mode documentation to report command
-
-Peter Zijlstra (1):
-      perf: Pass protection and flags bits through mmap2 interface
-
-Sebastian Andrzej Siewior (1):
-      perf tools: Consider header files outside perf directory in tags target
-
-Steven Rostedt (Red Hat) (1):
-      tools lib traceevent: Added support for __get_bitmask() macro
-
- include/uapi/linux/perf_event.h                    |   1 +
- kernel/events/core.c                               |  37 ++++++-
- tools/lib/api/fs/fs.c                              |  43 +++++++-
- tools/lib/traceevent/event-parse.c                 | 113 +++++++++++++++++++++
- tools/lib/traceevent/event-parse.h                 |   7 ++
- tools/perf/Documentation/perf-report.txt           |  22 ++++
- tools/perf/Makefile.perf                           |   9 +-
- tools/perf/config/Makefile                         |   1 +
- tools/perf/perf.c                                  |   8 +-
- tools/perf/tests/dwarf-unwind.c                    |   2 +-
- tools/perf/util/event.c                            |  59 +++++++----
- tools/perf/util/event.h                            |   2 +
- tools/perf/util/evsel.c                            |   1 +
- tools/perf/util/machine.c                          |   4 +-
- tools/perf/util/map.c                              |   4 +-
- tools/perf/util/map.h                              |   4 +-
- .../perf/util/scripting-engines/trace-event-perl.c |   1 +
- .../util/scripting-engines/trace-event-python.c    |   1 +
- 18 files changed, 286 insertions(+), 33 deletions(-)
