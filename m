@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312AbaE1QoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:44:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20864 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947AbaE1QoK (ORCPT
+	id S1754828AbaE1QvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:51:21 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:10205 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503AbaE1QvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:44:10 -0400
-Date: Wed, 28 May 2014 19:43:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] mei: me: remove unneeded condition
-Message-ID: <20140528164354.GE1824@mwanda>
+	Wed, 28 May 2014 12:51:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 28 May 2014 09:44:20 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>
+Subject: [PATCH 0/2] debugfs entries for Tegra clocks
+Date: Wed, 28 May 2014 19:51:06 +0300
+Message-ID: <1401295868-18697-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We know that "err" is zero from the line before.  No need to check
-again.
+This patch set introduces the 'regs' debugfs entry which shows the
+contents of all registers related to a clock.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Peter De Schrijver (2):
+  clk: tegra: Add debugfs infrastructure
+  clk: tegra: periph, PLL and super clk debugfs entries
 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 6a2d272..86694093 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -274,8 +274,7 @@ static int mei_me_hw_ready_wait(struct mei_device *dev)
- 			mei_secs_to_jiffies(MEI_HW_READY_TIMEOUT));
- 	mutex_lock(&dev->device_lock);
- 	if (!err && !dev->recvd_hw_ready) {
--		if (!err)
--			err = -ETIME;
-+		err = -ETIME;
- 		dev_err(&dev->pdev->dev,
- 			"wait hw ready failed. status = %d\n", err);
- 		return err;
+ drivers/clk/tegra/clk-periph.c |   24 +++++++
+ drivers/clk/tegra/clk-pll.c    |  144 +++++++++++++++++++++++++++++++++++++---
+ drivers/clk/tegra/clk-super.c  |   24 +++++++
+ drivers/clk/tegra/clk.c        |   61 +++++++++++++++++
+ drivers/clk/tegra/clk.h        |   11 +++
+ 5 files changed, 255 insertions(+), 9 deletions(-)
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
