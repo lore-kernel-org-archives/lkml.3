@@ -1,164 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232AbaE1UGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:06:13 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:51310 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308AbaE1UGK (ORCPT
+	id S1752142AbaE1UJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:09:39 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:51766 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaE1UJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:06:10 -0400
-Date: Thu, 29 May 2014 01:36:03 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Input: 88pm860x-ts: Introduce the use of the managed version
- of kzalloc
-Message-ID: <20140528200603.GA10566@himangi-Dell>
+	Wed, 28 May 2014 16:09:38 -0400
+Date: Wed, 28 May 2014 23:09:29 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Yong Zhang <yong.zhang@windriver.com>, ralf@linux-mips.org,
+        huawei.libin@huawei.com, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>
+Subject: Re: [PATCH V2] MIPS: change type of asid_cache to unsigned long
+Message-ID: <20140528200929.GA30528@drone.musicnaut.iki.fi>
+References: <1400650563-1033-1-git-send-email-yong.zhang@windriver.com>
+ <5384119E.7010606@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5384119E.7010606@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves most data allocated in the probe function from
-unmanaged interfaces to managed interfaces. The kfrees and error
-handling code is done away with. Also, the unnecesary labels are
-removed and the function pm860x_touch_remove is removed as it becomes
-empty after removing the no longer required function calls. 
+Hi,
 
-This changes the order of the freeing operations in the remove
-function, putting the free_irq first, and that this may resolve a 
-potential race condition.
+On Tue, May 27, 2014 at 12:16:30PM +0800, Li Zefan wrote:
+> On 2014/5/21 13:36, Yong Zhang wrote:
+> > asid_cache must be unsigned long otherwise on 64bit system
+> > it will become 0 if the value in get_new_mmu_context()
+> > reaches 0xffffffff and in the end the assumption of
+> > ASID_FIRST_VERSION is not true anymore thus leads to
+> > more dangerous things.
+> 
+> We should describe what problem this bug can lead to, which
+> will help people who encounter the same problem and google it.
 
-The following Coccinelle semantic patch was used for making a part of
-the change:
+Please describe it, then. Even if the patch is already committed,
+googling would probably still find this e-mail thread.
 
-@platform@
-identifier p, probefn, removefn;
-@@
-struct platform_driver p = {
-  .probe = probefn,
-  .remove = removefn,
-};
+Thanks,
 
-@prb@
-identifier platform.probefn, pdev;
-expression e, e1, e2;
-@@
-probefn(struct platform_device *pdev, ...) {
-  <+...
-- e = kzalloc(e1, e2)
-+ e = devm_kzalloc(&pdev->dev, e1, e2)
-  ...
-?-kfree(e);
-  ...+>
-}
-
-@rem depends on prb@
-identifier platform.removefn;
-expression e;
-@@
-removefn(...) {
-  <...
-- kfree(e);
-  ...>
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/input/touchscreen/88pm860x-ts.c | 36 +++++++++------------------------
- 1 file changed, 10 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/input/touchscreen/88pm860x-ts.c b/drivers/input/touchscreen/88pm860x-ts.c
-index 544e20c..30c8cc1 100644
---- a/drivers/input/touchscreen/88pm860x-ts.c
-+++ b/drivers/input/touchscreen/88pm860x-ts.c
-@@ -16,6 +16,7 @@
- #include <linux/input.h>
- #include <linux/mfd/88pm860x.h>
- #include <linux/slab.h>
-+#include <linux/device.h>
- 
- #define MEAS_LEN		(8)
- #define ACCURATE_BIT		(12)
-@@ -234,16 +235,16 @@ static int pm860x_touch_probe(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
- 
--	touch = kzalloc(sizeof(struct pm860x_touch), GFP_KERNEL);
-+	touch = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_touch),
-+			     GFP_KERNEL);
- 	if (touch == NULL)
- 		return -ENOMEM;
- 	platform_set_drvdata(pdev, touch);
- 
--	touch->idev = input_allocate_device();
-+	touch->idev = devm_input_allocate_device(&pdev->dev);
- 	if (touch->idev == NULL) {
- 		dev_err(&pdev->dev, "Failed to allocate input device!\n");
--		ret = -ENOMEM;
--		goto out;
-+		return -ENOMEM;
- 	}
- 
- 	touch->idev->name = "88pm860x-touch";
-@@ -258,10 +259,11 @@ static int pm860x_touch_probe(struct platform_device *pdev)
- 	touch->res_x = res_x;
- 	input_set_drvdata(touch->idev, touch);
- 
--	ret = request_threaded_irq(touch->irq, NULL, pm860x_touch_handler,
--				   IRQF_ONESHOT, "touch", touch);
-+	ret = devm_request_threaded_irq(&pdev->dev, touch->irq, NULL,
-+					pm860x_touch_handler, IRQF_ONESHOT,
-+					"touch", touch);
- 	if (ret < 0)
--		goto out_irq;
-+		return ret;
- 
- 	__set_bit(EV_ABS, touch->idev->evbit);
- 	__set_bit(ABS_X, touch->idev->absbit);
-@@ -279,28 +281,11 @@ static int pm860x_touch_probe(struct platform_device *pdev)
- 	ret = input_register_device(touch->idev);
- 	if (ret < 0) {
- 		dev_err(chip->dev, "Failed to register touch!\n");
--		goto out_rg;
-+		return ret;
- 	}
- 
- 	platform_set_drvdata(pdev, touch);
- 	return 0;
--out_rg:
--	free_irq(touch->irq, touch);
--out_irq:
--	input_free_device(touch->idev);
--out:
--	kfree(touch);
--	return ret;
--}
--
--static int pm860x_touch_remove(struct platform_device *pdev)
--{
--	struct pm860x_touch *touch = platform_get_drvdata(pdev);
--
--	input_unregister_device(touch->idev);
--	free_irq(touch->irq, touch);
--	kfree(touch);
--	return 0;
- }
- 
- static struct platform_driver pm860x_touch_driver = {
-@@ -309,7 +294,6 @@ static struct platform_driver pm860x_touch_driver = {
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe	= pm860x_touch_probe,
--	.remove	= pm860x_touch_remove,
- };
- module_platform_driver(pm860x_touch_driver);
- 
--- 
-1.9.1
-
+A.
