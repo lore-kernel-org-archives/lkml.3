@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104AbaE1Sua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 14:50:30 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:38690 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892AbaE1Su2 (ORCPT
+	id S1755172AbaE1SvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 14:51:08 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45861 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795AbaE1SvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 14:50:28 -0400
-Message-ID: <53862FFE.6030103@kernel.dk>
-Date: Wed, 28 May 2014 12:50:38 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 28 May 2014 14:51:07 -0400
+Date: Wed, 28 May 2014 19:50:51 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: carlo@caione.org, Boris Brezillon <boris@free-electrons.com>,
+        lgirdwood@gmail.com, lee.jones@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
+Message-ID: <20140528185051.GB22488@sirena.org.uk>
+References: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1401297069-7423-4-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.16
-References: <20140528182414.GA22931@phenom.dumpdata.com>
-In-Reply-To: <20140528182414.GA22931@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BwCQnh7xodEAoBMC"
+Content-Disposition: inline
+In-Reply-To: <1401297069-7423-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Cookie: I'm having an emotional outburst!!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] regulator: axp20x: Update the bindings to use a
+ local parent regulator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 12:24 PM, Konrad Rzeszutek Wilk wrote:
-> 
-> Dear Jens,
-> 
-> Please git pull the following branch:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.16
-> 
-> which has a bunch of fixes to the Xen block frontend and backend driver
-> and a new parameter for Xen backend driver - an override (set by the toolstack)
-> whether to expose the discard support (if disk of course supports it) or not.
-> 
->  drivers/block/xen-blkback/common.h |  4 +--
->  drivers/block/xen-blkback/xenbus.c | 53 ++++++++++++++++++++++++++++----------
->  drivers/block/xen-blkfront.c       | 40 ++++++++++------------------
->  include/xen/interface/io/blkif.h   |  2 +-
->  4 files changed, 57 insertions(+), 42 deletions(-)
-> 
-> Olaf Hering (3):
->       xen-blkfront: remove type check from blkfront_setup_discard
->       xen/blkback: disable discard feature if requested by toolstack
->       xen blkif.h: fix comment typo in discard-alignment
-> 
-> Valentin Priescu (1):
->       xen-blkback: defer freeing blkif to avoid blocking xenwatch
 
-Pulled, thanks.
+--BwCQnh7xodEAoBMC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Jens Axboe
+On Wed, May 28, 2014 at 07:11:07PM +0200, Maxime Ripard wrote:
 
+>  		axp_vcore_reg: dcdc2 {
+> +			vin-supply = <&axp_ipsout_reg>;
+
+>  		axp_ddr_reg: dcdc3 {
+> +			vin-supply = <&axp_ipsout_reg>;
+
+>  		axp_rtc_reg: ldo1 {
+> +			vin-supply = <&axp_ipsout_reg>;
+
+>  		axp_analog_reg: ldo2 {
+> +			vin-supply = <&axp_ipsout_reg>;
+
+>  		axp_pll_reg: ldo3 {
+> +			vin-supply = <&axp_ipsout_reg>;
+
+>  		axp_hdmi_reg: ldo4 {
+> +			vin-supply = <&axp_ipsout_reg>;
+
+>  		axp_mic_reg: ldo5 {
+> +			vin-supply = <&axp_ipsout_reg>;
+
+This is saying that every single regulator on the device is powered by a
+(presumably) single input called "vin".  This would certainly be an
+unusual package design...  As ever the name of the supply should follow
+the name of the pin on the device.
+
+--BwCQnh7xodEAoBMC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThjAIAAoJELSic+t+oim90SgP/3Ci9DJGAzupCvPpELYOY5Pi
+tporQczFwME3uxq/YHrDNuFQ01Gj1/1/Vw1AiFrKWVDYbIvc1Jh8XZDTQvJiDBOH
+wXyuE2KsuL/mqfp8hRew9wjTyrqQRLDv+KG/yrxsnj1Xf7vXBb3UrgVe3TJcfNAz
+AGMmJZUoNw8S9h15m5pZSVat0tYppprP8RXz0PvBXOjaPmxcXwpO5Swpm6XObNCz
+5GwFhN/47viFFZaYZZjoCwxT5+UqdAmx1BcN+xGAgOB62zpClcDHyFXZ8nyDARum
+XsvVCr3Q77cDZmpLXJiTOM9Hqu3cmRNopBwCGu0m7r0WLS9mfR/EYf+2vj05uvYQ
+sWn9SIkwhlq11icxnQ6FFuwNwgKWttqXN1Rnl2egGLR2JqeFjkwjLBAExtOY6JFQ
+ni65t/EOInGrr4i3y+y0pSAcflHZHPhQkMGXYDAwQl5vSs1Jy1MiGY1hbrX4xtj0
+ZbT98EHW3udSv4LpTauwrcuogv3MkRNZ30DS5NLYUn53+iJS8wsUaPjIJFTKkIkD
+cyRnblrc+1I2bsQrg0aGlRz0F6Pcc8HXlTl87tXJv2WiLGVM8rXZ9k9xPMQazvJO
+E8I57R4A0AfMoZQoPlkF8q74gmc6hXW1ZI3Yhx8RHj8CXlrOLQiy6gv8dgxPKCTh
+3Vawei3lEKRYj2IEUhP1
+=EKbD
+-----END PGP SIGNATURE-----
+
+--BwCQnh7xodEAoBMC--
