@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaE1NsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:48:07 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:49716 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394AbaE1NsE (ORCPT
+	id S1754479AbaE1NsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:48:17 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:60027 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754447AbaE1NsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:48:04 -0400
+	Wed, 28 May 2014 09:48:14 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v4 12/13] mmc: mmci: add explicit clk control
-Date: Wed, 28 May 2014 14:47:58 +0100
-Message-Id: <1401284878-16937-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v4 13/13] mmc: mmci: Add Qcom specific pio_read function.
+Date: Wed, 28 May 2014 14:48:06 +0100
+Message-Id: <1401284886-16978-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,181 +25,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-On Controllers like Qcom SD card controller where cclk is mclk and mclk should
-be directly controlled by the driver.
+MCIFIFOCNT register behaviour on Qcom chips is very different than the other
+pl180 integrations. MCIFIFOCNT register contains the number of
+words that are still waiting to be transferred through the FIFO. It keeps
+decrementing once the host CPU reads the MCIFIFO. With the existing logic and
+the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
+register will always return transfer size before reading the FIFO.
 
-This patch adds support to control mclk directly in the driver, and also
-adds explicit_mclk_control flag in variant structure giving more flexibility
-to the driver.
+Also the data sheet states that "This register is only useful for debug
+purposes and should not be used for normal operation since it does not reflect
+data which may or may not be in the pipeline".
+
+This patch implements qcom_pio_read function so as existing mmci_pio_read is
+not suitable for Qcom SOCs. qcom_pio_read function is only selected
+based on qcom_fifo flag in variant data structure.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/host/mmci.c | 96 ++++++++++++++++++++++++++++++++-----------------
- drivers/mmc/host/mmci.h |  2 ++
- 2 files changed, 65 insertions(+), 33 deletions(-)
+ drivers/mmc/host/mmci.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/mmc/host/mmci.h |  1 +
+ 2 files changed, 45 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 202f2d5..6eb0a29 100644
+index 6eb0a29..b68223a 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -72,6 +72,7 @@ static unsigned int fmax = 515633;
-  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
+@@ -73,6 +73,7 @@ static unsigned int fmax = 515633;
   * @busy_detect: true if busy detection on dat0 is supported
   * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
-+ * @explicit_mclk_control: enable explicit mclk control in driver.
+  * @explicit_mclk_control: enable explicit mclk control in driver.
++ * @qcom_fifo: enables qcom specific fifo pio read function.
   */
  struct variant_data {
  	unsigned int		clkreg;
-@@ -93,6 +94,7 @@ struct variant_data {
- 	bool			pwrreg_clkgate;
+@@ -95,6 +96,7 @@ struct variant_data {
  	bool			busy_detect;
  	bool			pwrreg_nopower;
-+	bool			explicit_mclk_control;
+ 	bool			explicit_mclk_control;
++	bool			qcom_fifo;
  };
  
  static struct variant_data variant_arm = {
-@@ -199,6 +201,7 @@ static struct variant_data variant_qcom = {
- 	.datalength_bits	= 24,
+@@ -202,6 +204,7 @@ static struct variant_data variant_qcom = {
  	.pwrreg_powerup		= MCI_PWR_UP,
  	.f_max			= 208000000,
-+	.explicit_mclk_control	= true,
+ 	.explicit_mclk_control	= true,
++	.qcom_fifo		= true,
  };
  
  static int mmci_card_busy(struct mmc_host *mmc)
-@@ -301,7 +304,9 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
- 	host->cclk = 0;
+@@ -1006,6 +1009,40 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
+ 	}
+ }
  
- 	if (desired) {
--		if (desired >= host->mclk) {
-+		if (variant->explicit_mclk_control) {
-+			host->cclk = host->mclk;
-+		} else if (desired >= host->mclk) {
- 			clk = MCI_CLK_BYPASS;
- 			if (variant->st_clkdiv)
- 				clk |= MCI_ST_UX500_NEG_EDGE;
-@@ -1340,6 +1345,18 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	if (!ios->clock && variant->pwrreg_clkgate)
- 		pwr &= ~MCI_PWR_ON;
- 
-+	if ((host->variant->explicit_mclk_control) &&
-+	    (ios->clock != host->mclk_req)) {
-+		int rc = clk_set_rate(host->clk, ios->clock);
-+		if (rc < 0) {
-+			dev_err(mmc_dev(host->mmc),
-+				"Error setting clock rate (%d)\n", rc);
-+		} else {
-+			host->mclk = clk_get_rate(host->clk);
-+			host->mclk_req = ios->clock;
++static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
++			unsigned int remain)
++{
++	u32 *ptr = (u32 *) buffer;
++	unsigned int count = 0;
++	unsigned int words, bytes;
++	unsigned int fsize = host->variant->fifosize;
++
++	words = remain >> 2;
++	bytes = remain % 4;
++	/* read full words followed by leftover bytes */
++	if (words) {
++		while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
++			*ptr = readl(host->base + MMCIFIFO + (count % fsize));
++			ptr++;
++			count += 4;
++			words--;
++			if (!words)
++				break;
 +		}
 +	}
 +
- 	spin_lock_irqsave(&host->lock, flags);
++	if (bytes) {
++		unsigned char buf[4];
++		if (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
++			*buf = readl(host->base + MMCIFIFO + (count % fsize));
++			memcpy(ptr, buf, bytes);
++			count += bytes;
++		}
++	}
++
++	return count;
++}
++
+ static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
+ {
+ 	void __iomem *base = host->base;
+@@ -1129,7 +1166,8 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
  
- 	mmci_set_clkreg(host, ios->clock);
-@@ -1490,19 +1507,6 @@ static int mmci_probe(struct amba_device *dev,
+ 		len = 0;
+ 		if (status & MCI_RXACTIVE)
+-			len = mmci_pio_read(host, buffer, remain);
++			len = host->pio_read(host, buffer, remain);
++
+ 		if (status & MCI_TXACTIVE)
+ 			len = mmci_pio_write(host, buffer, remain, status);
+ 
+@@ -1504,6 +1542,11 @@ static int mmci_probe(struct amba_device *dev,
+ 	if (ret)
+ 		goto host_free;
+ 
++	if (variant->qcom_fifo)
++		host->pio_read = mmci_qcom_pio_read;
++	else
++		host->pio_read = mmci_pio_read;
++
  	host->plat = plat;
  	host->variant = variant;
  	host->mclk = clk_get_rate(host->clk);
--	/*
--	 * According to the spec, mclk is max 100 MHz,
--	 * so we try to adjust the clock down to this,
--	 * (if possible).
--	 */
--	if (host->mclk > host->variant->f_max) {
--		ret = clk_set_rate(host->clk, host->variant->f_max);
--		if (ret < 0)
--			goto clk_disable;
--		host->mclk = clk_get_rate(host->clk);
--		dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
--			host->mclk);
--	}
- 
- 	host->phybase = dev->res.start;
- 	host->base = devm_ioremap_resource(&dev->dev, &dev->res);
-@@ -1511,25 +1515,51 @@ static int mmci_probe(struct amba_device *dev,
- 		goto clk_disable;
- 	}
- 
--	/*
--	 * The ARM and ST versions of the block have slightly different
--	 * clock divider equations which means that the minimum divider
--	 * differs too.
--	 */
--	if (variant->st_clkdiv)
--		mmc->f_min = DIV_ROUND_UP(host->mclk, 257);
--	else
--		mmc->f_min = DIV_ROUND_UP(host->mclk, 512);
--	/*
--	 * If no maximum operating frequency is supplied, fall back to use
--	 * the module parameter, which has a (low) default value in case it
--	 * is not specified. Either value must not exceed the clock rate into
--	 * the block, of course.
--	 */
--	if (mmc->f_max)
--		mmc->f_max = min(host->mclk, mmc->f_max);
--	else
--		mmc->f_max = min(host->mclk, fmax);
-+	if (variant->explicit_mclk_control) {
-+		/* get the nearest minimum clock to 100Khz */
-+		mmc->f_min = clk_round_rate(host->clk, 100000);
-+
-+		if (mmc->f_max)
-+			mmc->f_max = min(host->variant->f_max, mmc->f_max);
-+		else
-+			mmc->f_max = min(host->variant->f_max, fmax);
-+
-+	} else {
-+		/*
-+		 * According to the spec, mclk is max 100 MHz,
-+		 * so we try to adjust the clock down to this,
-+		 * (if possible).
-+		 */
-+		if (host->mclk > host->variant->f_max) {
-+			ret = clk_set_rate(host->clk, host->variant->f_max);
-+			if (ret < 0)
-+				goto clk_disable;
-+			host->mclk = clk_get_rate(host->clk);
-+			dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
-+				host->mclk);
-+		}
-+		/*
-+		 * The ARM and ST versions of the block have slightly different
-+		 * clock divider equations which means that the minimum divider
-+		 * differs too.
-+		 */
-+		if (variant->st_clkdiv)
-+			mmc->f_min = DIV_ROUND_UP(host->mclk, 257);
-+		else
-+			mmc->f_min = DIV_ROUND_UP(host->mclk, 512);
-+		/*
-+		 * If no maximum operating frequency is supplied, fall back to
-+		 * use the module parameter, which has a (low) default value in
-+		 * case it is not specified. Either value must not exceed the
-+		 * clock rate into the block, of course.
-+		 */
-+		if (mmc->f_max)
-+			mmc->f_max = min(host->mclk, mmc->f_max);
-+		else
-+			mmc->f_max = min(host->mclk, fmax);
-+
-+	}
-+
- 	dev_dbg(mmc_dev(mmc), "clocking block at %u Hz\n", mmc->f_max);
- 
- 	/* Get regulators and the supported OCR mask */
 diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index 706eb513..1882e20 100644
+index 1882e20..dc9fe0a 100644
 --- a/drivers/mmc/host/mmci.h
 +++ b/drivers/mmc/host/mmci.h
-@@ -208,6 +208,8 @@ struct mmci_host {
- 	spinlock_t		lock;
+@@ -229,6 +229,7 @@ struct mmci_host {
+ 	/* pio stuff */
+ 	struct sg_mapping_iter	sg_miter;
+ 	unsigned int		size;
++	int (*pio_read)(struct mmci_host *h, char *buf, unsigned int remain);
  
- 	unsigned int		mclk;
-+	/* cached value of requested clk in set_ios */
-+	unsigned int		mclk_req;
- 	unsigned int		cclk;
- 	u32			pwr_reg;
- 	u32			pwr_reg_add;
+ #ifdef CONFIG_DMA_ENGINE
+ 	/* DMA stuff */
 -- 
 1.9.1
 
