@@ -1,47 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaE1Jzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:55:47 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37693 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362AbaE1Jzq (ORCPT
+	id S1752978AbaE1J4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:56:42 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:51190 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205AbaE1J4l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:55:46 -0400
-Date: Wed, 28 May 2014 02:55:44 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 12/12] scsi/NCR5380: merge sun3_scsi_vme.c into
- sun3_scsi.c
-Message-ID: <20140528095544.GL26617@infradead.org>
-References: <20140318004212.612472697@telegraphics.com.au>
- <20140318004216.172443207@telegraphics.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140318004216.172443207@telegraphics.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 28 May 2014 05:56:41 -0400
+Date: Wed, 28 May 2014 11:56:36 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: <linux-pwm@vger.kernel.org>, <thierry.reding@gmail.com>,
+        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pwm: i.MX: Cleanup indentation for register definitions
+Message-ID: <20140528115636.4ad791aa@ipc1.ka-ro>
+In-Reply-To: <1401185980-29536-1-git-send-email-Ying.Liu@freescale.com>
+References: <1401185980-29536-1-git-send-email-Ying.Liu@freescale.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 11:42:24AM +1100, Finn Thain wrote:
-> The sun3 drivers suffer from a whole bunch of duplicated code. Fix this
-> by following the g_NCR5380_mmio example. (Notionally, sun3_scsi relates to
-> sun3_scsi_vme in the same way that g_NCR5380 relates to g_NCR5380_mmio.)
-> 
-> Dead code is also removed: we now have working debug macros so
-> SUN3_SCSI_DEBUG is undesirable. Dead code within #ifdef OLD_DMA is also
-> dropped, consistent with sun3_scsi_vme.c.
-> 
-> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Hi,
 
-Looks good,
+Liu Ying wrote:
+> This patch contains no logic change to cleanup indentation
+> for register definitions only.
+> 
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Shawn Guo <shawn.guo@freescale.com>
+> Cc: Lothar Waßmann <LW@KARO-electronics.de>
+> Cc: linux-pwm@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> ---
+>  drivers/pwm/pwm-imx.c |   26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+> index cc47733..0784554 100644
+> --- a/drivers/pwm/pwm-imx.c
+> +++ b/drivers/pwm/pwm-imx.c
+> @@ -21,24 +21,24 @@
+>  
+>  /* i.MX1 and i.MX21 share the same PWM function block: */
+>  
+> -#define MX1_PWMC    0x00   /* PWM Control Register */
+> -#define MX1_PWMS    0x04   /* PWM Sample Register */
+> -#define MX1_PWMP    0x08   /* PWM Period Register */
+> +#define MX1_PWMC			0x00   /* PWM Control Register */
+> +#define MX1_PWMS			0x04   /* PWM Sample Register */
+> +#define MX1_PWMP			0x08   /* PWM Period Register */
+>  
+> -#define MX1_PWMC_EN		(1 << 4)
+> +#define MX1_PWMC_EN			(1 << 4)
+>  
+>  /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
+>  
+> -#define MX3_PWMCR                 0x00    /* PWM Control Register */
+> -#define MX3_PWMSAR                0x0C    /* PWM Sample Register */
+> -#define MX3_PWMPR                 0x10    /* PWM Period Register */
+> -#define MX3_PWMCR_PRESCALER(x)    (((x - 1) & 0xFFF) << 4)
+> -#define MX3_PWMCR_DOZEEN                (1 << 24)
+> -#define MX3_PWMCR_WAITEN                (1 << 23)
+> +#define MX3_PWMCR			0x00    /* PWM Control Register */
+> +#define MX3_PWMSAR			0x0C    /* PWM Sample Register */
+> +#define MX3_PWMPR			0x10    /* PWM Period Register */
+> +#define MX3_PWMCR_PRESCALER(x)		(((x - 1) & 0xFFF) << 4)
+                                                   ^
+You could also add the missing () around the macro argument when you
+are changing this line anyway.
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+
+Lothar Waßmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
