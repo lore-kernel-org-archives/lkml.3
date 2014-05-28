@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186AbaE1Rti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:49:38 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45792 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaE1Rtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753245AbaE1Rtg (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 May 2014 13:49:36 -0400
-Date: Wed, 28 May 2014 18:49:09 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Dimitar Penev <dpenev@gmail.com>
-Cc: linux-sunxi@googlegroups.com,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org
-Message-ID: <20140528174909.GH5099@sirena.org.uk>
-References: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
- <20140527194932.GD12304@sirena.org.uk>
- <9ed19670-7a2e-4324-a201-6d3c8514bdb3@googlegroups.com>
+Received: from bombadil.infradead.org ([198.137.202.9]:49351 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbaE1Rtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 13:49:35 -0400
+Date: Wed, 28 May 2014 19:49:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [RFC PATCH 6/7] perf, x86: large PEBS interrupt threshold
+Message-ID: <20140528174927.GY30445@twins.programming.kicks-ass.net>
+References: <1401257890-30535-1-git-send-email-zheng.z.yan@intel.com>
+ <1401257890-30535-7-git-send-email-zheng.z.yan@intel.com>
+ <20140528081053.GP11096@twins.programming.kicks-ass.net>
+ <20140528145831.GH29957@tassilo.jf.intel.com>
+ <CABPqkBQZWC33egtrpGLUHKizzrFRAz68-AsP-GWxB=Q--bjf8g@mail.gmail.com>
+ <20140528165144.GK29957@tassilo.jf.intel.com>
+ <CABPqkBRBB0feNceYJCU43efOfyQqAugzaWzz04mr7mzEoJGhsw@mail.gmail.com>
+ <20140528171243.GL29957@tassilo.jf.intel.com>
+ <20140528171957.GW30445@twins.programming.kicks-ass.net>
+ <20140528174545.GN29957@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jaoouwwPWoQSJZYp"
+	protocol="application/pgp-signature"; boundary="PlWN2or5MzbGPm4Y"
 Content-Disposition: inline
-In-Reply-To: <9ed19670-7a2e-4324-a201-6d3c8514bdb3@googlegroups.com>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 0/6] mfd: axp20x: add AXP221 PMIC support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140528174545.GN29957@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---jaoouwwPWoQSJZYp
+--PlWN2or5MzbGPm4Y
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, May 28, 2014 at 09:00:17AM -0700, Dimitar Penev wrote:
-> Hi Mark,
+On Wed, May 28, 2014 at 10:45:45AM -0700, Andi Kleen wrote:
+> > So the window is fairly large for another to slip in, esp if you have a
+> > fast (say inst-ret) and a slow (say br-misp) event.
+>=20
+> yes, but unless you have really small periods it's still very unlikely
+> that they synchronize, so it will only happen very rarely.  And the
+> rare cases won't affect the statistics very much.
 
-Don't top post and if you are addressing someone please put them in the
-To: rather than Ccs - I very nearly just deleted this since it's a MFD
-mail not directly addressed to me.
+Sure, but it might be an information leak... Not sure how severe these
+are, but again.. it blows to have to worry about this when it would've
+been 'trivial' to actually fix.
 
-> I plan to use AXP221 on A20 based system as I require more switchers than=
-=20
-> the recommended AXP209 has.
-> Do you see any obstacles which I may be missing now?
-
-I'm afraid I don't really understand your question, sorry.
-
---jaoouwwPWoQSJZYp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--PlWN2or5MzbGPm4Y
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJThiGSAAoJELSic+t+oim9gksQAI+TMJ+pTT7LoHKd9H8WE4XE
-35CbYrOcuPMmpdDIJS0MLu2fkP1gJWxuTyRkgSeQW94yuZv6P3aBjzXjujcwySej
-D7JvH80AtALGlvZ2yrJfo5OPtkS3mAICuCWtGgCb4hkPmStosg+xuVYDhy3M/VKL
-gbsAl55YnVenrWCGi6VOI/2z/0mIxIwhoFqfUCkzmdRDjvo3f1rr2RN3MJNxY2OA
-DjOAI7yoEMhx4dwJWtz4agywlgkf4VYxWBo1ti5MtusZAodaai4RjMYOrfrD5M/Z
-0rZ/ecglYRPwyuf9CHm/tgwB6Yknl60EZvVd2kPdD+IzfsWZm324qTXk3GWwc2Wn
-Tl74msnKxJk+YM34Fm8AijwkdkRSKVqtZIjTWUe+AoL5PxMIry7ucpVB0vFwL78R
-cXeQUtyYPPs64r4ckRhJr2E4dEJ4wZzImeJYomxI7QeqFRN0sjRhA2C1uRCsJRTx
-p80ZQEa7OgjtkXzg07VqGrNLXOkRup1+62a/DejoStPUPRRx1xGSresFYJA2Elk8
-a3qEv08v8GaMjMpspHVH95N7VIZUOKq9K7iJlJ/sHCAPMDMZuXyZfcSesI7Z8AKM
-XaKPay40VoBvsdKm0YU8Sbhg0sXi+ZpAvqSLpaut7AQCnXV83roHvXPkFPpDwp2U
-8dZQs5SEE6l+F13zVYwB
-=ls0h
+iQIcBAEBAgAGBQJThiGnAAoJEHZH4aRLwOS6MZIP/08dAfAbfRAas5XC15Tkn4M3
+hRJFnMwZYZNAuNWy7CXKtRrSWNmt7xdy0tUtQeQNFKTKZfY5FE0ET8Mg37Vqw74N
+ovlPY/o+bCXoFD1JKBA/w0ScBmI1mNma5Egs5WW60ZWz0GuU9b4OBjT1+Lyqat1L
+ty/9nFQH/1MooYVudZkXhg6TpptkIOMI4oDyNwuVcwyez48/FaQ+dETCyM6S/aCV
+nsvM7LZvXcRu5xAwx3GQQVt8ms7vETHmYvWw0D1sSI/w/QQp13QBZMIfRB8pp3GD
+cVPuWiG4qTi2OPgu8CABHGZuWrJtMdcOtheVm/8YVwDvvHBU4btDbxEhnPLljAtw
+xqvG3Q60n32j9vwKjuXacSvyj6jJuF4wj8uchhy7Yviu4Zee9zC7D+7LwgEuUXqZ
+septmtV6MqyTY9NgrpDvCyTZemWtbVcpavnv6gmzEsAlUaZcby/k6ELUvoh55BOF
+P78YxqX9/tNTbiZWU/mitp3s/k4JIiH+loINIOPgMOEu/prA2nGFfQF+HS8xdwAQ
+Vm3esLVEmzgZ62QQ0NL6ZOE9sRllwRSx0XYnWJo6Md/r8Cqav88SxzRuWkk3dzoT
+h6+bE8/BPULEoQD+YScir0qLzSLIWDaxBkuoO15leKFrhBK8YKPoTVSDLGxJjplW
+rpllDss3o6nxK3h0bhbn
+=hAM2
 -----END PGP SIGNATURE-----
 
---jaoouwwPWoQSJZYp--
+--PlWN2or5MzbGPm4Y--
