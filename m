@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113AbaE1HkC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:40:02 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:47189 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356AbaE1Hj6 (ORCPT
+	id S1754395AbaE1Hkb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:40:31 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:52599 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319AbaE1Hjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:39:58 -0400
+	Wed, 28 May 2014 03:39:55 -0400
 From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 To: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
         m.chehab@samsung.com, bp@suse.de
 Cc: linux-edac@vger.kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
         Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: [PATCH v2 5/5] acpi, apei, ghes: Factor out ioremap virtual memory for IRQ and NMI context.
-Date: Wed, 28 May 2014 09:39:30 +0200
-Message-Id: <1401262770-25343-6-git-send-email-tomasz.nowicki@linaro.org>
+Subject: [PATCH v2 4/5] apei, ghes, nmi: Factor out NMI arch-specific calls.
+Date: Wed, 28 May 2014 09:39:29 +0200
+Message-Id: <1401262770-25343-5-git-send-email-tomasz.nowicki@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401262770-25343-1-git-send-email-tomasz.nowicki@linaro.org>
 References: <1401262770-25343-1-git-send-email-tomasz.nowicki@linaro.org>
@@ -23,95 +23,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GHES currently maps two pages with atomic_ioremap.  From now
-on, NMI is optional so there is no need to allocate an NMI page
-for platforms without NMI support.
-
-To make it possible to not use a second page, swap the existing
-page order so that the IRQ context page is first, and the optional
-NMI context page is second.  Then, use CONFIG_ACPI_APEI_NMI to decide
-at runtime how many pages are to be allocated.  Finally, put in
-sanity checks to avoid accessing unallocated memory.
+Similar to MCE related patch, all NMI architectural calls are abstracted.
+Also, we are providing corresponding X86 functions' content.
 
 Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 ---
- arch/x86/kernel/acpi/apei.c |    6 ++++++
- drivers/acpi/apei/ghes.c    |   16 ++++++++--------
- include/acpi/apei.h         |    1 +
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ arch/x86/kernel/acpi/apei.c   |   25 +++++++++++++++++++++++++
+ drivers/acpi/apei/apei-base.c |   19 +++++++++++++++++++
+ drivers/acpi/apei/ghes.c      |   14 ++++++--------
+ include/acpi/apei.h           |    7 +++++++
+ 4 files changed, 57 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/kernel/acpi/apei.c b/arch/x86/kernel/acpi/apei.c
-index 221a3a6..842d158 100644
+index dca2852..221a3a6 100644
 --- a/arch/x86/kernel/acpi/apei.c
 +++ b/arch/x86/kernel/acpi/apei.c
-@@ -79,3 +79,9 @@ void arch_apei_nmi_oops_begin(void)
+@@ -12,9 +12,12 @@
+  * GNU General Public License for more details.
+  */
+ 
++#include <linux/kdebug.h>
+ #include <acpi/apei.h>
+ 
+ #include <asm/mce.h>
++#include <asm/nmi.h>
++#include <asm/tlbflush.h>
+ 
+ int apei_arch_enable_cmcff(struct acpi_hest_header *hest_hdr, void *data)
  {
- 	oops_begin();
+@@ -54,3 +57,25 @@ void apei_arch_report_mem_error(int sev, struct cper_sec_mem_err *mem_err)
+ 	apei_mce_report_mem_error(sev, mem_err);
+ #endif
  }
 +
-+void arch_apei_flush_tlb_one(unsigned long addr)
++int arch_apei_register_nmi(int (*nmi_handler)(unsigned int, struct pt_regs *),
++			   const char *name)
 +{
-+	__flush_tlb_one(addr);
++	struct nmiaction apei_nmi_action = {
++		.handler = nmi_handler,
++		.name = name,
++		.flags = 0,
++	};
++
++	return __register_nmi_handler(NMI_LOCAL, &apei_nmi_action);
 +}
-+EXPORT_SYMBOL_GPL(arch_apei_flush_tlb_one);
++
++void arch_apei_unregister_nmi(const char *name)
++{
++	unregister_nmi_handler(NMI_LOCAL, name);
++}
++
++void arch_apei_nmi_oops_begin(void)
++{
++	oops_begin();
++}
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index 4a11c1a..78c2a26 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -758,6 +758,25 @@ void __weak apei_arch_report_mem_error(int sev,
+ }
+ EXPORT_SYMBOL_GPL(apei_arch_report_mem_error);
+ 
++int __weak arch_apei_register_nmi(
++	__attribute__((unused))	int (*nmi_handler)(unsigned int,
++						   struct pt_regs *),
++	const char *name)
++{
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(arch_apei_register_nmi);
++
++void __weak arch_apei_unregister_nmi(const char *name)
++{
++}
++EXPORT_SYMBOL_GPL(arch_apei_unregister_nmi);
++
++void __weak arch_apei_nmi_oops_begin(void)
++{
++}
++EXPORT_SYMBOL_GPL(arch_apei_nmi_oops_begin);
++
+ int apei_osc_setup(void)
+ {
+ 	static u8 whea_uuid_str[] = "ed855e0c-6c90-47bf-a62a-26de0fc5ad5c";
 diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index 3c42629..55bf47f 100644
+index 750b04e..3c42629 100644
 --- a/drivers/acpi/apei/ghes.c
 +++ b/drivers/acpi/apei/ghes.c
-@@ -113,12 +113,11 @@ static DEFINE_RAW_SPINLOCK(ghes_nmi_lock);
-  */
+@@ -51,7 +51,6 @@
+ #include <acpi/ghes.h>
+ #include <acpi/apei.h>
+ #include <asm/tlbflush.h>
+-#include <asm/nmi.h>
  
- /*
-- * Two virtual pages are used, one for NMI context, the other for
-- * IRQ/PROCESS context
-+ * Two virtual pages are used, one for IRQ/PROCESS context, the other for
-+ * NMI context (optionally).
-  */
--#define GHES_IOREMAP_PAGES		2
--#define GHES_IOREMAP_NMI_PAGE(base)	(base)
--#define GHES_IOREMAP_IRQ_PAGE(base)	((base) + PAGE_SIZE)
-+#define GHES_IOREMAP_IRQ_PAGE(base)	(base)
-+#define GHES_IOREMAP_NMI_PAGE(base)	((base) + PAGE_SIZE)
+ #include "apei-internal.h"
  
- /* virtual memory area for atomic ioremap */
- static struct vm_struct *ghes_ioremap_area;
-@@ -155,7 +154,8 @@ static struct ghes_notify_setup	ghes_notify_tab[];
- 
- static int ghes_ioremap_init(void)
+@@ -817,7 +816,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
  {
--	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
-+	ghes_ioremap_area = __get_vm_area(
-+		PAGE_SIZE * (IS_ENABLED(CONFIG_ACPI_APEI_NMI) ? 2 : 1),
- 		VM_IOREMAP, VMALLOC_START, VMALLOC_END);
- 	if (!ghes_ioremap_area) {
- 		pr_err(GHES_PFX "Failed to allocate virtual memory area for atomic ioremap.\n");
-@@ -199,7 +199,7 @@ static void ghes_iounmap_nmi(void __iomem *vaddr_ptr)
+ 	struct ghes *ghes, *ghes_global = NULL;
+ 	int sev, sev_global = -1;
+-	int ret = NMI_DONE;
++	int ret = APEI_NMI_DONE;
  
- 	BUG_ON(vaddr != (unsigned long)GHES_IOREMAP_NMI_PAGE(base));
- 	unmap_kernel_range_noflush(vaddr, PAGE_SIZE);
--	__flush_tlb_one(vaddr);
-+	arch_apei_flush_tlb_one(vaddr);
- }
+ 	BUG_ON(!IS_ENABLED(CONFIG_ACPI_APEI_NMI));
  
- static void ghes_iounmap_irq(void __iomem *vaddr_ptr)
-@@ -209,7 +209,7 @@ static void ghes_iounmap_irq(void __iomem *vaddr_ptr)
+@@ -832,14 +831,14 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
+ 			sev_global = sev;
+ 			ghes_global = ghes;
+ 		}
+-		ret = NMI_HANDLED;
++		ret = APEI_NMI_HANDLED;
+ 	}
  
- 	BUG_ON(vaddr != (unsigned long)GHES_IOREMAP_IRQ_PAGE(base));
- 	unmap_kernel_range_noflush(vaddr, PAGE_SIZE);
--	__flush_tlb_one(vaddr);
-+	arch_apei_flush_tlb_one(vaddr);
- }
+-	if (ret == NMI_DONE)
++	if (ret == APEI_NMI_DONE)
+ 		goto out;
  
- static int ghes_estatus_pool_init(void)
+ 	if (sev_global >= GHES_SEV_PANIC) {
+-		oops_begin();
++		arch_apei_nmi_oops_begin();
+ 		ghes_print_queued_estatus();
+ 		__ghes_print_estatus(KERN_EMERG, ghes_global->generic,
+ 				     ghes_global->estatus);
+@@ -909,8 +908,7 @@ static int ghes_notify_init_nmi(struct ghes *ghes)
+ 	ghes_estatus_pool_expand(len);
+ 	mutex_lock(&ghes_list_mutex);
+ 	if (list_empty(&ghes_nmi))
+-		status = register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0,
+-					      "ghes");
++		status = arch_apei_register_nmi(ghes_notify_nmi, "ghes");
+ 	list_add_rcu(&ghes->list, &ghes_nmi);
+ 	mutex_unlock(&ghes_list_mutex);
+ 
+@@ -924,7 +922,7 @@ static void ghes_notify_remove_nmi(struct ghes *ghes)
+ 	mutex_lock(&ghes_list_mutex);
+ 	list_del_rcu(&ghes->list);
+ 	if (list_empty(&ghes_nmi))
+-		unregister_nmi_handler(NMI_LOCAL, "ghes");
++		arch_apei_unregister_nmi("ghes");
+ 	mutex_unlock(&ghes_list_mutex);
+ 	/*
+ 	 * To synchronize with NMI handler, ghes can only be
 diff --git a/include/acpi/apei.h b/include/acpi/apei.h
-index 348e1ea..ff2bb7e 100644
+index 62b9d1c..348e1ea 100644
 --- a/include/acpi/apei.h
 +++ b/include/acpi/apei.h
-@@ -51,6 +51,7 @@ int arch_apei_register_nmi(int (*nmi_handler)(unsigned int, struct pt_regs *),
- 			   const char *name);
- void arch_apei_unregister_nmi(const char *name);
- void arch_apei_nmi_oops_begin(void);
-+void arch_apei_flush_tlb_one(unsigned long addr);
+@@ -14,6 +14,9 @@
+ #define APEI_ERST_CLEAR_RECORD		_IOW('E', 1, u64)
+ #define APEI_ERST_GET_RECORD_COUNT	_IOR('E', 2, u32)
+ 
++#define APEI_NMI_DONE		0
++#define APEI_NMI_HANDLED	1
++
+ #ifdef __KERNEL__
+ 
+ extern bool hest_disable;
+@@ -44,6 +47,10 @@ int erst_clear(u64 record_id);
+ 
+ int apei_arch_enable_cmcff(struct acpi_hest_header *hest_hdr, void *data);
+ void apei_arch_report_mem_error(int sev, struct cper_sec_mem_err *mem_err);
++int arch_apei_register_nmi(int (*nmi_handler)(unsigned int, struct pt_regs *),
++			   const char *name);
++void arch_apei_unregister_nmi(const char *name);
++void arch_apei_nmi_oops_begin(void);
  
  #endif
  #endif
