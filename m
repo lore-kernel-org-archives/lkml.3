@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaE1O13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:27:29 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33824 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754425AbaE1O0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:26:52 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: [PATCH] ARM: pci: add call to pcie_bus_configure_settings()
-Date: Wed, 28 May 2014 10:26:16 -0400
-Message-ID: <1401287176-4986-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932210AbaE1O3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:29:06 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:55419 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932194AbaE1O3E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 10:29:04 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] fence: Use smp_mb__before_atomic()
+Date: Wed, 28 May 2014 16:26:32 +0200
+Message-Id: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI core supports PCIE_BUS_SAFE and PCIE_BUS_PERFORMANCE modes.
-PCI controllers may not be able to handle pay load size higher
-than MPS and also read data size higher than MRSS. So limit the
-max to the least common supported payload size by calling
-pcie_bus_configure_settings(). Using pci=pcie_bus_safe do a walk
-and set the MPS to least common value used by devices on the bus.
-pci=pcie_bus_perf does do a walk and set MRSS to MPS.
+From: Thierry Reding <treding@nvidia.com>
 
-This is suggested as a better solution than pci quirk to do similar
-thing.
+Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atomic())
+deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}*()
+functions in favour of the unified smp_mb__{before,after}_atomic().
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- arch/arm/kernel/bios32.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/base/fence.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 16d43cd..537f99e 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -545,6 +545,18 @@ void pci_common_init_dev(struct device *parent, struct hw_pci *hw)
- 		 */
- 		pci_bus_add_devices(bus);
- 	}
-+
-+	list_for_each_entry(sys, &head, node) {
-+		struct pci_bus *bus = sys->bus;
-+
-+		/* Configure PCI Express settings */
-+		if (bus && !pci_has_flag(PCI_PROBE_ONLY)) {
-+			struct pci_bus *child;
-+
-+			list_for_each_entry(child, &bus->children, node)
-+			pcie_bus_configure_settings(child);
-+		}
-+	}
- }
+diff --git a/drivers/base/fence.c b/drivers/base/fence.c
+index f780f9b3d418..74d1f7bcb467 100644
+--- a/drivers/base/fence.c
++++ b/drivers/base/fence.c
+@@ -65,7 +65,7 @@ int __fence_signal(struct fence *fence)
  
- #ifndef CONFIG_PCI_HOST_ITE8152
+ 	if (!ktime_to_ns(fence->timestamp)) {
+ 		fence->timestamp = ktime_get();
+-		smp_mb__before_clear_bit();
++		smp_mb__before_atomic();
+ 	}
+ 
+ 	if (test_and_set_bit(FENCE_FLAG_SIGNALED_BIT, &fence->flags)) {
+@@ -105,7 +105,7 @@ int fence_signal(struct fence *fence)
+ 
+ 	if (!ktime_to_ns(fence->timestamp)) {
+ 		fence->timestamp = ktime_get();
+-		smp_mb__before_clear_bit();
++		smp_mb__before_atomic();
+ 	}
+ 
+ 	if (test_and_set_bit(FENCE_FLAG_SIGNALED_BIT, &fence->flags))
 -- 
-1.7.9.5
+1.9.2
 
