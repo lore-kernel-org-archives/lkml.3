@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaE1MrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:47:13 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64111 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366AbaE1MrG (ORCPT
+	id S1753551AbaE1Mrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:47:53 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:37735 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366AbaE1MrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:47:06 -0400
+	Wed, 28 May 2014 08:47:14 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -28,9 +28,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v5 5/9] of: i2c: Export single device registration method
-Date: Wed, 28 May 2014 15:46:29 +0300
-Message-Id: <1401281193-27146-6-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v5 8/9] OF: spi: Add OF notifier handler
+Date: Wed, 28 May 2014 15:46:32 +0300
+Message-Id: <1401281193-27146-9-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
 References: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
@@ -38,172 +38,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamically inserting i2c client device nodes requires the use
-of a single device registration method. Rework and export it.
+Add OF notifier handler needed for creating/destroying spi devices
+according to dynamic runtime changes in the DT live tree.
 
 Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/i2c/i2c-core.c | 99 +++++++++++++++++++++++++++-----------------------
- include/linux/i2c.h    | 10 +++++
- 2 files changed, 64 insertions(+), 45 deletions(-)
+ drivers/spi/spi.c | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 63 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 7c7f4b8..6e47f73 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -50,6 +50,7 @@
- #include <linux/acpi.h>
- #include <linux/jump_label.h>
- #include <asm/uaccess.h>
-+#include <linux/err.h>
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index a98d236..3d8feca 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -2336,6 +2336,57 @@ EXPORT_SYMBOL_GPL(spi_write_then_read);
  
- #include "i2c-core.h"
+ /*-------------------------------------------------------------------------*/
  
-@@ -997,63 +998,71 @@ static void i2c_scan_static_board_info(struct i2c_adapter *adapter)
- /* OF support code */
- 
- #if IS_ENABLED(CONFIG_OF)
--static void of_i2c_register_devices(struct i2c_adapter *adap)
-+struct i2c_client *
-+of_i2c_register_device(struct i2c_adapter *adap,
-+		struct device_node *node)
- {
--	void *result;
--	struct device_node *node;
-+	struct i2c_client *result;
-+	struct i2c_board_info info = {};
-+	struct dev_archdata dev_ad = {};
-+	const __be32 *addr;
-+	int len;
- 
--	/* Only register child devices if the adapter has a node pointer set */
--	if (!adap->dev.of_node)
--		return;
-+	dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
- 
--	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-+	if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
-+		dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
-+			node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--	for_each_available_child_of_node(adap->dev.of_node, node) {
--		struct i2c_board_info info = {};
--		struct dev_archdata dev_ad = {};
--		const __be32 *addr;
--		int len;
-+	addr = of_get_property(node, "reg", &len);
-+	if (!addr || (len < sizeof(int))) {
-+		dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
-+			node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
-+	info.addr = be32_to_cpup(addr);
-+	if (info.addr > (1 << 10) - 1) {
-+		dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
-+			info.addr, node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
--			dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
--				node->full_name);
--			continue;
--		}
-+	info.irq = irq_of_parse_and_map(node, 0);
-+	info.of_node = of_node_get(node);
-+	info.archdata = &dev_ad;
- 
--		addr = of_get_property(node, "reg", &len);
--		if (!addr || (len < sizeof(int))) {
--			dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
--				node->full_name);
--			continue;
--		}
-+	if (of_get_property(node, "wakeup-source", NULL))
-+		info.flags |= I2C_CLIENT_WAKE;
- 
--		info.addr = be32_to_cpup(addr);
--		if (info.addr > (1 << 10) - 1) {
--			dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
--				info.addr, node->full_name);
--			continue;
--		}
-+	request_module("%s%s", I2C_MODULE_PREFIX, info.type);
- 
--		info.irq = irq_of_parse_and_map(node, 0);
--		info.of_node = of_node_get(node);
--		info.archdata = &dev_ad;
-+	result = i2c_new_device(adap, &info);
-+	if (result == NULL) {
-+		dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
-+			node->full_name);
-+		of_node_put(node);
-+		irq_dispose_mapping(info.irq);
-+		return ERR_PTR(-EINVAL);
-+	}
-+	return result;
-+}
-+EXPORT_SYMBOL(of_i2c_register_device);
- 
--		if (of_get_property(node, "wakeup-source", NULL))
--			info.flags |= I2C_CLIENT_WAKE;
-+static void of_i2c_register_devices(struct i2c_adapter *adap)
-+{
-+	struct device_node *node;
- 
--		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
-+	/* Only register child devices if the adapter has a node pointer set */
-+	if (!adap->dev.of_node)
-+		return;
- 
--		result = i2c_new_device(adap, &info);
--		if (result == NULL) {
--			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
--				node->full_name);
--			of_node_put(node);
--			irq_dispose_mapping(info.irq);
--			continue;
--		}
--	}
-+	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
++#if IS_ENABLED(CONFIG_OF)
 +
-+	for_each_available_child_of_node(adap->dev.of_node, node)
-+		of_i2c_register_device(adap, node);
- }
- 
- static int of_dev_node_match(struct device *dev, void *data)
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index b556e0a..22a8f44 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -558,6 +558,9 @@ static inline int i2c_adapter_id(struct i2c_adapter *adap)
- #endif /* I2C */
- 
- #if IS_ENABLED(CONFIG_OF)
-+struct i2c_client *
-+of_i2c_register_device(struct i2c_adapter *adap, struct device_node *node);
-+
- /* must call put_device() when done with returned i2c_client device */
- extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
- 
-@@ -566,6 +569,13 @@ extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
- 
- #else
- 
-+static inline struct i2c_client *
-+of_i2c_register_device(struct i2c_adapter *adap,
-+		struct device_node *node)
++static int of_spi_notify(struct notifier_block *nb,
++				unsigned long action, void *arg)
 +{
-+	return ERR_PTR(-ENODEV);
++	struct device_node *dn;
++	struct spi_master *master;
++	struct spi_device *spi;
++
++	if (action == OF_RECONFIG_DYNAMIC_CREATE_DEV) {
++
++		dn = arg;
++
++		master = of_find_spi_master_by_node(dn->parent);
++		if (master == NULL)
++			return NOTIFY_OK;	/* not for us */
++
++		spi = of_register_spi_device(master, dn);
++		put_device(&master->dev);
++
++		if (IS_ERR(spi)) {
++			pr_err("%s: failed to create for '%s'\n",
++					__func__, dn->full_name);
++			return notifier_from_errno(PTR_ERR(spi));
++		}
++
++	} else if (action == OF_RECONFIG_DYNAMIC_DESTROY_DEV) {
++
++		dn = arg;
++
++		/* find our device by node */
++		spi = of_find_spi_device_by_node(dn);
++		if (spi == NULL)
++			return NOTIFY_OK;	/* no? not meant for us */
++
++		/* unregister takes one ref away */
++		spi_unregister_device(spi);
++
++		/* and put the reference of the find */
++		put_device(&spi->dev);
++
++	} else
++		return NOTIFY_OK;
++
++	return NOTIFY_STOP;
 +}
 +
- static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
++static struct notifier_block spi_of_notifier;
++
++#endif
++
+ static int __init spi_init(void)
  {
- 	return NULL;
+ 	int	status;
+@@ -2353,8 +2404,19 @@ static int __init spi_init(void)
+ 	status = class_register(&spi_master_class);
+ 	if (status < 0)
+ 		goto err2;
+-	return 0;
+ 
++#if IS_ENABLED(CONFIG_OF)
++	spi_of_notifier.notifier_call = of_spi_notify;
++	status = of_reconfig_notifier_register(&spi_of_notifier);
++	if (status)
++		goto err3;
++#endif
++
++	return 0;
++#if IS_ENABLED(CONFIG_OF)
++err3:
++	class_unregister(&spi_master_class);
++#endif
+ err2:
+ 	bus_unregister(&spi_bus_type);
+ err1:
 -- 
 1.7.12
 
