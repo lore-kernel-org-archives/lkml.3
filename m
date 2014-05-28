@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444AbaE1LUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 07:20:00 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45343 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaE1LT6 (ORCPT
+	id S1752901AbaE1LXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:23:31 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33361 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292AbaE1LXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 07:19:58 -0400
-Date: Wed, 28 May 2014 12:19:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Message-ID: <20140528111945.GJ12304@sirena.org.uk>
-References: <1400805629-10322-1-git-send-email-lejun.zhu@linux.intel.com>
- <1400805629-10322-2-git-send-email-lejun.zhu@linux.intel.com>
- <20140523174925.GH22111@sirena.org.uk>
- <5382D8A7.7010704@linux.intel.com>
- <20140526145127.GM22111@sirena.org.uk>
- <5383E0FA.5060509@linux.intel.com>
- <20140527112024.GS12304@sirena.org.uk>
- <538533EF.6080101@linux.intel.com>
+	Wed, 28 May 2014 07:23:30 -0400
+Date: Wed, 28 May 2014 04:23:29 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Vaughan Cao <vaughan.cao@oracle.com>
+Cc: James.Bottomley@HansenPartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] notify block layer when using temporary change to
+ cache_type
+Message-ID: <20140528112329.GA11953@infradead.org>
+References: <1401190754-6822-1-git-send-email-vaughan.cao@oracle.com>
+ <1401207496.14454.90.camel@dabdike>
+ <1401253107-16138-1-git-send-email-vaughan.cao@oracle.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7zn/zMRAdE+UkrBU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538533EF.6080101@linux.intel.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RESEND v2 1/4] mfd: intel_soc_pmic: Core driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1401253107-16138-1-git-send-email-vaughan.cao@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 28, 2014 at 12:58:27PM +0800, Vaughan Cao wrote:
+> No, I just want to keep the modification as small as possible. Checked
+> the actions of sd_revalidate_disk() again, it seems no harm to call it
+> from here. Also actual actions are skipped in sd_read_cache_type() if
+> cache_override!=0, so I suppose your original plan is to jump to
+> sd_revalidate_disk() from here.
 
---7zn/zMRAdE+UkrBU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think the right fix is to factor out a helper like:
 
-On Wed, May 28, 2014 at 08:55:11AM +0800, Zhu, Lejun wrote:
+static void sd_set_flush_flag(struct scsi_disk *sdkp)
+{
+	unsigned flush = 0;
 
-> Oh I see. Sorry I missed your point. So you are saying "int
-> intel_soc_pmic_readb(int reg)" is bad, but if I have:
+	if (sdkp->WCE) {
+		flush |= REQ_FLUSH;
+		if (sdkp->DPOFUA)
+			flush |= REQ_FUA;
+	}
 
-> int intel_soc_pmic_readb(struct intel_soc_pmic *pmic, int reg)
-> {
-> 	int ret;
-> 	unsigned int val;
->=20
-> 	ret =3D regmap_read(pmic->regmap, reg, &val);
-> 	if (!ret)
-> 		ret =3D val;
->=20
-> 	return ret;
-> }
+	blk_queue_flush(sdkp->disk->queue, flush);
+}
 
-> And have the caller (device or core) look up and pass *pmic in, this
-> will be OK?
+which can be called from sd_revalidate_disk and cache_type_store.
 
-Yes, that's the more common pattern - normally the caller will need
-*pmic for some other purpose anyway so it saves an additional regmap
-lookup if that's desired.
+> 
+> However, that way may not be acceptable after further code review.
+> Changing the sdkp->WCE,RCD will cause these real parameters of the
+> underlying device *lost*. In sd_shutdown() and sd_suspend_common(), we
+> need them to call sd_sync_cache() if necessary. I don't think this
+> action is avoidable, just for the performance issue to solve. And we
+> can't change the mode just by setting q->flush_flags while leave
+> sdkp->WCE,RCD untouched either, because cache_type_show() needs
+> sdkp->WCE,RCD to present the temporary config to userspace.
 
---7zn/zMRAdE+UkrBU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If the user overrides the cache type he should expect data not to be
+flushed, so I don't really think this is na issue.  Even if it is it
+should be a separate issue as it already exists before your patch.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThcZOAAoJELSic+t+oim9ArAP/0vE3WidvhXZxcV2mowMGTNp
-TJuqtKjz0s2Hb2KQ1YMyb2AObQfmLwi4pFfy8ZTlOjl2L4ZYy4pQhZcJ5UL0iRQk
-a2AboQcB/qdRre3yJxoGVWXeWKEIouFEEl5yFTr1wuRN35dgUrfp78unP+QyUs/8
-xSQPM/Vw45VT/i5pG/4z1wG7gpzHEjYq9GjKwgQBAR7LRwqQYrCwKTlK8rzumSJR
-bCVH0R09XLiEI81OcGx52xu7YyVO5Tgz+7vBm88lCU8Wuhzr+XypS3Aqy//qgbqQ
-31S5+1Q27Pdh7sfErnPCkRU/pkZZXD+GrYuYC0TePFc9sYOsjcv9SgNo4UAw2BZ4
-v8QkAMsmZBo/C1gClgBbecoa4ZppZCSZTQsI5CWRE/mTCC95aFYJTg2UHhsuWoPb
-cXlR0aEDTmW0mTr4meQyPGJyeffrmGidh0JF4WANMPVW3FywIVLB5AlTnUuaTO3N
-GxtMJGMLIt9HURIDO5L83aGaDJVSBwwGi9T2xV4FPfVwpmEXepocTQN2hfamQXpC
-h+V1o6hqd8+Ci3HvP/AI7xc6AkD82tmKTyFh5UGUNzJFi50OLj/iVqTXmxuYMqoG
-TIfoM1lNJADi1mQrA+Azj8IFtYQyzw9vnRw5YnuhSGs+4fZLl7wga9VkSPsgWfMW
-7hb2ugcGeULRDwmSlzhy
-=9ZAK
------END PGP SIGNATURE-----
-
---7zn/zMRAdE+UkrBU--
