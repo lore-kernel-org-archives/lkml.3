@@ -1,169 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaE1F3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 01:29:21 -0400
-Received: from erley.org ([97.107.129.9]:46191 "EHLO remote.erley.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878AbaE1F3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 01:29:20 -0400
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 01:29:19 EDT
-Message-ID: <538572E2.5030909@erley.org>
-Date: Wed, 28 May 2014 00:23:46 -0500
-From: Pat Erley <pat-lkml@erley.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753983AbaE1Fa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 01:30:58 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:42968 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751397AbaE1Fa4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 01:30:56 -0400
+X-IronPort-AV: E=Sophos;i="4.98,925,1392134400"; 
+   d="scan'208";a="31110582"
+Message-ID: <538571D4.70904@cn.fujitsu.com>
+Date: Wed, 28 May 2014 13:19:16 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
-        iommu@lists.linux-foundation.org
-CC: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org,
-        eddy0596@gmail.com, linux@horizon.com
-Subject: Re: [PATCH v4 00/16] PCI/iommu: Fix DMA alias problems
-References: <20140522230230.2856.40017.stgit@bling.home>
-In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: <xfs@oss.sgi.com>
+CC: Dave Chinner <david@fromorbit.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: xfs: possible deadlock warning
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2014 06:07 PM, Alex Williamson wrote:
-> For testing, this version can be found in my git tree:
->
-> git://github.com/awilliam/linux-vfio.git dma-alias-v4
->
-> Please report any issues.
->
-> v4:
->   - Change dma_func_alias to dma_alias_devfn, holding a single
->     devfn to alias, thereby supporting aliases to the wrong slot.
->     The DMA alias iterator is easily changed, but IOMMU grouping
->     requires significant rework.  This is now done in IOMMU code
->     rather than PCI code.
->
->   - AMD-Vi - try to incorporate IVRS aliases dynamically into
->     PCI alias quirks to make sure that our grouping remains the
->     same.  Potentially this could end up reporting BIOS aliases
->     that we can add to our list of quirks.
->
-> v3:
->   - Found several instances where I had PCI_SLOT when I meant
->     PCI_FUNC.  Thanks to Andrew for spotting this.  This should
->     fix the problem he was having with Ricoh quirks.  We also
->     pruned down the func0 quirks to only those that we know are
->     needed.  We can always add them back later.
->
->   - Found a case in intel-iommu of using dev_is_pci() where I
->     really wanted !dev_is_pci().  Fixed.
->
-> v2:
->   - Several new Marvell controllers added to quirks.  There's been
->     a lot of success reported with this series in
->     https://bugzilla.kernel.org/show_bug.cgi?id=42679
->
->   - Add quirk for ASMedia and Tundra PCIe-to-PCI bridges that do
->     not expose a PCIe capability.  These have been shown to use
->     the standard PCIe-to-PCI bridge requester ID.
->
->   - Fix copy/paste duplicate Ricoh quirk ID
->
->   - Fixed AMD IOMMU for the "ghost" function case where the DMA
->     alias is for an absent device.  The iommu rlookup table and
->     data fields need to be initializes.
->
->   - Fixed Intel interrupt remapping, I wasn't passing the target
->     bus number, only the alias bus number.
->
-> These patches are split across PCI and IOMMU, but I've front-loaded
-> all of the PCI infrastructure so that the first 7 patches can be
-> applied to PCI-core, the IOMMU maintainers can pickup their patches,
-> then we can finish with dead code removal.  Bjorn might also be
-> willing to carry the IOMMU changes if the maintainers want to ack
-> them.
->
-> Original description:
->
-> This series attempts to fix a couple issues we've had outstanding in
-> the PCI/IOMMU code for a while.  The first issue is with devices that
-> use the wrong requester ID for DMA transactions.  We already have a
-> sort of half-baked attempt to fix this for several Ricoh devices, but
-> the fix only helps them be useful through IOMMU groups, not the
-> general DMA case.  There are also several Marvell devices which use
-> use a different wrong requester ID and don't even fit into the DMA
-> source idea.  This series creates a DMA alias iterator that will
-> step through each possible alias of a device, allowing IOMMUs to
-> insert mappings for both the device and its aliases.
->
-> Hand-in-hand with this is our broken pci_find_upstream_pcie_bridge()
-> function, which is known to blowup when it finds itself suddenly at
-> a PCIe device without crossing a PCIe-to-PCI bridge (as identified by
-> the PCIe capability).  It also likes to make the invalid assumption
-> that a PCIe device never has its requester ID masked by any usptream
-> bus.  We can fix this using the above new DMA alias iterator, since
-> that's effectively what this function was meant to do.
->
-> Finally, with all these helpers, it makes sense to consolidate code
-> for determining IOMMU groups.  The first step in finding the root
-> of a group is finding the final upstream DMA alias for the device,
-> then applying additional ACS rules and incorporating device specific
-> aliases.  As this is all common to PCI, create a single implementation
-> and remove piles of code from the individual IOMMU drivers.
->
-> This series allows devices like the Marvell 88SE9123 to finally work
-> on Linux with either AMD-Vi or VT-d enabled on the box.  I've
-> collected device IDs from various bugs to support as many SKUs of
-> these devices as possible, but I'm sure there are others that I've
-> missed.
->
-> This should also enable motherboards with an onboard ASmedia
-> ASM1083/1085 PCIe-to-PCI bridge to work with VT-d enabled.  I've
-> acquired an adapter board with this chip, but it actually exposes
-> a PCIe capability, unlike most of the onboard controllers.  Therefore
-> I expect this series will fix the WARN_ON currently hit during boot,
-> but there's a 50/50 chance whether the device behaves like a PCI
-> bridge or a PCIe bridge with regard to the requester ID that it uses
-> to take ownership of the transaction.  If it turns out to use the
-> PCIe bridge model, I expect we can quirk it using a dev_flags bit
-> to identify a PCI bridge that takes ownership as if it was a PCIe
-> bridge.
->
-> Please test and provide feedback.  I expect IOMMU group topology
-> should not change from this series, but if a case is found where it
-> does, please share.  Also, if there are additional quirks we need
-> to add, please either file new or add to the existing bugs.  Thanks,
->
-> Alex
->
-> ---
->
-> Alex Williamson (16):
->        PCI: Add DMA alias iterator
->        PCI: define pci_dev_flags as bit shifts
->        PCI: quirk pci_for_each_dma_alias()
->        PCI: quirk dma_alias_devfn for Ricoh devices
->        PCI: quirk dma_alias_devfn for Marvell devices
->        PCI: Quirk pci_for_each_dma_alias() for bridges
->        PCI: Add quirks for ASMedia and Tundra bridges
->        iommu: Create central IOMMU group lookup/creation interface
->        iommu/amd: Update to use PCI DMA aliases
->        iommu/amd: Use iommu_group_get_for_dev()
->        iommu/intel: Use iommu_group_get_for_dev()
->        iommu/intel: Update to use PCI DMA aliases
->        iommu/fsl: Use iommu_group_get_for_dev() for IOMMU groups
->        iommu: Remove pci.h
->        PCI: Remove pci_find_upstream_pcie_bridge()
->        PCI: Remove pci_get_dma_source()
->
->
-This series allows my W510 to boot with firewire and VT-d enabled.  I've 
-been working around this issue for 2 years.  Feel free to CC me on any 
-further iterations of this series.
+Hi all,
+When running the latest Linus' tree, the following possible deadlock warning occurs.
 
-17:00.0 SD Host controller: Ricoh Co Ltd MMC/SD Host Controller (rev 01)
-17:00.3 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 PCIe IEEE 1394
-         Controller (rev 01)
+[  140.949000] ======================================================
+[  140.949000] [ INFO: possible circular locking dependency detected ]
+[  140.949000] 3.15.0-rc7+ #93 Not tainted
+[  140.949000] -------------------------------------------------------
+[  140.949000] qemu-kvm/5056 is trying to acquire lock:
+[  140.949000]  (&isec->lock){+.+.+.}, at: [<ffffffff8128c835>] inode_doinit_with_dentry+0xa5/0x640
+[  140.949000] 
+[  140.949000] but task is already holding lock:
+[  140.949000]  (&mm->mmap_sem){++++++}, at: [<ffffffff81182bcf>] vm_mmap_pgoff+0x6f/0xc0
+[  140.949000] 
+[  140.949000] which lock already depends on the new lock.
+[  140.949000] 
+[  140.949000] 
+[  140.949000] the existing dependency chain (in reverse order) is:
+[  140.949000] 
+[  140.949000] -> #2 (&mm->mmap_sem){++++++}:
+[  140.949000]        [<ffffffff810c214c>] __lock_acquire+0xadc/0x12f0
+[  140.949000]        [<ffffffff810c3152>] lock_acquire+0xa2/0x130
+[  140.949000]        [<ffffffff8118dbdc>] might_fault+0x8c/0xb0
+[  140.949000]        [<ffffffff811f1371>] filldir+0x91/0x120
+[  140.949000]        [<ffffffffa01ff788>] xfs_dir2_block_getdents+0x1e8/0x250 [xfs]
+[  140.949000]        [<ffffffffa01ff92a>] xfs_readdir+0xda/0x120 [xfs]
+[  140.949000]        [<ffffffffa02017db>] xfs_file_readdir+0x2b/0x40 [xfs]
+[  140.949000]        [<ffffffff811f11b8>] iterate_dir+0xa8/0xe0
+[  140.949000]        [<ffffffff811f165a>] SyS_getdents+0x8a/0x120
+[  140.949000]        [<ffffffff8164b269>] system_call_fastpath+0x16/0x1b
+[  140.949000] 
+[  140.949000] -> #1 (&xfs_dir_ilock_class){++++.+}:
+[  140.949000]        [<ffffffff810c214c>] __lock_acquire+0xadc/0x12f0
+[  140.949000]        [<ffffffff810c3152>] lock_acquire+0xa2/0x130
+[  140.949000]        [<ffffffff810bc547>] down_read_nested+0x57/0xa0
+[  140.949000]        [<ffffffffa0247602>] xfs_ilock+0xf2/0x120 [xfs]
+[  140.949000]        [<ffffffffa02476a4>] xfs_ilock_attr_map_shared+0x34/0x40 [xfs]
+[  140.949000]        [<ffffffffa021d229>] xfs_attr_get+0x79/0xb0 [xfs]
+[  140.949000]        [<ffffffffa02162f7>] xfs_xattr_get+0x37/0x50 [xfs]
+[  140.949000]        [<ffffffff812034cf>] generic_getxattr+0x4f/0x70
+[  140.949000]        [<ffffffff8128c8e0>] inode_doinit_with_dentry+0x150/0x640
+[  140.949000]        [<ffffffff8128cea8>] sb_finish_set_opts+0xd8/0x270
+[  140.949000]        [<ffffffff8128d2cf>] selinux_set_mnt_opts+0x28f/0x5e0
+[  140.949000]        [<ffffffff8128d688>] superblock_doinit+0x68/0xd0
+[  140.949000]        [<ffffffff8128d700>] delayed_superblock_init+0x10/0x20
+[  140.949000]        [<ffffffff811e0a82>] iterate_supers+0xb2/0x110
+[  140.949000]        [<ffffffff8128ef33>] selinux_complete_init+0x33/0x40
+[  140.949000]        [<ffffffff8129d6b4>] security_load_policy+0xf4/0x600
+[  140.949000]        [<ffffffff812908bc>] sel_write_load+0xac/0x750
+[  140.949000]        [<ffffffff811dd0ad>] vfs_write+0xbd/0x1f0
+[  140.949000]        [<ffffffff811ddc29>] SyS_write+0x49/0xb0
+[  140.949000]        [<ffffffff8164b269>] system_call_fastpath+0x16/0x1b
+[  140.949000] 
+[  140.949000] -> #0 (&isec->lock){+.+.+.}:
+[  140.949000]        [<ffffffff810c0c51>] check_prevs_add+0x951/0x970
+[  140.949000]        [<ffffffff810c214c>] __lock_acquire+0xadc/0x12f0
+[  140.949000]        [<ffffffff810c3152>] lock_acquire+0xa2/0x130
+[  140.949000]        [<ffffffff8163e038>] mutex_lock_nested+0x78/0x4f0
+[  140.949000]        [<ffffffff8128c835>] inode_doinit_with_dentry+0xa5/0x640
+[  140.949000]        [<ffffffff8128d97c>] selinux_d_instantiate+0x1c/0x20
+[  140.949000]        [<ffffffff81283a1b>] security_d_instantiate+0x1b/0x30
+[  140.949000]        [<ffffffff811f4fb0>] d_instantiate+0x50/0x70
+[  140.950000]        [<ffffffff8117eb10>] __shmem_file_setup+0xe0/0x1d0
+[  140.950000]        [<ffffffff81181488>] shmem_zero_setup+0x28/0x70
+[  140.950000]        [<ffffffff811999f3>] mmap_region+0x543/0x5a0
+[  140.950000]        [<ffffffff81199d51>] do_mmap_pgoff+0x301/0x3d0
+[  140.950000]        [<ffffffff81182bf0>] vm_mmap_pgoff+0x90/0xc0
+[  140.950000]        [<ffffffff81182c4d>] vm_mmap+0x2d/0x40
+[  140.950000]        [<ffffffffa0765177>] kvm_arch_prepare_memory_region+0x47/0x60 [kvm]
+[  140.950000]        [<ffffffffa074ed6f>] __kvm_set_memory_region+0x1ff/0x770 [kvm]
+[  140.950000]        [<ffffffffa074f30d>] kvm_set_memory_region+0x2d/0x50 [kvm]
+[  140.950000]        [<ffffffffa0b2e0da>] vmx_set_tss_addr+0x4a/0x190 [kvm_intel]
+[  140.950000]        [<ffffffffa0760bc0>] kvm_arch_vm_ioctl+0x9c0/0xb80 [kvm]
+[  140.950000]        [<ffffffffa074f3be>] kvm_vm_ioctl+0x8e/0x730 [kvm]
+[  140.950000]        [<ffffffff811f0e50>] do_vfs_ioctl+0x300/0x520
+[  140.950000]        [<ffffffff811f10f1>] SyS_ioctl+0x81/0xa0
+[  140.950000]        [<ffffffff8164b269>] system_call_fastpath+0x16/0x1b
+[  140.950000] 
+[  140.950000] other info that might help us debug this:
+[  140.950000] 
+[  140.950000] Chain exists of:
+[  140.950000]   &isec->lock --> &xfs_dir_ilock_class --> &mm->mmap_sem
+[  140.950000] 
+[  140.950000]  Possible unsafe locking scenario:
+[  140.950000] 
+[  140.950000]        CPU0                    CPU1
+[  140.950000]        ----                    ----
+[  140.950000]   lock(&mm->mmap_sem);
+[  140.950000]                                lock(&xfs_dir_ilock_class);
+[  140.950000]                                lock(&mm->mmap_sem);
+[  140.950000]   lock(&isec->lock);
+[  140.950000] 
+[  140.950000]  *** DEADLOCK ***
+[  140.950000] 
+[  140.950000] 2 locks held by qemu-kvm/5056:
+[  140.950000]  #0:  (&kvm->slots_lock){+.+.+.}, at: [<ffffffffa074f302>] kvm_set_memory_region+0x22/0x50 [kvm]
+[  140.950000]  #1:  (&mm->mmap_sem){++++++}, at: [<ffffffff81182bcf>] vm_mmap_pgoff+0x6f/0xc0
+[  140.950000] 
+[  140.950000] stack backtrace:
+[  140.950000] CPU: 76 PID: 5056 Comm: qemu-kvm Not tainted 3.15.0-rc7+ #93
+[  140.950000] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.48 05/07/2014
+[  140.950000]  ffffffff823925a0 ffff880830ba7750 ffffffff81638c00 ffffffff82321bc0
+[  140.950000]  ffff880830ba7790 ffffffff81632d63 ffff880830ba77c0 0000000000000001
+[  140.950000]  ffff8808359540d8 ffff8808359540d8 ffff880835953480 0000000000000002
+[  140.950000] Call Trace:
+[  140.950000]  [<ffffffff81638c00>] dump_stack+0x4d/0x66
+[  140.950000]  [<ffffffff81632d63>] print_circular_bug+0x1f9/0x207
+[  140.950000]  [<ffffffff810c0c51>] check_prevs_add+0x951/0x970
+[  140.950000]  [<ffffffff810c214c>] __lock_acquire+0xadc/0x12f0
+[  140.950000]  [<ffffffff810c3152>] lock_acquire+0xa2/0x130
+[  140.950000]  [<ffffffff8128c835>] ? inode_doinit_with_dentry+0xa5/0x640
+[  140.950000]  [<ffffffff8163e038>] mutex_lock_nested+0x78/0x4f0
+[  140.950000]  [<ffffffff8128c835>] ? inode_doinit_with_dentry+0xa5/0x640
+[  140.950000]  [<ffffffff8128c835>] ? inode_doinit_with_dentry+0xa5/0x640
+[  140.950000]  [<ffffffff8101cd69>] ? sched_clock+0x9/0x10
+[  140.950000]  [<ffffffff810a6545>] ? local_clock+0x25/0x30
+[  140.950000]  [<ffffffff8128c835>] inode_doinit_with_dentry+0xa5/0x640
+[  140.950000]  [<ffffffff8128d97c>] selinux_d_instantiate+0x1c/0x20
+[  140.950000]  [<ffffffff81283a1b>] security_d_instantiate+0x1b/0x30
+[  140.950000]  [<ffffffff811f4fb0>] d_instantiate+0x50/0x70
+[  140.950000]  [<ffffffff8117eb10>] __shmem_file_setup+0xe0/0x1d0
+[  140.950000]  [<ffffffff81181488>] shmem_zero_setup+0x28/0x70
+[  140.950000]  [<ffffffff811999f3>] mmap_region+0x543/0x5a0
+[  140.950000]  [<ffffffff81199d51>] do_mmap_pgoff+0x301/0x3d0
+[  140.950000]  [<ffffffff81182bf0>] vm_mmap_pgoff+0x90/0xc0
+[  140.950000]  [<ffffffff81182c4d>] vm_mmap+0x2d/0x40
+[  140.950000]  [<ffffffffa0765177>] kvm_arch_prepare_memory_region+0x47/0x60 [kvm]
+[  140.950000]  [<ffffffffa074ed6f>] __kvm_set_memory_region+0x1ff/0x770 [kvm]
+[  140.950000]  [<ffffffff810c1085>] ? mark_held_locks+0x75/0xa0
+[  140.950000]  [<ffffffffa074f30d>] kvm_set_memory_region+0x2d/0x50 [kvm]
+[  140.950000]  [<ffffffffa0b2e0da>] vmx_set_tss_addr+0x4a/0x190 [kvm_intel]
+[  140.950000]  [<ffffffffa0760bc0>] kvm_arch_vm_ioctl+0x9c0/0xb80 [kvm]
+[  140.950000]  [<ffffffff810c1920>] ? __lock_acquire+0x2b0/0x12f0
+[  140.950000]  [<ffffffff810c34e8>] ? lock_release_non_nested+0x308/0x350
+[  140.950000]  [<ffffffff8101cd69>] ? sched_clock+0x9/0x10
+[  140.950000]  [<ffffffff810a6545>] ? local_clock+0x25/0x30
+[  140.950000]  [<ffffffff810bde3f>] ? lock_release_holdtime.part.28+0xf/0x190
+[  140.950000]  [<ffffffffa074f3be>] kvm_vm_ioctl+0x8e/0x730 [kvm]
+[  140.950000]  [<ffffffff811f0e50>] do_vfs_ioctl+0x300/0x520
+[  140.950000]  [<ffffffff81287e86>] ? file_has_perm+0x86/0xa0
+[  140.950000]  [<ffffffff811f10f1>] SyS_ioctl+0x81/0xa0
+[  140.950000]  [<ffffffff8111383c>] ? __audit_syscall_entry+0x9c/0xf0
+[  140.950000]  [<ffffffff8164b269>] system_call_fastpath+0x16/0x1b
 
-17:00.0 0805: 1180:e822 (rev 01)
-17:00.3 0c00: 1180:e832 (rev 01)
-
-Tested-by: Pat Erley <pat-lkml@erley.org>
-
-
+Thanks,
+Gu
