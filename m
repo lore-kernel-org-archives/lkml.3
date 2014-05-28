@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaE1PQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:16:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5043 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753255AbaE1PQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:16:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,928,1392192000"; 
-   d="scan'208";a="547835298"
-Message-ID: <5385FDC1.2020800@intel.com>
-Date: Wed, 28 May 2014 23:16:17 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932176AbaE1PRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:17:06 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54976 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735AbaE1PRE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 11:17:04 -0400
+Date: Wed, 28 May 2014 17:16:46 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mark Brown <broonie@kernel.org>, "David S . Miller" <davem@davemloft.net>,
+        Nishanth Menon <nm@ti.com>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
+ ks8851 SPI chips
+Message-ID: <20140528151646.GU20155@pengutronix.de>
+References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
+ <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
+ <20140524124858.GR22111@sirena.org.uk>
+ <5385063F.30407@codeaurora.org>
 MIME-Version: 1.0
-To: Maurizio Lombardi <mlombard@redhat.com>, Ming Lei <tom.leiming@gmail.com>
-CC: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [jet.chen@intel.com: [bio] kernel BUG at drivers/block/virtio_blk.c:166!]
-References: <20140526194347.GB2271@dhcp-27-189.brq.redhat.com> <CACVXFVOaF-EOioE38sy9=2f-+rKECJnzUCSHrL-VZJi1Ycj_wA@mail.gmail.com> <20140527084359.GD2205@dhcp-27-189.brq.redhat.com> <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
-In-Reply-To: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5385063F.30407@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 07:24 PM, Maurizio Lombardi wrote:
-> On Tue, May 27, 2014 at 10:43:59AM +0200, Maurizio Lombardi wrote:
->>
->> But now I'm suspicious of this part of commit 3979ef4dcf:
->>
->>  failed:
->>         bvec->bv_page = NULL;
->>         bvec->bv_len = 0;
->>         bvec->bv_offset = 0;
->>         bio->bi_vcnt--;  <----------------
->>         blk_recount_segments(q, bio);
->>         return 0;
->>
->> Is decreasing bi_vcnt sufficient to guarantee that blk_recount_segments()
->> recalculates the correct number of physical segments?
->> Looking at the __blk_recalc_rq_segments() it appears it may not be the case.
->>
->> The question is how can we restore the correct number of physical segments in case
->> of failure without breaking anything...
->>
-> 
-> If my hypothesis is correct, the following patch should trigger a kernel panic,
-> Jet Chen, can you try it and let me know whether the BUG_ON is hit or not?
+Hello Stephen,
 
-Sorry for late respond. Dongsu has sent a patch for this issue.
-	message-id <1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
-Do you still need me to test the following patch ?
+On Tue, May 27, 2014 at 02:40:15PM -0700, Stephen Boyd wrote:
+> On 05/24/14 05:48, Mark Brown wrote:
+> > On Fri, May 23, 2014 at 12:57:17PM -0700, Stephen Boyd wrote:
+> >
+> >>  Optional properties:
+> >> -- vdd-supply:	supply for Ethernet mac
+> >> +- vdd-supply: analog 3.3V supply for Ethernet mac
+> >> +- vdd-io-supply: digital 1.8V IO supply for Ethernet mac
+> > So, according to the datasheet I managed to find this device has a
+> > supply VDD_IO (so normally written vdd-io-supply here), some other
+> > supplies which are tied to VDD_IO (so can probably be omitted) and a
+> > supply VDD_A3.3 none of which are optional.  There is an internal
+> > regulator which can be used to drop a higher voltage VDD_IO down for
+> > some of the supplies tied to it but that's essentially a noop from
+> > software as far as I can tell.  None of these supplies are obviously
+> > optional, though I've not read the datasheet in detail so I may have
+> > missed something here.
+There is a difference between the supply being optional for the hardware
+to work and the need to specify it in the device tree, isn't it? My
+expectation is that when it's not specified there is just nothing the
+the software needs to care for. 
 
+> > That said it looks like this is intended to be a supply for an external
+> > PHY rather than the device itself, but even so my original question
+> > about it being able to operate without power still applies.  Looking at
+> > the code it's certainly not doing any of the handling of a missing
+> > supply that I would associate with using _optional().
 > 
-> diff --git a/block/bio.c b/block/bio.c
-> index 0443694..763868f 100644
-> --- a/block/bio.c
-> +++ b/block/bio.c
-> @@ -701,6 +701,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  			  unsigned int max_sectors)
->  {
->  	int retried_segments = 0;
-> +	unsigned int phys_segments_orig;
->  	struct bio_vec *bvec;
->  
->  	/*
-> @@ -751,6 +752,9 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  	if (bio->bi_vcnt >= bio->bi_max_vecs)
->  		return 0;
->  
-> +	blk_recount_segments(q, bio);
-> +	phys_segments_orig = bio->bi_phys_segments;
-> +
->  	/*
->  	 * setup the new entry, we might clear it again later if we
->  	 * cannot add the page
-> @@ -811,6 +815,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  	bvec->bv_offset = 0;
->  	bio->bi_vcnt--;
->  	blk_recount_segments(q, bio);
-> +	BUG_ON(phys_segments_orig != bio->bi_phys_segments);
->  	return 0;
->  }
-> 
-> 
-> Regards,
-> Maurizio Lombardi 
-> 
+> I agree, both supplies don't look optional. Unfortunately
+> efm32gg-dk3750.dts doesn't look to be listing any supply, and this
+> driver only recently got support for the VDD_A3.3 supply that the omap
+> board uses (adding Uwe for any comments on efm setup). I presume on
+If I read the schematic correctly there is nothing to regulate on the
+efm32 dev board. If you want to take a look on the schematic yourself,
+it's contained in the documentation package available at
+http://www.silabs.com/products/mcu/lowpower/pages/efm32gg-dk3750.aspx .
+BDR3201A_A02_sch.pdf, page 3 of 22.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
