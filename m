@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaE1KlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:41:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55920 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaE1KlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 06:41:17 -0400
-Date: Wed, 28 May 2014 03:41:14 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acornscsi: remove linked command support
-Message-ID: <20140528104114.GE13542@infradead.org>
-References: <1400926433.31526.89.camel@x220>
+	id S1752247AbaE1KrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 06:47:14 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:53484 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751370AbaE1KrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 06:47:13 -0400
+Message-ID: <5385BEAA.1020006@mev.co.uk>
+Date: Wed, 28 May 2014 11:47:06 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400926433.31526.89.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Marcin Kostrzewa <marckostrzewa@gmail.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fred Akers <knivey@botops.net>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: comedi: addi-data: clean up formatting of the
+ else statement
+References: <1401201539-1098-1-git-send-email-marckostrzewa@gmail.com>
+In-Reply-To: <1401201539-1098-1-git-send-email-marckostrzewa@gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 24, 2014 at 12:13:53PM +0200, Paul Bolle wrote:
-> The acornscsi driver was added in v2.1.88. It has always #undef-ed
-> CONFIG_SCSI_ACORNSCSI_LINK near the top of acornscsi.c. And, just to be
-> sure, it has also always triggered a preprocessor error if
-> CONFIG_SCSI_ACORNSCSI_LINK was still defined. But, as far as I can see,
-> it has never even been possible to set SCSI_ACORNSCSI_LINK through
-> kconfig, or its predecessors, in the first place.
-> 
-> Let's remove the code involved.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On 2014-05-27 15:38, Marcin Kostrzewa wrote:
+> Signed-off-by: Marcin Kostrzewa <marckostrzewa@gmail.com>
+> ---
+>   drivers/staging/comedi/drivers/addi-data/hwdrv_apci3501.c | 6 +-----
+>   1 file changed, 1 insertion(+), 5 deletions(-)
 
-Looks good,
+Thanks!
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-And I have to disagree with James here, removing code that isn't even
-compiled always is an improvement, especially for an unmaintained
-driver.
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
