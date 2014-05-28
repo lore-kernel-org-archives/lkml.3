@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaE1LnB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 07:43:01 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:50975 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313AbaE1Lm7 (ORCPT
+	id S1753133AbaE1LoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:44:16 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:46694 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaE1LoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 07:42:59 -0400
-Date: Wed, 28 May 2014 12:42:48 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 1/9] procfs: use flags to deny or allow access to
- /proc/<pid>/$entry
-Message-ID: <20140528114248.GA2893@dztty>
-References: <1401110850-3552-1-git-send-email-tixxdz@opendz.org>
- <1401110850-3552-2-git-send-email-tixxdz@opendz.org>
- <CAGXu5jK_VkS7MPD4seQ2Bfqzi3+=ggfU3JOh6bkgu-YOxZCyhg@mail.gmail.com>
+	Wed, 28 May 2014 07:44:15 -0400
+Message-ID: <5385CBCE.9040507@huawei.com>
+Date: Wed, 28 May 2014 19:43:10 +0800
+From: Libo Chen <libo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jK_VkS7MPD4seQ2Bfqzi3+=ggfU3JOh6bkgu-YOxZCyhg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Mike Galbraith <umgwanakikbuti@gmail.com>, <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, "Li Zefan" <lizefan@huawei.com>,
+        <peterz@infradead.org>, Huang Qiang <h.huangqiang@huawei.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Borislav Petkov" <bp@alien8.de>, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: balance storm
+References: <5382AF2E.1040407@huawei.com>  <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com>  <1401113960.23186.41.camel@marge.simpson.net> <53844510.1040502@huawei.com>  <1401184553.5134.115.camel@marge.simpson.net> <53848A2C.5010209@huawei.com>  <1401196807.5134.132.camel@marge.simpson.net> <53853604.50500@huawei.com> <1401242038.4721.14.camel@marge.simpson.net> <5385881D.4090601@huawei.com> <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 11:38:54AM -0700, Kees Cook wrote:
-> On Mon, May 26, 2014 at 6:27 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > Add the deny or allow flags, so we can perform proper permission checks
-> > and set the result accordingly. These flags are needed in case we have
-> > to cache the result of permission checks that are done during ->open()
-> > time. Later during ->read(), we can decide to allow or deny the read().
-> >
-> > The pid entries that need these flags are:
-> > /proc/<pid>/stat
-> > /proc/<pid>/wchan
-> > /proc/<pid>/maps  (will be handled in next patches).
-> >
-> > These files are world readable, userspace depend on that. To prevent
-> > ASLR leaks and to avoid breaking userspace, we follow this scheme:
-> >
-> > a) Perform permission checks during ->open()
-> > b) Cache the result of a) and return success
-> > c) Recheck the cached result during ->read()
-> > d) If cached == PID_ENTRY_DENY:
-> >    then we replace the sensitive fields with zeros, userspace won't
-> >    break and sensitive fields are protected.
-> >
-> > These flags are internal to /proc/<pid>/*
+On 2014/5/28 17:08, Thomas Gleixner wrote:
+> On Wed, 28 May 2014, Libo Chen wrote:
 > 
-> Since this complex area of behavior has seen a lot of changes, I think
-> I'd really like to see some tests in tools/testsing/selftests/
-> somewhere that actually codify what the expected behaviors should be.
-Ok, sounds good!
-
-> We have a lot of corner cases, a lot of userspace behaviors to retain,
-> and given how fragile this area has been, I'd love to avoid seeing
-> regressions. It seems like we need to test file permissions, open/read
-> permissions, contents, etc, under many different cases (priv, unpriv,
-> passing between priv/unpriv and unpriv/priv, ptrace checks, etc).
-Yes, nice.
-
-> If we could do a "make run_tests" in a selftests subdirectory, it'd be
-> much easier to a) validate these fixes, and b) avoid regressions.
-Ok!
-
-Since I'm working on this on my free time and when time permits, please
-give me some days! I'll try to handle the cases I've discussed here.
-
-Now Kees, some of these files are still world readable and affected:
-smaps, maps ... I know, it's a matter of suid binary on your distro, and
-every one can exploit it. So what to do: make the tests public or write
-the tests and fix these entries then at last make the tests public ?
-
-
-Where should I send the tests ?
-
-Thank you!
-
-
-> -Kees
+>> On 2014/5/28 9:53, Mike Galbraith wrote:
+>>> On Wed, 2014-05-28 at 09:04 +0800, Libo Chen wrote:
+>>>
+>>>> oh yes, no tsc only hpet in my box.
+>>>
+>>> Making poor E5-2658 box a crippled wreck.
+>>
+>> yes,it is. But cpu usage will be down from 15% to 5% when binding
+>> cpu, so maybe read_hpet is not the root cause.
 > 
-> -- 
-> Kees Cook
-> Chrome OS Security
+> Definitely hpet _IS_ the root cause on a machine as large as this,
+> simply because everything gets serialized on the hpet access.
+> 
+> Binding stuff to cpus just makes the timing behaviour different, so
+> the hpet serialization is not that prominent, but still bad enough.
+> 
+> Talk to your HW/BIOS vendor. The kernel cannot do anything about
+> defunct hardware.
 
--- 
-Djalal Harouni
-http://opendz.org
+thank you for your reply.but suse sp2 is very good in this scene.
+Can it be said there has a bug, then community fix it later,
+so it's just a coincidence?
+
+Libo
+
+> 
+> Thanks,
+> 
+> 	tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+
