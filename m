@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaE1My1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:54:27 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:43191 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbaE1MyZ (ORCPT
+	id S1753374AbaE1Mz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:55:56 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19308 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068AbaE1Mzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:54:25 -0400
+	Wed, 28 May 2014 08:55:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 28 May 2014 05:48:56 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v5 0/5] efuse driver for Tegra
+Date: Wed, 28 May 2014 15:54:32 +0300
+Message-ID: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <20140528081053.GP11096@twins.programming.kicks-ass.net>
-References: <1401257890-30535-1-git-send-email-zheng.z.yan@intel.com>
-	<1401257890-30535-7-git-send-email-zheng.z.yan@intel.com>
-	<20140528081053.GP11096@twins.programming.kicks-ass.net>
-Date: Wed, 28 May 2014 14:54:25 +0200
-Message-ID: <CABPqkBTwU8mqHimfUnn0WEonL_reCcBED+tQx3XgwJh7gnFEsw@mail.gmail.com>
-Subject: Re: [RFC PATCH 6/7] perf, x86: large PEBS interrupt threshold
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:10 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, May 28, 2014 at 02:18:09PM +0800, Yan, Zheng wrote:
->> PEBS always had the capability to log samples to its buffers without
->> an interrupt. Traditionally perf has not used this but always set the
->> PEBS threshold to one.
->>
->> For the common cases we still need to use the PMI because the PEBS
->> hardware has various limitations. The biggest one is that it can not
->> supply a callgraph. It also requires setting a fixed period, as the
->> hardware does not support adaptive period. Another issue is that it
->> cannot supply a time stamp and some other options.
->
-> So the reason I've never done this is because Intel has never fully
-> explained the demuxing of pebs events.
->
-> In particular, the 0x90 offset (IA32_PERF_GLOBAL_STATUS). Intel once
-> confirmed to me that that is a direct copy of the similarly named MSR at
-> the time of the PEBS assist.
->
-> This is a problem, since if multiple counters overflow multiple bits
-> will be set and its (afaict) ambiguous which event is for which counter.
->
-I am not sure how having only one entry in the PEBS buffer solves this.
-I think PEBS will create only one entry if multiple counters overflow
-simultaneously. That OVFL_STATUS bitmask will have multiple bits
-set. I understand the problem in perf_events because you need to
-assign a sample to an event and not all events may record the same
-info in the sampling buffer.
+This driver allows userspace to read the raw efuse data. Its userspace
+interface is modelled after the sunxi_sid driver which provides similar
+functionality for some Allwinner SoCs. It has been tested on
+Tegra20 (ventana), Tegra30 (beaverboard), Tegra114 (dalmore) and
+Tegra124 (jetson TK1).
 
-> At one point it was said they'd fix this 0x90 offset to indicate which
-> counter triggered the event, but I've never heard back if this happened.
->
-> So until you can give an official Intel answer on how all this demuxing
-> is supposed to work and be correct this patch set isn't moving anywhere.
->
->> To supply a TID it
->> requires flushing on context switch. It can however supply the IP
->
-> On SNB+, previous to SNB it would need to have precise==1. I've seen no
-> such logic in. Instead you seem to artificially limit it to SNB+, for no
-> apparent reason to me.
+Changes since v1:
+
+* Add documentation for sysfs interface
+* Cleanup messages
+
+Changes since v2:
+
+* Incorporate early fuse code
+* Remove module support
+* Make driver always build when Tegra platform is selected
+* Add DT binding document
+* Address comments on v2
+
+Changes since v3:
+
+* Document sysfs file format
+* Added apbmisc DT node for access to the apbmisc registers
+* Address comments on v3
+
+Changes since v4:
+
+* Provide fallback to hardcoded 0x70000800 in case the apbmisc DT node is
+  missing. This is exactly what the current code does and prevents a system
+  crash in that case due to an invalid memory access by tegra_read_chipid()
+* Added tegra_fuse_readl() function for drivers to read calibration data
+
+Peter De Schrijver (5):
+  ARM: tegra: export apb dma readl/writel
+  ARM: tegra: move fuse exports to tegra-soc.h
+  misc: fuse: Add efuse driver for Tegra
+  ARM: tegra: Add efuse and apbmisc bindings
+  ARM: tegra: build new fuse driver in drivers/misc
+
+ Documentation/ABI/testing/sysfs-driver-tegra-fuse  |  201 +++++++++++++
+ .../devicetree/bindings/fuse/fuse-tegra.txt        |   30 ++
+ .../devicetree/bindings/misc/nvidia,apbmisc.txt    |   13 +
+ arch/arm/boot/dts/tegra114.dtsi                    |   12 +
+ arch/arm/boot/dts/tegra124.dtsi                    |   12 +
+ arch/arm/boot/dts/tegra20.dtsi                     |   12 +
+ arch/arm/boot/dts/tegra30.dtsi                     |   12 +
+ arch/arm/mach-tegra/Makefile                       |    4 -
+ arch/arm/mach-tegra/apbio.c                        |   51 ++--
+ arch/arm/mach-tegra/cpuidle.c                      |    2 +-
+ arch/arm/mach-tegra/flowctrl.c                     |    2 +-
+ arch/arm/mach-tegra/fuse.c                         |  252 -----------------
+ arch/arm/mach-tegra/fuse.h                         |   79 ------
+ arch/arm/mach-tegra/hotplug.c                      |    2 +-
+ arch/arm/mach-tegra/platsmp.c                      |    2 +-
+ arch/arm/mach-tegra/pm.c                           |    2 +-
+ arch/arm/mach-tegra/pmc.c                          |    2 +-
+ arch/arm/mach-tegra/powergate.c                    |    2 +-
+ arch/arm/mach-tegra/reset-handler.S                |    2 +-
+ arch/arm/mach-tegra/reset.c                        |    2 +-
+ arch/arm/mach-tegra/sleep-tegra30.S                |    2 +-
+ arch/arm/mach-tegra/tegra.c                        |    2 +-
+ arch/arm/mach-tegra/tegra114_speedo.c              |  104 -------
+ arch/arm/mach-tegra/tegra20_speedo.c               |  109 --------
+ arch/arm/mach-tegra/tegra30_speedo.c               |  292 -------------------
+ drivers/misc/Makefile                              |    2 +
+ drivers/misc/fuse/Makefile                         |    1 +
+ drivers/misc/fuse/tegra/Makefile                   |    7 +
+ drivers/misc/fuse/tegra/fuse-tegra.c               |  250 +++++++++++++++++
+ drivers/misc/fuse/tegra/fuse-tegra20.c             |  134 +++++++++
+ drivers/misc/fuse/tegra/fuse-tegra30.c             |  177 ++++++++++++
+ drivers/misc/fuse/tegra/fuse.h                     |   82 ++++++
+ drivers/misc/fuse/tegra/speedo-tegra114.c          |  110 ++++++++
+ drivers/misc/fuse/tegra/speedo-tegra124.c          |  180 ++++++++++++
+ drivers/misc/fuse/tegra/speedo-tegra20.c           |  110 ++++++++
+ drivers/misc/fuse/tegra/speedo-tegra30.c           |  294 ++++++++++++++++++++
+ include/linux/tegra-soc.h                          |   43 +++
+ 37 files changed, 1724 insertions(+), 871 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-tegra-fuse
+ create mode 100644 Documentation/devicetree/bindings/fuse/fuse-tegra.txt
+ create mode 100644 Documentation/devicetree/bindings/misc/nvidia,apbmisc.txt
+ delete mode 100644 arch/arm/mach-tegra/fuse.c
+ delete mode 100644 arch/arm/mach-tegra/fuse.h
+ delete mode 100644 arch/arm/mach-tegra/tegra114_speedo.c
+ delete mode 100644 arch/arm/mach-tegra/tegra20_speedo.c
+ delete mode 100644 arch/arm/mach-tegra/tegra30_speedo.c
+ create mode 100644 drivers/misc/fuse/Makefile
+ create mode 100644 drivers/misc/fuse/tegra/Makefile
+ create mode 100644 drivers/misc/fuse/tegra/fuse-tegra.c
+ create mode 100644 drivers/misc/fuse/tegra/fuse-tegra20.c
+ create mode 100644 drivers/misc/fuse/tegra/fuse-tegra30.c
+ create mode 100644 drivers/misc/fuse/tegra/fuse.h
+ create mode 100644 drivers/misc/fuse/tegra/speedo-tegra114.c
+ create mode 100644 drivers/misc/fuse/tegra/speedo-tegra124.c
+ create mode 100644 drivers/misc/fuse/tegra/speedo-tegra20.c
+ create mode 100644 drivers/misc/fuse/tegra/speedo-tegra30.c
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
