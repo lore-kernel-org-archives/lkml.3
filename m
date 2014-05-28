@@ -1,165 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaE1A0F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:26:05 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46682 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbaE1A0D (ORCPT
+	id S1753775AbaE1A0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:26:15 -0400
+Received: from mail-yk0-f177.google.com ([209.85.160.177]:63554 "EHLO
+	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731AbaE1A0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:26:03 -0400
-Date: Tue, 27 May 2014 17:25:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Minyard <cminyard@mvista.com>,
-        Stanislav Meduna <stano@meduna.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with irqsoff
- tracers
-Message-ID: <20140528002557.GR22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org>
- <17051981.niWmA6MIgX@wuerfel>
- <20140527174847.7b405b5c@gandalf.local.home>
- <53850FF3.8050107@codeaurora.org>
- <20140527193050.4606a014@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140527193050.4606a014@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052800-6688-0000-0000-00000222B270
+	Tue, 27 May 2014 20:26:12 -0400
+From: Cody P Schafer <dev@codyps.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Borislav Petkov <bp@suse.de>, Cody P Schafer <dev@codyps.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Michael Ellerman <mpe@ellerman.id.au>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: linux-doc@vger.kernel.org
+Subject: [PATCH 00/16] perf: add support for parameterized events from sysfs (powerpc 24x7)
+Date: Tue, 27 May 2014 17:21:55 -0700
+Message-Id: <1401236684-10579-1-git-send-email-dev@codyps.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 07:30:50PM -0400, Steven Rostedt wrote:
-> On Tue, 27 May 2014 15:21:39 -0700
-> Stephen Boyd <sboyd@codeaurora.org> wrote:
-> 
-> 
-> > > Arnd brings up a good point. 
-> > 
-> > Hrm.. still not getting Arnd's mails.
-> 
-> Strange. What mail service do you have. Could they be blocking him?
-> 
-> > 
-> > > If we disable irqs off tracing completely,
-> > > we may be missing places in the idle path that disable interrupts for
-> > > long periods of time. We may want to move the stop down further.
-> > >
-> > > The way it works (IIRC), and why tracing can start again is that it can
-> > > nest. Perhaps we need to stop it further down if we can't move it
-> > > completely.
-> > >
-> > 
-> > I'm not sure how much deeper it can go and I'm afraid it will become a
-> > game of whack-a-mole. I already see two places that disable and reenable
-> > irqs after stop_critical_timings() is called (first in rcu_idle_enter()
-> > and second in clockevents_notify()). Should rcu_idle_enter() move to
-> > raw_local_irq_save()? It looks like that path calls rcu_sched_qs() and
-> > on tiny RCU that again needs the raw_ treatement. We can probably call
-> > stop_critical_timings() after rcu_idle_enter() to fix this.
-> 
-> I don't think we need to whack-a-mole. The start stop should be around
-> where it goes to sleep.
-> 
-> > 
-> > What about clockevents_notify? __raw_spin_lock_irqsave() should probably
-> > use raw_local_irqsave().
-> 
-> No that solution is even worse. We need lockdep working here.
-> 
-> > 
-> > If we go the raw route, do we even need stop/start_critical_timings()?
-> > Can't we just use raw accessors in the idle paths
-> > (tick_nohz_idle_{enter,exit}(), cpuidle_enter(), etc.) and get rid of
-> > the stop/start stuff completely? I admit this patch is pretty much a big
-> > sledge hammer that tries to make things simple, but if there is some
-> > benefit to the raw accessors I'm willing to send patches to fix all the
-> > call sites.
-> > 
-> 
-> How about the following. I don't see any reason stop_critical_timings()
-> can't be called from within rcu_idle code, as it doesn't use any rcu.
-> 
-> Paul, Peter, see anything wrong with this?
+What this patchset does:
 
-I don't immediately see any RCU use by stop_critical_timings(), but could
-easily have missed something.  But CONFIG_PROVE_RCU=y will normally yell
-if something using RCU showed up.
+ - the first patch (override sysfs in tools/perf via SYSFS_PATH) was sent out
+   previously, but needed a resend anyhow. Having it is useful for testing the
+   later changes to tools/perf.
+ - the second patch is a bugfix to the powerpc hv-24x7 code which was
+   previously sent out, which is a good idea to have when testing these patches
+   on POWER8 hardware.
 
-Looks plausible, but clearly needs testing across the usual array of
-configs and arches.
+ - document perf sysfs and the changes to add parameterized events
+   - semi-notably: removes the growing list of specific POWER cpu events and
+     begins documenting them generically, much like the docs for
+     /sys/modules/MODULENAME do for modules.
+ - tools/perf changes to support parameterized events
+ - export some parameterized events from the powerpc pmus hv_24x7 and hv_gpci
 
-							Thanx, Paul
+Description of "event parameters" from the documentation patch:
 
-> -- Steve
-> 
-> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-> index 8f4390a..f5e6a64 100644
-> --- a/kernel/sched/idle.c
-> +++ b/kernel/sched/idle.c
-> @@ -88,12 +88,6 @@ static int cpuidle_idle_call(void)
->  	}
-> 
->  	/*
-> -	 * During the idle period, stop measuring the disabled irqs
-> -	 * critical sections latencies
-> -	 */
-> -	stop_critical_timings();
-> -
-> -	/*
->  	 * Tell the RCU framework we are entering an idle section,
->  	 * so no more rcu read side critical sections and one more
->  	 * step to the grace period
-> @@ -144,6 +138,12 @@ static int cpuidle_idle_call(void)
->  				trace_cpu_idle_rcuidle(next_state, dev->cpu);
-> 
->  				/*
-> +				 * During the idle period, stop measuring the
-> +				 * disabled irqs critical sections latencies
-> +				 */
-> +				stop_critical_timings();
-> +
-> +				/*
->  				 * Enter the idle state previously
->  				 * returned by the governor
->  				 * decision. This function will block
-> @@ -154,6 +154,8 @@ static int cpuidle_idle_call(void)
->  				entered_state = cpuidle_enter(drv, dev,
->  							      next_state);
-> 
-> +				start_critical_timings();
-> +
->  				trace_cpu_idle_rcuidle(PWR_EVENT_EXIT,
->  						       dev->cpu);
-> 
-> @@ -175,8 +177,11 @@ static int cpuidle_idle_call(void)
->  	 * We can't use the cpuidle framework, let's use the default
->  	 * idle routine
->  	 */
-> -	if (ret)
-> +	if (ret) {
-> +		stop_critical_timings();
->  		arch_cpu_idle();
-> +		start_critical_timings();
-> +	}
-> 
->  	__current_set_polling();
-> 
-> @@ -188,7 +193,6 @@ static int cpuidle_idle_call(void)
->  		local_irq_enable();
-> 
->  	rcu_idle_exit();
-> -	start_critical_timings();
-> 
->  	return 0;
->  }
-> 
+    Event parameters are a basic way for partial events to be specified in
+    sysfs with per-event names given to the fields that need to be filled in
+    when using a particular event.
+
+    It is intended for supporting cases where the single 'cpu' parameter is
+    insufficient. For example, POWER 8 has events for physical
+    sockets/cores/cpus that are accessible from with virtual machines. To
+    keep using the single 'cpu' parameter we'd need to perform a mapping
+    between Linux's cpus and the physical machine's cpus (in this case
+    Linux is running under a hypervisor). This isn't possible because
+    bindings between our cpus and physical cpus may not be fixed, and we
+    probably won't have a "cpu" on each physical cpu.
+
+Description of the sysfs contents when events are parameterized (copied from an
+included patch):
+
+	Examples:
+
+		domain=0x1,offset=0x8,starting_index=phys_cpu
+
+	In the case of the last example, a value replacing "phys_cpu"
+	would need to be provided by the user selecting the particular
+	event. This is refered to as "event parameterization". All
+	non-numerical values indicate an event parameter.
+
+Notes on how perf-list displays parameterized events (and how to use them,
+again culled from an included patch):
+
+	PARAMETERIZED EVENTS
+	--------------------
+
+	Some pmu events listed by 'perf-list' will be displayed with '?' in them. For
+	example:
+
+	  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
+
+	This means that when provided as an event, a value for phys_processor_idx must
+	also be supplied. For example:
+
+	  perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
+
+
+Cody P Schafer (16):
+  tools/perf: allow overriding sysfs and proc finding with env var
+  powerpc/perf/hv-24x7: use kmem_cache instead of aligned stack
+    allocations
+  perf Documentation: sysfs events/ interfaces
+  perf Documentation: remove duplicated docs for powerpc cpu specific
+    events
+  perf Documentation: add event parameters
+  tools/perf: annotate list_head with type info
+  tools/perf: support parsing parameterized events
+  tools/perf: extend format_alias() to include event parameters
+  tools/perf: document parameterized events and note symbolically formed
+    events
+  perf: provide sysfs_show for struct perf_pmu_events_attr
+  byteorder: provide a linux/byteorder.h with {be,le}_to_cpu() and
+    cpu_to_{be,le}() macros
+  powerpc/perf/hv-24x7: parse catalog and populate sysfs with events
+  powerpc/perf/hv-24x7: Documentaion for new sysfs entries which expose
+    descriptions
+  perf: add PMU_EVENT_ATTR_STRING() helper
+  powerpc/perf/{hv-gpci,hv-common}: generate requests with counters
+    annotated
+  powerpc/perf/hv-gpci: add the remaining gpci requests
+
+ .../testing/sysfs-bus-event_source-devices-events  | 617 ++--------------
+ .../testing/sysfs-bus-event_source-devices-hv_24x7 |  22 +
+ arch/powerpc/perf/hv-24x7-catalog.h                |  25 +
+ arch/powerpc/perf/hv-24x7-domains.h                |  19 +
+ arch/powerpc/perf/hv-24x7.c                        | 812 ++++++++++++++++++++-
+ arch/powerpc/perf/hv-24x7.h                        |  12 +-
+ arch/powerpc/perf/hv-common.c                      |  10 +-
+ arch/powerpc/perf/hv-gpci-requests.h               | 258 +++++++
+ arch/powerpc/perf/hv-gpci.c                        |   8 +
+ arch/powerpc/perf/hv-gpci.h                        |  37 +-
+ arch/powerpc/perf/req-gen/_begin.h                 |  13 +
+ arch/powerpc/perf/req-gen/_clear.h                 |   5 +
+ arch/powerpc/perf/req-gen/_end.h                   |   4 +
+ arch/powerpc/perf/req-gen/_request-begin.h         |  15 +
+ arch/powerpc/perf/req-gen/_request-end.h           |   8 +
+ arch/powerpc/perf/req-gen/perf.h                   | 155 ++++
+ include/linux/byteorder.h                          |  34 +
+ include/linux/perf_event.h                         |  10 +
+ kernel/events/core.c                               |   8 +
+ tools/lib/api/fs/fs.c                              |  43 +-
+ tools/perf/Documentation/perf-list.txt             |  13 +
+ tools/perf/Documentation/perf-record.txt           |   5 +
+ tools/perf/util/parse-events.h                     |   1 +
+ tools/perf/util/pmu.c                              |  85 ++-
+ tools/perf/util/pmu.h                              |   6 +-
+ 25 files changed, 1589 insertions(+), 636 deletions(-)
+ create mode 100644 arch/powerpc/perf/hv-24x7-domains.h
+ create mode 100644 arch/powerpc/perf/hv-gpci-requests.h
+ create mode 100644 arch/powerpc/perf/req-gen/_begin.h
+ create mode 100644 arch/powerpc/perf/req-gen/_clear.h
+ create mode 100644 arch/powerpc/perf/req-gen/_end.h
+ create mode 100644 arch/powerpc/perf/req-gen/_request-begin.h
+ create mode 100644 arch/powerpc/perf/req-gen/_request-end.h
+ create mode 100644 arch/powerpc/perf/req-gen/perf.h
+ create mode 100644 include/linux/byteorder.h
+
+-- 
+1.9.3
 
