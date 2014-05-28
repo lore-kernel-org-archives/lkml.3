@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaE1A1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:27:37 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:38534 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaE1A1f (ORCPT
+	id S1753995AbaE1A1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:27:42 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:59034 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150AbaE1A1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:27:35 -0400
+	Tue, 27 May 2014 20:27:39 -0400
 From: Cody P Schafer <dev@codyps.com>
 To: LKML <linux-kernel@vger.kernel.org>,
         Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Cody P Schafer <dev@codyps.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 09/16] tools/perf: document parameterized events and note symbolically formed events
-Date: Tue, 27 May 2014 17:22:04 -0700
-Message-Id: <1401236684-10579-10-git-send-email-dev@codyps.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Cody P Schafer <dev@codyps.com>
+Subject: [PATCH 10/16] perf: provide sysfs_show for struct perf_pmu_events_attr
+Date: Tue, 27 May 2014 17:22:05 -0700
+Message-Id: <1401236684-10579-11-git-send-email-dev@codyps.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401236684-10579-1-git-send-email-dev@codyps.com>
 References: <1401236684-10579-1-git-send-email-dev@codyps.com>
@@ -32,53 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(struct perf_pmu_events_attr) is defined in include/linux/perf_event.h,
+but the only "show" for it is in x86 and contains x86 specific stuff.
+
+Make a generic one for those of us who are just using the event_str.
+
 CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Signed-off-by: Cody P Schafer <dev@codyps.com>
 ---
- tools/perf/Documentation/perf-list.txt   | 13 +++++++++++++
- tools/perf/Documentation/perf-record.txt |  5 +++++
- 2 files changed, 18 insertions(+)
+ include/linux/perf_event.h | 3 +++
+ kernel/events/core.c       | 8 ++++++++
+ 2 files changed, 11 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 6fce6a6..626818b 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -89,6 +89,19 @@ raw encoding of 0x1A8 can be used:
- You should refer to the processor specific documentation for getting these
- details. Some of them are referenced in the SEE ALSO section below.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 3356abc..6c1d6dd 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -867,6 +867,9 @@ struct perf_pmu_events_attr {
+ 	const char *event_str;
+ };
  
-+PARAMETERIZED EVENTS
-+--------------------
++ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
++			      char *page);
 +
-+Some pmu events listed by 'perf-list' will be displayed with '?' in them. For
-+example:
-+
-+  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
-+
-+This means that when provided as an event, a value for phys_processor_idx must
-+also be supplied. For example:
-+
-+  perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
-+
- OPTIONS
- -------
+ #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
+ static struct perf_pmu_events_attr _var = {				\
+ 	.attr = __ATTR(_name, 0444, _show, NULL),			\
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f83a71a..6830e21 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7971,6 +7971,14 @@ void __init perf_event_init(void)
+ 		     != 1024);
+ }
  
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index c71b0f3..c005180 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -33,6 +33,11 @@ OPTIONS
-         - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
- 	  hexadecimal event descriptor.
- 
-+	- a symbolicly formed PMU event like 'pmu/value1=0x3,value2/' where
-+	  'value1' and 'value2' are defined as formats in
-+	  /sys/bus/event_sources/devices/pmu/format/* OR are one of 'config',
-+	  'config1', 'config2'.
++ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
++			      char *page)
++{
++	struct perf_pmu_events_attr *pmu_attr =
++		container_of(attr, struct perf_pmu_events_attr, attr);
++	return sprintf(page, "%s\n", pmu_attr->event_str);
++}
 +
-         - a hardware breakpoint event in the form of '\mem:addr[:access]'
-           where addr is the address in memory you want to break in.
-           Access is the memory access type (read, write, execute) it can
+ static int __init perf_event_sysfs_init(void)
+ {
+ 	struct pmu *pmu;
 -- 
 1.9.3
 
