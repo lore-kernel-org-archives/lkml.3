@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaE1IQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:16:50 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:58704 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaE1IQs (ORCPT
+	id S932126AbaE1IRM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:17:12 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:51624 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472AbaE1IRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:16:48 -0400
-Message-ID: <1401265004.9793.19.camel@marge.simpson.net>
-Subject: Re: balance storm
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
-        peterz@infradead.org, Huang Qiang <h.huangqiang@huawei.com>
-Date: Wed, 28 May 2014 10:16:44 +0200
-In-Reply-To: <5385881D.4090601@huawei.com>
-References: <5382AF2E.1040407@huawei.com>
-	 <1401081082.5339.41.camel@marge.simpson.net> <538330B7.5070503@huawei.com>
-	 <1401113960.23186.41.camel@marge.simpson.net> <53844510.1040502@huawei.com>
-	 <1401184553.5134.115.camel@marge.simpson.net> <53848A2C.5010209@huawei.com>
-	 <1401196807.5134.132.camel@marge.simpson.net> <53853604.50500@huawei.com>
-	 <1401242038.4721.14.camel@marge.simpson.net> <5385881D.4090601@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 28 May 2014 04:17:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1401172056-25743-1-git-send-email-iivanov@mm-sol.com>
+References: <CACRpkdZyLxMTSygRP6pD-mxghQ_D6tQ821tvn8GYw0Rnh9hZoQ@mail.gmail.com>
+	<1401172056-25743-1-git-send-email-iivanov@mm-sol.com>
+Date: Wed, 28 May 2014 10:17:10 +0200
+Message-ID: <CACRpkdYB5=sJZbcLFVMR5C391_HozGFQzNoUj6BRVzH03gBfkA@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: Enable "power-source" to be extracted from DT files
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        James Hogan <james.hogan@imgtec.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 14:54 +0800, Libo Chen wrote: 
-> On 2014/5/28 9:53, Mike Galbraith wrote:
-> > On Wed, 2014-05-28 at 09:04 +0800, Libo Chen wrote:
-> > 
-> >> oh yes, no tsc only hpet in my box.
-> > 
-> > Making poor E5-2658 box a crippled wreck.
-> 
-> yes,it is. But cpu usage will be down from 15% to 5% when binding cpu, so maybe read_hpet
-> is not the root cause.
+On Tue, May 27, 2014 at 8:27 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
 
-I don't think anyone will be particularly interested in making kernel
-changes based upon the behavior of a broken box.  The problem we were
-discussing is real enough though, it's just a question of severity.
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>
+> Add "power-source" property to generic options used for DT parsing files.
+> This  enables drivers, which use generic pin configurations, to get the
+> value passed to this property.
+>
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 
--Mike
+Patch applied. Cannot think of anything better anyway.
 
+Yours,
+Linus Walleij
