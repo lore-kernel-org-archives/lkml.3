@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305AbaE1QS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:18:59 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:61615 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729AbaE1QS5 (ORCPT
+	id S932317AbaE1QTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:19:41 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:21906 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752911AbaE1QTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:18:57 -0400
+	Wed, 28 May 2014 12:19:40 -0400
+Message-ID: <53860C97.8080708@fb.com>
+Date: Wed, 28 May 2014 10:19:35 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1400792413-21618-2-git-send-email-sboyd@codeaurora.org>
-References: <1400792413-21618-1-git-send-email-sboyd@codeaurora.org>
-	<1400792413-21618-2-git-send-email-sboyd@codeaurora.org>
-Date: Wed, 28 May 2014 11:18:56 -0500
-Message-ID: <CAL_JsqK1wkXMkJCag5g72enGcss2Cr1fYjEo--KkgQBDGuqyEQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] devicetree: bindings: Document micrel vendor prefix
-From: Rob Herring <robherring2@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        netdev <netdev@vger.kernel.org>,
-        "David S . Miller" <davem@davemloft.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Hellwig <hch@lst.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blk-mq: remove alloc_hctx and free_hctx methods
+References: <1401293466-24155-1-git-send-email-hch@lst.de>
+In-Reply-To: <1401293466-24155-1-git-send-email-hch@lst.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-28_06:2014-05-28,2014-05-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=2.09780581794661e-10 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.994525499955221
+ urlsuspect_oldscore=0.994525499955221 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.994525499955221 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1405280212
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 4:00 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> There's one existing use of 'micrel' in the documentation so use
-> 'micrel' instead of the company's ticker symbol 'mcrl'.
->
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+On 2014-05-28 10:11, Christoph Hellwig wrote:
+> There is no need for drivers to control hardware context allocation
+> now that we do the context to node mapping in common code.
 
-Applied for 3.16.
+Excellent, applied.
 
-Rob
+-- 
+Jens Axboe
 
-> ---
->
-> This is mostly here as the first patch to make checkpatch quiet. I expect DT
-> maintainers to pick this one up.
->
->  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index 1bc2174e1a05..2fe06ad1d248 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -76,6 +76,7 @@ linux Linux-specific binding
->  lsi    LSI Corp. (LSI Logic)
->  marvell        Marvell Technology Group Ltd.
->  maxim  Maxim Integrated Products
-> +micrel Micrel Inc.
->  microchip      Microchip Technology Inc.
->  mosaixtech     Mosaix Technologies, Inc.
->  moxa   Moxa
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
