@@ -1,232 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512AbaE1JNy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:13:54 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:10436 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752162AbaE1JNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:13:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhldAPanhVN5LL1sPGdsb2JhbABZgweDRIUIomcBAQEBAQEGmA0BgQoXAwEBAQE4NYIlAQEEAScTHCMFCwgDEgYJJQ8FJQMHBhQTHogcB9VvFxaFP4gZZAeDK4EVBJl0ixiLWiuBMA
-Date: Wed, 28 May 2014 19:13:45 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au, mst@redhat.com,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, xfs@oss.sgi.com
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140528091345.GD6677@dastard>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <20140528083738.GL8554@dastard>
+	id S1754457AbaE1JTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:19:19 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59750 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752358AbaE1JTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 05:19:16 -0400
+Message-ID: <5385B566.2050600@ti.com>
+Date: Wed, 28 May 2014 13:07:34 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528083738.GL8554@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@linaro.org>, Chen-Yu Tsai <wens@csie.org>
+CC: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1] of/irq: do irq resolution in platform_get_irq_byname()
+References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com> <20140523080333.66720C4176E@trevor.secretlab.ca> <CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com> <CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com> <20140528071855.GJ4227@lee--X1> <CACRpkdYgkEOjLamYu5uKSgs3iTNJ-w5XkbeygKjRdR-bNdETfg@mail.gmail.com> <CAGb2v64f8Wju6dtVuVN2x=9YVGA-=RXozzhpJZNspKZ05f=jtA@mail.gmail.com> <CACxGe6ts-TcSKk2F0-XSxAxeTxVCiyDHgh-O12v+F2OjHUsPyg@mail.gmail.com>
+In-Reply-To: <CACxGe6ts-TcSKk2F0-XSxAxeTxVCiyDHgh-O12v+F2OjHUsPyg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 06:37:38PM +1000, Dave Chinner wrote:
-> [ cc XFS list ]
+Hi All,
 
-[and now there is a complete copy on the XFs list, I'll add my 2c]
+On 05/28/2014 12:03 PM, Grant Likely wrote:
+> On Wed, May 28, 2014 at 9:49 AM, Chen-Yu Tsai <wens@csie.org> wrote:
+>> On Wed, May 28, 2014 at 4:25 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>> On Wed, May 28, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>>>> On Tue, 27 May 2014, Rob Herring wrote:
+>>>>
+>>>>> On Tue, May 27, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>>>>>> On Fri, May 23, 2014 at 1:03 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>>>>>>> On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+>>>>>>>> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
+>>>>>>>> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
+>>>>>>>> moves resolving of the interrupt resources in platform_get_irq().
+>>>>>>>> But this solution isn't complete because platform_get_irq_byname()
+>>>>>>>> need to be modified the same way.
+>>>>>>>>
+>>>>>>>> Hence, fix it by adding interrupt resolution code at the
+>>>>>>>> platform_get_irq_byname() function too.
+>>>>>>>>
+>>>>>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>>>>>> Cc: Rob Herring <robh@kernel.org>
+>>>>>>>> Cc: Tony Lindgren <tony@atomide.com>
+>>>>>>>> Cc: Grant Likely <grant.likely@linaro.org>
+>>>>>>>> Cc: Thierry Reding <thierry.reding@gmail.com>
+>>>>>>>>
+>>>>>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>>>>>
+>>>>>>> Applied, Thanks.
+>>>>>>
+>>>>>> As of next-20150526, the ST u8500 Snowball board has been failing boot
+>>>>>> in linux-next, and was bisected down to this patch (commit
+>>>>>> ad69674e73a1 in -next).   Full boot failure attached.
+>>>>>>
+>>>>>> I have not dug any deeper, but can confirm that next-20140526 with
+>>>>>> this patch reverted boots again on the snowball board.
+>>>>>
+>>>>> There's a patch on the list which fixes it. The problem is stmmac
+>>>>> driver was expecting only one error code.
+>>>>
+>>>> Does Snowball even use stmmac?
+>>>
+>>> No.
+>>>
+>>> I don't get this...
+>>
+>> Log says musb is wrestling control over some pins with some other driver:
+>>
+>> [    1.441497] pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
+>> requested by a03e0000.usb_per5; cannot claim for musb-hdrc.0.auto
+>> [    1.453369] pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.0.auto)
+>> status -22
+>> [    1.460571] pinctrl-nomadik soc:pinctrl: could not request pin 256
+>> (GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
+>> [    1.472076] musb-hdrc musb-hdrc.0.auto: Error applying setting,
+>> reverse things back
+>> [    1.479827] HS USB OTG: no transceiver configured
+>> [    1.484558] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
+>> with status -517
+>> [    1.492309] platform musb-hdrc.0.auto: Driver musb-hdrc requests
+>> probe deferral
+>> [    1.500183] pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
+>> requested by a03e0000.usb_per5; cannot claim for musb-hdrc.0.auto
+>> [    1.512023] pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.0.auto)
+>> status -22
+>> [    1.519226] pinctrl-nomadik soc:pinctrl: could not request pin 256
+>> (GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
+>> [    1.530731] musb-ux500 musb-hdrc.0.auto: Error applying setting,
+>> reverse things back
+>> [    1.539184] pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
+>> requested by a03e0000.usb_per5; cannot claim for musb-hdrc.1.auto
+>> [    1.551025] pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.1.auto)
+>> status -22
+>> [    1.558258] pinctrl-nomadik soc:pinctrl: could not request pin 256
+>> (GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
+>> [    1.569732] musb-hdrc musb-hdrc.1.auto: Error applying setting,
+>> reverse things back
+>> [    1.577453] HS USB OTG: no transceiver configured
+>>
+>> [ .. repeats until the end .. ]
+>>
+>> I think this is not related to this patch.
+>
+> The bisected patch causes platform_get_irq() to always parse the
+> devicetree to obtain the irq instead of using a precalculated value in
+> the platform_device. There are two possible scenarios for this problem
+> that I can think of:
+> 1) Platform_get_irq() is getting called multiple times (which would
+> happen on a deferred probe) but the setup code isn't handling it
+> properly, like trying to request the GPIO more than once
+> 2) the platform_device was preloaded with an irq number that differs
+> from what is determined when parsing the tree. This would happen if a
+> platform_device was created manually.
+>
 
-> On Wed, May 28, 2014 at 03:53:59PM +0900, Minchan Kim wrote:
-> > While I play inhouse patches with much memory pressure on qemu-kvm,
-> > 3.14 kernel was randomly crashed. The reason was kernel stack overflow.
-> > 
-> > When I investigated the problem, the callstack was a little bit deeper
-> > by involve with reclaim functions but not direct reclaim path.
-> > 
-> > I tried to diet stack size of some functions related with alloc/reclaim
-> > so did a hundred of byte but overflow was't disappeard so that I encounter
-> > overflow by another deeper callstack on reclaim/allocator path.
+Could anyone try attached patch? It has to improve situation, but it 
+might not fix all problems (see my previous e-mail).
 
-That's a no win situation. The stack overruns through ->writepage
-we've been seeing with XFS over the past *4 years* are much larger
-than a few bytes. The worst case stack usage on a virtio block
-device was about 10.5KB of stack usage.
+Regards,
+-grygorii
 
-And, like this one, it came from the flusher thread as well. The
-difference was that the allocation that triggered the reclaim path
-you've reported occurred when 5k of the stack had already been
-used...
+--
+ From 4a41912dba648c935982274966426fa430fd5aa4 Mon Sep 17 00:00:00 2001
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+Date: Wed, 28 May 2014 12:53:34 +0300
+Subject: [PATCH] mfd: ab8500: fix dt irq mapping
 
-> > Of course, we might sweep every sites we have found for reducing
-> > stack usage but I'm not sure how long it saves the world(surely,
-> > lots of developer start to add nice features which will use stack
-> > agains) and if we consider another more complex feature in I/O layer
-> > and/or reclaim path, it might be better to increase stack size(
-> > meanwhile, stack usage on 64bit machine was doubled compared to 32bit
-> > while it have sticked to 8K. Hmm, it's not a fair to me and arm64
-> > already expaned to 16K. )
+The AD8500 defines itself as interrupt-controller in DT,
+but it doesn't assign DT node to IRQ domain when creates it.
+As result, of_irq_xx() helpers don't work because they can't
+find necessary IRQ domain.
 
-Yup, that's all been pointed out previously. 8k stacks were never
-large enough to fit the linux IO architecture on x86-64, but nobody
-outside filesystem and IO developers has been willing to accept that
-argument as valid, despite regular stack overruns and filesystem
-having to add workaround after workaround to prevent stack overruns.
+Hence, fix it by assigning AD8500 core device DT node to IRQ
+domain when it's created.
 
-That's why stuff like this appears in various filesystem's
-->writepage:
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+  drivers/mfd/ab8500-core.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
 
-        /*
-         * Refuse to write the page out if we are called from reclaim context.
-         *
-         * This avoids stack overflows when called from deeply used stacks in
-         * random callers for direct reclaim or memcg reclaim.  We explicitly
-         * allow reclaim from kswapd as the stack usage there is relatively low.
-         *
-         * This should never happen except in the case of a VM regression so
-         * warn about it.
-         */
-        if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
-                        PF_MEMALLOC))
-                goto redirty;
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index a8ee4a3..cf2e6a1 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -591,7 +591,7 @@ static int ab8500_irq_init(struct ab8500 *ab8500, 
+struct device_node *np)
+  		num_irqs = AB8500_NR_IRQS;
 
-That still doesn't guarantee us enough stack space to do writeback,
-though, because memory allocation can occur when reading in metadata
-needed to do delayed allocation, and so we could trigger GFP_NOFS
-memory allocation from the flusher thread with 4-5k of stack already
-consumed, so that would still overrun teh stack.
+  	/* If ->irq_base is zero this will give a linear mapping */
+-	ab8500->domain = irq_domain_add_simple(NULL,
++	ab8500->domain = irq_domain_add_simple(ab8500->dev->of_node,
+  			num_irqs, 0,
+  			&ab8500_irq_ops, ab8500);
 
-So, a couple of years ago we started defering half the writeback
-stack usage to a worker thread (commit c999a22 "xfs: introduce an
-allocation workqueue"), under the assumption that the worst stack
-usage when we call memory allocation is around 3-3.5k of stack used.
-We thought that would be safe, but the stack trace you've posted
-shows that alloc_page(GFP_NOFS) can consume upwards of 5k of stack,
-which means we're still screwed despite all the workarounds we have
-in place.
-
-We've also had recent reports of allocation from direct IO blowing
-the stack, as well as block allocation adding an entry to a
-directory.  We're basically at the point where we have to push every
-XFS operation that requires block allocation off to another thread
-to get enough stack space for normal operation.....
-
-> > So, my stupid idea is just let's expand stack size and keep an eye
-
-Not stupid: it's been what I've been advocating we need to do for
-the past 3-4 years. XFS has always been the stack usage canary and
-this issue is basically a repeat of the 4k stack on i386 kernel
-debacle.
-
-> > toward stack consumption on each kernel functions via stacktrace of ftrace.
-> > For example, we can have a bar like that each funcion shouldn't exceed 200K
-> > and emit the warning when some function consumes more in runtime.
-> > Of course, it could make false positive but at least, it could make a
-> > chance to think over it.
-
-I don't think that's a good idea. There are reasons for putting a
-150-200 byte structure on the stack (e.g. used in a context where
-allocation cannot be guaranteed to succeed because forward progress
-cannot be guaranteed). hence having these users warn all the time
-will quickly get very annoying and that functionality switched off
-or removed....
-
-> > I guess this topic was discussed several time so there might be
-> > strong reason not to increase kernel stack size on x86_64, for me not
-> > knowing so Ccing x86_64 maintainers, other MM guys and virtio
-> > maintainers.
-> >
-> >          Depth    Size   Location    (51 entries)
-> > 
-> >    0)     7696      16   lookup_address+0x28/0x30
-> >    1)     7680      16   _lookup_address_cpa.isra.3+0x3b/0x40
-> >    2)     7664      24   __change_page_attr_set_clr+0xe0/0xb50
-> >    3)     7640     392   kernel_map_pages+0x6c/0x120
-> >    4)     7248     256   get_page_from_freelist+0x489/0x920
-> >    5)     6992     352   __alloc_pages_nodemask+0x5e1/0xb20
-> >    6)     6640       8   alloc_pages_current+0x10f/0x1f0
-> >    7)     6632     168   new_slab+0x2c5/0x370
-> >    8)     6464       8   __slab_alloc+0x3a9/0x501
-> >    9)     6456      80   __kmalloc+0x1cb/0x200
-> >   10)     6376     376   vring_add_indirect+0x36/0x200
-> >   11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
-> >   12)     5856     288   __virtblk_add_req+0xda/0x1b0
-> >   13)     5568      96   virtio_queue_rq+0xd3/0x1d0
-> >   14)     5472     128   __blk_mq_run_hw_queue+0x1ef/0x440
-> >   15)     5344      16   blk_mq_run_hw_queue+0x35/0x40
-> >   16)     5328      96   blk_mq_insert_requests+0xdb/0x160
-> >   17)     5232     112   blk_mq_flush_plug_list+0x12b/0x140
-> >   18)     5120     112   blk_flush_plug_list+0xc7/0x220
-> >   19)     5008      64   io_schedule_timeout+0x88/0x100
-> >   20)     4944     128   mempool_alloc+0x145/0x170
-> >   21)     4816      96   bio_alloc_bioset+0x10b/0x1d0
-> >   22)     4720      48   get_swap_bio+0x30/0x90
-> >   23)     4672     160   __swap_writepage+0x150/0x230
-> >   24)     4512      32   swap_writepage+0x42/0x90
-> >   25)     4480     320   shrink_page_list+0x676/0xa80
-> >   26)     4160     208   shrink_inactive_list+0x262/0x4e0
-> >   27)     3952     304   shrink_lruvec+0x3e1/0x6a0
-> >   28)     3648      80   shrink_zone+0x3f/0x110
-> >   29)     3568     128   do_try_to_free_pages+0x156/0x4c0
-> >   30)     3440     208   try_to_free_pages+0xf7/0x1e0
-> >   31)     3232     352   __alloc_pages_nodemask+0x783/0xb20
-> >   32)     2880       8   alloc_pages_current+0x10f/0x1f0
-> >   33)     2872     200   __page_cache_alloc+0x13f/0x160
-> >   34)     2672      80   find_or_create_page+0x4c/0xb0
-> >   35)     2592      80   ext4_mb_load_buddy+0x1e9/0x370
-> >   36)     2512     176   ext4_mb_regular_allocator+0x1b7/0x460
-> >   37)     2336     128   ext4_mb_new_blocks+0x458/0x5f0
-> >   38)     2208     256   ext4_ext_map_blocks+0x70b/0x1010
-> >   39)     1952     160   ext4_map_blocks+0x325/0x530
-> >   40)     1792     384   ext4_writepages+0x6d1/0xce0
-> >   41)     1408      16   do_writepages+0x23/0x40
-> >   42)     1392      96   __writeback_single_inode+0x45/0x2e0
-> >   43)     1296     176   writeback_sb_inodes+0x2ad/0x500
-> >   44)     1120      80   __writeback_inodes_wb+0x9e/0xd0
-> >   45)     1040     160   wb_writeback+0x29b/0x350
-> >   46)      880     208   bdi_writeback_workfn+0x11c/0x480
-> >   47)      672     144   process_one_work+0x1d2/0x570
-> >   48)      528     112   worker_thread+0x116/0x370
-> >   49)      416     240   kthread+0xf3/0x110
-> >   50)      176     176   ret_from_fork+0x7c/0xb0
-
-Impressive: 3 nested allocations - GFP_NOFS, GFP_NOIO and then
-GFP_ATOMIC before the stack goes boom. XFS usually only needs 2...
-
-However, add another 1000 bytes of stack for each IO by going
-through the FC/scsi layers and hitting command allocation at the
-bottom of the IO stack rather than bio allocation at the top and
-maybe stack usage for 2-3 layers of MD and LVM as well, and you
-start to see how that stack pushes >10k of usage rather than just
-overflowing 8k....
-
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  arch/x86/include/asm/page_64_types.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-> > index 8de6d9cf3b95..678205195ae1 100644
-> > --- a/arch/x86/include/asm/page_64_types.h
-> > +++ b/arch/x86/include/asm/page_64_types.h
-> > @@ -1,7 +1,7 @@
-> >  #ifndef _ASM_X86_PAGE_64_DEFS_H
-> >  #define _ASM_X86_PAGE_64_DEFS_H
-> >  
-> > -#define THREAD_SIZE_ORDER	1
-> > +#define THREAD_SIZE_ORDER	2
-> >  #define THREAD_SIZE  (PAGE_SIZE << THREAD_SIZE_ORDER)
-> >  #define CURRENT_MASK (~(THREAD_SIZE - 1))
-
-Got my vote. Can we get this into 3.16, please?
-
-Acked-by: Dave Chinner <david@fromorbit.com>
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
+
+
