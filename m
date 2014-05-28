@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122AbaE1XVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:21:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47817 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755045AbaE1XVC (ORCPT
+	id S932577AbaE1XZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:25:05 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:36373 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047AbaE1XVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:21:02 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        linux-leds@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 05/15] ARM: at91: at91sam9rl: switch to generic PWM framework
-Date: Thu, 29 May 2014 01:20:08 +0200
-Message-Id: <1401319218-16772-6-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 28 May 2014 19:21:03 -0400
+MIME-Version: 1.0
+X-Originating-IP: [128.107.151.95]
+In-Reply-To: <1401319048-15797-1-git-send-email-c@24.io>
+References: <1401319048-15797-1-git-send-email-c@24.io>
+Date: Wed, 28 May 2014 16:21:02 -0700
+Message-ID: <CADadk9ExTYrK-vM0_UK7Oc8UAc98u9jKAXHbFqvU02_PkO4JnQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Staging: rtl8192u: r8192U_wx.c Fixed misplaced brace
+From: Chaitanya Hazarey <c@24.io>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ksenia Ragiadakou <burzalodowa@gmail.com>,
+        Andrea Merello <andrea.merello@gmail.com>
+Cc: devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Chaitanya Hazarey <c@24.io>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to the pwm/pwm-atmel driver instead of misc/atmel_pwm
+Please ignore this patch, there seems something wrong with it, will
+resend with a new subject.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/at91sam9rl.c         |  1 +
- arch/arm/mach-at91/at91sam9rl_devices.c | 11 ++---------
- 2 files changed, 3 insertions(+), 9 deletions(-)
+Thanks,
 
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index a79960f57e6a..878d5015daab 100644
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -200,6 +200,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("pclk", "fffc4000.ssc", &ssc1_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20.0", &twi0_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20.1", &twi1_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91sam9rl-pwm", &pwm_clk),
- 	CLKDEV_CON_ID("pioA", &pioA_clk),
- 	CLKDEV_CON_ID("pioB", &pioB_clk),
- 	CLKDEV_CON_ID("pioC", &pioC_clk),
-diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-index 044ad8bc6963..76b3dbd13921 100644
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -799,9 +799,7 @@ static void __init at91_add_device_watchdog(void) {}
-  *  PWM
-  * --------------------------------------------------------------------*/
- 
--#if defined(CONFIG_ATMEL_PWM)
--static u32 pwm_mask;
--
-+#if IS_ENABLED(CONFIG_PWM_ATMEL)
- static struct resource pwm_resources[] = {
- 	[0] = {
- 		.start	= AT91SAM9RL_BASE_PWMC,
-@@ -816,11 +814,8 @@ static struct resource pwm_resources[] = {
- };
- 
- static struct platform_device at91sam9rl_pwm0_device = {
--	.name	= "atmel_pwm",
-+	.name	= "at91sam9rl-pwm",
- 	.id	= -1,
--	.dev	= {
--		.platform_data		= &pwm_mask,
--	},
- 	.resource	= pwm_resources,
- 	.num_resources	= ARRAY_SIZE(pwm_resources),
- };
-@@ -839,8 +834,6 @@ void __init at91_add_device_pwm(u32 mask)
- 	if (mask & (1 << AT91_PWM3))
- 		at91_set_B_periph(AT91_PIN_PD8, 1);	/* enable PWM3 */
- 
--	pwm_mask = mask;
--
- 	platform_device_register(&at91sam9rl_pwm0_device);
- }
- #else
--- 
-1.9.1
+Chaitanya
 
+On Wed, May 28, 2014 at 4:17 PM, Chaitanya Hazarey <c@24.io> wrote:
+> Fixed a misplaced brace in a function
+>
+> Signed-off-by: Chaitanya Hazarey <c@24.io>
+> ---
+>  drivers/staging/rtl8192u/r8192U_wx.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
+> index 1af7c5d..675a12d 100644
+> --- a/drivers/staging/rtl8192u/r8192U_wx.c
+> +++ b/drivers/staging/rtl8192u/r8192U_wx.c
+> @@ -616,7 +616,8 @@ static int r8192_wx_set_enc(struct net_device *dev,
+>
+>
+>  static int r8192_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa,
+> -                                       union iwreq_data *wrqu, char *p){
+> +                                       union iwreq_data *wrqu, char *p)
+> +{
+>
+>         struct r8192_priv *priv = ieee80211_priv(dev);
+>         int *parms = (int *)p;
+> --
+> 1.9.1
+>
