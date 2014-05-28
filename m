@@ -1,55 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaE1ICP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:02:15 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:63780 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316AbaE1ICM (ORCPT
+	id S1754448AbaE1ICw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:02:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60631 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420AbaE1ICq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:02:12 -0400
+	Wed, 28 May 2014 04:02:46 -0400
+Message-ID: <538597F0.1040003@linutronix.de>
+Date: Wed, 28 May 2014 10:01:52 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <5383C28D.1060808@linaro.org>
-References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1400849578-7585-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<CAPDyKFqz-O9-Douk96LBuFRD_P1146c_Ld14TgiduBgfBqRi_A@mail.gmail.com>
-	<5383C28D.1060808@linaro.org>
-Date: Wed, 28 May 2014 10:02:11 +0200
-Message-ID: <CACRpkdYjQzwVF8ikqqt=7pCvdKM59JcM4HS-UNJ8Ueqdw9az4A@mail.gmail.com>
-Subject: Re: [PATCH v3 12/13] mmc: mmci: add explicit clk control
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [Patch V3 19/37] x86, irq: introduce mechanisms to support dynamically
+ allocate IRQ for IOAPIC
+References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com> <1401178092-1228-20-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1405271445050.21720@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1405271445050.21720@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 12:39 AM, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> On 26/05/14 15:21, Ulf Hansson wrote:
->> On 23 May 2014 14:52,  <srinivas.kandagatla@linaro.org> wrote:
+On 05/27/2014 09:58 PM, Thomas Gleixner wrote:
+> ce4100 is an oddball though. The ioapic is registered way before the
+> interrupt subsystem is initialized and I have a hard time to
+> understand that comment:
+> 
+>         /* We can't set this earlier, because we need to calibrate the timer */
+>         legacy_pic = &null_legacy_pic;
+> 
+> The timer calibration happens after the interrupts are set up. I
+> assume it's check_timer() which wants that, but we know exactly how
+> the ce4100 works, so we might be able to avoid that whole "testing"
+> stuff. Sebastian, any input on this?
 
->>>
->>> +       bool                    explicit_mclk_control;
->>> +       bool                    cclk_is_mclk;
->>
->> I can't see why you need to have both these new configurations. Aren't
->> "cclk_is_mclk" just a fact when you use "explicit_mclk_control".
->
->> I also believe I would prefer something like "qcom_clkdiv" instead.
->
-> There is a subtle difference between both the flags.  Am happy to change it
-> to qcom_clkdiv.
+According to my memory there was some PIC init we need but I don't
+recall the details. However, booting the system with "legacy_pic =
+&null_legacy_pic;" in x86_ce4100_early_setup() gives me this:
 
-I think this was due to me wanting the variant variables to be more about
-the actual technical difference they indicate rather than pointing to
-a certain vendor or variant where that difference occurs.
+[    0.001000] Enabling APIC mode:  Flat.  Using 2 I/O APICs
+[    0.001000] leaving PIC mode, enabling APIC mode.
+[    0.001000] enabled ExtINT on CPU#0
+[    0.001000] ENABLING IO-APIC IRQs
+[    0.001000] Setting 1 in the phys_id_present_map
+[    0.001000] ...changing IO-APIC physical APIC ID to 1 ... ok.
+[    0.001000] Setting 2 in the phys_id_present_map
+[    0.001000] ...changing IO-APIC physical APIC ID to 2 ... ok.
+[    0.001000] smpboot: CPU0: Intel(R) Atom(TM) CPU CE4150   @ 1.20GHz
+(fam: 06, model: 1c, stepping: 0a)
+[    0.001000] Using local APIC timer interrupts.
+[    0.001000] calibrating APIC timer ...
 
-It's a very minor thing though, if you prefer it this way, go for it.
+and we stand still. With the assignment as it is now:
 
-Yours,
-Linus Walleij
+[    0.001000] Enabling APIC mode:  Flat.  Using 2 I/O APICs
+[    0.001000] leaving PIC mode, enabling APIC mode.
+[    0.001000] enabled ExtINT on CPU#0
+[    0.002312] ENABLING IO-APIC IRQs
+[    0.003009] Setting 1 in the phys_id_present_map
+[    0.004007] ...changing IO-APIC physical APIC ID to 1 ... ok.
+[    0.005533] Setting 2 in the phys_id_present_map
+[    0.006006] ...changing IO-APIC physical APIC ID to 2 ... ok.
+[    0.008373] ..TIMER: vector=0x30 apic1=-1 pin1=-1 apic2=-1 pin2=-1
+[    0.009000] ...trying to set up timer as Virtual Wire IRQ...
+[    0.019490] ..... works.
+[    0.020005] smpboot: CPU0: Intel(R) Atom(TM) CPU CE4150   @ 1.20GHz
+(fam: 06, model: 1c, stepping: 0a)
+[    0.024005] Using local APIC timer interrupts.
+[    0.024005] calibrating APIC timer ...
+[    0.026000] ... lapic delta = 624992
+[    0.026000] ... PM-Timer delta = 0
+[    0.026000] ..... delta 624992
+[    0.026000] ..... mult: 26843202
+[    0.026000] ..... calibration result: 99998
+[    0.026000] ..... CPU clock speed is 1199.0984 MHz.
+[    0.026000] ..... host bus clock speed is 99.0998 MHz.
+[    0.026000] ... verify APIC timer
+[    0.128565] ... jiffies delta = 100
+[    0.129004] ... jiffies result ok
+
+and it goes on. As you see, "..TIMER:" is missing in the upper output.
+
+> 
+> Thanks,
+> 
+> 	tglx
+
+Sebastian
