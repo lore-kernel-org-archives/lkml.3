@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaE1DyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 23:54:19 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:64753 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713AbaE1DyS (ORCPT
+	id S1751745AbaE1ELJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 00:11:09 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:57671 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaE1ELI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 23:54:18 -0400
-Date: Tue, 27 May 2014 20:53:00 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Chen Yucong <slaoub@gmail.com>
-cc: Shaohua Li <shli@kernel.org>, akpm@linux-foundation.org, ddstreet@ieee.org,
-        mgorman@suse.de, k.kozlowski@samsung.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] swap: Avoid scanning invalidated region for cheap seek
-In-Reply-To: <1401069659-29589-1-git-send-email-slaoub@gmail.com>
-Message-ID: <alpine.LSU.2.11.1405272037080.1126@eggly.anvils>
-References: <1401069659-29589-1-git-send-email-slaoub@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 28 May 2014 00:11:08 -0400
+X-Originating-IP: 50.43.32.211
+Date: Tue, 27 May 2014 21:10:58 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/4] lib/debugobjects.c: convert printk to pr_foo()
+Message-ID: <20140528041058.GA20758@thin>
+References: <1400936768-24897-1-git-send-email-fabf@skynet.be>
+ <20140524215322.GA24038@thin>
+ <20140525051836.116fe09126f16de8b3955d27@skynet.be>
+ <20140525034043.GA26647@thin>
+ <20140527162554.c0e15156130eedf712934eea@skynet.be>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140527162554.c0e15156130eedf712934eea@skynet.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 May 2014, Chen Yucong wrote:
-
-> For cheap seek, when we scan the region between si->lowset_bit
-> and scan_base, if san_base is greater than si->highest_bit, the
-> scan operation between si->highest_bit and scan_base is not
-> unnecessary.
+On Tue, May 27, 2014 at 04:25:54PM +0200, Fabian Frederick wrote:
+> On Sat, 24 May 2014 20:40:43 -0700
+> Josh Triplett <josh@joshtriplett.org> wrote:
 > 
-> This patch can be used to avoid scanning invalidated region for
-> cheap seek.
+> > On Sun, May 25, 2014 at 05:18:36AM +0200, Fabian Frederick wrote:
+> > > On Sat, 24 May 2014 14:53:22 -0700
+> > > Josh Triplett <josh@joshtriplett.org> wrote:
+> > > 
+> > > > On Sat, May 24, 2014 at 03:06:08PM +0200, Fabian Frederick wrote:
+> > > > > Convert all except KERN_DEBUG
+> > > > 
+> > > > Why not KERN_DEBUG?
+> > > printk(KERN_DEBUG can't be converted to pr_debug the same way as other printk.
+> > 
+> > True, but I don't see any obvious reason why that prevents you from
+> > converting them.  More importantly, though, you should explain for the
+> > benefit of the changelog.
 > 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-
-I was going to suggest that you are adding a little code to a common
-path, in order to optimize a very unlikely case: which does not seem
-worthwhile to me.
-
-But digging a little deeper, I think you have hit upon something more
-interesting (though still in no need of your patch): it looks to me
-like that is not even a common path, but dead code.
-
-Shaohua, am I missing something, or does all SWP_SOLIDSTATE "seek is
-cheap" now go your si->cluster_info scan_swap_map_try_ssd_cluster()
-route?  So that the "last_in_cluster < scan_base" loop in the body
-of scan_swap_map() is just redundant, and should have been deleted?
-
-Hugh
-
-> ---
->  mm/swapfile.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+> 	There's no documentation yet in mainline for this but in linux-next:
+> commit 8ce2658fc31bb7
 > 
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index beeeef8..7f0f27e 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -489,6 +489,7 @@ static unsigned long scan_swap_map(struct swap_info_struct *si,
->  {
->  	unsigned long offset;
->  	unsigned long scan_base;
-> +	unsigned long upper_bound;
->  	unsigned long last_in_cluster = 0;
->  	int latency_ration = LATENCY_LIMIT;
->  
-> @@ -551,9 +552,11 @@ static unsigned long scan_swap_map(struct swap_info_struct *si,
->  
->  		offset = si->lowest_bit;
->  		last_in_cluster = offset + SWAPFILE_CLUSTER - 1;
-> +		upper_bound = (scan_base <= si->highest_bit) ?
-> +				scan_base : (si->highest_bit + 1);
->  
->  		/* Locate the first empty (unaligned) cluster */
-> -		for (; last_in_cluster < scan_base; offset++) {
-> +		for (; last_in_cluster < upper_bound; offset++) {
->  			if (si->swap_map[offset])
->  				last_in_cluster = offset + SWAPFILE_CLUSTER;
->  			else if (offset == last_in_cluster) {
-> -- 
-> 1.7.10.4
+> 	I can submit one more patch with pr_debug conversion using #define DEBUG
+> or compilation -DDEBUG
+
+Definitely keep it as a separate patch, but I don't think you should
+define DEBUG by default; just let people turn it on if desired, and
+leave it out otherwise.  There's only a single KERN_DEBUG printk in this
+driver, and it seems fine to just convert to pr_debug so it gets left
+out of normal builds.
+
+- Josh Triplett
