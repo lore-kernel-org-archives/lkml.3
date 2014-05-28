@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402AbaE1Wh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:37:29 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:43554 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384AbaE1WhX (ORCPT
+	id S1755441AbaE1WlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:41:13 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:46621 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaE1WlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:37:23 -0400
+	Wed, 28 May 2014 18:41:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <536BAD05.9070401@samsung.com>
-References: <1399293056-17143-1-git-send-email-gautam.vivek@samsung.com>
-	<536BA9E8.2030306@suse.de>
-	<536BAD05.9070401@samsung.com>
-Date: Wed, 28 May 2014 15:37:23 -0700
-X-Google-Sender-Auth: w7H3BZjjeDMmgR-tUSV64hZcziI
-Message-ID: <CAODwPW8FpsF6vo5Z8_+YXwchwab=7Ltv0nEvP_=907HK232xCg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: dts: Enable USB 3503 hub on exynos5250-snow
-From: Julius Werner <jwerner@chromium.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>, arunkk.samsung@gmail.com
+In-Reply-To: <20140528223142.GO8554@dastard>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+	<1401260039-18189-2-git-send-email-minchan@kernel.org>
+	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+	<20140528223142.GO8554@dastard>
+Date: Wed, 28 May 2014 15:41:11 -0700
+X-Google-Sender-Auth: 41AMAt8sFO12p4eBxx47N9-vqow
+Message-ID: <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We originally tried using this driver on ChromiumOS and never got it
-to work reliably. IIRC the issue was that if the hub had already been
-initialized by firmware, the USB stack might enumerate it before the
-usb3503 driver is probed and then the later reset will silently
-disrupt that connection. (I think I tried to force the 3503 to probe
-earlier as well, and there was some other issue with that although I
-don't recall the details.)
+On Wed, May 28, 2014 at 3:31 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> Indeed, the call chain reported here is not caused by swap issuing
+> IO.
 
-This will not be an issue for the Snow and Peach_Pi(t) boards (since
-neither of them shipped with firmware that supports this hub), but it
-will be an issue for Spring and Skate. On ChromiumOS we decided to
-carry a local (and admittedly ugly) patch to pull that reset line from
-the USB PHY driver instead, since that's the only way I could get it
-to work in all cases (see http://crosreview.com/58963).
+Well, that's one way of reading that callchain.
 
-This doesn't mean I'm against this patch per se, just wanted to point
-out the trade-offs.
+I think it's the *wrong* way of reading it, though. Almost dishonestly
+so. Because very clearly, the swapout _is_ what causes the unplugging
+of the IO queue, and does so because it is allocating the BIO for its
+own IO. The fact that that then fails (because of other IO's in
+flight), and causes *other* IO to be flushed, doesn't really change
+anything fundamental. It's still very much swap that causes that
+"let's start IO".
+
+IOW, swap-out directly caused that extra 3kB of stack use in what was
+a deep call chain (due to memory allocation). I really don't
+understand why you are arguing anything else on a pure technicality.
+
+I thought you had some other argument for why swap was different, and
+against removing that "page_is_file_cache()" special case in
+shrink_page_list().
+
+                         Linus
