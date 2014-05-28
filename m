@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163AbaE1O0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:26:54 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33189 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754592AbaE1O0v (ORCPT
+	id S932122AbaE1O0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:26:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38884 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaE1O0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 May 2014 10:26:51 -0400
-Message-ID: <1401287204.2288.28.camel@dabdike>
-Subject: Re: [PATCH] acornscsi: remove linked command support
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 May 2014 18:26:44 +0400
-In-Reply-To: <20140528104114.GE13542@infradead.org>
-References: <1400926433.31526.89.camel@x220>
-	 <20140528104114.GE13542@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Wed, 28 May 2014 17:26:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mark Hounschell <markh@compro.net>
+Cc: DaeSeok Youn <daeseok.youn@gmail.com>, devel <devel@driverdev.osuosl.org>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH V2] staging: dgap: implement proper error handling in
+ dgap_firmware_load()
+Message-ID: <20140528142631.GQ17724@mwanda>
+References: <20140527070937.GA21621@devel.8.8.4.4>
+ <20140527102002.GI17724@mwanda>
+ <CAHb8M2AceJeFv-KonF+bAFJ-+xssFxx5ytEKhMNZ1c3xm2jvZA@mail.gmail.com>
+ <20140528070233.GP17724@mwanda>
+ <CAHb8M2ABVCaoNR0m5mLmWv-ei60PDRu462QTqDgEJwAf63oteg@mail.gmail.com>
+ <1203682594.1176349.1401271946432.JavaMail.root@mx2.compro.net>
+ <5385EF2B.1000003@compro.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5385EF2B.1000003@compro.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 03:41 -0700, Christoph Hellwig wrote:
-> On Sat, May 24, 2014 at 12:13:53PM +0200, Paul Bolle wrote:
-> > The acornscsi driver was added in v2.1.88. It has always #undef-ed
-> > CONFIG_SCSI_ACORNSCSI_LINK near the top of acornscsi.c. And, just to be
-> > sure, it has also always triggered a preprocessor error if
-> > CONFIG_SCSI_ACORNSCSI_LINK was still defined. But, as far as I can see,
-> > it has never even been possible to set SCSI_ACORNSCSI_LINK through
-> > kconfig, or its predecessors, in the first place.
-> > 
-> > Let's remove the code involved.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> 
-> Looks good,
-> 
-> Reviewed-by: Christoph Hellwig <hch@lst.de>
-> 
-> And I have to disagree with James here, removing code that isn't even
-> compiled always is an improvement, especially for an unmaintained
-> driver.
+On Wed, May 28, 2014 at 10:14:03AM -0400, Mark Hounschell wrote:
+> Is that TODO-list going to be commited?
 
-Well, as I said, this is in theory a maintained driver, so just get an
-ack from Russell and this debate is moot.
+The TODO-list is a new thing.  People are always complaining that there
+isn't a TODO-list with task for people to do.  Now I can just search my
+inbox and generate one automatically.  Fancy, huh?  :)
 
-James
-
+regards,
+dan carpenter
 
