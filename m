@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaE1XVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:21:53 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47887 "EHLO
+	id S932490AbaE1XWD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:22:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47899 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932397AbaE1XVs (ORCPT
+	with ESMTP id S932397AbaE1XV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:21:48 -0400
+	Wed, 28 May 2014 19:21:58 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-leds@vger.kernel.org, linux-pwm@vger.kernel.org,
         linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 12/15] avr32: update defconfig to use the generic PWM framework
-Date: Thu, 29 May 2014 01:20:15 +0200
-Message-Id: <1401319218-16772-13-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 13/15] backlight: atmel-pwm-bl: remove obsolete driver
+Date: Thu, 29 May 2014 01:20:16 +0200
+Message-Id: <1401319218-16772-14-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -28,199 +28,334 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all boards have switched to the generic PWM framework, update the
-defconfigs to use it.
+The atmel-pwm-bl driver is now obsolete. It is not used by any mainlined boards
+and is replaced by the generic pwm_bl with the pawm-atmel driver using the
+generic PWM framework.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 ---
- arch/avr32/configs/atngw100_mrmt_defconfig | 5 +++--
- arch/avr32/configs/atstk1002_defconfig     | 5 +++--
- arch/avr32/configs/atstk1003_defconfig     | 5 +++--
- arch/avr32/configs/atstk1004_defconfig     | 5 +++--
- arch/avr32/configs/atstk1006_defconfig     | 5 +++--
- arch/avr32/configs/merisc_defconfig        | 5 +++--
- 6 files changed, 18 insertions(+), 12 deletions(-)
+ drivers/video/backlight/Kconfig        |  11 --
+ drivers/video/backlight/Makefile       |   1 -
+ drivers/video/backlight/atmel-pwm-bl.c | 223 ---------------------------------
+ include/linux/atmel-pwm-bl.h           |  43 -------
+ 4 files changed, 278 deletions(-)
+ delete mode 100644 drivers/video/backlight/atmel-pwm-bl.c
+ delete mode 100644 include/linux/atmel-pwm-bl.h
 
-diff --git a/arch/avr32/configs/atngw100_mrmt_defconfig b/arch/avr32/configs/atngw100_mrmt_defconfig
-index 9a57da44eb6f..6838781e966f 100644
---- a/arch/avr32/configs/atngw100_mrmt_defconfig
-+++ b/arch/avr32/configs/atngw100_mrmt_defconfig
-@@ -56,7 +56,6 @@ CONFIG_MTD_CFI_AMDSTD=y
- CONFIG_MTD_PHYSMAP=y
- CONFIG_MTD_DATAFLASH=y
- CONFIG_BLK_DEV_LOOP=y
--CONFIG_ATMEL_PWM=y
- CONFIG_NETDEVICES=y
- CONFIG_NET_ETHERNET=y
- CONFIG_MACB=y
-@@ -104,8 +103,8 @@ CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
--CONFIG_LEDS_ATMEL_PWM=y
- CONFIG_LEDS_GPIO=y
-+CONFIG_LEDS_PWM=y
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_TIMER=y
- CONFIG_LEDS_TRIGGER_HEARTBEAT=y
-@@ -114,6 +113,8 @@ CONFIG_RTC_DRV_S35390A=m
- CONFIG_RTC_DRV_AT32AP700X=m
- CONFIG_DMADEVICES=y
- CONFIG_UIO=y
-+CONFIG_PWM=y
-+CONFIG_PWM_ATMEL=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT2_FS_XATTR=y
- CONFIG_EXT3_FS=y
-diff --git a/arch/avr32/configs/atstk1002_defconfig b/arch/avr32/configs/atstk1002_defconfig
-index 2813dd2b9138..b056820eef33 100644
---- a/arch/avr32/configs/atstk1002_defconfig
-+++ b/arch/avr32/configs/atstk1002_defconfig
-@@ -64,7 +64,6 @@ CONFIG_BLK_DEV_LOOP=m
- CONFIG_BLK_DEV_NBD=m
- CONFIG_BLK_DEV_RAM=m
- CONFIG_MISC_DEVICES=y
--CONFIG_ATMEL_PWM=m
- CONFIG_ATMEL_TCLIB=y
- CONFIG_ATMEL_SSC=m
- # CONFIG_SCSI_PROC_FS is not set
-@@ -133,14 +132,16 @@ CONFIG_MMC_TEST=m
- CONFIG_MMC_ATMELMCI=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
--CONFIG_LEDS_ATMEL_PWM=m
- CONFIG_LEDS_GPIO=m
-+CONFIG_LEDS_PWM=m
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_TIMER=m
- CONFIG_LEDS_TRIGGER_HEARTBEAT=m
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_AT32AP700X=y
- CONFIG_DMADEVICES=y
-+CONFIG_PWM=y
-+CONFIG_PWM_ATMEL=m
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-diff --git a/arch/avr32/configs/atstk1003_defconfig b/arch/avr32/configs/atstk1003_defconfig
-index f8ff3a3baad4..0cd23a303da1 100644
---- a/arch/avr32/configs/atstk1003_defconfig
-+++ b/arch/avr32/configs/atstk1003_defconfig
-@@ -53,7 +53,6 @@ CONFIG_BLK_DEV_LOOP=m
- CONFIG_BLK_DEV_NBD=m
- CONFIG_BLK_DEV_RAM=m
- CONFIG_MISC_DEVICES=y
--CONFIG_ATMEL_PWM=m
- CONFIG_ATMEL_TCLIB=y
- CONFIG_ATMEL_SSC=m
- # CONFIG_SCSI_PROC_FS is not set
-@@ -112,14 +111,16 @@ CONFIG_MMC_TEST=m
- CONFIG_MMC_ATMELMCI=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
--CONFIG_LEDS_ATMEL_PWM=m
- CONFIG_LEDS_GPIO=m
-+CONFIG_LEDS_PWM=m
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_TIMER=m
- CONFIG_LEDS_TRIGGER_HEARTBEAT=m
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_AT32AP700X=y
- CONFIG_DMADEVICES=y
-+CONFIG_PWM=y
-+CONFIG_PWM_ATMEL=m
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-diff --git a/arch/avr32/configs/atstk1004_defconfig b/arch/avr32/configs/atstk1004_defconfig
-index 992228e54e38..ac1041f5f85a 100644
---- a/arch/avr32/configs/atstk1004_defconfig
-+++ b/arch/avr32/configs/atstk1004_defconfig
-@@ -53,7 +53,6 @@ CONFIG_BLK_DEV_LOOP=m
- CONFIG_BLK_DEV_NBD=m
- CONFIG_BLK_DEV_RAM=m
- CONFIG_MISC_DEVICES=y
--CONFIG_ATMEL_PWM=m
- CONFIG_ATMEL_TCLIB=y
- CONFIG_ATMEL_SSC=m
- # CONFIG_SCSI_PROC_FS is not set
-@@ -111,14 +110,16 @@ CONFIG_MMC_TEST=m
- CONFIG_MMC_ATMELMCI=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
--CONFIG_LEDS_ATMEL_PWM=m
- CONFIG_LEDS_GPIO=m
-+CONFIG_LEDS_PWM=m
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_TIMER=m
- CONFIG_LEDS_TRIGGER_HEARTBEAT=m
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_AT32AP700X=y
- CONFIG_DMADEVICES=y
-+CONFIG_PWM=y
-+CONFIG_PWM_ATMEL=m
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-diff --git a/arch/avr32/configs/atstk1006_defconfig b/arch/avr32/configs/atstk1006_defconfig
-index b8e698b0d1fa..ea4f670cb995 100644
---- a/arch/avr32/configs/atstk1006_defconfig
-+++ b/arch/avr32/configs/atstk1006_defconfig
-@@ -67,7 +67,6 @@ CONFIG_BLK_DEV_LOOP=m
- CONFIG_BLK_DEV_NBD=m
- CONFIG_BLK_DEV_RAM=m
- CONFIG_MISC_DEVICES=y
--CONFIG_ATMEL_PWM=m
- CONFIG_ATMEL_TCLIB=y
- CONFIG_ATMEL_SSC=m
- # CONFIG_SCSI_PROC_FS is not set
-@@ -136,14 +135,16 @@ CONFIG_MMC_TEST=m
- CONFIG_MMC_ATMELMCI=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
--CONFIG_LEDS_ATMEL_PWM=m
- CONFIG_LEDS_GPIO=m
-+CONFIG_LEDS_PWM=m
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_TIMER=m
- CONFIG_LEDS_TRIGGER_HEARTBEAT=m
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_AT32AP700X=y
- CONFIG_DMADEVICES=y
-+CONFIG_PWM=y
-+CONFIG_PWM_ATMEL=m
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-diff --git a/arch/avr32/configs/merisc_defconfig b/arch/avr32/configs/merisc_defconfig
-index 91df6b2986be..b9ef4cc85d08 100644
---- a/arch/avr32/configs/merisc_defconfig
-+++ b/arch/avr32/configs/merisc_defconfig
-@@ -55,7 +55,6 @@ CONFIG_MTD_ABSENT=y
- CONFIG_MTD_PHYSMAP=y
- CONFIG_MTD_BLOCK2MTD=y
- CONFIG_BLK_DEV_LOOP=y
--CONFIG_ATMEL_PWM=y
- CONFIG_ATMEL_SSC=y
- CONFIG_SCSI=y
- CONFIG_BLK_DEV_SD=y
-@@ -103,12 +102,14 @@ CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
--CONFIG_LEDS_ATMEL_PWM=y
-+CONFIG_LEDS_PWM=y
- CONFIG_RTC_CLASS=y
- # CONFIG_RTC_HCTOSYS is not set
- CONFIG_RTC_DRV_PCF8563=y
- CONFIG_DMADEVICES=y
- CONFIG_UIO=y
-+CONFIG_PWM=y
-+CONFIG_PWM_ATMEL=m
- CONFIG_EXT2_FS=y
- # CONFIG_DNOTIFY is not set
- CONFIG_FUSE_FS=y
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 5a3eb2ecb525..9bd32b7a7561 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -178,17 +178,6 @@ config BACKLIGHT_ATMEL_LCDC
+ 	  If in doubt, it's safe to enable this option; it doesn't kick
+ 	  in unless the board's description says it's wired that way.
+ 
+-config BACKLIGHT_ATMEL_PWM
+-	tristate "Atmel PWM backlight control"
+-	depends on ATMEL_PWM
+-	help
+-	  Say Y here if you want to use the PWM peripheral in Atmel AT91 and
+-	  AVR32 devices. This driver will need additional platform data to know
+-	  which PWM instance to use and how to configure it.
+-
+-	  To compile this driver as a module, choose M here: the module will be
+-	  called atmel-pwm-bl.
+-
+ config BACKLIGHT_EP93XX
+ 	tristate "Cirrus EP93xx Backlight Driver"
+ 	depends on FB_EP93XX
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index bb820024f346..351451dbb607 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -25,7 +25,6 @@ obj-$(CONFIG_BACKLIGHT_ADP8860)		+= adp8860_bl.o
+ obj-$(CONFIG_BACKLIGHT_ADP8870)		+= adp8870_bl.o
+ obj-$(CONFIG_BACKLIGHT_APPLE)		+= apple_bl.o
+ obj-$(CONFIG_BACKLIGHT_AS3711)		+= as3711_bl.o
+-obj-$(CONFIG_BACKLIGHT_ATMEL_PWM)	+= atmel-pwm-bl.o
+ obj-$(CONFIG_BACKLIGHT_BD6107)		+= bd6107.o
+ obj-$(CONFIG_BACKLIGHT_CARILLO_RANCH)	+= cr_bllcd.o
+ obj-$(CONFIG_BACKLIGHT_CLASS_DEVICE)	+= backlight.o
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+deleted file mode 100644
+index 261b1a4ec3d8..000000000000
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ /dev/null
+@@ -1,223 +0,0 @@
+-/*
+- * Copyright (C) 2008 Atmel Corporation
+- *
+- * Backlight driver using Atmel PWM peripheral.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU General Public License version 2 as published by
+- * the Free Software Foundation.
+- */
+-#include <linux/init.h>
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/fb.h>
+-#include <linux/gpio.h>
+-#include <linux/backlight.h>
+-#include <linux/atmel_pwm.h>
+-#include <linux/atmel-pwm-bl.h>
+-#include <linux/slab.h>
+-
+-struct atmel_pwm_bl {
+-	const struct atmel_pwm_bl_platform_data	*pdata;
+-	struct backlight_device			*bldev;
+-	struct platform_device			*pdev;
+-	struct pwm_channel			pwmc;
+-	int					gpio_on;
+-};
+-
+-static void atmel_pwm_bl_set_gpio_on(struct atmel_pwm_bl *pwmbl, int on)
+-{
+-	if (!gpio_is_valid(pwmbl->gpio_on))
+-		return;
+-
+-	gpio_set_value(pwmbl->gpio_on, on ^ pwmbl->pdata->on_active_low);
+-}
+-
+-static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+-{
+-	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
+-	int intensity = bd->props.brightness;
+-	int pwm_duty;
+-
+-	if (bd->props.power != FB_BLANK_UNBLANK)
+-		intensity = 0;
+-	if (bd->props.fb_blank != FB_BLANK_UNBLANK)
+-		intensity = 0;
+-
+-	if (pwmbl->pdata->pwm_active_low)
+-		pwm_duty = pwmbl->pdata->pwm_duty_min + intensity;
+-	else
+-		pwm_duty = pwmbl->pdata->pwm_duty_max - intensity;
+-
+-	if (pwm_duty > pwmbl->pdata->pwm_duty_max)
+-		pwm_duty = pwmbl->pdata->pwm_duty_max;
+-	if (pwm_duty < pwmbl->pdata->pwm_duty_min)
+-		pwm_duty = pwmbl->pdata->pwm_duty_min;
+-
+-	if (!intensity) {
+-		atmel_pwm_bl_set_gpio_on(pwmbl, 0);
+-		pwm_channel_writel(&pwmbl->pwmc, PWM_CUPD, pwm_duty);
+-		pwm_channel_disable(&pwmbl->pwmc);
+-	} else {
+-		pwm_channel_enable(&pwmbl->pwmc);
+-		pwm_channel_writel(&pwmbl->pwmc, PWM_CUPD, pwm_duty);
+-		atmel_pwm_bl_set_gpio_on(pwmbl, 1);
+-	}
+-
+-	return 0;
+-}
+-
+-static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+-{
+-	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
+-	u32 cdty;
+-	u32 intensity;
+-
+-	cdty = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
+-	if (pwmbl->pdata->pwm_active_low)
+-		intensity = cdty - pwmbl->pdata->pwm_duty_min;
+-	else
+-		intensity = pwmbl->pdata->pwm_duty_max - cdty;
+-
+-	return intensity & 0xffff;
+-}
+-
+-static int atmel_pwm_bl_init_pwm(struct atmel_pwm_bl *pwmbl)
+-{
+-	unsigned long pwm_rate = pwmbl->pwmc.mck;
+-	unsigned long prescale = DIV_ROUND_UP(pwm_rate,
+-			(pwmbl->pdata->pwm_frequency *
+-			 pwmbl->pdata->pwm_compare_max)) - 1;
+-
+-	/*
+-	 * Prescale must be power of two and maximum 0xf in size because of
+-	 * hardware limit. PWM speed will be:
+-	 *	PWM module clock speed / (2 ^ prescale).
+-	 */
+-	prescale = fls(prescale);
+-	if (prescale > 0xf)
+-		prescale = 0xf;
+-
+-	pwm_channel_writel(&pwmbl->pwmc, PWM_CMR, prescale);
+-	pwm_channel_writel(&pwmbl->pwmc, PWM_CDTY,
+-			pwmbl->pdata->pwm_duty_min +
+-			pwmbl->bldev->props.brightness);
+-	pwm_channel_writel(&pwmbl->pwmc, PWM_CPRD,
+-			pwmbl->pdata->pwm_compare_max);
+-
+-	dev_info(&pwmbl->pdev->dev, "Atmel PWM backlight driver (%lu Hz)\n",
+-		pwmbl->pwmc.mck / pwmbl->pdata->pwm_compare_max /
+-		(1 << prescale));
+-
+-	return pwm_channel_enable(&pwmbl->pwmc);
+-}
+-
+-static const struct backlight_ops atmel_pwm_bl_ops = {
+-	.get_brightness = atmel_pwm_bl_get_intensity,
+-	.update_status  = atmel_pwm_bl_set_intensity,
+-};
+-
+-static int atmel_pwm_bl_probe(struct platform_device *pdev)
+-{
+-	struct backlight_properties props;
+-	const struct atmel_pwm_bl_platform_data *pdata;
+-	struct backlight_device *bldev;
+-	struct atmel_pwm_bl *pwmbl;
+-	unsigned long flags;
+-	int retval;
+-
+-	pdata = dev_get_platdata(&pdev->dev);
+-	if (!pdata)
+-		return -ENODEV;
+-
+-	if (pdata->pwm_compare_max < pdata->pwm_duty_max ||
+-			pdata->pwm_duty_min > pdata->pwm_duty_max ||
+-			pdata->pwm_frequency == 0)
+-		return -EINVAL;
+-
+-	pwmbl = devm_kzalloc(&pdev->dev, sizeof(struct atmel_pwm_bl),
+-				GFP_KERNEL);
+-	if (!pwmbl)
+-		return -ENOMEM;
+-
+-	pwmbl->pdev = pdev;
+-	pwmbl->pdata = pdata;
+-	pwmbl->gpio_on = pdata->gpio_on;
+-
+-	retval = pwm_channel_alloc(pdata->pwm_channel, &pwmbl->pwmc);
+-	if (retval)
+-		return retval;
+-
+-	if (gpio_is_valid(pwmbl->gpio_on)) {
+-		/* Turn display off by default. */
+-		if (pdata->on_active_low)
+-			flags = GPIOF_OUT_INIT_HIGH;
+-		else
+-			flags = GPIOF_OUT_INIT_LOW;
+-
+-		retval = devm_gpio_request_one(&pdev->dev, pwmbl->gpio_on,
+-						flags, "gpio_atmel_pwm_bl");
+-		if (retval)
+-			goto err_free_pwm;
+-	}
+-
+-	memset(&props, 0, sizeof(struct backlight_properties));
+-	props.type = BACKLIGHT_RAW;
+-	props.max_brightness = pdata->pwm_duty_max - pdata->pwm_duty_min;
+-	bldev = devm_backlight_device_register(&pdev->dev, "atmel-pwm-bl",
+-					&pdev->dev, pwmbl, &atmel_pwm_bl_ops,
+-					&props);
+-	if (IS_ERR(bldev)) {
+-		retval = PTR_ERR(bldev);
+-		goto err_free_pwm;
+-	}
+-
+-	pwmbl->bldev = bldev;
+-
+-	platform_set_drvdata(pdev, pwmbl);
+-
+-	/* Power up the backlight by default at middle intesity. */
+-	bldev->props.power = FB_BLANK_UNBLANK;
+-	bldev->props.brightness = bldev->props.max_brightness / 2;
+-
+-	retval = atmel_pwm_bl_init_pwm(pwmbl);
+-	if (retval)
+-		goto err_free_pwm;
+-
+-	atmel_pwm_bl_set_intensity(bldev);
+-
+-	return 0;
+-
+-err_free_pwm:
+-	pwm_channel_free(&pwmbl->pwmc);
+-
+-	return retval;
+-}
+-
+-static int atmel_pwm_bl_remove(struct platform_device *pdev)
+-{
+-	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+-
+-	atmel_pwm_bl_set_gpio_on(pwmbl, 0);
+-	pwm_channel_disable(&pwmbl->pwmc);
+-	pwm_channel_free(&pwmbl->pwmc);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver atmel_pwm_bl_driver = {
+-	.driver = {
+-		.name = "atmel-pwm-bl",
+-	},
+-	/* REVISIT add suspend() and resume() */
+-	.probe = atmel_pwm_bl_probe,
+-	.remove = atmel_pwm_bl_remove,
+-};
+-
+-module_platform_driver(atmel_pwm_bl_driver);
+-
+-MODULE_AUTHOR("Hans-Christian egtvedt <hans-christian.egtvedt@atmel.com>");
+-MODULE_DESCRIPTION("Atmel PWM backlight driver");
+-MODULE_LICENSE("GPL");
+-MODULE_ALIAS("platform:atmel-pwm-bl");
+diff --git a/include/linux/atmel-pwm-bl.h b/include/linux/atmel-pwm-bl.h
+deleted file mode 100644
+index 0153a47806c2..000000000000
+--- a/include/linux/atmel-pwm-bl.h
++++ /dev/null
+@@ -1,43 +0,0 @@
+-/*
+- * Copyright (C) 2007 Atmel Corporation
+- *
+- * Driver for the AT32AP700X PS/2 controller (PSIF).
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU General Public License version 2 as published
+- * by the Free Software Foundation.
+- */
+-
+-#ifndef __INCLUDE_ATMEL_PWM_BL_H
+-#define __INCLUDE_ATMEL_PWM_BL_H
+-
+-/**
+- * struct atmel_pwm_bl_platform_data
+- * @pwm_channel: which PWM channel in the PWM module to use.
+- * @pwm_frequency: PWM frequency to generate, the driver will try to be as
+- *	close as the prescaler allows.
+- * @pwm_compare_max: value to use in the PWM channel compare register.
+- * @pwm_duty_max: maximum duty cycle value, must be less than or equal to
+- *	pwm_compare_max.
+- * @pwm_duty_min: minimum duty cycle value, must be less than pwm_duty_max.
+- * @pwm_active_low: set to one if the low part of the PWM signal increases the
+- *	brightness of the backlight.
+- * @gpio_on: GPIO line to control the backlight on/off, set to -1 if not used.
+- * @on_active_low: set to one if the on/off signal is on when GPIO is low.
+- *
+- * This struct must be added to the platform device in the board code. It is
+- * used by the atmel-pwm-bl driver to setup the GPIO to control on/off and the
+- * PWM device.
+- */
+-struct atmel_pwm_bl_platform_data {
+-	unsigned int pwm_channel;
+-	unsigned int pwm_frequency;
+-	unsigned int pwm_compare_max;
+-	unsigned int pwm_duty_max;
+-	unsigned int pwm_duty_min;
+-	unsigned int pwm_active_low;
+-	int gpio_on;
+-	unsigned int on_active_low;
+-};
+-
+-#endif /* __INCLUDE_ATMEL_PWM_BL_H */
 -- 
 1.9.1
 
