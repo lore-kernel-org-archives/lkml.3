@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542AbaE1IZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:25:12 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:39635 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228AbaE1IZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:25:09 -0400
+	id S1754479AbaE1I2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:28:35 -0400
+Received: from ozlabs.org ([103.22.144.67]:49974 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754177AbaE1I2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:28:32 -0400
+Date: Wed, 28 May 2014 18:28:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: linux-next: manual merge of the staging tree with the net-next tree
+Message-ID: <20140528182824.63672ad9@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140528071855.GJ4227@lee--X1>
-References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
-	<20140523080333.66720C4176E@trevor.secretlab.ca>
-	<CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com>
-	<CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
-	<20140528071855.GJ4227@lee--X1>
-Date: Wed, 28 May 2014 10:25:08 +0200
-Message-ID: <CACRpkdYgkEOjLamYu5uKSgs3iTNJ-w5XkbeygKjRdR-bNdETfg@mail.gmail.com>
-Subject: Re: [PATCH v1] of/irq: do irq resolution in platform_get_irq_byname()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <robh@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/K.V47Y2h8HC5yHcLZwqcdZZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Tue, 27 May 2014, Rob Herring wrote:
->
->> On Tue, May 27, 2014 at 3:23 PM, Kevin Hilman <khilman@linaro.org> wrote:
->> > On Fri, May 23, 2014 at 1:03 AM, Grant Likely <grant.likely@linaro.org> wrote:
->> >> On Tue, 20 May 2014 13:42:02 +0300, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
->> >>> The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
->> >>> "of/irq: do irq resolution in platform_get_irq" from Rob Herring -
->> >>> moves resolving of the interrupt resources in platform_get_irq().
->> >>> But this solution isn't complete because platform_get_irq_byname()
->> >>> need to be modified the same way.
->> >>>
->> >>> Hence, fix it by adding interrupt resolution code at the
->> >>> platform_get_irq_byname() function too.
->> >>>
->> >>> Cc: Russell King <linux@arm.linux.org.uk>
->> >>> Cc: Rob Herring <robh@kernel.org>
->> >>> Cc: Tony Lindgren <tony@atomide.com>
->> >>> Cc: Grant Likely <grant.likely@linaro.org>
->> >>> Cc: Thierry Reding <thierry.reding@gmail.com>
->> >>>
->> >>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> >>
->> >> Applied, Thanks.
->> >
->> > As of next-20150526, the ST u8500 Snowball board has been failing boot
->> > in linux-next, and was bisected down to this patch (commit
->> > ad69674e73a1 in -next).   Full boot failure attached.
->> >
->> > I have not dug any deeper, but can confirm that next-20140526 with
->> > this patch reverted boots again on the snowball board.
->>
->> There's a patch on the list which fixes it. The problem is stmmac
->> driver was expecting only one error code.
->
-> Does Snowball even use stmmac?
+--Sig_/K.V47Y2h8HC5yHcLZwqcdZZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-No.
+Hi Greg,
 
-I don't get this...
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/rtl8821ae/core.c between commit 77be2c54c5bd
+("mac80211: add vif to flush call") from the net-next tree and commit
+0cd05ba54a53 ("staging: rtl8821ae: core.c: Remove version specific
+code") from the staging tree.
 
-Yours,
-Linus Walleij
+I fixed it up (the former is a suberset of the latter for this
+particular conflict) and can carry the fix as necessary (no action is
+required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/K.V47Y2h8HC5yHcLZwqcdZZ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJThZ4tAAoJEMDTa8Ir7ZwVSLIP/Rvlj7PQQUiRMxyF6NJlwr9w
+SdUzpLz6d6+K/aJUAaLWTUrw/Sk3P8B8jI0/9z/N3wdNsBGwCpClvj46P+XajrDW
+YOt5CdrsRb1/1ZCDZVtGW7w7BWRhjGwawCec+Y0+zusChwn7q01lNl651T7ebIJw
+UmuSGN2K8zIPybysU+hvnJdd4vqM3rsFKn3j6e2pcrxkKb80c0FunyLJCqu5Tbc4
+SjOvMV3IuxJWf21OzmToF/afsZ/FNej+iYXeNModtpzuKEb+PL+9zHtMXjntyT4M
+QRava/VKA9RSFfKAxlhE/OHf4AWYn01INbrd7aHbho1HF/Ev6eo8y8oaW7pAobdi
+jddBlFMDqLRtIiRuNTpbRd/22xmEGmlO1GLlL53h0UzFGiT6t7htskel+MX7apUv
+kDRh6lCIM0hFR3QyroorZq/O8oN8OyQHmyFqkf78ZO0wWT2HOOla3WCfatqoe/t7
+Pe1VkMrSrTKEKnVWeX+Nxrp8FwVG7MKCC0XXDyzK1h8+704dRq92h8+I3FqDQfyl
+fro/KBCP9Oag8LlBwGCQT3FmftiWaEz6egE7iAqB/3lf1MjQN/40l5AhcNTB7gYh
+Lfpw1q1+r8ouz2P13uSL1vshli3SCGnKkdm7oM/vqB0eRO2HjAqXTRXSGR5ChFBy
+1gDEYn8U0idFOboJsG46
+=lWkz
+-----END PGP SIGNATURE-----
+
+--Sig_/K.V47Y2h8HC5yHcLZwqcdZZ--
