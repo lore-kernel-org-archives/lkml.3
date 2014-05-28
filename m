@@ -1,45 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbaE1PcM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:32:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338AbaE1PcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:32:11 -0400
-Date: Wed, 28 May 2014 17:27:01 +0200
-From: Maurizio Lombardi <mlombard@redhat.com>
-To: Jet Chen <jet.chen@intel.com>
-Cc: tom.leiming@gmail.com, Jens Axboe <axboe@kernel.dk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [jet.chen@intel.com: [bio] kernel BUG at
- drivers/block/virtio_blk.c:166!]
-Message-ID: <20140528152701.GB2255@dhcp-27-189.brq.redhat.com>
-References: <20140526194347.GB2271@dhcp-27-189.brq.redhat.com>
- <CACVXFVOaF-EOioE38sy9=2f-+rKECJnzUCSHrL-VZJi1Ycj_wA@mail.gmail.com>
- <20140527084359.GD2205@dhcp-27-189.brq.redhat.com>
- <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
- <5385FDC1.2020800@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5385FDC1.2020800@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754616AbaE1Pcv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:32:51 -0400
+Received: from ns.horizon.com ([71.41.210.147]:22422 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753573AbaE1Pcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 11:32:50 -0400
+Date: 28 May 2014 11:32:49 -0400
+Message-ID: <20140528153249.18014.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: herbert@gondor.apana.org.au, JBeulich@suse.com, linux@horizon.com,
+        tim.c.chen@linux.intel.com
+Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink K_table
+Cc: linux-kernel@vger.kernel.org, sandyw@twitter.com
+In-Reply-To: <20140528144000.28686.qmail@ns.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Um, yeah, I just noticed the problem with that patch: half of the numbers
+in that table are 33 bits, and cause a pile of warnings (not errors,
+unfortunately!) from gas that scrolled by when I wasn't looking.
 
-On Wed, May 28, 2014 at 11:16:17PM +0800, Jet Chen wrote:
-> 
-> Sorry for late respond. Dongsu has sent a patch for this issue.
-> 	message-id <1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
-> Do you still need me to test the following patch ?
-
-No, don't test my patch, it is not needed anymore, please test Dongsu's
-patch instead so we are sure the regression is fixed.
-
-Thanks,
-Maurizio Lombardi
+Logically, there should be no need for 33-bit values; they should all be
+reducible modulo the polynomial.  But that is going to take a slightly
+larger change.
