@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622AbaE1Iqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:46:55 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:40655 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751984AbaE1Iqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:46:53 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Cody P Schafer'" <dev@codyps.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: RE: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
- le}_to_cpu() and cpu_to_{be, le}() macros
-Thread-Topic: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
- le}_to_cpu() and cpu_to_{be, le}() macros
-Thread-Index: AQHPehtRSTTppVgBd0OVC+FRTYrw6JtVrLPQ
-Date: Wed, 28 May 2014 08:45:52 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724EEAF@AcuExch.aculab.com>
-References: <1401236684-10579-1-git-send-email-dev@codyps.com>
- <1401236684-10579-12-git-send-email-dev@codyps.com>
-In-Reply-To: <1401236684-10579-12-git-send-email-dev@codyps.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1754637AbaE1IsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:48:15 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:48345 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbaE1IsM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:48:12 -0400
 MIME-Version: 1.0
+In-Reply-To: <1943407.eJZOu7V4pT@phil>
+References: <CACRpkdZyLxMTSygRP6pD-mxghQ_D6tQ821tvn8GYw0Rnh9hZoQ@mail.gmail.com>
+	<2480893.UEqfxe8meR@phil>
+	<CACRpkdbaWYgku0_n5CqGU8DAFnn-5jEJ64Mfh9fixB4mRPnfwg@mail.gmail.com>
+	<1943407.eJZOu7V4pT@phil>
+Date: Wed, 28 May 2014 10:48:11 +0200
+Message-ID: <CACRpkdYR9cZOnG2r3Kh027LNKgsDJqxL0J9Gryu+JHXacTNHbQ@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: Enable "power-source" to be extracted from DT files
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4S8l5Xw029308
 
-From: Cody P Schafer
-> Rather manually specifying the size of the integer to be converted, key
-> off of the type size. Reduces duplicate size info and the occurance of
-> certain types of bugs (using the wrong sized conversion).
-...
-> +#define be_to_cpu(v) \
-> +	__builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v,	\
-> +	__builtin_choose_expr(sizeof(v) == sizeof(uint16_t), be16_to_cpu(v), \
-> +	__builtin_choose_expr(sizeof(v) == sizeof(uint32_t), be32_to_cpu(v), \
-> +	__builtin_choose_expr(sizeof(v) == sizeof(uint64_t), be64_to_cpu(v), \
-> +		(void)0))))
-...
+On Wed, May 28, 2014 at 10:36 AM, Heiko StÃ¼bner <heiko@sntech.de> wrote:
+> Am Mittwoch, 28. Mai 2014, 10:15:43 schrieb Linus Walleij:
+>> On Tue, May 27, 2014 at 3:09 PM, Heiko StÃ¼bner <heiko@sntech.de> wrote:
+>> > Am Dienstag, 27. Mai 2014, 09:27:36 schrieb Ivan T. Ivanov:
+>> >> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>> >>
+>> >> Add "power-source" property to generic options used for DT parsing files.
+>> >> This  enables drivers, which use generic pin configurations, to get the
+>> >> value passed to this property.
+>> >
+>> > I think the main problem here is, that pinconf-generic.h defines the
+>> > power-
+>> > source as having a "custom format". With DT as a hardware description,
+>> > implementaton specific values do not work well - instead it should have a
+>> > regular unit-value.
+>> >
+>> > For the power-source I think volts could work well - as this is the main
+>> > use- case for pinctrl I know. The regulator-binding uses microvolts,
+>> > maybe it would be good use a similar unit.
+>>
+>> (...)
+>>
+>> >         pcfg_1v8 {
+>> >
+>> >                 power-source = <1800000>;
+>> >
+>> >         };
+>>
+>> I don't think this is what it's meant for actually. In this case the thing
+>> would be modeled as a regulator rather than some pin control option I
+>> guess?
+>>
+>> I think it's more like a selector, such as found on old amplifiers,
+>> input source A, B or C? So it's just some discrete number.
+>
+> as I said, you know this better than me ;-)
+>
+> I was thinking more of these io-voltages, where one can select between say 1.8
+> and 3.3V for the pins.
+>
+> I have this somewhere on my todo list for the rockchips too.
+>
+> So essentially the pinctrl driver [as it is a pin-group specific setting]
+> should just export regulators for these voltage settings, without touching the
+> pinconfig itself, right?
 
-I'm not at all sure that using the 'size' of the constant will reduce
-the number of bugs - it just introduces a whole new category of bugs.
+Hm hm hm.
 
-Using the size of the destination might help, but that makes the code
-ugly.
+I am a bit in the blue actually.
 
-Getting one of the static analysers to find the obvious errors is
-probably more appropriate.
+I think we need to have a discussion with Mark Brown on how to
+handle this.
 
-	David
+We have previously had the case of MMC/SD level-shifters, where
+a certain setting gives a certain level of signals out, and another setting
+gives another level. Like two discrete levels.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+So we modeled that as a regulator provider inside the pin control
+driver eventually, see sh-pfc/pfc-sh73a0.c
+
+But this is different: it is the power of the pin itself.
+
+I can think of a "padring regulator" hooking in as part of the pin state
+but have no clear idea on how to actually do that. We need some
+coding I think.
+
+Yours,
+Linus Walleij
