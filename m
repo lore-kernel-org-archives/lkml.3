@@ -1,64 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674AbaE1NV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:21:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58874 "EHLO mx1.redhat.com"
+	id S1753716AbaE1NVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:21:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9464 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753637AbaE1NV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:21:27 -0400
+	id S1753680AbaE1NVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:21:31 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 7/9] perf tools: Consider header files outside perf directory in tags target
-Date: Wed, 28 May 2014 15:21:00 +0200
-Message-Id: <1401283262-16035-8-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 9/9] tools lib traceevent: Added support for __get_bitmask() macro
+Date: Wed, 28 May 2014 15:21:02 +0200
+Message-Id: <1401283262-16035-10-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 References: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-This fixes lookups like "vi -t event_format"
+Coming in v3.16, trace events will be able to save bitmasks in raw
+format in the ring buffer and output it with the __get_bitmask() macro.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140528081918.GA28567@linutronix.de
+In order for userspace tools to parse this, it must be able to handle
+the __get_bitmask() call and be able to convert the data that's in
+the ring buffer into a nice bitmask format. The output is similar to
+what the kernel uses to print bitmasks, with a comma separator every
+4 bytes (8 characters).
+
+This allows for cpumasks to also be saved efficiently.
+
+The first user is the thermal:thermal_power_limit event which has the
+following output:
+
+ thermal_power_limit:  cpus=0000000f freq=1900000 cdev_state=0 power=5252
+
+Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
+
+Suggested-by: Javi Merino <javi.merino@arm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Tested-by: Javi Merino <javi.merino@arm.com>
+Link: http://lkml.kernel.org/r/20140516140502.628373326@goodmis.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Makefile.perf | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ tools/lib/traceevent/event-parse.c                 | 113 +++++++++++++++++++++
+ tools/lib/traceevent/event-parse.h                 |   7 ++
+ .../perf/util/scripting-engines/trace-event-perl.c |   1 +
+ .../util/scripting-engines/trace-event-python.c    |   1 +
+ 4 files changed, 122 insertions(+)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 02f0a4d..f80ec2d 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -814,17 +814,20 @@ INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
- $(DOC_TARGETS):
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) $(@:doc=all)
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index b83184f..2d6aa92 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -765,6 +765,9 @@ static void free_arg(struct print_arg *arg)
+ 	case PRINT_BSTRING:
+ 		free(arg->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		free(arg->bitmask.bitmask);
++		break;
+ 	case PRINT_DYNAMIC_ARRAY:
+ 		free(arg->dynarray.index);
+ 		break;
+@@ -2268,6 +2271,7 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		ret = 0;
+@@ -2296,6 +2300,7 @@ static char *arg_eval (struct print_arg *arg)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		break;
+@@ -2683,6 +2688,35 @@ process_str(struct event_format *event __maybe_unused, struct print_arg *arg,
+ 	return EVENT_ERROR;
+ }
  
-+TAG_FOLDERS= . ../lib/traceevent ../lib/api ../lib/symbol
-+TAG_FILES= ../../include/uapi/linux/perf_event.h
++static enum event_type
++process_bitmask(struct event_format *event __maybe_unused, struct print_arg *arg,
++	    char **tok)
++{
++	enum event_type type;
++	char *token;
 +
- TAGS:
- 	$(RM) TAGS
--	$(FIND) . -name '*.[hcS]' -print | xargs etags -a
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs etags -a $(TAG_FILES)
++	if (read_expect_type(EVENT_ITEM, &token) < 0)
++		goto out_free;
++
++	arg->type = PRINT_BITMASK;
++	arg->bitmask.bitmask = token;
++	arg->bitmask.offset = -1;
++
++	if (read_expected(EVENT_DELIM, ")") < 0)
++		goto out_err;
++
++	type = read_token(&token);
++	*tok = token;
++
++	return type;
++
++ out_free:
++	free_token(token);
++ out_err:
++	*tok = NULL;
++	return EVENT_ERROR;
++}
++
+ static struct pevent_function_handler *
+ find_func_handler(struct pevent *pevent, char *func_name)
+ {
+@@ -2797,6 +2831,10 @@ process_function(struct event_format *event, struct print_arg *arg,
+ 		free_token(token);
+ 		return process_str(event, arg, tok);
+ 	}
++	if (strcmp(token, "__get_bitmask") == 0) {
++		free_token(token);
++		return process_bitmask(event, arg, tok);
++	}
+ 	if (strcmp(token, "__get_dynamic_array") == 0) {
+ 		free_token(token);
+ 		return process_dynamic_array(event, arg, tok);
+@@ -3324,6 +3362,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		return eval_type(val, arg, 0);
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 		return 0;
+ 	case PRINT_FUNC: {
+ 		struct trace_seq s;
+@@ -3556,6 +3595,60 @@ static void print_str_to_seq(struct trace_seq *s, const char *format,
+ 		trace_seq_printf(s, format, str);
+ }
  
- tags:
- 	$(RM) tags
--	$(FIND) . -name '*.[hcS]' -print | xargs ctags -a
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs ctags -a $(TAG_FILES)
++static void print_bitmask_to_seq(struct pevent *pevent,
++				 struct trace_seq *s, const char *format,
++				 int len_arg, const void *data, int size)
++{
++	int nr_bits = size * 8;
++	int str_size = (nr_bits + 3) / 4;
++	int len = 0;
++	char buf[3];
++	char *str;
++	int index;
++	int i;
++
++	/*
++	 * The kernel likes to put in commas every 32 bits, we
++	 * can do the same.
++	 */
++	str_size += (nr_bits - 1) / 32;
++
++	str = malloc(str_size + 1);
++	if (!str) {
++		do_warning("%s: not enough memory!", __func__);
++		return;
++	}
++	str[str_size] = 0;
++
++	/* Start out with -2 for the two chars per byte */
++	for (i = str_size - 2; i >= 0; i -= 2) {
++		/*
++		 * data points to a bit mask of size bytes.
++		 * In the kernel, this is an array of long words, thus
++		 * endianess is very important.
++		 */
++		if (pevent->file_bigendian)
++			index = size - (len + 1);
++		else
++			index = len;
++
++		snprintf(buf, 3, "%02x", *((unsigned char *)data + index));
++		memcpy(str + i, buf, 2);
++		len++;
++		if (!(len & 3) && i > 0) {
++			i--;
++			str[i] = ',';
++		}
++	}
++
++	if (len_arg >= 0)
++		trace_seq_printf(s, format, len_arg, str);
++	else
++		trace_seq_printf(s, format, str);
++
++	free(str);
++}
++
+ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 			  struct event_format *event, const char *format,
+ 			  int len_arg, struct print_arg *arg)
+@@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 	case PRINT_BSTRING:
+ 		print_str_to_seq(s, format, len_arg, arg->string.string);
+ 		break;
++	case PRINT_BITMASK: {
++		int bitmask_offset;
++		int bitmask_size;
++
++		if (arg->bitmask.offset == -1) {
++			struct format_field *f;
++
++			f = pevent_find_any_field(event, arg->bitmask.bitmask);
++			arg->bitmask.offset = f->offset;
++		}
++		bitmask_offset = data2host4(pevent, data + arg->string.offset);
++		bitmask_size = bitmask_offset >> 16;
++		bitmask_offset &= 0xffff;
++		print_bitmask_to_seq(pevent, s, format, len_arg,
++				     data + bitmask_offset, bitmask_size);
++		break;
++	}
+ 	case PRINT_OP:
+ 		/*
+ 		 * The only op for string should be ? :
+@@ -4822,6 +4932,9 @@ static void print_args(struct print_arg *args)
+ 	case PRINT_BSTRING:
+ 		printf("__get_str(%s)", args->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		printf("__get_bitmask(%s)", args->bitmask.bitmask);
++		break;
+ 	case PRINT_TYPE:
+ 		printf("(%s)", args->typecast.type);
+ 		print_args(args->typecast.item);
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index feab942..fb3b415 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -208,6 +208,11 @@ struct print_arg_string {
+ 	int			offset;
+ };
  
- cscope:
- 	$(RM) cscope*
--	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs cscope -b $(TAG_FILES)
++struct print_arg_bitmask {
++	char			*bitmask;
++	int			offset;
++};
++
+ struct print_arg_field {
+ 	char			*name;
+ 	struct format_field	*field;
+@@ -274,6 +279,7 @@ enum print_arg_type {
+ 	PRINT_DYNAMIC_ARRAY,
+ 	PRINT_OP,
+ 	PRINT_FUNC,
++	PRINT_BITMASK,
+ };
  
- ### Detect prefix changes
- TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
+ struct print_arg {
+@@ -288,6 +294,7 @@ struct print_arg {
+ 		struct print_arg_hex		hex;
+ 		struct print_arg_func		func;
+ 		struct print_arg_string		string;
++		struct print_arg_bitmask	bitmask;
+ 		struct print_arg_op		op;
+ 		struct print_arg_dynarray	dynarray;
+ 	};
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index e108207..af7da56 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -215,6 +215,7 @@ static void define_event_symbols(struct event_format *event,
+ 	case PRINT_BSTRING:
+ 	case PRINT_DYNAMIC_ARRAY:
+ 	case PRINT_STRING:
++	case PRINT_BITMASK:
+ 		break;
+ 	case PRINT_TYPE:
+ 		define_event_symbols(event, ev_name, args->typecast.item);
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index cd9774d..c3de097 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -197,6 +197,7 @@ static void define_event_symbols(struct event_format *event,
+ 	case PRINT_BSTRING:
+ 	case PRINT_DYNAMIC_ARRAY:
+ 	case PRINT_FUNC:
++	case PRINT_BITMASK:
+ 		/* we should warn... */
+ 		return;
+ 	}
 -- 
 1.8.3.1
 
