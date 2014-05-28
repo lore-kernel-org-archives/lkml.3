@@ -1,406 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892AbaE1Wad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:30:33 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:35795 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495AbaE1Waa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:30:30 -0400
-Date: Wed, 28 May 2014 16:30:27 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        Greg KH <greg@kroah.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 10/15] thunderbolt: Add path setup code.
-Message-ID: <20140528223027.GX11907@google.com>
-References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
- <1401117492-2870-11-git-send-email-andreas.noever@gmail.com>
+	id S1755913AbaE1WbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:31:21 -0400
+Received: from smtp.pobox.com ([208.72.237.35]:57791 "EHLO smtp.pobox.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755453AbaE1WbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 18:31:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=HKqjhNkDyjix1BRVY9yKXnuXYHxf+tkohpCLROCF2vUHBl4X4E8fYxrO
+	qlpZJvv+EVLOQxZ4BeGfC02CBbHhubIcInxS7XGjLZNjZuMftYEfMwXBDJ3J4I1F
+	RKd+PapnSfnFFlY3DBI15gERIUuG4N3ztmsBBfXzt2hBeGYImmc=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v2.0.0
+Date: Wed, 28 May 2014 15:31:13 -0700
+Message-ID: <xmqqr43dbkni.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401117492-2870-11-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Pobox-Relay-ID: C77DC60C-E6B7-11E3-8C1F-9903E9FBB39C-77302942!pb-smtp0.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 05:18:07PM +0200, Andreas Noever wrote:
-> A thunderbolt path is a unidirectional channel between two thunderbolt
-> ports. Two such paths are needed to establish a pci tunnel.
-> 
-> This patch introduces struct tb_path as well as a set of tb_path_*
-> methods which are used do activate & deactive paths.
+The latest feature release Git v2.0.0 is now available at the
+usual places.
 
-s/do activate & deactive/to activate & deactivate/
+We had to delay the final release by a week or so because we found a
+few problems in earlier release candidates (request-pull had a
+regression that stopped it from showing the "tags/" prefix in
+"Please pull tags/frotz" when the user asked to compose a request
+for 'frotz' to be pulled; a code path in git-gui to support ancient
+versions of Git incorrectly triggered for Git 2.0), which we had to
+fix in an extra unplanned release candidate.
 
-> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
-> ---
->  drivers/thunderbolt/Makefile |   2 +-
->  drivers/thunderbolt/path.c   | 215 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/thunderbolt/switch.c |  34 +++++++
->  drivers/thunderbolt/tb.h     |  62 +++++++++++++
->  4 files changed, 312 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/thunderbolt/path.c
-> 
-> diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-> index 617b314..3532f36 100644
-> --- a/drivers/thunderbolt/Makefile
-> +++ b/drivers/thunderbolt/Makefile
-> @@ -1,3 +1,3 @@
->  obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
-> -thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
-> +thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o
->  
-> diff --git a/drivers/thunderbolt/path.c b/drivers/thunderbolt/path.c
-> new file mode 100644
-> index 0000000..8fcf8a7
-> --- /dev/null
-> +++ b/drivers/thunderbolt/path.c
-> @@ -0,0 +1,215 @@
-> +/*
-> + * Thunderbolt Cactus Ridge driver - path/tunnel functionality
-> + *
-> + * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/errno.h>
-> +
-> +#include "tb.h"
-> +
-> +
-> +static void tb_dump_hop(struct tb_port *port, struct tb_regs_hop *hop)
-> +{
-> +	tb_port_info(port, " Hop through port %d to hop %d (%s)\n",
-> +		     hop->out_port, hop->next_hop,
-> +		     hop->enable ? "enabled" : "disabled");
-> +	tb_port_info(port, "  Weight: %d Priority: %d Credits: %d Drop: %d\n",
-> +		     hop->weight, hop->priority,
-> +		     hop->initial_credits, hop->drop_packages);
-> +	tb_port_info(port, "   Counter enabled: %d Counter index: %d\n",
-> +		     hop->counter_enable, hop->counter);
-> +	tb_port_info(port, "  Flow Control (In/Eg): %d/%d Shared Buffer (In/Eg): %d/%d\n",
-> +		     hop->ingress_fc, hop->egress_fc,
-> +		     hop->ingress_shared_buffer, hop->egress_shared_buffer);
-> +	tb_port_info(port, "  Unknown1: %#x Unknown2: %#x Unknown3: %#x\n",
-> +		     hop->unknown1, hop->unknown2, hop->unknown3);
-> +}
-> +
-> +/**
-> + * tb_path_alloc() - allocate a thunderbolt path
-> + *
-> + * Return: Returns a tb_path on success or NULL on failure.
-> + */
-> +struct tb_path *tb_path_alloc(struct tb *tb, int num_hops)
-> +{
-> +	struct tb_path *path = kzalloc(sizeof(*path), GFP_KERNEL);
-> +	if (!path)
-> +		return NULL;
-> +	path->hops = kcalloc(num_hops, sizeof(*path->hops), GFP_KERNEL);
-> +	if (!path->hops) {
-> +		kfree(path);
-> +		return NULL;
-> +	}
-> +	path->tb = tb;
-> +	path->path_length = num_hops;
-> +	return path;
-> +}
-> +
-> +/**
-> + * tb_path_free() - free a deactivated path
-> + */
-> +void tb_path_free(struct tb_path *path)
-> +{
-> +	if (path->activated) {
-> +		tb_WARN(path->tb, "trying to free an activated path\n")
-> +		return;
-> +	}
-> +	kfree(path->hops);
-> +	kfree(path);
-> +}
-> +
-> +static void __tb_path_deallocate_nfc(struct tb_path *path, int first_hop)
-> +{
-> +	int i, res;
-> +	for (i = first_hop; i < path->path_length; i++) {
-> +		res = tb_port_add_nfc_credits(path->hops[i].in_port,
-> +					      -path->nfc_credits);
-> +		if (res)
-> +			tb_port_warn(path->hops[i].in_port,
-> +				     "nfc credits deallocation failed for hop %d\n",
-> +				     i);
-> +	}
-> +}
-> +
-> +static void __tb_path_deactivate_hops(struct tb_path *path, int first_hop)
-> +{
-> +	int i, res;
-> +	struct tb_regs_hop hop = { };
-> +	for (i = first_hop; i < path->path_length; i++) {
-> +		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
-> +				    2 * path->hops[i].in_hop_index, 2);
-> +		if (res)
-> +			tb_port_warn(path->hops[i].in_port,
-> +				     "hop deactivation failed for hop %d, index %d\n",
-> +				     i, path->hops[i].in_hop_index);
-> +	}
-> +}
-> +
-> +void tb_path_deactivate(struct tb_path *path)
-> +{
-> +	if (!path->activated) {
-> +		tb_WARN(path->tb, "trying to deactivate an inactive path\n");
-> +		return;
-> +	}
-> +	tb_info(path->tb,
-> +		"deactivating path from %llx:%x to %llx:%x\n",
-> +		tb_route(path->hops[0].in_port->sw),
-> +		path->hops[0].in_port->port,
-> +		tb_route(path->hops[path->path_length - 1].out_port->sw),
-> +		path->hops[path->path_length - 1].out_port->port);
-> +	__tb_path_deactivate_hops(path, 0);
-> +	__tb_path_deallocate_nfc(path, 0);
-> +	path->activated = false;
-> +}
-> +
-> +/**
-> + * tb_path_activate() - activate a path
-> + *
-> + * Activate a path starting with the last hop and iterating backwards. The
-> + * caller must fill path->hops before calling tb_path_activate().
-> + *
-> + * Return: Returns 0 on success or an error code on failure.
-> + */
-> +int tb_path_activate(struct tb_path *path)
-> +{
-> +	int i, res;
-> +	enum tb_path_port out_mask, in_mask;
-> +	if (path->activated) {
-> +		tb_WARN(path->tb, "trying to activate already activated path\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	tb_info(path->tb,
-> +		"activating path from %llx:%x to %llx:%x\n",
-> +		tb_route(path->hops[0].in_port->sw),
-> +		path->hops[0].in_port->port,
-> +		tb_route(path->hops[path->path_length - 1].out_port->sw),
-> +		path->hops[path->path_length - 1].out_port->port);
-> +
-> +	/* Clear counters. */
-> +	for (i = path->path_length - 1; i >= 0; i--) {
-> +		if (path->hops[i].in_counter_index == -1)
-> +			continue;
-> +		res = tb_port_clear_counter(path->hops[i].in_port,
-> +					    path->hops[i].in_counter_index);
-> +		if (res)
-> +			goto err;
-> +	}
-> +
-> +	/* Add non flow controlled credits. */
-> +	for (i = path->path_length - 1; i >= 0; i--) {
-> +		res = tb_port_add_nfc_credits(path->hops[i].in_port,
-> +					      path->nfc_credits);
-> +		if (res) {
-> +			__tb_path_deallocate_nfc(path, i);
-> +			goto err;
-> +		}
-> +	}
-> +
-> +	/* Activate hops. */
-> +	for (i = path->path_length - 1; i >= 0; i--) {
-> +		struct tb_regs_hop hop;
-> +
-> +		/* dword 0 */
-> +		hop.next_hop = path->hops[i].next_hop_index;
-> +		hop.out_port = path->hops[i].out_port->port;
-> +		/* TODO: figure out why these are good values */
-> +		hop.initial_credits = (i == path->path_length - 1) ? 16 : 7;
-> +		hop.unknown1 = 0;
-> +		hop.enable = 1;
-> +
-> +		/* dword 1 */
-> +		out_mask = (i == path->path_length - 1) ?
-> +				TB_PATH_DESTINATION : TB_PATH_INTERNAL;
-> +		in_mask = (i == 0) ? TB_PATH_SOURCE : TB_PATH_INTERNAL;
-> +		hop.weight = path->weight;
-> +		hop.unknown2 = 0;
-> +		hop.priority = path->priority;
-> +		hop.drop_packages = path->drop_packages;
-> +		hop.counter = path->hops[i].in_counter_index;
-> +		hop.counter_enable = path->hops[i].in_counter_index != -1;
-> +		hop.ingress_fc = path->ingress_fc_enable & in_mask;
-> +		hop.egress_fc = path->egress_fc_enable & out_mask;
-> +		hop.ingress_shared_buffer = path->ingress_shared_buffer
-> +					    & in_mask;
-> +		hop.egress_shared_buffer = path->egress_shared_buffer
-> +					    & out_mask;
-> +		hop.unknown3 = 0;
-> +
-> +		tb_port_info(path->hops[i].in_port, "Writing hop %d, index %d",
-> +			     i, path->hops[i].in_hop_index);
-> +		tb_dump_hop(path->hops[i].in_port, &hop);
-> +		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
-> +				    2 * path->hops[i].in_hop_index, 2);
-> +		if (res) {
-> +			__tb_path_deactivate_hops(path, i);
-> +			__tb_path_deallocate_nfc(path, 0);
-> +			goto err;
-> +		}
-> +	}
-> +	path->activated = true;
-> +	tb_info(path->tb, "path activation complete\n");
-> +	return 0;
-> +err:
-> +	tb_WARN(path->tb, "path activation failed\n");
-> +	return res;
-> +}
-> +
-> +/**
-> + * tb_path_is_invalid() - check whether any ports on the path are invalid
-> + *
-> + * Return: Returns true if the path is invalid, false otherwise.
-> + */
-> +bool tb_path_is_invalid(struct tb_path *path)
-> +{
-> +	int i = 0;
-> +	for (i = 0; i < path->path_length; i++) {
-> +		if (path->hops[i].in_port->sw->is_unplugged)
-> +			return true;
-> +		if (path->hops[i].out_port->sw->is_unplugged)
-> +			return true;
-> +	}
-> +	return false;
-> +}
-> diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-> index c092f7c..a6968cc 100644
-> --- a/drivers/thunderbolt/switch.c
-> +++ b/drivers/thunderbolt/switch.c
-> @@ -139,6 +139,40 @@ int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
->  }
->  
->  /**
-> + * tb_port_add_nfc_credits() - add/remove non flow controlled credits to port
-> + *
-> + * Change the number of NFC credits allocated to @port by @credits. To remove
-> + * NFC credits pass a negative amount of credits.
-> + *
-> + * Return: Returns 0 on success or an error code on failure.
-> + */
-> +int tb_port_add_nfc_credits(struct tb_port *port, int credits)
-> +{
-> +	if (credits == 0)
-> +		return 0;
-> +	tb_port_info(port,
-> +		     "adding %#x NFC credits (%#x -> %#x)",
-> +		     credits,
-> +		     port->config.nfc_credits,
-> +		     port->config.nfc_credits + credits);
-> +	port->config.nfc_credits += credits;
-> +	return tb_port_write(port, &port->config.nfc_credits,
-> +			     TB_CFG_PORT, 4, 1);
-> +}
-> +
-> +/**
-> + * tb_port_clear_counter() - clear a counter in TB_CFG_COUNTER
-> + *
-> + * Return: Returns 0 on success or an error code on failure.
-> + */
-> +int tb_port_clear_counter(struct tb_port *port, int counter)
-> +{
-> +	u32 zero[3] = { 0, 0, 0 };
-> +	tb_port_info(port, "clearing counter %d\n", counter);
-> +	return tb_port_write(port, zero, TB_CFG_COUNTERS, 3 * counter, 3);
-> +}
-> +
-> +/**
->   * tb_init_port() - initialize a port
->   *
->   * This is a helper method for tb_switch_alloc. Does not check or initialize
-> diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-> index 661f182..8bbdc2b 100644
-> --- a/drivers/thunderbolt/tb.h
-> +++ b/drivers/thunderbolt/tb.h
-> @@ -35,6 +35,60 @@ struct tb_port {
->  };
->  
->  /**
-> + * struct tb_path_hop - routing information for a tb_path
-> + *
-> + * Hop configuration is always done on the IN port of a switch.
-> + * in_port and out_port have to be on the same switch. Packets arriving on
-> + * in_port with "hop" = in_hop_index will get routed to through out_port. The
-> + * next hop to take (on out_port->remote) is determined by next_hop_index.
-> + *
-> + * in_counter_index is the index of a counter (in TB_CFG_COUNTERS) on the in
-> + * port.
-> + */
-> +struct tb_path_hop {
-> +	struct tb_port *in_port;
-> +	struct tb_port *out_port;
-> +	int in_hop_index;
-> +	int in_counter_index; /* write -1 to disable counters for this hop. */
-> +	int next_hop_index;
-> +};
-> +
-> +/**
-> + * enum tb_path_port - path options mask
-> + */
-> +enum tb_path_port {
-> +	TB_PATH_NONE = 0,
-> +	TB_PATH_SOURCE = 1, /* activate on the first hop (out of src) */
-> +	TB_PATH_INTERNAL = 2, /* activate on other hops (not the first/last) */
-> +	TB_PATH_DESTINATION = 4, /* activate on the last hop (into dst) */
-> +	TB_PATH_ALL = 7,
-> +};
-> +
-> +/**
-> + * struct tb_path - a unidirectional path between two ports
-> + *
-> + * A path consists of a number of hops (see tb_path_hop). To establish a PCIe
-> + * tunnel two paths have to be created between the two PCIe ports.
-> + *
-> + */
-> +struct tb_path {
-> +	struct tb *tb;
-> +	int nfc_credits; /* non flow controlled credits */
-> +	enum tb_path_port ingress_shared_buffer;
-> +	enum tb_path_port egress_shared_buffer;
-> +	enum tb_path_port ingress_fc_enable;
-> +	enum tb_path_port egress_fc_enable;
-> +
-> +	int priority:3;
-> +	int weight:4;
-> +	bool drop_packages;
-> +	bool activated;
-> +	struct tb_path_hop *hops;
-> +	int path_length; /* number of hops */
-> +};
-> +
-> +
-> +/**
->   * struct tb - main thunderbolt bus structure
->   */
->  struct tb {
-> @@ -165,9 +219,17 @@ void tb_sw_set_unpplugged(struct tb_switch *sw);
->  struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
->  
->  int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
-> +int tb_port_add_nfc_credits(struct tb_port *port, int credits);
-> +int tb_port_clear_counter(struct tb_port *port, int counter);
->  
->  int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
->  
-> +struct tb_path *tb_path_alloc(struct tb *tb, int num_hops);
-> +void tb_path_free(struct tb_path *path);
-> +int tb_path_activate(struct tb_path *path);
-> +void tb_path_deactivate(struct tb_path *path);
-> +bool tb_path_is_invalid(struct tb_path *path);
-> +
->  
->  static inline int tb_route_length(u64 route)
->  {
-> -- 
-> 1.9.3
-> 
+Hopefully the next cycle will become shorter, as topics that have
+been cooking on the 'next' branch had extra time to mature, so it
+all evens out in the end ;-).
+
+The tarballs are found at:
+
+    https://www.kernel.org/pub/software/scm/git/testing/
+
+The following public repositories all have a copy of the 'v2.0.0'
+tag and the 'master' branch that the tag points at:
+
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Git v2.0 Release Notes
+======================
+
+Backward compatibility notes
+----------------------------
+
+When "git push [$there]" does not say what to push, we have used the
+traditional "matching" semantics so far (all your branches were sent
+to the remote as long as there already are branches of the same name
+over there).  In Git 2.0, the default is now the "simple" semantics,
+which pushes:
+
+ - only the current branch to the branch with the same name, and only
+   when the current branch is set to integrate with that remote
+   branch, if you are pushing to the same remote as you fetch from; or
+
+ - only the current branch to the branch with the same name, if you
+   are pushing to a remote that is not where you usually fetch from.
+
+You can use the configuration variable "push.default" to change
+this.  If you are an old-timer who wants to keep using the
+"matching" semantics, you can set the variable to "matching", for
+example.  Read the documentation for other possibilities.
+
+When "git add -u" and "git add -A" are run inside a subdirectory
+without specifying which paths to add on the command line, they
+operate on the entire tree for consistency with "git commit -a" and
+other commands (these commands used to operate only on the current
+subdirectory).  Say "git add -u ." or "git add -A ." if you want to
+limit the operation to the current directory.
+
+"git add <path>" is the same as "git add -A <path>" now, so that
+"git add dir/" will notice paths you removed from the directory and
+record the removal.  In older versions of Git, "git add <path>" used
+to ignore removals.  You can say "git add --ignore-removal <path>" to
+add only added or modified paths in <path>, if you really want to.
+
+The "-q" option to "git diff-files", which does *NOT* mean "quiet",
+has been removed (it told Git to ignore deletion, which you can do
+with "git diff-files --diff-filter=d").
+
+"git request-pull" lost a few "heuristics" that often led to mistakes.
+
+The default prefix for "git svn" has changed in Git 2.0.  For a long
+time, "git svn" created its remote-tracking branches directly under
+refs/remotes, but it now places them under refs/remotes/origin/ unless
+it is told otherwise with its "--prefix" option.
+
+
+Updates since v1.9 series
+-------------------------
+
+UI, Workflows & Features
+
+ * The "multi-mail" post-receive hook (in contrib/) has been updated
+   to a more recent version from upstream.
+
+ * The "remote-hg/bzr" remote-helper interfaces (used to be in
+   contrib/) are no more.  They are now maintained separately as
+   third-party plug-ins in their own repositories.
+
+ * "git gc --aggressive" learned "--depth" option and
+   "gc.aggressiveDepth" configuration variable to allow use of a less
+   insane depth than the built-in default value of 250.
+
+ * "git log" learned the "--show-linear-break" option to show where a
+   single strand-of-pearls is broken in its output.
+
+ * The "rev-parse --parseopt" mechanism used by scripted Porcelains to
+   parse command-line options and to give help text learned to take
+   the argv-help (the placeholder string for an option parameter,
+   e.g. "key-id" in "--gpg-sign=<key-id>").
+
+ * The pattern to find where the function begins in C/C++ used in
+   "diff" and "grep -p" has been updated to improve viewing C++
+   sources.
+
+ * "git rebase" learned to interpret a lone "-" as "@{-1}", the
+   branch that we were previously on.
+
+ * "git commit --cleanup=<mode>" learned a new mode, scissors.
+
+ * "git tag --list" output can be sorted using "version sort" with
+   "--sort=version:refname".
+
+ * Discard the accumulated "heuristics" to guess from which branch the
+   result wants to be pulled from and make sure that what the end user
+   specified is not second-guessed by "git request-pull", to avoid
+   mistakes.  When you pushed out your 'master' branch to your public
+   repository as 'for-linus', use the new "master:for-linus" syntax to
+   denote the branch to be pulled.
+
+ * "git grep" learned to behave in a way similar to native grep when
+   "-h" (no header) and "-c" (count) options are given.
+
+ * "git push" via transport-helper interface has been updated to
+   allow forced ref updates in a way similar to the natively
+   supported transports.
+
+ * The "simple" mode is the default for "git push".
+
+ * "git add -u" and "git add -A", when run without any pathspec, is a
+   tree-wide operation even when run inside a subdirectory of a
+   working tree.
+
+ * "git add <path>" is the same as "git add -A <path>" now.
+
+ * "core.statinfo" configuration variable, which is a
+   never-advertised synonym to "core.checkstat", has been removed.
+
+ * The "-q" option to "git diff-files", which does *NOT* mean
+   "quiet", has been removed (it told Git to ignore deletion, which
+   you can do with "git diff-files --diff-filter=d").
+
+ * Server operators can loosen the "tips of refs only" restriction for
+   the remote archive service with the uploadarchive.allowUnreachable
+   configuration option.
+
+ * The progress indicators from various time-consuming commands have
+   been marked for i18n/l10n.
+
+ * "git notes -C <blob>" diagnoses as an error an attempt to use an
+   object that is not a blob.
+
+ * "git config" learned to read from the standard input when "-" is
+   given as the value to its "--file" parameter (attempting an
+   operation to update the configuration in the standard input is
+   rejected, of course).
+
+ * Trailing whitespaces in .gitignore files, unless they are quoted
+   for fnmatch(3), e.g. "path\ ", are warned and ignored.  Strictly
+   speaking, this is a backward-incompatible change, but very unlikely
+   to bite any sane user and adjusting should be obvious and easy.
+
+ * Many commands that create commits, e.g. "pull" and "rebase",
+   learned to take the "--gpg-sign" option on the command line.
+
+ * "git commit" can be told to always GPG sign the resulting commit
+   by setting the "commit.gpgsign" configuration variable to "true"
+   (the command-line option "--no-gpg-sign" should override it).
+
+ * "git pull" can be told to only accept fast-forward by setting the
+   new "pull.ff" configuration variable.
+
+ * "git reset" learned the "-N" option, which does not reset the index
+   fully for paths the index knows about but the tree-ish the command
+   resets to does not (these paths are kept as intend-to-add entries).
+
+
+Performance, Internal Implementation, etc.
+
+ * The compilation options to port to AIX and to MSVC have been
+   updated.
+
+ * We started using wildmatch() in place of fnmatch(3) a few releases
+   ago; complete the process and stop using fnmatch(3).
+
+ * Uses of curl's "multi" interface and "easy" interface do not mix
+   well when we attempt to reuse outgoing connections.  Teach the RPC
+   over HTTP code, used in the smart HTTP transport, not to use the
+   "easy" interface.
+
+ * The bitmap-index feature from JGit has been ported, which should
+   significantly improve performance when serving objects from a
+   repository that uses it.
+
+ * The way "git log --cc" shows a combined diff against multiple
+   parents has been optimized.
+
+ * The prefixcmp() and suffixcmp() functions are gone.  Use
+   starts_with() and ends_with(), and also consider if skip_prefix()
+   suits your needs better when using the former.
+
+
+Also contains various documentation updates and code clean-ups.  Many
+of them came from flurry of activities as GSoC candidate microproject
+exercises.
+
+
+Fixes since v1.9 series
+-----------------------
+
+Unless otherwise noted, all the fixes since v1.9 in the maintenance
+track are contained in this release (see the maintenance releases'
+notes for details).
+
+ * "git p4" was broken in 1.9 release to deal with changes in binary
+   files.
+   (merge 749b668 cl/p4-use-diff-tree later to maint).
+
+ * The shell prompt script (in contrib/), when using the PROMPT_COMMAND
+   interface, used an unsafe construct when showing the branch name in
+   $PS1.
+   (merge 1e4119c8 rh/prompt-pcmode-avoid-eval-on-refname later to maint).
+
+ * "git rebase" used a POSIX shell construct FreeBSD's /bin/sh does not
+   work well with.
+   (merge 8cd6596 km/avoid-non-function-return-in-rebase later to maint).
+
+ * zsh prompt (in contrib/) leaked unnecessary error messages.
+
+ * Bash completion (in contrib/) did not complete the refs and remotes
+   correctly given "git pu<TAB>" when "pu" is aliased to "push".
+
+ * Some more Unicode code points, defined in Unicode 6.3 as having zero
+   width, have been taught to our display column counting logic.
+   (merge d813ab9 tb/unicode-6.3-zero-width later to maint).
+
+ * Some tests used shell constructs that did not work well on FreeBSD
+   (merge ff7a1c6 km/avoid-bs-in-shell-glob later to maint).
+   (merge 00764ca km/avoid-cp-a later to maint).
+
+ * "git update-ref --stdin" did not fail a request to create a ref
+   when the ref already existed.
+   (merge b9d56b5 mh/update-ref-batch-create-fix later to maint).
+
+ * "git diff --no-index -Mq a b" fell into an infinite loop.
+   (merge ad1c3fb jc/fix-diff-no-index-diff-opt-parse later to maint).
+
+ * "git fetch --prune", when the right-hand side of multiple fetch
+   refspecs overlap (e.g. storing "refs/heads/*" to
+   "refs/remotes/origin/*", while storing "refs/frotz/*" to
+   "refs/remotes/origin/fr/*"), aggressively thought that lack of
+   "refs/heads/fr/otz" on the origin site meant we should remove
+   "refs/remotes/origin/fr/otz" from us, without checking their
+   "refs/frotz/otz" first.
+
+   Note that such a configuration is inherently unsafe (think what
+   should happen when "refs/heads/fr/otz" does appear on the origin
+   site), but that is not a reason not to be extra careful.
+   (merge e6f6371 cn/fetch-prune-overlapping-destination later to maint).
+
+ * "git status --porcelain --branch" showed its output with labels
+   "ahead/behind/gone" translated to the user's locale.
+   (merge 7a76c28 mm/status-porcelain-format-i18n-fix later to maint).
+
+ * A stray environment variable $prefix could have leaked into and
+   affected the behaviour of the "subtree" script (in contrib/).
+
+ * When it is not necessary to edit a commit log message (e.g. "git
+   commit -m" is given a message without specifying "-e"), we used to
+   disable the spawning of the editor by overriding GIT_EDITOR, but
+   this means all the uses of the editor, other than to edit the
+   commit log message, are also affected.
+   (merge b549be0 bp/commit-p-editor later to maint).
+
+ * "git mv" that moves a submodule forgot to adjust the array that
+   uses to keep track of which submodules were to be moved to update
+   its configuration.
+   (merge fb8a4e8 jk/mv-submodules-fix later to maint).
+
+ * Length limit for the pathname used when removing a path in a deep
+   subdirectory has been removed to avoid buffer overflows.
+   (merge 2f29e0c mh/remove-subtree-long-pathname-fix later to maint).
+
+ * The test helper lib-terminal always run an actual test_expect_*
+   when included, which screwed up with the use of skil-all that may
+   have to be done later.
+   (merge 7e27173 jk/lib-terminal-lazy later to maint).
+
+ * "git index-pack" used a wrong variable to name the keep-file in an
+   error message when the file cannot be written or closed.
+   (merge de983a0 nd/index-pack-error-message later to maint).
+
+ * "rebase -i" produced a broken insn sheet when the title of a commit
+   happened to contain '\n' (or ended with '\c') due to a careless use
+   of 'echo'.
+   (merge cb1aefd us/printf-not-echo later to maint).
+
+ * There were a few instances of 'git-foo' remaining in the
+   documentation that should have been spelled 'git foo'.
+   (merge 3c3e6f5 rr/doc-merge-strategies later to maint).
+
+ * Serving objects from a shallow repository needs to write a
+   new file to hold the temporary shallow boundaries, but it was not
+   cleaned when we exit due to die() or a signal.
+   (merge 7839632 jk/shallow-update-fix later to maint).
+
+ * When "git stash pop" stops after failing to apply the stash
+   (e.g. due to conflicting changes), the stash is not dropped. State
+   that explicitly in the output to let the users know.
+   (merge 2d4c993 jc/stash-pop-not-popped later to maint).
+
+ * The labels in "git status" output that describe the nature of
+   conflicts (e.g. "both deleted") were limited to 20 bytes, which was
+   too short for some l10n (e.g. fr).
+   (merge c7cb333 jn/wt-status later to maint).
+
+ * "git clean -d pathspec" did not use the given pathspec correctly
+   and ended up cleaning too much.
+   (merge 1f2e108 jk/clean-d-pathspec later to maint).
+
+ * "git difftool" misbehaved when the repository is bound to the
+   working tree with the ".git file" mechanism, where a textual file
+   ".git" tells us where it is.
+   (merge fcfec8b da/difftool-git-files later to maint).
+
+ * "git push" did not pay attention to "branch.*.pushremote" if it is
+   defined earlier than "remote.pushdefault"; the order of these two
+   variables in the configuration file should not matter, but it did
+   by mistake.
+   (merge 98b406f jk/remote-pushremote-config-reading later to maint).
+
+ * Code paths that parse timestamps in commit objects have been
+   tightened.
+   (merge f80d1f9 jk/commit-dates-parsing-fix later to maint).
+
+ * "git diff --external-diff" incorrectly fed the submodule directory
+   in the working tree to the external diff driver when it knew that it
+   is the same as one of the versions being compared.
+   (merge aba4727 tr/diff-submodule-no-reuse-worktree later to maint).
+
+ * "git reset" needs to refresh the index when working in a working
+   tree (it can also be used to match the index to the HEAD in an
+   otherwise bare repository), but it failed to set up the working
+   tree properly, causing GIT_WORK_TREE to be ignored.
+   (merge b7756d4 nd/reset-setup-worktree later to maint).
+
+ * "git check-attr" when working on a repository with a working tree
+   did not work well when the working tree was specified via the
+   "--work-tree" (and obviously with "--git-dir") option.
+   (merge cdbf623 jc/check-attr-honor-working-tree later to maint).
+
+ * "merge-recursive" was broken in 1.7.7 era and stopped working in
+   an empty (temporary) working tree, when there are renames
+   involved.  This has been corrected.
+   (merge 6e2068a bk/refresh-missing-ok-in-merge-recursive later to maint.)
+
+ * "git rev-parse" was loose in rejecting command-line arguments
+   that do not make sense, e.g. "--default" without the required
+   value for that option.
+   (merge a43219f ds/rev-parse-required-args later to maint.)
+
+ * "include.path" variable (or any variable that expects a path that
+   can use ~username expansion) in the configuration file is not a
+   boolean, but the code failed to check it.
+   (merge 67beb60 jk/config-path-include-fix later to maint.)
+
+ * Commands that take pathspecs on the command line misbehaved when
+   the pathspec is given as an absolute pathname (which is a
+   practice not particularly encouraged) that points at a symbolic
+   link in the working tree.
+   (merge 6127ff6 mw/symlinks later to maint.)
+
+ * "git diff --quiet -- pathspec1 pathspec2" sometimes did not return
+   the correct status value.
+   (merge f34b205 nd/diff-quiet-stat-dirty later to maint.)
+
+ * Attempting to deepen a shallow repository by fetching over smart
+   HTTP transport failed in the protocol exchange, when the no-done
+   extension was used.  The fetching side waited for the list of
+   shallow boundary commits after the sending side stopped talking to
+   it.
+   (merge 0232852 nd/http-fetch-shallow-fix later to maint.)
+
+ * Allow "git cmd path/", when the 'path' is where a submodule is
+   bound to the top-level working tree, to match 'path', despite the
+   extra and unnecessary trailing slash (such a slash is often
+   given by command-line completion).
+   (merge 2e70c01 nd/submodule-pathspec-ending-with-slash later to maint.)
+
+ * Documentation and in-code comments had many instances of mistaken
+   use of "nor", which have been corrected.
+   (merge 235e8d5 jl/nor-or-nand-and later to maint).
