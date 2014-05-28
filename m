@@ -1,145 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034AbaE1SlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 14:41:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38578 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754681AbaE1SlP (ORCPT
+	id S1753382AbaE1SsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 14:48:19 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45851 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaE1SsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 14:41:15 -0400
-Date: Wed, 28 May 2014 11:44:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Satish Patel <satish.patel@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        rob@landley.net, tony@atomide.com, grant.likely@linaro.org,
-        robh+dt@kernel.org
-Subject: Re: [PATCH v3 2/5] misc: tda8026: Add NXP TDA8026 PHY driver
-Message-ID: <20140528184450.GD30031@kroah.com>
-References: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
- <1401267437-22489-3-git-send-email-satish.patel@ti.com>
+	Wed, 28 May 2014 14:48:17 -0400
+Date: Wed, 28 May 2014 19:47:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: carlo@caione.org, Boris Brezillon <boris@free-electrons.com>,
+        lgirdwood@gmail.com, lee.jones@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
+Message-ID: <20140528184752.GA22488@sirena.org.uk>
+References: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
 Content-Disposition: inline
-In-Reply-To: <1401267437-22489-3-git-send-email-satish.patel@ti.com>
+In-Reply-To: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Cookie: I'm having an emotional outburst!!
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 0/5] regulator: Enhance AXP209 DT support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 02:27:14PM +0530, Satish Patel wrote:
-> TDA8026 is a SmartCard PHY from NXP.
-> 
-> The PHY interfaces with the main processor over the
-> I2C interface and acts as a slave device.
-> 
-> The driver also exposes the phy interface
-> (defined@include/linux/sc_phy.h) for SmartCard controller.
-> Controller uses this interface to communicate with smart card
-> inserted to the phy's slot.
-> 
-> Note: gpio irq is not validated as I do not have device with that.
-> I have validated interrupt with dedicated interrupt line on my device.
-> 
-> Signed-off-by: Satish Patel <satish.patel@ti.com>
-> ---
->  Documentation/devicetree/bindings/misc/tda8026.txt |   19 +
->  drivers/misc/Kconfig                               |    7 +
->  drivers/misc/Makefile                              |    1 +
->  drivers/misc/tda8026.c                             | 1258 ++++++++++++++++++++
->  4 files changed, 1285 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/misc/tda8026.txt
->  create mode 100644 drivers/misc/tda8026.c
-> 
-> diff --git a/Documentation/devicetree/bindings/misc/tda8026.txt b/Documentation/devicetree/bindings/misc/tda8026.txt
-> new file mode 100644
-> index 0000000..f115c9c
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/misc/tda8026.txt
-> @@ -0,0 +1,19 @@
-> +TDA8026 smart card slot interface
-> +
-> +This is an i2c based smart card interface device forming the electrical
-> +interface between a microcontroller and smart cards. This device supports
-> +asynchronous cards (micro controller-based IC cards) as well as synchronous
-> +cards (mainly memory cards)
-> +
-> +Required properties:
-> +- compatible: "nxp,tda8026"
-> +- shutdown-gpio = GPIO pin mapping for SDWNN pin
-> +- reg = i2c interface address
-> +
-> +
-> +Example:
-> +tda8026: tda8026@48 {
-> +		 compatible = "nxp,tda8026";
-> +		 reg = <0x48>;
-> +		 shutdown-gpio = <&gpio5 19 GPIO_ACTIVE_HIGH>;/* Bank5, pin19 */
-> +	 };
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 8baff0e..80b21d7 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -515,6 +515,13 @@ config SRAM
->  	  the genalloc API. It is supposed to be used for small on-chip SRAM
->  	  areas found on many SoCs.
->  
-> +config NXP_TDA8026_PHY
-> +        tristate "NXP PHY Driver for Smart Card PHY"
-> +        depends on I2C=y
-> +        help
-> +          If you say yes here you get support for the TDA8026 Smart card PHY
-> +	  with I2C interface.
-> +
->  source "drivers/misc/c2port/Kconfig"
->  source "drivers/misc/eeprom/Kconfig"
->  source "drivers/misc/cb710/Kconfig"
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 7eb4b69..f262c0b 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -55,3 +55,4 @@ obj-$(CONFIG_SRAM)		+= sram.o
->  obj-y				+= mic/
->  obj-$(CONFIG_GENWQE)		+= genwqe/
->  obj-$(CONFIG_ECHO)		+= echo/
-> +obj-$(CONFIG_NXP_TDA8026_PHY)	+= tda8026.o
-> diff --git a/drivers/misc/tda8026.c b/drivers/misc/tda8026.c
-> new file mode 100644
-> index 0000000..38df33e
-> --- /dev/null
-> +++ b/drivers/misc/tda8026.c
-> @@ -0,0 +1,1258 @@
-> +/*
-> + * tda8026.c - TDA8026 PHY driver for NXP Smart card PHY
-> + *
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation version 2.
-> + *
-> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-> + * kind, whether express or implied; without even the implied warranty
-> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/gpio.h>
-> +#include <linux/i2c.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/notifier.h>
-> +#include <linux/sc_phy.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/of_device.h>
-> +#include <linux/delay.h>
 
-I think you just broke the build if this driver is enabled now right?
+--LQksG6bCIzRHxTLp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Not good :(
+On Wed, May 28, 2014 at 07:11:04PM +0200, Maxime Ripard wrote:
 
+> This patchset modifies the regulator core and axp209 regulator driver
+> to be able to set in each regulators sub-node the supply, that should
+> be possible, given that it's documented as such in the bindings, but
+
+It is?  We should fix that.
+
+> is not at the moment, since whenever looking up the supply in the DT,
+> of_get_regulator will always look into the parent's device of_node
+> pointer.
+
+> This leads to a common pattern accross the regulators to have multiple
+> supply in the main device node, while it would be more intuitive yet
+> follow the documented bindings to look into the regulator sub-nodes
+> first.
+
+No, we've been round this loop several times before.  This reduces
+consistency in how we map supplies since the user has to work out which
+subnode the supply is associated with and what it's called there instead
+of being able to just look at the schematic and translate the supply
+name into a property name.  It also means you have to map supplies into
+multiple child nodes if the same supply is used in multiple places.
+
+The idea is that supplies that happen to be used to supply a regulator
+don't get treated any differently to any other supply and that we do
+that at the physical package level.
+
+--LQksG6bCIzRHxTLp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThi9VAAoJELSic+t+oim9pXQP/j2Rv1yL6LH0jE3CHfU87mWb
+61jpHGQMVmrKrFwpb2ucLkoOzah346FFkV0obBqP212hGHGdlDvcI+K3ek7w//en
+2F2h5oMOsvZZaJNpKQEG/3tkng+dolU62exMW6nfmmkiyvoJD+h/bm5rRZIe9f9G
+XeGyOVdT6lBGG/VmaSkNvZ8li0lYWpIvuTHavDqWi2sQGmXgiVljCoL7Nu/JGvg8
+ULRCilVNXH0SL6u/p2FLdgiWFmvs6IUjZTlVJn7jMoMzwFxXU+nD3wdZsZ0DwZoI
+0hMz0ZwNR+K0KRiI2AIUczU3QDcpE1sgK62O5F/FpehGgf3X0e8zFvuHL+EUQElm
+9IYxBkQ0uhhxka5gcblBfAN25Lz+ATbF9S8h/Ubum/QzgAos7rDIFxgiToLyF3uc
+09rd1md9QLMC0zZekyAH0iGpuMDG2RPEOIkZCH6fqfjbja7Oib6rbDqxgQJgEno/
+POZA4aDpWSWCKyasB9E4uhIJrl36hkF+/vkTd0cVI08KAi4UcNwUoECG4q0umnH6
+YwZNBtXxJx5uvrP6ytmzPtvBNP22pCiDxbgfG0h7cUzC1nXZ76Yn6mkq/W2r2OAn
+CfKEwXOgDTad92hYqffDbP+HFjWisS4ODZegZII0+kRf++TzK57lNIQQ/4KsSRtF
+vIugRltuCG+jp79l/Dua
+=YrZI
+-----END PGP SIGNATURE-----
+
+--LQksG6bCIzRHxTLp--
