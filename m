@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaE1IcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:32:07 -0400
-Received: from ozlabs.org ([103.22.144.67]:48147 "EHLO ozlabs.org"
+	id S1754520AbaE1Ide (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:33:34 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:44481 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873AbaE1IcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:32:04 -0400
-Message-ID: <1401265922.3355.4.camel@concordia>
-Subject: BUG at mm/memory.c:1489!
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        trinity@vger.kernel.org
-Date: Wed, 28 May 2014 18:32:02 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754225AbaE1Idb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:33:31 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] pinctrl: Enable "power-source" to be extracted from DT files
+Date: Wed, 28 May 2014 10:36:17 +0200
+Message-ID: <1943407.eJZOu7V4pT@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CACRpkdbaWYgku0_n5CqGU8DAFnn-5jEJ64Mfh9fixB4mRPnfwg@mail.gmail.com>
+References: <CACRpkdZyLxMTSygRP6pD-mxghQ_D6tQ821tvn8GYw0Rnh9hZoQ@mail.gmail.com> <2480893.UEqfxe8meR@phil> <CACRpkdbaWYgku0_n5CqGU8DAFnn-5jEJ64Mfh9fixB4mRPnfwg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey folks,
+Am Mittwoch, 28. Mai 2014, 10:15:43 schrieb Linus Walleij:
+> On Tue, May 27, 2014 at 3:09 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> > Am Dienstag, 27. Mai 2014, 09:27:36 schrieb Ivan T. Ivanov:
+> >> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >> 
+> >> Add "power-source" property to generic options used for DT parsing files.
+> >> This  enables drivers, which use generic pin configurations, to get the
+> >> value passed to this property.
+> > 
+> > I think the main problem here is, that pinconf-generic.h defines the
+> > power-
+> > source as having a "custom format". With DT as a hardware description,
+> > implementaton specific values do not work well - instead it should have a
+> > regular unit-value.
+> > 
+> > For the power-source I think volts could work well - as this is the main
+> > use- case for pinctrl I know. The regulator-binding uses microvolts,
+> > maybe it would be good use a similar unit.
+> 
+> (...)
+> 
+> >         pcfg_1v8 {
+> >         
+> >                 power-source = <1800000>;
+> >         
+> >         };
+> 
+> I don't think this is what it's meant for actually. In this case the thing
+> would be modeled as a regulator rather than some pin control option I
+> guess?
+> 
+> I think it's more like a selector, such as found on old amplifiers,
+> input source A, B or C? So it's just some discrete number.
 
-Anyone seen this before? Trinity hit it just now:
+as I said, you know this better than me ;-)
 
-Linux Blade312-5 3.15.0-rc7 #306 SMP Wed May 28 17:51:18 EST 2014 ppc64
+I was thinking more of these io-voltages, where one can select between say 1.8 
+and 3.3V for the pins.
 
-[watchdog] 27853 iterations. [F:22642 S:5174 HI:1276]
-------------[ cut here ]------------
-kernel BUG at /home/michael/mmk-build/flow/mm/memory.c:1489!
-cpu 0xc: Vector: 700 (Program Check) at [c000000384eaf960]
-    pc: c0000000001ad6f0: .follow_page_mask+0x90/0x650
-    lr: c0000000001ad6d8: .follow_page_mask+0x78/0x650
-    sp: c000000384eafbe0
-   msr: 8000000000029032
-  current = 0xc0000003c27e1bc0
-  paca    = 0xc000000001dc3000   softe: 0        irq_happened: 0x01
-    pid   = 20800, comm = trinity-c12
-kernel BUG at /home/michael/mmk-build/flow/mm/memory.c:1489!
-enter ? for help
-[c000000384eafcc0] c0000000001e5514 .SyS_move_pages+0x524/0x7d0
-[c000000384eafe30] c00000000000a1d8 syscall_exit+0x0/0x98
---- Exception: c01 (System Call) at 00003fff795f30a8
-SP (3ffff958f290) is in userspace
+I have this somewhere on my todo list for the rockchips too.
+
+So essentially the pinctrl driver [as it is a pin-group specific setting] 
+should just export regulators for these voltage settings, without touching the 
+pinconfig itself, right?
 
 
-I've left it in the debugger, can dig into it a bit more tomorrow if anyone has
-any clues.
-
-cheers
-
+Thanks
+Heiko
 
