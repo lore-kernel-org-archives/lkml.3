@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaE1Gje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 02:39:34 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:42712 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaE1Gjc (ORCPT
+	id S1754029AbaE1Gkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 02:40:39 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:60127 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaE1Gkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 02:39:32 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Subject: Re: [PATCH 5/9] tlan: Restart autonegotiation on link loss
-Date: Wed, 28 May 2014 08:39:00 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Samuel Chessman <chessman@tux.org>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1401226727-5508-1-git-send-email-linux@rainbow-software.org> <1401226727-5508-6-git-send-email-linux@rainbow-software.org> <CAGVrzcbD=OhzuWRuxJVG1SJeYDsOYaV2AozsWafBtX6gcF08vw@mail.gmail.com>
-In-Reply-To: <CAGVrzcbD=OhzuWRuxJVG1SJeYDsOYaV2AozsWafBtX6gcF08vw@mail.gmail.com>
-X-KMail-QuotePrefix: > 
+	Wed, 28 May 2014 02:40:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Minyard <cminyard@mvista.com>,
+        Stanislav Meduna <stano@meduna.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v2] tracing: Don't account for cpu idle time with irqsoff tracers
+Date: Wed, 28 May 2014 08:40:29 +0200
+Message-ID: <6460837.vaSzv6fugQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140527193050.4606a014@gandalf.local.home>
+References: <1401221284-13678-1-git-send-email-sboyd@codeaurora.org> <53850FF3.8050107@codeaurora.org> <20140527193050.4606a014@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201405280839.00973.linux@rainbow-software.org>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:m3vtrixSrWhbtFJcHcoIlv+wN94WbVCaNHBSQN/+mPm
+ tjDx1+2LeGHNcBIuLNyGMYQUNeLkOvK/jFM/T5fbOPaoEoZ/Bh
+ 8c6ZPfwFgRHFTYOt3TMQErR15DmAvPmVCnblTqqF9I1eYDh8Ok
+ awJT4Rl9dNNZiBPpBOQshdaLYmxf5pZrwlTeM9rD+pDWEjbl2N
+ g9wRLORsBaPOavKPqPRIIbo+aJnXgSTOkGqiXKuzAS/t/TbqRm
+ eJwwakqfNPmp4Nnhpu6L4rTRR+MLiSjoflQdaUzNxToAe3XT3c
+ kYhzDgEEhciPie6lL6cDa1lEJ9hNw4CfY2ehgeX/p1jlFxDv8w
+ zc96Q8e5paZcIOV/M+Rc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 May 2014, Florian Fainelli wrote:
-> Hi,
->
-> 2014-05-27 14:38 GMT-07:00 Ondrej Zary <linux@rainbow-software.org>:
-> > When link is lost on a card which uses internal PHY for 10 Mbit speeds,
-> > restart autonegotiation to allow switching between 10 and 100 Mbps
-> > speeds.
->
-> I think you should take a look at implementing libphy read/write stubs
-> for this driver, that would allow you not to open-code such things.
+On Tuesday 27 May 2014 19:30:50 Steven Rostedt wrote:
+> On Tue, 27 May 2014 15:21:39 -0700
+> Stephen Boyd <sboyd@codeaurora.org> wrote:
+> 
+> 
+> > > Arnd brings up a good point. 
+> > 
+> > Hrm.. still not getting Arnd's mails.
+> 
+> Strange. What mail service do you have. Could they be blocking him?
+> 
 
-Yes, that would be good. However, I don't want to do any major PHY-related 
-changes to the driver because it supports cards with various PHY 
-configurations and I don't have all the different hardware to test.
+I think it's United Internet again getting blocked by some blacklist,
+I has had bounces from arm.com addresses today.
 
-> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> > ---
-> >  drivers/net/ethernet/ti/tlan.c |   14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> >
-> > diff --git a/drivers/net/ethernet/ti/tlan.c
-> > b/drivers/net/ethernet/ti/tlan.c index 31d4a96..1047b3f 100644
-> > --- a/drivers/net/ethernet/ti/tlan.c
-> > +++ b/drivers/net/ethernet/ti/tlan.c
-> > @@ -2721,6 +2721,7 @@ static void tlan_phy_finish_auto_neg(struct
-> > net_device *dev) else if (!(mode & 0x0080) && (mode & 0x0040))
-> >                 priv->tlan_full_duplex = true;
-> >
-> > +       /* switch to internal PHY for 10 Mbps */
-> >         if ((!(mode & 0x0180)) &&
-> >             (priv->adapter->flags & TLAN_ADAPTER_USE_INTERN_10) &&
-> >             (priv->phy_num != 0)) {
-> > @@ -2788,6 +2789,19 @@ static void tlan_phy_monitor(unsigned long data)
-> >                                dev->name);
-> >                         tlan_dio_write8(dev->base_addr, TLAN_LED_REG, 0);
-> >                         netif_carrier_off(dev);
-> > +                       if (priv->adapter->flags &
-> > TLAN_ADAPTER_USE_INTERN_10) { +                               /* power
-> > down internal PHY */
-> > +                               u16 data = MII_GC_PDOWN | MII_GC_LOOPBK
-> > +                                       | MII_GC_ISOLATE;
-> > +                               tlan_mii_sync(dev->base_addr);
-> > +                               tlan_mii_write_reg(dev, priv->phy[0],
-> > +                                       MII_GEN_CTL, data);
-> > +                               /* set to external PHY */
-> > +                               priv->phy_num = 1;
-> > +                               /* restart autonegotiation */
-> > +                               tlan_set_timer(dev, (4*HZ/10),
-> > TLAN_TIMER_PHY_PDOWN); +                               return;
-> > +                       }
-> >                 }
-> >         }
-> >
-> > --
-> > Ondrej Zary
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Ondrej Zary
+	Arnd
