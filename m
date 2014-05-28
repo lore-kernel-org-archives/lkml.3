@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaE1I6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:58:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47451 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754471AbaE1I6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:58:03 -0400
-From: Satish Patel <satish.patel@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rob@landley.net>, <tony@atomide.com>
-CC: <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        Satish Patel <satish.patel@ti.com>
-Subject: [PATCH v3 5/5] ARM: dts: AM43xx-epos-evm: DT entries  for ti-usim and phy
-Date: Wed, 28 May 2014 14:27:17 +0530
-Message-ID: <1401267437-22489-6-git-send-email-satish.patel@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
-References: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
+	id S1754655AbaE1I6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:58:25 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:64243 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634AbaE1I6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:58:19 -0400
+Message-ID: <5385A538.8020504@linaro.org>
+Date: Wed, 28 May 2014 10:58:32 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
+        rjw@rjwysocki.net, kgene.kim@samsung.com, tomasz.figa@gmail.com,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: Re: [PATCH v6 1/6] driver: cpuidle-big-little: add of_device_id structure
+References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com> <1400227438-27155-1-git-send-email-chander.kashyap@linaro.org> <1400227438-27155-2-git-send-email-chander.kashyap@linaro.org>
+In-Reply-To: <1400227438-27155-2-git-send-email-chander.kashyap@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Board specific DT entries for TI's USIM - smart card controller of AM43xx
-platfrom.These entries are used by USIM driver for various configurations.
+On 05/16/2014 10:03 AM, Chander Kashyap wrote:
+> This driver will be used by many big.Little Soc's. As of now it does
+> string matching of hardcoded compatible string to init the driver. This
+> comparison list will keep on growing with addition of new SoC's.
+> Hence add of_device_id structure to collect the compatible strings of
+> SoC's using this driver.
+>
+> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
 
-- Shutdown line of NXP phy is maped to GPIO5. So enabling same to have support
-for NXP phy.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-- i2c2 pinmux configuration -  NxP tda8026 phy is connected to i2c2 lines
+> ---
+>   drivers/cpuidle/cpuidle-big_little.c |   11 ++++++++++-
+>   1 file changed, 10 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
+> index b45fc62..4cd02bd 100644
+> --- a/drivers/cpuidle/cpuidle-big_little.c
+> +++ b/drivers/cpuidle/cpuidle-big_little.c
+> @@ -163,14 +163,23 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
+>   	return 0;
+>   }
+>
+> +static const struct of_device_id compatible_machine_match[] = {
+> +	{ .compatible = "arm,vexpress,v2p-ca15_a7" },
+> +	{},
+> +};
+> +
+>   static int __init bl_idle_init(void)
+>   {
+>   	int ret;
+> +	struct device_node *root = of_find_node_by_path("/");
+> +
+> +	if (!root)
+> +		return -ENODEV;
+>
+>   	/*
+>   	 * Initialize the driver just for a compliant set of machines
+>   	 */
+> -	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7"))
+> +	if (!of_match_node(compatible_machine_match, root))
+>   		return -ENODEV;
+>   	/*
+>   	 * For now the differentiation between little and big cores
+>
 
-Signed-off-by: Satish Patel <satish.patel@ti.com>
----
- arch/arm/boot/dts/am43x-epos-evm.dts |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
 
-diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-index 167dbc8..ecc8b1a 100644
---- a/arch/arm/boot/dts/am43x-epos-evm.dts
-+++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-@@ -115,6 +115,18 @@
- 			>;
- 		};
- 
-+		usim0_default: usim0_default {
-+		       pinctrl-single,pins = <
-+			       /* USIM 0 */
-+			       0x1B4 (SLEWCTRL_FAST | PULL_DISABLE | MUX_MODE8)		/* CLK0  */
-+			       0x1B0 (SLEWCTRL_FAST | PULL_DISABLE | MUX_MODE8)		/* CLK1  */
-+			       0x1B8 (SLEWCTRL_FAST | INPUT_EN | PULL_DISABLE | MUX_MODE8)	/* DATA0 */
-+			       0x1BC (SLEWCTRL_FAST | INPUT_EN | PULL_DISABLE | MUX_MODE8)	/* DATA1 */
-+			       0x1C8 (SLEWCTRL_FAST | INPUT_EN | PULL_UP | MUX_MODE8)		/* IRQn  */
-+			       >;
-+	       };
-+
-+
- 		spi0_pins: pinmux_spi0_pins {
- 			pinctrl-single,pins = <
- 				0x150 (PIN_INPUT | MUX_MODE0)           /* spi0_clk.spi0_clk */
-@@ -238,10 +250,24 @@
- 	};
- };
- 
-+&usim0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&usim0_default>;
-+	phy = <&tda8026>;
-+	phy-slots = <1>;
-+	status = "okay";
-+};
-+
- &i2c2 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c2_pins>;
- 	status = "okay";
-+	tda8026: tda8026@48 {
-+		compatible = "nxp,tda8026";
-+		reg = <0x48>;
-+		shutdown-gpio = <&gpio5 19 GPIO_ACTIVE_HIGH>;   /* Bank5, pin19 */
-+		interrupts = <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
-+	};
- };
- 
- &gpio0 {
-@@ -260,6 +286,11 @@
- 	status = "okay";
- };
- 
-+&gpio5 {
-+	status = "okay";
-+};
-+
-+
- &elm {
- 	status = "okay";
- };
 -- 
-1.7.9.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
