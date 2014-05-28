@@ -1,127 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149AbaE1R2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:28:25 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50134 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753960AbaE1R2Y (ORCPT
+	id S1755161AbaE1R26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:28:58 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49957 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041AbaE1R24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:28:24 -0400
-Message-ID: <1401298101.22486.48.camel@x220>
-Subject: Re: [PATCH] acornscsi: remove linked command support
-From: Paul Bolle <pebolle@tiscali.nl>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Hannes Reinecke <hare@suse.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 May 2014 19:28:21 +0200
-In-Reply-To: <1401003771.2322.33.camel@dabdike.int.hansenpartnership.com>
-References: <1400926433.31526.89.camel@x220> <538075E0.4080001@suse.de>
-	 <1400933617.6956.34.camel@dabdike.int.hansenpartnership.com>
-	 <1400937395.22523.55.camel@x220>
-	 <1401003771.2322.33.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 May 2014 17:28:21.0367 (UTC) FILETIME=[38CEE870:01CF7A9A]
-X-RcptDomain: vger.kernel.org
+	Wed, 28 May 2014 13:28:56 -0400
+Date: Wed, 28 May 2014 22:58:49 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] bq27x00_battery: Introduce the use of the managed version of
+ kzalloc
+Message-ID: <20140528172849.GA5614@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-05-25 at 11:42 +0400, James Bottomley wrote:
-> On Sat, 2014-05-24 at 15:16 +0200, Paul Bolle wrote:
-> > On Sat, 2014-05-24 at 16:13 +0400, James Bottomley wrote:
-> > > Wait, no, that's not a good idea.  We leave obsolete drivers to bitrot.
-> > > Particularly we try not to touch them unless we have to because there
-> > > might be a few people still using them and the more we tamper, the
-> > > greater the risk that something gets broken.
-> > 
-> > Which is also a way to notice whether people still use those obsolete
-> > drivers.
-> 
-> Really, no.  We don't deliberately break old drivers to see if anyone
-> notices.  Usually the feedback loop is months to years for the long tail
-> to notice and by that time fixing the problem becomes a real pain if you
-> allow driver churn.
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions for both platform and i2c drivers. Also, the unecessary
+variable ret and labels batt_failed3, err_free were removed.
 
-Of course I wasn't advocating deliberately breaking old drivers. But
-it's easy to get annoyed by that short remark. It would have been better
-if I hadn't made it.
+The following Coccinele script was used for making the change:
 
-Especially because I didn't also point out, as Cristoph did, that the
-code I want removed doesn't get compiled. So removing it can, by
-definition I'd say, not break that old driver.
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-> We keep old drivers that compile until there's a problem caused usually
-> by something like API changes.
-> 
-> > > On that principle, since
-> > > there's no real reason to remove the code,
-> > 
-> > (Unless one carries the hope that any check, treewide, for a CONFIG_*
-> > macro can be linked to a proper Kconfig symbol.)
-> 
-> The check can be fixed.  If you look at what Fengguang Wu does, he has a
-> list of expected problems which he diffs.  Don't churn the tree to match
-> the checker, make the checker match the tree.
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
-Sure. See my recent patch to scripts/headers_check.pl, which does just
-that. But before one special cases a certain hit for a checker one needs
-to know that this hit really can't or won't be fixed. And in order to
-know that one needs to at least try to fix it first.
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
 
-> > > it should stay ... until the
-> > > whole driver bitrots to the extent that we can no-longer compile it.
-> > 
-> > I've run into this depreciation policy before. With aic7xxx_old (which I
-> > eventually convinced Fedora to disable, a few relases before it was
-> > removed from the tree). With aic94xx (which I also convinced Fedora to
-> > disable). I also tried multiple times to shut up advansys' compile
-> > time[1]. It seems SCSI might risk not to notice their bitrot, because
-> > eventually everybody stops compiling these obsolete drivers, leaving
-> > SCSI without feedback on their state.
-> 
-> Why would we care?  If it compiles that's fine, it's not causing a
-> problem and it might just be useful to somebody.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/power/bq27x00_battery.c | 25 +++++--------------------
+ 1 file changed, 5 insertions(+), 20 deletions(-)
 
-Fair point: having code that no one uses doesn't cost a lot.
-
-> The time obsolete drivers cause problems is tree or subsystem wide API
-> changes.  Then we look at the amount of work required and sometimes
-> remove them or do hack fixes. 
-> 
-> > Anyhow, SCSI seems to be the only subsystem that uses this subcategory
-> > of not-really-maintained drivers. Other subsystems appear to allow
-> > anything to be fixed, even trivialities, which are what I tend to fix,
-> > and only stop allowing fixes if the drivers involved are going to be
-> > removed anyway. But maybe I just never ran into that category in other
-> > subsystems.
-> 
-> Try ide ... they have the same policy.
-
-I never really touched IDE. That might explain why I only ran into this
-issue with SCSI.
-
-> Try to understand the reason: we have a long tail of people using
-> obsolete systems who we try not to break.  Any change to an unmaintained
-> driver which can't be tested risks that ... and I'm the one who would
-> have to try to sort out the problem when it's noticed, hence the
-> caution.  If we allow trivial churn, by the time the breakage is noticed
-> (usually months to years later), the driver will have picked up a ton of
-> changes and finding the problem one becomes really hard.  So
-> unmaintained drivers get a default deep freeze maintenance policy.
-
-Thanks for taking the time to explain this to me. I appreciate that.
-This is the first time, I think, that I've seen you explain that policy.
-(I might have missed earlier explanations to other people.) Now I might
-not entirely agree with you, but it does help to know where you're
-coming from.
-
-Thanks,
-
-
-Paul Bolle
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index b309713..a0f205b 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -25,6 +25,7 @@
+  * http://www.ti.com/product/bq27425-g1
+  */
+ 
++#include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/param.h>
+ #include <linux/jiffies.h>
+@@ -804,7 +805,7 @@ static int bq27x00_battery_probe(struct i2c_client *client,
+ 		goto batt_failed_1;
+ 	}
+ 
+-	di = kzalloc(sizeof(*di), GFP_KERNEL);
++	di = devm_kzalloc(&client->dev, sizeof(*di), GFP_KERNEL);
+ 	if (!di) {
+ 		dev_err(&client->dev, "failed to allocate device info data\n");
+ 		retval = -ENOMEM;
+@@ -819,14 +820,12 @@ static int bq27x00_battery_probe(struct i2c_client *client,
+ 
+ 	retval = bq27x00_powersupply_init(di);
+ 	if (retval)
+-		goto batt_failed_3;
++		goto batt_failed_2;
+ 
+ 	i2c_set_clientdata(client, di);
+ 
+ 	return 0;
+ 
+-batt_failed_3:
+-	kfree(di);
+ batt_failed_2:
+ 	kfree(name);
+ batt_failed_1:
+@@ -849,8 +848,6 @@ static int bq27x00_battery_remove(struct i2c_client *client)
+ 	idr_remove(&battery_id, di->id);
+ 	mutex_unlock(&battery_mutex);
+ 
+-	kfree(di);
+-
+ 	return 0;
+ }
+ 
+@@ -933,7 +930,6 @@ static int bq27000_battery_probe(struct platform_device *pdev)
+ {
+ 	struct bq27x00_device_info *di;
+ 	struct bq27000_platform_data *pdata = pdev->dev.platform_data;
+-	int ret;
+ 
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "no platform_data supplied\n");
+@@ -945,7 +941,7 @@ static int bq27000_battery_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	di = kzalloc(sizeof(*di), GFP_KERNEL);
++	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
+ 	if (!di) {
+ 		dev_err(&pdev->dev, "failed to allocate device info data\n");
+ 		return -ENOMEM;
+@@ -959,16 +955,7 @@ static int bq27000_battery_probe(struct platform_device *pdev)
+ 	di->bat.name = pdata->name ?: dev_name(&pdev->dev);
+ 	di->bus.read = &bq27000_read_platform;
+ 
+-	ret = bq27x00_powersupply_init(di);
+-	if (ret)
+-		goto err_free;
+-
+-	return 0;
+-
+-err_free:
+-	kfree(di);
+-
+-	return ret;
++	return bq27x00_powersupply_init(di);
+ }
+ 
+ static int bq27000_battery_remove(struct platform_device *pdev)
+@@ -977,8 +964,6 @@ static int bq27000_battery_remove(struct platform_device *pdev)
+ 
+ 	bq27x00_powersupply_unregister(di);
+ 
+-	kfree(di);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
