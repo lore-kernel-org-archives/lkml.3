@@ -1,135 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaE1KRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:17:14 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:51994 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752205AbaE1KRL (ORCPT
+	id S1752884AbaE1KR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 06:17:28 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:52779 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaE1KR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 06:17:11 -0400
-X-IronPort-AV: E=Sophos;i="4.98,927,1392134400"; 
-   d="scan'208";a="31124245"
-Message-ID: <5385B52A.7050106@cn.fujitsu.com>
-Date: Wed, 28 May 2014 18:06:34 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Wed, 28 May 2014 06:17:26 -0400
 MIME-Version: 1.0
-To: <stable@vger.kernel.org>
-CC: Cgroups <cgroups@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>
-Subject: [stable-3.10.y] possible unsafe locking warning
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+In-Reply-To: <53859E47.2040701@linaro.org>
+References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1400849578-7585-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<CAPDyKFqz-O9-Douk96LBuFRD_P1146c_Ld14TgiduBgfBqRi_A@mail.gmail.com>
+	<5383C28D.1060808@linaro.org>
+	<CACRpkdYjQzwVF8ikqqt=7pCvdKM59JcM4HS-UNJ8Ueqdw9az4A@mail.gmail.com>
+	<53859E47.2040701@linaro.org>
+Date: Wed, 28 May 2014 12:17:26 +0200
+Message-ID: <CAPDyKFqVO2kE4Yv6vx=qi0=i6RCmMHa8GX0hv+docu5mSPgfww@mail.gmail.com>
+Subject: Re: [PATCH v3 12/13] mmc: mmci: add explicit clk control
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-When offline the whole memory of a movable numa node on kernel stable-3.10-y,
-the following possible deadlock warning occurs.
+On 28 May 2014 10:28, Srinivas Kandagatla
+<srinivas.kandagatla@linaro.org> wrote:
+>
+>
+> On 28/05/14 09:02, Linus Walleij wrote:
+>>
+>> On Tue, May 27, 2014 at 12:39 AM, Srinivas Kandagatla
+>> <srinivas.kandagatla@linaro.org> wrote:
+>>>
+>>> On 26/05/14 15:21, Ulf Hansson wrote:
+>>>>
+>>>> On 23 May 2014 14:52,  <srinivas.kandagatla@linaro.org> wrote:
+>>
+>>
+>>>>>
+>>>>> +       bool                    explicit_mclk_control;
+>>>>> +       bool                    cclk_is_mclk;
+>>>>
+>>>>
+>>>> I can't see why you need to have both these new configurations. Aren't
+>>>> "cclk_is_mclk" just a fact when you use "explicit_mclk_control".
+>>>
+>>>
+>>>> I also believe I would prefer something like "qcom_clkdiv" instead.
+>>>
+>>>
+>>> There is a subtle difference between both the flags.  Am happy to change
+>>> it
+>>> to qcom_clkdiv.
+>>
+>>
+>> I think this was due to me wanting the variant variables to be more about
+>> the actual technical difference they indicate rather than pointing to
+>> a certain vendor or variant where that difference occurs.
+>>
+> Yes, that's correct, I think having these two variables seems to be more
+> generic than qcom_clkdiv.
+>
+> I will keep it as it is and fix other comments from Ulf in next version.
+>
 
-[ 2457.467359] 
-[ 2457.485175] =================================
-[ 2457.537325] [ INFO: inconsistent lock state ]
-[ 2457.589476] 3.10.39+ #4 Not tainted
-[ 2457.631218] ---------------------------------
-[ 2457.683370] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
-[ 2457.761540] kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[ 2457.824102]  (&sig->group_rwsem){+++++?}, at: [<ffffffff81071864>] exit_signals+0x24/0x130
-[ 2457.923538] {RECLAIM_FS-ON-W} state was registered at:
-[ 2457.985055]   [<ffffffff810bfc99>] mark_held_locks+0xb9/0x140
-[ 2458.053976]   [<ffffffff810c1e3a>] lockdep_trace_alloc+0x7a/0xe0
-[ 2458.126015]   [<ffffffff81194f47>] kmem_cache_alloc_trace+0x37/0x240
-[ 2458.202214]   [<ffffffff812c6e89>] flex_array_alloc+0x99/0x1a0
-[ 2458.272175]   [<ffffffff810da563>] cgroup_attach_task+0x63/0x430
-[ 2458.344214]   [<ffffffff810dcca0>] attach_task_by_pid+0x210/0x280
-[ 2458.417294]   [<ffffffff810dcd26>] cgroup_procs_write+0x16/0x20
-[ 2458.488287]   [<ffffffff810d8410>] cgroup_file_write+0x120/0x2c0
-[ 2458.560320]   [<ffffffff811b21a0>] vfs_write+0xc0/0x1f0
-[ 2458.622994]   [<ffffffff811b2bac>] SyS_write+0x4c/0xa0
-[ 2458.684618]   [<ffffffff815ec3c0>] tracesys+0xdd/0xe2
-[ 2458.745214] irq event stamp: 49
-[ 2458.782794] hardirqs last  enabled at (49): [<ffffffff815e2b56>] _raw_spin_unlock_irqrestore+0x36/0x70
-[ 2458.894388] hardirqs last disabled at (48): [<ffffffff815e337b>] _raw_spin_lock_irqsave+0x2b/0xa0
-[ 2459.000771] softirqs last  enabled at (0): [<ffffffff81059247>] copy_process.part.24+0x627/0x15f0
-[ 2459.107161] softirqs last disabled at (0): [<          (null)>]           (null)
-[ 2459.195852] 
-[ 2459.195852] other info that might help us debug this:
-[ 2459.274024]  Possible unsafe locking scenario:
-[ 2459.274024] 
-[ 2459.344911]        CPU0
-[ 2459.374161]        ----
-[ 2459.403408]   lock(&sig->group_rwsem);
-[ 2459.448490]   <Interrupt>
-[ 2459.479825]     lock(&sig->group_rwsem);
-[ 2459.526979] 
-[ 2459.526979]  *** DEADLOCK ***
-[ 2459.526979] 
-[ 2459.597866] no locks held by kswapd2/1151.
-[ 2459.646896] 
-[ 2459.646896] stack backtrace:
-[ 2459.699049] CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
-[ 2459.774098] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.48 05/07/2014
-[ 2459.895983]  ffffffff82284bf0 ffff88085856bbf8 ffffffff815dbcf6 ffff88085856bc48
-[ 2459.985003]  ffffffff815d67c6 0000000000000000 ffff880800000001 ffff880800000001
-[ 2460.074024]  000000000000000a ffff88085edc9600 ffffffff810be0e0 0000000000000009
-[ 2460.163087] Call Trace:
-[ 2460.192345]  [<ffffffff815dbcf6>] dump_stack+0x19/0x1b
-[ 2460.253874]  [<ffffffff815d67c6>] print_usage_bug+0x1f7/0x208
-[ 2460.322679]  [<ffffffff810be0e0>] ? check_usage_backwards+0x160/0x160
-[ 2460.399807]  [<ffffffff810bfb5d>] mark_lock+0x21d/0x2a0
-[ 2460.462369]  [<ffffffff810c076a>] __lock_acquire+0x52a/0xb60
-[ 2460.530136]  [<ffffffff8101acd3>] ? native_sched_clock+0x13/0x80
-[ 2460.602065]  [<ffffffff8101ad49>] ? sched_clock+0x9/0x10
-[ 2460.665668]  [<ffffffff81096f05>] ? sched_clock_cpu+0xb5/0x100
-[ 2460.735516]  [<ffffffff810c1592>] lock_acquire+0xa2/0x140
-[ 2460.800156]  [<ffffffff81071864>] ? exit_signals+0x24/0x130
-[ 2460.866885]  [<ffffffff81158ca0>] ? balance_pgdat+0x5e0/0x5e0
-[ 2460.935691]  [<ffffffff815e01e1>] down_read+0x51/0xa0
-[ 2460.996166]  [<ffffffff81071864>] ? exit_signals+0x24/0x130
-[ 2461.062888]  [<ffffffff81071864>] exit_signals+0x24/0x130
-[ 2461.127536]  [<ffffffff81060d55>] do_exit+0xb5/0xa50
-[ 2461.186976]  [<ffffffff810841e0>] ? wake_up_bit+0x30/0x30
-[ 2461.251629]  [<ffffffff81158ca0>] ? balance_pgdat+0x5e0/0x5e0
-[ 2461.320433]  [<ffffffff8108303b>] kthread+0xdb/0x100
-[ 2461.379870]  [<ffffffff815e12eb>] ? wait_for_completion+0x3b/0x110
-[ 2461.453879]  [<ffffffff81082f60>] ? kthread_create_on_node+0x140/0x140
-[ 2461.532049]  [<ffffffff815ec0ec>] ret_from_fork+0x7c/0xb0
-[ 2461.596689]  [<ffffffff81082f60>] ? kthread_create_on_node+0x140/0x140
+I think this relates to the discussion we had around fetching the
+f_min and f_max in ->probe(). It, just seems silly to have to check
+for an extra flag there as well, because that is in principle what
+this would mean, right?
 
-And when reference to the related code(kernel-3.10.y), it seems that cgroup_attach_task(thread-2,
-attach kswapd) trigger kswapd(reclaim memory?) when trying to alloc memory(flex_array_alloc) under
-the protection of sig->group_rwsem, but meanwhile the kswapd(thread-1) is in the exit routine
-(because it was marked SHOULD STOP when offline pages completed), which needs to acquire
-sig->group_rwsem in exit_signals(), so the deadlock occurs.
+So, please adjust to my proposal, I strongly think this should be only
+one flag. You might want a more generic name of the flag in favour of
+qcom_clkdiv, feel free to change to whatever you think make sense.
 
-       thread-1                           			 |            thread-2
-                                                                 |
-__offline_pages():                                               | system_call_fastpath()
-|-> kswapd_stop(node);                                           | |-> ......
-    |-> kthread_stop(kswapd)                                     | |-> cgroup_file_write()
-        |-> set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);       | |-> ......
-        |-> wake_up_process(k)                                   | |-> attach_task_by_pid()
-            |                                                    |     |-> threadgroup_lock(tsk)
-|<----------|                                                    |        // Here, got the lock.
-|-> kswapd()                                                     |    |-> ...
-    |-> if (kthread_should_stop())                               |     |-> cgroup_attach_task()
-            return;                                              |         |-> flex_array_alloc()
-            |                                                    |             |-> kzalloc()
-|<----------|                                                    |                |-> wait for kswapd to reclaim memory
-|-> kthread()                                                    |
-    |-> do_exit(ret)                                             |
-        |-> exit_signals()                                       |
-            |-> threadgroup_change_begin(tsk)                    |
-                |-> down_read(&tsk->signal->group_rwsem)         |
-                    // Here, acquire the lock. 
+Kind regards
+Ulf Hansson
 
-If my analysis is correct, the latest kernel may have the same issue, though the flex_array was replaced
-by list, but we still need to alloc memory(e.g. in find_css_set()), so the race may still occur.
-Any comments about this? If I missed something, please correct me.:)
-
-Regards,
-Gu
+>
+>> It's a very minor thing though, if you prefer it this way, go for it.
+>>
+>
+> Thanks,
+> sirni
+>>
+>> Yours,
+>> Linus Walleij
+>>
+>
