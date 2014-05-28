@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaE1MrB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 08:47:01 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:61386 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325AbaE1MrA (ORCPT
+	id S1753478AbaE1MrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 08:47:16 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36026 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325AbaE1MrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 08:47:00 -0400
+	Wed, 28 May 2014 08:47:13 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -28,9 +28,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v5 4/9] OF: platform: Add OF notifier handler
-Date: Wed, 28 May 2014 15:46:28 +0300
-Message-Id: <1401281193-27146-5-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v5 7/9] of: spi: Export single device registration method and accessors
+Date: Wed, 28 May 2014 15:46:31 +0300
+Message-Id: <1401281193-27146-8-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
 References: <1401281193-27146-1-git-send-email-pantelis.antoniou@konsulko.com>
@@ -38,102 +38,305 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OF notifier handler needed for creating/destroying platform devices
-according to dynamic runtime changes in the DT live tree.
+Dynamically inserting spi device nodes requires the use of a single
+device registration method. Rework and export it.
+
+Methods to lookup a device/master using a device node are added
+as well, of_find_spi_master_by_node() & of_find_spi_device_by_node().
 
 Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/base/platform.c | 69 ++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 66 insertions(+), 3 deletions(-)
+ drivers/spi/spi.c | 259 ++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 156 insertions(+), 103 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 9e9227e..8d64605 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -930,6 +930,56 @@ struct bus_type platform_bus_type = {
- };
- EXPORT_SYMBOL_GPL(platform_bus_type);
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index d4f9670..a98d236 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1200,6 +1200,121 @@ err_init_queue:
+ /*-------------------------------------------------------------------------*/
  
-+static struct notifier_block platform_of_notifier;
+ #if defined(CONFIG_OF)
 +
-+static int of_platform_notify(struct notifier_block *nb,
-+				unsigned long action, void *arg)
++static struct spi_device *
++of_register_spi_device(struct spi_master *master, struct device_node *node)
 +{
-+	struct device_node *dn;
-+	struct platform_device *pdev_parent, *pdev;
++	struct spi_device *spi;
++	struct device_node *nc;
++	int err;
++	u32 value;
 +
-+	if (action == OF_RECONFIG_DYNAMIC_CREATE_DEV) {
++	/* Alloc an spi_device */
++	spi = spi_alloc_device(master);
++	if (!spi) {
++		dev_err(&master->dev, "spi_device alloc error for %s\n",
++			nc->full_name);
++		err = -ENOMEM;
++		goto err_out;
++	}
 +
-+		dn = arg;
++	/* Select device driver */
++	err = of_modalias_node(nc, spi->modalias,
++				sizeof(spi->modalias));
++	if (err) {
++		dev_err(&master->dev, "cannot find modalias for %s\n",
++			nc->full_name);
++		goto err_out;
++	}
 +
-+		/* verify that the parent is a bus */
-+		if (!of_match_node(of_default_bus_match_table, dn->parent))
-+			return NOTIFY_OK;	/* not for us */
++	/* Device address */
++	err = of_property_read_u32(nc, "reg", &value);
++	if (err) {
++		dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
++			nc->full_name, err);
++		goto err_out;
++	}
++	spi->chip_select = value;
 +
-+		/* pdev_parent may be NULL when no bus platform device */
-+		pdev_parent = of_find_device_by_node(dn->parent);
-+		pdev = of_platform_device_create(dn, NULL,
-+				pdev_parent ? &pdev_parent->dev : NULL);
-+		of_dev_put(pdev_parent);
++	/* Mode (clock phase/polarity/etc.) */
++	if (of_find_property(nc, "spi-cpha", NULL))
++		spi->mode |= SPI_CPHA;
++	if (of_find_property(nc, "spi-cpol", NULL))
++		spi->mode |= SPI_CPOL;
++	if (of_find_property(nc, "spi-cs-high", NULL))
++		spi->mode |= SPI_CS_HIGH;
++	if (of_find_property(nc, "spi-3wire", NULL))
++		spi->mode |= SPI_3WIRE;
 +
-+		if (pdev == NULL) {
-+			pr_err("%s: failed to create for '%s'\n",
-+					__func__, dn->full_name);
-+			/* of_platform_device_create tosses the error code */
-+			return notifier_from_errno(-EINVAL);
++	/* Device DUAL/QUAD mode */
++	if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
++		switch (value) {
++		case 1:
++			break;
++		case 2:
++			spi->mode |= SPI_TX_DUAL;
++			break;
++		case 4:
++			spi->mode |= SPI_TX_QUAD;
++			break;
++		default:
++			dev_warn(&master->dev,
++				"spi-tx-bus-width %d not supported\n",
++				value);
++			break;
 +		}
++	}
 +
-+	} else if (action == OF_RECONFIG_DYNAMIC_DESTROY_DEV) {
++	if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
++		switch (value) {
++		case 1:
++			break;
++		case 2:
++			spi->mode |= SPI_RX_DUAL;
++			break;
++		case 4:
++			spi->mode |= SPI_RX_QUAD;
++			break;
++		default:
++			dev_warn(&master->dev,
++				"spi-rx-bus-width %d not supported\n",
++				value);
++			break;
++		}
++	}
 +
-+		dn = arg;
++	/* Device speed */
++	err = of_property_read_u32(nc, "spi-max-frequency", &value);
++	if (err) {
++		dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
++			nc->full_name, err);
++		goto err_out;
++	}
++	spi->max_speed_hz = value;
 +
-+		/* find our device by node */
-+		pdev = of_find_device_by_node(dn);
-+		if (pdev == NULL)
-+			return NOTIFY_OK;	/* no? not meant for us */
++	/* IRQ */
++	spi->irq = irq_of_parse_and_map(nc, 0);
 +
-+		/* unregister takes one ref away */
-+		platform_device_unregister(pdev);
++	/* Store a pointer to the node in the device structure */
++	of_node_get(nc);
++	spi->dev.of_node = nc;
 +
-+		/* and put the reference of the find */
-+		of_dev_put(pdev);
++	/* Register the new device */
++	request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
++	err = spi_add_device(spi);
++	if (err) {
++		dev_err(&master->dev, "spi_device register error %s\n",
++			nc->full_name);
++		goto err_out;
++	}
 +
-+	} else
-+		return NOTIFY_OK;
++	return spi;
 +
-+	return NOTIFY_STOP;
++err_out:
++	spi_dev_put(spi);
++	return ERR_PTR(err);
 +}
 +
- int __init platform_bus_init(void)
+ /**
+  * of_register_spi_devices() - Register child devices onto the SPI bus
+  * @master:	Pointer to spi_master device
+@@ -1209,120 +1324,58 @@ err_init_queue:
+  */
+ static void of_register_spi_devices(struct spi_master *master)
  {
- 	int error;
-@@ -938,10 +988,23 @@ int __init platform_bus_init(void)
+-	struct spi_device *spi;
+ 	struct device_node *nc;
+-	int rc;
+-	u32 value;
  
- 	error = device_register(&platform_bus);
- 	if (error)
--		return error;
--	error =  bus_register(&platform_bus_type);
-+		goto err_out;
-+
-+	error = bus_register(&platform_bus_type);
-+	if (error)
-+		goto err_unreg_dev;
-+
-+	platform_of_notifier.notifier_call = of_platform_notify;
-+	error = of_reconfig_notifier_register(&platform_of_notifier);
- 	if (error)
--		device_unregister(&platform_bus);
-+		goto err_unreg_bus;
-+
-+	return 0;
-+err_unreg_bus:
-+	bus_unregister(&platform_bus_type);
-+err_unreg_dev:
-+	device_unregister(&platform_bus);
-+err_out:
- 	return error;
+ 	if (!master->dev.of_node)
+ 		return;
+ 
+-	for_each_available_child_of_node(master->dev.of_node, nc) {
+-		/* Alloc an spi_device */
+-		spi = spi_alloc_device(master);
+-		if (!spi) {
+-			dev_err(&master->dev, "spi_device alloc error for %s\n",
+-				nc->full_name);
+-			spi_dev_put(spi);
+-			continue;
+-		}
++	for_each_available_child_of_node(master->dev.of_node, nc)
++		of_register_spi_device(master, nc);
++}
+ 
+-		/* Select device driver */
+-		if (of_modalias_node(nc, spi->modalias,
+-				     sizeof(spi->modalias)) < 0) {
+-			dev_err(&master->dev, "cannot find modalias for %s\n",
+-				nc->full_name);
+-			spi_dev_put(spi);
+-			continue;
+-		}
++static int of_dev_node_match(struct device *dev, void *data)
++{
++	return dev->of_node == data;
++}
+ 
+-		/* Device address */
+-		rc = of_property_read_u32(nc, "reg", &value);
+-		if (rc) {
+-			dev_err(&master->dev, "%s has no valid 'reg' property (%d)\n",
+-				nc->full_name, rc);
+-			spi_dev_put(spi);
+-			continue;
+-		}
+-		spi->chip_select = value;
+-
+-		/* Mode (clock phase/polarity/etc.) */
+-		if (of_find_property(nc, "spi-cpha", NULL))
+-			spi->mode |= SPI_CPHA;
+-		if (of_find_property(nc, "spi-cpol", NULL))
+-			spi->mode |= SPI_CPOL;
+-		if (of_find_property(nc, "spi-cs-high", NULL))
+-			spi->mode |= SPI_CS_HIGH;
+-		if (of_find_property(nc, "spi-3wire", NULL))
+-			spi->mode |= SPI_3WIRE;
+-		if (of_find_property(nc, "spi-lsb-first", NULL))
+-			spi->mode |= SPI_LSB_FIRST;
+-
+-		/* Device DUAL/QUAD mode */
+-		if (!of_property_read_u32(nc, "spi-tx-bus-width", &value)) {
+-			switch (value) {
+-			case 1:
+-				break;
+-			case 2:
+-				spi->mode |= SPI_TX_DUAL;
+-				break;
+-			case 4:
+-				spi->mode |= SPI_TX_QUAD;
+-				break;
+-			default:
+-				dev_warn(&master->dev,
+-					 "spi-tx-bus-width %d not supported\n",
+-					 value);
+-				break;
+-			}
+-		}
++/* bah; the match functions differ just by const-ness */
++static int of_dev_node_match_const(struct device *dev, const void *data)
++{
++	return dev->of_node == data;
++}
+ 
+-		if (!of_property_read_u32(nc, "spi-rx-bus-width", &value)) {
+-			switch (value) {
+-			case 1:
+-				break;
+-			case 2:
+-				spi->mode |= SPI_RX_DUAL;
+-				break;
+-			case 4:
+-				spi->mode |= SPI_RX_QUAD;
+-				break;
+-			default:
+-				dev_warn(&master->dev,
+-					 "spi-rx-bus-width %d not supported\n",
+-					 value);
+-				break;
+-			}
+-		}
++/* must call put_device() when done with returned spi_device device */
++struct spi_device *of_find_spi_device_by_node(struct device_node *node)
++{
++	struct device *dev;
+ 
+-		/* Device speed */
+-		rc = of_property_read_u32(nc, "spi-max-frequency", &value);
+-		if (rc) {
+-			dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
+-				nc->full_name, rc);
+-			spi_dev_put(spi);
+-			continue;
+-		}
+-		spi->max_speed_hz = value;
+-
+-		/* IRQ */
+-		spi->irq = irq_of_parse_and_map(nc, 0);
+-
+-		/* Store a pointer to the node in the device structure */
+-		of_node_get(nc);
+-		spi->dev.of_node = nc;
+-
+-		/* Register the new device */
+-		request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
+-		rc = spi_add_device(spi);
+-		if (rc) {
+-			dev_err(&master->dev, "spi_device register error %s\n",
+-				nc->full_name);
+-			spi_dev_put(spi);
+-		}
++	dev = bus_find_device(&spi_bus_type, NULL, node,
++					 of_dev_node_match);
++	if (!dev)
++		return NULL;
+ 
+-	}
++	return to_spi_device(dev);
  }
- 
++EXPORT_SYMBOL(of_find_spi_device_by_node);
++
++/* forward decl */
++static struct class spi_master_class;
++
++/* the spi masters are not using spi_bus, so we find it with another way */
++struct spi_master *of_find_spi_master_by_node(struct device_node *node)
++{
++	struct device *dev;
++
++	dev = class_find_device(&spi_master_class, NULL, node,
++				of_dev_node_match_const);
++	if (!dev)
++		return NULL;
++
++	/* reference got in class_find_device */
++	return container_of(dev, struct spi_master, dev);
++}
++EXPORT_SYMBOL(of_find_spi_master_by_node);
++
+ #else
+ static void of_register_spi_devices(struct spi_master *master) { }
+ #endif
 -- 
 1.7.12
 
