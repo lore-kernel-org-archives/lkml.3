@@ -1,78 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011AbaE1A1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:27:52 -0400
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:35820 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893AbaE1A1u (ORCPT
+	id S1754025AbaE1A2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:28:04 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:54644 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893AbaE1A2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:27:50 -0400
-From: Cody P Schafer <dev@codyps.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Cody P Schafer <dev@codyps.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,le}_to_cpu() and cpu_to_{be,le}() macros
-Date: Tue, 27 May 2014 17:22:06 -0700
-Message-Id: <1401236684-10579-12-git-send-email-dev@codyps.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1401236684-10579-1-git-send-email-dev@codyps.com>
-References: <1401236684-10579-1-git-send-email-dev@codyps.com>
+	Tue, 27 May 2014 20:28:01 -0400
+Date: Wed, 28 May 2014 02:28:00 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] perf, tools: Support spark lines in perf stat v3
+Message-ID: <20140528002800.GH25366@two.firstfloor.org>
+References: <1397673678-27452-1-git-send-email-andi@firstfloor.org>
+ <20140526172746.GB2763@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140526172746.GB2763@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather manually specifying the size of the integer to be converted, key
-off of the type size. Reduces duplicate size info and the occurance of
-certain types of bugs (using the wrong sized conversion).
+> google says this pragma got obsolete.. any reason for using this?
 
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Signed-off-by: Cody P Schafer <dev@codyps.com>
----
- include/linux/byteorder.h | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
- create mode 100644 include/linux/byteorder.h
+google is wrong.
 
-diff --git a/include/linux/byteorder.h b/include/linux/byteorder.h
-new file mode 100644
-index 0000000..c7ab8da
---- /dev/null
-+++ b/include/linux/byteorder.h
-@@ -0,0 +1,34 @@
-+#ifndef LINUX_BYTEORDER_H_
-+#define LINUX_BYTEORDER_H_
-+
-+#include <asm/byteorder.h>
-+
-+#define be_to_cpu(v) \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v,	\
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint16_t), be16_to_cpu(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint32_t), be32_to_cpu(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint64_t), be64_to_cpu(v), \
-+		(void)0))))
-+
-+#define le_to_cpu(v) \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v,	\
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint16_t), le16_to_cpu(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint32_t), le32_to_cpu(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint64_t), le64_to_cpu(v), \
-+		(void)0))))
-+
-+#define cpu_to_le(v) \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v,	\
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint16_t), cpu_to_le16(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint32_t), cpu_to_le32(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint64_t), cpu_to_le64(v), \
-+		(void)0))))
-+
-+#define cpu_to_be(v) \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v,	\
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint16_t), cpu_to_be16(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint32_t), cpu_to_be32(v), \
-+	__builtin_choose_expr(sizeof(v) == sizeof(uint64_t), cpu_to_be64(v), \
-+		(void)0))))
-+
-+#endif
--- 
-1.9.3
+It's standard e.g. on MacOS and imho simpler and nicer than 
+the usual ifdef. But I removed it.
 
+-Andi
