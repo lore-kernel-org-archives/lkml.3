@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831AbaE1OFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:05:06 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42569 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaE1OFD (ORCPT
+	id S1753998AbaE1OGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:06:37 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:58446 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198AbaE1OGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:05:03 -0400
-Message-ID: <5385ECE0.7040703@ti.com>
-Date: Wed, 28 May 2014 10:04:16 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 28 May 2014 10:06:35 -0400
+Date: Wed, 28 May 2014 18:06:32 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf_fuzzer crash on pentium 4
+Message-ID: <20140528140632.GH2570@moon>
+References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
+ <20140528135617.GA25750@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-CC: Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>	<5840140.8yGnd4Ycx3@wuerfel>	<CACRpkdZjEVYgq7tKEfmZC0Fu4n=JuUues=pAAtquLahkex=pkA@mail.gmail.com>	<4960549.viM91iY2g2@wuerfel> <CACRpkda5x-fJWTN40ze17woMWuWoVbuhbNu5nkm1sFcdJchRfA@mail.gmail.com>
-In-Reply-To: <CACRpkda5x-fJWTN40ze17woMWuWoVbuhbNu5nkm1sFcdJchRfA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528135617.GA25750@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 May 2014 09:32 AM, Linus Walleij wrote:
-> On Wed, May 28, 2014 at 3:29 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Wednesday 28 May 2014 10:23:09 Linus Walleij wrote:
+On Wed, May 28, 2014 at 03:56:17PM +0200, Pavel Machek wrote:
+> Hi!
 > 
->>>         model = "ARM Integrator/AP";
->>>         compatible = "arm,integrator-ap";
->>> +       dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
->>>
->>>         aliases {
->>>                 arm,timer-primary = &timer2;
->>>
->>
->> It looks like you accidentally copied the ranges from keystone, even
->> though that has a 64-bit root bus and you only have 32-bit.
+> > So just to be difficult I fired up the perf_fuzzer on a Pentium 4 machine.
+> > 
+> > It crashes more or less instantly (sorry for the line wrapping, 
+> > just got the serial console hooked up and don't have minicom configured 
+> > right yet).
+> > 
+> > this is 3.15-rc4 with the anti-memory corruption patch applied.
+> > 
+> > [   67.872274] BUG: unable to handle kernel NULL pointer dereference at 00000004
+> > [   67.876146] IP: [<ffffffff81013df2>] p4_pmu_schedule_events+0xa5/0x331
 > 
-> Nah it was no accident, just good old incompetence ;-)
-> 
->> I suspect what you want is
->>
->>         dma-ranges = <0x80000000 0 0x80000000>;
->>
->> to translate dma_addr_t 0x80000000-0xffffffff to phys_addr_t 0x0-0x7fffffff
->> rather than phys_addr_t 0x800000000-0x87fffffff.
->
-Interesting. Where does the ROM address space resides on integrator then considering
-address 0 is used for DMA.
- 
-> Thanks, I'll fix up my patch.
-> 
-Feel free to add my ack after the fixup if you need one.
+> Pentium 4 's were not 64bit, were they?
 
-regards,
-Santosh
-
+Not all, but there were 64bit varians (Xeons iirc).
