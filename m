@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195AbaE1NrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:47:25 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:40372 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147AbaE1NrV (ORCPT
+	id S1754239AbaE1Nre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:47:34 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37730 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202AbaE1Nra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:47:21 -0400
+	Wed, 28 May 2014 09:47:30 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v4 08/13] mmc: mmci: add edge support to data and command out in variant data.
-Date: Wed, 28 May 2014 14:47:12 +0100
-Message-Id: <1401284832-16769-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v4 09/13] mmc: mmci: add Qcom specifics of clk and datactrl registers.
+Date: Wed, 28 May 2014 14:47:24 +0100
+Message-Id: <1401284844-16811-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,64 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-This patch adds edge support for data and command out to variant structure
-giving more flexibility to the driver to support more SOCs which have
-different clock register layout.
-
-Without this patch other new SOCs like Qcom will have to add more code to
-special case them
+This patch adds specifics of clk and datactrl register on Qualcomm SD
+Card controller. This patch also populates the Qcom variant data with
+these new values specific to Qualcomm SD Card Controller.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/host/mmci.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/mmc/host/mmci.c |  4 ++++
+ drivers/mmc/host/mmci.h | 17 +++++++++++++++++
+ 2 files changed, 21 insertions(+)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 2f4cdf3..8deea4a 100644
+index 8deea4a..dbcb952 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -53,6 +53,7 @@ static unsigned int fmax = 515633;
-  * @clkreg: default value for MCICLOCK register
-  * @clkreg_enable: enable value for MMCICLOCK register
-  * @clkreg_8bit_bus_enable: enable value for 8 bit bus
-+ * @clkreg_neg_edge_enable: enable value for inverted data/cmd output
-  * @datalength_bits: number of bits in the MMCIDATALENGTH register
-  * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
-  *	      is asserted (likewise for RX)
-@@ -74,6 +75,7 @@ struct variant_data {
- 	unsigned int		clkreg;
- 	unsigned int		clkreg_enable;
- 	unsigned int		clkreg_8bit_bus_enable;
-+	unsigned int		clkreg_neg_edge_enable;
- 	unsigned int		datalength_bits;
- 	unsigned int		fifosize;
- 	unsigned int		fifohalfsize;
-@@ -143,6 +145,7 @@ static struct variant_data variant_ux500 = {
+@@ -179,6 +179,10 @@ static struct variant_data variant_qcom = {
+ 	.fifosize		= 16 * 4,
+ 	.fifohalfsize		= 8 * 4,
  	.clkreg			= MCI_CLK_ENABLE,
- 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
- 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
-+	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
++	.clkreg_enable		= MCI_QCOM_CLK_FLOWENA |
++				  MCI_QCOM_CLK_SELECT_IN_FBCLK,
++	.clkreg_8bit_bus_enable = MCI_QCOM_CLK_WIDEBUS_8,
++	.datactrl_mask_ddrmode	= MCI_QCOM_CLK_SELECT_IN_DDR_MODE,
+ 	.blksz_datactrl4	= true,
  	.datalength_bits	= 24,
- 	.sdio			= true,
- 	.st_clkdiv		= true,
-@@ -159,6 +162,7 @@ static struct variant_data variant_ux500v2 = {
- 	.clkreg			= MCI_CLK_ENABLE,
- 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
- 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
-+	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
- 	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
- 	.datalength_bits	= 24,
- 	.sdio			= true,
-@@ -322,7 +326,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
- 		clk |= variant->clkreg_8bit_bus_enable;
+ 	.pwrreg_powerup		= MCI_PWR_UP,
+diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
+index cd83ca3..706eb513 100644
+--- a/drivers/mmc/host/mmci.h
++++ b/drivers/mmc/host/mmci.h
+@@ -41,6 +41,15 @@
+ /* Modified PL180 on Versatile Express platform */
+ #define MCI_ARM_HWFCEN		BIT(12)
  
- 	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
--		clk |= MCI_ST_UX500_NEG_EDGE;
-+		clk |= variant->clkreg_neg_edge_enable;
++/* Modified on Qualcomm Integrations */
++#define MCI_QCOM_CLK_WIDEBUS_8	(BIT(10) | BIT(11))
++#define MCI_QCOM_CLK_FLOWENA	BIT(12)
++#define MCI_QCOM_CLK_INVERTOUT	BIT(13)
++
++/* select in latch data and command in */
++#define MCI_QCOM_CLK_SELECT_IN_FBCLK	BIT(15)
++#define MCI_QCOM_CLK_SELECT_IN_DDR_MODE	(BIT(14) | BIT(15))
++
+ #define MMCIARGUMENT		0x008
+ #define MMCICOMMAND		0x00c
+ #define MCI_CPSM_RESPONSE	BIT(6)
+@@ -54,6 +63,14 @@
+ #define MCI_ST_NIEN		BIT(13)
+ #define MCI_ST_CE_ATACMD	BIT(14)
  
- 	mmci_write_clkreg(host, clk);
- }
++/* Modified on Qualcomm Integrations */
++#define MCI_QCOM_CSPM_DATCMD		BIT(12)
++#define MCI_QCOM_CSPM_MCIABORT		BIT(13)
++#define MCI_QCOM_CSPM_CCSENABLE		BIT(14)
++#define MCI_QCOM_CSPM_CCSDISABLE	BIT(15)
++#define MCI_QCOM_CSPM_AUTO_CMD19	BIT(16)
++#define MCI_QCOM_CSPM_AUTO_CMD21	BIT(21)
++
+ #define MMCIRESPCMD		0x010
+ #define MMCIRESPONSE0		0x014
+ #define MMCIRESPONSE1		0x018
 -- 
 1.9.1
 
