@@ -1,44 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaE1OWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:22:17 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:45096 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198AbaE1OWP (ORCPT
+	id S1754635AbaE1OXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:23:17 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:39012 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaE1OXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:22:15 -0400
-Date: Wed, 28 May 2014 10:22:12 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix busted pr_info conversion in kernel/workqueue.c
-Message-ID: <20140528142212.GC1419@htj.dyndns.org>
-References: <14251.1401215339@turing-police.cc.vt.edu>
- <20140527204433.e22e1cca95d2b4a5dac5f960@skynet.be>
- <25551.1401222429@turing-police.cc.vt.edu>
+	Wed, 28 May 2014 10:23:16 -0400
+Date: Wed, 28 May 2014 19:53:09 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH v3] ehea: Introduce the use of the managed version of kzalloc
+Message-ID: <20140528142309.GA4371@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <25551.1401222429@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 04:27:09PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 27 May 2014 20:44:33 +0200, Fabian Frederick said:
-> > Hello Valdis,
-> >
-> > 	I thought Tejun directly reverted that patch (Joe Perches noticed
-> >  the level problem just after submit).Anyway, problem is solved now :)
-> 
-> Tejun - can you see if that patch in fact got reverted?  It made it
-> into the linux-next 20140529 tree somehow. (Perhaps the revert is in
-> a tree that didn't get pushed/pulled correctly?)
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. Also, linux/device.h is added to make sure the devm_*()
+routine declarations are unambiguously available.
 
-Hah, thought I did.  Apparently didn't.  Applying the patch.
+The following Coccinelle semantic patch was used for making the change:
 
-Thanks.
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
+
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Compile-Tested-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+---
+v3: add space in linux/device.h include
+
+ drivers/net/ethernet/ibm/ehea/ehea_main.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+index 538903b..a0b418e 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -28,6 +28,7 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#include <linux/device.h>
+ #include <linux/in.h>
+ #include <linux/ip.h>
+ #include <linux/tcp.h>
+@@ -3273,7 +3274,7 @@ static int ehea_probe_adapter(struct platform_device *dev)
+ 		return -EINVAL;
+ 	}
+ 
+-	adapter = kzalloc(sizeof(*adapter), GFP_KERNEL);
++	adapter = devm_kzalloc(&dev->dev, sizeof(*adapter), GFP_KERNEL);
+ 	if (!adapter) {
+ 		ret = -ENOMEM;
+ 		dev_err(&dev->dev, "no mem for ehea_adapter\n");
+@@ -3359,7 +3360,6 @@ out_kill_eq:
+ 
+ out_free_ad:
+ 	list_del(&adapter->list);
+-	kfree(adapter);
+ 
+ out:
+ 	ehea_update_firmware_handles();
+@@ -3386,7 +3386,6 @@ static int ehea_remove(struct platform_device *dev)
+ 	ehea_destroy_eq(adapter->neq);
+ 	ehea_remove_adapter_mr(adapter);
+ 	list_del(&adapter->list);
+-	kfree(adapter);
+ 
+ 	ehea_update_firmware_handles();
+ 
 -- 
-tejun
+1.9.1
+
