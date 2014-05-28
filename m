@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbaE1RLd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 13:11:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46298 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753310AbaE1RL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 13:11:29 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: carlo@caione.org, Boris Brezillon <boris@free-electrons.com>,
-        Mark Brown <broonie@kernel.org>, lgirdwood@gmail.com,
-        lee.jones@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 1/5] regulator: Allow to pass the device node to regulator_dev_lookup
-Date: Wed, 28 May 2014 19:11:05 +0200
-Message-Id: <1401297069-7423-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1752044AbaE1RLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 13:11:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751861AbaE1RLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 13:11:43 -0400
+Message-ID: <538618C9.10600@redhat.com>
+Date: Wed, 28 May 2014 19:11:37 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: linux-kernel@vger.kernel.org, yang.z.zhang@intel.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: lapic: sync highest ISR to hardware apic on EOI
+References: <1400856713-18628-1-git-send-email-pbonzini@redhat.com> <20140528165623.GA10861@amt.cnet>
+In-Reply-To: <20140528165623.GA10861@amt.cnet>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For now, regulator_dev_lookup only cares about the of_node field of the struct
-device that is passed as as argument.
+Il 28/05/2014 18:57, Marcelo Tosatti ha scritto:
+> On Fri, May 23, 2014 at 04:51:53PM +0200, Paolo Bonzini wrote:
+>> When Hyper-V enlightenments are in effect, Windows prefers to issue an
+>> Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
+>> The Hyper-V MSR write is not handled by the processor, and besides
+>> being slower, this also causes bugs with APIC virtualization.  The
+>> reason is that on EOI the processor will modify the highest in-service
+>> interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
+>> the SDM.
+>>
+>> We need to do the same, and be careful not to muck with the isr_count
+>> and highest_isr_cache fields that are unused when virtual interrupt
+>> delivery is enabled.
+>>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>> ---
+>>  arch/x86/kvm/lapic.c |   62 ++++++++++++++++++++++++++++++++++---------------
+>>  1 files changed, 43 insertions(+), 19 deletions(-)
+>
+> Why not disable Hyper-V APIC enlightenment if APIC-V is available ?
 
-This is actually an issue whenever we have several regulators subnodes in the
-DT, that all belong to the same device, which is usually the case.
+That would be a good suggestion indeed, but it doesn't help if you just 
+keep your old configuration and get new hardware.
 
-Add an extra of_node field that is used first in regulator_dev_lookup that
-allows to first lookup in the regulator node itself, and then fallback to the
-old behaviour.
-
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/regulator/core.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 8b6b28b5cfda..3e3954252a23 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -154,7 +154,7 @@ static struct regulator_dev *of_get_regulator(struct device *dev,
- 	}
- 
- 	list_for_each_entry(r, &regulator_list, list)
--		if (r->dev.parent && node == r->dev.of_node)
-+		if (r->dev.parent && regnode == r->dev.of_node)
- 			return r;
- 
- 	return ERR_PTR(-EPROBE_DEFER);
-@@ -1264,6 +1264,7 @@ static void regulator_supply_alias(struct device **dev, const char **supply)
- }
- 
- static struct regulator_dev *regulator_dev_lookup(struct device *dev,
-+						  struct device_node *of_node,
- 						  const char *supply,
- 						  int *ret)
- {
-@@ -1273,7 +1274,14 @@ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
- 
- 	regulator_supply_alias(&dev, &supply);
- 
--	/* first do a dt based lookup */
-+	/* First, do a lookup against the provided of_node */
-+	if (of_node) {
-+		r = of_get_regulator(dev, of_node, supply);
-+		if (!IS_ERR(r))
-+			return r;
-+	}
-+
-+	/* Then, do a lookup based on the device of_node */
- 	if (dev && dev->of_node) {
- 		r = of_get_regulator(dev, dev->of_node, supply);
- 		if (IS_ERR(r)) {
-@@ -1332,7 +1340,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- 
- 	mutex_lock(&regulator_list_mutex);
- 
--	rdev = regulator_dev_lookup(dev, id, &ret);
-+	rdev = regulator_dev_lookup(dev, NULL, id, &ret);
- 	if (rdev)
- 		goto found;
- 
-@@ -3495,7 +3503,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
- 	if (supply) {
- 		struct regulator_dev *r;
- 
--		r = regulator_dev_lookup(dev, supply, &ret);
-+		r = regulator_dev_lookup(dev, NULL, supply, &ret);
- 
- 		if (ret == -ENODEV) {
- 			/*
--- 
-1.9.3
+Paolo
 
