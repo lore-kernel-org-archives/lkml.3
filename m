@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaE1KIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:08:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33833 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaE1KIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 06:08:10 -0400
-Date: Wed, 28 May 2014 12:07:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [Patch V3 19/37] x86, irq: introduce mechanisms to support
- dynamically allocate IRQ for IOAPIC
-In-Reply-To: <538597F0.1040003@linutronix.de>
-Message-ID: <alpine.DEB.2.02.1405281159030.21720@ionos.tec.linutronix.de>
-References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com> <1401178092-1228-20-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1405271445050.21720@ionos.tec.linutronix.de> <538597F0.1040003@linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752510AbaE1KKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 06:10:12 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:15085
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751855AbaE1KKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 06:10:10 -0400
+Message-ID: <5385B69D.50508@freescale.com>
+Date: Wed, 28 May 2014 18:12:45 +0800
+From: Liu Ying <Ying.Liu@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
+CC: <linux-pwm@vger.kernel.org>, <thierry.reding@gmail.com>,
+        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pwm: i.MX: Cleanup indentation for register definitions
+References: <1401185980-29536-1-git-send-email-Ying.Liu@freescale.com>
+ <20140528115636.4ad791aa@ipc1.ka-ro>
+In-Reply-To: <20140528115636.4ad791aa@ipc1.ka-ro>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(377454003)(479174003)(51704005)(24454002)(76482001)(77982001)(33656002)(65816999)(81542001)(23676002)(50986999)(21056001)(19580405001)(19580395003)(83322001)(64126003)(97736001)(81342001)(83506001)(6806004)(68736004)(81156002)(69596002)(87936001)(99396002)(44976005)(50466002)(92566001)(102836001)(36756003)(92726001)(79102001)(84676001)(31966008)(86362001)(76176999)(104016001)(80022001)(575784001)(54356999)(65806001)(65956001)(64706001)(4396001)(26826002)(47776003)(85852003)(74502001)(77096999)(74662001)(46102001)(20776003)(83072002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB347;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0225B0D5BC
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014, Sebastian Andrzej Siewior wrote:
-> On 05/27/2014 09:58 PM, Thomas Gleixner wrote:
-> > ce4100 is an oddball though. The ioapic is registered way before the
-> > interrupt subsystem is initialized and I have a hard time to
-> > understand that comment:
-> > 
-> >         /* We can't set this earlier, because we need to calibrate the timer */
-> >         legacy_pic = &null_legacy_pic;
-> > 
-> > The timer calibration happens after the interrupts are set up. I
-> > assume it's check_timer() which wants that, but we know exactly how
-> > the ce4100 works, so we might be able to avoid that whole "testing"
-> > stuff. Sebastian, any input on this?
+On 05/28/2014 05:56 PM, Lothar Waßmann wrote:
+> Hi,
 > 
-> According to my memory there was some PIC init we need but I don't
-> recall the details. However, booting the system with "legacy_pic =
-> &null_legacy_pic;" in x86_ce4100_early_setup() gives me this:
+> Liu Ying wrote:
+>> This patch contains no logic change to cleanup indentation
+>> for register definitions only.
+>>
+>> Cc: Thierry Reding <thierry.reding@gmail.com>
+>> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+>> Cc: Shawn Guo <shawn.guo@freescale.com>
+>> Cc: Lothar Waßmann <LW@KARO-electronics.de>
+>> Cc: linux-pwm@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+>> ---
+>>  drivers/pwm/pwm-imx.c |   26 +++++++++++++-------------
+>>  1 file changed, 13 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+>> index cc47733..0784554 100644
+>> --- a/drivers/pwm/pwm-imx.c
+>> +++ b/drivers/pwm/pwm-imx.c
+>> @@ -21,24 +21,24 @@
+>>  
+>>  /* i.MX1 and i.MX21 share the same PWM function block: */
+>>  
+>> -#define MX1_PWMC    0x00   /* PWM Control Register */
+>> -#define MX1_PWMS    0x04   /* PWM Sample Register */
+>> -#define MX1_PWMP    0x08   /* PWM Period Register */
+>> +#define MX1_PWMC			0x00   /* PWM Control Register */
+>> +#define MX1_PWMS			0x04   /* PWM Sample Register */
+>> +#define MX1_PWMP			0x08   /* PWM Period Register */
+>>  
+>> -#define MX1_PWMC_EN		(1 << 4)
+>> +#define MX1_PWMC_EN			(1 << 4)
+>>  
+>>  /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
+>>  
+>> -#define MX3_PWMCR                 0x00    /* PWM Control Register */
+>> -#define MX3_PWMSAR                0x0C    /* PWM Sample Register */
+>> -#define MX3_PWMPR                 0x10    /* PWM Period Register */
+>> -#define MX3_PWMCR_PRESCALER(x)    (((x - 1) & 0xFFF) << 4)
+>> -#define MX3_PWMCR_DOZEEN                (1 << 24)
+>> -#define MX3_PWMCR_WAITEN                (1 << 23)
+>> +#define MX3_PWMCR			0x00    /* PWM Control Register */
+>> +#define MX3_PWMSAR			0x0C    /* PWM Sample Register */
+>> +#define MX3_PWMPR			0x10    /* PWM Period Register */
+>> +#define MX3_PWMCR_PRESCALER(x)		(((x - 1) & 0xFFF) << 4)
+>                                                    ^
+> You could also add the missing () around the macro argument when you
+> are changing this line anyway.
 > 
-> [    0.001000] Enabling APIC mode:  Flat.  Using 2 I/O APICs
-> [    0.001000] leaving PIC mode, enabling APIC mode.
-> [    0.001000] enabled ExtINT on CPU#0
-> [    0.001000] ENABLING IO-APIC IRQs
-> [    0.001000] Setting 1 in the phys_id_present_map
-> [    0.001000] ...changing IO-APIC physical APIC ID to 1 ... ok.
-> [    0.001000] Setting 2 in the phys_id_present_map
-> [    0.001000] ...changing IO-APIC physical APIC ID to 2 ... ok.
-> [    0.001000] smpboot: CPU0: Intel(R) Atom(TM) CPU CE4150   @ 1.20GHz
-> (fam: 06, model: 1c, stepping: 0a)
-> [    0.001000] Using local APIC timer interrupts.
-> [    0.001000] calibrating APIC timer ...
+
+I may generate a separate patch to do that.
+
+Thanks.
+
 > 
-> and we stand still. With the assignment as it is now:
+> Lothar Waßmann
 > 
-> [    0.001000] Enabling APIC mode:  Flat.  Using 2 I/O APICs
-> [    0.001000] leaving PIC mode, enabling APIC mode.
-> [    0.001000] enabled ExtINT on CPU#0
-> [    0.002312] ENABLING IO-APIC IRQs
-> [    0.003009] Setting 1 in the phys_id_present_map
-> [    0.004007] ...changing IO-APIC physical APIC ID to 1 ... ok.
-> [    0.005533] Setting 2 in the phys_id_present_map
-> [    0.006006] ...changing IO-APIC physical APIC ID to 2 ... ok.
-> [    0.008373] ..TIMER: vector=0x30 apic1=-1 pin1=-1 apic2=-1 pin2=-1
-> [    0.009000] ...trying to set up timer as Virtual Wire IRQ...
-> [    0.019490] ..... works.
 
-Right, so it needs the setup of irq 0 and that only happens when the
-legacy_pic->nr_legacy_irqs > 0.
-
-Do you remember, why we switch to the null_pic later on?
-
-Thanks,
-
-	tglx
-
-
+-- 
+Liu Ying
