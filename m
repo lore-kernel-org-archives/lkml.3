@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546AbaE1VrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 17:47:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37942 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbaE1VrX (ORCPT
+	id S1755549AbaE1Vt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 17:49:26 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:59480 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaE1VtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 17:47:23 -0400
-From: Nishanth Menon <nm@ti.com>
-To: <dbaryshkov@gmail.com>, <tony@atomide.com>
-CC: <balbi@ti.com>, <linux@arm.linux.org.uk>, <dwmw2@infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 0/2] power: twl4030_charger: cleanup to handle various battery handling error conditions
-Date: Wed, 28 May 2014 16:46:48 -0500
-Message-ID: <1401313610-14252-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 28 May 2014 17:49:25 -0400
+Date: Wed, 28 May 2014 14:49:21 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 01/27] mtd: nand: introduce function to fix a common bug
+ in most nand-drivers not showing a device in sysfs
+Message-ID: <20140528214921.GC3599@ld-irv-0074>
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
+ <1401142372-14148-2-git-send-email-holler@ahsoftware.de>
+ <20140528084344.GB4285@norris-Latitude-E6410>
+ <53863056.2070405@ahsoftware.de>
+ <20140528201018.GA3599@ld-irv-0074>
+ <53865071.5060501@ahsoftware.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53865071.5060501@ahsoftware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 28, 2014 at 11:09:05PM +0200, Alexander Holler wrote:
+> I'm very sorry, but I find such discussions extremly tiresome.
+> 
+> If you just would have suggested that one if to prevent that someone who
+> doesn't c&p existing code would end up with a clobbered name (which he
+> obviously can't miss if he ever would test his new or changed driver),
+> than I maybe would have send a v2 with that if. But all the other noise
+> just made me to want I never had send (again) a patch to LKML. It is
+> almost impossible to avoid such answers and it turns every patch posting
+> into a endless story where people do want to discuss every line or even
+> character of totally silly things.
 
-This issue was originally reported by Russell on OMAP3-LDP platform,
-and original attempt to solve this by Felipe[1] did not quiet work,
-follow on attempt[2] seems to be effective, but in this resend, I have
-added an shutdown attempt in case things dont quiet look right.
+It would help if you brought a more open attitude to the table.
 
-Based on: v3.15-rc7
-
-Tests:
-ldp boot with battery: http://slexy.org/raw/s20StiV4xr
-ldp boot with a/c charger, no battery: http://slexy.org/raw/s2UfjIkZKG
-ldp boot with a/c charger+battery, remove battery: http://slexy.org/raw/s2yFTVlrWJ
-	^^ <- this is not exactly a safe test to perform :)..
-
-Nishanth Menon (2):
-  power: twl4030_charger: detect battery presence prior to enabling    
-    charger
-  power: twl4030_charger: attempt to power off in case of critical
-    events
-
- drivers/power/twl4030_charger.c |   70 +++++++++++++++++++++++++++++++++++----
- 1 file changed, 64 insertions(+), 6 deletions(-)
-
-[1] https://patchwork.kernel.org/patch/4002371/
-[2] https://patchwork.kernel.org/patch/4124751/
--- 
-1.7.9.5
-
+https://lkml.org/lkml/2014/5/14/574
