@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901AbaE1QJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:09:25 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:48991 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970AbaE1QJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:09:24 -0400
+	id S1754929AbaE1QJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:09:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38135 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754914AbaE1QJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 12:09:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,928,1392192000"; 
+   d="scan'208";a="547863958"
+Date: Wed, 28 May 2014 09:08:47 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, eranian@google.com
+Subject: Re: [RFC PATCH 6/7] perf, x86: large PEBS interrupt threshold
+Message-ID: <20140528160847.GJ29957@tassilo.jf.intel.com>
+References: <1401257890-30535-1-git-send-email-zheng.z.yan@intel.com>
+ <1401257890-30535-7-git-send-email-zheng.z.yan@intel.com>
+ <20140528081053.GP11096@twins.programming.kicks-ass.net>
+ <20140528145831.GH29957@tassilo.jf.intel.com>
+ <20140528153548.GY11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1401260039-18189-2-git-send-email-minchan@kernel.org>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-Date: Wed, 28 May 2014 09:09:23 -0700
-X-Google-Sender-Auth: nPsU2pL7_2lBluwWXw9BK0Q59gc
-Message-ID: <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528153548.GY11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 11:53 PM, Minchan Kim <minchan@kernel.org> wrote:
->
-> So, my stupid idea is just let's expand stack size and keep an eye
-> toward stack consumption on each kernel functions via stacktrace of ftrace.
+On Wed, May 28, 2014 at 05:35:48PM +0200, Peter Zijlstra wrote:
+> On Wed, May 28, 2014 at 07:58:31AM -0700, Andi Kleen wrote:
+> > > In particular, the 0x90 offset (IA32_PERF_GLOBAL_STATUS). Intel once
+> > > confirmed to me that that is a direct copy of the similarly named MSR at
+> > > the time of the PEBS assist.
+> > 
+> > That is correct.
+> > 
+> > > 
+> > > This is a problem, since if multiple counters overflow multiple bits
+> > > will be set and its (afaict) ambiguous which event is for which counter.
+> > 
+> > When a PEBS counter overflows it clears its respective GLOBAL_STATUS bit
+> > automatically.
+> 
+> That's an ambiguous statement; did you mean to say a PEBS enabled
+> counter will not raise its bit in GLOBAL_STATUS on counter overflow?
 
-We probably have to do this at some point, but that point is not -rc7.
+Let's revisit how PEBS works:
 
-And quite frankly, from the backtrace, I can only say: there is some
-bad shit there. The current VM stands out as a bloated pig:
+- The counter overflows and sets the GLOBAL_STATUS bit
+- The PEBS assist is armed
+- The counter triggers again
+- The PEBS assist fires and delivers a PEBS record
+- Finally it clears the GLOBAL_STATUS
+- When the threshold is reached it raises an PMI
 
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   0)     7696      16   lookup_address+0x28/0x30
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   1)     7680      16   _lookup_address_cpa.isra.3+0x3b/0x40
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   2)     7664      24   __change_page_attr_set_clr+0xe0/0xb50
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   3)     7640     392   kernel_map_pages+0x6c/0x120
-> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   4)     7248     256   get_page_from_freelist+0x489/0x920
-> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   5)     6992     352   __alloc_pages_nodemask+0x5e1/0xb20
+So the GLOBAL_STATUS bit is visible between the first overflow and the end 
+of the PEBS record delivery.
 
-> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  23)     4672     160   __swap_writepage+0x150/0x230
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  24)     4512      32   swap_writepage+0x42/0x90
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  25)     4480     320   shrink_page_list+0x676/0xa80
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  26)     4160     208   shrink_inactive_list+0x262/0x4e0
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  27)     3952     304   shrink_lruvec+0x3e1/0x6a0
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  28)     3648      80   shrink_zone+0x3f/0x110
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  29)     3568     128   do_try_to_free_pages+0x156/0x4c0
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  30)     3440     208   try_to_free_pages+0xf7/0x1e0
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  31)     3232     352   __alloc_pages_nodemask+0x783/0xb20
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  32)     2880       8   alloc_pages_current+0x10f/0x1f0
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  33)     2872     200   __page_cache_alloc+0x13f/0x160
+> 
+> Because if it does raise it, but then clears it again, its raised for a
+> short while and might be observed.
 
-That __alloc_pages_nodemask() thing in particular looks bad. It
-actually seems not to be the usual "let's just allocate some
-structures on the stack" disease, it looks more like "lots of
-inlining, horrible calling conventions, and lots of random stupid
-variables".
+That's correct. 
 
->From a quick glance at the frame usage, some of it seems to be gcc
-being rather bad at stack allocation, but lots of it is just nasty
-spilling around the disgusting call-sites with tons or arguments. A
-_lot_ of the stack slots are marked as "%sfp" (which is gcc'ese for
-"spill frame pointer", afaik).
+But it's no different than with threshold 1 and relatively rare.
 
-Avoiding some inlining, and using a single flag value rather than the
-collection of "bool"s would probably help. But nothing really
-trivially obvious stands out.
-
-But what *does* stand out (once again) is that we probably shouldn't
-do swap-out in direct reclaim. This came up the last time we had stack
-issues (XFS) too. I really do suspect that direct reclaim should only
-do the kind of reclaim that does not need any IO at all.
-
-I think we _do_ generally avoid IO in direct reclaim, but swap is
-special. And not for a good reason, afaik. DaveC, remind me, I think
-you said something about the swap case the last time this came up..
-
-                  Linus
+-andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
