@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaE1TEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 15:04:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29923 "EHLO mx1.redhat.com"
+	id S1754596AbaE1TJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 15:09:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22803 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487AbaE1TET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 15:04:19 -0400
-Date: Wed, 28 May 2014 15:04:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Dave Young <dyoung@redhat.com>, "Fleming, Matt" <matt.fleming@intel.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
-Subject: Re: [PATCH] export efi.flags to sysfs
-Message-ID: <20140528190400.GR14863@redhat.com>
-References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
- <20140527030058.GB2372@darkstar.nay.redhat.com>
- <CAL01qpvqa-8u2MZ=8wE8gsiprFLbN4U3AbEX9+h7FuemXNR93Q@mail.gmail.com>
- <20140528020935.GB2820@darkstar.nay.redhat.com>
- <20140528094712.GL2820@darkstar.nay.redhat.com>
- <20140528155104.GW10771@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528155104.GW10771@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751338AbaE1TJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 15:09:39 -0400
+Message-ID: <1401304172.2412.65.camel@ul30vt.home>
+Subject: Re: [PATCH v4 06/16] PCI: Quirk pci_for_each_dma_alias() for bridges
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
+        acooks@gmail.com, linux-kernel@vger.kernel.org, eddy0596@gmail.com,
+        linux@horizon.com
+Date: Wed, 28 May 2014 13:09:32 -0600
+In-Reply-To: <20140528180018.GS11907@google.com>
+References: <20140522230230.2856.40017.stgit@bling.home>
+	 <20140522230801.2856.18629.stgit@bling.home>
+	 <20140528180018.GS11907@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:51:04AM -0500, Alex Thorlton wrote:
+On Wed, 2014-05-28 at 12:00 -0600, Bjorn Helgaas wrote:
+> On Thu, May 22, 2014 at 05:08:01PM -0600, Alex Williamson wrote:
+> > Several PCIe-to-PCI bridges fail to provide a PCIe capability, causing
+> > us to handle them as conventional PCI devices.  In some cases, this
+> > may be correct, in others it's not.  Add a dev_flag bit to identify
+> > devices to be handled as standard PCIe-to-PCI bridges.
+> 
+> Can you expand on the "in some cases, this may be correct, in others it's
+> not"?  Do you mean that for some *devices* it's correct to handle them as
+> conventional PCI, or in some *situations* it's correct?  Something else?
 
-[..]
-> A side note, though:  We're going to have to figure out some way to
-> determine whether or not to apply the old_map quirk on during boot
-> anyway, so if it's easiest for you to just determine how the original
-> kernel was booted and key off of that, then I wouldn't worry about
-> finding a different method to get the firmware version in userspace,
-> unless there are other reasons for you to do it that way.
+Yes, the example that I know of is the PCI bridge found on the root
+complex of many Intel chipsets.  Older generations do not have a PCIe
+capability and the requester ID behaves as a conventional PCI device,
+using the bridge itself as the requester ID, newer version include a
+PCIe capability and use the secondary bus as the requester ID.  Those
+devices work correctly without this quirk.  The bridges in the next
+patch obviously don't.
 
-Agreed. Let kernel and firmware figure it out when to apply quirk and
-user space should not worry about firmware version.
+> I'd like to either remove that sentence or add a little more information to
+> make it useful.
 
-I liked the other approach better where user space just needs to know
-if 1:1 mapping are in effect or not and take decision based on that.
+Ok, I'll note some of the above in a new commit log.
 
-So once SGI firmware gets fixed for 1:1 mapping, and kernel knows it,
-then user space will not have to be changed at all.
+> I guess this probably goes along with the tests in
+> quirk_use_pcie_bridge_dma_alias().
 
-Thanks
-Vivek
+Yep.  For that, we need to look at the upstream device of the bridge, so
+it won't flag any root complex bridges like those above, which is why it
+could probably be applied to any bridge.  Thanks,
+
+Alex
+
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >  drivers/pci/search.c |   10 ++++++++--
+> >  include/linux/pci.h  |    2 ++
+> >  2 files changed, 10 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> > index 2c19f3f..df38f73 100644
+> > --- a/drivers/pci/search.c
+> > +++ b/drivers/pci/search.c
+> > @@ -88,8 +88,14 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
+> >  				continue;
+> >  			}
+> >  		} else {
+> > -			ret = fn(tmp, PCI_DEVID(tmp->bus->number, tmp->devfn),
+> > -				 data);
+> > +			if (tmp->dev_flags & PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS)
+> > +				ret = fn(tmp,
+> > +					 PCI_DEVID(tmp->subordinate->number,
+> > +						   PCI_DEVFN(0, 0)), data);
+> > +			else
+> > +				ret = fn(tmp,
+> > +					 PCI_DEVID(tmp->bus->number,
+> > +						   tmp->devfn), data);
+> >  			if (ret)
+> >  				return ret;
+> >  		}
+> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+> > index 9d4035c..85ab35e 100644
+> > --- a/include/linux/pci.h
+> > +++ b/include/linux/pci.h
+> > @@ -173,6 +173,8 @@ enum pci_dev_flags {
+> >  	PCI_DEV_FLAGS_ACS_ENABLED_QUIRK = (__force pci_dev_flags_t) (1 << 3),
+> >  	/* Flag to indicate the device uses dma_alias_devfn */
+> >  	PCI_DEV_FLAGS_DMA_ALIAS_DEVFN = (__force pci_dev_flags_t) (1 << 4),
+> > +	/* Use a PCIe-to-PCI bridge alias even if !pci_is_pcie */
+> > +	PCI_DEV_FLAG_PCIE_BRIDGE_ALIAS = (__force pci_dev_flags_t) (1 << 5),
+> >  };
+> >  
+> >  enum pci_irq_reroute_variant {
+> > 
+
+
+
