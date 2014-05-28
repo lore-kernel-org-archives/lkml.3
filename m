@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817AbaE1A02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:26:28 -0400
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:39151 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430AbaE1A0Y (ORCPT
+	id S1753848AbaE1A0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:26:39 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:40048 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825AbaE1A0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:26:24 -0400
+	Tue, 27 May 2014 20:26:36 -0400
 From: Cody P Schafer <dev@codyps.com>
 To: LKML <linux-kernel@vger.kernel.org>,
         Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@suse.de>, Cody P Schafer <dev@codyps.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: [PATCH 01/16] tools/perf: allow overriding sysfs and proc finding with env var
-Date: Tue, 27 May 2014 17:21:56 -0700
-Message-Id: <1401236684-10579-2-git-send-email-dev@codyps.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Cody P Schafer <dev@codyps.com>, Michael Ellerman <mpe@ellerman.id.au>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 02/16] powerpc/perf/hv-24x7: use kmem_cache instead of aligned stack allocations
+Date: Tue, 27 May 2014 17:21:57 -0700
+Message-Id: <1401236684-10579-3-git-send-email-dev@codyps.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401236684-10579-1-git-send-email-dev@codyps.com>
 References: <1401236684-10579-1-git-send-email-dev@codyps.com>
@@ -24,83 +24,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SYSFS_PATH and PROC_PATH environment variables now let the user override
-the detection of sysfs and proc locations for testing purposes.
+Ian pointed out the use of __aligned(4096) caused rather large stack
+consumption in single_24x7_request(), so use the kmem_cache
+hv_page_cache (which we've already got set up for other allocations)
+insead of allocating locally.
 
 CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Reported-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Cody P Schafer <dev@codyps.com>
 ---
- tools/lib/api/fs/fs.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ arch/powerpc/perf/hv-24x7.c | 52 ++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 37 insertions(+), 15 deletions(-)
 
-diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-index 5b5eb78..c1b49c3 100644
---- a/tools/lib/api/fs/fs.c
-+++ b/tools/lib/api/fs/fs.c
-@@ -1,8 +1,10 @@
- /* TODO merge/factor in debugfs.c here */
- 
-+#include <ctype.h>
- #include <errno.h>
- #include <stdbool.h>
- #include <stdio.h>
-+#include <stdlib.h>
- #include <string.h>
- #include <sys/vfs.h>
- 
-@@ -96,12 +98,51 @@ static bool fs__check_mounts(struct fs *fs)
- 	return false;
- }
- 
-+static void mem_toupper(char *f, size_t len)
-+{
-+	while (len) {
-+		*f = toupper(*f);
-+		f++;
-+		len--;
-+	}
-+}
-+
-+/*
-+ * Check for "NAME_PATH" environment variable to override fs location (for
-+ * testing). This matches the recommendation in Documentation/sysfs-rules.txt
-+ * for SYSFS_PATH.
-+ */
-+static bool fs__env_override(struct fs *fs)
-+{
-+	char *override_path;
-+	size_t name_len = strlen(fs->name);
-+	/* name + "_PATH" + '\0' */
-+	char upper_name[name_len + 5 + 1];
-+	memcpy(upper_name, fs->name, name_len);
-+	mem_toupper(upper_name, name_len);
-+	strcpy(&upper_name[name_len], "_PATH");
-+
-+	override_path = getenv(upper_name);
-+	if (!override_path)
-+		return false;
-+
-+	fs->found = true;
-+	strncpy(fs->path, override_path, sizeof(fs->path));
-+	return true;
-+}
-+
- static const char *fs__get_mountpoint(struct fs *fs)
+diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
+index e0766b8..9a7a830 100644
+--- a/arch/powerpc/perf/hv-24x7.c
++++ b/arch/powerpc/perf/hv-24x7.c
+@@ -294,7 +294,7 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
+ 					 u16 lpar, u64 *res,
+ 					 bool success_expected)
  {
-+	if (fs__env_override(fs))
-+		return fs->path;
-+
- 	if (fs__check_mounts(fs))
- 		return fs->path;
+-	unsigned long ret;
++	unsigned long ret = -ENOMEM;
  
--	return fs__read_mounts(fs) ? fs->path : NULL;
-+	if (fs__read_mounts(fs))
-+		return fs->path;
+ 	/*
+ 	 * request_buffer and result_buffer are not required to be 4k aligned,
+@@ -304,7 +304,27 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
+ 	struct reqb {
+ 		struct hv_24x7_request_buffer buf;
+ 		struct hv_24x7_request req;
+-	} __packed __aligned(4096) request_buffer = {
++	} __packed *request_buffer;
++	struct resb {
++		struct hv_24x7_data_result_buffer buf;
++		struct hv_24x7_result res;
++		struct hv_24x7_result_element elem;
++		__be64 result;
++	} __packed *result_buffer;
 +
-+	return NULL;
++	BUILD_BUG_ON(sizeof(*request_buffer) > 4096);
++	BUILD_BUG_ON(sizeof(*result_buffer) > 4096);
++
++	request_buffer = kmem_cache_alloc(hv_page_cache, GFP_USER);
++
++	if (!request_buffer)
++		goto out_reqb;
++
++	result_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
++	if (!result_buffer)
++		goto out_resb;
++
++	*request_buffer = (struct reqb) {
+ 		.buf = {
+ 			.interface_version = HV_24X7_IF_VERSION_CURRENT,
+ 			.num_requests = 1,
+@@ -320,28 +340,30 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
+ 		}
+ 	};
+ 
+-	struct resb {
+-		struct hv_24x7_data_result_buffer buf;
+-		struct hv_24x7_result res;
+-		struct hv_24x7_result_element elem;
+-		__be64 result;
+-	} __packed __aligned(4096) result_buffer = {};
+-
+ 	ret = plpar_hcall_norets(H_GET_24X7_DATA,
+-			virt_to_phys(&request_buffer), sizeof(request_buffer),
+-			virt_to_phys(&result_buffer),  sizeof(result_buffer));
++			virt_to_phys(request_buffer), sizeof(*request_buffer),
++			virt_to_phys(result_buffer),  sizeof(*result_buffer));
+ 
+ 	if (ret) {
+ 		if (success_expected)
+ 			pr_err_ratelimited("hcall failed: %d %#x %#x %d => 0x%lx (%ld) detail=0x%x failing ix=%x\n",
+ 					domain, offset, ix, lpar,
+ 					ret, ret,
+-					result_buffer.buf.detailed_rc,
+-					result_buffer.buf.failing_request_ix);
+-		return ret;
++					result_buffer->buf.detailed_rc,
++					result_buffer->buf.failing_request_ix);
++		goto out_hcall;
+ 	}
+ 
+-	*res = be64_to_cpu(result_buffer.result);
++	*res = be64_to_cpu(result_buffer->result);
++	kfree(result_buffer);
++	kfree(request_buffer);
++	return ret;
++
++out_hcall:
++	kfree(result_buffer);
++out_resb:
++	kfree(request_buffer);
++out_reqb:
+ 	return ret;
  }
  
- static const char *fs__mountpoint(int idx)
 -- 
 1.9.3
 
