@@ -1,83 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881AbaE1QSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:18:24 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:53586 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425AbaE1QSW (ORCPT
+	id S932271AbaE1QSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:18:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:16827 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754602AbaE1QSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:18:22 -0400
-Date: Wed, 28 May 2014 18:18:39 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jingoo Han <jg1.han@samsung.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] mfd: fix unintentional NULL check in
- menelaus_set_voltage()
-Message-ID: <20140528161839.GA16693@lianli>
-References: <1401284030-9650-1-git-send-email-emilgoode@gmail.com>
- <20140528152011.GB1954@lee--X1>
+	Wed, 28 May 2014 12:18:34 -0400
+Date: Wed, 28 May 2014 12:18:32 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au, mst@redhat.com,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [PATCH 1/2] ftrace: print stack usage right before Oops
+Message-ID: <20140528121832.747aaf75@gandalf.local.home>
+In-Reply-To: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528152011.GB1954@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 28 May 2014 15:53:58 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-On Wed, May 28, 2014 at 04:20:11PM +0100, Lee Jones wrote:
-> On Wed, 28 May 2014, Emil Goode wrote:
+> While I played with my own feature(ex, something on the way to reclaim),
+> kernel went to oops easily. I guessed reason would be stack overflow
+> and wanted to prove it.
 > 
-> > The struct menelaus_vtg pointer vtg cannot be NULL here
-> > so the condition is never true and if it ever was true
-> > it would lead to a NULL pointer dereference when we goto
-> > label set_voltage.
-> > 
-> > Before the below patch was applied the code was:
-> > 
-> > if (vtg == 0)
-> > 
-> > The intention was to check if vtg_val is 0.
-> > 
-> > commit 59a9f7a32adf6537b4e4db8ca204eeb77d7a634e
-> > ("mfd: menelaus: Use NULL instead of 0")
-> > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > ---
-> > Hello,
-> > 
-> > This is only build tested, it would be good to get a comment
-> > from someone who is familiar with this code.
-> > 
-> > Found using coccinelle.
-> > 
-> > Best regards,
-> > 
-> > Emil Goode
-> > 
-> >  drivers/mfd/menelaus.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-> > index ad25bfa..4859597 100644
-> > --- a/drivers/mfd/menelaus.c
-> > +++ b/drivers/mfd/menelaus.c
-> > @@ -466,7 +466,7 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
-> >  	struct i2c_client *c = the_menelaus->client;
-> >  
-> >  	mutex_lock(&the_menelaus->lock);
-> > -	if (!vtg)
-> > +	if (vtg_val == 0)
+> I found stack tracer which would be very useful for me but kernel went
+> oops before my user program gather the information via
+> "watch cat /sys/kernel/debug/tracing/stack_trace" so I couldn't get an
+> stack usage of each functions.
 > 
-> I would prefer:
+> What I want was that emit the kernel stack usage when kernel goes oops.
 > 
->   if (!vtg_val)
+> This patch records callstack of max stack usage into ftrace buffer
+> right before Oops and print that information with ftrace_dump_on_oops.
+> At last, I can find a culprit. :)
+> 
 
-Ok, I will resend.
+This is not dependent on patch 2/2, nor is 2/2 dependent on this patch,
+I'll review this as if 2/2 does not exist.
 
-Best regards,
 
-Emil Goode
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  kernel/trace/trace_stack.c | 32 ++++++++++++++++++++++++++++++--
+>  1 file changed, 30 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+> index 5aa9a5b9b6e2..5eb88e60bc5e 100644
+> --- a/kernel/trace/trace_stack.c
+> +++ b/kernel/trace/trace_stack.c
+> @@ -51,6 +51,30 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
+>  int stack_tracer_enabled;
+>  static int last_stack_tracer_enabled;
+>  
+> +static inline void print_max_stack(void)
+> +{
+> +	long i;
+> +	int size;
+> +
+> +	trace_printk("        Depth    Size   Location"
+> +			   "    (%d entries)\n"
+
+Please do not break strings just to satisfy that silly 80 character
+limit. Even Linus Torvalds said that's pretty stupid.
+
+Also, do not use trace_printk(). It is not made to be included in a
+production kernel. It reserves special buffers to make it as fast as
+possible, and those buffers should not be created in production
+systems. In fact, I will probably add for 3.16 a big warning message
+when trace_printk() is used.
+
+Since this is a bug, why not just use printk() instead?
+
+BTW, wouldn't this this function crash as well if the stack is already
+bad?
+
+-- Steve
+
+> +			   "        -----    ----   --------\n",
+> +			   max_stack_trace.nr_entries - 1);
+> +
+> +	for (i = 0; i < max_stack_trace.nr_entries; i++) {
+> +		if (stack_dump_trace[i] == ULONG_MAX)
+> +			break;
+> +		if (i+1 == max_stack_trace.nr_entries ||
+> +				stack_dump_trace[i+1] == ULONG_MAX)
+> +			size = stack_dump_index[i];
+> +		else
+> +			size = stack_dump_index[i] - stack_dump_index[i+1];
+> +
+> +		trace_printk("%3ld) %8d   %5d   %pS\n", i, stack_dump_index[i],
+> +				size, (void *)stack_dump_trace[i]);
+> +	}
+> +}
+> +
+>  static inline void
+>  check_stack(unsigned long ip, unsigned long *stack)
+>  {
+> @@ -149,8 +173,12 @@ check_stack(unsigned long ip, unsigned long *stack)
+>  			i++;
+>  	}
+>  
+> -	BUG_ON(current != &init_task &&
+> -		*(end_of_stack(current)) != STACK_END_MAGIC);
+> +	if ((current != &init_task &&
+> +		*(end_of_stack(current)) != STACK_END_MAGIC)) {
+> +		print_max_stack();
+> +		BUG();
+> +	}
+> +
+>   out:
+>  	arch_spin_unlock(&max_stack_lock);
+>  	local_irq_restore(flags);
+
