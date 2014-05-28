@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaE1IMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:12:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41380 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaE1IMK (ORCPT
+	id S1754305AbaE1IPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:15:47 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:64149 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753966AbaE1IPo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:12:10 -0400
-Date: Wed, 28 May 2014 10:12:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, eranian@google.com,
-        ak@linux.intel.com
-Subject: Re: [RFC PATCH 7/7] perf, x86: drain PEBS buffer during context
- switch
-Message-ID: <20140528081204.GQ11096@twins.programming.kicks-ass.net>
-References: <1401257890-30535-1-git-send-email-zheng.z.yan@intel.com>
- <1401257890-30535-8-git-send-email-zheng.z.yan@intel.com>
+	Wed, 28 May 2014 04:15:44 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UJoEJyuH25+IoM96"
-Content-Disposition: inline
-In-Reply-To: <1401257890-30535-8-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <2480893.UEqfxe8meR@phil>
+References: <CACRpkdZyLxMTSygRP6pD-mxghQ_D6tQ821tvn8GYw0Rnh9hZoQ@mail.gmail.com>
+	<1401172056-25743-1-git-send-email-iivanov@mm-sol.com>
+	<2480893.UEqfxe8meR@phil>
+Date: Wed, 28 May 2014 10:15:43 +0200
+Message-ID: <CACRpkdbaWYgku0_n5CqGU8DAFnn-5jEJ64Mfh9fixB4mRPnfwg@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: Enable "power-source" to be extracted from DT files
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 27, 2014 at 3:09 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Dienstag, 27. Mai 2014, 09:27:36 schrieb Ivan T. Ivanov:
+>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>>
+>> Add "power-source" property to generic options used for DT parsing files.
+>> This  enables drivers, which use generic pin configurations, to get the
+>> value passed to this property.
+>
+> I think the main problem here is, that pinconf-generic.h defines the power-
+> source as having a "custom format". With DT as a hardware description,
+> implementaton specific values do not work well - instead it should have a
+> regular unit-value.
+>
+> For the power-source I think volts could work well - as this is the main use-
+> case for pinctrl I know. The regulator-binding uses microvolts, maybe it would
+> be good use a similar unit.
+(...)
+>         pcfg_1v8 {
+>                 power-source = <1800000>;
+>         };
 
---UJoEJyuH25+IoM96
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I don't think this is what it's meant for actually. In this case the thing would
+be modeled as a regulator rather than some pin control option I guess?
 
-On Wed, May 28, 2014 at 02:18:10PM +0800, Yan, Zheng wrote:
-> Flush the PEBS buffer during context switch if PEBS interrupt threshold
-> is larger than one. This allows perf to supply TID for events.
+I think it's more like a selector, such as found on old amplifiers,
+input source A, B or C? So it's just some discrete number.
 
-I have the distinct feeling you're doing this patch series the wrong way
-around. It seems to me patch 5 completely breaks PEBS, patch 6 maybe
-patches it up a bit, but only after this patch things work again
-(maybe).
+Then we don't know which voltage comes from power source A, B, C.
 
-That's wrong.
-
---UJoEJyuH25+IoM96
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThZpUAAoJEHZH4aRLwOS6srgQAKmAtRGpNxSNCapIebXhli8j
-nw8nlGWIuoyQYtVTv/JvC84Ua7CPOb2v6g5phPUM0ZoMc38IZGnPz6VpvOcBz2Ok
-yGIi6MfaBejzbHdmlKx4k/tfbIFqCNx32BkylwK0KZwsVAiTXO7yhi5Bh4EKr3yW
-2oXbxHqq/TqIMDtTZ4n4aNq4jmL+8Im0FsVr7biDpjKP+CRlNu1FxHebAfdaPT7M
-syz+aE5ZZyCb/DSBZ0vlbr6O3tRZZPiJ8YRapeDGwWORKSZFiF0DPXkuEOO3LvLO
-Im4G8pSByvLozhuZ8VddQs6HHVtmObhP4MIDxbFWwrxJg7m1/cRGQJFdrZH3ePW9
-Y1GdZ5NQWkcW3hoOTjVoB4Hk63Vs2oSv9UuzlKPtDM0UyZyYTGnTEITmy3gigqHi
-kDGeGC4aUF8cvrQNDzRVkCQmVkvKrWplQMyG0NWuQHvesXamxxuc0lTKUPobDEuf
-ufQe9biLv5bw/k8Q9nGof8xKktNJ5jKxC7KP5IO6GPXuisZzbRhl9tbgOMUOegrH
-OwwRgNuLZ1hlSBC/aTnRUm4WK+svOWz3nbIB+Pe8IvjhqSkFe6P34mE3pGR75UQI
-mpXyYeF44H5ZzClyUDOb55gyX+NVZKIIhavARYl2gyPFBGiymP9/BVdvwSeZ4iUj
-LQb35/QfFSG9UmCE3Je6
-=gI11
------END PGP SIGNATURE-----
-
---UJoEJyuH25+IoM96--
+Yours,
+Linus Walleij
