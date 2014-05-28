@@ -1,122 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247AbaE1P0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:26:00 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:55825 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447AbaE1PZ7 (ORCPT
+	id S1753801AbaE1P2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:28:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:54668 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752358AbaE1P2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:25:59 -0400
+	Wed, 28 May 2014 11:28:34 -0400
+Date: Wed, 28 May 2014 11:28:32 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: bp@alien8.de, tony.luck@intel.com, m.chehab@samsung.com,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140528112832.5f83c66b@gandalf.local.home>
+In-Reply-To: <1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+References: <1400142646-10127-1-git-send-email-gong.chen@linux.intel.com>
+	<1401247938-22125-1-git-send-email-gong.chen@linux.intel.com>
+	<1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <5385FC38.3050201@arm.com>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-3-git-send-email-vincent.guittot@linaro.org>
- <20140527124848.GQ30445@twins.programming.kicks-ass.net> <CAKfTPtAbnDdQ=C6oABtwUPr7ADhHo1qsdzt5GFsuVMncA9Q=Qw@mail.gmail.com>
- <20140527153937.GE19143@laptop.programming.kicks-ass.net> <CAKfTPtCZx4i5HFnma3EFYjxVHojUAkezSS7jL7KDTgwvKEVFwQ@mail.gmail.com>
- <CAKfTPtB_4bQxBOUJ4tCFRVqzHDRVXj3YPkyzyTv_h-sgm8NwEQ@mail.gmail.com> <5385FC38.3050201@arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 28 May 2014 17:25:38 +0200
-Message-ID: <CAKfTPtC=sQVU4YFP_YViawpDVXoXSXayjr=nHR1mrGftY1022w@mail.gmail.com>
-Subject: Re: [PATCH v2 02/11] sched: remove a wake_affine condition
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "npiggin@gmail.com" <npiggin@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 May 2014 17:09, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
-> Hi Vincent & Peter,
->
-> On 28/05/14 07:49, Vincent Guittot wrote:
-> [...]
->>
->> Nick,
->>
->> While doing some rework on the wake affine part of the scheduler, i
->> failed to catch the use case that takes advantage of a condition that
->> you added some while ago with the commit
->> a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
->>
->> Could you help us to clarify the 2 first lines of the test that you added ?
->> +                       if ((tl <= load &&
->> +                               tl + target_load(cpu, idx) <=
->> SCHED_LOAD_SCALE) ||
->> +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
->>
->> Regards,
->> Vincent
->>>
->>>>
->>>>>> commit a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
->>>>>>
->>>>>>
->>>>>> +                       if ((tl <= load &&
->>>>>> +                               tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
->>>>>> +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
->>>>>>
->>>>>>
->>>>>> So back when the code got introduced, it read:
->>>>>>
->>>>>>         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE < source_load(this_cpu, idx) &&
->>>>>>         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(this_cpu, idx) < SCHED_LOAD_SCALE
->>>>>>
->
-> Shouldn't this be
->
-> target_load(this_cpu, idx) - sync*SCHED_LOAD_SCALE <= source_load(prev_cpu, idx) &&
-> target_load(this_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(prev_cpu, idx) <= SCHED_LOAD_SCALE
+Added LKML
 
-yes, there was a typo mistake in Peter's explanation
+On Tue, 27 May 2014 23:32:18 -0400
+"Chen, Gong" <gong.chen@linux.intel.com> wrote:
 
->
-> "[PATCH] sched: implement smpnice" (2dd73a4f09beacadde827a032cf15fd8b1fa3d48)
-> mentions that SCHED_LOAD_BALANCE (IMHO, should be SCHED_LOAD_SCALE) represents
-> the load contribution of a single task. So I read the second part as if
-> the sum of the load of this_cpu and prev_cpu is smaller or equal to the
-> (maximal) load contribution (maximal possible effect) of a single task.
->
-> There is even a comment in "[PATCH] sched: tweak affine wakeups"
-> (a3f21bce1fefdf92a4d1705e888d390b10f3ac6f) in try_to_wake_up() when
-> SCHED_LOAD_SCALE gets subtracted from tl = this_load =
-> target_load(this_cpu, idx):
->
-> + * If sync wakeup then subtract the (maximum possible)
-> + * effect of the currently running task from the load
-> + * of the current CPU:
->
-> "[PATCH] sched: implement smpnice" then replaces SCHED_LOAD_SCALE w/
->
-> +static inline unsigned long cpu_avg_load_per_task(int cpu)
-> +{
-> +       runqueue_t *rq = cpu_rq(cpu);
-> +       unsigned long n = rq->nr_running;
+> Add trace interface to elaborate all H/W error related information.
+> 
+> v6 -> v5: format adjustment.
+> v5 -> v4: Add physical mask(LSB) in trace.
+> v4 -> v3: change ras trace dependency rule.
+> v3 -> v2: minor adjustment according to the suggestion from Boris.
+> v2 -> v1: spinlock is not needed anymore.
+> 
+> Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+> ---
+>  drivers/acpi/Kconfig       |  4 +++-
+>  drivers/acpi/acpi_extlog.c | 54 +++++++++++++++++++++++++++++++++++++++---
+>  drivers/ras/ras.c          |  1 +
+>  include/ras/ras_event.h    | 59 ++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 114 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index a34a228..099a2d5 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -370,6 +370,7 @@ config ACPI_EXTLOG
+>  	tristate "Extended Error Log support"
+>  	depends on X86_MCE && X86_LOCAL_APIC
+>  	select UEFI_CPER
+> +	select RAS_TRACE
+>  	default n
+>  	help
+>  	  Certain usages such as Predictive Failure Analysis (PFA) require
+> @@ -384,6 +385,7 @@ config ACPI_EXTLOG
+>  
+>  	  Enhanced MCA Logging allows firmware to provide additional error
+>  	  information to system software, synchronous with MCE or CMCI. This
+> -	  driver adds support for that functionality.
+> +	  driver adds support for that functionality with corresponding
+> +	  tracepoint which carries that information to userspace.
+>  
+>  endif	# ACPI
+> diff --git a/drivers/acpi/acpi_extlog.c b/drivers/acpi/acpi_extlog.c
+> index c4a5d87..8815b73 100644
+> --- a/drivers/acpi/acpi_extlog.c
+> +++ b/drivers/acpi/acpi_extlog.c
+> @@ -16,6 +16,7 @@
+>  #include <asm/mce.h>
+>  
+>  #include "apei/apei-internal.h"
+> +#include <ras/ras_event.h>
+>  
+>  #define EXT_ELOG_ENTRY_MASK	GENMASK_ULL(51, 0) /* elog entry address mask */
+>  
+> @@ -43,6 +44,9 @@ struct extlog_l1_head {
+>  
+>  static int old_edac_report_status;
+>  
+> +static char mem_location[CPER_REC_LEN];
+> +static char dimm_location[CPER_REC_LEN];
 > +
-> +       return n ?  rq->raw_weighted_load / n : SCHED_LOAD_SCALE;
->
-> -- Dietmar
->
->>>>>> So while the first line makes some sense, the second line is still
->>>>>> somewhat challenging.
->>>>>>
->>>>>> I read the second line something like: if there's less than one full
->>>>>> task running on the combined cpus.
->>>>>
->>>>> ok. your explanation makes sense
->>>>
->>>> Maybe, its still slightly weird :-)
->>>>
->>>>>>
-> [...]
->
+>  static u8 extlog_dsm_uuid[] __initdata = "663E35AF-CC10-41A4-88EA-5470AF055295";
+>  
+>  /* L1 table related physical address */
+> @@ -69,6 +73,30 @@ static u32 l1_percpu_entry;
+>  #define ELOG_ENTRY_ADDR(phyaddr) \
+>  	(phyaddr - elog_base + (u8 *)elog_addr)
+>  
+> +static void __trace_mem_error(const uuid_le *fru_id, char *fru_text,
+> +			       u32 err_number, u8 severity,
+> +			       struct cper_sec_mem_err *mem)
+> +{
+> +	u8 etype = ~0, pa_mask_lsb = ~0;
+> +	u64 pa = ~0ull;
+> +
+> +	if (mem->validation_bits & CPER_MEM_VALID_ERROR_TYPE)
+> +		etype = mem->error_type;
+> +
+> +	if (mem->validation_bits & CPER_MEM_VALID_PA)
+> +		pa = mem->physical_addr;
+> +
+> +	if (mem->validation_bits & CPER_MEM_VALID_PA_MASK)
+> +		pa_mask_lsb = (u8)__ffs64(mem->physical_addr_mask);
+> +
+> +	memset(mem_location, 0, CPER_REC_LEN);
+> +	cper_mem_err_location(mem, mem_location);
+> +	memset(dimm_location, 0, CPER_REC_LEN);
+> +	cper_dimm_err_location(mem, dimm_location);
+> +	trace_extlog_mem_event(err_number, etype, severity, pa, pa_mask_lsb,
+> +			       fru_id, dimm_location, mem_location, fru_text);
+
+This seems like a lot of work for a tracepoint. Why all the strings?
+Ideally, you want to record in the fast path the minimum raw data and
+reconstruct it at the time it is read.
+
+> +}
+> +
+>  static struct acpi_generic_status *extlog_elog_entry_check(int cpu, int bank)
+>  {
+>  	int idx;
+> @@ -137,8 +165,12 @@ static int extlog_print(struct notifier_block *nb, unsigned long val,
+>  	struct mce *mce = (struct mce *)data;
+>  	int	bank = mce->bank;
+>  	int	cpu = mce->extcpu;
+> -	struct acpi_generic_status *estatus;
+> -	int rc;
+> +	struct acpi_generic_status *estatus, *tmp;
+> +	struct acpi_generic_data *gdata;
+> +	const uuid_le *fru_id = &NULL_UUID_LE;
+> +	char *fru_text = "";
+> +	uuid_le *sec_type;
+> +	static u32 err_number;
+>  
+>  	estatus = extlog_elog_entry_check(cpu, bank);
+>  	if (estatus == NULL)
+> @@ -148,7 +180,23 @@ static int extlog_print(struct notifier_block *nb, unsigned long val,
+>  	/* clear record status to enable BIOS to update it again */
+>  	estatus->block_status = 0;
+>  
+> -	rc = print_extlog_rcd(NULL, (struct acpi_generic_status *)elog_buf, cpu);
+> +	tmp = (struct acpi_generic_status *)elog_buf;
+> +	print_extlog_rcd(NULL, tmp, cpu);
+> +
+> +	/* log event via trace */
+> +	err_number++;
+> +	gdata = (struct acpi_generic_data *)(tmp + 1);
+> +	if (gdata->validation_bits & CPER_SEC_VALID_FRU_ID)
+> +		fru_id = (uuid_le *)gdata->fru_id;
+> +	if (gdata->validation_bits & CPER_SEC_VALID_FRU_TEXT)
+> +		fru_text = gdata->fru_text;
+> +	sec_type = (uuid_le *)gdata->section_type;
+> +	if (!uuid_le_cmp(*sec_type, CPER_SEC_PLATFORM_MEM)) {
+> +		struct cper_sec_mem_err *mem_err = (void *)(gdata + 1);
+> +		if (gdata->error_data_length >= sizeof(*mem_err))
+> +			__trace_mem_error(fru_id, fru_text, err_number,
+> +					  (u8)gdata->error_severity, mem_err);
+> +	}
+>  
+>  	return NOTIFY_STOP;
+>  }
+> diff --git a/drivers/ras/ras.c b/drivers/ras/ras.c
+> index 4cac43a..da227a3 100644
+> --- a/drivers/ras/ras.c
+> +++ b/drivers/ras/ras.c
+> @@ -23,4 +23,5 @@ static int __init ras_init(void)
+>  }
+>  subsys_initcall(ras_init);
+>  
+> +EXPORT_TRACEPOINT_SYMBOL_GPL(extlog_mem_event);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(mc_event);
+> diff --git a/include/ras/ras_event.h b/include/ras/ras_event.h
+> index acbcbb8..4d3bc92 100644
+> --- a/include/ras/ras_event.h
+> +++ b/include/ras/ras_event.h
+> @@ -9,6 +9,65 @@
+>  #include <linux/edac.h>
+>  #include <linux/ktime.h>
+>  #include <linux/aer.h>
+> +#include <linux/cper.h>
+> +
+> +
+> +/*
+> + * MCE Extended Error Log trace event
+> + *
+> + * These events are generated when hardware detects a corrected or
+> + * uncorrected event.
+> + */
+> +
+> +/* memory trace event */
+> +
+> +TRACE_EVENT(extlog_mem_event,
+> +	TP_PROTO(u32 error_number,
+> +		 u8 etype,
+> +		 u8 severity,
+> +		 u64 pa,
+> +		 u8 pa_mask_lsb,
+> +		 const uuid_le *fru_id,
+> +		 const char *dimm_info,
+> +		 const char *mem_loc,
+> +		 const char *fru_text),
+> +
+> +	TP_ARGS(error_number, etype, severity, pa, pa_mask_lsb, fru_id,
+> +		dimm_info, mem_loc, fru_text),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(u32, error_number)
+> +		__field(u8, etype)
+> +		__field(u8, severity)
+> +		__field(u64, pa)
+> +		__field(u8, pa_mask_lsb)
+> +		__string(dimm_info, dimm_info)
+> +		__string(mem_loc, mem_loc)
+> +		__dynamic_array(char, fru, CPER_REC_LEN)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->error_number = error_number;
+> +		__entry->etype = etype;
+> +		__entry->severity = severity;
+> +		__entry->pa = pa;
+> +		__entry->pa_mask_lsb = pa_mask_lsb;
+> +		__assign_str(dimm_info, dimm_info);
+> +		__assign_str(mem_loc, mem_loc);
+> +		snprintf(__get_dynamic_array(fru), CPER_REC_LEN - 1,
+> +			 "FRU: %pUl %.20s", fru_id, fru_text);
+
+For example, here don't use snprintf(). Save that processing for the
+TP_printk(), as that is done at time of read. Again, only store the
+minimum raw data, and reconstruct it later. Why slow down the fast path?
+
+-- Steve
+
+> +	),
+> +
+> +	TP_printk("%d %s error: %s %s physical addr: %016llx (mask lsb: %x), %s%s",
+> +		  __entry->error_number,
+> +		  cper_severity_str(__entry->severity),
+> +		  cper_mem_err_type_str(__entry->etype),
+> +		  __get_str(dimm_info),
+> +		  __entry->pa,
+> +		  __entry->pa_mask_lsb,
+> +		  __get_str(mem_loc),
+> +		  __get_str(fru))
+> +);
+>  
+>  /*
+>   * Hardware Events Report
+
