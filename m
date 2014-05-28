@@ -1,69 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaE1VWg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 17:22:36 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40467 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaE1VWe (ORCPT
+	id S1755455AbaE1VYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 17:24:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41975 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830AbaE1VYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 17:22:34 -0400
-Date: Wed, 28 May 2014 23:22:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [Patch V3 19/37] x86, irq: introduce mechanisms to support
- dynamically allocate IRQ for IOAPIC
-In-Reply-To: <alpine.DEB.2.10.1405282301310.3952@nanos>
-Message-ID: <alpine.DEB.2.10.1405282320430.3952@nanos>
-References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com> <1401178092-1228-20-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1405271445050.21720@ionos.tec.linutronix.de> <53856D8E.3010401@linux.intel.com>
- <alpine.DEB.2.10.1405282301310.3952@nanos>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 28 May 2014 17:24:50 -0400
+Date: Wed, 28 May 2014 14:24:33 -0700
+From: "tip-bot for David E. Box" <tipbot@zytor.com>
+Message-ID: <tip-6b8f0c8780c71d78624f736d7849645b64cc88b7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.e.box@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1399668248-24199-2-git-send-email-david.e.box@linux.intel.com>
+References: <1399668248-24199-2-git-send-email-david.e.box@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, iosf:
+  Make IOSF driver modular and usable by more drivers
+Git-Commit-ID: 6b8f0c8780c71d78624f736d7849645b64cc88b7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014, Thomas Gleixner wrote:
-> On Wed, 28 May 2014, Jiang Liu wrote:
-> > This is used to work around special non-ISA interrupts with GSI below
-> > NR_IRQS_LEGACY. The original code for the special case is:
-> > /*
-> >  * Provide an identity mapping of gsi == irq except on truly
-> >  * weird platforms that have non isa irqs in the first 16 gsis.
-> >  */
-> > return gsi >= NR_IRQS_LEGACY ? gsi : gsi_top + gsi;
-> 
-> That looks really, really wrong. What's wrong with assigning that irq
-> irq number on those platforms?
-> 
-> The weird stuff is SFI and devicetree, if I understand your code
-> correctly.
-> 
-> So if those platforms do not have actual legacy irqs, what's wrong
-> with giving out the legacy numbers?
+Commit-ID:  6b8f0c8780c71d78624f736d7849645b64cc88b7
+Gitweb:     http://git.kernel.org/tip/6b8f0c8780c71d78624f736d7849645b64cc88b7
+Author:     David E. Box <david.e.box@linux.intel.com>
+AuthorDate: Fri, 9 May 2014 13:44:05 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 9 May 2014 14:56:15 -0700
 
-Though if it's a real issue, we can simply mark the ioapic on those
-devices as DYNAMIC and avoid that whole magic.
+x86, iosf: Make IOSF driver modular and usable by more drivers
 
-Thanks,
+Currently drivers that run on non-IOSF systems (Core/Xeon) can't use the IOSF
+driver on SOC's without selecting it which forces an unnecessary and limiting
+dependency. Provides dummy functions to allow these modules to conditionally
+use the driver on IOSF equipped platforms without impacting their ability to
+compile and load on non-IOSF platforms. Build default m to ensure availability
+on x86 SOC's.
 
-	tglx
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Link: http://lkml.kernel.org/r/1399668248-24199-2-git-send-email-david.e.box@linux.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig                |  7 ++-----
+ arch/x86/include/asm/iosf_mbi.h | 33 +++++++++++++++++++++++++++++++++
+ arch/x86/kernel/iosf_mbi.c      |  7 +++++++
+ 3 files changed, 42 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 25d2c6f..f1304d3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2375,12 +2375,9 @@ config X86_DMA_REMAP
+ 	depends on STA2X11
+ 
+ config IOSF_MBI
+-	bool
++	tristate
++	default m
+ 	depends on PCI
+-	---help---
+-	  To be selected by modules requiring access to the Intel OnChip System
+-	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
+-	  enumerable by PCI.
+ 
+ source "net/Kconfig"
+ 
+diff --git a/arch/x86/include/asm/iosf_mbi.h b/arch/x86/include/asm/iosf_mbi.h
+index 8e71c79..1a91a36 100644
+--- a/arch/x86/include/asm/iosf_mbi.h
++++ b/arch/x86/include/asm/iosf_mbi.h
+@@ -50,6 +50,10 @@
+ #define BT_MBI_PCIE_READ	0x00
+ #define BT_MBI_PCIE_WRITE	0x01
+ 
++#if IS_ENABLED(CONFIG_IOSF_MBI)
++
++bool iosf_mbi_available(void);
++
+ /**
+  * iosf_mbi_read() - MailBox Interface read command
+  * @port:	port indicating subunit being accessed
+@@ -87,4 +91,33 @@ int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
+  */
+ int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
+ 
++#else /* CONFIG_IOSF_MBI is not enabled */
++static inline
++bool iosf_mbi_available(void)
++{
++	return false;
++}
++
++static inline
++int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
++{
++	WARN(1, "IOSF_MBI driver not available");
++	return -EPERM;
++}
++
++static inline
++int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
++{
++	WARN(1, "IOSF_MBI driver not available");
++	return -EPERM;
++}
++
++static inline
++int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
++{
++	WARN(1, "IOSF_MBI driver not available");
++	return -EPERM;
++}
++#endif /* CONFIG_IOSF_MBI */
++
+ #endif /* IOSF_MBI_SYMS_H */
+diff --git a/arch/x86/kernel/iosf_mbi.c b/arch/x86/kernel/iosf_mbi.c
+index c3aae66..f4ff978 100644
+--- a/arch/x86/kernel/iosf_mbi.c
++++ b/arch/x86/kernel/iosf_mbi.c
+@@ -177,6 +177,13 @@ int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
+ }
+ EXPORT_SYMBOL(iosf_mbi_modify);
+ 
++bool iosf_mbi_available(void)
++{
++	/* Mbi isn't hot-pluggable. No remove routine is provided */
++	return mbi_pdev;
++}
++EXPORT_SYMBOL(iosf_mbi_available);
++
+ static int iosf_mbi_probe(struct pci_dev *pdev,
+ 			  const struct pci_device_id *unused)
+ {
