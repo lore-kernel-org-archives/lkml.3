@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaE1Et4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 00:49:56 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23435 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaE1Etx convert rfc822-to-8bit (ORCPT
+	id S1753922AbaE1EwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 00:52:05 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:32404 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473AbaE1EwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 00:49:53 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-11-53856aee43a4
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Mike Turquette'" <mturquette@linaro.org>,
-        "'Tarek Dakhran'" <t.dakhran@samsung.com>,
-        linux-kernel@vger.kernel.org
-Cc: "'Rob Herring'" <robh+dt@kernel.org>, "'Pawel Moll'" <pawel.moll@arm.com>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
-        "'Kumar Gala'" <galak@codeaurora.org>,
-        "'Rob Landley'" <rob@landley.net>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Vyacheslav Tyrtov'" <v.tyrtov@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Heiko Stuebner'" <heiko@sntech.de>,
-        "'Romain Naour'" <romain.naour@openwide.fr>,
-        "'Chander Kashyap'" <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Tarek Dakhran'" <t.dakhran@gmail.com>,
-        "'Tarek Dakhran'" <t.dakhran@samsung.com>,
-        "'Jonghwan Choi'" <jhbird.choi@samsung.com>
-References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
- <1401074613-29227-3-git-send-email-t.dakhran@samsung.com>
- <20140528004116.7816.69646@quantum>
-In-reply-to: <20140528004116.7816.69646@quantum>
-Subject: RE: [PATCH v11 2/3] clk: exynos5410: register clocks using common
- clock framework
-Date: Wed, 28 May 2014 13:49:49 +0900
-Message-id: <01a201cf7a30$41ecca90$c5c65fb0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQFLA9759H0kHQ27SjqSEX8Gj5vNBQJBHm7eAR7viIycQ1ckEA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA5WSa0hTYRjHeXfOzi6inbzkm2TJoDua1/kuo8QPcehDRFFSBjrXQa2pY9PI
-	T5m2vG26FFNHWcrKnLrJNDQpWUsTinnJmoopmnndWpAiXrDSHT/4tW+/933+D7+Hh4eLeU6w
-	/bgpaRm0PE0sFRB8/NOfmZBA503lpeAhDUSlBjMLTRpHcPS0q5eNShw1bPT3u52NehfqAdLl
-	uiFrjoODTFM2Nqp5oMPRYMdjAlX2dbLQ6KA7ej40wELTmgECaSqacGSYr8CR8m0XB7Wu5gO0
-	rvqNIePsR4CMlXYcfajUAVReucKJhlRjdSOg7ueqCGqwWM2iNvRzGPVaO8ah6uuWCMqkLyCo
-	hYYqNvXN9oagWnR3qQUbThW36gHVZqvGqEXT/gse1/inbtDSlNu0/MTpBH6yyRwrW/a6sz44
-	i2cD565CwOVCMhwqDbxCwNvEPbB/3EgUAj7Xk3wBYHNBEZsphMOcJ/e2C7UALmrWcOaxAeDU
-	RDVrK0WQR+D7XzOcLfYmM+FGx2dXCCMXCViT37PdUQfgT8cjVwePDIZNagexxV7kddjZv+Tq
-	xsmDcHzW7HK7kyLYVm4iGN4NV8rG8S3GyMOwtLoWY/g4/OHs3541ALZb7YCZIgYOqBoAk/GG
-	nXNOwGTqeNBansW4SLhcZsGZXfhDkxljInvhu5fDuAZA7Q6zdodZu8Os3WF4BnA98KFlEpki
-	MUkeEqQQpyoy05KCJOmpJsBcl7odjJqjLECyqX+I+flI0jevLy0jPiRMGIoiwiPCQiNFwv/7
-	Fvi6J04mXvQkk8QZ9C2altHyeHmmlFZYAIvL88sGpAjPHVF2yKTCvPDuBkGWKOZkn2PGe2Xc
-	7avBIy+S72xhx+kkEz0VzcOqfbaZV/rz/JK4iGzRcOyhucv20auRE0UOq/3MnKEpoVU5NeIr
-	VU9fyas6i86tcU3TX3rm18Qt0cZAgU2fGCc52r1qifIfO6Dk8p1ewoAmu5ifLsAVyeKQY5hc
-	If4Hnf474nMDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPJsWRmVeSWpSXmKPExsVy+t9jAd13Wa3BBv/fC1hMWneAyeLh+pss
-	FvOPnGO16H+zkNXi/6PXrBbnXq1ktFjSzG1xtukNu8Wmx9dYLRa2LWGxuLxrDpvFjPP7mCxu
-	X+a1WHr9IpPF0wkX2SwmTF/LYrHu5XQWi9a9R9gttvzsYLT43fOJ2WL981OMFutnvGaxODZj
-	CaPF1Bk/2B0kPNbMW8Po0dLcw+Zxua+XyePvqhfMHjtn3WX3WLn8C5vHplWdbB6vVs9k9bhz
-	bQ+bx+Yl9R6vrrF49G1Zxeix/do8Zo/Pm+QC+KIaGG0yUhNTUosUUvOS81My89JtlbyD453j
-	Tc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgKGgpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8zYdCC84Jtwxe/Lz1kaGN/xdzFyckgImEg0zW1kg7DFJC7cWw9kc3EICSxi
-	lPg84RcLhPOXUeLxg3lMIFVsAhoSh98/YwexRQRKJf7uugRWxCzwmU1iYcdxqI7ljBJv30wD
-	6+AUMJBY2/sGbIewQIzEvgtfwLpZBFQl7j0/wApi8wpYSmyfuokNwhaU+DH5HguIzSygLjFp
-	3iJmCFtb4sm7C6wQtypI7Dj7mhHiCieJiz2rGSFqRCT2vXjHOIFRaBaSUbOQjJqFZNQsJC0L
-	GFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQnx2fSOxhXNVgcYhTgYFTi4T2wuCVYiDWx
-	rLgy9xCjBAezkgjvn4DWYCHelMTKqtSi/Pii0pzU4kOMyUCfTmSWEk3OBybuvJJ4Q2MTMyNL
-	IzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpgLGna94mPUyk55VhQ9vSU+n2y
-	E6aevjpzrZByMfvJyOZT956pHCpf8eCmY8yx2va8h8ovw3rfVD+I/bgyNIIlnjGH87BfwNJ7
-	n1VnT0uL//DDNcvekF0y59H0vKY04+A3nYv7Qj7daZ33bOPHbS6nf/5/rHLN9qnn2jPeu58u
-	+nj7QNKj33NbFyqxFGckGmoxFxUnAgDjC9E70gMAAA==
+	Wed, 28 May 2014 00:52:03 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-b0-53856b6f18bd
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com
+Subject: [PATCH] extcon: Reorder the sequence of extcon device driver
+ alphabetically
+Date: Wed, 28 May 2014 13:51:54 +0900
+Message-id: <1401252714-32150-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsWyRsSkQDc/uzXYoOURl8X1L89ZLS7vmsNm
+	cbtxBZsDs0ffllWMHp83yQUwRXHZpKTmZJalFunbJXBldM/7xFJwV7TiRM9DlgbG94JdjJwc
+	EgImEn9uvmeEsMUkLtxbz9bFyMUhJLCUUWL646+MMEWnT/QzQyQWMUpsnNzMDuE0MUmcmL+W
+	FaSKTUBLYv+LG2wgtoiAgsTm3mdgcWYBY4mpJ44zg9jCAmES2w5+ZQKxWQRUJVZdfM0OYvMK
+	uEr0Tehjg9gmJ/FhzyN2CPsMm8TMucoQ9QIS3yYfYuli5ACKy0psOsAMUSIpcXDFDZYJjIIL
+	GBlWMYqmFiQXFCelFxnqFSfmFpfmpesl5+duYgQG3Ol/z3p3MN4+YH2IMRlo3ERmKdHkfGDA
+	5pXEGxqbGVmYmpgaG5lbmpEmrCTOm/QwKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY7L3
+	HRPd72c6ahNLlObP1CmuvMrsxF+jH6Gz6OXLt0+OfnvtmD/tdZE/G79GP4N+IJt7trh8rdC0
+	PfprP0ioM980KWCP+f/wTMqa4+37PXaJr/Lu+56vaf+l1I1H4tfG1Be/w2u/nPNIXLhv5f6w
+	hmpV2X+zDY0ljy6/VSNnrB3wZlqyr8VJJZbijERDLeai4kQA1VB9F04CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t9jAd387NZgg21PmSyuf3nOanF51xw2
+	i9uNK9gcmD36tqxi9Pi8SS6AKaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJc
+	SSEvMTfVVsnFJ0DXLTMHaImSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCG
+	MaN73ieWgruiFSd6HrI0ML4X7GLk5JAQMJE4faKfGcIWk7hwbz1bFyMXh5DAIkaJjZOb2SGc
+	JiaJE/PXsoJUsQloSex/cYMNxBYRUJDY3PsMLM4sYCwx9cRxsEnCAmES2w5+ZQKxWQRUJVZd
+	fM0OYvMKuEr0Tehjg9gmJ/FhzyP2CYzcCxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIE
+	B/Qz6R2MqxosDjEKcDAq8fAeWNwSLMSaWFZcmXuIUYKDWUmE909Aa7AQb0piZVVqUX58UWlO
+	avEhxmSg7ROZpUST84HRllcSb2hsYmZkaWRuaGFkbE6asJI478FW60AhgfTEktTs1NSC1CKY
+	LUwcnFINjC3Vdicv3Lr12z7PdYv7JCbZWx/EKoLnyX/zm7lw4s0e/oYPq764zNfftSAy/mac
+	ZsX+xRuFEpYtcH9quOnidJXadIMfG3ZfY+D25Ln//oHSs6KV3Q08my1nbOa5FchcHV56msvu
+	y6KJkwMFDCdJAWPhhOjHvb3ev+ykHn1xdv+ZGGp14Mena0osxRmJhlrMRcWJAMby8EGsAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -84,71 +44,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Turquette wrote:
-> 
-> Quoting Tarek Dakhran (2014-05-25 20:23:32)
-> > The EXYNOS5410 clocks are statically listed and registered
-> > using the Samsung specific common clock helper functions.
-> >
-> > Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-> > Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-> > ---
-> >  .../devicetree/bindings/clock/exynos5410-clock.txt |   45 +++++
-> >  drivers/clk/samsung/Makefile                       |    1 +
-> >  drivers/clk/samsung/clk-exynos5410.c               |  209
-> ++++++++++++++++++++
-> >  include/dt-bindings/clock/exynos5410.h             |   33 ++++
-> >  4 files changed, 288 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-
-> clock.txt
-> >  create mode 100644 drivers/clk/samsung/clk-exynos5410.c
-> >  create mode 100644 include/dt-bindings/clock/exynos5410.h
-> >
-> > diff --git a/Documentation/devicetree/bindings/clock/exynos5410-
-> clock.txt b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
-> > new file mode 100644
-> > index 0000000..aeab635
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
-> > @@ -0,0 +1,45 @@
-> > +* Samsung Exynos5410 Clock Controller
-> > +
-> > +The Exynos5410 clock controller generates and supplies clock to various
-> > +controllers within the Exynos5410 SoC.
-> > +
-> > +Required Properties:
-> > +
-> > +- compatible: should be "samsung,exynos5410-clock"
-> > +
-> > +- reg: physical base address of the controller and length of memory
-> mapped
-> > +  region.
-> > +
-> > +- #clock-cells: should be 1.
-> > +
-> > +All available clocks are defined as preprocessor macros in
-> > +dt-bindings/clock/exynos5410.h header and can be used in device
-> > +tree sources.
-> > +
-> > +External clock:
-> > +
-> > +There is clock that is generated outside the SoC. It
-> > +is expected that it is defined using standard clock bindings
-> > +with following clock-output-name:
-> > +
-> > + - "fin_pll" - PLL input clock from XXTI
-> 
-> Does fin_pll feed into the exynos5410-clock controller? If so, should
-> the example clock-controller node below have a clocks and clock-names
-> property?
-> 
-Well, it is fixed clocks and generated outside of the SoC...so maybe the properties are not required?
+This patch reorder the sequence of extcon device diver alphabetically
+to imporbe readability.
 
-BTW, I've applied this series with Tomasz Figa's reviewed tag and sent out to arm-soc today so if any concerns on this, please let me know immediately.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ drivers/extcon/Kconfig  | 28 ++++++++++++++--------------
+ drivers/extcon/Makefile |  6 +++---
+ 2 files changed, 17 insertions(+), 17 deletions(-)
 
-> Otherwise patch looks good.
-> 
-
-Thanks,
-Kukjin
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index aebde48..9125eba 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -14,6 +14,20 @@ if EXTCON
+ 
+ comment "Extcon Device Drivers"
+ 
++config EXTCON_ADC_JACK
++	tristate "ADC Jack extcon support"
++	depends on IIO
++	help
++	  Say Y here to enable extcon device driver based on ADC values.
++
++config EXTCON_ARIZONA
++	tristate "Wolfson Arizona EXTCON support"
++	depends on MFD_ARIZONA && INPUT && SND_SOC
++	help
++	  Say Y here to enable support for external accessory detection
++	  with Wolfson Arizona devices. These are audio CODECs with
++	  advanced audio accessory detection support.
++
+ config EXTCON_GPIO
+ 	tristate "GPIO extcon support"
+ 	depends on GPIOLIB
+@@ -21,12 +35,6 @@ config EXTCON_GPIO
+ 	  Say Y here to enable GPIO based extcon support. Note that GPIO
+ 	  extcon supports single state per extcon instance.
+ 
+-config EXTCON_ADC_JACK
+-	tristate "ADC Jack extcon support"
+-	depends on IIO
+-	help
+-	  Say Y here to enable extcon device driver based on ADC values.
+-
+ config EXTCON_MAX14577
+ 	tristate "MAX14577/77836 EXTCON Support"
+ 	depends on MFD_MAX14577
+@@ -55,14 +63,6 @@ config EXTCON_MAX8997
+ 	  Maxim MAX8997 PMIC. The MAX8997 MUIC is a USB port accessory
+ 	  detector and switch.
+ 
+-config EXTCON_ARIZONA
+-	tristate "Wolfson Arizona EXTCON support"
+-	depends on MFD_ARIZONA && INPUT && SND_SOC
+-	help
+-	  Say Y here to enable support for external accessory detection
+-	  with Wolfson Arizona devices. These are audio CODECs with
+-	  advanced audio accessory detection support.
+-
+ config EXTCON_PALMAS
+ 	tristate "Palmas USB EXTCON support"
+ 	depends on MFD_PALMAS
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index bf7861e..e48abc6 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -1,12 +1,12 @@
+-#
++
+ # Makefile for external connector class (extcon) devices
+ #
+ 
+ obj-$(CONFIG_EXTCON)		+= extcon-class.o
+-obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
+ obj-$(CONFIG_EXTCON_ADC_JACK)	+= extcon-adc-jack.o
++obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
++obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
+ obj-$(CONFIG_EXTCON_MAX14577)	+= extcon-max14577.o
+ obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+-obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+ obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
+-- 
+1.8.0
 
