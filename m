@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021AbaE1L1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 07:27:25 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33693 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaE1L1Y (ORCPT
+	id S1753183AbaE1L2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:28:06 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49865 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752767AbaE1L2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 07:27:24 -0400
-Date: Wed, 28 May 2014 04:27:21 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        Masanari Iida <standby24x7@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi: mvsas: mv_sas.c:  Fix for possible null pointer
- dereference
-Message-ID: <20140528112721.GC11953@infradead.org>
-References: <1400429547-11342-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Wed, 28 May 2014 07:28:04 -0400
+Date: Wed, 28 May 2014 12:27:38 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Larry Bassel <larry.bassel@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: [PATCH v5 1/2] arm64: adjust el0_sync so that a function can be
+ called
+Message-ID: <20140528112738.GE15222@arm.com>
+References: <1401130573-7443-1-git-send-email-larry.bassel@linaro.org>
+ <1401130573-7443-2-git-send-email-larry.bassel@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400429547-11342-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1401130573-7443-2-git-send-email-larry.bassel@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 18, 2014 at 06:12:26PM +0200, Rickard Strandqvist wrote:
-> There is otherwise a risk of a possible null pointer dereference.
-> 
-> Was largely found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Hi Larry,
 
-Looks good, although I'd love to know how a NULL dev could even happen
-here.
+On Mon, May 26, 2014 at 07:56:12PM +0100, Larry Bassel wrote:
+> To implement the context tracker properly on arm64,
+> a function call needs to be made after debugging and
+> interrupts are turned on, but before the lr is changed
+> to point to ret_to_user(). If the function call
+> is made after the lr is changed the function will not
+> return to the correct place.
+> 
+> For similar reasons, defer the setting of x0 so that
+> it doesn't need to be saved around the function call
+> (save far_el1 in x26 temporarily instead).
+> 
+> Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+[...]
+
+> @@ -476,23 +481,27 @@ el0_undef:
+>  	// enable interrupts before calling the main handler
+>  	enable_dbg_and_irq
+>  	mov	x0, sp
+> +	adr	lr, ret_to_user
+>  	b	do_undefinstr
+>  el0_dbg:
+>  	/*
+>  	 * Debug exception handling
+>  	 */
+>  	tbnz	x24, #0, el0_inv		// EL0 only
+> -	mrs	x0, far_el1
+> +	mrs	x26, far_el1
+> +	mov	x0, x26
+>  	mov	x1, x25
+>  	mov	x2, sp
+>  	bl	do_debug_exception
+>  	enable_dbg
+> +	mov	x0, x26
+>  	b	ret_to_user
+
+Why have you added this mov instruction?
+
+Will
