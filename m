@@ -1,154 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaE1OOG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:14:06 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:60638 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753286AbaE1OOE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:14:04 -0400
-Date: Wed, 28 May 2014 10:14:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au, mst@redhat.com,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140528101401.43853563@gandalf.local.home>
-In-Reply-To: <1401260039-18189-2-git-send-email-minchan@kernel.org>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754629AbaE1OOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:14:09 -0400
+Received: from mx2.comprocs.com ([12.186.155.30]:61126 "HELO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753286AbaE1OOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 10:14:07 -0400
+X-BYPSHEADER: 2487585
+X-SMScore: -400
+Message-ID: <5385EF2B.1000003@compro.net>
+Date: Wed, 28 May 2014 10:14:03 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        DaeSeok Youn <daeseok.youn@gmail.com>
+CC: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH V2] staging: dgap: implement proper error handling in
+ dgap_firmware_load()
+References: <20140527070937.GA21621@devel.8.8.4.4> <20140527102002.GI17724@mwanda> <CAHb8M2AceJeFv-KonF+bAFJ-+xssFxx5ytEKhMNZ1c3xm2jvZA@mail.gmail.com> <20140528070233.GP17724@mwanda> <CAHb8M2ABVCaoNR0m5mLmWv-ei60PDRu462QTqDgEJwAf63oteg@mail.gmail.com> <1203682594.1176349.1401271946432.JavaMail.root@mx2.compro.net>
+In-Reply-To: <1203682594.1176349.1401271946432.JavaMail.root@mx2.compro.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/28/2014 06:11 AM, Dan Carpenter wrote:
+> On Wed, May 28, 2014 at 06:29:38PM +0900, DaeSeok Youn wrote:
+>>> In your patch it has:
+>>> +       dgap_tty_uninit(brd, false);
+>>>
+>>> But it should only be "false" if dgap_tty_init() failed.  If
+>>> dgap_tty_register_ports() fails then it should be "true".  Another
+>> Yes, you're right. There were no error handle for tty_port_register_device() and
+>> dgap_create_tty_sysfs() in dgap_tty_register_ports(). I didn't catch it. :-(
+>> It need to add error handlers for them, right?
+> 
+> Eventually, yes.  But I don't see a simple way to fix
+> dgap_firmware_load() until after the code is cleaned up.
+> 
+>>
+>>> problem is that as you say, the earlier function are allocating
+>>> resources like dgap_tty_register() but only the last two function calls
+>>> have a "goto err_cleanup;" so the error handling is incomplete.
+>> So remove "goto" in dgap_firmware_load() and add error handler in
+>> dgap_tty_init()
+> 
+> In the current code there isn't a goto in dgap_firmware_load().  Remove
+> the call to dgap_tty_uninit() and add error handling in dgap_tty_init().
+> 
+> That will clean up the code, and fix some NULL dereference bugs inside
+> dgap_tty_uninit().
+> 
+>> and dgap_tty_register_ports(), right?
+> 
+> Inside dgap_tty_register_ports(), then we should add a
+> kfree(brd->serial_ports) if the "brd->printer_ports" allocation fails.
+> That is not a complete fix, but it is a part fix and it is clean.
+> 
+>>
+>> I have a question of this. In case of this, how to complete the error handling?
+> 
+> [patch 1/x] staging: dgap: remove useless dgap_probe1() function
+> [patch 2/x] staging: dgap: unwind on error in dgap_found_board()
+> [patch 3/x] staging: dgap: remove bogus null test in dgap_tty_init()
+> 	The ->channels[] were set to null in dgap_found_board().
+> [patch 4/x] staging: dgap: unwind on error in dgap_tty_init()
+> 	This also removes the call to dgap_tty_uninit() in
+> 	dgap_firmware_load()
+> [patch 5/x] staging: dgap: unwind on error in dgap_tty_register_ports()
+> [patch 6/x] staging: dgap: make dgap_config_buf a local buffer
+> [patch 7/x] staging: dgap: pass "dgap_numboards" to dgap_found_board()
+> 	instead of using a global variable
+> [patch 8/x] staging: dgap: pass "brd" to dgap_after_config_loaded()
+> 	instead of passing "dgap_numboards" and looking up brd again.
+> [patch 9/x] staging: dgap: rename dgap_finalize_board_init() to dgap_request_irq()
+> 
+> In the end, I hate dgap_tty_uninit() because it doesn't match
+> dgap_tty_init() at all.  It's poorly named.  We should rename it and
+> make another dgap_tty_init() which just sets the ->channels[] to NULL.
+> 
+> [patch x/x] staging: dgap: introduce dgap_tty_unregister()
+> 	This is currently done in dgap_tty_uninit(), which is the wrong
+> 	place.
+> 
+> I have started using a new todo list tag in my emails.  So I'm adding
+> this stuff to the todo list.
+> 
+> TODO-list: 2014-05-28: dgap: cleanups and bug fixes.
+> 
 
-This looks like something that Linus should be involved in too. He's
-been critical in the past about stack usage.
+I can think of some more things that could be added to that TODO-list.
 
-On Wed, 28 May 2014 15:53:59 +0900
-Minchan Kim <minchan@kernel.org> wrote:
+All the configuration file stuff needs to go away. As Greg previously
+said, we don't read configurations files in kernel modules. I'm pretty
+sure all cards supported have unique device IDs, even though notes and
+code in this driver imply otherwise. As long as they all do, with the
+exception of those cards that use port extenders, I think this could be
+done. Maybe we will never be able to support "port extenders". Unclear
+yet. When we do this, the useintr and altpin configuration file stuff
+will need converted to module options.
 
-> While I play inhouse patches with much memory pressure on qemu-kvm,
-> 3.14 kernel was randomly crashed. The reason was kernel stack overflow.
-> 
-> When I investigated the problem, the callstack was a little bit deeper
-> by involve with reclaim functions but not direct reclaim path.
-> 
-> I tried to diet stack size of some functions related with alloc/reclaim
-> so did a hundred of byte but overflow was't disappeard so that I encounter
-> overflow by another deeper callstack on reclaim/allocator path.
-> 
-> Of course, we might sweep every sites we have found for reducing
-> stack usage but I'm not sure how long it saves the world(surely,
-> lots of developer start to add nice features which will use stack
-> agains) and if we consider another more complex feature in I/O layer
-> and/or reclaim path, it might be better to increase stack size(
-> meanwhile, stack usage on 64bit machine was doubled compared to 32bit
-> while it have sticked to 8K. Hmm, it's not a fair to me and arm64
-> already expaned to 16K. )
-> 
-> So, my stupid idea is just let's expand stack size and keep an eye
-> toward stack consumption on each kernel functions via stacktrace of ftrace.
-> For example, we can have a bar like that each funcion shouldn't exceed 200K
-> and emit the warning when some function consumes more in runtime.
-> Of course, it could make false positive but at least, it could make a
-> chance to think over it.
-> 
-> I guess this topic was discussed several time so there might be
-> strong reason not to increase kernel stack size on x86_64, for me not
-> knowing so Ccing x86_64 maintainers, other MM guys and virtio
-> maintainers.
+There was also some ioctl code removed entirely before the driver was
+merged into staging. It was specific to the dgap_mgmt device (currently
+dead as a result) that allowed userland some real-time monitoring and
+configuration changes. These userland utilities were part of the
+original Digi package and I'm sure are used by some. I personally never
+used them, but...
 
-I agree with Boris that if this goes in, it should be a config option.
-Or perhaps selected by those file systems that need it. I hate to have
-16K stacks on a box that doesn't have that much memory, but also just
-uses ext2.
+Then there are some things you recommended in a previous email that I
+haven't got to yet?
 
--- Steve
+Is that TODO-list going to be commited?
 
-> 
-> [ 1065.604404] kworker/-5766    0d..2 1071625990us : stack_trace_call:         Depth    Size   Location    (51 entries)
-> [ 1065.604404]         -----    ----   --------
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   0)     7696      16   lookup_address+0x28/0x30
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   1)     7680      16   _lookup_address_cpa.isra.3+0x3b/0x40
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   2)     7664      24   __change_page_attr_set_clr+0xe0/0xb50
-> [ 1065.604404] kworker/-5766    0d..2 1071625991us : stack_trace_call:   3)     7640     392   kernel_map_pages+0x6c/0x120
-> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   4)     7248     256   get_page_from_freelist+0x489/0x920
-> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   5)     6992     352   __alloc_pages_nodemask+0x5e1/0xb20
-> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   6)     6640       8   alloc_pages_current+0x10f/0x1f0
-> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   7)     6632     168   new_slab+0x2c5/0x370
-> [ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   8)     6464       8   __slab_alloc+0x3a9/0x501
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:   9)     6456      80   __kmalloc+0x1cb/0x200
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  10)     6376     376   vring_add_indirect+0x36/0x200
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  12)     5856     288   __virtblk_add_req+0xda/0x1b0
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  13)     5568      96   virtio_queue_rq+0xd3/0x1d0
-> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  14)     5472     128   __blk_mq_run_hw_queue+0x1ef/0x440
-> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  15)     5344      16   blk_mq_run_hw_queue+0x35/0x40
-> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  16)     5328      96   blk_mq_insert_requests+0xdb/0x160
-> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  17)     5232     112   blk_mq_flush_plug_list+0x12b/0x140
-> [ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  18)     5120     112   blk_flush_plug_list+0xc7/0x220
-> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  19)     5008      64   io_schedule_timeout+0x88/0x100
-> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  20)     4944     128   mempool_alloc+0x145/0x170
-> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  21)     4816      96   bio_alloc_bioset+0x10b/0x1d0
-> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  22)     4720      48   get_swap_bio+0x30/0x90
-> [ 1065.604404] kworker/-5766    0d..2 1071625995us : stack_trace_call:  23)     4672     160   __swap_writepage+0x150/0x230
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  24)     4512      32   swap_writepage+0x42/0x90
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  25)     4480     320   shrink_page_list+0x676/0xa80
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  26)     4160     208   shrink_inactive_list+0x262/0x4e0
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  27)     3952     304   shrink_lruvec+0x3e1/0x6a0
-> [ 1065.604404] kworker/-5766    0d..2 1071625996us : stack_trace_call:  28)     3648      80   shrink_zone+0x3f/0x110
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  29)     3568     128   do_try_to_free_pages+0x156/0x4c0
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  30)     3440     208   try_to_free_pages+0xf7/0x1e0
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  31)     3232     352   __alloc_pages_nodemask+0x783/0xb20
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  32)     2880       8   alloc_pages_current+0x10f/0x1f0
-> [ 1065.604404] kworker/-5766    0d..2 1071625997us : stack_trace_call:  33)     2872     200   __page_cache_alloc+0x13f/0x160
-> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  34)     2672      80   find_or_create_page+0x4c/0xb0
-> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  35)     2592      80   ext4_mb_load_buddy+0x1e9/0x370
-> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  36)     2512     176   ext4_mb_regular_allocator+0x1b7/0x460
-> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  37)     2336     128   ext4_mb_new_blocks+0x458/0x5f0
-> [ 1065.604404] kworker/-5766    0d..2 1071625998us : stack_trace_call:  38)     2208     256   ext4_ext_map_blocks+0x70b/0x1010
-> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  39)     1952     160   ext4_map_blocks+0x325/0x530
-> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  40)     1792     384   ext4_writepages+0x6d1/0xce0
-> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  41)     1408      16   do_writepages+0x23/0x40
-> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  42)     1392      96   __writeback_single_inode+0x45/0x2e0
-> [ 1065.604404] kworker/-5766    0d..2 1071625999us : stack_trace_call:  43)     1296     176   writeback_sb_inodes+0x2ad/0x500
-> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  44)     1120      80   __writeback_inodes_wb+0x9e/0xd0
-> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  45)     1040     160   wb_writeback+0x29b/0x350
-> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  46)      880     208   bdi_writeback_workfn+0x11c/0x480
-> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  47)      672     144   process_one_work+0x1d2/0x570
-> [ 1065.604404] kworker/-5766    0d..2 1071626000us : stack_trace_call:  48)      528     112   worker_thread+0x116/0x370
-> [ 1065.604404] kworker/-5766    0d..2 1071626001us : stack_trace_call:  49)      416     240   kthread+0xf3/0x110
-> [ 1065.604404] kworker/-5766    0d..2 1071626001us : stack_trace_call:  50)      176     176   ret_from_fork+0x7c/0xb0
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  arch/x86/include/asm/page_64_types.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-> index 8de6d9cf3b95..678205195ae1 100644
-> --- a/arch/x86/include/asm/page_64_types.h
-> +++ b/arch/x86/include/asm/page_64_types.h
-> @@ -1,7 +1,7 @@
->  #ifndef _ASM_X86_PAGE_64_DEFS_H
->  #define _ASM_X86_PAGE_64_DEFS_H
->  
-> -#define THREAD_SIZE_ORDER	1
-> +#define THREAD_SIZE_ORDER	2
->  #define THREAD_SIZE  (PAGE_SIZE << THREAD_SIZE_ORDER)
->  #define CURRENT_MASK (~(THREAD_SIZE - 1))
->  
+Regards
+Mark
 
