@@ -1,117 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345AbaE1VJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 17:09:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40404 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaE1VJC (ORCPT
+	id S932358AbaE1VJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 17:09:51 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:48024 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695AbaE1VJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 17:09:02 -0400
-Date: Wed, 28 May 2014 23:08:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [Patch V3 19/37] x86, irq: introduce mechanisms to support
- dynamically allocate IRQ for IOAPIC
-In-Reply-To: <53856D8E.3010401@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1405282301310.3952@nanos>
-References: <1401178092-1228-1-git-send-email-jiang.liu@linux.intel.com> <1401178092-1228-20-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1405271445050.21720@ionos.tec.linutronix.de> <53856D8E.3010401@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 28 May 2014 17:09:49 -0400
+Message-ID: <53865071.5060501@ahsoftware.de>
+Date: Wed, 28 May 2014 23:09:05 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Brian Norris <computersforpeace@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 01/27] mtd: nand: introduce function to fix a common bug
+ in most nand-drivers not showing a device in sysfs
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de> <1401142372-14148-2-git-send-email-holler@ahsoftware.de> <20140528084344.GB4285@norris-Latitude-E6410> <53863056.2070405@ahsoftware.de> <20140528201018.GA3599@ld-irv-0074>
+In-Reply-To: <20140528201018.GA3599@ld-irv-0074>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014, Jiang Liu wrote:
-> On 2014/5/28 3:58, Thomas Gleixner wrote:
-> > So you have these cases covered here:
-> > 
-> > 1) The ACPI case of secondary ioapics. You only have the strict 1:1
-> >    mapping for the first ioapic
-> > 
-> > 2) The gsi < NR_IRQS_LEGACY case where you have two options:
-> > 
-> >     a) Let the core create a random virq number if ioapic_identity_map
-> >        is 0
-> > 
-> >        ioapic_identity_map is only set by SFI and devicetree
-> > 
-> >        So in all other cases we fall into that code path for all
-> >        legacy interrupts. So how is that supposed to work lets say for
-> >        i8042 which has hardcoded irq 1 and 12?
-> > 
-> >        irq_create_mapping(1)
-> >        
-> > 	    hint = 1 % nr_irqs; --> 1
-> > 	    virq = irq_alloc_desc_from(hint, of_node_to_nid(domain->of_node));
-> > 
-> > 	    This returns something >= 16, because the irq descriptors
-> > 	    for 0-15 (LEGACY) are allocated already.
-> > 
-> >        The pin association works, but how is the i8042 driver supposed
-> >        to figure out that it should request the virq >=16 which was
-> >        created instead of the hardcoded 1 ?
-> This is used to work around special non-ISA interrupts with GSI below
-> NR_IRQS_LEGACY. The original code for the special case is:
-> /*
->  * Provide an identity mapping of gsi == irq except on truly
->  * weird platforms that have non isa irqs in the first 16 gsis.
->  */
-> return gsi >= NR_IRQS_LEGACY ? gsi : gsi_top + gsi;
+Am 28.05.2014 22:10, schrieb Brian Norris:
+> On Wed, May 28, 2014 at 08:52:06PM +0200, Alexander Holler wrote:
+>> Am 28.05.2014 10:43, schrieb Brian Norris:
+>>> On Tue, May 27, 2014 at 12:12:26AM +0200, Alexander Holler wrote:
+>>>> +{
+>>>> +	mtd->priv	= priv;
+>>>
+>>> I don't think you should hide this one here. It will be quite obvious if
+>>> a driver didn't stash its private data but tries to access it later. Are
+>>> there any drivers that missed this?
+>>
+>> No, it just saves a line of source in all drivers and I think it
+>> fits there. I don't understand why do you think it is hidden.
+>
+> The function name doesn't make it obvious what it's doing. So all code
+> readers will have to follow the definition to see what it's doing. But
+> this point is not that important, so I won't argue.
 
-That looks really, really wrong. What's wrong with assigning that irq
-irq number on those platforms?
+So you think every function does hide important things? How's about C?
+It hides which registers are used. Maybe we should go back to assembler.
+But I prefer to just press ctrl-} in vim.
 
-The weird stuff is SFI and devicetree, if I understand your code
-correctly.
+>>>> +	mtd->owner	= pdev->dev.driver->owner;
+>>>> +	mtd->dev.parent	= &pdev->dev;
+>>>> +	mtd->name	= pdev->dev.driver->name;
+>>>
+>>> I think this is a little dangerous. You're potentially clobbering the
+>>> name that a driver already chose here. And why did you pick to use the
 
-So if those platforms do not have actual legacy irqs, what's wrong
-with giving out the legacy numbers?
+It's a dangerous world. And ordering sometimes matters. Feel free to
+post another patch where you add an if() or an if (). I don't care which
+style you prefer, but checkpatch would want the second one.
 
-> We have one path to handle ISA IRQs before calling
-> alloc_irq_from_domain() as below:
->         if (idx >= 0 && test_bit(mp_irqs[idx].srcbus, mp_bus_not_pci))
->                 return mp_irqs[idx].srcbusirq;
+And as I currently don't see your argument to use the driver instead of
+the platform device, here's an argument why I prefer to use pdev:
+someone might want to use the upper layer (here the platform device) in
+that silly function in the future. A very personal decision I did., but...
 
-Ok.
- 
-> >         /* We can't set this earlier, because we need to calibrate the timer */
-> >         legacy_pic = &null_legacy_pic;
-> I haven't figured out the story behind the comment yet:(
+>>> driver name? This gives non-unique names if there is more than one
+>>> device instantiated for a driver. That's why some drivers already use
+>>> the device name, not the driver name:
+>>>
+>>> 	mtd->name = dev_name(&pev->dev);
+>>>
+>>> And in fact, if any drivers are missing mtd->name, perhaps it's best to
+>>> just modify the MTD registration to give them a default:
+>>>
+>>> 	if (!mtd->name)
+>>> 		mtd->name = dev_name(&pdev->dev);
+>>>
+>>>> +}
+>>
+>> I don't clobber any name. The name is set as default before drivers
+>> might do this.
 
-Sebastian gave some insight.
- 
-> > Why do we need strict mappings in the non ACPI case for all ioapic
-> > pins? What's so different about ACPI? Or is this just to avoid
-> > breaking the existing SFI/devicetree stuff. If that's the reason I'm
-> > fine with it, but ...
-> It's to avoid breaking SFI/intel_mid stuff. intel_mid assumes IRQ
-> number equals to pin number and use pci_dev->irq to save both IRQ
-> number and pin number.
+BTW. I don't like what dev_name produces. E.g. on one box I use here
+devname would produce f4000000.nand instead orion_nand. So I would have
+to name partitons with f4000000.nand. I don't understand why someone
+would prefer f4000000.nand instead of orion_nand, but I accept that
+other people do so. I don't have to understand everything.
 
-Fair enough.
+> At the moment this is true, but the ordering is somewhat subtle if you
+> don't examine the details of mtd_setup_common_members() to see that it
+> is assigning a name. I can easily imagine some new driver in which
+> someone does:
+>
+> 	mtd->name = ...;
+> 	[...]
+> 	mtd_setup_common_members(mtd, priv, pdev);
+>
+> And doesn't notice that the ordering matters.
+>
+> You could make this simpler by either
+> (1) making mtd_setup_common_members() check for mtd->name==NULL first
+> (2) just move the (default) name assignment to the common MTD
+>     registration, like I suggested
+>
+>>>> +
+>>>>  extern int mtd_device_parse_register(struct mtd_info *mtd,
+>>>>  				     const char * const *part_probe_types,
+>>>>  				     struct mtd_part_parser_data *parser_data,
+>>>
+>>> How about we rethink the "helper" approach, and instead just do
+>>> validation in the core code? This would cover most of the important
+>>> parts of your helper, I think:
+>>
+>> Feel free to change all drivers. I like my approach with fixing 21
+>> bugs by reducing code by 44 lines.
+>
+> I appreciate the bug fixes. I am just questioning the approach. Reduced
+> (source) code doesn't help anyone if it makes the code less
+> maintainable. My suggestions can probably make this more maintainable,
+> fix the same bugs, and reduce the source by a similar (albeit smaller)
+> number of lines.
+>
+>> And it offers a common function where future similiarities can be
+>> put into too. Of course you can just add 21 lines, but that is not
+>> how I do such stuff.
+>
+> I don't see how your common location helps much more than putting it in
+> mtdcore.c like I suggested, without the extra function.
+>
+>> And I did the patches. If you don't like them, feel free to ignore
+>> them. I'm not playing remote keyboard but I do patches like I would
+>> do them, not like some arbitrary maintainer would do them. Sorry for
+>> the harsh words.
+>
+> Arbitrary maintainer, eh? I'm simply suggesting that this could be
+> accomplished in a better way. If you don't want to take part in the
+> review process, then I have no obligation to engage either.
 
-Thanks,
+TIMTOWTDI. Humans are different, they think different, they write
+different code, they see code different and they prefer different
+styles. And what you think is a better way, isn't one in my point of
+view. And I prefer to not discuss such silly things like this simple 4
+line function.
 
-	tglx
+I'm very sorry, but I find such discussions extremly tiresome.
 
- 
+If you just would have suggested that one if to prevent that someone who
+doesn't c&p existing code would end up with a clobbered name (which he
+obviously can't miss if he ever would test his new or changed driver),
+than I maybe would have send a v2 with that if. But all the other noise
+just made me to want I never had send (again) a patch to LKML. It is
+almost impossible to avoid such answers and it turns every patch posting
+into a endless story where people do want to discuss every line or even
+character of totally silly things.
+
+Alexander Holler
