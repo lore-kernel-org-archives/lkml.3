@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaE1WLX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:11:23 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:13419 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754503AbaE1WLW (ORCPT
+	id S1755848AbaE1WLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:11:52 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:44860 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832AbaE1WLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:11:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArhPAE5ehlN5LL1sPGdsb2JhbABagweDRIUIom0BAQEBAQEGmB0BgQ8XAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwcaE4hB2B8XFoU/iH0HhEABA5l0ixiLWis
-Date: Thu, 29 May 2014 08:11:18 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au, mst@redhat.com,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140528221118.GN8554@dastard>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <20140528101401.43853563@gandalf.local.home>
- <f00f9b56-704d-4d03-ad0e-ec3ba2d122fd@email.android.com>
+	Wed, 28 May 2014 18:11:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <f00f9b56-704d-4d03-ad0e-ec3ba2d122fd@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2601:7:1680:338::529]
+In-Reply-To: <CAPoQQ-17OHotfbczJvEoq=vAzu_+6-sV3M1ZAhDaQ45wB3NB4A@mail.gmail.com>
+References: <1401236684-10579-1-git-send-email-dev@codyps.com>
+	<1401236684-10579-12-git-send-email-dev@codyps.com>
+	<063D6719AE5E284EB5DD2968C1650D6D1724EEAF@AcuExch.aculab.com>
+	<CAPoQQ-17OHotfbczJvEoq=vAzu_+6-sV3M1ZAhDaQ45wB3NB4A@mail.gmail.com>
+Date: Wed, 28 May 2014 17:11:49 -0500
+Message-ID: <CAPoQQ-11vW3Q0=LcS-myNZ6hXeYBeu==_prwHJXHvLfkUSmZHQ@mail.gmail.com>
+Subject: Re: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
+ le}_to_cpu() and cpu_to_{be, le}() macros
+From: Cody P Schafer <dev@codyps.com>
+To: David Laight <David.Laight@aculab.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 07:23:23AM -0700, H. Peter Anvin wrote:
-> We tried for 4K on x86-64, too, for b quite a while as I recall.
-> The kernel stack is a one of the main costs for a thread.  I would
-> like to decouple struct thread_info from the kernel stack (PJ
-> Waskewicz was working on that before he left Intel) but that
-> doesn't buy us all that much.
-> 
-> 8K additional per thread is a huge hit.  XFS has indeed always
-> been a canary, or troublespot, I suspect because it originally
-> came from another kernel where this was not an optimization
-> target.
+On Wed, May 28, 2014 at 5:05 PM, Cody P Schafer <dev@codyps.com> wrote:
+> On Wed, May 28, 2014 at 3:45 AM, David Laight <David.Laight@aculab.com> wrote:
+>> From: Cody P Schafer
+>>> Rather manually specifying the size of the integer to be converted, key
+>>> off of the type size. Reduces duplicate size info and the occurance of
+>>> certain types of bugs (using the wrong sized conversion).
+>> ...
+>>> +#define be_to_cpu(v) \
+>>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v, \
+>>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint16_t), be16_to_cpu(v), \
+>>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint32_t), be32_to_cpu(v), \
+>>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint64_t), be64_to_cpu(v), \
+>>> +             (void)0))))
+>> ...
+>>
+>> I'm not at all sure that using the 'size' of the constant will reduce
+>> the number of bugs - it just introduces a whole new category of bugs.
+>
+> Certainly, if you mis-size the argument (and thus have missized one of
+> the variables containing the be value, probably a bug anyhow), there
+> will be problems.
+>
+> I put this interface together because of an actual bug I wrote into
+> the initial code of the hv_24x7 driver (resized a struct member
+> without adjusting the be*_to_cpu() sizing).
+> Having this "auto sizing" macro means I can avoid encoding the size of
+> a struct field in multiple places.
 
-<sigh>
-
-Always blame XFS for stack usage problems.
-
-Even when the reported problem is from IO to an ext4 filesystem.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+To clarify, the point I'm making here is that this simply cuts out 1
+more place we can screw up endianness conversion sizing.
