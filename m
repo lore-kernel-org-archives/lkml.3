@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214AbaE1Tsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 15:48:52 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:55115 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146AbaE1Tsv (ORCPT
+	id S1755245AbaE1Ttv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 15:49:51 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45903 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625AbaE1Ttt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 15:48:51 -0400
+	Wed, 28 May 2014 15:49:49 -0400
+Date: Wed, 28 May 2014 20:49:13 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140528194913.GI5099@sirena.org.uk>
+References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
+ <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
+ <20140524124858.GR22111@sirena.org.uk>
+ <5385063F.30407@codeaurora.org>
+ <20140528151646.GU20155@pengutronix.de>
+ <20140528171219.GD5099@sirena.org.uk>
+ <53863CA3.7040000@codeaurora.org>
 MIME-Version: 1.0
-Date: Wed, 28 May 2014 21:48:51 +0200
-Message-ID: <CABPqkBTsiwicZNuU5BW6FZfB4aC=T=w9vFoxLqBTV3-PS4BnoA@mail.gmail.com>
-Subject: [RFC] perf/x86: PMU IRQ handler issues
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tSiBuZsJmMXpnp7T"
+Content-Disposition: inline
+In-Reply-To: <53863CA3.7040000@codeaurora.org>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
+ ks8851 SPI chips
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Some days ago, I was alerted that under important network load, something
-is going wrong with perf_event sampling in frequency mode (such as perf top).
-The number of samples was way too low given the cycle count (via perf stat).
-Looking at the syslog, I noticed that the perf irq latency throttler
-had kicked in
-several times. There may have been several reasons for this.
+--tSiBuZsJmMXpnp7T
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Maybe the workload had changing phases and the frequency adjustments
-was not working properly and dropping to very small period and then generated
-flood of interrupts.
+On Wed, May 28, 2014 at 12:44:35PM -0700, Stephen Boyd wrote:
+> On 05/28/14 10:12, Mark Brown wrote:
 
-Another explanation is that because we ACK the NMI early, we leave the
-door open to other interrupts, incl. NIC, and we are interrupting the execution
-of the PMU IRQ handler, yet that detour is measured in the PMU handler
-latency, causing more throttling than needed. Is that a plausible scenario too?
-And if so, I think we need to narrow the window for timing errors, by
-acking late
-on all processors and not just HSW.
+> > If the supply must always be physically present the bindings should be
+> > specified as it being mandatory and the code written in that fashion; as
+> > an extension Linux will put a dummy in but this is attempting to handle
+> > incorrect DTs.  This means we have functional error handling in cases
+> > where there is something to worry about and simplifies the code using
+> > the regulator.
 
-I still suspect there is something wrong with the frequency mode.
+> Ok, you're saying the opposite of Rob. Should it be required or optional
+> in the DT binding?
 
-Any better explanation for the problem?
+I'm saying it should be required.  The implementation accepts it as an
+extension (a recent extension at that).
+
+> Ok. Dave M has already picked up all these patches so I'll send a patch
+> to replace regulator_get_optional() with regulator_get() and fix up the
+> error handling unless I hear otherwise.
+
+Yes, please.  I'm much more worried about the abuse of
+regulator_get_optional() than the binding.
+
+--tSiBuZsJmMXpnp7T
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThj22AAoJELSic+t+oim9YCQP/3X79T9pZF6Mlt7qgfAAzkt5
+1tOJAXcsj11VYtwdVp61JJsmluCnYCK7LrGCoVBiv4wcgraaV0fivPpESjrC0SL6
+jf9JDo2G9QBFafd7uMkrUGmEfd0CEk/CrESX3qD+AWHiQe/cpQwhZGGmP4ArFg22
+PNwRHPnXrPOS1hFxJstcpKZBdG1VwK5EnXuQpTiA36SljLyQz0BUJeK8HOofmAHn
+3aOeUf5OE8Sp1ktAG0VLvBCBwVNhkz0VdFfrEYweWJ0FX2dvBtvM7QppDBY5EHgY
+2L8XYPK6F7+QkEDzZNKmCh+TUfjrdOEUiH9417Ewq8FAf/IK6G6v4xL/pKkeONN6
+3Gs0K+UoBRkMi2fVakiaaFxac+B4zWK290aIIhEFnRsq5x+KXUzrvtbgRwpfIQO5
+EhvsP67SImY5Q2JmeDC2suSQwoG+HKzhtrekwViIX7LEozPSheTiPTzYWd6aMUlQ
+UOUZfpb4FSxo/W9xUvZkVUlGslYuBECyqBDQRyDc9zr2cRiYb22vh/K+qs+OkPYl
+1Jf+4dhenqAgDvHr+JPne78DSW9cNXCA8+Us0SPPckgT11aKexEzH+sFeWNhuxZ0
+Zr2//CD75J7DTxbswucidzNFhE6o6G6xddPlHyKjl4gGau3bU8VyV9X+MMhYYCBi
+gJ3TAaMcWyrE1zuPUtsB
+=lp/p
+-----END PGP SIGNATURE-----
+
+--tSiBuZsJmMXpnp7T--
