@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaE1NVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:21:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58652 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753425AbaE1NVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:21:16 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 4/9] perf report: Add mem-mode documentation to report command
-Date: Wed, 28 May 2014 15:20:57 +0200
-Message-Id: <1401283262-16035-5-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
-References: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
+	id S1753306AbaE1N0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:26:41 -0400
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:50469 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670AbaE1N0k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:26:40 -0400
+X-Greylist: delayed 4006 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 09:26:39 EDT
+From: Philipp Kern <pkern@google.com>
+To: hpa@linux.intel.com
+Cc: Philipp Kern <pkern@google.com>, linux-kernel@vger.kernel.org,
+        "H. J. Lu" <hjl.tools@gmail.com>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH] x32: Mask away the x32 syscall bit in the ptrace codepath
+Date: Wed, 28 May 2014 14:19:43 +0200
+Message-Id: <1401279583-1027-1-git-send-email-pkern@google.com>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
+audit_filter_syscall uses the syscall number to reference into a
+bitmask (e->rule.mask[word]). Not removing the x32 bit before passing
+the number to this architecture independent codepath will fail to
+lookup the proper audit bit. Furthermore it will cause an invalid memory
+access in the kernel if the out of bound location is not mapped:
 
-Add mem-mode sorting types and mem-mode itself to perf-report documentation.
+  BUG: unable to handle kernel paging request at ffff8800e5446630
+  IP: [<ffffffff810fcdd0>] audit_filter_syscall+0x90/0xf0
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1400526833-141779-5-git-send-email-dzickus@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Together with the entrypoint in entry_64.S this change causes x32
+programs to pass in both AUDIT_ARCH_X86_64 and AUDIT_ARCH_I386 depending
+on the syscall path.
+
+Cc: linux-kernel@vger.kernel.org
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Philipp Kern <pkern@google.com>
 ---
- tools/perf/Documentation/perf-report.txt | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/x86/kernel/ptrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index a1b5185..4986bde 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -117,6 +117,21 @@ OPTIONS
- 	By default, every sort keys not specified in -F will be appended
- 	automatically.
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 678c0ad..166a3c7 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1489,7 +1489,7 @@ long syscall_trace_enter(struct pt_regs *regs)
  
-+	If --mem-mode option is used, following sort keys are also available
-+	(incompatible with --branch-stack):
-+	symbol_daddr, dso_daddr, locked, tlb, mem, snoop.
-+
-+	- symbol_daddr: name of data symbol being executed on at the time of sample
-+	- dso_daddr: name of library or module containing the data being executed
-+	on at the time of sample
-+	- locked: whether the bus was locked at the time of sample
-+	- tlb: type of tlb access for the data at the time of sample
-+	- mem: type of memory access for the data at the time of sample
-+	- snoop: type of snoop (if any) for the data at the time of sample
-+
-+	And default sort keys are changed to local_weight, mem, sym, dso,
-+	symbol_daddr, dso_daddr, snoop, tlb, locked, see '--mem-mode'.
-+
- -p::
- --parent=<regex>::
-         A regex filter to identify parent. The parent is a caller of this
-@@ -255,6 +270,13 @@ OPTIONS
- 	Demangle symbol names to human readable form. It's enabled by default,
- 	disable with --no-demangle.
- 
-+--mem-mode::
-+	Use the data addresses of samples in addition to instruction addresses
-+	to build the histograms.  To generate meaningful output, the perf.data
-+	file must have been obtained using perf record -d -W and using a
-+	special event -e cpu/mem-loads/ or -e cpu/mem-stores/. See
-+	'perf mem' for simpler access.
-+
- --percent-limit::
- 	Do not show entries which have an overhead under that percent.
- 	(Default: 0).
+ 	if (IS_IA32)
+ 		audit_syscall_entry(AUDIT_ARCH_I386,
+-				    regs->orig_ax,
++				    regs->orig_ax & __SYSCALL_MASK,
+ 				    regs->bx, regs->cx,
+ 				    regs->dx, regs->si);
+ #ifdef CONFIG_X86_64
 -- 
-1.8.3.1
+1.9.1.423.g4596e3a
 
