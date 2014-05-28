@@ -1,235 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaE1A31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:29:27 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:37795 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528AbaE1A3Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:29:25 -0400
-From: Cody P Schafer <dev@codyps.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Cody P Schafer <dev@codyps.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 16/16] powerpc/perf/hv-gpci: add the remaining gpci requests
-Date: Tue, 27 May 2014 17:22:11 -0700
-Message-Id: <1401236684-10579-17-git-send-email-dev@codyps.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1401236684-10579-1-git-send-email-dev@codyps.com>
-References: <1401236684-10579-1-git-send-email-dev@codyps.com>
+	id S1754138AbaE1A3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:29:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20007 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752528AbaE1A3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 20:29:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,923,1392192000"; 
+   d="scan'208";a="547479227"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Support spark lines in perf stat v4
+Date: Tue, 27 May 2014 17:29:30 -0700
+Message-Id: <1401236970-31106-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the remaining gpci requests that contain counters suitable for use
-by perf. Omit those that don't contain any counters (but note their
-ommision).
+From: Andi Kleen <ak@linux.intel.com>
 
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Signed-off-by: Cody P Schafer <dev@codyps.com>
+perf stat -rX prints the stddev for multiple measurements.
+Just looking at the stddev for judging the quality of the data
+is a bit dangerous The simplest sanity check is to just look
+at a simple plot. This patchs add a sparkline to the end
+of the measurements to make it simple to judge the data.
+
+The sparkline only uses UTF-8, so should be readable
+in all modern tools and terminals.
+
+The sparkline is between the minimum and maximum of the data,
+so it's mainly a indicator of variance. To keep the code
+simple and make the output not too wide only the first
+8 values are printed. If more values are there it adds '..'
+
+The code is inspired by Zach Holman's spark shell script.
+
+Example output (view in non-proportial font):
+
+ Performance counter stats for 'true' (10 runs):
+
+          0.175672      task-clock (msec)         #    0.555 CPUs utilized            ( +-  1.77% ) █▄▁▁▁▁▁▁..
+                 0      context-switches          #    0.000 K/sec
+                 0      cpu-migrations            #    0.000 K/sec
+               114      page-faults               #    0.647 M/sec                    ( +-  0.14% ) ▁█▁▁████..
+           520,798      cycles                    #    2.965 GHz                      ( +-  1.75% ) █▄▁▁▁▁▁▁..
+           433,525      instructions              #    0.83  insns per cycle          ( +-  0.28% ) ▅▇▅▄▇█▁▆..
+            83,012      branches                  #  472.537 M/sec                    ( +-  0.31% ) ▅▇▆▄▇█▁▆..
+             3,157      branch-misses             #    3.80% of all branches          ( +-  2.55% ) ▇█▃▅▁▃▁▂..
+
+       0.000316660 seconds time elapsed                                          ( +-  1.78% ) █▅▁▁▁▁▁▁..
+
+As you can see even in the most simple run there are quite interesting
+patterns. The time sparkline suggests it would be also useful to have an option
+to throw the first measurement away.
+
+Known issues:
+- Makes the perf stat output wider. Could be adjust by shrinking
+some white space. Not done so far.
+- No output for -A/--per-socket/--per-core with -rX. This code
+is missing the basic noise detection code. Once it's added there
+sparklines could be shown too.
+
+v2: Avoid printing spark lines for normal CSV case (Jiri)
+v3: LONG->ULONG, random changes
+v4: Add some missing changes from the forked v2: checks value is not
+zero instead of all the same. Update documentation. Remove n variable.
+Remove #pragma once
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/powerpc/perf/hv-gpci-requests.h | 179 +++++++++++++++++++++++++++++++++++
- 1 file changed, 179 insertions(+)
+ tools/perf/Documentation/perf-stat.txt |  4 ++++
+ tools/perf/Makefile.perf               |  1 +
+ tools/perf/builtin-stat.c              | 12 ++++++++++++
+ tools/perf/util/spark.c                | 28 ++++++++++++++++++++++++++++
+ tools/perf/util/spark.h                |  4 ++++
+ tools/perf/util/stat.c                 | 34 ++++++++++++++++++++++++++++++++++
+ tools/perf/util/stat.h                 | 10 ++++++++++
+ 7 files changed, 93 insertions(+)
+ create mode 100644 tools/perf/util/spark.c
+ create mode 100644 tools/perf/util/spark.h
 
-diff --git a/arch/powerpc/perf/hv-gpci-requests.h b/arch/powerpc/perf/hv-gpci-requests.h
-index 0dfc4d9..af3b73c 100644
---- a/arch/powerpc/perf/hv-gpci-requests.h
-+++ b/arch/powerpc/perf/hv-gpci-requests.h
-@@ -65,6 +65,33 @@ REQUEST(__count(0,	8,	processor_time_in_timebase_cycles)
- )
- #include I(REQUEST_END)
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 29ee857..840c1db 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -53,6 +53,10 @@ OPTIONS
+ -r::
+ --repeat=<n>::
+ 	repeat command and print average + stddev (max: 100). 0 means forever.
++	In addition it prints a spark line (when not in CSV mode), which visualizes the
++	variance between minimum and maximum of the measurements. This allows a simple sanity
++	check of the measurements. Only 8 values are printed, when more are available
++	it adds ..
  
-+#define REQUEST_NAME entitled_capped_uncapped_donated_idle_timebase_by_partition
-+#define REQUEST_NUM 0x20
-+#define REQUEST_IDX_KIND sibling_part_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	8,	partition_id)
-+	__count(0x8,	8,	entitled_cycles)
-+	__count(0x10,	8,	consumed_capped_cycles)
-+	__count(0x18,	8,	consumed_uncapped_cycles)
-+	__count(0x20,	8,	cycles_donated)
-+	__count(0x28,	8,	purr_idle_cycles)
-+)
-+#include I(REQUEST_END)
+ -B::
+ --big-num::
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 7257e7e..432d099 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -359,6 +359,7 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
+ LIB_OBJS += $(OUTPUT)util/trace-event.o
+ LIB_OBJS += $(OUTPUT)util/svghelper.o
+ LIB_OBJS += $(OUTPUT)util/sort.o
++LIB_OBJS += $(OUTPUT)util/spark.o
+ LIB_OBJS += $(OUTPUT)util/hist.o
+ LIB_OBJS += $(OUTPUT)util/probe-event.o
+ LIB_OBJS += $(OUTPUT)util/util.o
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 65a151e..cb0f7c5 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
+ 				if (run != ena)
+ 					fprintf(output, "  (%.2f%%)",
+ 						100.0 * run / ena);
 +
-+/*
-+ * Not avaliable for counter_info_version >= 0x8, use
-+ * run_instruction_cycles_by_partition(0x100) instead.
-+ */
-+#define REQUEST_NAME run_instructions_run_cycles_by_partition
-+#define REQUEST_NUM 0x30
-+#define REQUEST_IDX_KIND sibling_part_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	8,	partition_id)
-+	__count(0x8,	8,	instructions_completed)
-+	__count(0x10,	8,	cycles)
-+)
-+#include I(REQUEST_END)
-+
- #define REQUEST_NAME system_performance_capabilities
- #define REQUEST_NUM 0x40
- #define REQUEST_IDX_KIND M1
-@@ -75,5 +102,157 @@ REQUEST(__field(0,	1,	perf_collect_privileged)
- )
- #include I(REQUEST_END)
++				fputc(' ', output);
++				print_stat_spark(output, counter->priv);
+ 			}
+ 			fputc('\n', output);
+ 		}
+@@ -1229,6 +1232,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ 		return;
+ 	}
  
-+#define REQUEST_NAME processor_bus_utilization_abc_links
-+#define REQUEST_NUM 0x50
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	total_link_cycles)
-+	__count(0x18,	8,	idle_cycles_for_a_link)
-+	__count(0x20,	8,	idle_cycles_for_b_link)
-+	__count(0x28,	8,	idle_cycles_for_c_link)
-+	__array(0x30,	0x20,	reserved2)
-+)
-+#include I(REQUEST_END)
++	fputc(' ', output);
++	print_stat_spark(output, counter->priv);
 +
-+#define REQUEST_NAME processor_bus_utilization_wxyz_links
-+#define REQUEST_NUM 0x60
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	total_link_cycles)
-+	__count(0x18,	8,	idle_cycles_for_w_link)
-+	__count(0x20,	8,	idle_cycles_for_x_link)
-+	__count(0x28,	8,	idle_cycles_for_y_link)
-+	__count(0x30,	8,	idle_cycles_for_z_link)
-+	__array(0x38,	0x28,	reserved2)
-+)
-+#include I(REQUEST_END)
+ 	if (scaled) {
+ 		double avg_enabled, avg_running;
+ 
+@@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
+ 			if (run != ena)
+ 				fprintf(output, "  (%.2f%%)",
+ 					100.0 * run / ena);
 +
-+#define REQUEST_NAME processor_bus_utilization_gx_links
-+#define REQUEST_NUM 0x70
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	gx0_in_address_cycles)
-+	__count(0x18,	8,	gx0_in_data_cycles)
-+	__count(0x20,	8,	gx0_in_retries)
-+	__count(0x28,	8,	gx0_in_bus_cycles)
-+	__count(0x30,	8,	gx0_in_cycles_total)
-+	__count(0x38,	8,	gx0_out_address_cycles)
-+	__count(0x40,	8,	gx0_out_data_cycles)
-+	__count(0x48,	8,	gx0_out_retries)
-+	__count(0x50,	8,	gx0_out_bus_cycles)
-+	__count(0x58,	8,	gx0_out_cycles_total)
-+	__count(0x60,	8,	gx1_in_address_cycles)
-+	__count(0x68,	8,	gx1_in_data_cycles)
-+	__count(0x70,	8,	gx1_in_retries)
-+	__count(0x78,	8,	gx1_in_bus_cycles)
-+	__count(0x80,	8,	gx1_in_cycles_total)
-+	__count(0x88,	8,	gx1_out_address_cycles)
-+	__count(0x90,	8,	gx1_out_data_cycles)
-+	__count(0x98,	8,	gx1_out_retries)
-+	__count(0xA0,	8,	gx1_out_bus_cycles)
-+	__count(0xA8,	8,	gx1_out_cycles_total)
-+)
-+#include I(REQUEST_END)
++			fputc(' ', output);
++			print_stat_spark(output, counter->priv);
+ 		}
+ 		fputc('\n', output);
+ 	}
+@@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
+ 			fprintf(output, "                                        ");
+ 			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
+ 					avg_stats(&walltime_nsecs_stats));
 +
-+#define REQUEST_NAME processor_bus_utilization_mc_links
-+#define REQUEST_NUM 0x80
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	mc0_frames)
-+	__count(0x18,	8,	mc0_reads)
-+	__count(0x20,	8,	mc0_write)
-+	__count(0x28,	8,	mc0_total_cycles)
-+	__count(0x30,	8,	mc1_frames)
-+	__count(0x38,	8,	mc1_reads)
-+	__count(0x40,	8,	mc1_writes)
-+	__count(0x48,	8,	mc1_total_cycles)
-+)
-+#include I(REQUEST_END)
++			fputc(' ', output);
++			print_stat_spark(output, &walltime_nsecs_stats);
+ 		}
+ 		fprintf(output, "\n\n");
+ 	}
+diff --git a/tools/perf/util/spark.c b/tools/perf/util/spark.c
+new file mode 100644
+index 0000000..ac5b3a5
+--- /dev/null
++++ b/tools/perf/util/spark.c
+@@ -0,0 +1,28 @@
++#include <stdio.h>
++#include <limits.h>
++#include "spark.h"
 +
-+/* Processor_config (0x90) skipped, no counters */
-+/* Current_processor_frequency (0x91) skipped, no counters */
++#define NUM_SPARKS 8
++#define SPARK_SHIFT 8
 +
-+#define REQUEST_NAME processor_core_utilization
-+#define REQUEST_NUM 0x94
-+#define REQUEST_IDX_KIND phys_processor_idx
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	phys_processor_idx)
-+	__field(0x4,	4,	hw_processor_id)
-+	__count(0x8,	8,	cycles_across_any_thread)
-+	__count(0x10,	8,	timebase_at_collection)
-+	__count(0x18,	8,	purr_cycles)
-+	__count(0x20,	8,	sum_of_cycles_across_all_threads)
-+	__count(0x28,	8,	instructions_completed)
-+)
-+#include I(REQUEST_END)
++/* Print spark lines on outf for numval values in val. */
++void print_spark(FILE *outf, unsigned long *val, int numval)
++{
++	static const char *ticks[NUM_SPARKS] = {
++		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
++	};
++	int i;
++	unsigned long min = ULONG_MAX, max = 0, f;
 +
-+/* Processor_core_power_mode (0x95) skipped, no counters */
-+/* Affinity_domain_information_by_virtual_processor (0xA0) skipped, no counters */
-+/* Affinity_domain_information_by_domain (0xB0) skipped, no counters */
-+/* Affinity_domain_information_by_partition (0xB1) skipped, no counters */
-+/* Physical_memory_info (0xC0) skipped, no counters */
-+/* Processor_bus_topology (0xD0) skipped, no counters */
++	for (i = 0; i < numval; i++) {
++		if (val[i] < min)
++			min = val[i];
++		if (val[i] > max)
++			max = val[i];
++	}
++	f = ((max - min) << SPARK_SHIFT) / (NUM_SPARKS - 1);
++	if (f < 1)
++		f = 1;
++	for (i = 0; i < numval; i++)
++		fputs(ticks[((val[i] - min) << SPARK_SHIFT) / f], outf);
++}
+diff --git a/tools/perf/util/spark.h b/tools/perf/util/spark.h
+new file mode 100644
+index 0000000..59b04ad
+--- /dev/null
++++ b/tools/perf/util/spark.h
+@@ -0,0 +1,4 @@
++#ifndef SPARK_H
++#define SPARK_H 1
++void print_spark(FILE *outf, unsigned long *val, int numval);
++#endif
+diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
+index 6506b3d..2e76d9c 100644
+--- a/tools/perf/util/stat.c
++++ b/tools/perf/util/stat.c
+@@ -1,10 +1,16 @@
+ #include <math.h>
++#include <stdio.h>
+ 
+ #include "stat.h"
++#include "spark.h"
+ 
+ void update_stats(struct stats *stats, u64 val)
+ {
+ 	double delta;
++	int n = stats->n;
 +
-+#define REQUEST_NAME partition_hypervisor_queuing_times
-+#define REQUEST_NUM 0xE0
-+#define REQUEST_IDX_KIND partition_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	2,	partition_id)
-+	__array(0x2,	0x6,	reserved1)
-+	__count(0x8,	8,	time_waiting_for_entitlement)
-+	__count(0x10,	8,	times_waited_for_entitlement)
-+	__count(0x18,	8,	time_waiting_for_phys_processor)
-+	__count(0x20,	8,	times_waited_for_phys_processor)
-+	__count(0x28,	8,	dispatches_on_home_core)
-+	__count(0x30,	8,	dispatches_on_home_primary_affinity_domain)
-+	__count(0x38,	8,	dispatches_on_home_secondary_affinity_domain)
-+	__count(0x40,	8,	dispatches_off_home_secondary_affinity_domain)
-+	__count(0x48,	8,	dispatches_on_dedicated_processor_donating_cycles)
-+)
-+#include I(REQUEST_END)
++	if (n < NUM_SPARK_VALS)
++		stats->svals[n] = val;
+ 
+ 	stats->n++;
+ 	delta = val - stats->mean;
+@@ -61,3 +67,31 @@ double rel_stddev_stats(double stddev, double avg)
+ 
+ 	return pct;
+ }
 +
-+#define REQUEST_NAME system_hypervisor_times
-+#define REQUEST_NUM 0xF0
-+#define REQUEST_IDX_KIND M1
-+#include I(REQUEST_BEGIN)
-+REQUEST(__count(0,	8,	time_spent_to_dispatch_virtual_processors)
-+	__count(0x8,	8,	time_spent_processing_virtual_processor_timers)
-+	__count(0x10,	8,	time_spent_managing_partitions_over_entitlement)
-+	__count(0x18,	8,	time_spent_on_system_managment)
-+)
-+#include I(REQUEST_END)
++static int all_zero(unsigned long *vals, int len)
++{
++	int i;
 +
-+#define REQUEST_NAME system_tlbie_count_and_time
-+#define REQUEST_NUM 0xF4
-+#define REQUEST_IDX_KIND M1
-+#include I(REQUEST_BEGIN)
-+REQUEST(__count(0,	8,	tlbie_instructions_issued)
-+	/* FIXME: The spec says the offset here is 0x10, which I suspect is wrong. */
-+	__count(0x8,	8,	time_spent_issuing_tlbies)
-+)
-+#include I(REQUEST_END)
++	for (i = 0; i < len; i++)
++		if (vals[i] != 0)
++			return 0;
++	return 1;
++}
 +
-+#define REQUEST_NAME partition_instruction_count_and_time
-+#define REQUEST_NUM 0x100
-+#define REQUEST_IDX_KIND partition_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	2,	partition_id)
-+	__array(0x2,	0x6,	reserved1)
-+	__count(0x8,	8,	instructions_performed)
-+	__count(0x10,	8,	time_collected)
-+)
-+#include I(REQUEST_END)
++void print_stat_spark(FILE *f, struct stats *stat)
++{
++	int len;
 +
-+/* set_mmcrh (0x80001000) skipped, no counters */
-+/* retrieve_hpmcx (0x80002000) skipped, no counters */
++	if (stat->n <= 1)
++		return;
 +
- #undef M1
- #include "req-gen/_end.h"
++	len = stat->n;
++	if (len > NUM_SPARK_VALS)
++		len = NUM_SPARK_VALS;
++	if (all_zero(stat->svals, len))
++		return;
++
++	print_spark(f, stat->svals, len);
++	if (stat->n > NUM_SPARK_VALS)
++		fputs("..", f);
++}
+diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
+index ae8ccd7..1b4dc71 100644
+--- a/tools/perf/util/stat.h
++++ b/tools/perf/util/stat.h
+@@ -1,12 +1,16 @@
+ #ifndef __PERF_STATS_H
+ #define __PERF_STATS_H
+ 
++#include <stdio.h>
+ #include "types.h"
+ 
++#define NUM_SPARK_VALS 8 /* support spark line on first N items */
++
+ struct stats
+ {
+ 	double n, mean, M2;
+ 	u64 max, min;
++	unsigned long svals[NUM_SPARK_VALS];
+ };
+ 
+ void update_stats(struct stats *stats, u64 val);
+@@ -14,12 +18,18 @@ double avg_stats(struct stats *stats);
+ double stddev_stats(struct stats *stats);
+ double rel_stddev_stats(double stddev, double avg);
+ 
++void print_stat_spark(FILE *f, struct stats *stat);
++
+ static inline void init_stats(struct stats *stats)
+ {
++	int i;
++
+ 	stats->n    = 0.0;
+ 	stats->mean = 0.0;
+ 	stats->M2   = 0.0;
+ 	stats->min  = (u64) -1;
+ 	stats->max  = 0;
++	for (i = 0; i < NUM_SPARK_VALS; i++)
++		stats->svals[i] = 0;
+ }
+ #endif
 -- 
-1.9.3
+1.9.0
 
