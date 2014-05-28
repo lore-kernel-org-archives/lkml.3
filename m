@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600AbaE1VxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 17:53:24 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:36527 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347AbaE1VxW convert rfc822-to-8bit (ORCPT
+	id S932195AbaE1Vy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 17:54:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57145 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019AbaE1VyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 17:53:22 -0400
+	Wed, 28 May 2014 17:54:25 -0400
+Message-ID: <53865B0F.6080706@infradead.org>
+Date: Wed, 28 May 2014 14:54:23 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWOOFhusn6MACs=o+TqqjQDXyTwVTe-iE_4bQcJu-ez=w@mail.gmail.com>
-References: <1401279583-1027-1-git-send-email-pkern@google.com>
- <53864B66.8030100@amacapital.net> <53864E91.4060207@linux.intel.com>
- <CALCETrWd9dbBt03u5cpJx+p3D7NeT-d2_=kTg94CRGMq7ji7kQ@mail.gmail.com>
- <538652EA.3040606@linux.intel.com> <CALCETrWOOFhusn6MACs=o+TqqjQDXyTwVTe-iE_4bQcJu-ez=w@mail.gmail.com>
-From: Philipp Kern <pkern@google.com>
-Date: Wed, 28 May 2014 23:53:00 +0200
-Message-ID: <CAA2ZrUSzXUp=uipjwCDLsXPOhPwp7m1oSfR8zdKJaQCgg2aoeQ@mail.gmail.com>
-Subject: Re: [PATCH] x32: Mask away the x32 syscall bit in the ptrace codepath
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. J. Lu" <hjl.tools@gmail.com>, Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: werner <w.landgraf@ru.ru>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15-rc6  build / link failed  fs/built-in  mb_cache_entry problems
+References: <redirect-87012843@zbackend1.aha.ru> <53841CED.9010800@infradead.org> <5385101D.4050504@hp.com> <538516EE.40209@infradead.org> <web-87633644@zbackend1.aha.ru>
+In-Reply-To: <web-87633644@zbackend1.aha.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 11:43 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> However: are you sure that entry_64.S handles this?  It looks like
-> tracesys has higher priority than badsys.  And strace can certainly
-> see out-of-range syscalls. […]
+On 05/28/2014 01:48 PM, werner wrote:
+> Oi think im using 4.2.4 . but the kernel should be programmed clean, so that it builds with all not-too-old versions.
+> 
+> wl
+> 
 
-Not only can it see them: It must see that this bit is set as that's
-the only identifier it has to deduce that the binary is running in x32
-mode.
+Hi Werner,
+Please reply to the mailing list also (as I am doing).
 
-Out of range syscall numbers certainly do not work for auditing right
-now, hence my attempt to patch around it.
+I asked Thavatchai for a patch to fix this.
 
-Kind regards and thanks
-Philipp Kern
+> 
+> 
+> n Tue, 27 May 2014 15:51:26 -0700
+>  Randy Dunlap <rdunlap@infradead.org> wrote:
+>> On 05/27/2014 03:22 PM, Thavatchai Makphaibulchoke wrote:
+>>> On 05/26/2014 11:04 PM, Randy Dunlap wrote:
+>>>> On 05/26/2014 11:17 AM, werner wrote:
+>>>> @tmac:  can mbcache.c #include <linux/log2.h> and use ilog2(NR_BG_LOCKS)
+>>>> instead of using __builtin_log2(NR_BG_LOCKS) ?
+>>>> (ref. commit ID 1f3e55fe02d12213f87869768aa2b0bad3ba9a7d)
+>>>>
+>>>
+>>> I don't see any problem with that, unless somebody else has any concern.  Please let me know if you'd like me to submit the change.
+>>
+>> I'd say yes since some gcc version(s) don't seem to support __builtin_log2().
+>>
+>> -- 
+>> ~Randy
+>>
+>>
+> 
+> "werner" <w.landgraf@ru.ru>
+> ---
+> Professional hosting for everyone - http://www.host.ru
+
+
+-- 
+~Randy
