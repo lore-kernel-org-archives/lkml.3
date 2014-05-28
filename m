@@ -1,101 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaE1PJe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:09:34 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:34006 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060AbaE1PJd (ORCPT
+	id S932156AbaE1PJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:09:51 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:32888 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710AbaE1PJu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:09:33 -0400
-Date: Wed, 28 May 2014 17:09:24 +0200
-From: Dongsu Park <dongsu.park@profitbricks.com>
-To: Maurizio Lombardi <mlombard@redhat.com>
-Cc: Ming Lei <tom.leiming@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        jet.chen@intel.com, Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [jet.chen@intel.com: [bio] kernel BUG at
- drivers/block/virtio_blk.c:166!]
-Message-ID: <20140528150924.GA5301@gmail.com>
-References: <20140526194347.GB2271@dhcp-27-189.brq.redhat.com>
- <CACVXFVOaF-EOioE38sy9=2f-+rKECJnzUCSHrL-VZJi1Ycj_wA@mail.gmail.com>
- <20140527084359.GD2205@dhcp-27-189.brq.redhat.com>
- <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
+	Wed, 28 May 2014 11:09:50 -0400
+Message-ID: <5385FC38.3050201@arm.com>
+Date: Wed, 28 May 2014 16:09:44 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "npiggin@gmail.com" <npiggin@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 02/11] sched: remove a wake_affine condition
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org> <1400860385-14555-3-git-send-email-vincent.guittot@linaro.org> <20140527124848.GQ30445@twins.programming.kicks-ass.net> <CAKfTPtAbnDdQ=C6oABtwUPr7ADhHo1qsdzt5GFsuVMncA9Q=Qw@mail.gmail.com> <20140527153937.GE19143@laptop.programming.kicks-ass.net> <CAKfTPtCZx4i5HFnma3EFYjxVHojUAkezSS7jL7KDTgwvKEVFwQ@mail.gmail.com> <CAKfTPtB_4bQxBOUJ4tCFRVqzHDRVXj3YPkyzyTv_h-sgm8NwEQ@mail.gmail.com>
+In-Reply-To: <CAKfTPtB_4bQxBOUJ4tCFRVqzHDRVXj3YPkyzyTv_h-sgm8NwEQ@mail.gmail.com>
+X-OriginalArrivalTime: 28 May 2014 15:09:43.0142 (UTC) FILETIME=[DAC28060:01CF7A86]
+X-MC-Unique: 114052816094617401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Vincent & Peter,
 
-On 27.05.2014 13:24, Maurizio Lombardi wrote:
-> On Tue, May 27, 2014 at 10:43:59AM +0200, Maurizio Lombardi wrote:
-> > 
-> > But now I'm suspicious of this part of commit 3979ef4dcf:
-> > 
-> >  failed:
-> >         bvec->bv_page = NULL;
-> >         bvec->bv_len = 0;
-> >         bvec->bv_offset = 0;
-> >         bio->bi_vcnt--;  <----------------
-> >         blk_recount_segments(q, bio);
-> >         return 0;
-> > 
-> > Is decreasing bi_vcnt sufficient to guarantee that blk_recount_segments()
-> > recalculates the correct number of physical segments?
-> > Looking at the __blk_recalc_rq_segments() it appears it may not be the case.
-> > 
-> > The question is how can we restore the correct number of physical segments in case
-> > of failure without breaking anything...
+On 28/05/14 07:49, Vincent Guittot wrote:
+[...]
 > 
-> If my hypothesis is correct, the following patch should trigger a kernel panic,
-> Jet Chen, can you try it and let me know whether the BUG_ON is hit or not?
-
-I was also able to reproduce this bug just as reported by Jet Chen,
-and now I think I've found out a solution. I'll send out a patch.
-
-Regards,
-Dongsu
-
-> diff --git a/block/bio.c b/block/bio.c
-> index 0443694..763868f 100644
-> --- a/block/bio.c
-> +++ b/block/bio.c
-> @@ -701,6 +701,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  			  unsigned int max_sectors)
->  {
->  	int retried_segments = 0;
-> +	unsigned int phys_segments_orig;
->  	struct bio_vec *bvec;
->  
->  	/*
-> @@ -751,6 +752,9 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  	if (bio->bi_vcnt >= bio->bi_max_vecs)
->  		return 0;
->  
-> +	blk_recount_segments(q, bio);
-> +	phys_segments_orig = bio->bi_phys_segments;
-> +
->  	/*
->  	 * setup the new entry, we might clear it again later if we
->  	 * cannot add the page
-> @@ -811,6 +815,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->  	bvec->bv_offset = 0;
->  	bio->bi_vcnt--;
->  	blk_recount_segments(q, bio);
-> +	BUG_ON(phys_segments_orig != bio->bi_phys_segments);
->  	return 0;
->  }
+> Nick,
 > 
+> While doing some rework on the wake affine part of the scheduler, i
+> failed to catch the use case that takes advantage of a condition that
+> you added some while ago with the commit
+> a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
+> 
+> Could you help us to clarify the 2 first lines of the test that you added ?
+> +                       if ((tl <= load &&
+> +                               tl + target_load(cpu, idx) <=
+> SCHED_LOAD_SCALE) ||
+> +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
 > 
 > Regards,
-> Maurizio Lombardi 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Vincent
+>>
+>>>
+>>>>> commit a3f21bce1fefdf92a4d1705e888d390b10f3ac6f
+>>>>>
+>>>>>
+>>>>> +                       if ((tl <= load &&
+>>>>> +                               tl + target_load(cpu, idx) <= SCHED_LOAD_SCALE) ||
+>>>>> +                               100*(tl + SCHED_LOAD_SCALE) <= imbalance*load) {
+>>>>>
+>>>>>
+>>>>> So back when the code got introduced, it read:
+>>>>>
+>>>>>         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE < source_load(this_cpu, idx) &&
+>>>>>         target_load(prev_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(this_cpu, idx) < SCHED_LOAD_SCALE
+>>>>>
+
+Shouldn't this be 
+
+target_load(this_cpu, idx) - sync*SCHED_LOAD_SCALE <= source_load(prev_cpu, idx) &&
+target_load(this_cpu, idx) - sync*SCHED_LOAD_SCALE + target_load(prev_cpu, idx) <= SCHED_LOAD_SCALE
+
+"[PATCH] sched: implement smpnice" (2dd73a4f09beacadde827a032cf15fd8b1fa3d48)
+mentions that SCHED_LOAD_BALANCE (IMHO, should be SCHED_LOAD_SCALE) represents
+the load contribution of a single task. So I read the second part as if
+the sum of the load of this_cpu and prev_cpu is smaller or equal to the
+(maximal) load contribution (maximal possible effect) of a single task.
+
+There is even a comment in "[PATCH] sched: tweak affine wakeups"
+(a3f21bce1fefdf92a4d1705e888d390b10f3ac6f) in try_to_wake_up() when
+SCHED_LOAD_SCALE gets subtracted from tl = this_load =
+target_load(this_cpu, idx):
+
++ * If sync wakeup then subtract the (maximum possible)
++ * effect of the currently running task from the load
++ * of the current CPU:
+
+"[PATCH] sched: implement smpnice" then replaces SCHED_LOAD_SCALE w/ 
+
++static inline unsigned long cpu_avg_load_per_task(int cpu)
++{
++       runqueue_t *rq = cpu_rq(cpu);
++       unsigned long n = rq->nr_running;
++
++       return n ?  rq->raw_weighted_load / n : SCHED_LOAD_SCALE;
+
+-- Dietmar
+
+>>>>> So while the first line makes some sense, the second line is still
+>>>>> somewhat challenging.
+>>>>>
+>>>>> I read the second line something like: if there's less than one full
+>>>>> task running on the combined cpus.
+>>>>
+>>>> ok. your explanation makes sense
+>>>
+>>> Maybe, its still slightly weird :-)
+>>>
+>>>>>
+[...]
+
