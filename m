@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998AbaE1OGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:06:37 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:58446 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198AbaE1OGf (ORCPT
+	id S1754097AbaE1OIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:08:11 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:52471 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584AbaE1OIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:06:35 -0400
-Date: Wed, 28 May 2014 18:06:32 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf_fuzzer crash on pentium 4
-Message-ID: <20140528140632.GH2570@moon>
-References: <alpine.DEB.2.10.1405061137560.3220@vincent-weaver-1.umelst.maine.edu>
- <20140528135617.GA25750@amd.pavel.ucw.cz>
+	Wed, 28 May 2014 10:08:09 -0400
+Message-ID: <5385EDCD.5030001@cogentembedded.com>
+Date: Wed, 28 May 2014 18:08:13 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528135617.GA25750@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ondrej Zary <linux@rainbow-software.org>,
+        Samuel Chessman <chessman@tux.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] tlan: Restart autonegotiation on link loss
+References: <1401226727-5508-1-git-send-email-linux@rainbow-software.org> <1401226727-5508-6-git-send-email-linux@rainbow-software.org>
+In-Reply-To: <1401226727-5508-6-git-send-email-linux@rainbow-software.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 03:56:17PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > So just to be difficult I fired up the perf_fuzzer on a Pentium 4 machine.
-> > 
-> > It crashes more or less instantly (sorry for the line wrapping, 
-> > just got the serial console hooked up and don't have minicom configured 
-> > right yet).
-> > 
-> > this is 3.15-rc4 with the anti-memory corruption patch applied.
-> > 
-> > [   67.872274] BUG: unable to handle kernel NULL pointer dereference at 00000004
-> > [   67.876146] IP: [<ffffffff81013df2>] p4_pmu_schedule_events+0xa5/0x331
-> 
-> Pentium 4 's were not 64bit, were they?
+Hello.
 
-Not all, but there were 64bit varians (Xeons iirc).
+On 05/28/2014 01:38 AM, Ondrej Zary wrote:
+
+> When link is lost on a card which uses internal PHY for 10 Mbit speeds,
+> restart autonegotiation to allow switching between 10 and 100 Mbps speeds.
+
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> ---
+>   drivers/net/ethernet/ti/tlan.c |   14 ++++++++++++++
+>   1 file changed, 14 insertions(+)
+
+> diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
+> index 31d4a96..1047b3f 100644
+> --- a/drivers/net/ethernet/ti/tlan.c
+> +++ b/drivers/net/ethernet/ti/tlan.c
+[...]
+> @@ -2788,6 +2789,19 @@ static void tlan_phy_monitor(unsigned long data)
+>   			       dev->name);
+>   			tlan_dio_write8(dev->base_addr, TLAN_LED_REG, 0);
+>   			netif_carrier_off(dev);
+> +			if (priv->adapter->flags & TLAN_ADAPTER_USE_INTERN_10) {
+> +				/* power down internal PHY */
+> +				u16 data = MII_GC_PDOWN | MII_GC_LOOPBK
+> +					| MII_GC_ISOLATE;
+
+    Please, leave | on the previosu line.
+
+> +				tlan_mii_sync(dev->base_addr);
+> +				tlan_mii_write_reg(dev, priv->phy[0],
+> +					MII_GEN_CTL, data);
+
+    Please start this line right under 'dev' on the previous one.
+
+> +				/* set to external PHY */
+> +				priv->phy_num = 1;
+> +				/* restart autonegotiation */
+> +				tlan_set_timer(dev, (4*HZ/10), TLAN_TIMER_PHY_PDOWN);
+
+    Spaces around * and / wouldn't hurt for consistency.
+
+> +				return;
+> +			}
+>   		}
+>   	}
+
+WBR, Sergei
+
