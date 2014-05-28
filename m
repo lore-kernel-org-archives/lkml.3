@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaE1Gzn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 02:55:43 -0400
-Received: from toccata.ens-lyon.org ([140.77.166.68]:60248 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389AbaE1Gzl (ORCPT
+	id S1754119AbaE1G5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 02:57:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41070 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaE1G5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 02:55:41 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 02:55:40 EDT
-Date: Wed, 28 May 2014 08:49:01 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@reisers.ca,
-        gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: speakup: don't die if accessing sysfs without
- synth
-Message-ID: <20140528064901.GW6800@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Sasha Levin <sasha.levin@oracle.com>, w.d.hubbs@gmail.com,
-	chris@the-brannons.com, kirk@reisers.ca, gregkh@linuxfoundation.org,
-	speakup@braille.uwo.ca, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1401232116-31740-1-git-send-email-sasha.levin@oracle.com>
+	Wed, 28 May 2014 02:57:14 -0400
+Date: Wed, 28 May 2014 08:57:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH v2] sched/numa: Fix use of spin_{un}lock_irq() when
+ interrupts are disabled
+Message-ID: <20140528065708.GK11096@twins.programming.kicks-ass.net>
+References: <20140527170204.2968e4fd@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TRAzd1zqvkbVQS90"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401232116-31740-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <20140527170204.2968e4fd@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin, le Tue 27 May 2014 19:08:36 -0400, a écrit :
-> Setting a 'silent' parameter without a synth would crash the kernel.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Acked-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+--TRAzd1zqvkbVQS90
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  drivers/staging/speakup/synth.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/staging/speakup/synth.c b/drivers/staging/speakup/synth.c
-> index 0b3549b..172cf62 100644
-> --- a/drivers/staging/speakup/synth.c
-> +++ b/drivers/staging/speakup/synth.c
-> @@ -212,6 +212,9 @@ void synth_start(void)
->  
->  void spk_do_flush(void)
->  {
-> +	if (!synth)
-> +		return;
-> +
->  	speakup_info.flushing = 1;
->  	synth_buffer_clear();
->  	if (synth->alive) {
-> -- 
-> 1.7.10.4
-> 
+On Tue, May 27, 2014 at 05:02:04PM -0400, Steven Rostedt wrote:
+> As Peter Zijlstra told me, we have the following path:
+>=20
+> do_exit()
+>   exit_itimers()
+>     itimer_delete()
+>       spin_lock_irqsave(&timer->it_lock, &flags);
+>       timer_delete_hook(timer);
+>         kc->timer_del(timer) :=3D posix_cpu_timer_del()
+>           put_task_struct()
+>             __put_task_struct()
+>               task_numa_free()
+>                 spin_lock(&grp->lock);
+>=20
+>=20
+> Which means that task_numa_free() can be called with interrupts
+> disabled, which means that we should not be using spin_lock_irq() but
+> spin_lock_irqsave() instead. Otherwise we are enabling interrupts while
+> holding an interrupt unsafe lock!
+>=20
 
--- 
-Samuel
-Now I know someone out there is going to claim, "Well then, UNIX is intuitive,
-because you only need to learn 5000 commands, and then everything else follows
-from that! Har har har!"
-(Andy Bates in comp.os.linux.misc, on "intuitive interfaces", slightly
-defending Macs.)
+Duh, yes. Thanks Steve!
+
+--TRAzd1zqvkbVQS90
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJThYjEAAoJEHZH4aRLwOS6N70P/3ib29fCtQX6bMqrOTP28Iwg
+RwbksA4Spnvnli9SvQcT1/wIMw6XBAS6Ki3dcfkFmHGNFWsvD7kNnH3p46R7DbIA
+lygG/h2DcBmPCYiM08xlq0u28h6vAEHRKezcM8nlr2jBVcyIwc9/qZfuZ5T5JDiz
+LhMB+lNUsowlyeWdX45y1uBwGAgglgzZgd6fY2QnxMGz0pn+3CAKLbTOW7eI/IfC
+6Z6bCGV4Rg8yYJ+184s/PXaaumY8WPfK20oOr2J3JM/Y0lG+Ihpndd6zxVMPKTRS
+5YxYqQ2CgSoPamC8Q89+kI4eNkvUiCCeFN17ncgX0ysRE3MVpSDJmtQLKc9BnYeT
+JywrpUVZBLrn6C33CNnHYfFKMeS1Np4fjgFIl/7DyYz6a9C34lcZuizFq9pwPvPd
+HPr23RPeqInZ0LcmIr3wxEHt6UFs7gMT2MJpl3fDwra3QLYKxY0SKsDOYic9mAhs
+pNH/bGSzp9xTfmtnQHrztfm6BZc8/XuZf0YFEp2SeKQKtHR/Xt+NsswG684GT1lM
+3wXQsvxE1KFQCe7OROmGhrp06LR6dMXCOQsYncqniu5sYUD0tZR+fb6SBnBZ9ZS1
+4LYmlTk0ORnMFNRmb4NnngkjF+F5dMJr2kUfdzCah+fROwkP01fEYCILJaYGNkb6
+ZP4rosHuxI+fd+qQ7TfL
+=6Hg8
+-----END PGP SIGNATURE-----
+
+--TRAzd1zqvkbVQS90--
