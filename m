@@ -1,185 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaE1Enb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 00:43:31 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40240 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591AbaE1En3 (ORCPT
+	id S1753233AbaE1Et4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 00:49:56 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23435 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaE1Etx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 00:43:29 -0400
-Subject: [PATCH 2/6] powerpc, powernv,
- CPU hotplug: Put offline CPUs in Fast-Sleep instead of Nap
-To: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        svaidyan@in.ibm.com, paulus@samba.org,
-        srivatsa.bhat@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Wed, 28 May 2014 10:08:56 +0530
-Message-ID: <20140528043856.15676.35844.stgit@preeti.in.ibm.com>
-In-Reply-To: <20140528043703.15676.58580.stgit@preeti.in.ibm.com>
-References: <20140528043703.15676.58580.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.16-38-g167d
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052804-9332-0000-0000-000000EB1E0F
+	Wed, 28 May 2014 00:49:53 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-11-53856aee43a4
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Mike Turquette'" <mturquette@linaro.org>,
+        "'Tarek Dakhran'" <t.dakhran@samsung.com>,
+        linux-kernel@vger.kernel.org
+Cc: "'Rob Herring'" <robh+dt@kernel.org>, "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Rob Landley'" <rob@landley.net>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Vyacheslav Tyrtov'" <v.tyrtov@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Heiko Stuebner'" <heiko@sntech.de>,
+        "'Romain Naour'" <romain.naour@openwide.fr>,
+        "'Chander Kashyap'" <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Tarek Dakhran'" <t.dakhran@gmail.com>,
+        "'Tarek Dakhran'" <t.dakhran@samsung.com>,
+        "'Jonghwan Choi'" <jhbird.choi@samsung.com>
+References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
+ <1401074613-29227-3-git-send-email-t.dakhran@samsung.com>
+ <20140528004116.7816.69646@quantum>
+In-reply-to: <20140528004116.7816.69646@quantum>
+Subject: RE: [PATCH v11 2/3] clk: exynos5410: register clocks using common
+ clock framework
+Date: Wed, 28 May 2014 13:49:49 +0900
+Message-id: <01a201cf7a30$41ecca90$c5c65fb0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQFLA9759H0kHQ27SjqSEX8Gj5vNBQJBHm7eAR7viIycQ1ckEA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA5WSa0hTYRjHeXfOzi6inbzkm2TJoDua1/kuo8QPcehDRFFSBjrXQa2pY9PI
+	T5m2vG26FFNHWcrKnLrJNDQpWUsTinnJmoopmnndWpAiXrDSHT/4tW+/933+D7+Hh4eLeU6w
+	/bgpaRm0PE0sFRB8/NOfmZBA503lpeAhDUSlBjMLTRpHcPS0q5eNShw1bPT3u52NehfqAdLl
+	uiFrjoODTFM2Nqp5oMPRYMdjAlX2dbLQ6KA7ej40wELTmgECaSqacGSYr8CR8m0XB7Wu5gO0
+	rvqNIePsR4CMlXYcfajUAVReucKJhlRjdSOg7ueqCGqwWM2iNvRzGPVaO8ah6uuWCMqkLyCo
+	hYYqNvXN9oagWnR3qQUbThW36gHVZqvGqEXT/gse1/inbtDSlNu0/MTpBH6yyRwrW/a6sz44
+	i2cD565CwOVCMhwqDbxCwNvEPbB/3EgUAj7Xk3wBYHNBEZsphMOcJ/e2C7UALmrWcOaxAeDU
+	RDVrK0WQR+D7XzOcLfYmM+FGx2dXCCMXCViT37PdUQfgT8cjVwePDIZNagexxV7kddjZv+Tq
+	xsmDcHzW7HK7kyLYVm4iGN4NV8rG8S3GyMOwtLoWY/g4/OHs3541ALZb7YCZIgYOqBoAk/GG
+	nXNOwGTqeNBansW4SLhcZsGZXfhDkxljInvhu5fDuAZA7Q6zdodZu8Os3WF4BnA98KFlEpki
+	MUkeEqQQpyoy05KCJOmpJsBcl7odjJqjLECyqX+I+flI0jevLy0jPiRMGIoiwiPCQiNFwv/7
+	Fvi6J04mXvQkk8QZ9C2altHyeHmmlFZYAIvL88sGpAjPHVF2yKTCvPDuBkGWKOZkn2PGe2Xc
+	7avBIy+S72xhx+kkEz0VzcOqfbaZV/rz/JK4iGzRcOyhucv20auRE0UOq/3MnKEpoVU5NeIr
+	VU9fyas6i86tcU3TX3rm18Qt0cZAgU2fGCc52r1qifIfO6Dk8p1ewoAmu5ifLsAVyeKQY5hc
+	If4Hnf474nMDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPJsWRmVeSWpSXmKPExsVy+t9jAd13Wa3BBv/fC1hMWneAyeLh+pss
+	FvOPnGO16H+zkNXi/6PXrBbnXq1ktFjSzG1xtukNu8Wmx9dYLRa2LWGxuLxrDpvFjPP7mCxu
+	X+a1WHr9IpPF0wkX2SwmTF/LYrHu5XQWi9a9R9gttvzsYLT43fOJ2WL981OMFutnvGaxODZj
+	CaPF1Bk/2B0kPNbMW8Po0dLcw+Zxua+XyePvqhfMHjtn3WX3WLn8C5vHplWdbB6vVs9k9bhz
+	bQ+bx+Yl9R6vrrF49G1Zxeix/do8Zo/Pm+QC+KIaGG0yUhNTUosUUvOS81My89JtlbyD453j
+	Tc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgKGgpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8zYdCC84Jtwxe/Lz1kaGN/xdzFyckgImEg0zW1kg7DFJC7cWw9kc3EICSxi
+	lPg84RcLhPOXUeLxg3lMIFVsAhoSh98/YwexRQRKJf7uugRWxCzwmU1iYcdxqI7ljBJv30wD
+	6+AUMJBY2/sGbIewQIzEvgtfwLpZBFQl7j0/wApi8wpYSmyfuokNwhaU+DH5HguIzSygLjFp
+	3iJmCFtb4sm7C6wQtypI7Dj7mhHiCieJiz2rGSFqRCT2vXjHOIFRaBaSUbOQjJqFZNQsJC0L
+	GFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQnx2fSOxhXNVgcYhTgYFTi4T2wuCVYiDWx
+	rLgy9xCjBAezkgjvn4DWYCHelMTKqtSi/Pii0pzU4kOMyUCfTmSWEk3OBybuvJJ4Q2MTMyNL
+	IzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpgLGna94mPUyk55VhQ9vSU+n2y
+	E6aevjpzrZByMfvJyOZT956pHCpf8eCmY8yx2va8h8ovw3rfVD+I/bgyNIIlnjGH87BfwNJ7
+	n1VnT0uL//DDNcvekF0y59H0vKY04+A3nYv7Qj7daZ33bOPHbS6nf/5/rHLN9qnn2jPeu58u
+	+nj7QNKj33NbFyqxFGckGmoxFxUnAgDjC9E70gMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Mike Turquette wrote:
+> 
+> Quoting Tarek Dakhran (2014-05-25 20:23:32)
+> > The EXYNOS5410 clocks are statically listed and registered
+> > using the Samsung specific common clock helper functions.
+> >
+> > Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+> > Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+> > ---
+> >  .../devicetree/bindings/clock/exynos5410-clock.txt |   45 +++++
+> >  drivers/clk/samsung/Makefile                       |    1 +
+> >  drivers/clk/samsung/clk-exynos5410.c               |  209
+> ++++++++++++++++++++
+> >  include/dt-bindings/clock/exynos5410.h             |   33 ++++
+> >  4 files changed, 288 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-
+> clock.txt
+> >  create mode 100644 drivers/clk/samsung/clk-exynos5410.c
+> >  create mode 100644 include/dt-bindings/clock/exynos5410.h
+> >
+> > diff --git a/Documentation/devicetree/bindings/clock/exynos5410-
+> clock.txt b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
+> > new file mode 100644
+> > index 0000000..aeab635
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
+> > @@ -0,0 +1,45 @@
+> > +* Samsung Exynos5410 Clock Controller
+> > +
+> > +The Exynos5410 clock controller generates and supplies clock to various
+> > +controllers within the Exynos5410 SoC.
+> > +
+> > +Required Properties:
+> > +
+> > +- compatible: should be "samsung,exynos5410-clock"
+> > +
+> > +- reg: physical base address of the controller and length of memory
+> mapped
+> > +  region.
+> > +
+> > +- #clock-cells: should be 1.
+> > +
+> > +All available clocks are defined as preprocessor macros in
+> > +dt-bindings/clock/exynos5410.h header and can be used in device
+> > +tree sources.
+> > +
+> > +External clock:
+> > +
+> > +There is clock that is generated outside the SoC. It
+> > +is expected that it is defined using standard clock bindings
+> > +with following clock-output-name:
+> > +
+> > + - "fin_pll" - PLL input clock from XXTI
+> 
+> Does fin_pll feed into the exynos5410-clock controller? If so, should
+> the example clock-controller node below have a clocks and clock-names
+> property?
+> 
+Well, it is fixed clocks and generated outside of the SoC...so maybe the properties are not required?
 
-The offline cpus are put to fast sleep if the idle state is discovered in the
-device tree. This is to gain maximum powersavings in the offline state.
+BTW, I've applied this series with Tomasz Figa's reviewed tag and sent out to arm-soc today so if any concerns on this, please let me know immediately.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-[ Changelog added by <preeti@linux.vnet.ibm.com> ]
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
+> Otherwise patch looks good.
+> 
 
- arch/powerpc/include/asm/processor.h |    8 +++++
- arch/powerpc/kernel/idle.c           |   52 ++++++++++++++++++++++++++++++++++
- arch/powerpc/platforms/powernv/smp.c |   12 +++++++-
- 3 files changed, 71 insertions(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-index d922e5c..c5256db 100644
---- a/arch/powerpc/include/asm/processor.h
-+++ b/arch/powerpc/include/asm/processor.h
-@@ -449,6 +449,14 @@ static inline unsigned long get_clean_sp(unsigned long sp, int is_32)
- #define IDLE_INST_NAP	0x00010000 /* nap instruction can be used */
- #define IDLE_INST_SLEEP	0x00020000 /* sleep instruction can be used */
- 
-+/* Flags to indicate which of the CPU idle states are available for use */
-+
-+#define IDLE_USE_NAP		(1UL << 0)
-+#define IDLE_USE_SLEEP		(1UL << 1)
-+
-+extern unsigned int supported_cpuidle_states;
-+extern unsigned int pnv_get_supported_cpuidle_states(void);
-+
- extern unsigned long cpuidle_disable;
- enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
- 
-diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
-index d7216c9..e51d574 100644
---- a/arch/powerpc/kernel/idle.c
-+++ b/arch/powerpc/kernel/idle.c
-@@ -25,6 +25,7 @@
- #include <linux/cpu.h>
- #include <linux/sysctl.h>
- #include <linux/tick.h>
-+#include <linux/of.h>
- 
- #include <asm/processor.h>
- #include <asm/cputable.h>
-@@ -32,6 +33,7 @@
- #include <asm/machdep.h>
- #include <asm/runlatch.h>
- #include <asm/smp.h>
-+#include <asm/firmware.h>
- 
- 
- unsigned long cpuidle_disable = IDLE_NO_OVERRIDE;
-@@ -79,6 +81,56 @@ void arch_cpu_idle(void)
- 	ppc64_runlatch_on();
- }
- 
-+#ifdef CONFIG_PPC_POWERNV
-+
-+unsigned int supported_cpuidle_states = 0;
-+
-+unsigned int pnv_get_supported_cpuidle_states(void)
-+{
-+	return supported_cpuidle_states;
-+}
-+
-+static int __init pnv_probe_idle_states(void)
-+{
-+	struct device_node *power_mgt;
-+	struct property *prop;
-+	int dt_idle_states;
-+	u32 *flags;
-+	int i;
-+
-+	if (!firmware_has_feature(FW_FEATURE_OPALv3))
-+		return 0;
-+
-+	power_mgt = of_find_node_by_path("/ibm,opal/power-mgt");
-+	if (!power_mgt) {
-+		pr_warn("opal: PowerMgmt Node not found\n");
-+		return 0;
-+	}
-+
-+	prop = of_find_property(power_mgt, "ibm,cpu-idle-state-flags", NULL);
-+	if (!prop) {
-+		pr_warn("DT-PowerMgmt: missing ibm,cpu-idle-state-flags\n");
-+		return 0;
-+	}
-+
-+	dt_idle_states = prop->length / sizeof(u32);
-+	flags = (u32 *) prop->value;
-+
-+	for (i = 0; i < dt_idle_states; i++) {
-+		if (flags[i] & IDLE_INST_NAP)
-+			supported_cpuidle_states |= IDLE_USE_NAP;
-+
-+		if (flags[i] & IDLE_INST_SLEEP)
-+			supported_cpuidle_states |= IDLE_USE_SLEEP;
-+	}
-+
-+	return 0;
-+}
-+
-+__initcall(pnv_probe_idle_states);
-+#endif
-+
-+
- int powersave_nap;
- 
- #ifdef CONFIG_SYSCTL
-diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
-index bf5fcd4..fc83006 100644
---- a/arch/powerpc/platforms/powernv/smp.c
-+++ b/arch/powerpc/platforms/powernv/smp.c
-@@ -31,6 +31,7 @@
- #include <asm/xics.h>
- #include <asm/opal.h>
- #include <asm/runlatch.h>
-+#include <asm/processor.h>
- 
- #include "powernv.h"
- 
-@@ -142,6 +143,7 @@ static int pnv_smp_cpu_disable(void)
- static void pnv_smp_cpu_kill_self(void)
- {
- 	unsigned int cpu;
-+	unsigned long idle_states;
- 
- 	/* Standard hot unplug procedure */
- 	local_irq_disable();
-@@ -152,13 +154,21 @@ static void pnv_smp_cpu_kill_self(void)
- 	generic_set_cpu_dead(cpu);
- 	smp_wmb();
- 
-+	idle_states = pnv_get_supported_cpuidle_states();
-+
- 	/* We don't want to take decrementer interrupts while we are offline,
- 	 * so clear LPCR:PECE1. We keep PECE2 enabled.
- 	 */
- 	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) & ~(u64)LPCR_PECE1);
- 	while (!generic_check_cpu_restart(cpu)) {
- 		ppc64_runlatch_off();
--		power7_nap();
-+
-+		/* If sleep is supported, go to sleep, instead of nap */
-+		if (idle_states & IDLE_USE_SLEEP)
-+			power7_sleep();
-+		else
-+			power7_nap();
-+
- 		ppc64_runlatch_on();
- 		if (!generic_check_cpu_restart(cpu)) {
- 			DBG("CPU%d Unexpected exit while offline !\n", cpu);
+Thanks,
+Kukjin
 
