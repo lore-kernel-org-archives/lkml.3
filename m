@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaE1I2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:28:35 -0400
-Received: from ozlabs.org ([103.22.144.67]:49974 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754177AbaE1I2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:28:32 -0400
-Date: Wed, 28 May 2014 18:28:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: linux-next: manual merge of the staging tree with the net-next tree
-Message-ID: <20140528182824.63672ad9@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S932150AbaE1I3F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:29:05 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:52411 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932075AbaE1I3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 04:29:01 -0400
+Message-ID: <53859E47.2040701@linaro.org>
+Date: Wed, 28 May 2014 09:28:55 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/K.V47Y2h8HC5yHcLZwqcdZZ"; protocol="application/pgp-signature"
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v3 12/13] mmc: mmci: add explicit clk control
+References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>	<1400849578-7585-1-git-send-email-srinivas.kandagatla@linaro.org>	<CAPDyKFqz-O9-Douk96LBuFRD_P1146c_Ld14TgiduBgfBqRi_A@mail.gmail.com>	<5383C28D.1060808@linaro.org> <CACRpkdYjQzwVF8ikqqt=7pCvdKM59JcM4HS-UNJ8Ueqdw9az4A@mail.gmail.com>
+In-Reply-To: <CACRpkdYjQzwVF8ikqqt=7pCvdKM59JcM4HS-UNJ8Ueqdw9az4A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/K.V47Y2h8HC5yHcLZwqcdZZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/rtl8821ae/core.c between commit 77be2c54c5bd
-("mac80211: add vif to flush call") from the net-next tree and commit
-0cd05ba54a53 ("staging: rtl8821ae: core.c: Remove version specific
-code") from the staging tree.
+On 28/05/14 09:02, Linus Walleij wrote:
+> On Tue, May 27, 2014 at 12:39 AM, Srinivas Kandagatla
+> <srinivas.kandagatla@linaro.org> wrote:
+>> On 26/05/14 15:21, Ulf Hansson wrote:
+>>> On 23 May 2014 14:52,  <srinivas.kandagatla@linaro.org> wrote:
+>
+>>>>
+>>>> +       bool                    explicit_mclk_control;
+>>>> +       bool                    cclk_is_mclk;
+>>>
+>>> I can't see why you need to have both these new configurations. Aren't
+>>> "cclk_is_mclk" just a fact when you use "explicit_mclk_control".
+>>
+>>> I also believe I would prefer something like "qcom_clkdiv" instead.
+>>
+>> There is a subtle difference between both the flags.  Am happy to change it
+>> to qcom_clkdiv.
+>
+> I think this was due to me wanting the variant variables to be more about
+> the actual technical difference they indicate rather than pointing to
+> a certain vendor or variant where that difference occurs.
+>
+Yes, that's correct, I think having these two variables seems to be more 
+generic than qcom_clkdiv.
 
-I fixed it up (the former is a suberset of the latter for this
-particular conflict) and can carry the fix as necessary (no action is
-required).
+I will keep it as it is and fix other comments from Ulf in next version.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> It's a very minor thing though, if you prefer it this way, go for it.
+>
 
---Sig_/K.V47Y2h8HC5yHcLZwqcdZZ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJThZ4tAAoJEMDTa8Ir7ZwVSLIP/Rvlj7PQQUiRMxyF6NJlwr9w
-SdUzpLz6d6+K/aJUAaLWTUrw/Sk3P8B8jI0/9z/N3wdNsBGwCpClvj46P+XajrDW
-YOt5CdrsRb1/1ZCDZVtGW7w7BWRhjGwawCec+Y0+zusChwn7q01lNl651T7ebIJw
-UmuSGN2K8zIPybysU+hvnJdd4vqM3rsFKn3j6e2pcrxkKb80c0FunyLJCqu5Tbc4
-SjOvMV3IuxJWf21OzmToF/afsZ/FNej+iYXeNModtpzuKEb+PL+9zHtMXjntyT4M
-QRava/VKA9RSFfKAxlhE/OHf4AWYn01INbrd7aHbho1HF/Ev6eo8y8oaW7pAobdi
-jddBlFMDqLRtIiRuNTpbRd/22xmEGmlO1GLlL53h0UzFGiT6t7htskel+MX7apUv
-kDRh6lCIM0hFR3QyroorZq/O8oN8OyQHmyFqkf78ZO0wWT2HOOla3WCfatqoe/t7
-Pe1VkMrSrTKEKnVWeX+Nxrp8FwVG7MKCC0XXDyzK1h8+704dRq92h8+I3FqDQfyl
-fro/KBCP9Oag8LlBwGCQT3FmftiWaEz6egE7iAqB/3lf1MjQN/40l5AhcNTB7gYh
-Lfpw1q1+r8ouz2P13uSL1vshli3SCGnKkdm7oM/vqB0eRO2HjAqXTRXSGR5ChFBy
-1gDEYn8U0idFOboJsG46
-=lWkz
------END PGP SIGNATURE-----
-
---Sig_/K.V47Y2h8HC5yHcLZwqcdZZ--
+Thanks,
+sirni
+> Yours,
+> Linus Walleij
+>
