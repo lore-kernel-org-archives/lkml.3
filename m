@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaE1Nrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:47:53 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:49492 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320AbaE1Nru (ORCPT
+	id S1754432AbaE1NsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:48:07 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:49716 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394AbaE1NsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:47:50 -0400
+	Wed, 28 May 2014 09:48:04 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v4 11/13] mmc: mmci: add f_max to variant structure
-Date: Wed, 28 May 2014 14:47:42 +0100
-Message-Id: <1401284862-16894-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v4 12/13] mmc: mmci: add explicit clk control
+Date: Wed, 28 May 2014 14:47:58 +0100
+Message-Id: <1401284878-16937-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,111 +25,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Some of the controller have maximum supported frequency, This patch adds
-support in variant data structure to specify such restrictions. This
-gives more flexibility in calculating the f_max before passing it to
-mmc-core.
+On Controllers like Qcom SD card controller where cclk is mclk and mclk should
+be directly controlled by the driver.
+
+This patch adds support to control mclk directly in the driver, and also
+adds explicit_mclk_control flag in variant structure giving more flexibility
+to the driver.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/host/mmci.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/mmc/host/mmci.c | 96 ++++++++++++++++++++++++++++++++-----------------
+ drivers/mmc/host/mmci.h |  2 ++
+ 2 files changed, 65 insertions(+), 33 deletions(-)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index fd40f9a..202f2d5 100644
+index 202f2d5..6eb0a29 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -67,6 +67,7 @@ static unsigned int fmax = 515633;
-  * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
-  *		     register
-  * @pwrreg_powerup: power up value for MMCIPOWER register
-+ * @f_max: maximum clk frequency supported by the controller.
-  * @signal_direction: input/out direction of bus signals can be indicated
+@@ -72,6 +72,7 @@ static unsigned int fmax = 515633;
   * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
   * @busy_detect: true if busy detection on dat0 is supported
-@@ -87,6 +88,7 @@ struct variant_data {
- 	bool			blksz_datactrl16;
- 	bool			blksz_datactrl4;
- 	u32			pwrreg_powerup;
-+	u32			f_max;
- 	bool			signal_direction;
+  * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
++ * @explicit_mclk_control: enable explicit mclk control in driver.
+  */
+ struct variant_data {
+ 	unsigned int		clkreg;
+@@ -93,6 +94,7 @@ struct variant_data {
  	bool			pwrreg_clkgate;
  	bool			busy_detect;
-@@ -98,6 +100,7 @@ static struct variant_data variant_arm = {
- 	.fifohalfsize		= 8 * 4,
- 	.datalength_bits	= 16,
- 	.pwrreg_powerup		= MCI_PWR_UP,
-+	.f_max			= 100000000,
+ 	bool			pwrreg_nopower;
++	bool			explicit_mclk_control;
  };
  
- static struct variant_data variant_arm_extended_fifo = {
-@@ -105,6 +108,7 @@ static struct variant_data variant_arm_extended_fifo = {
- 	.fifohalfsize		= 64 * 4,
- 	.datalength_bits	= 16,
- 	.pwrreg_powerup		= MCI_PWR_UP,
-+	.f_max			= 100000000,
- };
- 
- static struct variant_data variant_arm_extended_fifo_hwfc = {
-@@ -113,6 +117,7 @@ static struct variant_data variant_arm_extended_fifo_hwfc = {
- 	.clkreg_enable		= MCI_ARM_HWFCEN,
- 	.datalength_bits	= 16,
- 	.pwrreg_powerup		= MCI_PWR_UP,
-+	.f_max			= 100000000,
- };
- 
- static struct variant_data variant_u300 = {
-@@ -123,6 +128,7 @@ static struct variant_data variant_u300 = {
- 	.datalength_bits	= 16,
- 	.sdio			= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
-+	.f_max			= 100000000,
- 	.signal_direction	= true,
- 	.pwrreg_clkgate		= true,
- 	.pwrreg_nopower		= true,
-@@ -136,6 +142,7 @@ static struct variant_data variant_nomadik = {
- 	.sdio			= true,
- 	.st_clkdiv		= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
-+	.f_max			= 100000000,
- 	.signal_direction	= true,
- 	.pwrreg_clkgate		= true,
- 	.pwrreg_nopower		= true,
-@@ -152,6 +159,7 @@ static struct variant_data variant_ux500 = {
- 	.sdio			= true,
- 	.st_clkdiv		= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
-+	.f_max			= 100000000,
- 	.signal_direction	= true,
- 	.pwrreg_clkgate		= true,
- 	.busy_detect		= true,
-@@ -171,6 +179,7 @@ static struct variant_data variant_ux500v2 = {
- 	.st_clkdiv		= true,
- 	.blksz_datactrl16	= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
-+	.f_max			= 100000000,
- 	.signal_direction	= true,
- 	.pwrreg_clkgate		= true,
- 	.busy_detect		= true,
-@@ -189,6 +198,7 @@ static struct variant_data variant_qcom = {
- 	.blksz_datactrl4	= true,
+ static struct variant_data variant_arm = {
+@@ -199,6 +201,7 @@ static struct variant_data variant_qcom = {
  	.datalength_bits	= 24,
  	.pwrreg_powerup		= MCI_PWR_UP,
-+	.f_max			= 208000000,
+ 	.f_max			= 208000000,
++	.explicit_mclk_control	= true,
  };
  
  static int mmci_card_busy(struct mmc_host *mmc)
-@@ -1485,8 +1495,8 @@ static int mmci_probe(struct amba_device *dev,
- 	 * so we try to adjust the clock down to this,
- 	 * (if possible).
- 	 */
--	if (host->mclk > 100000000) {
--		ret = clk_set_rate(host->clk, 100000000);
-+	if (host->mclk > host->variant->f_max) {
-+		ret = clk_set_rate(host->clk, host->variant->f_max);
- 		if (ret < 0)
- 			goto clk_disable;
- 		host->mclk = clk_get_rate(host->clk);
+@@ -301,7 +304,9 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
+ 	host->cclk = 0;
+ 
+ 	if (desired) {
+-		if (desired >= host->mclk) {
++		if (variant->explicit_mclk_control) {
++			host->cclk = host->mclk;
++		} else if (desired >= host->mclk) {
+ 			clk = MCI_CLK_BYPASS;
+ 			if (variant->st_clkdiv)
+ 				clk |= MCI_ST_UX500_NEG_EDGE;
+@@ -1340,6 +1345,18 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	if (!ios->clock && variant->pwrreg_clkgate)
+ 		pwr &= ~MCI_PWR_ON;
+ 
++	if ((host->variant->explicit_mclk_control) &&
++	    (ios->clock != host->mclk_req)) {
++		int rc = clk_set_rate(host->clk, ios->clock);
++		if (rc < 0) {
++			dev_err(mmc_dev(host->mmc),
++				"Error setting clock rate (%d)\n", rc);
++		} else {
++			host->mclk = clk_get_rate(host->clk);
++			host->mclk_req = ios->clock;
++		}
++	}
++
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	mmci_set_clkreg(host, ios->clock);
+@@ -1490,19 +1507,6 @@ static int mmci_probe(struct amba_device *dev,
+ 	host->plat = plat;
+ 	host->variant = variant;
+ 	host->mclk = clk_get_rate(host->clk);
+-	/*
+-	 * According to the spec, mclk is max 100 MHz,
+-	 * so we try to adjust the clock down to this,
+-	 * (if possible).
+-	 */
+-	if (host->mclk > host->variant->f_max) {
+-		ret = clk_set_rate(host->clk, host->variant->f_max);
+-		if (ret < 0)
+-			goto clk_disable;
+-		host->mclk = clk_get_rate(host->clk);
+-		dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
+-			host->mclk);
+-	}
+ 
+ 	host->phybase = dev->res.start;
+ 	host->base = devm_ioremap_resource(&dev->dev, &dev->res);
+@@ -1511,25 +1515,51 @@ static int mmci_probe(struct amba_device *dev,
+ 		goto clk_disable;
+ 	}
+ 
+-	/*
+-	 * The ARM and ST versions of the block have slightly different
+-	 * clock divider equations which means that the minimum divider
+-	 * differs too.
+-	 */
+-	if (variant->st_clkdiv)
+-		mmc->f_min = DIV_ROUND_UP(host->mclk, 257);
+-	else
+-		mmc->f_min = DIV_ROUND_UP(host->mclk, 512);
+-	/*
+-	 * If no maximum operating frequency is supplied, fall back to use
+-	 * the module parameter, which has a (low) default value in case it
+-	 * is not specified. Either value must not exceed the clock rate into
+-	 * the block, of course.
+-	 */
+-	if (mmc->f_max)
+-		mmc->f_max = min(host->mclk, mmc->f_max);
+-	else
+-		mmc->f_max = min(host->mclk, fmax);
++	if (variant->explicit_mclk_control) {
++		/* get the nearest minimum clock to 100Khz */
++		mmc->f_min = clk_round_rate(host->clk, 100000);
++
++		if (mmc->f_max)
++			mmc->f_max = min(host->variant->f_max, mmc->f_max);
++		else
++			mmc->f_max = min(host->variant->f_max, fmax);
++
++	} else {
++		/*
++		 * According to the spec, mclk is max 100 MHz,
++		 * so we try to adjust the clock down to this,
++		 * (if possible).
++		 */
++		if (host->mclk > host->variant->f_max) {
++			ret = clk_set_rate(host->clk, host->variant->f_max);
++			if (ret < 0)
++				goto clk_disable;
++			host->mclk = clk_get_rate(host->clk);
++			dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
++				host->mclk);
++		}
++		/*
++		 * The ARM and ST versions of the block have slightly different
++		 * clock divider equations which means that the minimum divider
++		 * differs too.
++		 */
++		if (variant->st_clkdiv)
++			mmc->f_min = DIV_ROUND_UP(host->mclk, 257);
++		else
++			mmc->f_min = DIV_ROUND_UP(host->mclk, 512);
++		/*
++		 * If no maximum operating frequency is supplied, fall back to
++		 * use the module parameter, which has a (low) default value in
++		 * case it is not specified. Either value must not exceed the
++		 * clock rate into the block, of course.
++		 */
++		if (mmc->f_max)
++			mmc->f_max = min(host->mclk, mmc->f_max);
++		else
++			mmc->f_max = min(host->mclk, fmax);
++
++	}
++
+ 	dev_dbg(mmc_dev(mmc), "clocking block at %u Hz\n", mmc->f_max);
+ 
+ 	/* Get regulators and the supported OCR mask */
+diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
+index 706eb513..1882e20 100644
+--- a/drivers/mmc/host/mmci.h
++++ b/drivers/mmc/host/mmci.h
+@@ -208,6 +208,8 @@ struct mmci_host {
+ 	spinlock_t		lock;
+ 
+ 	unsigned int		mclk;
++	/* cached value of requested clk in set_ios */
++	unsigned int		mclk_req;
+ 	unsigned int		cclk;
+ 	u32			pwr_reg;
+ 	u32			pwr_reg_add;
 -- 
 1.9.1
 
