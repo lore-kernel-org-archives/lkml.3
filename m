@@ -1,154 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaE1NsR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:48:17 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:60027 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447AbaE1NsO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:48:14 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v4 13/13] mmc: mmci: Add Qcom specific pio_read function.
-Date: Wed, 28 May 2014 14:48:06 +0100
-Message-Id: <1401284886-16978-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
+	id S1754542AbaE1Ntf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:49:35 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33445 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753458AbaE1Ntd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:49:33 -0400
+Date: Wed, 28 May 2014 09:49:05 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+Message-ID: <20140528134905.GF2878@cmpxchg.org>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <20140528121023.GA10735@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528121023.GA10735@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+On Wed, May 28, 2014 at 02:10:23PM +0200, Michal Hocko wrote:
+> Hi Andrew, Johannes,
+> 
+> On Mon 28-04-14 14:26:41, Michal Hocko wrote:
+> > This patchset introduces such low limit that is functionally similar
+> > to a minimum guarantee. Memcgs which are under their lowlimit are not
+> > considered eligible for the reclaim (both global and hardlimit) unless
+> > all groups under the reclaimed hierarchy are below the low limit when
+> > all of them are considered eligible.
+> > 
+> > The previous version of the patchset posted as a RFC
+> > (http://marc.info/?l=linux-mm&m=138677140628677&w=2) suggested a
+> > hard guarantee without any fallback. More discussions led me to
+> > reconsidering the default behavior and come up a more relaxed one. The
+> > hard requirement can be added later based on a use case which really
+> > requires. It would be controlled by memory.reclaim_flags knob which
+> > would specify whether to OOM or fallback (default) when all groups are
+> > bellow low limit.
+> 
+> It seems that we are not in a full agreement about the default behavior
+> yet. Johannes seems to be more for hard guarantee while I would like to
+> see the weaker approach first and move to the stronger model later.
+> Johannes, is this absolutely no-go for you? Do you think it is seriously
+> handicapping the semantic of the new knob?
 
-MCIFIFOCNT register behaviour on Qcom chips is very different than the other
-pl180 integrations. MCIFIFOCNT register contains the number of
-words that are still waiting to be transferred through the FIFO. It keeps
-decrementing once the host CPU reads the MCIFIFO. With the existing logic and
-the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
-register will always return transfer size before reading the FIFO.
+Well we certainly can't start OOMing where we previously didn't,
+that's called a regression and automatically limits our options.
 
-Also the data sheet states that "This register is only useful for debug
-purposes and should not be used for normal operation since it does not reflect
-data which may or may not be in the pipeline".
+Any unexpected OOMs will be much more acceptable from a new feature
+than from configuration that previously "worked" and then stopped.
 
-This patch implements qcom_pio_read function so as existing mmci_pio_read is
-not suitable for Qcom SOCs. qcom_pio_read function is only selected
-based on qcom_fifo flag in variant data structure.
+> My main motivation for the weaker model is that it is hard to see all
+> the corner case right now and once we hit them I would like to see a
+> graceful fallback rather than fatal action like OOM killer. Besides that
+> the usaceses I am mostly interested in are OK with fallback when the
+> alternative would be OOM killer. I also feel that introducing a knob
+> with a weaker semantic which can be made stronger later is a sensible
+> way to go.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+We can't make it stronger, but we can make it weaker.  Stronger is the
+simpler definition, it's simpler code, your usecases are fine with it,
+Greg and I prefer it too.  I don't even know what we are arguing about
+here.
+
+Patch applies on top of mmots.
+
 ---
- drivers/mmc/host/mmci.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
- drivers/mmc/host/mmci.h |  1 +
- 2 files changed, 45 insertions(+), 1 deletion(-)
+>From ced6ac70bb274cdaa4c5d78b53420d84fb803dd7 Mon Sep 17 00:00:00 2001
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Wed, 28 May 2014 09:37:05 -0400
+Subject: [patch] mm: vmscan: treat memcg low limit as hard guarantee
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 6eb0a29..b68223a 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -73,6 +73,7 @@ static unsigned int fmax = 515633;
-  * @busy_detect: true if busy detection on dat0 is supported
-  * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
-  * @explicit_mclk_control: enable explicit mclk control in driver.
-+ * @qcom_fifo: enables qcom specific fifo pio read function.
+Don't hide low limit configuration problems behind weak semantics and
+quietly breach the set-up guarantees.
+
+Make it simple: memcg guarantees are equivalent to mlocked memory,
+anonymous memory without swap, kernel memory, pinned memory etc. -
+unreclaimable.  If no memory can be reclaimed without otherwise
+breaching guarantees, it's a real problem, so let the machine OOM and
+dump the memory state in that situation.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/memcontrol.h |  5 -----
+ mm/memcontrol.c            | 15 ---------------
+ mm/vmscan.c                | 41 +++++------------------------------------
+ 3 files changed, 5 insertions(+), 56 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index a5cf853129ec..c3a53cbb88eb 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -94,7 +94,6 @@ bool task_in_mem_cgroup(struct task_struct *task,
+ 
+ extern bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+ 		struct mem_cgroup *root);
+-extern bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root);
+ 
+ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+ extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+@@ -297,10 +296,6 @@ static inline bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+ {
+ 	return false;
+ }
+-static inline bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
+-{
+-	return false;
+-}
+ 
+ static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 4df733e13727..85fdef53fcf1 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2788,7 +2788,6 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+  *
+  * The given group is within its reclaim gurantee if it is below its low limit
+  * or the same applies for any parent up the hierarchy until root (including).
+- * Such a group might be excluded from the reclaim.
   */
- struct variant_data {
- 	unsigned int		clkreg;
-@@ -95,6 +96,7 @@ struct variant_data {
- 	bool			busy_detect;
- 	bool			pwrreg_nopower;
- 	bool			explicit_mclk_control;
-+	bool			qcom_fifo;
- };
+ bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+ 		struct mem_cgroup *root)
+@@ -2801,25 +2800,11 @@ bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
+ 			return true;
+ 		if (memcg == root)
+ 			break;
+-
+ 	} while ((memcg = parent_mem_cgroup(memcg)));
  
- static struct variant_data variant_arm = {
-@@ -202,6 +204,7 @@ static struct variant_data variant_qcom = {
- 	.pwrreg_powerup		= MCI_PWR_UP,
- 	.f_max			= 208000000,
- 	.explicit_mclk_control	= true,
-+	.qcom_fifo		= true,
- };
- 
- static int mmci_card_busy(struct mmc_host *mmc)
-@@ -1006,6 +1009,40 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
- 	}
+ 	return false;
  }
  
-+static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
-+			unsigned int remain)
-+{
-+	u32 *ptr = (u32 *) buffer;
-+	unsigned int count = 0;
-+	unsigned int words, bytes;
-+	unsigned int fsize = host->variant->fifosize;
-+
-+	words = remain >> 2;
-+	bytes = remain % 4;
-+	/* read full words followed by leftover bytes */
-+	if (words) {
-+		while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-+			*ptr = readl(host->base + MMCIFIFO + (count % fsize));
-+			ptr++;
-+			count += 4;
-+			words--;
-+			if (!words)
-+				break;
-+		}
-+	}
-+
-+	if (bytes) {
-+		unsigned char buf[4];
-+		if (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-+			*buf = readl(host->base + MMCIFIFO + (count % fsize));
-+			memcpy(ptr, buf, bytes);
-+			count += bytes;
-+		}
-+	}
-+
-+	return count;
-+}
-+
- static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
+-bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
+-{
+-	struct mem_cgroup *iter;
+-
+-	for_each_mem_cgroup_tree(iter, root)
+-		if (!mem_cgroup_within_guarantee(iter, root)) {
+-			mem_cgroup_iter_break(root, iter);
+-			return false;
+-		}
+-
+-	return true;
+-}
+-
+ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
  {
- 	void __iomem *base = host->base;
-@@ -1129,7 +1166,8 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 	struct mem_cgroup *memcg = NULL;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a8ffe4e616fe..c72493e8fb53 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2244,20 +2244,14 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ }
  
- 		len = 0;
- 		if (status & MCI_RXACTIVE)
--			len = mmci_pio_read(host, buffer, remain);
-+			len = host->pio_read(host, buffer, remain);
-+
- 		if (status & MCI_TXACTIVE)
- 			len = mmci_pio_write(host, buffer, remain, status);
+ /**
+- * __shrink_zone - shrinks a given zone
++ * shrink_zone - shrinks a given zone
+  *
+  * @zone: zone to shrink
+  * @sc: scan control with additional reclaim parameters
+- * @honor_memcg_guarantee: do not reclaim memcgs which are within their memory
+- * guarantee
+- *
+- * Returns the number of reclaimed memcgs.
+  */
+-static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+-		bool honor_memcg_guarantee)
++static void shrink_zone(struct zone *zone, struct scan_control *sc)
+ {
+ 	unsigned long nr_reclaimed, nr_scanned;
+-	unsigned nr_scanned_groups = 0;
  
-@@ -1504,6 +1542,11 @@ static int mmci_probe(struct amba_device *dev,
- 	if (ret)
- 		goto host_free;
+ 	do {
+ 		struct mem_cgroup *root = sc->target_mem_cgroup;
+@@ -2274,20 +2268,16 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+ 		do {
+ 			struct lruvec *lruvec;
  
-+	if (variant->qcom_fifo)
-+		host->pio_read = mmci_qcom_pio_read;
-+	else
-+		host->pio_read = mmci_pio_read;
-+
- 	host->plat = plat;
- 	host->variant = variant;
- 	host->mclk = clk_get_rate(host->clk);
-diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index 1882e20..dc9fe0a 100644
---- a/drivers/mmc/host/mmci.h
-+++ b/drivers/mmc/host/mmci.h
-@@ -229,6 +229,7 @@ struct mmci_host {
- 	/* pio stuff */
- 	struct sg_mapping_iter	sg_miter;
- 	unsigned int		size;
-+	int (*pio_read)(struct mmci_host *h, char *buf, unsigned int remain);
+-			/* Memcg might be protected from the reclaim */
+-			if (honor_memcg_guarantee &&
+-					mem_cgroup_within_guarantee(memcg, root)) {
++			/* Don't reclaim guaranteed memory */
++			if (mem_cgroup_within_guarantee(memcg, root)) {
+ 				/*
+-				 * It would be more optimal to skip the memcg
+-				 * subtree now but we do not have a memcg iter
+-				 * helper for that. Anyone?
++				 * XXX: skip the entire subtree here
+ 				 */
+ 				memcg = mem_cgroup_iter(root, memcg, &reclaim);
+ 				continue;
+ 			}
  
- #ifdef CONFIG_DMA_ENGINE
- 	/* DMA stuff */
+ 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+-			nr_scanned_groups++;
+ 
+ 			sc->swappiness = mem_cgroup_swappiness(memcg);
+ 			shrink_lruvec(lruvec, sc);
+@@ -2316,27 +2306,6 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+ 
+ 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
+ 					 sc->nr_scanned - nr_scanned, sc));
+-
+-	return nr_scanned_groups;
+-}
+-
+-static void shrink_zone(struct zone *zone, struct scan_control *sc)
+-{
+-	bool honor_guarantee = true;
+-
+-	while (!__shrink_zone(zone, sc, honor_guarantee)) {
+-		/*
+-		 * The previous round of reclaim didn't find anything to scan
+-		 * because
+-		 * a) the whole reclaimed hierarchy is within guarantee so
+-		 *    we fallback to ignore the guarantee because other option
+-		 *    would be the OOM
+-		 * b) multiple reclaimers are racing and so the first round
+-		 *    should be retried
+-		 */
+-		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
+-			honor_guarantee = false;
+-	}
+ }
+ 
+ /* Returns true if compaction should go ahead for a high-order request */
 -- 
-1.9.1
+1.9.3
 
