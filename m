@@ -1,113 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaE1Bhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 21:37:52 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:45445 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaE1Bhu (ORCPT
+	id S1753889AbaE1BiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 21:38:01 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:60189 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753543AbaE1Bh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 21:37:50 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-8d-53853decc2dd
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Bjorn Helgaas'" <bhelgaas@google.com>, "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Magnus Damm'" <damm@opensource.se>, linux-pci@vger.kernel.org,
-        linux-sh@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-14-git-send-email-arnd@arndb.de>
- <20140527225422.GE11907@google.com>
-In-reply-to: <20140527225422.GE11907@google.com>
-Subject: Re: [PATCH] pci: rcar host needs OF
-Date: Wed, 28 May 2014 10:37:47 +0900
-Message-id: <002401cf7a15$6e25d9f0$4a718dd0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac95/p7OaZVpVAJ3SpGah8yk5UJcMQAFof8w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t8zQ903tq3BBjsnSFn8nXSM3WJJU4bF
-	/ce3mCwuL7zEarHp8TVWi8u75rBZnJ13nM1izp8pzA4cHr9/TWL0WLCp1GPzknqPlT8usXv0
-	bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxsbG6ywFr3grvjV9ZW9g/M/VxcjJISFgInHg1kRm
-	CFtM4sK99WxdjFwcQgLLGCW+f//OBFN04ulvJojEIkaJ3xM72SGc34wSO1/uZQWpYhNQk/jy
-	5TA7iC0i4CXx4/VxsCJmgeOMEodPTwIrEhK4xCjRN4Wvi5GDg1PAQOLPdGWQsLCAjsSpCfdY
-	QcIsAqoS35Y4gIR5BWwlZt05wQZhC0r8mHyPBcRmFtCSWL/zOBOELS+xec1bZpBWCQF1iUd/
-	dSEuMJJon3CEEaJERGLfi3eMINdICPxll1jb1wuWYBEQkPg2+RALRK+sxKYD0ICQlDi44gbL
-	BEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yEivODG3uDQvXS85P3cTIySW+3Yw3jxg
-	fYgxGWj9RGYp0eR8YCrIK4k3NDYzsjA1MTU2Mrc0I01YSZx30cOkICGB9MSS1OzU1ILUovii
-	0pzU4kOMTBycUg2Mc7do/Z66l8vK5sS5WeIBf+z/TFdoll965tgT65S8hl8vnePPO5Xdv27B
-	8nfrUmd5g7DnW+w1wh7udS8NL4s3Edb/IJgkzDm/UsJfUerL85hHLwt5mOXk4zTtZjHu1NMu
-	Wrdz6Z3T/3eeb6qYyuO/6o3h3rq2rTfPX2ZuKdbRE5j1bVdCaZGrEktxRqKhFnNRcSIAeXd5
-	EPsCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jAd03tq3BBud3iFr8nXSM3WJJU4bF
-	/ce3mCwuL7zEarHp8TVWi8u75rBZnJ13nM1izp8pzA4cHr9/TWL0WLCp1GPzknqPlT8usXv0
-	bVnF6PF5k1wAW1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKL
-	T4CuW2YO0DlKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMI6xoyNjddZCl7x
-	Vnxr+srewPifq4uRk0NCwETixNPfTBC2mMSFe+vZuhi5OIQEFjFK/J7YyQ7h/GaU2PlyLytI
-	FZuAmsSXL4fZQWwRAS+JH6+PgxUxCxxnlDh8ehJYkZDAJUaJvil8XYwcHJwCBhJ/piuDhIUF
-	dCROTbjHChJmEVCV+LbEASTMK2ArMevOCTYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveMoO0
-	SgioSzz6qwtxgZFE+4QjjBAlIhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPS
-	cw31ihNzi0vz0vWS83M3MYITxTOpHYwrGywOMQpwMCrx8B5Y3BIsxJpYVlyZe4hRgoNZSYR3
-	kUBrsBBvSmJlVWpRfnxRaU5q8SHGZKA/JzJLiSbnA5NYXkm8obGJmZGlkZmFkYm5OWnCSuK8
-	B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwHheKUxGyP3HhUsFjXssTTW9XubAv+7DFo+JU0KpM
-	p7/HXpju7WTZdb72WMVaLrOfOjcfrjyxxFTowrUt1ZuyP0f0uM6LcMvhU5W43VvjJBo79dfd
-	VLmrz+4Ht+k+CBZ6N58lamnN5VKzi1t4/TYxpHPMCdH/HFwzu0tsYrVsj175mRTDnYYTlViK
-	MxINtZiLihMBvw8HhFgDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 27 May 2014 21:37:58 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnBSAIg9hVN5LL1sPGdsb2JhbABZgweDRIUIonEBAQEBAQEGmA0BgQgXAwEBAQE4NYIlAQEFDhkTHA8UEAgDGAkMGQ8FJQMHGhOIQdVEFxaFP4h9BwqENgSEXwKVEpZyKw
+Date: Wed, 28 May 2014 11:37:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Bob Liu <bob.liu@oracle.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Shrinkers and proportional reclaim
+Message-ID: <20140528013704.GI8554@dastard>
+References: <1400749779-24879-1-git-send-email-mgorman@suse.de>
+ <alpine.LSU.2.11.1405261441320.7154@eggly.anvils>
+ <20140527023751.GB8554@dastard>
+ <alpine.LSU.2.11.1405271406520.4317@eggly.anvils>
+ <CALYGNiPZXnTG+vxg5tr+jnaDSvHRArJq=fmQ4bPD-m-iJU9jqA@mail.gmail.com>
+ <alpine.LSU.2.11.1405271618360.5019@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1405271618360.5019@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 28, 2014 7:54 AM, Bjorn Helgaas wrote:
-> On Thu, May 08, 2014 at 04:56:25PM +0200, Arnd Bergmann wrote:
-> > The pci-rcar driver is enabled for compile tests, and this has
-> > now shown that the driver cannot build without CONFIG_OF,
-> > following the inclusion of f8f2fe7355fb "PCI: rcar: Use new OF
-> > interrupt mapping when possible":
-> >
-> > drivers/built-in.o: In function `rcar_pci_map_irq':
-> > :(.text+0x1cc7c): undefined reference to `of_irq_parse_and_map_pci'
-> >
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Magnus Damm <damm@opensource.se>
-> > Cc: linux-pci@vger.kernel.org
-> > Cc: linux-sh@vger.kernel.org
+On Tue, May 27, 2014 at 04:19:12PM -0700, Hugh Dickins wrote:
+> On Wed, 28 May 2014, Konstantin Khlebnikov wrote:
+> > On Wed, May 28, 2014 at 1:17 AM, Hugh Dickins <hughd@google.com> wrote:
+> > > On Tue, 27 May 2014, Dave Chinner wrote:
+> > >> On Mon, May 26, 2014 at 02:44:29PM -0700, Hugh Dickins wrote:
+> > >> >
+> > >> > [PATCH 4/3] fs/superblock: Avoid counting without __GFP_FS
+> > >> >
+> > >> > Don't waste time counting objects in super_cache_count() if no __GFP_FS:
+> > >> > super_cache_scan() would only back out with SHRINK_STOP in that case.
+> > >> >
+> > >> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > >>
+> > >> While you might think that's a good thing, it's not.  The act of
+> > >> shrinking is kept separate from the accounting of how much shrinking
+> > >> needs to take place.  The amount of work the shrinker can't do due
+> > >> to the reclaim context is deferred until the shrinker is called in a
+> > >> context where it can do work (eg. kswapd)
+> > >>
+> > >> Hence not accounting for work that can't be done immediately will
+> > >> adversely impact the balance of the system under memory intensive
+> > >> filesystem workloads. In these worklaods, almost all allocations are
+> > >> done in the GFP_NOFS or GFP_NOIO contexts so not deferring the work
+> > >> will will effectively stop superblock cache reclaim entirely....
+> > >
+> > > Thanks for filling me in on that.  At first I misunderstood you,
+> > > and went off looking in the wrong direction.  Now I see what you're
+> > > referring to: the quantity that shrink_slab_node() accumulates in
+> > > and withdraws from shrinker->nr_deferred[nid].
+> > 
+> > Maybe shrinker could accumulate fraction nr_pages_scanned / lru_pages
+> > instead of exact amount of required work? Count of shrinkable objects
+> > might be calculated later, when shrinker is called from a suitable context
+> > and can actualy do something.
 > 
-> If I understand correctly, this patch was superceded by this one:
-> 
->     "[PATCH] of/irq: provide int of_irq_parse_and_map_pci wrapper"
-> 
-> and you aren't expecting me to do anything.  Let me know if otherwise.
+> Good idea, probably a worthwhile optimization to think through further.
+> (Though experience says that Dave will explain how that can never work.)
 
-Yes, right. I checked that the build error was resolved by the above
-mentioned patch.
+Heh. :)
 
-Best regards,
-Jingoo Han
+Two things, neither are show-stoppers but would need to be handled
+in some way.
 
-> 
-> > ---
-> >  drivers/pci/host/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
-> > index fbbef0b..4675f47 100644
-> > --- a/drivers/pci/host/Kconfig
-> > +++ b/drivers/pci/host/Kconfig
-> > @@ -27,7 +27,7 @@ config PCI_TEGRA
-> >
-> >  config PCI_RCAR_GEN2
-> >  	bool "Renesas R-Car Gen2 Internal PCI controller"
-> > -	depends on ARCH_SHMOBILE || (ARM && COMPILE_TEST)
-> > +	depends on ARCH_SHMOBILE || (ARM && OF && COMPILE_TEST)
-> >  	help
-> >  	  Say Y here if you want internal PCI support on R-Car Gen2 SoC.
-> >  	  There are 3 internal PCI controllers available with a single
-> > --
-> > 1.8.3.2
-> >
+First: it would remove a lot of the policy flexibility from the
+shrinker implementations that we currently have. i.e. the "work to
+do" policy is current set by the shrinker, not by the shrinker
+infrastructure. The shrinker infrastructure only determines whether
+it can be done immediately of whether it shoul dbe deferred....
 
+e.g. there are shrinkers that don't do work unless they are
+over certain thresholds. For these shrinkers, they need to have the
+work calculated by the callout as they may decide nothing
+can/should/needs to be done, and that decision may have nothing to
+do with the current reclaim context. You can't really do this
+without a callout to determine the cache size.
+
+The other thing I see is that deferring the ratio of work rather
+than the actual work is that it doesn't take into account the fact
+that the cache sizes might be changing in a different way to memory
+pressure. i.e. a sudden increase in cache size just before deferred
+reclaim occurred would cause much more reclaim than the current
+code, even though the cache wasn't contributing to the original
+deferred memory pressure.
+
+This will lead to bursty/peaky reclaim behaviour because we then
+can't distinguish an large instantenous change in memory pressure
+from "wind up" caused by lots of small increments of deferred work.
+We specifically damp the second case:
+
+        /*
+         * We need to avoid excessive windup on filesystem shrinkers
+         * due to large numbers of GFP_NOFS allocations causing the
+         * shrinkers to return -1 all the time. This results in a large
+         * nr being built up so when a shrink that can do some work
+         * comes along it empties the entire cache due to nr >>>
+         * freeable. This is bad for sustaining a working set in
+         * memory.
+         *
+         * Hence only allow the shrinker to scan the entire cache when
+         * a large delta change is calculated directly.
+         */
+
+Hence we'd need a different mechanism to prevent such defered work
+wind up from occurring. We can probably do better than the current
+SWAG if we design a new algorithm that has this damping built in.
+The current algorithm is all based around the "seek penalty"
+reinstantiating a reclaimed object has, and that simply does not
+match for many shrinker users now as they aren't spinning disk
+based. Hence I think we really need to look at improving the entire
+shrinker "work" algorithm rather than just tinkering around the
+edges...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
