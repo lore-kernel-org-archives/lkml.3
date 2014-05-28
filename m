@@ -1,106 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaE1POw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:14:52 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:33388 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372AbaE1POu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:14:50 -0400
+	id S1754363AbaE1PQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:16:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5043 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753255AbaE1PQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 11:16:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,928,1392192000"; 
+   d="scan'208";a="547835298"
+Message-ID: <5385FDC1.2020800@intel.com>
+Date: Wed, 28 May 2014 23:16:17 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1400762084-31606-2-git-send-email-maxime.ripard@free-electrons.com>
-References: <1400762084-31606-1-git-send-email-maxime.ripard@free-electrons.com>
- <1400762084-31606-2-git-send-email-maxime.ripard@free-electrons.com>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Wed, 28 May 2014 23:14:29 +0800
-X-Google-Sender-Auth: -hQwAa3W35kyCiZYJ145NPYKu38
-Message-ID: <CAGb2v67ekvfjx+nFNGfVkWYH1XeeHq4+jPGsVZBzCQNPH9Eddg@mail.gmail.com>
-Subject: Re: [linux-sunxi] [PATCH v9 1/2] Documentation: dt: Add Allwinner A31
- DMA controller bindings
-To: linux-sunxi <linux-sunxi@googlegroups.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dmaengine@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, Shuge <shuge@allwinnertech.com>,
-        zhuzhenhua@allwinnertech.com, Arnd Bergmann <arnd@arndb.de>,
-        andriy.shevchenko@intel.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+To: Maurizio Lombardi <mlombard@redhat.com>, Ming Lei <tom.leiming@gmail.com>
+CC: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [jet.chen@intel.com: [bio] kernel BUG at drivers/block/virtio_blk.c:166!]
+References: <20140526194347.GB2271@dhcp-27-189.brq.redhat.com> <CACVXFVOaF-EOioE38sy9=2f-+rKECJnzUCSHrL-VZJi1Ycj_wA@mail.gmail.com> <20140527084359.GD2205@dhcp-27-189.brq.redhat.com> <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
+In-Reply-To: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 8:34 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> The Allwinner A31 DMA controller is rather simple to describe in the DT. Add
-> the bindings documentation.
->
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  .../devicetree/bindings/dma/sun6i-dma.txt          | 45 ++++++++++++++++++++++
->  1 file changed, 45 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/dma/sun6i-dma.txt
->
-> diff --git a/Documentation/devicetree/bindings/dma/sun6i-dma.txt b/Documentation/devicetree/bindings/dma/sun6i-dma.txt
-> new file mode 100644
-> index 000000000000..5d7c86d52665
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/dma/sun6i-dma.txt
-> @@ -0,0 +1,45 @@
-> +Allwinner A31 DMA Controller
-> +
-> +This driver follows the generic DMA bindings defined in dma.txt.
-> +
-> +Required properties:
-> +
-> +- compatible:  Must be "allwinner,sun6i-a31-dma"
-> +- reg:         Should contain the registers base address and length
-> +- interrupts:  Should contain a reference to the interrupt used by this device
-> +- clocks:      Should contain a reference to the parent AHB clock
-> +- resets:      Should contain a reference to the reset controller asserting
-> +               this device in reset
+On 05/27/2014 07:24 PM, Maurizio Lombardi wrote:
+> On Tue, May 27, 2014 at 10:43:59AM +0200, Maurizio Lombardi wrote:
+>>
+>> But now I'm suspicious of this part of commit 3979ef4dcf:
+>>
+>>  failed:
+>>         bvec->bv_page = NULL;
+>>         bvec->bv_len = 0;
+>>         bvec->bv_offset = 0;
+>>         bio->bi_vcnt--;  <----------------
+>>         blk_recount_segments(q, bio);
+>>         return 0;
+>>
+>> Is decreasing bi_vcnt sufficient to guarantee that blk_recount_segments()
+>> recalculates the correct number of physical segments?
+>> Looking at the __blk_recalc_rq_segments() it appears it may not be the case.
+>>
+>> The question is how can we restore the correct number of physical segments in case
+>> of failure without breaking anything...
+>>
+> 
+> If my hypothesis is correct, the following patch should trigger a kernel panic,
+> Jet Chen, can you try it and let me know whether the BUG_ON is hit or not?
 
-Extra spaces between the leading tabs.
-(Gmail messes up whitespaces, please see original mail.)
+Sorry for late respond. Dongsu has sent a patch for this issue.
+	message-id <1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
+Do you still need me to test the following patch ?
 
-> +- #dma-cells : Should be 1, a single cell holding a line request number
+> 
+> diff --git a/block/bio.c b/block/bio.c
+> index 0443694..763868f 100644
+> --- a/block/bio.c
+> +++ b/block/bio.c
+> @@ -701,6 +701,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  			  unsigned int max_sectors)
+>  {
+>  	int retried_segments = 0;
+> +	unsigned int phys_segments_orig;
+>  	struct bio_vec *bvec;
+>  
+>  	/*
+> @@ -751,6 +752,9 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  	if (bio->bi_vcnt >= bio->bi_max_vecs)
+>  		return 0;
+>  
+> +	blk_recount_segments(q, bio);
+> +	phys_segments_orig = bio->bi_phys_segments;
 > +
-> +Example:
-> +       dma: dma-controller@01c02000 {
-> +               compatible = "allwinner,sun6i-a31-dma";
-> +               reg = <0x01c02000 0x1000>;
-> +               interrupts = <0 50 4>;
-> +               clocks = <&ahb1_gates 6>;
-> +               resets = <&ahb1_rst 6>;
-> +               #dma-cells = <1>;
-> +       };
-> +
-> +Clients:
-> +
-> +DMA clients connected to the A31 DMA controller must use the format
-> +described in the dma.txt file, using a two-cell specifier for each
-> +channel: a phandle plus one integer cells.
-> +The two cells in order are:
-> +
-> +1. A phandle pointing to the DMA controller.
-> +2. The port ID as specified in the datasheet
-> +
-> +Example:
-> +spi2: spi@01c6a000 {
-> +       compatible = "allwinner,sun6i-a31-spi";
-> +       reg = <0x01c6a000 0x1000>;
-> +       interrupts = <0 67 4>;
-> +       clocks = <&ahb1_gates 22>, <&spi2_clk>;
-> +       clock-names = "ahb", "mod";
-> +       dmas = <&dma 25>, <&dma 25>;
-> +       dma-names = "rx", "tx";
-> +       resets = <&ahb1_rst 22>;
-> +};
-> --
-> 1.9.3
->
-> --
-> You received this message because you are subscribed to the Google Groups "linux-sunxi" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to linux-sunxi+unsubscribe@googlegroups.com.
-> For more options, visit https://groups.google.com/d/optout.
+>  	/*
+>  	 * setup the new entry, we might clear it again later if we
+>  	 * cannot add the page
+> @@ -811,6 +815,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  	bvec->bv_offset = 0;
+>  	bio->bi_vcnt--;
+>  	blk_recount_segments(q, bio);
+> +	BUG_ON(phys_segments_orig != bio->bi_phys_segments);
+>  	return 0;
+>  }
+> 
+> 
+> Regards,
+> Maurizio Lombardi 
+> 
