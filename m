@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292AbaE1Nrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:47:42 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:51938 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250AbaE1Nrj (ORCPT
+	id S1754363AbaE1Nrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:47:53 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:49492 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320AbaE1Nru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:47:39 -0400
+	Wed, 28 May 2014 09:47:50 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v4 10/13] mmc: mmci: Add support to data commands via variant structure.
-Date: Wed, 28 May 2014 14:47:33 +0100
-Message-Id: <1401284853-16853-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v4 11/13] mmc: mmci: add f_max to variant structure
+Date: Wed, 28 May 2014 14:47:42 +0100
+Message-Id: <1401284862-16894-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,55 +25,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-On some SOCs like Qcom there are explicit bits in the command register
-to specify if its a data transfer command or not. So this patch adds
-support to such bits in variant data, giving more flexibility to the
-driver.
+Some of the controller have maximum supported frequency, This patch adds
+support in variant data structure to specify such restrictions. This
+gives more flexibility in calculating the f_max before passing it to
+mmc-core.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/host/mmci.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/mmc/host/mmci.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index dbcb952..fd40f9a 100644
+index fd40f9a..202f2d5 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -59,6 +59,7 @@ static unsigned int fmax = 515633;
-  *	      is asserted (likewise for RX)
-  * @fifohalfsize: number of bytes that can be written when MCI_TXFIFOHALFEMPTY
-  *		  is asserted (likewise for RX)
-+ * @data_cmd_enable: enable value for data commands.
-  * @sdio: variant supports SDIO
-  * @st_clkdiv: true if using a ST-specific clock divider algorithm
-  * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
-@@ -79,6 +80,7 @@ struct variant_data {
- 	unsigned int		datalength_bits;
- 	unsigned int		fifosize;
- 	unsigned int		fifohalfsize;
-+	unsigned int		data_cmd_enable;
- 	unsigned int		datactrl_mask_ddrmode;
- 	bool			sdio;
- 	bool			st_clkdiv;
-@@ -183,6 +185,7 @@ static struct variant_data variant_qcom = {
- 				  MCI_QCOM_CLK_SELECT_IN_FBCLK,
- 	.clkreg_8bit_bus_enable = MCI_QCOM_CLK_WIDEBUS_8,
- 	.datactrl_mask_ddrmode	= MCI_QCOM_CLK_SELECT_IN_DDR_MODE,
-+	.data_cmd_enable	= MCI_QCOM_CSPM_DATCMD,
+@@ -67,6 +67,7 @@ static unsigned int fmax = 515633;
+  * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
+  *		     register
+  * @pwrreg_powerup: power up value for MMCIPOWER register
++ * @f_max: maximum clk frequency supported by the controller.
+  * @signal_direction: input/out direction of bus signals can be indicated
+  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
+  * @busy_detect: true if busy detection on dat0 is supported
+@@ -87,6 +88,7 @@ struct variant_data {
+ 	bool			blksz_datactrl16;
+ 	bool			blksz_datactrl4;
+ 	u32			pwrreg_powerup;
++	u32			f_max;
+ 	bool			signal_direction;
+ 	bool			pwrreg_clkgate;
+ 	bool			busy_detect;
+@@ -98,6 +100,7 @@ static struct variant_data variant_arm = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.datalength_bits	= 16,
+ 	.pwrreg_powerup		= MCI_PWR_UP,
++	.f_max			= 100000000,
+ };
+ 
+ static struct variant_data variant_arm_extended_fifo = {
+@@ -105,6 +108,7 @@ static struct variant_data variant_arm_extended_fifo = {
+ 	.fifohalfsize		= 64 * 4,
+ 	.datalength_bits	= 16,
+ 	.pwrreg_powerup		= MCI_PWR_UP,
++	.f_max			= 100000000,
+ };
+ 
+ static struct variant_data variant_arm_extended_fifo_hwfc = {
+@@ -113,6 +117,7 @@ static struct variant_data variant_arm_extended_fifo_hwfc = {
+ 	.clkreg_enable		= MCI_ARM_HWFCEN,
+ 	.datalength_bits	= 16,
+ 	.pwrreg_powerup		= MCI_PWR_UP,
++	.f_max			= 100000000,
+ };
+ 
+ static struct variant_data variant_u300 = {
+@@ -123,6 +128,7 @@ static struct variant_data variant_u300 = {
+ 	.datalength_bits	= 16,
+ 	.sdio			= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.pwrreg_nopower		= true,
+@@ -136,6 +142,7 @@ static struct variant_data variant_nomadik = {
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.pwrreg_nopower		= true,
+@@ -152,6 +159,7 @@ static struct variant_data variant_ux500 = {
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.busy_detect		= true,
+@@ -171,6 +179,7 @@ static struct variant_data variant_ux500v2 = {
+ 	.st_clkdiv		= true,
+ 	.blksz_datactrl16	= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.busy_detect		= true,
+@@ -189,6 +198,7 @@ static struct variant_data variant_qcom = {
  	.blksz_datactrl4	= true,
  	.datalength_bits	= 24,
  	.pwrreg_powerup		= MCI_PWR_UP,
-@@ -852,6 +855,9 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
- 	if (/*interrupt*/0)
- 		c |= MCI_CPSM_INTERRUPT;
++	.f_max			= 208000000,
+ };
  
-+	if (mmc_cmd_type(cmd) == MMC_CMD_ADTC)
-+		c |= host->variant->data_cmd_enable;
-+
- 	host->cmd = cmd;
- 
- 	writel(cmd->arg, base + MMCIARGUMENT);
+ static int mmci_card_busy(struct mmc_host *mmc)
+@@ -1485,8 +1495,8 @@ static int mmci_probe(struct amba_device *dev,
+ 	 * so we try to adjust the clock down to this,
+ 	 * (if possible).
+ 	 */
+-	if (host->mclk > 100000000) {
+-		ret = clk_set_rate(host->clk, 100000000);
++	if (host->mclk > host->variant->f_max) {
++		ret = clk_set_rate(host->clk, host->variant->f_max);
+ 		if (ret < 0)
+ 			goto clk_disable;
+ 		host->mclk = clk_get_rate(host->clk);
 -- 
 1.9.1
 
