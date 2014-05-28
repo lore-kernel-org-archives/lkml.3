@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaE1ITY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 04:19:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60764 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753879AbaE1ITW (ORCPT
+	id S1754496AbaE1IXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 04:23:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:41167 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471AbaE1IXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 04:19:22 -0400
-Date: Wed, 28 May 2014 10:19:18 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: [PATCH v2] perf tools: consider header files outside perf directory
- in tags target
-Message-ID: <20140528081918.GA28567@linutronix.de>
-References: <1401207822-8695-1-git-send-email-bigeasy@linutronix.de>
- <20140527163325.GA26128@krava.brq.redhat.com>
+	Wed, 28 May 2014 04:23:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140527163325.GA26128@krava.brq.redhat.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5840140.8yGnd4Ycx3@wuerfel>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
+	<5279118.J5305KQNjB@wuerfel>
+	<20140527125655.63A46C40FCB@trevor.secretlab.ca>
+	<5840140.8yGnd4Ycx3@wuerfel>
+Date: Wed, 28 May 2014 10:23:09 +0200
+Message-ID: <CACRpkdZjEVYgq7tKEfmZC0Fu4n=JuUues=pAAtquLahkex=pkA@mail.gmail.com>
+Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes lookups like "vi -t event_format"
+On Tue, May 27, 2014 at 3:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 27 May 2014 13:56:55 Grant Likely wrote:
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
-v1..v2:
-    - add ../lib/{api|symbol}
-    - move the files  & folders into a variable which can be resued for
-      the three users.
+>> Come to think of it, doesn't PCI DMA have to deal with that situation if
+>> the PCI window is not 1:1 mapped into the CPU address space?
+>
+> I think all PCI buses we support so far only need a single entry in the
+> dma-ranges property.
 
- tools/perf/Makefile.perf | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+Here is the patch I've cooked for the Integrator (PCIv3), identical
+to the keystone:
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 895edd3..90e96ea 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -810,17 +810,20 @@ INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
- $(DOC_TARGETS):
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) $(@:doc=all)
- 
-+TAG_FOLDERS= . ../lib/traceevent ../lib/api ../lib/symbol
-+TAG_FILES= ../../include/uapi/linux/perf_event.h
-+
- TAGS:
- 	$(RM) TAGS
--	$(FIND) . -name '*.[hcS]' -print | xargs etags -a
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs etags -a $(TAG_FILES)
- 
- tags:
- 	$(RM) tags
--	$(FIND) . -name '*.[hcS]' -print | xargs ctags -a
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs ctags -a $(TAG_FILES)
- 
- cscope:
- 	$(RM) cscope*
--	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs cscope -b $(TAG_FILES)
- 
- ### Detect prefix changes
- TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
--- 
-2.0.0.rc4
+commit b326b94a58ff476fca2b57cf7912b00bec1363c0
+Author: Linus Walleij <linus.walleij@linaro.org>
+Date:   Fri Feb 14 10:26:15 2014 +0100
 
+    ARM: integrator: get rid of <mach/memory.h>
+
+    The Integrator has a custom <mach/memory.h> header defining the
+    BUS_OFFSET for *_to_bus and bus_to_* operations as offset from
+    0x80000000.
+
+    This switches the Integrator over to using the mechanism
+    introduced for the Keystone to provide the same offset using
+    the device tree, deletes <mach/memory.h> and augments the
+    Integrator device tree to provide the bus offset.
+
+    Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+    Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+    Cc: Will Deacon <will.deacon@arm.com>
+    Cc: Jonathan Austin <jonathan.austin@arm.com>
+    Cc: Russell King <linux@arm.linux.org.uk>
+    Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ab438cb5af55..2b29a1a7f26f 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -329,7 +329,6 @@ config ARCH_INTEGRATOR
+        select HAVE_TCM
+        select ICST
+        select MULTI_IRQ_HANDLER
+-       select NEED_MACH_MEMORY_H
+        select PLAT_VERSATILE
+        select SPARSE_IRQ
+        select USE_OF
+diff --git a/arch/arm/boot/dts/integratorap.dts
+b/arch/arm/boot/dts/integratorap.dts
+index b10e6351da53..f0c397fd45c5 100644
+--- a/arch/arm/boot/dts/integratorap.dts
++++ b/arch/arm/boot/dts/integratorap.dts
+@@ -8,6 +8,7 @@
+ / {
+        model = "ARM Integrator/AP";
+        compatible = "arm,integrator-ap";
++       dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+
+        aliases {
+                arm,timer-primary = &timer2;
+diff --git a/arch/arm/mach-integrator/include/mach/memory.h
+b/arch/arm/mach-integrator/include/mach/memory.h
+deleted file mode 100644
+index 334d5e271889..000000000000
+--- a/arch/arm/mach-integrator/include/mach/memory.h
++++ /dev/null
+(...)
+
+Yours,
+Linus Walleij
