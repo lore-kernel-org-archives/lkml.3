@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaE1LXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 07:23:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33361 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaE1LXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 07:23:30 -0400
-Date: Wed, 28 May 2014 04:23:29 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Vaughan Cao <vaughan.cao@oracle.com>
-Cc: James.Bottomley@HansenPartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] notify block layer when using temporary change to
- cache_type
-Message-ID: <20140528112329.GA11953@infradead.org>
-References: <1401190754-6822-1-git-send-email-vaughan.cao@oracle.com>
- <1401207496.14454.90.camel@dabdike>
- <1401253107-16138-1-git-send-email-vaughan.cao@oracle.com>
+	id S1753028AbaE1LXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:23:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35751 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752479AbaE1LXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 07:23:49 -0400
+Date: Wed, 28 May 2014 13:23:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>
+Subject: Re: ACPI Error: Could not enable RealTimeClock event
+ (20140214/evxfevnt-212)
+Message-ID: <20140528112344.GC17196@pd.tnic>
+References: <20140526160403.GA26531@pd.tnic>
+ <CALAqxLWSLq8vgkcs3-Cu-coMB9L=eL-gmBPfsZ+ZuxF0LuY5LA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1401253107-16138-1-git-send-email-vaughan.cao@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <CALAqxLWSLq8vgkcs3-Cu-coMB9L=eL-gmBPfsZ+ZuxF0LuY5LA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 12:58:27PM +0800, Vaughan Cao wrote:
-> No, I just want to keep the modification as small as possible. Checked
-> the actions of sd_revalidate_disk() again, it seems no harm to call it
-> from here. Also actual actions are skipped in sd_read_cache_type() if
-> cache_override!=0, so I suppose your original plan is to jump to
-> sd_revalidate_disk() from here.
-
-I think the right fix is to factor out a helper like:
-
-static void sd_set_flush_flag(struct scsi_disk *sdkp)
-{
-	unsigned flush = 0;
-
-	if (sdkp->WCE) {
-		flush |= REQ_FLUSH;
-		if (sdkp->DPOFUA)
-			flush |= REQ_FUA;
-	}
-
-	blk_queue_flush(sdkp->disk->queue, flush);
-}
-
-which can be called from sd_revalidate_disk and cache_type_store.
-
+On Tue, May 27, 2014 at 11:56:29AM -0700, John Stultz wrote:
+> On Mon, May 26, 2014 at 9:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+> > Hi guys,
+> >
+> > so I get this with rc7+tip but not with rc6+tip:
+> >
+> > ACPI Error: Could not enable RealTimeClock event (20140214/evxfevnt-212)
+> > ACPI Warning: Could not enable fixed event - RealTimeClock (4) (20140214/evxface-628)
 > 
-> However, that way may not be acceptable after further code review.
-> Changing the sdkp->WCE,RCD will cause these real parameters of the
-> underlying device *lost*. In sd_shutdown() and sd_suspend_common(), we
-> need them to call sd_sync_cache() if necessary. I don't think this
-> action is avoidable, just for the performance issue to solve. And we
-> can't change the mode just by setting q->flush_flags while leave
-> sdkp->WCE,RCD untouched either, because cache_type_show() needs
-> sdkp->WCE,RCD to present the temporary config to userspace.
+> Does it happen on -rc7 w/o tip?
+> 
+> Looking at the -rc6 to -rc7 commit list, I don't see anything that
+> pops out at me.  There's no changes to drivers/rtc nor drivers/acpi.
+> 
+> The only change that might be relevant from arch/x86/ is:
+> a4b4f11b2783ec678cccb4ce7e4ce9665aa04a24 (perf/x86/intel: Fix
+> Silvermont's event constraints).  Any other hardware details, etc?
 
-If the user overrides the cache type he should expect data not to be
-flushed, so I don't really think this is na issue.  Even if it is it
-should be a separate issue as it already exists before your patch.
+Yeah, I just did a fresh merge of Linus' master + tip/master and the
+error message is gone. It could've been a glitch so I'll watch out for
+it if it reappears.
 
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
