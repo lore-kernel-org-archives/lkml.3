@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaE1NO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:14:57 -0400
-Received: from mail.siteground.com ([67.19.240.234]:36024 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaE1NO4 (ORCPT
+	id S1753449AbaE1NP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:15:26 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:36400 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbaE1NPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:14:56 -0400
-Message-ID: <5385E153.6030607@1h.com>
-Date: Wed, 28 May 2014 16:14:59 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 28 May 2014 09:15:24 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC] Per user namespace process accounting
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20140528121001.GI19967@e103034-lin>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org> <20140528121001.GI19967@e103034-lin>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 28 May 2014 15:15:03 +0200
+Message-ID: <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 28 May 2014 14:10, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> On Fri, May 23, 2014 at 04:53:02PM +0100, Vincent Guittot wrote:
+>> Monitor the activity level of each group of each sched_domain level. The
+>> activity is the amount of cpu_power that is currently used on a CPU or group
+>> of CPUs. We use the runnable_avg_sum and _period to evaluate this activity
+>> level. In the special use case where the CPU is fully loaded by more than 1
+>> task, the activity level is set above the cpu_power in order to reflect the
+>> overload of the CPU
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/sched/fair.c | 22 ++++++++++++++++++++++
+>>  1 file changed, 22 insertions(+)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index b7c51be..c01d8b6 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -4044,6 +4044,11 @@ static unsigned long power_of(int cpu)
+>>       return cpu_rq(cpu)->cpu_power;
+>>  }
+>>
+>> +static unsigned long power_orig_of(int cpu)
+>> +{
+>> +     return cpu_rq(cpu)->cpu_power_orig;
+>> +}
+>> +
+>>  static unsigned long cpu_avg_load_per_task(int cpu)
+>>  {
+>>       struct rq *rq = cpu_rq(cpu);
+>> @@ -4438,6 +4443,18 @@ done:
+>>       return target;
+>>  }
+>>
+>> +static int get_cpu_activity(int cpu)
+>> +{
+>> +     struct rq *rq = cpu_rq(cpu);
+>> +     u32 sum = rq->avg.runnable_avg_sum;
+>> +     u32 period = rq->avg.runnable_avg_period;
+>> +
+>> +     if (sum >= period)
+>> +             return power_orig_of(cpu) + rq->nr_running - 1;
+>> +
+>> +     return (sum * power_orig_of(cpu)) / period;
+>> +}
+>
+> The rq runnable_avg_{sum, period} give a very long term view of the cpu
+> utilization (I will use the term utilization instead of activity as I
+> think that is what we are talking about here). IMHO, it is too slow to
+> be used as basis for load balancing decisions. I think that was also
+> agreed upon in the last discussion related to this topic [1].
+>
+> The basic problem is that worst case: sum starting from 0 and period
+> already at LOAD_AVG_MAX = 47742, it takes LOAD_AVG_MAX_N = 345 periods
+> (ms) for sum to reach 47742. In other words, the cpu might have been
+> fully utilized for 345 ms before it is considered fully utilized.
+> Periodic load-balancing happens much more frequently than that.
 
-Hello,
+I agree that it's not really responsive but several statistics of the
+scheduler use the same kind of metrics and have the same kind of
+responsiveness.
+I agree that it's not enough and that's why i'm not using only this
+metric but it gives information that the unweighted load_avg_contrib
+(that you are speaking about below) can't give. So i would be less
+contrasted than you and would say that we probably need additional
+metrics
 
-I have the following proposition.
+>
+> Also, if load-balancing actually moves tasks around it may take quite a
+> while before runnable_avg_sum actually reflects this change. The next
+> periodic load-balance is likely to happen before runnable_avg_sum has
+> reflected the result of the previous periodic load-balance.
 
-Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that multiple
-containers in different user namespaces share the process counters.
+runnable_avg_sum uses a 1ms unit step so i tend to disagree with your
+point above
 
-So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any
-processes with ist own UID 99.
+>
+> To avoid these problems, we need to base utilization on a metric which
+> is updated instantaneously when we add/remove tasks to a cpu (or a least
+> fast enough that we don't see the above problems). In the previous
+> discussion [1] it was suggested that a sum of unweighted task
+> runnable_avg_{sum,period} ratio instead. That is, an unweighted
+> equivalent to weighted_cpuload(). That isn't a perfect solution either.
 
-I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps, but
-this brings another problem.
+Regarding the unweighted load_avg_contrib, you will have similar issue
+because of the slowness in the variation of each sched_entity load
+that will be added/removed in the unweighted load_avg_contrib.
 
-We are provisioning the containers from a template. The template has a lot of files 500k and more. And chowning these
-causes a lot of I/O and also slows down provisioning considerably.
+The update of the runnable_avg_{sum,period}  of an sched_entity is
+quite similar to cpu utilization. This value is linked to the CPU on
+which it has run previously because of the time sharing with others
+tasks, so the unweighted load of a freshly migrated task will reflect
+its load on the previous CPU (with the time sharing with other tasks
+on prev CPU).
 
-The other problem is that when we migrate one container from one host machine to another the IDs may be already in use
-on the new machine and we need to chown all the files again.
+I'm not saying that such metric is useless but it's not perfect as well.
 
-Finally if we use different UID/GID maps we can not do live migration to another node because the UIDs may be already
-in use.
+Vincent
 
-So I'm proposing one hack modifying unshare_userns() to allocate new user_struct for the cred that is created for the
-first task creating the user_ns and free it in exit_creds().
-
-Can you please comment on that?
-
-Or suggest a better solution?
-
-Best regards,
-Marian
-
-
-- -- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iEYEARECAAYFAlOF4VMACgkQ4mt9JeIbjJSFnwCgrAgCDvBs5ue0BPUHmach04Oo
-xgMAn34PJbuVCBwh/RqUumFP05fvMHHy
-=5J9M
------END PGP SIGNATURE-----
+> It is fine as long as the cpus are not fully utilized, but when they are
+> we need to use weighted_cpuload() to preserve smp_nice. What to do
+> around the tipping point needs more thought, but I think that is
+> currently the best proposal for a solution for task and cpu utilization.
+>
+> rq runnable_avg_sum is useful for decisions where we need a longer term
+> view of the cpu utilization, but I don't see how we can use as cpu
+> utilization metric for load-balancing decisions at wakeup or
+> periodically.
+>
+> Morten
+>
+> [1] https://lkml.org/lkml/2014/1/8/251
