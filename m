@@ -1,299 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaE1A3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 20:29:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20007 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528AbaE1A3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 20:29:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,923,1392192000"; 
-   d="scan'208";a="547479227"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Support spark lines in perf stat v4
-Date: Tue, 27 May 2014 17:29:30 -0700
-Message-Id: <1401236970-31106-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
+	id S1753787AbaE1Abc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 20:31:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56752 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590AbaE1Aba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 20:31:30 -0400
+Date: Tue, 27 May 2014 17:35:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Usyskin, Alexander" <alexander.usyskin@intel.com>
+Subject: Re: [char-misc-next 3/3] mei: add WPT second mei interface
+Message-ID: <20140528003504.GB22892@kroah.com>
+References: <1399969321-6512-1-git-send-email-tomas.winkler@intel.com>
+ <1399969321-6512-4-git-send-email-tomas.winkler@intel.com>
+ <20140527212207.GB26089@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFFBCDC@HASMSX106.ger.corp.intel.com>
+ <20140527220630.GA7924@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AFFBE0A@HASMSX106.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AFFBE0A@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Tue, May 27, 2014 at 11:47:44PM +0000, Winkler, Tomas wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Wednesday, May 28, 2014 01:07
+> > To: Winkler, Tomas
+> > Cc: arnd@arndb.de; linux-kernel@vger.kernel.org; Usyskin, Alexander
+> > Subject: Re: [char-misc-next 3/3] mei: add WPT second mei interface
+> > 
+> > On Tue, May 27, 2014 at 09:42:19PM +0000, Winkler, Tomas wrote:
+> > > > > +/* PCH devices MEI 2 interface */
+> > > > > +const struct mei_cfg mei_me_pch_2_cfg = {
+> > > > > +	MEI_CFG_PCH_HFS,
+> > > > > +	.mei_id = 1
+> > > >
+> > > > That's going to be a recipe for disaster.  Have the MEI core allocate
+> > > > the id numbers as things are registered, don't have the individual
+> > > > drivers create their id.
+> > >
+> > > I'm don't think can ensure the enumeration order.
+> > 
+> > You should not be relying on the order to get anything right.
+> > 
+> > > This is per device not per driver configuration structure.
+> > > Each pci device is actually just  another head to one MEI device but heads are not
+> > equal the name/id matters
+> > > Yes I assume it looks odd at the first glance, anyhow we are open to any
+> > reasonable suggestions
+> > 
+> > Just dynamically allocate the numbers like all other subsystems do?
+> >
+> > Then userspace can open the device nodes it cares about, it should be
+> > able to somehow tell what device is what somehow, right?  If not, you
+> > are doing something wrong with the interface as you can't rely on minor
+> > numbers.
+> > 
+> 
+> The only way for user space to distinguish among interfaces is the same way as driver does by looking for device id. 
 
-perf stat -rX prints the stddev for multiple measurements.
-Just looking at the stddev for judging the quality of the data
-is a bit dangerous The simplest sanity check is to just look
-at a simple plot. This patchs add a sparkline to the end
-of the measurements to make it simple to judge the data.
+What's with the lack of line-wrapping?
 
-The sparkline only uses UTF-8, so should be readable
-in all modern tools and terminals.
+Anyway, why does userspace care?  If it wants to look at the device id,
+then just look at the symlink to the device id of the device node.  Then
+you don't care what the device node is named / numbered.
 
-The sparkline is between the minimum and maximum of the data,
-so it's mainly a indicator of variance. To keep the code
-simple and make the output not too wide only the first
-8 values are printed. If more values are there it adds '..'
+> The assignment of the device name/id is pretty much static in the HW.
+> Now the same device id database from the driver has to be copied to
+> the udev rules or equivalent  and kept in sync.
 
-The code is inspired by Zach Holman's spark shell script.
+What?  No.  Why would you want to do that?  Why does it matter what
+order these devices are connected?  Are they talked to in different
+ways?  Are they different "classes" of devices?  What are they and why
+aren't they just "interchangeable" as far as userspace cares?
 
-Example output (view in non-proportial font):
+> Most importantly all the legacy user space just opens /dev/mei  so I
+> wanted to leave /dev/mei (not /dev/mei0) to be assigned always to the
+> first mei head and to not break existing user space. 
 
- Performance counter stats for 'true' (10 runs):
+That's fine, I have no objection to that.
 
-          0.175672      task-clock (msec)         #    0.555 CPUs utilized            ( +-  1.77% ) █▄▁▁▁▁▁▁..
-                 0      context-switches          #    0.000 K/sec
-                 0      cpu-migrations            #    0.000 K/sec
-               114      page-faults               #    0.647 M/sec                    ( +-  0.14% ) ▁█▁▁████..
-           520,798      cycles                    #    2.965 GHz                      ( +-  1.75% ) █▄▁▁▁▁▁▁..
-           433,525      instructions              #    0.83  insns per cycle          ( +-  0.28% ) ▅▇▅▄▇█▁▆..
-            83,012      branches                  #  472.537 M/sec                    ( +-  0.31% ) ▅▇▆▄▇█▁▆..
-             3,157      branch-misses             #    3.80% of all branches          ( +-  2.55% ) ▇█▃▅▁▃▁▂..
+> Can you be a bit more specific on why we cannot depend on minor
+> numbers and default naming rules, what is the scenario that will
+> break? 
 
-       0.000316660 seconds time elapsed                                          ( +-  1.78% ) █▅▁▁▁▁▁▁..
+Why is the kernel picking a name for these with a specific minor number
+in it?  What makes this different from a random tty device where you
+don't care what the minor number is, you just care about where is it
+connected so you look at the other things "around" it (pci path, vendor
+id, etc.) and create a deterministic name from with a symlink, if you
+care, with udev / mdev.
 
-As you can see even in the most simple run there are quite interesting
-patterns. The time sparkline suggests it would be also useful to have an option
-to throw the first measurement away.
+thanks,
 
-Known issues:
-- Makes the perf stat output wider. Could be adjust by shrinking
-some white space. Not done so far.
-- No output for -A/--per-socket/--per-core with -rX. This code
-is missing the basic noise detection code. Once it's added there
-sparklines could be shown too.
-
-v2: Avoid printing spark lines for normal CSV case (Jiri)
-v3: LONG->ULONG, random changes
-v4: Add some missing changes from the forked v2: checks value is not
-zero instead of all the same. Update documentation. Remove n variable.
-Remove #pragma once
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-stat.txt |  4 ++++
- tools/perf/Makefile.perf               |  1 +
- tools/perf/builtin-stat.c              | 12 ++++++++++++
- tools/perf/util/spark.c                | 28 ++++++++++++++++++++++++++++
- tools/perf/util/spark.h                |  4 ++++
- tools/perf/util/stat.c                 | 34 ++++++++++++++++++++++++++++++++++
- tools/perf/util/stat.h                 | 10 ++++++++++
- 7 files changed, 93 insertions(+)
- create mode 100644 tools/perf/util/spark.c
- create mode 100644 tools/perf/util/spark.h
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 29ee857..840c1db 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -53,6 +53,10 @@ OPTIONS
- -r::
- --repeat=<n>::
- 	repeat command and print average + stddev (max: 100). 0 means forever.
-+	In addition it prints a spark line (when not in CSV mode), which visualizes the
-+	variance between minimum and maximum of the measurements. This allows a simple sanity
-+	check of the measurements. Only 8 values are printed, when more are available
-+	it adds ..
- 
- -B::
- --big-num::
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 7257e7e..432d099 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -359,6 +359,7 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
- LIB_OBJS += $(OUTPUT)util/trace-event.o
- LIB_OBJS += $(OUTPUT)util/svghelper.o
- LIB_OBJS += $(OUTPUT)util/sort.o
-+LIB_OBJS += $(OUTPUT)util/spark.o
- LIB_OBJS += $(OUTPUT)util/hist.o
- LIB_OBJS += $(OUTPUT)util/probe-event.o
- LIB_OBJS += $(OUTPUT)util/util.o
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 65a151e..cb0f7c5 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
- 				if (run != ena)
- 					fprintf(output, "  (%.2f%%)",
- 						100.0 * run / ena);
-+
-+				fputc(' ', output);
-+				print_stat_spark(output, counter->priv);
- 			}
- 			fputc('\n', output);
- 		}
-@@ -1229,6 +1232,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- 		return;
- 	}
- 
-+	fputc(' ', output);
-+	print_stat_spark(output, counter->priv);
-+
- 	if (scaled) {
- 		double avg_enabled, avg_running;
- 
-@@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 			if (run != ena)
- 				fprintf(output, "  (%.2f%%)",
- 					100.0 * run / ena);
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, counter->priv);
- 		}
- 		fputc('\n', output);
- 	}
-@@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
- 			fprintf(output, "                                        ");
- 			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
- 					avg_stats(&walltime_nsecs_stats));
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, &walltime_nsecs_stats);
- 		}
- 		fprintf(output, "\n\n");
- 	}
-diff --git a/tools/perf/util/spark.c b/tools/perf/util/spark.c
-new file mode 100644
-index 0000000..ac5b3a5
---- /dev/null
-+++ b/tools/perf/util/spark.c
-@@ -0,0 +1,28 @@
-+#include <stdio.h>
-+#include <limits.h>
-+#include "spark.h"
-+
-+#define NUM_SPARKS 8
-+#define SPARK_SHIFT 8
-+
-+/* Print spark lines on outf for numval values in val. */
-+void print_spark(FILE *outf, unsigned long *val, int numval)
-+{
-+	static const char *ticks[NUM_SPARKS] = {
-+		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
-+	};
-+	int i;
-+	unsigned long min = ULONG_MAX, max = 0, f;
-+
-+	for (i = 0; i < numval; i++) {
-+		if (val[i] < min)
-+			min = val[i];
-+		if (val[i] > max)
-+			max = val[i];
-+	}
-+	f = ((max - min) << SPARK_SHIFT) / (NUM_SPARKS - 1);
-+	if (f < 1)
-+		f = 1;
-+	for (i = 0; i < numval; i++)
-+		fputs(ticks[((val[i] - min) << SPARK_SHIFT) / f], outf);
-+}
-diff --git a/tools/perf/util/spark.h b/tools/perf/util/spark.h
-new file mode 100644
-index 0000000..59b04ad
---- /dev/null
-+++ b/tools/perf/util/spark.h
-@@ -0,0 +1,4 @@
-+#ifndef SPARK_H
-+#define SPARK_H 1
-+void print_spark(FILE *outf, unsigned long *val, int numval);
-+#endif
-diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
-index 6506b3d..2e76d9c 100644
---- a/tools/perf/util/stat.c
-+++ b/tools/perf/util/stat.c
-@@ -1,10 +1,16 @@
- #include <math.h>
-+#include <stdio.h>
- 
- #include "stat.h"
-+#include "spark.h"
- 
- void update_stats(struct stats *stats, u64 val)
- {
- 	double delta;
-+	int n = stats->n;
-+
-+	if (n < NUM_SPARK_VALS)
-+		stats->svals[n] = val;
- 
- 	stats->n++;
- 	delta = val - stats->mean;
-@@ -61,3 +67,31 @@ double rel_stddev_stats(double stddev, double avg)
- 
- 	return pct;
- }
-+
-+static int all_zero(unsigned long *vals, int len)
-+{
-+	int i;
-+
-+	for (i = 0; i < len; i++)
-+		if (vals[i] != 0)
-+			return 0;
-+	return 1;
-+}
-+
-+void print_stat_spark(FILE *f, struct stats *stat)
-+{
-+	int len;
-+
-+	if (stat->n <= 1)
-+		return;
-+
-+	len = stat->n;
-+	if (len > NUM_SPARK_VALS)
-+		len = NUM_SPARK_VALS;
-+	if (all_zero(stat->svals, len))
-+		return;
-+
-+	print_spark(f, stat->svals, len);
-+	if (stat->n > NUM_SPARK_VALS)
-+		fputs("..", f);
-+}
-diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
-index ae8ccd7..1b4dc71 100644
---- a/tools/perf/util/stat.h
-+++ b/tools/perf/util/stat.h
-@@ -1,12 +1,16 @@
- #ifndef __PERF_STATS_H
- #define __PERF_STATS_H
- 
-+#include <stdio.h>
- #include "types.h"
- 
-+#define NUM_SPARK_VALS 8 /* support spark line on first N items */
-+
- struct stats
- {
- 	double n, mean, M2;
- 	u64 max, min;
-+	unsigned long svals[NUM_SPARK_VALS];
- };
- 
- void update_stats(struct stats *stats, u64 val);
-@@ -14,12 +18,18 @@ double avg_stats(struct stats *stats);
- double stddev_stats(struct stats *stats);
- double rel_stddev_stats(double stddev, double avg);
- 
-+void print_stat_spark(FILE *f, struct stats *stat);
-+
- static inline void init_stats(struct stats *stats)
- {
-+	int i;
-+
- 	stats->n    = 0.0;
- 	stats->mean = 0.0;
- 	stats->M2   = 0.0;
- 	stats->min  = (u64) -1;
- 	stats->max  = 0;
-+	for (i = 0; i < NUM_SPARK_VALS; i++)
-+		stats->svals[i] = 0;
- }
- #endif
--- 
-1.9.0
-
+greg k-h
