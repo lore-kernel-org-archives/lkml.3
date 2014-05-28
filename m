@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaE1OKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 10:10:55 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:33479 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbaE1OKx (ORCPT
+	id S1754345AbaE1OLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 10:11:06 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:54812 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262AbaE1OLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 10:10:53 -0400
-Date: Wed, 28 May 2014 19:40:47 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org, kbuild@01.org,
-        julia.lawall@lip6.fr
-Subject: [PATCH] coccinelle/null: solve parse error
-Message-ID: <20140528141047.GA4059@himangi-Dell>
+	Wed, 28 May 2014 10:11:02 -0400
+Message-ID: <5385EE7A.2030501@cogentembedded.com>
+Date: Wed, 28 May 2014 18:11:06 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ondrej Zary <linux@rainbow-software.org>,
+        Samuel Chessman <chessman@tux.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/9] tlan: Make autonegotiation faster
+References: <1401226727-5508-1-git-send-email-linux@rainbow-software.org> <1401226727-5508-8-git-send-email-linux@rainbow-software.org>
+In-Reply-To: <1401226727-5508-8-git-send-email-linux@rainbow-software.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch solves the parse-error by adding @@ . This is necessary since
-Coccinelle version 1.0.0-rc20. Also, the comment is added to use a
-recent version of Coccinelle.
+Hello.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- scripts/coccinelle/null/badzero.cocci | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On 05/28/2014 01:38 AM, Ondrej Zary wrote:
 
-diff --git a/scripts/coccinelle/null/badzero.cocci b/scripts/coccinelle/null/badzero.cocci
-index d79baf7..5551da2 100644
---- a/scripts/coccinelle/null/badzero.cocci
-+++ b/scripts/coccinelle/null/badzero.cocci
-@@ -10,7 +10,7 @@
- // Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
- // Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
- // URL: http://coccinelle.lip6.fr/
--// Comments:
-+// Comments: Requires Coccinelle version 1.0.0-rc20 or later
- // Options:
- 
- virtual patch
-@@ -19,6 +19,7 @@ virtual org
- virtual report
- 
- @initialize:ocaml@
-+@@
- let negtable = Hashtbl.create 101
- 
- @depends on patch@
--- 
-1.9.1
+> Reduce the autonegotiation poll interval from 8 seconds to 2.
+> This greatly reduces the time needed to detect link presence,
+> especially on Olicom cards at 10 Mbps (two autonegoatiations required).
+
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> ---
+>   drivers/net/ethernet/ti/tlan.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+
+> diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
+> index 628a779..007c2fe 100644
+> --- a/drivers/net/ethernet/ti/tlan.c
+> +++ b/drivers/net/ethernet/ti/tlan.c
+> @@ -2699,7 +2699,7 @@ static void tlan_phy_finish_auto_neg(struct net_device *dev)
+>   		/* Wait for 8 sec to give the process
+>   		 * more time.  Perhaps we should fail after a while.
+>   		 */
+> -		tlan_set_timer(dev, (8*HZ), TLAN_TIMER_PHY_FINISH_AN);
+> +		tlan_set_timer(dev, (2*HZ), TLAN_TIMER_PHY_FINISH_AN);
+
+    The inner () not needed but space around * wouldn't hurt.
+
+>   		return;
+>   	}
+
+WBR, Sergei
 
