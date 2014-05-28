@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaE1LpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 07:45:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55226 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751363AbaE1LpI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 07:45:08 -0400
-Date: Wed, 28 May 2014 12:44:38 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Larry Bassel <larry.bassel@linaro.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: [PATCH v5 2/2] arm64: enable context tracking
-Message-ID: <20140528114438.GF15222@arm.com>
-References: <1401130573-7443-1-git-send-email-larry.bassel@linaro.org>
- <1401130573-7443-3-git-send-email-larry.bassel@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401130573-7443-3-git-send-email-larry.bassel@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752775AbaE1LvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 07:51:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55326 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363AbaE1LvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 07:51:24 -0400
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+From: Jean Delvare <jdelvare@suse.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140528180331.4abb99a0@canb.auug.org.au>
+References: <20140528180331.4abb99a0@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Wed, 28 May 2014 11:30:02 +0200
+Message-ID: <1401269402.4597.15.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Larry,
+Hi Stephen, Greg,
 
-On Mon, May 26, 2014 at 07:56:13PM +0100, Larry Bassel wrote:
-> Make calls to ct_user_enter when the kernel is exited
-> and ct_user_exit when the kernel is entered (in el0_da,
-> el0_ia, el0_svc, el0_irq and all of the "error" paths).
+Le Wednesday 28 May 2014 à 18:03 +1000, Stephen Rothwell a écrit :
+> Hi Greg,
 > 
-> These macros expand to function calls which will only work
-> properly if el0_sync and related code has been rearranged
-> (in a previous patch of this series).
+> After merging the driver-core tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> The calls to ct_user_exit are made after hw debugging has been
-> enabled (enable_dbg_and_irq).
+> drivers/crypto/nx/nx-842.c: In function 'nx842_probe':
+> drivers/crypto/nx/nx-842.c:1200:6: error: void value not ignored as it ought to be
+>   if (dev_set_drvdata(&viodev->dev, rcu_dereference(devdata))) {
+>       ^
 > 
-> The call to ct_user_enter is made at the beginning of the
-> kernel_exit macro.
-> 
-> This patch is based on earlier work by Kevin Hilman.
-> Save/restore optimizations were also done by Kevin.
+> Caused by commit 2c1f1ff0f0d9 ("driver core: dev_set_drvdata returns
+> void").  Grep is better than hope :-)
 
-Apologies if we've discussed this before (it rings a bell), but why are we
-penalising the fast syscall path with this? Shouldn't TIF_NOHZ contribute to
-out _TIF_WORK_MASK, then we could do the tracking on the syscall slow path?
+Oops, that would be my fault, sorry. I did grep for such cases but my
+grep command must have been poor, I only caught 2 of the 3 cases in the
+kernel tree. And make allmodconfig didn't help as the driver is
+ppc64-specific.
 
-I think that would tidy up your mov into x19 too.
+I'll send a fix-up patch immediately, sorry for the trouble.
 
-Also -- how do you track ret_from_fork in the child with these patches?
+-- 
+Jean Delvare
+SUSE L3 Support
 
-Will
