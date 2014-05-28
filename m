@@ -1,80 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaE1BU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 21:20:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39344 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753484AbaE1BU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 21:20:27 -0400
-Date: Wed, 28 May 2014 09:20:21 +0800
-From: Amos Kong <akong@redhat.com>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org
-Subject: Re: [PATCH] hv: use correct order when freeing monitor_pages
-Message-ID: <20140528012021.GA3127@z.redhat.com>
-References: <1401210980-2515-1-git-send-email-rkrcmar@redhat.com>
+	id S1753836AbaE1BUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 21:20:10 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:36509 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661AbaE1BUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 May 2014 21:20:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401210980-2515-1-git-send-email-rkrcmar@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5385255D.5060204@intel.com>
+References: <20140505212346.18767.34117.stgit@ahduyck-cp2.jf.intel.com>
+ <20140527222256.GC11907@google.com> <5385255D.5060204@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 27 May 2014 19:19:47 -0600
+Message-ID: <CAErSpo5QU1LsKVqyGbT07mhF-t5L1y3NxD4JhJ6N3AM0XT0c2A@mail.gmail.com>
+Subject: Re: [PATCH] pci: Save and restore VFs as a part of a reset
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Don Dutile <ddutile@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 07:16:20PM +0200, Radim Krčmář wrote:
-> We try to free two pages when only one has been allocated.
-> Cleanup path is unlikely, so I haven't found any trace that would fit,
-> but I hope that free_pages_prepare() does catch it.
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> ---
->  Cc'd stable because the worst-case looks hard to debug.
->  Btw. the module can't get unloaded after we successfully connect?
-> 
->  drivers/hv/connection.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-> index 7f10c15..e84f452 100644
-> --- a/drivers/hv/connection.c
-> +++ b/drivers/hv/connection.c
-> @@ -224,8 +224,8 @@ cleanup:
->  		vmbus_connection.int_page = NULL;
->  	}
->  
-> -	free_pages((unsigned long)vmbus_connection.monitor_pages[0], 1);
-> -	free_pages((unsigned long)vmbus_connection.monitor_pages[1], 1);
-> +	free_pages((unsigned long)vmbus_connection.monitor_pages[0], 0);
-> +	free_pages((unsigned long)vmbus_connection.monitor_pages[1], 0);
+[+cc Alex, Don]
 
+On Tue, May 27, 2014 at 5:53 PM, Alexander Duyck
+<alexander.h.duyck@intel.com> wrote:
+> On 05/27/2014 03:22 PM, Bjorn Helgaas wrote:
+>> On Mon, May 05, 2014 at 02:25:17PM -0700, Alexander Duyck wrote:
+>>> This fixes an issue I found in which triggering a reset via the PCI sysfs
+>>> reset while SR-IOV was enabled would leave the VFs in a state in which the
+>>> BME and MSI-X enable bits were all cleared.
+>>>
+>>> To correct that I have added code so that the VF state is saved and restored
+>>> as a part of the PF save and restore state functions.  By doing this the VF
+>>> state is restored as well as the IOV state allowing the VFs to resume function
+>>> following a reset.
+>>>
+>>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+>>> ---
+>>>  drivers/pci/iov.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++--
+>>>  drivers/pci/pci.c |    2 ++
+>>>  drivers/pci/pci.h |    5 +++++
+>>>  3 files changed, 53 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+>>> index de7a747..645ed71 100644
+>>> --- a/drivers/pci/iov.c
+>>> +++ b/drivers/pci/iov.c
+>>> @@ -521,13 +521,57 @@ resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
+>>>  }
+>>>
+>>>  /**
+>>> + * pci_save_iov_state - Save the state of the VF configurations
+>>> + * @dev: the PCI device
+>>> + */
+>>> +int pci_save_iov_state(struct pci_dev *dev)
+>>> +{
+>>> +    struct pci_dev *vfdev = NULL;
+>>> +    unsigned short dev_id;
+>>> +
+>>> +    /* only search if we are a PF */
+>>> +    if (!dev->is_physfn)
+>>> +            return 0;
+>>> +
+>>> +    /* retrieve VF device ID */
+>>> +    pci_read_config_word(dev, dev->sriov->pos + PCI_SRIOV_VF_DID, &dev_id);
+...
 
-Allocate order is 0. (2^0 = 1 page)
+>>> +    /* loop through all the VFs and save their state information */
+>>> +    while ((vfdev = pci_get_device(dev->vendor, dev_id, vfdev))) {
+>>> +            if (vfdev->is_virtfn && (vfdev->physfn == dev)) {
+>>> +                    int err = pci_save_state(vfdev);
+>>
+>> It makes me uneasy to operate on another device (we're resetting A, and
+>> here we save state for B).  I know B is dependent on A, since B is a VF
+>> related to PF A, but what synchronization is there to serialize this
+>> against any other save/restore operations that may be in progress by B's
+>> driver or by a sysfs operation on B?
+>
+> I don't believe there is any synchronization mechanism in place
+> currently.  I can look into that as well.  Odds are we probably need to
+> have the VFs check the parent lock before they take any independent action.
 
-  vmbus_connection.monitor_pages[0] = (void *)__get_free_pages((GFP_KERNEL|__GFP_ZERO), 0);
-  vmbus_connection.monitor_pages[1] = (void *)__get_free_pages((GFP_KERNEL|__GFP_ZERO), 0);
+It's just the whole question of how we manage the single "saved-state"
+area.  Right now, I think almost all use of it is under control of the
+driver that owns the device, in suspend/resume methods.  The
+exceptions are the PM suspend/freeze/etc. routines in
+pci/pci-driver.c, which I assume prevent the driver from running and
+are therefore safe, and the reset path.  I don't know how the
 
-Looks good.
+>> Is there anything in the reset path that pays attention to whether
+>> resetting this PF will clobber VFs?  Do we care whether those VFs are in
+>> use?  I assume they might be in use by guests?
+>
+> The problem I found was that the sysfs reset call doesn't bother to
+> check with the PF driver at all.  It just clobbers the PF and any VFs on
+> it without talking to the PF driver.
 
-Reviewed-by: Amos Kong <akong@redhat.com>
+There is Keith Busch's recent patch:
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/hotplug&id=3ebe7f9f7e4a4fd1f6461ecd01ff2961317a483a
+.  I dunno if that's useful to you or not.
 
->  	vmbus_connection.monitor_pages[0] = NULL;
->  	vmbus_connection.monitor_pages[1] = NULL;
->  
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+And I'm not sure there's actually a requirement to *have* a PF driver.
+ Obviously there has to be a way to enable the VFs, but once they're
+enabled, it might be possible to keep using them via VF drivers even
+without a PF driver in the picture.
 
--- 
-			Amos.
+Maybe resetting the PF should just fail if there's an active VF.  If
+you need to reset the PF, you'd have to unbind the VFs first.
+
+>>> +                    if (err)
+>>> +                            return err;
+>>> +            }
+>>> +    }
+>>
+>> pci_get_device() acquires a reference on each device it returns, so this
+>> strategy would require a pci_dev_put().
+>
+> Yes, if I am not mistaken the pci_dev_put is called as a part of
+> pci_get_dev_by_id which is what pci_get_device ends up being.
+
+Oh, yeah, you're right.  I forgot about that.  Since you call it in a
+loop until you get NULL back, you're OK.  It's only when you stop
+before you get NULL that you have to deal with the extra reference.
+
+>> But I'm not really keen on pci_get_device() in the first place.  It works
+>> by iterating over all PCI devices in the system, which seems like a
+>> sledgehammer approach.  It *is* widely used, but mostly in quirk-type code
+>> from which I avert my eyes.
+>>
+>> Maybe you could do something based on pci_walk_bus()?  If you did that, I
+>> think the PCI_SRIOV_VF_DID would become superfluous.
+>>
+>
+> I can look into that, I'm not familiar with the interface.  I'll have to
+> see what the relationship is between the PF and VF in terms of busses as
+> I don't recall it off of the top of my head.
+
+This reminds me about an open problem: VFs can be on "virtual" buses,
+which aren't really connected in the hierarchy, and I don't think we
+have a nice way to iterate over them.  So probably pci_get_device() is
+the best we can do now.
+
+Bjorn
