@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbaE1Pxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 11:53:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37837 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110AbaE1Pxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 11:53:38 -0400
-Date: Wed, 28 May 2014 08:53:36 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] scsi/NCR5380: dprintk macro
-Message-ID: <20140528155336.GB14981@infradead.org>
-References: <alpine.LNX.2.00.1405290020570.3539@nippy.intranet>
+	id S932223AbaE1PyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 11:54:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60450 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753544AbaE1PyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 11:54:16 -0400
+Date: Wed, 28 May 2014 17:54:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+Message-ID: <20140528155414.GN9895@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <20140528121023.GA10735@dhcp22.suse.cz>
+ <20140528134905.GF2878@cmpxchg.org>
+ <20140528142144.GL9895@dhcp22.suse.cz>
+ <20140528152854.GG2878@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1405290020570.3539@nippy.intranet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20140528152854.GG2878@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 12:43:43AM +1000, Finn Thain wrote:
+On Wed 28-05-14 11:28:54, Johannes Weiner wrote:
+> On Wed, May 28, 2014 at 04:21:44PM +0200, Michal Hocko wrote:
+> > On Wed 28-05-14 09:49:05, Johannes Weiner wrote:
+> > > On Wed, May 28, 2014 at 02:10:23PM +0200, Michal Hocko wrote:
+[...]
+> > > > My main motivation for the weaker model is that it is hard to see all
+> > > > the corner case right now and once we hit them I would like to see a
+> > > > graceful fallback rather than fatal action like OOM killer. Besides that
+> > > > the usaceses I am mostly interested in are OK with fallback when the
+> > > > alternative would be OOM killer. I also feel that introducing a knob
+> > > > with a weaker semantic which can be made stronger later is a sensible
+> > > > way to go.
+> > > 
+> > > We can't make it stronger, but we can make it weaker. 
+> > 
+> > Why cannot we make it stronger by a knob/configuration option?
 > 
-> This is the delta between the two submissions:
-> [PATCH 00/12] scsi/NCR5380: fix debugging macros and #include structure
-> and
-> [PATCH v2 00/12] scsi/NCR5380: fix debugging macros and #include structure
+> Why can't we make it weaker by a knob?
+
+I haven't said we couldn't.
+
+> Why should we design the default for unforeseeable cornercases
+> rather than make the default make sense for existing cases and give
+> cornercases a fallback once they show up?
+
+Sure we can do that but it would be little bit lame IMO. We are
+promising something and once we find out it doesn't work we will make
+it weaker to workaround that.
+
+Besides that the default should reflect the usecases, no? Do we have any
+use case for the hard guarantee?
+
+> > > Stronger is the simpler definition, it's simpler code,
+> > 
+> > The code is not really that much simpler. The one you have posted will
+> > not work I am afraid. I haven't tested it yet but I remember I had to do
+> > some tweaks to the reclaim path to not end up in an endless loop in the
+> > direct reclaim (http://marc.info/?l=linux-mm&m=138677140828678&w=2 and
+> > http://marc.info/?l=linux-mm&m=138677141328682&w=2).
 > 
-> The macro definition changes were discussed on the mailing list during 
-> review. The idea is to get the compiler to check the parameters of 
-> disabled printk() calls so that the debugging code doesn't rot again.
+> That's just a result of do_try_to_free_pages being stupid and using
+> its own zonelist loop to check reclaimability by duplicating all the
+> checks instead of properly using returned state of shrink_zones().
+> Something that would be worth fixing regardless of memcg guarantees.
 > 
-> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+> Or maybe we could add the guaranteed lru pages to sc->nr_scanned.
 
-Thanks a lot Finn!
+Fixes might be different than what I was proposing previously. I was
+merely pointing out that removing the retry loop is not sufficient.
 
-> I know the whitespace is wrong throughout these drivers but when I put 
-> this patch series together it seemed best to defer the whitespace cleanup. 
->(I still intend to do that cleanup.)
+> > > your usecases are fine with it,
+> > 
+> > my usecases do not overcommit low_limit on the available memory, so far
+> > so good, but once we hit a corner cases when limits are set properly but
+> > we end up not being able to reclaim anybody in a zone then OOM sounds
+> > too brutal.
+> 
+> What cornercases?
 
-Yes, I ignored the whitespace warnings in the debug macro cleanups.  I
-fixed them up for the "newly" added code in the sun3 driver merge.
+I have mentioned a case where NUMA placement and specific node bindings
+interfering with other allocators can end up in unreclaimable zones.
+While you might disagree about the setup I have seen different things
+done out there.
 
+Besides that the reclaim logic is complex enough and history thought me
+that little buggers are hidden at places where you do not expect them.
+
+So call me a chicken but I would sleep calmer if we start weaker and add
+an additional guarantees later when somebody really insists on rseeing
+an OOM rather than get reclaimed.
+The proposed counter can tell us more how good we are at not touching
+groups with the limit and we can eventually debug those corner cases
+without affecting the loads too much.
+-- 
+Michal Hocko
+SUSE Labs
