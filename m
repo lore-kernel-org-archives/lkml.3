@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936AbaE1XUv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:20:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47801 "EHLO
+	id S1755034AbaE1XU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:20:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47807 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751924AbaE1XUt (ORCPT
+	with ESMTP id S1754948AbaE1XU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:20:49 -0400
+	Wed, 28 May 2014 19:20:56 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-leds@vger.kernel.org, linux-pwm@vger.kernel.org,
         linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 03/15] ARM: at91: at91sam9263: switch to generic PWM framework
-Date: Thu, 29 May 2014 01:20:06 +0200
-Message-Id: <1401319218-16772-4-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 04/15] ARM: at91: sam9263ek: use generic leds_pwm driver
+Date: Thu, 29 May 2014 01:20:07 +0200
+Message-Id: <1401319218-16772-5-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1401319218-16772-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -28,64 +28,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to the pwm/pwm-atmel driver instead of misc/atmel_pwm
+Switch to the generic leds_pwm driver instead of leds-atmel-pwm.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/at91sam9263.c         |  1 +
- arch/arm/mach-at91/at91sam9263_devices.c | 11 ++---------
- 2 files changed, 3 insertions(+), 9 deletions(-)
+ arch/arm/mach-at91/board-sam9263ek.c | 55 ++++++++++++++++++++++++++++++------
+ 1 file changed, 47 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index f30290572293..f6663d6c01ec 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -199,6 +199,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
- 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260.0", &twi_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91sam9rl-pwm", &pwm_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
- 	CLKDEV_CON_ID("pioA", &pioA_clk),
-diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-index 953616e5dbcb..4ab8be942f86 100644
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -1131,9 +1131,7 @@ static void __init at91_add_device_watchdog(void) {}
-  *  PWM
-  * --------------------------------------------------------------------*/
+diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
+index cd2726ee5add..fc446097f410 100644
+--- a/arch/arm/mach-at91/board-sam9263ek.c
++++ b/arch/arm/mach-at91/board-sam9263ek.c
+@@ -32,6 +32,8 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/leds.h>
++#include <linux/pwm.h>
++#include <linux/leds_pwm.h>
  
--#if defined(CONFIG_ATMEL_PWM)
--static u32 pwm_mask;
--
-+#if IS_ENABLED(CONFIG_PWM_ATMEL)
- static struct resource pwm_resources[] = {
- 	[0] = {
- 		.start	= AT91SAM9263_BASE_PWMC,
-@@ -1148,11 +1146,8 @@ static struct resource pwm_resources[] = {
+ #include <video/atmel_lcdc.h>
+ 
+@@ -369,21 +371,47 @@ static struct gpio_led ek_leds[] = {
+ 		.name			= "ds3",
+ 		.gpio			= AT91_PIN_PB7,
+ 		.default_trigger	= "heartbeat",
++	},
++#if !IS_ENABLED(CONFIG_LEDS_PWM)
++	{
++		.name			= "ds1",
++		.gpio			= AT91_PIN_PB8,
++		.active_low		= 1,
++		.default_trigger	= "none",
+ 	}
++#endif
  };
  
- static struct platform_device at91sam9263_pwm0_device = {
--	.name	= "atmel_pwm",
-+	.name	= "at91sam9rl-pwm",
- 	.id	= -1,
--	.dev	= {
--		.platform_data		= &pwm_mask,
--	},
- 	.resource	= pwm_resources,
- 	.num_resources	= ARRAY_SIZE(pwm_resources),
+ /*
+  * PWM Leds
+  */
+-static struct gpio_led ek_pwm_led[] = {
+-	/* For now only DS1 is PWM-driven (by pwm1) */
++static struct pwm_lookup pwm_lookup[] = {
++	PWM_LOOKUP("at91sam9rl-pwm", 1, "leds_pwm", "ds1",
++		   5000, PWM_POLARITY_INVERSED),
++};
++
++#if IS_ENABLED(CONFIG_LEDS_PWM)
++static struct led_pwm pwm_leds[] = {
+ 	{
+-		.name			= "ds1",
+-		.gpio			= 1,	/* is PWM channel number */
+-		.active_low		= 1,
+-		.default_trigger	= "none",
+-	}
++		.name = "ds1",
++		.max_brightness = 255,
++	},
++};
++
++static struct led_pwm_platform_data pwm_data = {
++	.num_leds       = ARRAY_SIZE(pwm_leds),
++	.leds           = pwm_leds,
++};
++
++static struct platform_device leds_pwm = {
++	.name   = "leds_pwm",
++	.id     = -1,
++	.dev    = {
++		.platform_data = &pwm_data,
++	},
  };
-@@ -1171,8 +1166,6 @@ void __init at91_add_device_pwm(u32 mask)
- 	if (mask & (1 << AT91_PWM3))
- 		at91_set_B_periph(AT91_PIN_PB29, 1);	/* enable PWM3 */
++#endif
++
  
--	pwm_mask = mask;
--
- 	platform_device_register(&at91sam9263_pwm0_device);
+ /*
+  * CAN
+@@ -403,6 +431,12 @@ static struct at91_can_data ek_can_data = {
+ 	.transceiver_switch = sam9263ek_transceiver_switch,
+ };
+ 
++static struct platform_device *devices[] __initdata = {
++#if IS_ENABLED(CONFIG_LEDS_PWM)
++	&leds_pwm,
++#endif
++};
++
+ static void __init ek_board_init(void)
+ {
+ 	/* Serial */
+@@ -437,9 +471,14 @@ static void __init ek_board_init(void)
+ 	at91_add_device_ac97(&ek_ac97_data);
+ 	/* LEDs */
+ 	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
+-	at91_pwm_leds(ek_pwm_led, ARRAY_SIZE(ek_pwm_led));
++	pwm_add_table(pwm_lookup, ARRAY_SIZE(pwm_lookup));
++#if IS_ENABLED(CONFIG_LEDS_PWM)
++	at91_add_device_pwm(1 << AT91_PWM1);
++#endif
+ 	/* CAN */
+ 	at91_add_device_can(&ek_can_data);
++	/* Other platform devices */
++	platform_add_devices(devices, ARRAY_SIZE(devices));
  }
- #else
+ 
+ MACHINE_START(AT91SAM9263EK, "Atmel AT91SAM9263-EK")
 -- 
 1.9.1
 
