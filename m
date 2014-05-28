@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaE1Vn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 17:43:57 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:38600 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaE1Vn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 17:43:56 -0400
+	id S1755512AbaE1VoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 17:44:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41996 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755428AbaE1VoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 17:44:12 -0400
+Date: Wed, 28 May 2014 18:44:06 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [BUG] perf probe segfaulting when asked for variable it doesn't find
+Message-ID: <20140528214406.GE2764@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <538652EA.3040606@linux.intel.com>
-References: <1401279583-1027-1-git-send-email-pkern@google.com>
- <53864B66.8030100@amacapital.net> <53864E91.4060207@linux.intel.com>
- <CALCETrWd9dbBt03u5cpJx+p3D7NeT-d2_=kTg94CRGMq7ji7kQ@mail.gmail.com> <538652EA.3040606@linux.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 28 May 2014 14:43:35 -0700
-Message-ID: <CALCETrWOOFhusn6MACs=o+TqqjQDXyTwVTe-iE_4bQcJu-ez=w@mail.gmail.com>
-Subject: Re: [PATCH] x32: Mask away the x32 syscall bit in the ptrace codepath
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Philipp Kern <pkern@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. J. Lu" <hjl.tools@gmail.com>, Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 2:19 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 05/28/2014 02:15 PM, Andy Lutomirski wrote:
->>>
->>>> 3. The OOPS you're fixing doesn't seem like it's fixed.  What if some
->>>> other random high bits are set?
->>>
->>> There is a range check in entry_*.S for the system call.
->>
->> I can imagine that causing a certain amount of confusion to fancy
->> seccomp users.  Oh, well.  No one that I know of has complained yet.
->>
->
-> I don't know how seccomp or audit deal with out-of-range syscall
-> numbers, so that might be worth taking a look at.
+Masami-san,
 
-audit oopses, apparently.  seccomp will tell BPF about it and follow
-directions, barring bugs.
+	While trying:
 
-However: are you sure that entry_64.S handles this?  It looks like
-tracesys has higher priority than badsys.  And strace can certainly
-see out-of-range syscalls.  And I can oops audit by doing:
+[root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+Failed to find the location of result at this address.
+ Perhaps, it has been optimized out.
+Failed to find 'result' in this function.
+  Error: Failed to add events. (-2)
+[root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+Added new event:
+Segmentation fault (core dumped)
 
-auditctl -a exit,always -S open
-./a.out
+I got segfaulted while in the past I would get the much nicer:
 
-where a.out is this:
+[root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+Failed to find the location of result at this address.
+ Perhaps, it has been optimized out.
+Failed to find 'result' in this function.
+  Error: Failed to add events. (-2)
+[root@zoo ~]#
 
-#include <stdio.h>
-#include <sys/syscall.h>
+The "Error:"  part can and should be trimmed, just the two middle ones should
+be enough, but I'm digressing, I bisected it down to the cset at the bottom of this
+message.
 
-int main()
-{
-  long i;
-  for (i = 1000; ; i += 64 * 4096)
-    syscall(i, 0, 0, 0, 0, 0, 0);
-  return 0;
-}
+In the past there was a 'result' variable at getname_flags, but now 'probe'
+isn't finding any, as it seems to have been optimized away, still haven't checked
+thoroughly:
 
-I would *love* to deprecate the entire syscall auditing mechanism.  Or
-at least I'd love to have distros stop using it.
+[root@zoo ~]# perf probe -V getname_flags
+Available variables at getname_flags
+        @<getname_flags+0>
+                char*   filename
+                int     flags
+                int*    empty
+        @<getname+18>
+                (No matched variables)
+        @<user_path_create+37>
+                (No matched variables)
+        @<user_path_parent+37>
+                (No matched variables)
+        @<user_path_at_empty+50>
+                (No matched variables)
+        @<user_path_mountpoint_at+37>
+                (No matched variables)
+        @<sys_symlinkat+38>
+                (No matched variables)
+        @<sys_symlink+34>
+                (No matched variables)
+[root@zoo ~]
 
-I'll go ask for a CVE number.  Sigh.
+3d918a12a1b3088ac16ff37fa52760639d6e2403 is the first bad commit
+commit 3d918a12a1b3088ac16ff37fa52760639d6e2403
+Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date:   Fri Oct 11 16:10:26 2013 +0900
 
+    perf probe: Find fentry mcount fuzzed parameter location
+    
+    At this point, --fentry (mcount function entry) option for gcc fuzzes
+    the debuginfo variable locations by skipping the mcount instruction
+    offset (on x86, this is a 5 byte call instruction).
+    
+    This makes variable searching fail at the entry of functions which
+    are mcount'ed.
+    
+    e.g.)
+    Available variables at vfs_read
+            @<vfs_read+0>
+                    (No matched variables)
+    
+    This patch adds additional location search at the function entry point
+    to solve this issue, which tries to find the earliest address for the
+    variable location.
+    
+    Note that this only works with function parameters (formal parameters)
+    because any local variables should not exist on the function entry
+    address (those are not initialized yet).
+    
+    With this patch, perf probe shows correct parameters if possible;
+     # perf probe --vars vfs_read
+     Available variables at vfs_read
+             @<vfs_read+0>
+                     char*   buf
+                     loff_t* pos
+                     size_t  count
+                     struct file*    file
+    
+    Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+    Cc: Ingo Molnar <mingo@redhat.com>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/20131011071025.15557.13275.stgit@udc4-manage.rcp.hitachi.co.jp
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
---Andy
+:040000 040000 4c416906285aa1488ed2badbaf3b3feee86f9578 978c6b47f442845e6e93a79a24aeb36bbca0b7da M	tools
+[acme@zoo linux]$
