@@ -1,259 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaE1DHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 May 2014 23:07:51 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:45219 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397AbaE1DHr (ORCPT
+	id S1753509AbaE1DUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 May 2014 23:20:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52269 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaE1DT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 May 2014 23:07:47 -0400
-Date: Tue, 27 May 2014 21:07:42 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, kvm@vger.kernel.org, konrad.wilk@oracle.com,
-        kim.phillips@linaro.org, gregkh@linuxfoundation.org,
-        stuart.yoder@freescale.com, agraf@suse.de, libvir-list@redhat.com,
-        iommu@lists.linux-foundation.org, christoffer.dall@linaro.org,
-        tech@virtualopensystems.com, kvmarm@lists.cs.columbia.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PCI: Introduce new device binding path using
- pci_dev.driver_override
-Message-ID: <20140528030742.GO11907@google.com>
-References: <20140520145136.28232.90707.stgit@bling.home>
+	Tue, 27 May 2014 23:19:59 -0400
+Date: Wed, 28 May 2014 04:19:55 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140528031955.GW18016@ZenIV.linux.org.uk>
+References: <20140526135746.GM18016@ZenIV.linux.org.uk>
+ <20140526142948.GA1685@lahna.fi.intel.com>
+ <20140526152703.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
+ <20140526182644.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
+ <20140527014054.GR18016@ZenIV.linux.org.uk>
+ <20140527031415.GS18016@ZenIV.linux.org.uk>
+ <20140527040026.GT18016@ZenIV.linux.org.uk>
+ <20140527070409.GA1801@lahna.fi.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140520145136.28232.90707.stgit@bling.home>
+In-Reply-To: <20140527070409.GA1801@lahna.fi.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 20, 2014 at 08:53:21AM -0600, Alex Williamson wrote:
-> The driver_override field allows us to specify the driver for a device
-> rather than relying on the driver to provide a positive match of the
-> device.  This shortcuts the existing process of looking up the vendor
-> and device ID, adding them to the driver new_id, binding the device,
-> then removing the ID, but it also provides a couple advantages.
+On Tue, May 27, 2014 at 10:04:09AM +0300, Mika Westerberg wrote:
+> On Tue, May 27, 2014 at 05:00:26AM +0100, Al Viro wrote:
+> > On Tue, May 27, 2014 at 04:14:15AM +0100, Al Viro wrote:
+> > 
+> > > As the matter of fact, let's try this instead - retry the same sucker
+> > > immediately in case if trylocks fail.  Comments?
+> > 
+> > Better yet, let's take "move back to shrink list" into dentry_kill()
+> > itself.  Then we get consistent locking rules for dentry_kill() and
+> > instead of unlock_on_failure we simply pass it NULL or the shrink
+> > list to put the sucker back.  Mika, could you test this one and see
+> > if it fixes that livelock?  The difference in behaviour is that in
+> > case of trylock failure we hit that sucker again without letting
+> > it ride all the way around the list, same as we do for other dentry_kill()
+> > callers.
 > 
-> First, the above existing process allows the driver to bind to any
-> device matching the new_id for the window where it's enabled.  This is
-> often not desired, such as the case of trying to bind a single device
-> to a meta driver like pci-stub or vfio-pci.  Using driver_override we
-> can do this deterministically using:
+> I tried this patch and unfortunately it still results the same sort of
+> livelock. I've attached the dmesg.
 > 
-> echo pci-stub > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
+> I also tried the serialization patch from Linus and it seemed to fix the
+> problem. After several rounds of USB memory stick plug/unplug I haven't
+> seen a single "soft lockup" warning in dmesg.
 > 
-> Previously we could not invoke drivers_probe after adding a device
-> to new_id for a driver as we get non-deterministic behavior whether
-> the driver we intend or the standard driver will claim the device.
-> Now it becomes a deterministic process, only the driver matching
-> driver_override will probe the device.
-> 
-> To return the device to the standard driver, we simply clear the
-> driver_override and reprobe the device:
-> 
-> echo > /sys/bus/pci/devices/0000:03:00.0/driver_override
-> echo 0000:03:00.0 > /sys/bus/pci/devices/0000:03:00.0/driver/unbind
-> echo 0000:03:00.0 > /sys/bus/pci/drivers_probe
-> 
-> Another advantage to this approach is that we can specify a driver
-> override to force a specific binding or prevent any binding.  For
-> instance when an IOMMU group is exposed to userspace through VFIO
-> we require that all devices within that group are owned by VFIO.
-> However, devices can be hot-added into an IOMMU group, in which case
-> we want to prevent the device from binding to any driver (override
-> driver = "none") or perhaps have it automatically bind to vfio-pci.
-> With driver_override it's a simple matter for this field to be set
-> internally when the device is first discovered to prevent driver
-> matches.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> I'm able to reproduce the problem pretty easily, so if you have
+> something else to try I'm more than happy to give it a try.
 
-Greg, are you going to weigh in on this?  It does seem to solve some real
-problems.  ISTR you had an opinion once, but I don't know your current
-thoughts.
+Could you try this and post the resulting log?  I'd really like to understand
+what's going on there - are we really hitting trylock failures there and what
+dentries are involved.
 
-Bjorn
-
-> ---
-> 
-> v3: kfree() override buffer on device release, noted by Alex Graf
-> 
-> v2: Use strchr() as suggested by Guenter Roeck and adopted by the
->     platform driver version of this same interface.
-> 
->  Documentation/ABI/testing/sysfs-bus-pci |   21 ++++++++++++++++
->  drivers/pci/pci-driver.c                |   25 +++++++++++++++++--
->  drivers/pci/pci-sysfs.c                 |   40 +++++++++++++++++++++++++++++++
->  drivers/pci/probe.c                     |    1 +
->  include/linux/pci.h                     |    1 +
->  5 files changed, 85 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
-> index a3c5a66..898ddc4 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-pci
-> +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> @@ -250,3 +250,24 @@ Description:
->  		valid.  For example, writing a 2 to this file when sriov_numvfs
->  		is not 0 and not 2 already will return an error. Writing a 10
->  		when the value of sriov_totalvfs is 8 will return an error.
-> +
-> +What:		/sys/bus/pci/devices/.../driver_override
-> +Date:		April 2014
-> +Contact:	Alex Williamson <alex.williamson@redhat.com>
-> +Description:
-> +		This file allows the driver for a device to be specified which
-> +		will override standard static and dynamic ID matching.  When
-> +		specified, only a driver with a name matching the value written
-> +		to driver_override will have an opportunity to bind to the
-> +		device.  The override is specified by writing a string to the
-> +		driver_override file (echo pci-stub > driver_override) and
-> +		may be cleared with an empty string (echo > driver_override).
-> +		This returns the device to standard matching rules binding.
-> +		Writing to driver_override does not automatically unbind the
-> +		device from its current driver or make any attempt to
-> +		automatically load the specified driver.  If no driver with a
-> +		matching name is currently loaded in the kernel, the device
-> +		will not bind to any driver.  This also allows devices to
-> +		opt-out of driver binding using a driver_override name such as
-> +		"none".  Only a single driver may be specified in the override,
-> +		there is no support for parsing delimiters.
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index d911e0c..4393c12 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -216,6 +216,13 @@ const struct pci_device_id *pci_match_id(const struct pci_device_id *ids,
->  	return NULL;
->  }
->  
-> +static const struct pci_device_id pci_device_id_any = {
-> +	.vendor = PCI_ANY_ID,
-> +	.device = PCI_ANY_ID,
-> +	.subvendor = PCI_ANY_ID,
-> +	.subdevice = PCI_ANY_ID,
-> +};
-> +
->  /**
->   * pci_match_device - Tell if a PCI device structure has a matching PCI device id structure
->   * @drv: the PCI driver to match against
-> @@ -229,18 +236,30 @@ static const struct pci_device_id *pci_match_device(struct pci_driver *drv,
->  						    struct pci_dev *dev)
->  {
->  	struct pci_dynid *dynid;
-> +	const struct pci_device_id *found_id = NULL;
-> +
-> +	/* When driver_override is set, only bind to the matching driver */
-> +	if (dev->driver_override && strcmp(dev->driver_override, drv->name))
-> +		return NULL;
->  
->  	/* Look at the dynamic ids first, before the static ones */
->  	spin_lock(&drv->dynids.lock);
->  	list_for_each_entry(dynid, &drv->dynids.list, node) {
->  		if (pci_match_one_device(&dynid->id, dev)) {
-> -			spin_unlock(&drv->dynids.lock);
-> -			return &dynid->id;
-> +			found_id = &dynid->id;
-> +			break;
->  		}
->  	}
->  	spin_unlock(&drv->dynids.lock);
->  
-> -	return pci_match_id(drv->id_table, dev);
-> +	if (!found_id)
-> +		found_id = pci_match_id(drv->id_table, dev);
-> +
-> +	/* driver_override will always match, send a dummy id */
-> +	if (!found_id && dev->driver_override)
-> +		found_id = &pci_device_id_any;
-> +
-> +	return found_id;
->  }
->  
->  struct drv_dev_and_id {
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 4e0acef..faa4ab5 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -499,6 +499,45 @@ static struct device_attribute sriov_numvfs_attr =
->  		       sriov_numvfs_show, sriov_numvfs_store);
->  #endif /* CONFIG_PCI_IOV */
->  
-> +static ssize_t driver_override_store(struct device *dev,
-> +				     struct device_attribute *attr,
-> +				     const char *buf, size_t count)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +	char *driver_override, *old = pdev->driver_override, *cp;
-> +
-> +	if (count > PATH_MAX)
-> +		return -EINVAL;
-> +
-> +	driver_override = kstrndup(buf, count, GFP_KERNEL);
-> +	if (!driver_override)
-> +		return -ENOMEM;
-> +
-> +	cp = strchr(driver_override, '\n');
-> +	if (cp)
-> +		*cp = '\0';
-> +
-> +	if (strlen(driver_override)) {
-> +		pdev->driver_override = driver_override;
-> +	} else {
-> +		kfree(driver_override);
-> +		pdev->driver_override = NULL;
-> +	}
-> +
-> +	kfree(old);
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t driver_override_show(struct device *dev,
-> +				    struct device_attribute *attr, char *buf)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +
-> +	return sprintf(buf, "%s\n", pdev->driver_override);
-> +}
-> +static DEVICE_ATTR_RW(driver_override);
-> +
->  static struct attribute *pci_dev_attrs[] = {
->  	&dev_attr_resource.attr,
->  	&dev_attr_vendor.attr,
-> @@ -521,6 +560,7 @@ static struct attribute *pci_dev_attrs[] = {
->  #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
->  	&dev_attr_d3cold_allowed.attr,
->  #endif
-> +	&dev_attr_driver_override.attr,
->  	NULL,
->  };
->  
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index ef09f5f..54268de 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1215,6 +1215,7 @@ static void pci_release_dev(struct device *dev)
->  	pci_release_of_node(pci_dev);
->  	pcibios_release_device(pci_dev);
->  	pci_bus_put(pci_dev->bus);
-> +	kfree(pci_dev->driver_override);
->  	kfree(pci_dev);
->  }
->  
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index aab57b4..b72af27 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -365,6 +365,7 @@ struct pci_dev {
->  #endif
->  	phys_addr_t rom; /* Physical address of ROM if it's not from the BAR */
->  	size_t romlen; /* Length of ROM if it's not from the BAR */
-> +	char *driver_override; /* Driver name to force a match */
->  };
->  
->  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
-> 
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 42ae01e..75f56a6 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -38,6 +38,7 @@
+ #include <linux/prefetch.h>
+ #include <linux/ratelimit.h>
+ #include <linux/list_lru.h>
++#include <linux/magic.h>
+ #include "internal.h"
+ #include "mount.h"
+ 
+@@ -448,7 +449,7 @@ EXPORT_SYMBOL(d_drop);
+  * Returns dentry requiring refcount drop, or NULL if we're done.
+  */
+ static struct dentry *
+-dentry_kill(struct dentry *dentry, int unlock_on_failure)
++dentry_kill(struct dentry *dentry, struct list_head *shrink_list)
+ 	__releases(dentry->d_lock)
+ {
+ 	struct inode *inode;
+@@ -464,10 +465,10 @@ dentry_kill(struct dentry *dentry, int unlock_on_failure)
+ 	inode = dentry->d_inode;
+ 	if (inode && !spin_trylock(&inode->i_lock)) {
+ relock:
+-		if (unlock_on_failure) {
+-			spin_unlock(&dentry->d_lock);
+-			cpu_relax();
+-		}
++		if (shrink_list)
++			d_shrink_add(dentry, shrink_list);
++		spin_unlock(&dentry->d_lock);
++		cpu_relax();
+ 		return dentry; /* try again with same dentry */
+ 	}
+ 	if (!IS_ROOT(dentry))
+@@ -542,6 +543,14 @@ out:
+  * on the compiler to always get this right (gcc generally doesn't).
+  * Real recursion would eat up our stack space.
+  */
++static inline void dump(const char *s, struct dentry *dentry)
++{
++	if (unlikely(dentry->d_sb->s_magic == SYSFS_MAGIC)) {
++		printk(KERN_ERR "%s[%pd4]; CPU %d PID %d [%s]\n",
++			s, dentry, smp_processor_id(),
++			task_pid_nr(current), current->comm);
++	}
++}
+ 
+ /*
+  * dput - release a dentry
+@@ -579,7 +588,9 @@ repeat:
+ 	return;
+ 
+ kill_it:
+-	dentry = dentry_kill(dentry, 1);
++	if (dentry->d_inode)
++		dump("dput", dentry);
++	dentry = dentry_kill(dentry, NULL);
+ 	if (dentry)
+ 		goto repeat;
+ }
+@@ -798,6 +809,7 @@ static void shrink_dentry_list(struct list_head *list)
+ 
+ 	while (!list_empty(list)) {
+ 		dentry = list_entry(list->prev, struct dentry, d_lru);
++again:
+ 		spin_lock(&dentry->d_lock);
+ 		/*
+ 		 * The dispose list is isolated and dentries are not accounted
+@@ -815,22 +827,19 @@ static void shrink_dentry_list(struct list_head *list)
+ 			continue;
+ 		}
+ 
+-		parent = dentry_kill(dentry, 0);
++		dump("shrink", dentry);
++		parent = dentry_kill(dentry, list);
+ 		/*
+ 		 * If dentry_kill returns NULL, we have nothing more to do.
+ 		 */
+ 		if (!parent)
+ 			continue;
+ 
++		 /* if trylocks have failed; just do it again */
+ 		if (unlikely(parent == dentry)) {
+-			/*
+-			 * trylocks have failed and d_lock has been held the
+-			 * whole time, so it could not have been added to any
+-			 * other lists. Just add it back to the shrink list.
+-			 */
+-			d_shrink_add(dentry, list);
+-			spin_unlock(&dentry->d_lock);
+-			continue;
++			if (dentry->d_sb->s_magic == SYSFS_MAGIC)
++				printk(KERN_ERR "A");
++			goto again;
+ 		}
+ 		/*
+ 		 * We need to prune ancestors too. This is necessary to prevent
+@@ -839,8 +848,10 @@ static void shrink_dentry_list(struct list_head *list)
+ 		 * fragmentation.
+ 		 */
+ 		dentry = parent;
+-		while (dentry && !lockref_put_or_lock(&dentry->d_lockref))
+-			dentry = dentry_kill(dentry, 1);
++		while (dentry && !lockref_put_or_lock(&dentry->d_lockref)) {
++			dump("shrink-dput", dentry);
++			dentry = dentry_kill(dentry, NULL);
++		}
+ 	}
+ }
+ 
+@@ -1223,6 +1234,7 @@ out:
+  */
+ void shrink_dcache_parent(struct dentry *parent)
+ {
++	dump("shrink_dcache_parent", parent);
+ 	for (;;) {
+ 		struct select_data data;
+ 
+@@ -1331,6 +1343,8 @@ int check_submounts_and_drop(struct dentry *dentry)
+ 		goto out;
+ 	}
+ 
++	dump("check_submounts_and_drop", dentry);
++
+ 	for (;;) {
+ 		struct select_data data;
+ 
