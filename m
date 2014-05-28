@@ -1,154 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613AbaE1NVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:21:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15068 "EHLO mx1.redhat.com"
+	id S1753674AbaE1NV3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:21:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58874 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753542AbaE1NVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:21:17 -0400
+	id S1753637AbaE1NV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:21:27 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 2/9] Revert "perf: Disable PERF_RECORD_MMAP2 support"
-Date: Wed, 28 May 2014 15:20:55 +0200
-Message-Id: <1401283262-16035-3-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 7/9] perf tools: Consider header files outside perf directory in tags target
+Date: Wed, 28 May 2014 15:21:00 +0200
+Message-Id: <1401283262-16035-8-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 References: <1401283262-16035-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
+This fixes lookups like "vi -t event_format"
 
-Re-enable the mmap2 interface as we will have a user soon.
-
-Since things have changed since perf disabled mmap2, small tweaks
-to the revert had to be done:
-
-o commit 9d4ecc88 forced (n!=8) to become (n<7)
-o a new libunwind test needed updating to use mmap2 interface
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1400526833-141779-3-git-send-email-dzickus@redhat.com
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140528081918.GA28567@linutronix.de
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- kernel/events/core.c            |  4 ----
- tools/perf/tests/dwarf-unwind.c |  2 +-
- tools/perf/util/event.c         | 36 +++++++++++++++++++-----------------
- tools/perf/util/evsel.c         |  1 +
- 4 files changed, 21 insertions(+), 22 deletions(-)
+ tools/perf/Makefile.perf | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index cd68f49..57edc51 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6909,10 +6909,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (ret)
- 		return -EFAULT;
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 02f0a4d..f80ec2d 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -814,17 +814,20 @@ INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
+ $(DOC_TARGETS):
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) $(@:doc=all)
  
--	/* disabled for now */
--	if (attr->mmap2)
--		return -EINVAL;
--
- 	if (attr->__reserved_1)
- 		return -EINVAL;
- 
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index 108f0cd..96adb73 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -15,7 +15,7 @@ static int mmap_handler(struct perf_tool *tool __maybe_unused,
- 			struct perf_sample *sample __maybe_unused,
- 			struct machine *machine)
- {
--	return machine__process_mmap_event(machine, event, NULL);
-+	return machine__process_mmap2_event(machine, event, NULL);
- }
- 
- static int init_live_machine(struct machine *machine)
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 65795b8..5e7c722 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -178,13 +178,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		return -1;
- 	}
- 
--	event->header.type = PERF_RECORD_MMAP;
-+	event->header.type = PERF_RECORD_MMAP2;
- 
- 	while (1) {
- 		char bf[BUFSIZ];
- 		char prot[5];
- 		char execname[PATH_MAX];
- 		char anonstr[] = "//anon";
-+		unsigned int ino;
- 		size_t size;
- 		ssize_t n;
- 
-@@ -195,14 +196,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		strcpy(execname, "");
- 
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
--		       &event->mmap.start, &event->mmap.len, prot,
--		       &event->mmap.pgoff,
--		       execname);
--		/*
-- 		 * Anon maps don't have the execname.
-- 		 */
--		if (n < 4)
-+		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
-+		       &event->mmap2.start, &event->mmap2.len, prot,
-+		       &event->mmap2.pgoff, &event->mmap2.maj,
-+		       &event->mmap2.min,
-+		       &ino, execname);
++TAG_FOLDERS= . ../lib/traceevent ../lib/api ../lib/symbol
++TAG_FILES= ../../include/uapi/linux/perf_event.h
 +
-+		event->mmap2.ino = (u64)ino;
-+
-+		if (n < 7)
- 			continue;
- 		/*
- 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
-@@ -223,15 +225,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			strcpy(execname, anonstr);
+ TAGS:
+ 	$(RM) TAGS
+-	$(FIND) . -name '*.[hcS]' -print | xargs etags -a
++	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs etags -a $(TAG_FILES)
  
- 		size = strlen(execname) + 1;
--		memcpy(event->mmap.filename, execname, size);
-+		memcpy(event->mmap2.filename, execname, size);
- 		size = PERF_ALIGN(size, sizeof(u64));
--		event->mmap.len -= event->mmap.start;
--		event->mmap.header.size = (sizeof(event->mmap) -
--					(sizeof(event->mmap.filename) - size));
--		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
--		event->mmap.header.size += machine->id_hdr_size;
--		event->mmap.pid = tgid;
--		event->mmap.tid = pid;
-+		event->mmap2.len -= event->mmap.start;
-+		event->mmap2.header.size = (sizeof(event->mmap2) -
-+					(sizeof(event->mmap2.filename) - size));
-+		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
-+		event->mmap2.header.size += machine->id_hdr_size;
-+		event->mmap2.pid = tgid;
-+		event->mmap2.tid = pid;
+ tags:
+ 	$(RM) tags
+-	$(FIND) . -name '*.[hcS]' -print | xargs ctags -a
++	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs ctags -a $(TAG_FILES)
  
- 		if (process(tool, event, &synth_sample, machine) != 0) {
- 			rc = -1;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 5c28d82..21154da 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -659,6 +659,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 		perf_evsel__set_sample_bit(evsel, WEIGHT);
+ cscope:
+ 	$(RM) cscope*
+-	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
++	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs cscope -b $(TAG_FILES)
  
- 	attr->mmap  = track;
-+	attr->mmap2 = track && !perf_missing_features.mmap2;
- 	attr->comm  = track;
- 
- 	if (opts->sample_transaction)
+ ### Detect prefix changes
+ TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
 -- 
 1.8.3.1
 
