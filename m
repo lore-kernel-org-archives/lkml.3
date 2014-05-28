@@ -1,283 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaE1HCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:02:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57909 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972AbaE1HC3 (ORCPT
+	id S1754351AbaE1HC5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:02:57 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:15377 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294AbaE1HCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:02:29 -0400
-Date: Wed, 28 May 2014 09:01:33 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Alan Tull <delicious.quinoa@gmail.com>
-Cc: Thor Thayer <tthayer.linux@gmail.com>, Thor Thayer <tthayer@altera.com>,
-        Rob Herring <robherring2@gmail.com>, pawel.moll@arm.com,
-        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux@arm.linux.org.uk, Dinh Nguyen <dinguyen@altera.com>,
-        dougthompson@xmission.com, Grant Likely <grant.likely@linaro.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
-        Alan Tull <atull@altera.com>
-Subject: Re: [PATCHv5 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
- controller
-Message-ID: <20140528070133.GD13172@pengutronix.de>
-References: <CAF03EBfOrBWsGVkwYHQt9Pm858LtkgUThkM6dFjksa93ETo_bw@mail.gmail.com>
- <20140519191206.GH949@pengutronix.de>
- <CAF03EBfwFC7bK=j0W3K+no9TK7xe2nF1ZXH9bMBRNzVErB5EjQ@mail.gmail.com>
- <CANk1AXTdSheUkNtF2fSmtcYaUrd2CnTjBxGitmSy88H4VRVbnw@mail.gmail.com>
- <20140520144446.GJ949@pengutronix.de>
- <CAF03EBe+G8EpZSU7vhu4QZ3E-Nq4WnHw7DRM7=EyxHkjzp5cqg@mail.gmail.com>
- <20140527071157.GC20695@pengutronix.de>
- <CANk1AXTMHuWeaxn_hVi+AH=aXbbSNov=894YmSYfvfvpWM+eSg@mail.gmail.com>
- <20140527194228.GB13172@pengutronix.de>
- <CANk1AXRMZrNWr4FR6KYAkN3JwVA1d9qdn00UY3OaYurz6DNvmA@mail.gmail.com>
+	Wed, 28 May 2014 03:02:55 -0400
+Message-ID: <53858A06.8080507@huawei.com>
+Date: Wed, 28 May 2014 15:02:30 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANk1AXRMZrNWr4FR6KYAkN3JwVA1d9qdn00UY3OaYurz6DNvmA@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:50:56 up 35 days, 22 min, 34 users,  load average: 0,08, 0,11,
- 0,13
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone allocations
+ (v2)
+References: <20140523193706.GA22854@amt.cnet> <20140526185344.GA19976@amt.cnet>
+In-Reply-To: <20140526185344.GA19976@amt.cnet>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 03:57:47PM -0500, Alan Tull wrote:
-> On Tue, May 27, 2014 at 2:42 PM, Steffen Trumtrar
-> <s.trumtrar@pengutronix.de> wrote:
-> > On Tue, May 27, 2014 at 02:12:17PM -0500, Alan Tull wrote:
-> >> On Tue, May 27, 2014 at 2:11 AM, Steffen Trumtrar
-> >> <s.trumtrar@pengutronix.de> wrote:
-> >> > On Wed, May 21, 2014 at 10:38:34AM -0500, Thor Thayer wrote:
-> >> >> On Tue, May 20, 2014 at 9:44 AM, Steffen Trumtrar
-> >> >> <s.trumtrar@pengutronix.de> wrote:
-> >> >> > Hi!
-> >> >> >
-> >> >> > On Tue, May 20, 2014 at 09:31:06AM -0500, Alan Tull wrote:
-> >> >> >> On Mon, May 19, 2014 at 2:37 PM, Thor Thayer <tthayer.linux@gmail.com> wrote:
-> >> >> >>
-> >> >> >> >>> >> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> >> >> >> >>> >> new file mode 100644
-> >> >> >> >>> >> index 0000000..8f8746b
-> >> >> >> >>> >> --- /dev/null
-> >> >> >> >>> >> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> >> >> >> >>> >> @@ -0,0 +1,11 @@
-> >> >> >> >>> >> +Altera SOCFPGA SDRAM Controller
-> >> >> >> >>> >> +
-> >> >> >> >>> >> +Required properties:
-> >> >> >> >>> >> +- compatible : "altr,sdr-ctl";
-> >> >> >> >>> >> +- reg : Should contain 1 register ranges(address and length)
-> >> >> >> >>> >> +
-> >> >> >> >>> >> +Example:
-> >> >> >> >>> >> +     sdrctl@ffc25000 {
-> >> >> >> >>> >> +             compatible = "altr,sdr-ctl";
-> >> >> >> >>> >> +             reg = <0xffc25000 0x1000>;
-> >> >> >> >>> >> +     };
-> >> >> >> >>> >> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> >> >> >> >>> >> index df43702..6ce912e 100644
-> >> >> >> >>> >> --- a/arch/arm/boot/dts/socfpga.dtsi
-> >> >> >> >>> >> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> >> >> >> >>> >> @@ -676,6 +676,11 @@
-> >> >> >> >>> >>                       clocks = <&l4_sp_clk>;
-> >> >> >> >>> >>               };
-> >> >> >> >>> >>
-> >> >> >> >>> >> +             sdrctl@ffc25000 {
-> >> >> >> >>> >> +                     compatible = "altr,sdr-ctl", "syscon";
-> >> >> >> >>> >                                                    ^^^^^^^^^^
-> >> >> >> >>> >
-> >> >> >> >>> > Get rid of that, too, please.
-> >> >> >> >>>
-> >> >> >> >>> Hi Steffan,
-> >> >> >> >>>
-> >> >> >> >>> I believe I need to keep the "syscon". The same register (ctrlcfg)
-> >> >> >> >>> that has the ECC enable bitfield also includes the DRAM configuration
-> >> >> >> >>> bitfields that other drivers will want to access (specifically the
-> >> >> >> >>> FPGA bridge needs this information). Since this register will be
-> >> >> >> >>> shared between drivers,  syscon seems like the best solution.
-> >> >> >> >>>
-> >> >> >> >>
-> >> >> >> >> Hm, from looking at the documentation of the ctrlcfg I can't really
-> >> >> >> >> understand which bits you would need for the FPGA brigde and why.
-> >> >> >>
-> >> >> >> Hi Steffen,
-> >> >> >>
-> >> >> >> Offset 0x80 in the sdr-ctl is the "fpgaportrst" register.  14 bits
-> >> >> >> wide, defaults to 0.  When appropriate bits set to 1 in that reg, it
-> >> >> >> allows an FPGA port to come out of reset (enables that port).  Has no
-> >> >> >> other effect on SDRAM configuration.
-> >> >> >>
-> >> >> >> >> That all sounds like stuff you would want to set for the specific
-> >> >> >> >> RAM you are dealing with on a specific board.
-> >> >> >> >> What bridge are you talking about? The SDRAM bridge?
-> >> >> >>
-> >> >> >> Yes, the port allows the FPGA a direct path to the SDRAM.  This one
-> >> >> >> register the only register in the sdr that the bridge driver needs.
-> >> >> >>
-> >> >> >
-> >> >> > So, what I suggested down ...
-> >> >> >
-> >> >> >> >>
-> >> >> >> >> I can see the problem with the ECC enable, though.
-> >> >> >> >>
-> >> >> >> >> Regards,
-> >> >> >> >> Steffen
-> >> >> >> >>
-> >> >> >> >
-> >> >> >> >>> >                 sdrctl@ffc25000 {
-> >> >> >> >>> >                         compatible = "altr,sdr-ctl";
-> >> >> >> >>> >                         reg = <0xffc25000 0x1000>;
-> >> >> >> >>> >                         ranges;
-> >> >> >> >>> >
-> >> >> >> >>> >                         edac@ffc2502c {
-> >> >> >> >>> >                                 compatible = "altr,sdram-edac";
-> >> >> >> >>> >                                 reg = <0xffc2502c 0x50>;
-> >> >> >> >>> >                                 interrupts = <0 39 4>;
-> >> >> >> >>> >                         };
-> >> >> >> >>> >                 };
-> >> >> >> >>> >
-> >> >> >> >>> > Then we can later add:
-> >> >> >> >>> >
-> >> >> >> >>> >                         sdr-ports: ports@ffc2507c {
-> >> >> >> >>> >                                 #reset-cells = <1>;
-> >> >> >> >>> >                                 compatible = "altr,sdr-ports";
-> >> >> >> >>> >                                 reg = <0xffc2507c 0x10>;
-> >> >> >> >>> >                                 clocks = <&ddr_dqs_clk>;
-> >> >> >> >>> >                                 ...
-> >> >> >> >>> >                         };
-> >> >> >>
-> >> >> >
-> >> >> > ... here should work. No?! Just a simple driver that registers with the
-> >> >> > reset-framework. I would add 0x7c to that driver and than that driver could
-> >> >> > "configure" the port and let it out of reset.
-> >> >> >
-> >> >> > I have done the same thing for the other 3 bridges, but am not finished yet.
-> >> >> > Especially the GPV-stuff needs to at least be able to be added later if not now.
-> >> >> >
-> >> >
-> >> > Hi Thor!
-> >> >
-> >> >> I'm not clear on how the EDAC driver will interact with the registers
-> >> >> allocated to the SDRAM controller. If the group of registers from
-> >> >> 0xffc25000 to 0xffc26000 is exclusively allocated to the SDRAM
-> >> >> controller, how does the EDAC driver cleanly access that single
-> >> >> register inside this range?
-> >> >>
-> >> >
-> >> > The compatible in the example is wrong. I didn't mean to map the whole address space
-> >> > to some driver.
-> >> > I think for the configuration register syscon is the right approach. It is a
-> >> > bag of bits that don't necessitate an own driver, so syscon is perfect.
-> >> >
-> >> > So, let me change my proposal to
-> >> >
-> >> >         sdr-ctl: sdram@ffc25000 {
-> >> >                 compatible = "altr,sdr-ctl", "syscon";
-> >> >                 reg = <0xffc25000 0x1>;
-> >> >         };
-> >> >
-> >> >         edac: edac@ffc2502c {
-> >> >                 compatible = "altr,sdram-edac";
-> >> >                 reg = <0xffc2502c 0x50>;
-> >> >                 interrupts = <0 39 4>;
-> >> >                 config = <&sdr-ctl>;
-> >> >                 ...
-> >> >         };
-> >> >
-> >> >         sdr-ports: ports@ffc2507c {
-> >> >                 compatible = "altr,sdr-ports";
-> >> >                 reg = <0xffc2507c 0x10>;
-> >> >                 clocks = <&ddr_dqs_clk>;
-> >> >                 ...
-> >> >         };
-> >> >
-> >> > Maybe we can just skip the outer node that combines all the others.
-> >> > So, if we do it like that, you can still use syscon, but only for the register
-> >> > that needs it. And the EDAC definitely needs access to the config register, so
-> >> > all is good.
-> >> >
-> >> >> Is the solution that I don't use request_region() (and therefore not
-> >> >> request exclusive access) when setting up the SDRAM controller?
-> >> >>
-> >> >> If you could point me to your drivers for the other bridges that you
-> >> >> reference, your code may answer my question.
-> >> >>
-> >> >
-> >> > The other bridges don't need access to any SDRAM controller registers and
-> >> > I haven't even started to implement the GPV-stuff with the lw2hps-bridge :-(
-> >> >
-> >> > Regards,
-> >> > Steffen
-> >> >
-> >> > --
-> >> > Pengutronix e.K.                           |                             |
-> >> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> >> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> >> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-> >>
-> >> OK now I understand.  For register offset 0x0, that's all stuff set up
-> >> in the bootloader.  We won't be touching that register except for the
-> >> EDAC.  So syscon isn't needed here.
-> >>
-> >> Each driver that uses some sdr registers can specify which registers
-> >> it uses in the device tree.  So far we don't have any cases of two
-> >> drivers that share a register.
-> >>
-> >> The ECC driver will need two ranges: offset 0x00 and 0x38 through 0x50.
-> >> The fpga bridges just needs offset 0x80.
-> >>
-> >
-> > Well, almost ;-)
-> > Use syscon for 0x0 and reference that in the ECC driver, which only is
-> > responsible for 0x38 to 0x50. Then flip the two EDAC bits via the syscon-phandle.
-> > Then a bootloader can probe with the same dts and have a driver match on the
-> > config-register and one for all the DRAM setup (< 0x38), which we don't need in
-> > the kernel. On the other hand the EDAC seems unneccessary for the bootloader.
-> > And this all matches the partitioning of the SDR register space, so I think it
-> > is also a correct hardware description.
-> >
-> > Regards,
-> > Steffen
-> >
-> > --
-> > Pengutronix e.K.                           |                             |
-> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+On 2014/5/27 2:53, Marcelo Tosatti wrote:
 > 
-> We could do that.  But is syscon a concept the bootloader will know about?
+> Zone specific allocations, such as GFP_DMA32, should not be restricted
+> to cpusets allowed node list: the zones which such allocations demand
+> might be contained in particular nodes outside the cpuset node list.
+> 
+> The alternative would be to not perform such allocations from
+> applications which are cpuset restricted, which is unrealistic.
+> 
+> Fixes KVM's alloc_page(gfp_mask=GFP_DMA32) with cpuset as explained.
 > 
 
-Depends on the bootloader. I guess u-boot doesn't, but barebox does.
-Alternative would be to have the bootloader know that it has to look for an
-ECC node when it instead is looking for DRAM timing/width/... setup.
-Sounds wrong to me.
+Could you add the use case that you described in a previous email to
+the changelog?
 
-> Actually it is a bit messier than what I originally said:
->  ECC driver needs two ranges: offset 0x00 and 0x38 through 0x50.
->  Machine layer needs control of 0x10, 0x14, 0x54, and 0x58 for putting
-> SDRAM into self-refresh.
+> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+> 
+> v2: fix slowpath as well (David Rientjes)
+> 
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 3d54c41..b70a336 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -2392,6 +2392,10 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
+>  
 
-I didn't get that. Does the ECC driver need access to this "machine layer"?
+Add a comment accordingly?
 
-Regards,
-Steffen
+	 *      in_interrupt - any node ok (current task context irrelevant)
+	 *      GFP_ATOMIC   - any node ok
+	 *      TIF_MEMDIE   - any node ok
+	 *      GFP_KERNEL   - any node in enclosing hardwalled cpuset ok
+	 *      GFP_USER     - only nodes in current tasks mems allowed ok.
 
+>  	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
+>  		return 1;
+> +#ifdef CONFIG_NUMA
+> +	if (gfp_zone(gfp_mask) < policy_zone)
+> +		return 1;
+> +#endif
+>  	might_sleep_if(!(gfp_mask & __GFP_HARDWALL));
+>  	if (node_isset(node, current->mems_allowed))
+>  		return 1;
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 5dba293..dfea3dc 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2698,6 +2698,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>  	unsigned int cpuset_mems_cookie;
+>  	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+>  	struct mem_cgroup *memcg = NULL;
+> +	nodemask_t *cpuset_mems_allowed = &cpuset_current_mems_allowed;
+>  
+>  	gfp_mask &= gfp_allowed_mask;
+>  
+> @@ -2726,9 +2727,14 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>  retry_cpuset:
+>  	cpuset_mems_cookie = read_mems_allowed_begin();
+>  
+> +#ifdef CONFIG_NUMA
+> +	if (gfp_zone(gfp_mask) < policy_zone)
+> +		cpuset_mems_allowed = NULL;
+> +#endif
+> +
+>  	/* The preferred zone is used for statistics later */
+>  	first_zones_zonelist(zonelist, high_zoneidx,
+> -				nodemask ? : &cpuset_current_mems_allowed,
+> +				nodemask ? : cpuset_mems_allowed,
+>  				&preferred_zone);
+>  	if (!preferred_zone)
+>  		goto out;
+> .
+> 
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
