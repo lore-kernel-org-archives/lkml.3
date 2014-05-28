@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242AbaE1QBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:01:05 -0400
-Received: from relay2.sgi.com ([192.48.180.65]:50265 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932144AbaE1QBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:01:03 -0400
-X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 12:01:02 EDT
-Date: Wed, 28 May 2014 10:51:04 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: "Fleming, Matt" <matt.fleming@intel.com>, "bp@alien8.de" <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        vgoyal@redhat.com, Alex Thorlton <athorlton@sgi.com>
-Subject: Re: [PATCH] export efi.flags to sysfs
-Message-ID: <20140528155104.GW10771@sgi.com>
-References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
- <20140527030058.GB2372@darkstar.nay.redhat.com>
- <CAL01qpvqa-8u2MZ=8wE8gsiprFLbN4U3AbEX9+h7FuemXNR93Q@mail.gmail.com>
- <20140528020935.GB2820@darkstar.nay.redhat.com>
- <20140528094712.GL2820@darkstar.nay.redhat.com>
+	id S932266AbaE1QBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:01:23 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40161 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144AbaE1QBV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 12:01:21 -0400
+Message-ID: <5386084A.6030003@codeaurora.org>
+Date: Wed, 28 May 2014 21:31:14 +0530
+From: Sujit Reddy Thumma <sthumma@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528094712.GL2820@darkstar.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Hellwig <hch@infradead.org>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] scsi patch queue tree
+References: <20140519140614.GA12183@infradead.org> <20140520100343.31490551@canb.auug.org.au> <20140520053928.GA1751@infradead.org> <20140521094636.515289e8@canb.auug.org.au> <1400639101.2481.19.camel@dabdike> <20140528105429.GA20549@infradead.org>
+In-Reply-To: <20140528105429.GA20549@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 05:47:12PM +0800, Dave Young wrote:
-> Add Alex to cc
-> 
-> > > The 1:1 mapping was required to make kexec + EFI work in the first
-> > > instance. If a machine implements the EFI 1:1 mapping, kexec should
-> > > work. If it doesn't implement the 1:1 mapping, then it's probably not
-> > > going to work, right?
-> > > 
-> > > The crux of the question: are you trying to fix a regression?
-> > > 
-> > > If not, then we just need to get SGI UV working with the EFI 1:1
-> > > mapping. No?
-> 
-> Alex is working on a SGI UV fix for 1:1 mapping.
-> Question to Alex, if userspace can get the firmware version there might
-> be another option that kexec-tools checking the firmware version and
-> switch to old noefi way automaticlly. Is it doable?
+On 5/28/2014 4:24 PM, Christoph Hellwig wrote:
+> I've pushed the following changes to the drivers-for-3.16 tree.  I've
+> there's anyting matching the rules that I did forget please resend
+> and/or ping me.
+>
+>
+> ----------------------------------------------------------------
+> Benoit Taine (2):
+>        qla4xxx: Use kmemdup instead of kmalloc + memcpy
+>        qla2xxx: Use kmemdup instead of kmalloc + memcpy
+>
+> Dan Carpenter (1):
+>        qla2xxx: fix incorrect debug printk
+>
+> Dolev Raviv (4):
+>        scsi: ufs: query descriptor API
+>        scsi: ufs: device query status and size check
+>        scsi: ufs: Logical Unit (LU) command queue depth
+>        scsi: ufs: Fix queue depth handling for best effort cases
 
-Userspace can get the firmware version easily, as long as our hwperf
-module is installed (as it should be on any supported SGI machine).  The
-firmware version can be found in /proc/sgi_uv/bios_version on any
-machine where hwperf is loaded.
+The above 4 patches are just posted to mailing lists with no
+review/ack's yet. I believe it still went in because the sender has
+modified the author name to himself and signed-off by is present by the
+original author which worked as a positive review for your rules. I
+have asked the sender to check why the original author name is changed.
+Meanwhile, I believe these patches should get some more time for review.
 
-I don't know if that's really an ideal method for what you're doing, but
-that's the only way I know of to get the firmware version in userspace.
 
-A side note, though:  We're going to have to figure out some way to
-determine whether or not to apply the old_map quirk on during boot
-anyway, so if it's easiest for you to just determine how the original
-kernel was booted and key off of that, then I wouldn't worry about
-finding a different method to get the firmware version in userspace,
-unless there are other reasons for you to do it that way.
-
-- Alex
+-- 
+Regards,
+Sujit
