@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577AbaE1XZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:25:05 -0400
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:36373 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047AbaE1XVD (ORCPT
+	id S1754894AbaE1X1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 19:27:00 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:51309 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583AbaE1X07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:21:03 -0400
+	Wed, 28 May 2014 19:26:59 -0400
 MIME-Version: 1.0
-X-Originating-IP: [128.107.151.95]
-In-Reply-To: <1401319048-15797-1-git-send-email-c@24.io>
-References: <1401319048-15797-1-git-send-email-c@24.io>
-Date: Wed, 28 May 2014 16:21:02 -0700
-Message-ID: <CADadk9ExTYrK-vM0_UK7Oc8UAc98u9jKAXHbFqvU02_PkO4JnQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Staging: rtl8192u: r8192U_wx.c Fixed misplaced brace
-From: Chaitanya Hazarey <c@24.io>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ksenia Ragiadakou <burzalodowa@gmail.com>,
-        Andrea Merello <andrea.merello@gmail.com>
-Cc: devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Chaitanya Hazarey <c@24.io>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [2601:7:1680:338::529]
+In-Reply-To: <1401318025.19335.15.camel@joe-AO725>
+References: <1401236684-10579-1-git-send-email-dev@codyps.com>
+	<1401236684-10579-12-git-send-email-dev@codyps.com>
+	<063D6719AE5E284EB5DD2968C1650D6D1724EEAF@AcuExch.aculab.com>
+	<CAPoQQ-17OHotfbczJvEoq=vAzu_+6-sV3M1ZAhDaQ45wB3NB4A@mail.gmail.com>
+	<CAPoQQ-11vW3Q0=LcS-myNZ6hXeYBeu==_prwHJXHvLfkUSmZHQ@mail.gmail.com>
+	<1401318025.19335.15.camel@joe-AO725>
+Date: Wed, 28 May 2014 18:26:57 -0500
+Message-ID: <CAPoQQ-2Mjx7kHC8FSDBnLT2Y+m9W9cB_Q5ohWoYsKmxyhBp_DQ@mail.gmail.com>
+Subject: Re: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
+ le}_to_cpu() and cpu_to_{be, le}() macros
+From: Cody P Schafer <dev@codyps.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Laight <David.Laight@aculab.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this patch, there seems something wrong with it, will
-resend with a new subject.
+On Wed, May 28, 2014 at 6:00 PM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2014-05-28 at 17:11 -0500, Cody P Schafer wrote:
+>> On Wed, May 28, 2014 at 5:05 PM, Cody P Schafer <dev@codyps.com> wrote:
+>> > On Wed, May 28, 2014 at 3:45 AM, David Laight <David.Laight@aculab.com> wrote:
+>> >> From: Cody P Schafer
+>> >>> Rather manually specifying the size of the integer to be converted, key
+>> >>> off of the type size. Reduces duplicate size info and the occurance of
+>> >>> certain types of bugs (using the wrong sized conversion).
+>> >> ...
+>> >>> +#define be_to_cpu(v) \
+>> >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v, \
+>> >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint16_t), be16_to_cpu(v), \
+>> >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint32_t), be32_to_cpu(v), \
+>> >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint64_t), be64_to_cpu(v), \
+>> >>> +             (void)0))))
+>> >> ...
+>> >>
+>> >> I'm not at all sure that using the 'size' of the constant will reduce
+>> >> the number of bugs - it just introduces a whole new category of bugs.
+>> >
+>> > Certainly, if you mis-size the argument (and thus have missized one of
+>> > the variables containing the be value, probably a bug anyhow), there
+>> > will be problems.
+>> >
+>> > I put this interface together because of an actual bug I wrote into
+>> > the initial code of the hv_24x7 driver (resized a struct member
+>> > without adjusting the be*_to_cpu() sizing).
+>> > Having this "auto sizing" macro means I can avoid encoding the size of
+>> > a struct field in multiple places.
+>>
+>> To clarify, the point I'm making here is that this simply cuts out 1
+>> more place we can screw up endianness conversion sizing.
+>
+> It does screw up other types when you do things like:
+>
+>         u8 foo = some_function();
+>
+>         cpu_to_be(foo + 1);
+>
+> the return value is sizeof(int) not u8
 
-Thanks,
-
-Chaitanya
-
-On Wed, May 28, 2014 at 4:17 PM, Chaitanya Hazarey <c@24.io> wrote:
-> Fixed a misplaced brace in a function
->
-> Signed-off-by: Chaitanya Hazarey <c@24.io>
-> ---
->  drivers/staging/rtl8192u/r8192U_wx.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-> index 1af7c5d..675a12d 100644
-> --- a/drivers/staging/rtl8192u/r8192U_wx.c
-> +++ b/drivers/staging/rtl8192u/r8192U_wx.c
-> @@ -616,7 +616,8 @@ static int r8192_wx_set_enc(struct net_device *dev,
->
->
->  static int r8192_wx_set_scan_type(struct net_device *dev, struct iw_request_info *aa,
-> -                                       union iwreq_data *wrqu, char *p){
-> +                                       union iwreq_data *wrqu, char *p)
-> +{
->
->         struct r8192_priv *priv = ieee80211_priv(dev);
->         int *parms = (int *)p;
-> --
-> 1.9.1
->
+Yep, that is a very good argument against the cpu_to_{be,le}()
+variants. It might make sense to remove them and just have the
+{be,le}_to_cpu() ones.
