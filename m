@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaE1NaB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:30:01 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:50341 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaE1N37 (ORCPT
+	id S1753749AbaE1NaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:30:25 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63279 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaE1NaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:29:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-Date: Wed, 28 May 2014 15:29:26 +0200
-Message-ID: <4960549.viM91iY2g2@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACRpkdZjEVYgq7tKEfmZC0Fu4n=JuUues=pAAtquLahkex=pkA@mail.gmail.com>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <5840140.8yGnd4Ycx3@wuerfel> <CACRpkdZjEVYgq7tKEfmZC0Fu4n=JuUues=pAAtquLahkex=pkA@mail.gmail.com>
+	Wed, 28 May 2014 09:30:00 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5385E4C9.2010204@roeck-us.net>
+Date: Wed, 28 May 2014 06:29:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:qDn9YtXtFvT3ZFG1pAj4DJpQKQJL8o3MChTfc6NJEJp
- OHL31Kdar/kbjNO28OrTyleuYQts/l4fIdENVfOB6SLA7fFsHU
- 2L9qe+ogPFqk8keBLATBy23sIU2XCnfZqASizuf6Wtjy/GXFOW
- SbfRlSz15T+cZi+bd+nBzRvqnDAv56oldz2O2ZnCb1LShUqqap
- K+3tH3SKfB1c497iqC8ln2OcJBfqP6YRqmM4sFDOyCCSSOen3+
- IyOX6NveEqz9asU9b+yocevGuZriCNO/oBTP81yXNb4aKT1k9o
- JEei47a9v3mlFvnaTsGjkKzWUufBBtuKJjnliV4QZdqZDQ6EBk
- JckVfU4WdbV0nDPC6FCo=
+To: Andreas Werner <andreas.werner@men.de>, Lee Jones <lee.jones@linaro.org>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        linux-leds@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+References: <cover.1401181010.git.andreas.werner@men.de> <a3cd43562effd2580d0174c56eff5584791217ac.1401181010.git.andreas.werner@men.de> <20140527150547.GA4227@lee--X1> <20140528070222.GA24101@jtlinux> <20140528082404.GA10803@lee--X1> <20140528115159.GA2090@awelinux>
+In-Reply-To: <20140528115159.GA2090@awelinux>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 May 2014 10:23:09 Linus Walleij wrote:
-> diff --git a/arch/arm/boot/dts/integratorap.dts
-> b/arch/arm/boot/dts/integratorap.dts
-> index b10e6351da53..f0c397fd45c5 100644
-> --- a/arch/arm/boot/dts/integratorap.dts
-> +++ b/arch/arm/boot/dts/integratorap.dts
-> @@ -8,6 +8,7 @@
->  / {
->         model = "ARM Integrator/AP";
->         compatible = "arm,integrator-ap";
-> +       dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
-> 
->         aliases {
->                 arm,timer-primary = &timer2;
-> 
+On 05/28/2014 04:51 AM, Andreas Werner wrote:
+> aOn Wed, May 28, 2014 at 09:24:05AM +0100, Lee Jones wrote:
+>>>>> The MEN 14F021P00 Board Management Controller provides an
+>>>>> I2C interface to the host to access the feature implemented in the BMC.
+>>>>> The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+>>>>> and on a few Box/Display Computer.
+>>>>>
+>>>>> Added MFD Core driver, supporting the I2C communication to the device.
+>>>>>
+>>>>> The MFD driver currently supports the following features:
+>>>>> 	- Watchdog
+>>>>> 	- LEDs
+>>>>>
+>>>>> Signed-off-by: Andreas Werner <andreas.werner@men.de>
+>>>>> ---
+>>>>>   drivers/mfd/Kconfig           |  12 +++
+>>>>>   drivers/mfd/Makefile          |   1 +
+>>>>>   drivers/mfd/menf21bmc.c       | 220 ++++++++++++++++++++++++++++++++++++++++++
+>>>>>   include/linux/mfd/menf21bmc.h |  31 ++++++
+>>>>>   4 files changed, 264 insertions(+)
+>>>>>   create mode 100644 drivers/mfd/menf21bmc.c
+>>>>>   create mode 100644 include/linux/mfd/menf21bmc.h
+>>
+>> [...]
+>>
+>>>>> +static int menf21bmc_write_byte(struct i2c_client *client, u8 val)
+>>>>> +{
+>>>>> +	int ret;
+>>>>> +	struct menf21bmc *data = i2c_get_clientdata(client);
+>>>>> +
+>>>>> +	mutex_lock(&data->lock);
+>>>>> +	ret = i2c_smbus_write_byte(client, val);
+>>>>> +	mutex_unlock(&data->lock);
+>>>>> +
+>>>>> +	return ret;
+>>>>> +}
+>>>>
+>>>> Didn't we ask you to remove these?  Just make the i2c_smbus_* calls
+>>>> from within the driver.  The I2C subsystem conducts its own locking.
+>>>> I'm really starting to frown on aggregation for the sake of
+>>>> aggregation.  It's just overhead.
+>>>>
+>>>
+>>> Correct me if I'm wrong but as far as I remember Guenther asked to retain the
+>>> original API, not the remove the "abstraction layer". Once we build a board with
+>>> one of these BMCs attached via e.g. SPI we would have to reintroduce it anyways,
+>>> in order to re-use these drivers.
+>>
+>> If there are two or more possible interfaces then I agree, these
+>> aggregations would be the best approach.  However, as it stands, that's
+>> not currently the case.
+>>
+>> Genuine question; are Men on the verge of building such a board, or
+>> are we talking about 'ifs' and 'maybes'?
+>>
+>
+> I think it was a missunderstanding. I also thought that i just
+> have to adapt the wrapper to the original API, that is what I did in the patch,
+> and not to delete the functions completly.
+>
+> Anayway, we currently have another project which use a STM32 MCR connected to USB.
+> A nice feature of this STM is to update the firmware using the USB interface.
+> This is easy to implement and fast.
+>
+> We want to use such a functionality in all of our MCRs to easily update the firmware
+> at the customer if we found a bug.
+>
+> We also plan to have a BMC connected to USB. Then we have i2c and USB.
+>
 
-It looks like you accidentally copied the ranges from keystone, even
-though that has a 64-bit root bus and you only have 32-bit.
+Even more likely that you would have to change the API in that case to be less
+I2C centric.
 
-I suspect what you want is
+Guenter
 
-	dma-ranges = <0x80000000 0 0x80000000>;
-
-to translate dma_addr_t 0x80000000-0xffffffff to phys_addr_t 0x0-0x7fffffff
-rather than phys_addr_t 0x800000000-0x87fffffff.
-
-	Arnd
