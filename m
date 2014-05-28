@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbaE1Nih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:38:37 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:36084 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaE1Nif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:38:35 -0400
-Date: Wed, 28 May 2014 08:38:32 -0500
-From: Michael Welling <mwelling@ieee.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Stickel <ms@mycable.de>
-Subject: Re: linux-next: manual merge of the gpio tree with Linus' tree
-Message-ID: <20140528133832.GA2541@deathray>
-References: <20140528190011.302a2e52@canb.auug.org.au>
+	id S1753340AbaE1Nn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:43:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57623 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177AbaE1Nn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:43:56 -0400
+Date: Wed, 28 May 2014 15:43:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Reyad Attiyat <reyad.attiyat@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: [PATCH] HID: hid-sensor-hub: Set report quirk for Microsoft
+ Surface
+In-Reply-To: <1401175750-3008-1-git-send-email-reyad.attiyat@gmail.com>
+Message-ID: <alpine.LNX.2.00.1405281541100.17241@pobox.suse.cz>
+References: <1401175750-3008-1-git-send-email-reyad.attiyat@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528190011.302a2e52@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 07:00:11PM +1000, Stephen Rothwell wrote:
-> Hi Linus,
-> 
-> Today's linux-next merge of the gpio tree got a conflict in
-> drivers/gpio/gpio-mcp23s08.c between commit 99e4b98dbe3a ("gpio:
-> mcp23s08: Bug fix of SPI device tree registration") from Linus' tree
-> and commit 3e3bed913e8b ("gpio: mcp23s08: fixed count variable for
-> devicetree probing") from the gpio tree.
-> 
-> I fixed it up (one way - see below) and can carry the fix as necessary
-> (no action is required).
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/gpio/gpio-mcp23s08.c
-> index 3d53fd6880d1,00fbb30b9b10..000000000000
-> --- a/drivers/gpio/gpio-mcp23s08.c
-> +++ b/drivers/gpio/gpio-mcp23s08.c
-> @@@ -894,11 -894,14 +894,12 @@@ static int mcp23s08_probe(struct spi_de
->   			dev_err(&spi->dev, "invalid spi-present-mask\n");
->   			return -ENODEV;
->   		}
-> + 
->   		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
-> - 			if ((spi_present_mask & (1 << addr)))
-> - 				chips++;
->   			pullups[addr] = 0;
-> + 			if (spi_present_mask & (1 << addr))
-> + 				chips++;
->   		}
->  -		if (!chips)
->  -			return -ENODEV;
->   	} else {
->   		type = spi_get_device_id(spi)->driver_data;
->   		pdata = dev_get_platdata(&spi->dev);
+On Tue, 27 May 2014, Reyad Attiyat wrote:
 
+> Add the Microsoft Surface Pro 2 Type/Touch and default device hardware ID's
+> Set report quirk for the device in hid-sensor-hub
+> 
+> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
+> ---
+>  drivers/hid/hid-ids.h        | 3 +++
+>  drivers/hid/hid-sensor-hub.c | 9 +++++++++
+>  2 files changed, 12 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 34bb220..18e2099 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -633,6 +633,9 @@
+>  #define USB_DEVICE_ID_MS_PRESENTER_8K_USB	0x0713
+>  #define USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K	0x0730
+>  #define USB_DEVICE_ID_MS_COMFORT_MOUSE_4500	0x076c
+> +#define USB_DEVICE_ID_MS_SURFACE_PRO_2   0x0799
+> +#define USB_DEVICE_ID_MS_TOUCH_COVER_2   0x07a7
+> +#define USB_DEVICE_ID_MS_TYPE_COVER_2    0x07a9
+>  
+>  #define USB_VENDOR_ID_MOJO		0x8282
+>  #define USB_DEVICE_ID_RETRO_ADAPTER	0x3201
+> diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+> index be14b56..eefaaf6 100644
+> --- a/drivers/hid/hid-sensor-hub.c
+> +++ b/drivers/hid/hid-sensor-hub.c
+> @@ -711,6 +711,15 @@ static const struct hid_device_id sensor_hub_devices[] = {
+>  	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_TEXAS_INSTRUMENTS,
+>  			USB_DEVICE_ID_TEXAS_INSTRUMENTS_LENOVO_YOGA),
+>  			.driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
+> +	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_MICROSOFT,
+> +			USB_DEVICE_ID_MS_SURFACE_PRO_2),
+> +			.driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
+> +	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_MICROSOFT,
+> +			USB_DEVICE_ID_MS_TOUCH_COVER_2),
+> +			.driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
+> +	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, USB_VENDOR_ID_MICROSOFT,
+> +			USB_DEVICE_ID_MS_TYPE_COVER_2),
+> +			.driver_data = HID_SENSOR_HUB_ENUM_QUIRK},
+>  	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, HID_ANY_ID,
+>  		     HID_ANY_ID) },
+>  	{ }
 
-Looking at the Linux next version, I am fairly certian that the following is
-redundant checking:
-                if (chips < 0) {
-                        dev_err(&spi->dev, "FATAL: invalid negative chip id\n");
-                        goto fail;
-                }
+[ Benjamin added to CC]
 
-The chips variable should equal the number of bits in the spi_present_mask variable.
-Or am I missing something?
+How does this combine with f3b0cbce01 and e24d0d399b2f in Linus' tree?
 
+-- 
+Jiri Kosina
+SUSE Labs
