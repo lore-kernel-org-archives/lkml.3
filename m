@@ -1,155 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649AbaE1Nc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:32:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63266 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670AbaE1Nc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:32:28 -0400
-Date: Wed, 28 May 2014 09:31:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: benh@kernel.crashing.org, paulus@samba.org, ebiederm@xmission.com,
-        mahesh@linux.vnet.ibm.com, ananth@in.ibm.com, suzuki@in.ibm.com,
-        ego@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc, kexec: Fix "Processor X is stuck" issue during
- kexec from ST mode
-Message-ID: <20140528133143.GK14863@redhat.com>
-References: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com>
+	id S1753854AbaE1Nc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:32:59 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:58445 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735AbaE1Nc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:32:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4960549.viM91iY2g2@wuerfel>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
+	<5840140.8yGnd4Ycx3@wuerfel>
+	<CACRpkdZjEVYgq7tKEfmZC0Fu4n=JuUues=pAAtquLahkex=pkA@mail.gmail.com>
+	<4960549.viM91iY2g2@wuerfel>
+Date: Wed, 28 May 2014 15:32:56 +0200
+Message-ID: <CACRpkda5x-fJWTN40ze17woMWuWoVbuhbNu5nkm1sFcdJchRfA@mail.gmail.com>
+Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 04:25:34PM +0530, Srivatsa S. Bhat wrote:
-> If we try to perform a kexec when the machine is in ST (Single-Threaded) mode
-> (ppc64_cpu --smt=off), the kexec operation doesn't succeed properly, and we
-> get the following messages during boot:
-> 
-> [    0.089866] POWER8 performance monitor hardware support registered
-> [    0.089985] power8-pmu: PMAO restore workaround active.
-> [    5.095419] Processor 1 is stuck.
-> [   10.097933] Processor 2 is stuck.
-> [   15.100480] Processor 3 is stuck.
-> [   20.102982] Processor 4 is stuck.
-> [   25.105489] Processor 5 is stuck.
-> [   30.108005] Processor 6 is stuck.
-> [   35.110518] Processor 7 is stuck.
-> [   40.113369] Processor 9 is stuck.
-> [   45.115879] Processor 10 is stuck.
-> [   50.118389] Processor 11 is stuck.
-> [   55.120904] Processor 12 is stuck.
-> [   60.123425] Processor 13 is stuck.
-> [   65.125970] Processor 14 is stuck.
-> [   70.128495] Processor 15 is stuck.
-> [   75.131316] Processor 17 is stuck.
-> 
-> Note that only the sibling threads are stuck, while the primary threads (0, 8,
-> 16 etc) boot just fine. Looking closer at the previous step of kexec, we observe
-> that kexec tries to wakeup (bring online) the sibling threads of all the cores,
-> before performing kexec:
-> 
-> [ 9464.131231] Starting new kernel
-> [ 9464.148507] kexec: Waking offline cpu 1.
-> [ 9464.148552] kexec: Waking offline cpu 2.
-> [ 9464.148600] kexec: Waking offline cpu 3.
-> [ 9464.148636] kexec: Waking offline cpu 4.
-> [ 9464.148671] kexec: Waking offline cpu 5.
-> [ 9464.148708] kexec: Waking offline cpu 6.
-> [ 9464.148743] kexec: Waking offline cpu 7.
-> [ 9464.148779] kexec: Waking offline cpu 9.
-> [ 9464.148815] kexec: Waking offline cpu 10.
-> [ 9464.148851] kexec: Waking offline cpu 11.
-> [ 9464.148887] kexec: Waking offline cpu 12.
-> [ 9464.148922] kexec: Waking offline cpu 13.
-> [ 9464.148958] kexec: Waking offline cpu 14.
-> [ 9464.148994] kexec: Waking offline cpu 15.
-> [ 9464.149030] kexec: Waking offline cpu 17.
-> 
-> Instrumenting this piece of code revealed that the cpu_up() operation actually
-> fails with -EBUSY. Thus, only the primary threads of all the cores are online
-> during kexec, and hence this is a sure-shot receipe for disaster, as explained
-> in commit e8e5c2155b (powerpc/kexec: Fix orphaned offline CPUs across kexec),
-> as well as in the comment above wake_offline_cpus().
-> 
-> It turns out that cpu_up() was returning -EBUSY because the variable
-> 'cpu_hotplug_disabled' was set to 1; and this disabling of CPU hotplug was done
-> by migrate_to_reboot_cpu() inside kernel_kexec().
-> 
-> Now, migrate_to_reboot_cpu() was originally written with the assumption that
-> any further code will not need to perform CPU hotplug, since we are anyway in
-> the reboot path. However, kexec is clearly not such a case, since we depend on
-> onlining CPUs, atleast on powerpc.
-> 
-> So re-enable cpu-hotplug after returning from migrate_to_reboot_cpu() in the
-> kexec path, to fix this regression in kexec on powerpc.
-> 
-> Also, wrap the cpu_up() in powerpc kexec code within a WARN_ON(), so that we
-> can catch such issues more easily in the future.
-> 
-> Fixes: c97102ba963 (kexec: migrate to reboot cpu)
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  arch/powerpc/kernel/machine_kexec_64.c |    2 +-
->  kernel/kexec.c                         |    8 ++++++++
->  2 files changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-> index 59d229a..879b3aa 100644
-> --- a/arch/powerpc/kernel/machine_kexec_64.c
-> +++ b/arch/powerpc/kernel/machine_kexec_64.c
-> @@ -237,7 +237,7 @@ static void wake_offline_cpus(void)
->  		if (!cpu_online(cpu)) {
->  			printk(KERN_INFO "kexec: Waking offline cpu %d.\n",
->  			       cpu);
-> -			cpu_up(cpu);
-> +			WARN_ON(cpu_up(cpu));
->  		}
->  	}
->  }
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index c8380ad..28c5706 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1683,6 +1683,14 @@ int kernel_kexec(void)
->  		kexec_in_progress = true;
->  		kernel_restart_prepare(NULL);
->  		migrate_to_reboot_cpu();
-> +
-> +		/*
-> +		 * migrate_to_reboot_cpu() disables CPU hotplug assuming that
-> +		 * no further code needs to use CPU hotplug (which is true in
-> +		 * the reboot case). However, the kexec path depends on using
-> +		 * CPU hotplug again; so re-enable it here.
-> +		 */
-> +		cpu_hotplug_enable();
->  		printk(KERN_EMERG "Starting new kernel\n");
->  		machine_shutdown();
+On Wed, May 28, 2014 at 3:29 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 28 May 2014 10:23:09 Linus Walleij wrote:
 
-After migrate_to_reboot_cpu(), we are calling machine_shutdown() which
-calls disable_nonboot_cpus() and which in turn calls _cpu_down().
+>>         model = "ARM Integrator/AP";
+>>         compatible = "arm,integrator-ap";
+>> +       dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+>>
+>>         aliases {
+>>                 arm,timer-primary = &timer2;
+>>
+>
+> It looks like you accidentally copied the ranges from keystone, even
+> though that has a 64-bit root bus and you only have 32-bit.
 
-So it is kind of odd that we first migrate to boot cpu, and then disable
-all non-boot cpus and after that powerpc goes ahead and onlines all
-cpus.
+Nah it was no accident, just good old incompetence ;-)
 
-I think this is not a good idea. For whatever reason if powerpc has to
-online all cpus, then it should happne earlier and not in machine_kexec().
+> I suspect what you want is
+>
+>         dma-ranges = <0x80000000 0 0x80000000>;
+>
+> to translate dma_addr_t 0x80000000-0xffffffff to phys_addr_t 0x0-0x7fffffff
+> rather than phys_addr_t 0x800000000-0x87fffffff.
 
-In fact I think generic code expects that all non-boot cpus are disabled
-so that generic code can use all the RAM as it wants to. Now if powerpc
-breaks that assumption, it will lead to various kind of issues.
+Thanks, I'll fix up my patch.
 
-So I think we need to go back and see if we can find a way where we
-don't have to online all cpus in first kernel. And second kernel needs
-to have a way to detect it and online things.
-
-Thanks
-Vivek
+Yours,
+Linus Walleij
