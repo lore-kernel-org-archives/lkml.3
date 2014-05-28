@@ -1,175 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaE1Kaq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:30:46 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:34052 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaE1Kap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 06:30:45 -0400
-Date: Wed, 28 May 2014 12:30:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Libo Chen <libo.chen@huawei.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>, mingo@elte.hu,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Li Zefan <lizefan@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>, bp@alien8.de
-Subject: Re: balance storm
-Message-ID: <20140528103019.GT11096@twins.programming.kicks-ass.net>
-References: <538330B7.5070503@huawei.com>
- <1401113960.23186.41.camel@marge.simpson.net>
- <53844510.1040502@huawei.com>
- <1401184553.5134.115.camel@marge.simpson.net>
- <53848A2C.5010209@huawei.com>
- <1401196807.5134.132.camel@marge.simpson.net>
- <53853604.50500@huawei.com>
- <1401242038.4721.14.camel@marge.simpson.net>
- <5385881D.4090601@huawei.com>
- <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
+	id S1752387AbaE1KcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 06:32:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36492 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751914AbaE1KcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 06:32:18 -0400
+Message-ID: <5385BB14.9010804@ti.com>
+Date: Wed, 28 May 2014 13:31:48 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a3TIYp8vN9YM5Qs8"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1405281106130.21720@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Joel Fernandes <joelf@ti.com>, Olof Johansson <olof@lixom.net>
+CC: Dan Williams <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>, Sekhar Nori <nsekhar@ti.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH v3 01/10] platform_data: edma: Be precise with the paRAM
+ struct
+References: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>	<1397475725-5036-2-git-send-email-peter.ujfalusi@ti.com> <CAOesGMg43jT6D_ot2tKfRXXgAgwqs5Pu_tAFKc35yxLAczrzGQ@mail.gmail.com> <53846779.4070204@ti.com> <5384A92B.4080606@ti.com>
+In-Reply-To: <5384A92B.4080606@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/27/2014 06:03 PM, Joel Fernandes wrote:
+> On 05/27/2014 05:22 AM, Peter Ujfalusi wrote:
+>> On 05/27/2014 12:32 AM, Olof Johansson wrote:
+> [..]
+>>>
+>>> I came across this patch when I was looking at a pull request from
+>>> Sekhar for EDMA cleanups, and it made me look closer at the contents
+>>> of this file.
+>>>
+>>> The include/linux/platform_data/ directory is meant to hold
+>>> platform_data definitions for drivers, and nothing more.
+>>> platform_data/edma.h also contains a whole bunch of interface
+>>> definitions for the driver. They do not belong there, and should be
+>>> moved to a different include file.
+>>>
+>>> That also includes the above struct, because as far as I can tell it's
+>>> a runtime state structure, not something that is passed in with
+>>> platform data.
+>>>
+>>> Can someone please clean this up? Thanks.
+>>
+>> I think Joel is working on to move/merge the code from arch/arm/common/edma.c
+>> to drivers/dma/edma.c
+> 
+> Yes, I am planning to work on that soon. But there is an issue, more on
+> that discussed below..
+> 
+>> I'm sure within this work he is going to clean up the header file as well.
+> 
+> Agreed. The private API should not be expored in any header and should
+> be exclusive for the EDMA dmaengine driver ideally.
+> 
+>> As a first step I think the non platform_data content can be moved as
+>> include/linux/edma.h or probably as ti-edma.h?
+>>
+> 
+> sound/soc/davinci/davinci-pcm.c: This still uses the EDMA private API in
+> arch/arm/common/edma.c. Peter, any idea when the private usage will be
+> removed fully, and we switch to dmaengine for ASoC? Before that can
+> happen, we can't clean up or do any merges.
 
---a3TIYp8vN9YM5Qs8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We have the edma-pcm platform driver upstream already which I'm using locally
+for a long time now on AM335x/AM437x. I'm planning to send a patch to do the
+same upstream after the 3.16 window closes.
+But, davinci-pcm has a mode called 'ping-pong' which is not available via
+dmaengine and this mode is used by several daVinci SoCs to overcome buffer
+underflow/overflow issues. This mode essentially means in playback case:
+      dma_ch1       dma_ch2
+SDRAM -------> SRAM -------> McASP
 
-On Wed, May 28, 2014 at 11:08:40AM +0200, Thomas Gleixner wrote:
-> On Wed, 28 May 2014, Libo Chen wrote:
->=20
-> > On 2014/5/28 9:53, Mike Galbraith wrote:
-> > > On Wed, 2014-05-28 at 09:04 +0800, Libo Chen wrote:
-> > >=20
-> > >> oh yes, no tsc only hpet in my box.
-> > >=20
-> > > Making poor E5-2658 box a crippled wreck.
-> >=20
-> > yes,it is. But cpu usage will be down from 15% to 5% when binding
-> > cpu, so maybe read_hpet is not the root cause.
->=20
-> Definitely hpet _IS_ the root cause on a machine as large as this,
-> simply because everything gets serialized on the hpet access.
->=20
-> Binding stuff to cpus just makes the timing behaviour different, so
-> the hpet serialization is not that prominent, but still bad enough.
->=20
-> Talk to your HW/BIOS vendor. The kernel cannot do anything about
-> defunct hardware.
+ch1 is to move a block of samples to SRAM from where ch2 will copy the samples
+word by word to McASP.
 
----
-Subject: x86: FW_BUG when the TSC goes funny on hardware where it really sh=
-ould be stable
+If we move all davinci SoCs to use the edma-pcm, we are going to loose this
+mode. As a note: the edma-pcm is confirmed to work fine on the tested daVinci
+boards.
+I think what we need to do first: find a board which is using ping-pong mode,
+put under stress test in:
+- davinci-pcm, ping-pong mode
+- davinci-pcm, no ping-pong mode
+- edma-pcm
 
-It happens far too often on 'consumer' grade hardware, and sometimes on
-'enterprise' too that the TSC gets marked unstable due to FW fuckage,
-complain more loudly in this case.
+and see how edma-pcm behaves compared to the davinci-pcm. One of the issue
+with davinci-pcm is that in non ping-pong mode it reconfigures the eDMA after
+every period, which is a bad thing. The dmaengine implementation does not need
+to do that, so we might be fine there.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/include/asm/tsc.h  | 1 +
- arch/x86/kernel/cpu/amd.c   | 4 +++-
- arch/x86/kernel/cpu/intel.c | 4 +++-
- arch/x86/kernel/tsc.c       | 7 +++++++
- 4 files changed, 14 insertions(+), 2 deletions(-)
+> What I'd like to do is fold the private API into the dmaengine driver
+> and eliminate the need to expose the private API, thus also getting rid
+> of the interface declarations Olof referred to.
+> 
+> thanks,
+> 
+> -Joel
+> 
 
-diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
-index 94605c0e9cee..e33853ee0416 100644
---- a/arch/x86/include/asm/tsc.h
-+++ b/arch/x86/include/asm/tsc.h
-@@ -52,6 +52,7 @@ extern int check_tsc_unstable(void);
- extern int check_tsc_disabled(void);
- extern unsigned long native_calibrate_tsc(void);
-=20
-+extern int tsc_should_be_reliable;
- extern int tsc_clocksource_reliable;
-=20
- /*
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index ce8b8ff0e0ef..46012d2ca5a1 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -483,8 +483,10 @@ static void early_init_amd(struct cpuinfo_x86 *c)
- 	if (c->x86_power & (1 << 8)) {
- 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
- 		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
--		if (!check_tsc_unstable())
-+		if (!check_tsc_unstable()) {
-+			tsc_should_be_reliable =3D 1;
- 			set_sched_clock_stable();
-+		}
- 	}
-=20
- #ifdef CONFIG_X86_64
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index a80029035bf2..2273ca1166bc 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -88,8 +88,10 @@ static void early_init_intel(struct cpuinfo_x86 *c)
- 	if (c->x86_power & (1 << 8)) {
- 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
- 		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
--		if (!check_tsc_unstable())
-+		if (!check_tsc_unstable()) {
-+			tsc_should_be_reliable =3D 1;
- 			set_sched_clock_stable();
-+		}
- 	}
-=20
- 	/* Penwell and Cloverview have the TSC which doesn't sleep on S3 */
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 57e5ce126d5a..1f93827561d8 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -40,6 +40,7 @@ static int __read_mostly tsc_disabled =3D -1;
-=20
- static struct static_key __use_tsc =3D STATIC_KEY_INIT;
-=20
-+int tsc_should_be_reliable;
- int tsc_clocksource_reliable;
-=20
- /*
-@@ -994,6 +995,12 @@ void mark_tsc_unstable(char *reason)
- 		clear_sched_clock_stable();
- 		disable_sched_clock_irqtime();
- 		pr_info("Marking TSC unstable due to %s\n", reason);
-+
-+		if (tsc_should_be_reliable) {
-+			pr_err(FW_BUG "TSC unstable even though it should be; "
-+				      "HW/BIOS broken, contact your vendor.\n");
-+		}
-+
- 		/* Change only the rating, when not registered */
- 		if (clocksource_tsc.mult)
- 			clocksource_mark_unstable(&clocksource_tsc);
 
---a3TIYp8vN9YM5Qs8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThbq7AAoJEHZH4aRLwOS6rWsP+wfm7+SLiIxe0qRgey1i60Xw
-Ydvafh3Sb6WITWe3nrgcdXgCp9CqaiEjkaEiLjPLv+JqMS2BAZrLi/Nnj7ZpH+7j
-jhJuotV81Tsm1bD3BvynCml4dMYQuW9drDpoC4Wy+uuUsinRlNhBaRnPvl0j4vrn
-fawxojik+cV887ZeT0AojBJuH4lh4DievZf3CNd8JZc/wqysDvRA+XWgwApoNXyI
-1zFTBChNMxPTzbNRMBJkVh6nES18ovasunb5Z0Ov48eB2nvkfFUtpV2Y6KNK2qSz
-CmchpTGoe3GwJJTC7UxwvSaOuAIGDk04Vv+XNIB0XPjQbXGPRuFWnrtpv++OGjdz
-ZFtJyDkpAVscSVbx4oMuKbTLWrQy528n+s5MB9Dvm3WnFwkW760Y9jIYooIPvuFE
-KlnF8kflolkR0+iChjJ/cvpUMhoqxB7rmX2nEcCl01+ud3oZ34TuC3koawcg9HDE
-IEwxr7zFGc/hp/ooSFDYyZm409ABM4IEWmq6fVd2Hr3IEjkEAsbq0rCOkYaGWJ4G
-85XjzYjg3ewoSHjqNvTutXc92LZey2KOHiKEbPVvIdgLqOlQtlJ0z08ymk1EhSIb
-1AkFYWmV74ZTTmkdpr04wgQalUY6fzgnCdWLnWaZ+BniV9KoJn2YFGWqNOLMnwLr
-N1FGGFROOjeQxZkF20nJ
-=o7Gp
------END PGP SIGNATURE-----
-
---a3TIYp8vN9YM5Qs8--
+-- 
+Péter
