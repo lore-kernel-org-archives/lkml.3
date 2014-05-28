@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930AbaE1Wbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:31:48 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:27033 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755453AbaE1Wbq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:31:46 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArhPAPpihlN5LL1sPGdsb2JhbABagweDRIUIom0BAQEBAQEGmB0BgQ8XAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwcaE4hB2CIXFoU/iH0HhEAEmXSLGItaKw
-Date: Thu, 29 May 2014 08:31:42 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140528223142.GO8554@dastard>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755934AbaE1WdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:33:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42131 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577AbaE1WdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 18:33:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,931,1392192000"; 
+   d="scan'208";a="548042034"
+Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink
+ K_table
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: George Spelvin <linux@horizon.com>
+Cc: herbert@gondor.apana.org.au, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, sandyw@twitter.com,
+        James Guilford <james.guilford@intel.com>
+In-Reply-To: <20140528144000.28686.qmail@ns.horizon.com>
+References: <20140528144000.28686.qmail@ns.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 May 2014 15:32:59 -0700
+Message-ID: <1401316379.2970.387.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 09:09:23AM -0700, Linus Torvalds wrote:
-> On Tue, May 27, 2014 at 11:53 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >
-> > So, my stupid idea is just let's expand stack size and keep an eye
-> > toward stack consumption on each kernel functions via stacktrace of ftrace.
-.....
-> But what *does* stand out (once again) is that we probably shouldn't
-> do swap-out in direct reclaim. This came up the last time we had stack
-> issues (XFS) too. I really do suspect that direct reclaim should only
-> do the kind of reclaim that does not need any IO at all.
+On Wed, 2014-05-28 at 10:40 -0400, George Spelvin wrote:
+> While following a number of tangents in the code (I was figuring out
+> how to edit lib/Kconfig; don't ask), I came across a table of 256 64-bit
+> words, all of which had the high half set to zero.
 > 
-> I think we _do_ generally avoid IO in direct reclaim, but swap is
-> special. And not for a good reason, afaik. DaveC, remind me, I think
-> you said something about the swap case the last time this came up..
+> Since the code depends on both pclmulq and crc32, SSE 4.1 is obviously
+> present, so it could use pmovzxdq and save 1K of kernel data.
+> 
+> The following patch obviously lacks the kludges for old binutils,
+> but should convey the general idea.
+> 
+> Jan: Is support for SLE10's pre-2.18 binutils still required?
+> Your PEXTRD fix was only a year ago, so I expect, but I wanted to ask.
+> 
+> Two other minor additional changes:
+> 
+> 1. The current code unnecessarily puts the table in the read-write
+>    .data section.  Moved to .text.
+> 2. I'm also not sure why it's necessary to force such large alignment
+>    on K_table.  Comments on reducing it?
+> 
+> Signed-off-by: George Spelvin <linux@horizon.com>
+> 
+> 
+> diff --git a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
+> index dbc4339b..9f885ee4 100644
+> --- a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
+> +++ b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
+> @@ -216,15 +216,11 @@ LABEL crc_ %i
+>  	## 4) Combine three results:
+>  	################################################################
+>  
+> -	lea	(K_table-16)(%rip), bufp	# first entry is for idx 1
+> +	lea	(K_table-8)(%rip), bufp		# first entry is for idx 1
+>  	shlq    $3, %rax			# rax *= 8
+> -	subq    %rax, tmp			# tmp -= rax*8
+> -	shlq    $1, %rax
+> -	subq    %rax, tmp			# tmp -= rax*16
+> -						# (total tmp -= rax*24)
+> -	addq    %rax, bufp
+> -
+> -	movdqa  (bufp), %xmm0			# 2 consts: K1:K2
+> +	pmovzxdq (bufp,%rax), %xmm0		# 2 consts: K1:K2
 
-Right, we do generally avoid IO through filesystems via direct
-reclaim because delayed allocation requires significant amounts
-of additional memory, stack space and IO.
+Changing from the aligned move (movdqa) to unaligned move and zeroing
+(pmovzxdq), is going to make things slower.  If the table is aligned
+on 8 byte boundary, some of the table can span 2 cache lines, which
+can slow things further.
 
-However, swap doesn't have that overhead - it's just the IO stack
-that it drives through submit_bio(), and the worst case I'd seen
-through that path was much less than other reclaim stack path usage.
-I haven't seen swap in any of the stack overflows from production
-machines, and I only rarely see it in worst case stack usage
-profiles on my test machines.
+We are trading speed for only 4096 bytes of memory save,
+which is likely not a good trade for most systems except for 
+those really constrained of memory.  For this kind of non-performance
+critical system, it may as well use the generic crc32c algorithm and
+compile out this module.
 
-Indeed, the call chain reported here is not caused by swap issuing
-IO.  We scheduled in the swap code (throttling waiting for
-congestion, I think) with a plugged block device (from the ext4
-writeback layer) with pending bios queued on it and the scheduler
-has triggered a flush of the device.  submit_bio in the swap path
-has much less stack usage than io_schedule() because it doesn't have
-any of the scheduler or plug list flushing overhead in the stack.
+Thanks.
 
-So, realistically, the swap path is not worst case stack usage here
-and disabling it won't prevent this stack overflow from happening.
-Direct reclaim will simply throttle elsewhere and that will still
-cause the plug to be flushed, the IO to be issued and the stack to
-overflow.
+Tim
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
