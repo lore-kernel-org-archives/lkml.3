@@ -1,46 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaE1J2e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 05:28:34 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:48755 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368AbaE1J2a (ORCPT
+	id S1754742AbaE1J3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 05:29:40 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:32798 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaE1J3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 05:28:30 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linus.walleij@linaro.org, lee.jones@linaro.org, linux@arm.linux.org.uk,
-        sachin.kamat@linaro.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: ux500: Staticize ab8505_regulators
-Date: Wed, 28 May 2014 14:56:05 +0530
-Message-Id: <1401269165-2996-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401269165-2996-1-git-send-email-sachin.kamat@linaro.org>
-References: <1401269165-2996-1-git-send-email-sachin.kamat@linaro.org>
+	Wed, 28 May 2014 05:29:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140528070233.GP17724@mwanda>
+References: <20140527070937.GA21621@devel.8.8.4.4>
+	<20140527102002.GI17724@mwanda>
+	<CAHb8M2AceJeFv-KonF+bAFJ-+xssFxx5ytEKhMNZ1c3xm2jvZA@mail.gmail.com>
+	<20140528070233.GP17724@mwanda>
+Date: Wed, 28 May 2014 18:29:38 +0900
+Message-ID: <CAHb8M2ABVCaoNR0m5mLmWv-ei60PDRu462QTqDgEJwAf63oteg@mail.gmail.com>
+Subject: Re: [PATCH V2] staging: dgap: implement proper error handling in dgap_firmware_load()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Mark Hounschell <markh@compro.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'ab8505_regulators' is used only in this file.
+Hi, Dan
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- arch/arm/mach-ux500/board-mop500-regulators.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Please look at below my line comment.
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index a4e139aa2441..32d744e91ec2 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -796,7 +796,7 @@ static struct ab8500_regulator_reg_init ab8505_reg_init[] = {
- 	INIT_REGULATOR_REGISTER(AB8505_CTRLVAUX6,              0x00, 0x00),
- };
- 
--struct regulator_init_data ab8505_regulators[AB8505_NUM_REGULATORS] = {
-+static struct regulator_init_data ab8505_regulators[AB8505_NUM_REGULATORS] = {
- 	/* supplies to the display/camera */
- 	[AB8505_LDO_AUX1] = {
- 		.constraints = {
--- 
-1.7.9.5
+2014-05-28 16:02 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> We are talking about different things I think.  What I'm saying is that
+> there is the normal way to do error handling in the kernel.  That's with
+> a series of labels like this:
+>
+>         ...
+>         return 0;
+>
+> err_free_ttys:
+>         free_ttys();
+> err_free_channels:
+>         free_channels();
+> err_free_brd:
+>         free_brd();
+>
+>         return ret;
+>
+> In this code there are no if statements unless absolutely needed because
+> of an matching if statement in the allocation code.  The label names
+> describe what happens at the label.  It is in reverse order from the way
+> the variables were allocated.
+>
+> The other thing is that at the end of dgap_tty_register() we have
+> unwinding like this.
+>
+>   1304  unregister_serial_drv:
+>   1305          tty_unregister_driver(brd->serial_driver);
+>   1306  free_print_drv:
+>   1307          put_tty_driver(brd->print_driver);
+>   1308  free_serial_drv:
+>   1309          put_tty_driver(brd->serial_driver);
+>
+> We can add a tty_unregister_driver(brd->print_driver) and create a
+> dgap_tty_unregister().
+>
+> static void dgap_tty_unregister(struct board_t *brd)
+> {
+>         tty_unregister_driver(brd->print_driver);
+>         tty_unregister_driver(brd->serial_driver);
+>         put_tty_driver(brd->print_driver);
+>         put_tty_driver(brd->serial_driver);
+> }
+>
+> Very simple and nice.
+>
+> If you have one label it makes the code too complicated and it causes
+> bugs.  We call them "one err bugs" because there is one error label.
+>
+> In your patch it has:
+> +       dgap_tty_uninit(brd, false);
+>
+> But it should only be "false" if dgap_tty_init() failed.  If
+> dgap_tty_register_ports() fails then it should be "true".  Another
+Yes, you're right. There were no error handle for tty_port_register_device() and
+dgap_create_tty_sysfs() in dgap_tty_register_ports(). I didn't catch it. :-(
+It need to add error handlers for them, right?
 
+> problem is that as you say, the earlier function are allocating
+> resources like dgap_tty_register() but only the last two function calls
+> have a "goto err_cleanup;" so the error handling is incomplete.
+So remove "goto" in dgap_firmware_load() and add error handler in
+dgap_tty_init() and dgap_tty_register_ports(), right?
+
+I have a question of this. In case of this, how to complete the error handling?
+I want to cleanup allocated resources from dgap_tty_register() when
+dgap_tty_init() is failed.
+(and also in case of failure of dgap_tty_register_ports())
+I think it can be handled as your previous e-mail.
+It can have a label name of "free_chan" in dgap_tty_init() but it also have
+a cleanup for allocated resource from earlier functions like
+dgap_tty_register().
+
+Can I call some functions for cleanup allocated resource from the
+earlier function in dgap_tty_init() with goto label?
+
+>
+> To be honest, I think once dgap the code is cleaned up this error
+> handling will be easy to write.  We shouldn't have things like:
+> brd->dgap_major_serial_registered = TRUE; because we will know which
+> order things were registered and unregister them in the reverse order.
+OK. I will look at the code with your comment.
+
+Really thanks for kind explanation.
+regards,
+Daeseok Youn
+>
+> regards,
+> dan carpenter
+>
