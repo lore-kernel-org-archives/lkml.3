@@ -1,242 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542AbaE1Ntf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 09:49:35 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33445 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458AbaE1Ntd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 09:49:33 -0400
-Date: Wed, 28 May 2014 09:49:05 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-Message-ID: <20140528134905.GF2878@cmpxchg.org>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <20140528121023.GA10735@dhcp22.suse.cz>
+	id S932085AbaE1Ntu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 09:49:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33576 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504AbaE1Ntr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 09:49:47 -0400
+Date: Wed, 28 May 2014 13:49:05 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Marian Marinov <mm@1h.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Richard Weinberger <richard@nod.at>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [lxc-devel] [RFC PATCH 00/11] Add support for devtmpfs in user
+ namespaces
+Message-ID: <20140528134905.GH6667@ubuntumail>
+References: <53751FFA.5040103@nod.at>
+ <20140515202628.GB25896@mail.hallyn.com>
+ <CALCETrWE72G86QKVZT2aqWsEmjwOPwsWMUNz5-JkDvbqaGbrvw@mail.gmail.com>
+ <20140520141931.GH26600@ubuntumail>
+ <537F04BF.3000301@1h.com>
+ <1400850960.2332.4.camel@dabdike>
+ <20140524222535.GD4232@ubuntumail>
+ <1401005530.2322.43.camel@dabdike.int.hansenpartnership.com>
+ <20140525222443.GA18410@mail.hallyn.com>
+ <1401260579.428.8.camel@dabdike>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140528121023.GA10735@dhcp22.suse.cz>
+In-Reply-To: <1401260579.428.8.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 02:10:23PM +0200, Michal Hocko wrote:
-> Hi Andrew, Johannes,
-> 
-> On Mon 28-04-14 14:26:41, Michal Hocko wrote:
-> > This patchset introduces such low limit that is functionally similar
-> > to a minimum guarantee. Memcgs which are under their lowlimit are not
-> > considered eligible for the reclaim (both global and hardlimit) unless
-> > all groups under the reclaimed hierarchy are below the low limit when
-> > all of them are considered eligible.
+Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> On Mon, 2014-05-26 at 00:24 +0200, Serge E. Hallyn wrote:
+> > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> > > On Sat, 2014-05-24 at 22:25 +0000, Serge Hallyn wrote:
+> > > > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> > > > > On Fri, 2014-05-23 at 11:20 +0300, Marian Marinov wrote:
+> > > > > > On 05/20/2014 05:19 PM, Serge Hallyn wrote:
+> > > > > > > Quoting Andy Lutomirski (luto@amacapital.net):
+> > > > > > >> On May 15, 2014 1:26 PM, "Serge E. Hallyn" <serge@hallyn.com> wrote:
+> > > > > > >>> 
+> > > > > > >>> Quoting Richard Weinberger (richard@nod.at):
+> > > > > > >>>> Am 15.05.2014 21:50, schrieb Serge Hallyn:
+> > > > > > >>>>> Quoting Richard Weinberger (richard.weinberger@gmail.com):
+> > > > > > >>>>>> On Thu, May 15, 2014 at 4:08 PM, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > > > > > >>>>>>> Then don't use a container to build such a thing, or fix the build scripts to not do that :)
+> > > > > > >>>>>> 
+> > > > > > >>>>>> I second this. To me it looks like some folks try to (ab)use Linux containers for purposes where KVM
+> > > > > > >>>>>> would much better fit in. Please don't put more complexity into containers. They are already horrible
+> > > > > > >>>>>> complex and error prone.
+> > > > > > >>>>> 
+> > > > > > >>>>> I, naturally, disagree :)  The only use case which is inherently not valid for containers is running a
+> > > > > > >>>>> kernel.  Practically speaking there are other things which likely will never be possible, but if someone 
+> > > > > > >>>>> offers a way to do something in containers, "you can't do that in containers" is not an apropos response.
+> > > > > > >>>>> 
+> > > > > > >>>>> "That abstraction is wrong" is certainly valid, as when vpids were originally proposed and rejected,
+> > > > > > >>>>> resulting in the development of pid namespaces.  "We have to work out (x) first" can be valid (and I can
+> > > > > > >>>>> think of examples here), assuming it's not just trying to hide behind a catch-22/chicken-egg problem.
+> > > > > > >>>>> 
+> > > > > > >>>>> Finally, saying "containers are complex and error prone" is conflating several large suites of userspace
+> > > > > > >>>>> code and many kernel features which support them.  Being more precise would, if the argument is valid, lend
+> > > > > > >>>>> it a lot more weight.
+> > > > > > >>>> 
+> > > > > > >>>> We (my company) use Linux containers since 2011 in production. First LXC, now libvirt-lxc. To understand the
+> > > > > > >>>> internals better I also wrote my own userspace to create/start containers. There are so many things which can
+> > > > > > >>>> hurt you badly. With user namespaces we expose a really big attack surface to regular users. I.e. Suddenly a
+> > > > > > >>>> user is allowed to mount filesystems.
+> > > > > > >>> 
+> > > > > > >>> That is currently not the case.  They can mount some virtual filesystems and do bind mounts, but cannot mount
+> > > > > > >>> most real filesystems.  This keeps us protected (for now) from potentially unsafe superblock readers in the 
+> > > > > > >>> kernel.
+> > > > > > >>> 
+> > > > > > >>>> Ask Andy, he found already lots of nasty things...
+> > > > > > >> 
+> > > > > > >> I don't think I have anything brilliant to add to this discussion right now, except possibly:
+> > > > > > >> 
+> > > > > > >> ISTM that Linux distributions are, in general, vulnerable to all kinds of shenanigans that would happen if an
+> > > > > > >> untrusted user can cause a block device to appear.  That user doesn't need permission to mount it
+> > > > > > > 
+> > > > > > > Interesting point.  This would further suggest that we absolutely must ensure that a loop device which shows up in
+> > > > > > > the container does not also show up in the host.
+> > > > > > 
+> > > > > > Can I suggest the usage of the devices cgroup to achieve that?
+> > > > > 
+> > > > > Not really ... cgroups impose resource limits, it's namespaces that
+> > > > > impose visibility separations.  In theory this can be done with the
+> > > > > device namespace that's been proposed; however, a simpler way is simply
+> > > > > to rm the device node in the host and mknod it in the guest.  I don't
+> > > > > really see host visibility as a huge problem: in a shared OS
+> > > > > virtualisation it's not really possible securely to separate the guest
+> > > > > from the host (only vice versa).
+> > > > > 
+> > > > > But I really don't think we want to do it this way.  Giving a container
+> > > > > the ability to do a mount is too dangerous.  What we want to do is
+> > > > > intercept the mount in the host and perform it on behalf of the guest as
+> > > > > host root in the guest's mount namespace.  If you do it that way, it
+> > > > 
+> > > > That doesn't help the problem of guests being able to provide bad input
+> > > > for (basically fuzz) the in-kernel filesystem code.  So apparently I'm
+> > > > suffering a failure of the imagination - what problem exactly does it solve?
+> > > 
+> > > Well, there's two types of fuzzing, one is on sys_mount, which this
+> > > would help with because the host filters the mount including all
+> > > parameters and may even redo the mount (from direct to bind etc).
 > > 
-> > The previous version of the patchset posted as a RFC
-> > (http://marc.info/?l=linux-mm&m=138677140628677&w=2) suggested a
-> > hard guarantee without any fallback. More discussions led me to
-> > reconsidering the default behavior and come up a more relaxed one. The
-> > hard requirement can be added later based on a use case which really
-> > requires. It would be controlled by memory.reclaim_flags knob which
-> > would specify whether to OOM or fallback (default) when all groups are
-> > bellow low limit.
+> > Sorry - I'm not *trying* to be dense, but am still not seeing it.
+> > 
+> > Let's assume that we continue to be strict about what a container may
+> > mount - let's say they can only mount using loopdev from blockdev images.
+> > They have to own the file, as well as the mount target.  Whatever they
+> > do with sys_mount, the only danger I see is the one where the filesystem
+> > data is bad and causes a DOS or privilege escalation in some bad fs
+> > reading code in the kernel.
+> > 
+> > What else is there?  Are you thinking of the sys_mount flags?  I guess
+> > the void *data?  (Though I see that as the same problem;  we're just
+> > not trusting the fs code to deal with badly formed data)
 > 
-> It seems that we are not in a full agreement about the default behavior
-> yet. Johannes seems to be more for hard guarantee while I would like to
-> see the weaker approach first and move to the stronger model later.
-> Johannes, is this absolutely no-go for you? Do you think it is seriously
-> handicapping the semantic of the new knob?
+> OK, so the problem you're worrying about is allowing the user to modify
+> a block device and then mount it?
 
-Well we certainly can't start OOMing where we previously didn't,
-that's called a regression and automatically limits our options.
+That's half of the problem I'm worrying about.
 
-Any unexpected OOMs will be much more acceptable from a new feature
-than from configuration that previously "worked" and then stopped.
+The other half is what Andy mentioned earlier - having a container modify
+a loop device and trick the host into mounting it (i.e. settingn its uuid
+to the host's HOME)
 
-> My main motivation for the weaker model is that it is hard to see all
-> the corner case right now and once we hit them I would like to see a
-> graceful fallback rather than fatal action like OOM killer. Besides that
-> the usaceses I am mostly interested in are OK with fallback when the
-> alternative would be OOM killer. I also feel that introducing a knob
-> with a weaker semantic which can be made stronger later is a sensible
-> way to go.
-
-We can't make it stronger, but we can make it weaker.  Stronger is the
-simpler definition, it's simpler code, your usecases are fine with it,
-Greg and I prefer it too.  I don't even know what we are arguing about
-here.
-
-Patch applies on top of mmots.
-
----
->From ced6ac70bb274cdaa4c5d78b53420d84fb803dd7 Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Wed, 28 May 2014 09:37:05 -0400
-Subject: [patch] mm: vmscan: treat memcg low limit as hard guarantee
-
-Don't hide low limit configuration problems behind weak semantics and
-quietly breach the set-up guarantees.
-
-Make it simple: memcg guarantees are equivalent to mlocked memory,
-anonymous memory without swap, kernel memory, pinned memory etc. -
-unreclaimable.  If no memory can be reclaimed without otherwise
-breaching guarantees, it's a real problem, so let the machine OOM and
-dump the memory state in that situation.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/memcontrol.h |  5 -----
- mm/memcontrol.c            | 15 ---------------
- mm/vmscan.c                | 41 +++++------------------------------------
- 3 files changed, 5 insertions(+), 56 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index a5cf853129ec..c3a53cbb88eb 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -94,7 +94,6 @@ bool task_in_mem_cgroup(struct task_struct *task,
- 
- extern bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
- 		struct mem_cgroup *root);
--extern bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root);
- 
- extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
- extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
-@@ -297,10 +296,6 @@ static inline bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
- {
- 	return false;
- }
--static inline bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
--{
--	return false;
--}
- 
- static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
- {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 4df733e13727..85fdef53fcf1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2788,7 +2788,6 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
-  *
-  * The given group is within its reclaim gurantee if it is below its low limit
-  * or the same applies for any parent up the hierarchy until root (including).
-- * Such a group might be excluded from the reclaim.
-  */
- bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
- 		struct mem_cgroup *root)
-@@ -2801,25 +2800,11 @@ bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
- 			return true;
- 		if (memcg == root)
- 			break;
--
- 	} while ((memcg = parent_mem_cgroup(memcg)));
- 
- 	return false;
- }
- 
--bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
--{
--	struct mem_cgroup *iter;
--
--	for_each_mem_cgroup_tree(iter, root)
--		if (!mem_cgroup_within_guarantee(iter, root)) {
--			mem_cgroup_iter_break(root, iter);
--			return false;
--		}
--
--	return true;
--}
--
- struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
- {
- 	struct mem_cgroup *memcg = NULL;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a8ffe4e616fe..c72493e8fb53 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2244,20 +2244,14 @@ static inline bool should_continue_reclaim(struct zone *zone,
- }
- 
- /**
-- * __shrink_zone - shrinks a given zone
-+ * shrink_zone - shrinks a given zone
-  *
-  * @zone: zone to shrink
-  * @sc: scan control with additional reclaim parameters
-- * @honor_memcg_guarantee: do not reclaim memcgs which are within their memory
-- * guarantee
-- *
-- * Returns the number of reclaimed memcgs.
-  */
--static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
--		bool honor_memcg_guarantee)
-+static void shrink_zone(struct zone *zone, struct scan_control *sc)
- {
- 	unsigned long nr_reclaimed, nr_scanned;
--	unsigned nr_scanned_groups = 0;
- 
- 	do {
- 		struct mem_cgroup *root = sc->target_mem_cgroup;
-@@ -2274,20 +2268,16 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
- 		do {
- 			struct lruvec *lruvec;
- 
--			/* Memcg might be protected from the reclaim */
--			if (honor_memcg_guarantee &&
--					mem_cgroup_within_guarantee(memcg, root)) {
-+			/* Don't reclaim guaranteed memory */
-+			if (mem_cgroup_within_guarantee(memcg, root)) {
- 				/*
--				 * It would be more optimal to skip the memcg
--				 * subtree now but we do not have a memcg iter
--				 * helper for that. Anyone?
-+				 * XXX: skip the entire subtree here
- 				 */
- 				memcg = mem_cgroup_iter(root, memcg, &reclaim);
- 				continue;
- 			}
- 
- 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
--			nr_scanned_groups++;
- 
- 			sc->swappiness = mem_cgroup_swappiness(memcg);
- 			shrink_lruvec(lruvec, sc);
-@@ -2316,27 +2306,6 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
- 
- 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
- 					 sc->nr_scanned - nr_scanned, sc));
--
--	return nr_scanned_groups;
--}
--
--static void shrink_zone(struct zone *zone, struct scan_control *sc)
--{
--	bool honor_guarantee = true;
--
--	while (!__shrink_zone(zone, sc, honor_guarantee)) {
--		/*
--		 * The previous round of reclaim didn't find anything to scan
--		 * because
--		 * a) the whole reclaimed hierarchy is within guarantee so
--		 *    we fallback to ignore the guarantee because other option
--		 *    would be the OOM
--		 * b) multiple reclaimers are racing and so the first round
--		 *    should be retried
--		 */
--		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
--			honor_guarantee = false;
--	}
- }
- 
- /* Returns true if compaction should go ahead for a high-order request */
--- 
-1.9.3
-
+> In that case, I agree, it doesn't
+> matter who does the mount, because a hostile user is looking to exploit
+> bad data on the device.  By and large, filesystems are tolerant to this
+> type of fuzzing, but the strict solution is not to allow a container to
+> mount any block devices it has direct access to.
+> 
+> James
+> 
+> 
