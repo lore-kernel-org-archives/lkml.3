@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbaE1QNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:13:53 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:38639 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340AbaE1QNv (ORCPT
+	id S1754811AbaE1QRD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:17:03 -0400
+Received: from smtprelay0156.hostedemail.com ([216.40.44.156]:39268 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752074AbaE1QRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:13:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140528120817.71921d6a@gandalf.local.home>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-	<CAFLxGvyV2Upn7+uTtScu2_LGazy9L+HU9DWEC==0qyZphCrauA@mail.gmail.com>
-	<20140528120817.71921d6a@gandalf.local.home>
-Date: Wed, 28 May 2014 09:13:51 -0700
-X-Google-Sender-Auth: g6RnrlV1SgDUNDrJM9SMq439dnA
-Message-ID: <CA+55aFwK5PnWonJZUA0O0dZp=k6RL7gRE5rjSTpxwcbS8ydkyQ@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 May 2014 12:17:00 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:4321:4605:5007:7652:7903:8603:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: card13_76fc6695fdc36
+X-Filterd-Recvd-Size: 1622
+Message-ID: <1401293816.19335.3.camel@joe-AO725>
+Subject: Re: [PATCH 2/2] lpc_eth: Use resource_size instead of computation
+From: Joe Perches <joe@perches.com>
+To: Benoit Taine <benoit.taine@lip6.fr>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Date: Wed, 28 May 2014 09:16:56 -0700
+In-Reply-To: <1401290047-30005-3-git-send-email-benoit.taine@lip6.fr>
+References: <1401290047-30005-1-git-send-email-benoit.taine@lip6.fr>
+	 <1401290047-30005-3-git-send-email-benoit.taine@lip6.fr>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 9:08 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> What performance impact are you looking for? Now if the system is short
-> on memory, it would probably cause issues in creating tasks.
+On Wed, 2014-05-28 at 17:14 +0200, Benoit Taine wrote:
+> This issue was reported by coccicheck using the semantic patch 
+> at scripts/coccinelle/api/resource_size.cocci
 
-It doesn't necessarily need to be short on memory, it could just be
-fragmented. But a page order of 2 should still be ok'ish.
+Slightly associated trivial note:
 
-That said, this is definitely not a rc7 issue. I'd *much* rather
-disable swap from direct reclaim, although that kind of patch too
-would be a "can Minchan test it, we can put it in the next merge
-window and then backport it if we don't have issues".
+> diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+[]
+> @@ -1419,8 +1419,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+>  
+>  	netdev_dbg(ndev, "IO address start     :0x%08x\n",
+>  			res->start);
+> -	netdev_dbg(ndev, "IO address size      :%d\n",
+> -			res->end - res->start + 1);
+> +	netdev_dbg(ndev, "IO address size      :%d\n", resource_size(res));
 
-I see that Johannes already did a patch for that (and this really
-_has_ come up before), although I'd skip the WARN_ON_ONCE() part
-except for perhaps Minchan testing it.
+May be better using:
 
-               Linus
+	netdev_dbg(ndev, "IO                       :%pR\n", res)
+
+
