@@ -1,275 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422AbaE1UrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:47:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40941 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399AbaE1UrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:47:14 -0400
-Date: Wed, 28 May 2014 13:50:49 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH char-misc-next 2/8] misc: mic: add a bus driver for
- virtual MIC devices
-Message-ID: <20140528205049.GA10468@kroah.com>
-References: <cover.1401239759.git.sudeep.dutt@intel.com>
- <07b374763197000963b1161e0fce0c3254ce8a0d.1401239759.git.sudeep.dutt@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932081AbaE1UrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:47:21 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:43380 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399AbaE1UrT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 28 May 2014 16:47:19 -0400
+Message-Id: <5386596402000078000B51F8@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Wed, 28 May 2014 21:47:16 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <herbert@gondor.apana.org.au>, <linux@horizon.com>,
+        <tim.c.chen@linux.intel.com>
+Cc: <sandyw@twitter.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink
+ K_table
+References: <20140528144000.28686.qmail@ns.horizon.com>
+In-Reply-To: <20140528144000.28686.qmail@ns.horizon.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <07b374763197000963b1161e0fce0c3254ce8a0d.1401239759.git.sudeep.dutt@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 07:36:11PM -0700, Sudeep Dutt wrote:
-> +int register_mbus_driver(struct mbus_driver *driver)
-> +{
-> +	driver->driver.bus = &mic_bus;
-> +	return driver_register(&driver->driver);
-> +}
-> +EXPORT_SYMBOL_GPL(register_mbus_driver);
+>>> "George Spelvin" <linux@horizon.com> 05/28/14 4:40 PM >>>
+>Jan: Is support for SLE10's pre-2.18 binutils still required?
+>Your PEXTRD fix was only a year ago, so I expect, but I wanted to ask.
 
-mbus_register_driver()?
+I'd much appreciate if I would be able to build the kernel that way for another while.
 
-> +void unregister_mbus_driver(struct mbus_driver *driver)
-> +{
-> +	driver_unregister(&driver->driver);
-> +}
-> +EXPORT_SYMBOL_GPL(unregister_mbus_driver);
+>Two other minor additional changes:
+>
+>1. The current code unnecessarily puts the table in the read-write
+   >.data section.  Moved to .text.
 
-mbus_unregister_driver()?
+Putting data into .text seems wrong - it should go into .rodata.
 
-> +int register_mbus_device(struct mbus_device *dev)
-
-mbus_register_device()?
-
-Trying to keep the kernel namespace sane.
-
-Why doesn't this function create the device structure?
-
-> +{
-> +	int err;
-> +
-> +	dev->dev.bus = &mic_bus;
-> +
-> +	/* Assign a unique device index and hence name. */
-> +	err = ida_simple_get(&mbus_index_ida, 0, 0, GFP_KERNEL);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	dev->index = err;
-> +	dev_set_name(&dev->dev, "mbus-dev%u", dev->index);
-> +	/*
-> +	 * device_register() causes the bus infrastructure to look for a
-> +	 * matching driver.
-> +	 */
-> +	err = device_register(&dev->dev);
-> +	return err;
-> +}
-> +EXPORT_SYMBOL_GPL(register_mbus_device);
-> +
-> +void unregister_mbus_device(struct mbus_device *dev)
-> +{
-> +	int index = dev->index; /* save for after device release */
-> +
-> +	device_unregister(&dev->dev);
-> +	ida_simple_remove(&mbus_index_ida, index);
-> +}
-> +EXPORT_SYMBOL_GPL(unregister_mbus_device);
-> +
-> +static int __init mbus_init(void)
-> +{
-> +	return bus_register(&mic_bus);
-> +}
-> +
-> +static void __exit mbus_exit(void)
-> +{
-> +	bus_unregister(&mic_bus);
-> +}
-> +
-> +core_initcall(mbus_init);
-> +module_exit(mbus_exit);
-> +
-> +MODULE_AUTHOR("Intel Corporation");
-> +MODULE_DESCRIPTION("Intel(R) MIC Bus driver");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/mic_bus.h b/include/linux/mic_bus.h
-> new file mode 100644
-> index 0000000..8297573
-> --- /dev/null
-> +++ b/include/linux/mic_bus.h
-> @@ -0,0 +1,148 @@
-> +/*
-> + * Intel MIC Platform Software Stack (MPSS)
-> + *
-> + * Copyright(c) 2014 Intel Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> + * General Public License for more details.
-> + *
-> + * The full GNU General Public License is included in this distribution in
-> + * the file called "COPYING".
-> + *
-> + * Intel MIC Bus driver.
-> + *
-> + * This implementation is very similar to the the virtio bus driver
-> + * implementation @ include/linux/virtio.h.
-> + */
-> +#ifndef _MIC_BUS_H_
-> +#define _MIC_BUS_H_
-> +/*
-> + * Everything a mbus driver needs to work with any particular mbus
-> + * implementation.
-> + */
-> +#include <linux/types.h>
-> +#include <linux/device.h>
-> +#include <linux/mod_devicetable.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/dma-mapping.h>
-> +
-> +struct mbus_device_id {
-> +	__u32 device;
-> +	__u32 vendor;
-> +};
-> +
-> +#define MBUS_DEV_DMA_HOST 2
-> +#define MBUS_DEV_DMA_MIC 3
-> +#define MBUS_DEV_ANY_ID 0xffffffff
-> +
-> +/**
-> + * mbus_device - representation of a device using mbus
-> + * @priv: private pointer for the driver's use.
-> + * @mmio_va: virtual address of mmio space
-> + * @hw_ops: the hardware ops supported by this device.
-> + * @id: the device type identification (used to match it with a driver).
-> + * @dev: underlying device.
-> + * be used to communicate with.
-> + * @index: unique position on the mbus bus
-> + */
-> +struct mbus_device {
-> +	void *priv;
-> +	void __iomem *mmio_va;
-> +	struct mbus_hw_ops *hw_ops;
-> +	struct mbus_device_id id;
-> +	struct device dev;
-> +	int index;
-> +};
-> +
-> +/**
-> + * mbus_driver - operations for a mbus I/O driver
-> + * @driver: underlying device driver (populate name and owner).
-> + * @id_table: the ids serviced by this driver.
-> + * @probe: the function to call when a device is found.  Returns 0 or -errno.
-> + * @remove: the function to call when a device is removed.
-> + */
-> +struct mbus_driver {
-> +	struct device_driver driver;
-> +	const struct mbus_device_id *id_table;
-> +	int (*probe)(struct mbus_device *dev);
-> +	void (*scan)(struct mbus_device *dev);
-> +	void (*remove)(struct mbus_device *dev);
-> +};
-> +
-> +/**
-> + * struct mic_irq - opaque pointer used as cookie
-> + */
-> +struct mic_irq;
-> +
-> +/**
-> + * mbus_hw_ops - Hardware operations for accessing a MIC device on the MIC bus.
-> + */
-> +struct mbus_hw_ops {
-> +	struct mic_irq* (*request_threaded_irq)(struct mbus_device *mbdev,
-> +			irq_handler_t handler, irq_handler_t thread_fn,
-> +			const char *name, void *data, int intr_src);
-> +	void (*free_irq)(struct mbus_device *mbdev,
-> +			struct mic_irq *cookie, void *data);
-> +	void (*ack_interrupt)(struct mbus_device *mbdev, int num);
-> +};
-> +
-> +int register_mbus_device(struct mbus_device *dev);
-> +void unregister_mbus_device(struct mbus_device *dev);
-> +
-> +int register_mbus_driver(struct mbus_driver *drv);
-> +void unregister_mbus_driver(struct mbus_driver *drv);
-> +
-> +static inline struct mbus_device *dev_to_mbus(struct device *_dev)
-> +{
-> +	return container_of(_dev, struct mbus_device, dev);
-> +}
-> +
-> +static inline struct mbus_driver *drv_to_mbus(struct device_driver *drv)
-> +{
-> +	return container_of(drv, struct mbus_driver, driver);
-> +}
-> +
-> +static inline void mbus_release_dev(struct device *d)
-> +{
-> +}
-
-As per the kernel documentation rules, I get to publicly make fun of you
-for doing this half-hearted attempt to get around the kernel providing
-you with a valid kernel message as to why you always need to provide a
-proper release function :(
-
-Consider yourself mocked.
-
-And go read the kernel documentation for why.
-
-An inline function?  Why?
-
-
-> +static inline int
-> +mbus_add_device(struct mbus_device *mbdev, struct device *pdev, int id,
-> +		struct dma_map_ops *dma_ops, struct mbus_hw_ops *hw_ops,
-> +		void __iomem *mmio_va)
-
-inline?  Why?
-
-> +{
-> +	int ret;
-> +
-> +	mbdev->mmio_va = mmio_va;
-> +	mbdev->dev.parent = pdev;
-> +	mbdev->id.device = id;
-> +	mbdev->id.vendor = MBUS_DEV_ANY_ID;
-> +	mbdev->dev.archdata.dma_ops = dma_ops;
-> +	mbdev->dev.dma_mask = &mbdev->dev.coherent_dma_mask;
-> +	dma_set_mask(&mbdev->dev, DMA_BIT_MASK(64));
-> +	mbdev->dev.release = mbus_release_dev;
-> +	mbdev->hw_ops = hw_ops;
-> +	dev_set_drvdata(&mbdev->dev, mbdev);
-> +
-> +	ret = register_mbus_device(mbdev);
-> +	if (ret) {
-> +		dev_err(mbdev->dev.parent,
-> +			"Failed to register mbus device type %u\n", id);
-> +		return ret;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static inline void mbus_remove_device(struct mbus_device *mbdev)
-> +{
-> +	unregister_mbus_device(mbdev);
-> +	memset(mbdev, 0x0, sizeof(*mbdev));
-
-Why are you doing this?  (hint, I think I know why, and it's totally and
-unacceptably wrong.)
-
-Also, inline?
+Jan
 
