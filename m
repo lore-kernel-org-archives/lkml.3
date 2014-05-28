@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaE1Ttv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 15:49:51 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45903 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625AbaE1Ttt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 15:49:49 -0400
-Date: Wed, 28 May 2014 20:49:13 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "David S . Miller" <davem@davemloft.net>, Nishanth Menon <nm@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140528194913.GI5099@sirena.org.uk>
-References: <1400875040-13269-1-git-send-email-sboyd@codeaurora.org>
- <1400875040-13269-2-git-send-email-sboyd@codeaurora.org>
- <20140524124858.GR22111@sirena.org.uk>
- <5385063F.30407@codeaurora.org>
- <20140528151646.GU20155@pengutronix.de>
- <20140528171219.GD5099@sirena.org.uk>
- <53863CA3.7040000@codeaurora.org>
+	id S1755276AbaE1TuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 15:50:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37808 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611AbaE1TuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 15:50:09 -0400
+Date: Wed, 28 May 2014 16:50:04 -0300
+From: "'Arnaldo Carvalho de Melo'" <acme@kernel.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Ondrej =?iso-8859-1?Q?B=EDlka?= <neleai@seznam.cz>,
+        Caitlin Bestler <caitlin.bestler@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Elie De Brauwer <eliedebrauwer@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Steven Whitehouse <steve@chygwyn.com>,
+        =?iso-8859-1?Q?R=E9mi?= Denis-Courmont 
+	<remi.denis-courmont@nokia.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Chris Friesen <chris.friesen@windriver.com>
+Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
+Message-ID: <20140528195004.GD2764@kernel.org>
+References: <537E0961.8040005@gmail.com>
+ <20140526134647.GB8176@kernel.org>
+ <20140526211706.GA25474@kernel.org>
+ <5384BEC5.2080607@gmail.com>
+ <20140527192115.GD25474@kernel.org>
+ <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com>
+ <20140527203010.GA2764@kernel.org>
+ <5385D47A.3070401@gmail.com>
+ <20140528150720.GB2764@kernel.org>
+ <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tSiBuZsJmMXpnp7T"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53863CA3.7040000@codeaurora.org>
-X-Cookie: Ditat Deus.
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/4] devicetree: bindings: Properly document micrel
- ks8851 SPI chips
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Wed, May 28, 2014 at 03:17:40PM +0000, David Laight escreveu:
+> From: Arnaldo Carvalho de Melo
+> ...
+> > > But, another question...
+> > >
+> > > In the case that the call is interrupted by a signal handler and some
+> > > datagrams have already been received, then the call succeeds, and
+> > > returns the number of datagrams received, and 'timeout' is updated with
+> > > the remaining time. Maybe that's the right behavior, but I just want to
+ 
+> > Note that what the comment in the existing code says should apply here,
+> > namely that the next recv (m or mmsg) syscall on this socket will return
+> > what is in sock->sk->sk_err, that is the signal:
+ 
+> ...
+ 
+> > So, yes, the user _can_ process the packets already copied to userspace,
+> > i.e. no packet loss, and then, on the next call, will receive the signal
+> > notification.
+ 
+> The application shouldn't need to see an EINTR response, any signal handler
+> should be run when the system call returns to user (regardless of the
+> system call result code).
+> If that doesn't happen Linux is badly broken!
+> >From an application point of view this is exactly the same as the signal
+> occurring just before/after the kernel entry/exit for the system call.
+> 
+> The call should just return early with success status.
+> No need to preserve the EINTR response for later.
+> 
+> The same might be appropriate for other errors - maybe including EFAULT
+> copying non-initial messages to userspace.
+> Put the message being processed back on the socket queue and return
+> success with the (non-zero) partial message count.
 
---tSiBuZsJmMXpnp7T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+We don't need to put anything back, if we get an EFAULT for a datagram,
+then we stop processing that packet, _dropping_ it (and that is just
+like recvmsg works, look at __skb_recv_datagram, the skb_unlink there,
+and udp_recvmsg, what happens if skb_copy_and_csum_datagram_iovec fails)
+and stop the batch, and if no datagrams were received, return the error
+straight away.
 
-On Wed, May 28, 2014 at 12:44:35PM -0700, Stephen Boyd wrote:
-> On 05/28/14 10:12, Mark Brown wrote:
+But if some datagrams were successfully received, and at that point
+_already_ removed from queues and sent successfully to userspace,
+recvmmsg will return the number of successfully copied datagrams and
+store the error so that it can return on the next syscall,
 
-> > If the supply must always be physically present the bindings should be
-> > specified as it being mandatory and the code written in that fashion; as
-> > an extension Linux will put a dummy in but this is attempting to handle
-> > incorrect DTs.  This means we have functional error handling in cases
-> > where there is something to worry about and simplifies the code using
-> > the regulator.
+Please refer to the original discussion on how to report how many
+successfully copied datagrams and also report that it stopped before the
+timeout and the number of requested datagrams in a batch:
 
-> Ok, you're saying the opposite of Rob. Should it be required or optional
-> in the DT binding?
+http://lkml.kernel.org/r/200905221022.48790.remi.denis-courmont@nokia.com
 
-I'm saying it should be required.  The implementation accepts it as an
-extension (a recent extension at that).
+What is being discussed here is how to return the EFAULT that may happen
+_after_ datagram processing, be it interrupted by an EFAULT, signal, or
+plain returning all that was requested, with no errors.
 
-> Ok. Dave M has already picked up all these patches so I'll send a patch
-> to replace regulator_get_optional() with regulator_get() and fix up the
-> error handling unless I hear otherwise.
+This EFAULT _after_ datagram processing may happen when updating the
+remaining timeout, because then how can userspace both receive the
+number of successfully copied datagrams (in any of the cases mentioned
+in the previous paragraph) and know that that timeout can't be used
+because there was a problem while trying to copy it to userspace
+(EFAULT)?
 
-Yes, please.  I'm much more worried about the abuse of
-regulator_get_optional() than the binding.
-
---tSiBuZsJmMXpnp7T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJThj22AAoJELSic+t+oim9YCQP/3X79T9pZF6Mlt7qgfAAzkt5
-1tOJAXcsj11VYtwdVp61JJsmluCnYCK7LrGCoVBiv4wcgraaV0fivPpESjrC0SL6
-jf9JDo2G9QBFafd7uMkrUGmEfd0CEk/CrESX3qD+AWHiQe/cpQwhZGGmP4ArFg22
-PNwRHPnXrPOS1hFxJstcpKZBdG1VwK5EnXuQpTiA36SljLyQz0BUJeK8HOofmAHn
-3aOeUf5OE8Sp1ktAG0VLvBCBwVNhkz0VdFfrEYweWJ0FX2dvBtvM7QppDBY5EHgY
-2L8XYPK6F7+QkEDzZNKmCh+TUfjrdOEUiH9417Ewq8FAf/IK6G6v4xL/pKkeONN6
-3Gs0K+UoBRkMi2fVakiaaFxac+B4zWK290aIIhEFnRsq5x+KXUzrvtbgRwpfIQO5
-EhvsP67SImY5Q2JmeDC2suSQwoG+HKzhtrekwViIX7LEozPSheTiPTzYWd6aMUlQ
-UOUZfpb4FSxo/W9xUvZkVUlGslYuBECyqBDQRyDc9zr2cRiYb22vh/K+qs+OkPYl
-1Jf+4dhenqAgDvHr+JPne78DSW9cNXCA8+Us0SPPckgT11aKexEzH+sFeWNhuxZ0
-Zr2//CD75J7DTxbswucidzNFhE6o6G6xddPlHyKjl4gGau3bU8VyV9X+MMhYYCBi
-gJ3TAaMcWyrE1zuPUtsB
-=lp/p
------END PGP SIGNATURE-----
-
---tSiBuZsJmMXpnp7T--
+- Arnaldo
