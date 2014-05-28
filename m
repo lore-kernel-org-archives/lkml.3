@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaE1UJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 16:09:39 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:51766 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaE1UJi (ORCPT
+	id S1755240AbaE1UJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 16:09:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40215 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882AbaE1UJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 16:09:38 -0400
-Date: Wed, 28 May 2014 23:09:29 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Yong Zhang <yong.zhang@windriver.com>, ralf@linux-mips.org,
-        huawei.libin@huawei.com, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>
-Subject: Re: [PATCH V2] MIPS: change type of asid_cache to unsigned long
-Message-ID: <20140528200929.GA30528@drone.musicnaut.iki.fi>
-References: <1400650563-1033-1-git-send-email-yong.zhang@windriver.com>
- <5384119E.7010606@huawei.com>
+	Wed, 28 May 2014 16:09:52 -0400
+Date: Wed, 28 May 2014 13:13:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>, Alan <gnomes@lxorguk.ukuu.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH V7] serial/uart/8250: Add tunable RX interrupt trigger
+ I/F of FIFO buffers
+Message-ID: <20140528201327.GA19249@kroah.com>
+References: <20140527050921.17672.97365.stgit@yunodevel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5384119E.7010606@huawei.com>
+In-Reply-To: <20140527050921.17672.97365.stgit@yunodevel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, May 27, 2014 at 12:16:30PM +0800, Li Zefan wrote:
-> On 2014/5/21 13:36, Yong Zhang wrote:
-> > asid_cache must be unsigned long otherwise on 64bit system
-> > it will become 0 if the value in get_new_mmu_context()
-> > reaches 0xffffffff and in the end the assumption of
-> > ASID_FIRST_VERSION is not true anymore thus leads to
-> > more dangerous things.
+On Tue, May 27, 2014 at 02:09:21PM +0900, Yoshihiro YUNOMAE wrote:
+> Add tunable RX interrupt trigger I/F of FIFO buffers.
 > 
-> We should describe what problem this bug can lead to, which
-> will help people who encounter the same problem and google it.
+> Serial devices are used as not only message communication devices but control
+> or sending communication devices. For the latter uses, normally small data
+> will be exchanged, so user applications want to receive data unit as soon as
+> possible for real-time tendency. If we have a sensor which sends a 1 byte data
+> each time and must control a device based on the sensor feedback, the RX
+> interrupt should be triggered for each data.
+> 
+> According to HW specification of serial UART devices, RX interrupt trigger
+> can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
+> in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
+> the trigger to only 8bytes.
+> 
+> This patch makes some devices change RX interrupt trigger from userland.
 
-Please describe it, then. Even if the patch is already committed,
-googling would probably still find this e-mail thread.
+I'd prefer it if you could split the attr_grps logic out into a separate
+patch, the first one in a 2 patch series.  I don't think it is quite
+correct what you are doing here, but given the other changes going on at
+the same time, it's hard to pick it apart.
 
-Thanks,
+So, can you split this up into 2 patches and resend please?
 
-A.
+thanks,
+
+greg k-h
