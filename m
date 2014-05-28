@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaE1KKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 06:10:12 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:15085
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751855AbaE1KKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 06:10:10 -0400
-Message-ID: <5385B69D.50508@freescale.com>
-Date: Wed, 28 May 2014 18:12:45 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752568AbaE1KMT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 06:12:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23147 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971AbaE1KMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 06:12:18 -0400
+Date: Wed, 28 May 2014 13:11:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Mark Hounschell <markh@compro.net>
+Subject: Re: [PATCH V2] staging: dgap: implement proper error handling in
+ dgap_firmware_load()
+Message-ID: <20140528101153.GU15585@mwanda>
+References: <20140527070937.GA21621@devel.8.8.4.4>
+ <20140527102002.GI17724@mwanda>
+ <CAHb8M2AceJeFv-KonF+bAFJ-+xssFxx5ytEKhMNZ1c3xm2jvZA@mail.gmail.com>
+ <20140528070233.GP17724@mwanda>
+ <CAHb8M2ABVCaoNR0m5mLmWv-ei60PDRu462QTqDgEJwAf63oteg@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-CC: <linux-pwm@vger.kernel.org>, <thierry.reding@gmail.com>,
-        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pwm: i.MX: Cleanup indentation for register definitions
-References: <1401185980-29536-1-git-send-email-Ying.Liu@freescale.com>
- <20140528115636.4ad791aa@ipc1.ka-ro>
-In-Reply-To: <20140528115636.4ad791aa@ipc1.ka-ro>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(377454003)(479174003)(51704005)(24454002)(76482001)(77982001)(33656002)(65816999)(81542001)(23676002)(50986999)(21056001)(19580405001)(19580395003)(83322001)(64126003)(97736001)(81342001)(83506001)(6806004)(68736004)(81156002)(69596002)(87936001)(99396002)(44976005)(50466002)(92566001)(102836001)(36756003)(92726001)(79102001)(84676001)(31966008)(86362001)(76176999)(104016001)(80022001)(575784001)(54356999)(65806001)(65956001)(64706001)(4396001)(26826002)(47776003)(85852003)(74502001)(77096999)(74662001)(46102001)(20776003)(83072002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB347;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0225B0D5BC
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHb8M2ABVCaoNR0m5mLmWv-ei60PDRu462QTqDgEJwAf63oteg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 05:56 PM, Lothar Waßmann wrote:
-> Hi,
-> 
-> Liu Ying wrote:
->> This patch contains no logic change to cleanup indentation
->> for register definitions only.
->>
->> Cc: Thierry Reding <thierry.reding@gmail.com>
->> Cc: Sascha Hauer <s.hauer@pengutronix.de>
->> Cc: Shawn Guo <shawn.guo@freescale.com>
->> Cc: Lothar Waßmann <LW@KARO-electronics.de>
->> Cc: linux-pwm@vger.kernel.org
->> Cc: linux-arm-kernel@lists.infradead.org
->> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> ---
->>  drivers/pwm/pwm-imx.c |   26 +++++++++++++-------------
->>  1 file changed, 13 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
->> index cc47733..0784554 100644
->> --- a/drivers/pwm/pwm-imx.c
->> +++ b/drivers/pwm/pwm-imx.c
->> @@ -21,24 +21,24 @@
->>  
->>  /* i.MX1 and i.MX21 share the same PWM function block: */
->>  
->> -#define MX1_PWMC    0x00   /* PWM Control Register */
->> -#define MX1_PWMS    0x04   /* PWM Sample Register */
->> -#define MX1_PWMP    0x08   /* PWM Period Register */
->> +#define MX1_PWMC			0x00   /* PWM Control Register */
->> +#define MX1_PWMS			0x04   /* PWM Sample Register */
->> +#define MX1_PWMP			0x08   /* PWM Period Register */
->>  
->> -#define MX1_PWMC_EN		(1 << 4)
->> +#define MX1_PWMC_EN			(1 << 4)
->>  
->>  /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
->>  
->> -#define MX3_PWMCR                 0x00    /* PWM Control Register */
->> -#define MX3_PWMSAR                0x0C    /* PWM Sample Register */
->> -#define MX3_PWMPR                 0x10    /* PWM Period Register */
->> -#define MX3_PWMCR_PRESCALER(x)    (((x - 1) & 0xFFF) << 4)
->> -#define MX3_PWMCR_DOZEEN                (1 << 24)
->> -#define MX3_PWMCR_WAITEN                (1 << 23)
->> +#define MX3_PWMCR			0x00    /* PWM Control Register */
->> +#define MX3_PWMSAR			0x0C    /* PWM Sample Register */
->> +#define MX3_PWMPR			0x10    /* PWM Period Register */
->> +#define MX3_PWMCR_PRESCALER(x)		(((x - 1) & 0xFFF) << 4)
->                                                    ^
-> You could also add the missing () around the macro argument when you
-> are changing this line anyway.
-> 
+On Wed, May 28, 2014 at 06:29:38PM +0900, DaeSeok Youn wrote:
+> > In your patch it has:
+> > +       dgap_tty_uninit(brd, false);
+> >
+> > But it should only be "false" if dgap_tty_init() failed.  If
+> > dgap_tty_register_ports() fails then it should be "true".  Another
+> Yes, you're right. There were no error handle for tty_port_register_device() and
+> dgap_create_tty_sysfs() in dgap_tty_register_ports(). I didn't catch it. :-(
+> It need to add error handlers for them, right?
 
-I may generate a separate patch to do that.
-
-Thanks.
+Eventually, yes.  But I don't see a simple way to fix
+dgap_firmware_load() until after the code is cleaned up.
 
 > 
-> Lothar Waßmann
-> 
+> > problem is that as you say, the earlier function are allocating
+> > resources like dgap_tty_register() but only the last two function calls
+> > have a "goto err_cleanup;" so the error handling is incomplete.
+> So remove "goto" in dgap_firmware_load() and add error handler in
+> dgap_tty_init()
 
--- 
-Liu Ying
+In the current code there isn't a goto in dgap_firmware_load().  Remove
+the call to dgap_tty_uninit() and add error handling in dgap_tty_init().
+
+That will clean up the code, and fix some NULL dereference bugs inside
+dgap_tty_uninit().
+
+> and dgap_tty_register_ports(), right?
+
+Inside dgap_tty_register_ports(), then we should add a
+kfree(brd->serial_ports) if the "brd->printer_ports" allocation fails.
+That is not a complete fix, but it is a part fix and it is clean.
+
+> 
+> I have a question of this. In case of this, how to complete the error handling?
+
+[patch 1/x] staging: dgap: remove useless dgap_probe1() function
+[patch 2/x] staging: dgap: unwind on error in dgap_found_board()
+[patch 3/x] staging: dgap: remove bogus null test in dgap_tty_init()
+	The ->channels[] were set to null in dgap_found_board().
+[patch 4/x] staging: dgap: unwind on error in dgap_tty_init()
+	This also removes the call to dgap_tty_uninit() in
+	dgap_firmware_load()
+[patch 5/x] staging: dgap: unwind on error in dgap_tty_register_ports()
+[patch 6/x] staging: dgap: make dgap_config_buf a local buffer
+[patch 7/x] staging: dgap: pass "dgap_numboards" to dgap_found_board()
+	instead of using a global variable
+[patch 8/x] staging: dgap: pass "brd" to dgap_after_config_loaded()
+	instead of passing "dgap_numboards" and looking up brd again.
+[patch 9/x] staging: dgap: rename dgap_finalize_board_init() to dgap_request_irq()
+
+In the end, I hate dgap_tty_uninit() because it doesn't match
+dgap_tty_init() at all.  It's poorly named.  We should rename it and
+make another dgap_tty_init() which just sets the ->channels[] to NULL.
+
+[patch x/x] staging: dgap: introduce dgap_tty_unregister()
+	This is currently done in dgap_tty_uninit(), which is the wrong
+	place.
+
+I have started using a new todo list tag in my emails.  So I'm adding
+this stuff to the todo list.
+
+TODO-list: 2014-05-28: dgap: cleanups and bug fixes.
+
+regards,
+dan carpenter
+
+
