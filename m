@@ -1,191 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609AbaE1W0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:26:46 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:48917 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008AbaE1W0n (ORCPT
+	id S1755751AbaE1W2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:28:52 -0400
+Received: from 19.mo5.mail-out.ovh.net ([46.105.35.78]:56058 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751833AbaE1W2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:26:43 -0400
-Date: Wed, 28 May 2014 16:26:40 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        Greg KH <greg@kroah.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 09/15] thunderbolt: Handle hotplug events
-Message-ID: <20140528222640.GW11907@google.com>
-References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
- <1401117492-2870-10-git-send-email-andreas.noever@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401117492-2870-10-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 May 2014 18:28:51 -0400
+X-Greylist: delayed 23400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 May 2014 18:28:51 EDT
+From: Joel Porquet <joel@porquet.org>
+To: arnd@arndb.de
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joel Porquet <joel@porquet.org>
+Subject: [PATCH] asm-generic: uaccess: avoid name conflicts for strncpy and str(n)len
+Date: Wed, 28 May 2014 17:21:51 +0200
+Message-Id: <1401290511-10211-1-git-send-email-joel@porquet.org>
+X-Mailer: git-send-email 1.9.3
+X-Ovh-Tracer-Id: 18385382529745186820
+X-Ovh-Remote: 132.227.92.188 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 05:18:06PM +0200, Andreas Noever wrote:
-> We reveive a plug event callback whenever a thunderbolt device is added
+asm-generic/uaccess.h defines 'strncpy_from_user', 'strnlen_user' and
+'strlen_user' as static inline functions. It makes it impossible for an
+arch to include asm-generic/uaccess.h and benefits from its content, in
+addition to defining GENERIC_STRNCPY_FROM_USER and GENERIC_STRNLEN_USER.
 
-s/reveive/receive/
+Both configuration tokens respectively enable lib/strncpy_from_user.c
+and lib/strnlen_user.c which redefine the same symbols, causing
+redefinition errors at compilation.
 
-> or removed. This patch fills in the tb_handle_hotplug method and starts
-> reacting to these events by adding/removing switches from the hierarchy.
-> 
-> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
-> ---
->  drivers/thunderbolt/switch.c | 42 +++++++++++++++++++++++++++++++++++++++-
->  drivers/thunderbolt/tb.c     | 46 +++++++++++++++++++++++++++++++++++++++++++-
->  drivers/thunderbolt/tb.h     |  3 +++
->  3 files changed, 89 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-> index 279b9c5..c092f7c 100644
-> --- a/drivers/thunderbolt/switch.c
-> +++ b/drivers/thunderbolt/switch.c
-> @@ -195,6 +195,24 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
->  		sw->__unknown1, sw->__unknown4);
->  }
->  
-> +struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
-> +{
-> +	u8 next_port = route; /*
-> +			       * Routes use a stride of 8 bits,
-> +			       * eventhough a port index has 6 bits at most.
-> +			       * */
-> +	if (route == 0)
-> +		return sw;
-> +	if (next_port > sw->config.max_port_number)
-> +		return 0;
-> +	if (tb_is_upstream_port(&sw->ports[next_port]))
-> +		return 0;
-> +	if (!sw->ports[next_port].remote)
-> +		return 0;
-> +	return get_switch_at_route(sw->ports[next_port].remote->sw,
-> +				   route >> TB_ROUTE_SHIFT);
-> +}
-> +
->  /**
->   * tb_plug_events_active() - enable/disable plug events on a switch
->   *
-> @@ -243,7 +261,8 @@ void tb_switch_free(struct tb_switch *sw)
->  		sw->ports[i].remote = NULL;
->  	}
->  
-> -	tb_plug_events_active(sw, false);
-> +	if (!sw->is_unplugged)
-> +		tb_plug_events_active(sw, false);
->  
->  	kfree(sw->ports);
->  	kfree(sw);
-> @@ -327,3 +346,24 @@ err:
->  	return NULL;
->  }
->  
-> +/**
-> + * tb_sw_set_unpplugged() - set is_unplugged on switch and downstream switches
-> + */
-> +void tb_sw_set_unpplugged(struct tb_switch *sw)
-> +{
-> +	int i;
-> +	if (sw == sw->tb->root_switch) {
-> +		tb_sw_WARN(sw, "cannot unplug root switch\n");
-> +		return;
-> +	}
-> +	if (sw->is_unplugged) {
-> +		tb_sw_WARN(sw, "is_unplugged already set\n");
-> +		return;
-> +	}
-> +	sw->is_unplugged = true;
-> +	for (i = 0; i <= sw->config.max_port_number; i++) {
-> +		if (!tb_is_upstream_port(&sw->ports[i]) && sw->ports[i].remote)
-> +			tb_sw_set_unpplugged(sw->ports[i].remote->sw);
-> +	}
-> +}
-> +
-> diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-> index 3b716fd..1efcacc 100644
-> --- a/drivers/thunderbolt/tb.c
-> +++ b/drivers/thunderbolt/tb.c
-> @@ -71,11 +71,55 @@ static void tb_handle_hotplug(struct work_struct *work)
->  {
->  	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
->  	struct tb *tb = ev->tb;
-> +	struct tb_switch *sw;
-> +	struct tb_port *port;
->  	mutex_lock(&tb->lock);
->  	if (!tb->hotplug_active)
->  		goto out; /* during init, suspend or shutdown */
->  
-> -	/* do nothing for now */
-> +	sw = get_switch_at_route(tb->root_switch, ev->route);
-> +	if (!sw) {
-> +		tb_warn(tb,
-> +			"hotplug event from non existent switch %llx:%x (unplug: %d)\n",
-> +			ev->route, ev->port, ev->unplug);
-> +		goto out;
-> +	}
-> +	if (ev->port > sw->config.max_port_number) {
-> +		tb_warn(tb,
-> +			"hotplug event from non existent port %llx:%x (unplug: %d)\n",
-> +			ev->route, ev->port, ev->unplug);
-> +		goto out;
-> +	}
-> +	port = &sw->ports[ev->port];
-> +	if (tb_is_upstream_port(port)) {
-> +		tb_warn(tb,
-> +			"hotplug event for upstream port %llx:%x (unplug: %d)\n",
-> +			ev->route, ev->port, ev->unplug);
-> +		goto out;
-> +	}
-> +	if (ev->unplug) {
-> +		if (port->remote) {
-> +			tb_port_info(port, "unplugged\n");
-> +			tb_sw_set_unpplugged(port->remote->sw);
-> +			tb_switch_free(port->remote->sw);
-> +			port->remote = NULL;
-> +		} else {
-> +			tb_port_info(port,
-> +				     "got unplug event for disconnected port, ignoring\n");
-> +		}
-> +	} else if (port->remote) {
-> +		tb_port_info(port,
-> +			     "got plug event for connected port, ignoring\n");
-> +	} else {
-> +		tb_port_info(port, "hotplug: scanning\n");
-> +		tb_scan_port(port);
-> +		if (!port->remote) {
-> +			tb_port_info(port, "hotplug: no switch found\n");
-> +		} else if (port->remote->sw->config.depth > 1) {
-> +			tb_sw_warn(port->remote->sw,
-> +				   "hotplug: chaining not supported\n");
-> +		}
-> +	}
->  out:
->  	mutex_unlock(&tb->lock);
->  	kfree(ev);
-> diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-> index 70a66fe..661f182 100644
-> --- a/drivers/thunderbolt/tb.h
-> +++ b/drivers/thunderbolt/tb.h
-> @@ -20,6 +20,7 @@ struct tb_switch {
->  	struct tb_port *ports;
->  	struct tb *tb;
->  	int cap_plug_events; /* offset, zero if not found */
-> +	bool is_unplugged; /* unplugged, will go away */
->  };
->  
->  /**
-> @@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
->  
->  struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
->  void tb_switch_free(struct tb_switch *sw);
-> +void tb_sw_set_unpplugged(struct tb_switch *sw);
-> +struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
->  
->  int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
->  
-> -- 
-> 1.9.3
-> 
+This patch modifies asm-generic/uaccess.h so that strncpy_from_user is
+not defined when GENERIC_STRNCPY_FROM_USER is, and strnlen_user and
+strlen_user are not defined when GENERIC_STRNLEN_USER is, thus avoiding
+any name conflict.
+
+At the moment, numerous archs, which make use of
+GENERIC_STRNCPY_FROM_USER and GENERIC_STRNLEN_USER, are forced to
+rewrite an entire asm/uaccess.h header because of this issue.
+
+To the best of my knowledge, the following list of archs could benefit
+from this patch: x86, sh, openrisc, powerpc, arm64, arm, alpha, parisc,
+sparc, m68k.
+
+Signed-off-by: Joel Porquet <joel@porquet.org>
+---
+ include/asm-generic/uaccess.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
+index 72d8803..4198d84 100644
+--- a/include/asm-generic/uaccess.h
++++ b/include/asm-generic/uaccess.h
+@@ -272,6 +272,7 @@ static inline long copy_to_user(void __user *to,
+ 		return n;
+ }
+ 
++#ifndef CONFIG_GENERIC_STRNCPY_FROM_USER
+ /*
+  * Copy a null terminated string from userspace.
+  */
+@@ -294,7 +295,9 @@ strncpy_from_user(char *dst, const char __user *src, long count)
+ 		return -EFAULT;
+ 	return __strncpy_from_user(dst, src, count);
+ }
++#endif
+ 
++#ifndef CONFIG_GENERIC_STRNLEN_USER
+ /*
+  * Return the size of a string (including the ending 0)
+  *
+@@ -320,6 +323,7 @@ static inline long strlen_user(const char __user *src)
+ {
+ 	return strnlen_user(src, 32767);
+ }
++#endif
+ 
+ /*
+  * Zero Userspace
+-- 
+1.9.3
+
