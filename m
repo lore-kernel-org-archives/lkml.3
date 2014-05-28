@@ -1,119 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaE1HiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 03:38:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27153 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752661AbaE1HiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 03:38:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,926,1392192000"; 
-   d="scan'208";a="538783306"
-Date: Wed, 28 May 2014 10:37:51 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140528073751.GB1757@lahna.fi.intel.com>
-References: <20140526142948.GA1685@lahna.fi.intel.com>
- <20140526152703.GN18016@ZenIV.linux.org.uk>
- <CA+55aFyz1oQQ+uz9DPSEmYBBby1VKTRFz81mTt3mVSLN+tMK+A@mail.gmail.com>
- <20140526182644.GP18016@ZenIV.linux.org.uk>
- <CA+55aFxq-=xyNOLKQhS5kwy5FKZ=Jp2XSRnyZLU9e8neBLk_2A@mail.gmail.com>
- <20140527014054.GR18016@ZenIV.linux.org.uk>
- <20140527031415.GS18016@ZenIV.linux.org.uk>
- <20140527040026.GT18016@ZenIV.linux.org.uk>
- <20140527070409.GA1801@lahna.fi.intel.com>
- <20140528031955.GW18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528031955.GW18016@ZenIV.linux.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754344AbaE1Hj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 03:39:56 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:51450 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297AbaE1Hjx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 03:39:53 -0400
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+To: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
+        m.chehab@samsung.com, bp@suse.de
+Cc: linux-edac@vger.kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: [PATCH v2 3/5] acpi, apei, ghes: Introduce more generic mechanism to init/deinit GHES error notifications.
+Date: Wed, 28 May 2014 09:39:28 +0200
+Message-Id: <1401262770-25343-4-git-send-email-tomasz.nowicki@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1401262770-25343-1-git-send-email-tomasz.nowicki@linaro.org>
+References: <1401262770-25343-1-git-send-email-tomasz.nowicki@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 04:19:55AM +0100, Al Viro wrote:
-> On Tue, May 27, 2014 at 10:04:09AM +0300, Mika Westerberg wrote:
-> > On Tue, May 27, 2014 at 05:00:26AM +0100, Al Viro wrote:
-> > > On Tue, May 27, 2014 at 04:14:15AM +0100, Al Viro wrote:
-> > > 
-> > > > As the matter of fact, let's try this instead - retry the same sucker
-> > > > immediately in case if trylocks fail.  Comments?
-> > > 
-> > > Better yet, let's take "move back to shrink list" into dentry_kill()
-> > > itself.  Then we get consistent locking rules for dentry_kill() and
-> > > instead of unlock_on_failure we simply pass it NULL or the shrink
-> > > list to put the sucker back.  Mika, could you test this one and see
-> > > if it fixes that livelock?  The difference in behaviour is that in
-> > > case of trylock failure we hit that sucker again without letting
-> > > it ride all the way around the list, same as we do for other dentry_kill()
-> > > callers.
-> > 
-> > I tried this patch and unfortunately it still results the same sort of
-> > livelock. I've attached the dmesg.
-> > 
-> > I also tried the serialization patch from Linus and it seemed to fix the
-> > problem. After several rounds of USB memory stick plug/unplug I haven't
-> > seen a single "soft lockup" warning in dmesg.
-> > 
-> > I'm able to reproduce the problem pretty easily, so if you have
-> > something else to try I'm more than happy to give it a try.
-> 
-> Could you try this and post the resulting log?  I'd really like to understand
-> what's going on there - are we really hitting trylock failures there and what
-> dentries are involved.
+Init/deinit of GHES error notifications are moved to corresponding
+functions e.g. for SCI ghes_notify_init_sci{sci} and ghes_notify_remove_{sci}
+which in turn are gathered to ghes_notify_tab table.
+ghes_probe and ghes_remove check notification support based on
+function reference pointer in ghes_notify_tab and call it with ghes argument.
 
-I sent you the whole log privately so that I don't spam everyone.
+This approach allows us to change address of a given error notification
+init/deinit function call in ghes_notify_tab in runtime. In turn,
+we will avoid #ifdef usage in common code for NMI which is currently
+supported by x86.
 
-Summary is here:
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+---
+ drivers/acpi/apei/ghes.c |  271 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 174 insertions(+), 97 deletions(-)
 
-May 28 10:24:23 lahna kernel: scsi 14:0:0:0: Direct-Access     JetFlash Transcend 4GB    8.07 PQ: 0 ANSI: 4
-May 28 10:24:23 lahna kernel: sd 14:0:0:0: Attached scsi generic sg4 type 0
-May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] 7864320 512-byte logical blocks: (4.02 GB/3.75 GiB)
-May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write Protect is off
-May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Mode Sense: 23 00 00 00
-May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
-May 28 10:24:23 lahna kernel:  sdc: sdc1
-May 28 10:24:23 lahna kernel: sd 14:0:0:0: [sdc] Attached SCSI removable disk
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index e7dc5c6..750b04e 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -146,6 +146,14 @@ static struct irq_work ghes_proc_irq_work;
+ struct ghes_estatus_cache *ghes_estatus_caches[GHES_ESTATUS_CACHES_SIZE];
+ static atomic_t ghes_estatus_cache_alloced;
+ 
++struct ghes_notify_setup {
++	const char *notif_name;
++	int (*init_call)(struct ghes *ghes);
++	void (*remove_call)(struct ghes *ghes);
++};
++
++static struct ghes_notify_setup	ghes_notify_tab[];
++
+ static int ghes_ioremap_init(void)
+ {
+ 	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
+@@ -811,6 +819,8 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
+ 	int sev, sev_global = -1;
+ 	int ret = NMI_DONE;
+ 
++	BUG_ON(!IS_ENABLED(CONFIG_ACPI_APEI_NMI));
++
+ 	raw_spin_lock(&ghes_nmi_lock);
+ 	list_for_each_entry_rcu(ghes, &ghes_nmi, list) {
+ 		if (ghes_read_estatus(ghes, 1)) {
+@@ -875,10 +885,6 @@ out:
+ 	return ret;
+ }
+ 
+-static struct notifier_block ghes_notifier_sci = {
+-	.notifier_call = ghes_notify_sci,
+-};
+-
+ static unsigned long ghes_esource_prealloc_size(
+ 	const struct acpi_hest_generic *generic)
+ {
+@@ -894,39 +900,169 @@ static unsigned long ghes_esource_prealloc_size(
+ 	return prealloc_size;
+ }
+ 
++static int ghes_notify_init_nmi(struct ghes *ghes)
++{
++	unsigned long len;
++	int status = 0;
++
++	len = ghes_esource_prealloc_size(ghes->generic);
++	ghes_estatus_pool_expand(len);
++	mutex_lock(&ghes_list_mutex);
++	if (list_empty(&ghes_nmi))
++		status = register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0,
++					      "ghes");
++	list_add_rcu(&ghes->list, &ghes_nmi);
++	mutex_unlock(&ghes_list_mutex);
++
++	return status;
++}
++
++static void ghes_notify_remove_nmi(struct ghes *ghes)
++{
++	unsigned long len;
++
++	mutex_lock(&ghes_list_mutex);
++	list_del_rcu(&ghes->list);
++	if (list_empty(&ghes_nmi))
++		unregister_nmi_handler(NMI_LOCAL, "ghes");
++	mutex_unlock(&ghes_list_mutex);
++	/*
++	 * To synchronize with NMI handler, ghes can only be
++	 * freed after NMI handler finishes.
++	 */
++	synchronize_rcu();
++	len = ghes_esource_prealloc_size(ghes->generic);
++	ghes_estatus_pool_shrink(len);
++}
++
++static void ghes_init_nmi(void)
++{
++	if (!IS_ENABLED(CONFIG_ACPI_APEI_NMI))
++		return;
++
++	init_irq_work(&ghes_proc_irq_work, ghes_proc_in_irq);
++	ghes_notify_tab[ACPI_HEST_NOTIFY_NMI].init_call = ghes_notify_init_nmi;
++	ghes_notify_tab[ACPI_HEST_NOTIFY_NMI].remove_call =
++							ghes_notify_remove_nmi;
++}
++
++static int ghes_notify_init_polled(struct ghes *ghes)
++{
++	ghes->timer.function = ghes_poll_func;
++	ghes->timer.data = (unsigned long)ghes;
++	init_timer_deferrable(&ghes->timer);
++	ghes_add_timer(ghes);
++
++	return 0;
++}
++
++static void ghes_notify_remove_polled(struct ghes *ghes)
++{
++	del_timer_sync(&ghes->timer);
++}
++
++static int ghes_notify_init_external(struct ghes *ghes)
++{
++	int rc;
++
++	/* External interrupt vector is GSI */
++	rc = acpi_gsi_to_irq(ghes->generic->notify.vector, &ghes->irq);
++	if (rc) {
++		pr_err(GHES_PFX "Failed to map GSI to IRQ for generic hardware error source: %d\n",
++		       ghes->generic->header.source_id);
++		goto out;
++	}
++
++	rc = request_irq(ghes->irq, ghes_irq_func, 0, "GHES IRQ", ghes);
++	if (rc)
++		pr_err(GHES_PFX "Failed to register IRQ for generic hardware error source: %d\n",
++		       ghes->generic->header.source_id);
++
++out:
++	return rc;
++}
++
++static void ghes_notify_remove_external(struct ghes *ghes)
++{
++	free_irq(ghes->irq, ghes);
++}
++
++static struct notifier_block ghes_notifier_sci = {
++	.notifier_call = ghes_notify_sci,
++};
++
++static int ghes_notify_init_sci(struct ghes *ghes)
++{
++	mutex_lock(&ghes_list_mutex);
++	if (list_empty(&ghes_sci))
++		register_acpi_hed_notifier(&ghes_notifier_sci);
++	list_add_rcu(&ghes->list, &ghes_sci);
++	mutex_unlock(&ghes_list_mutex);
++
++	return 0;
++}
++
++static void ghes_notify_remove_sci(struct ghes *ghes)
++{
++	mutex_lock(&ghes_list_mutex);
++	list_del_rcu(&ghes->list);
++	if (list_empty(&ghes_sci))
++		unregister_acpi_hed_notifier(&ghes_notifier_sci);
++	mutex_unlock(&ghes_list_mutex);
++}
++
++static struct ghes_notify_setup
++	ghes_notify_tab[ACPI_HEST_NOTIFY_RESERVED] = {
++		[ACPI_HEST_NOTIFY_POLLED]   = {"POLLED",
++					       ghes_notify_init_polled,
++					       ghes_notify_remove_polled},
++		[ACPI_HEST_NOTIFY_EXTERNAL] = {"EXT_IRQ",
++					       ghes_notify_init_external,
++					       ghes_notify_remove_external},
++		[ACPI_HEST_NOTIFY_LOCAL]    = {"LOCAL_IRQ", NULL, NULL},
++		[ACPI_HEST_NOTIFY_SCI]      = {"SCI",
++					       ghes_notify_init_sci,
++					       ghes_notify_remove_sci},
++		[ACPI_HEST_NOTIFY_NMI]      = {"NMI", NULL, NULL},
++		[ACPI_HEST_NOTIFY_CMCI]     = {"CMCI", NULL, NULL},
++		[ACPI_HEST_NOTIFY_MCE]      = {"MCE", NULL, NULL},
++};
++
+ static int ghes_probe(struct platform_device *ghes_dev)
+ {
+ 	struct acpi_hest_generic *generic;
+ 	struct ghes *ghes = NULL;
+-	unsigned long len;
+ 	int rc = -EINVAL;
++	int (*ghes_init_call)(struct ghes *ghes);
++	const char *ghes_notif_name;
++	u8 notify_type;
++
+ 
+ 	generic = *(struct acpi_hest_generic **)ghes_dev->dev.platform_data;
+ 	if (!generic->enabled)
+ 		return -ENODEV;
+ 
+-	switch (generic->notify.type) {
+-	case ACPI_HEST_NOTIFY_POLLED:
+-	case ACPI_HEST_NOTIFY_EXTERNAL:
+-	case ACPI_HEST_NOTIFY_SCI:
+-	case ACPI_HEST_NOTIFY_NMI:
+-		break;
+-	case ACPI_HEST_NOTIFY_LOCAL:
+-		pr_warning(GHES_PFX "Generic hardware error source: %d notified via local interrupt is not supported!\n",
+-			   generic->header.source_id);
++	notify_type = generic->notify.type;
++	if (notify_type >= ACPI_HEST_NOTIFY_RESERVED) {
++		pr_warn(FW_WARN GHES_PFX "Unknown notification type: %u for generic hardware error source: %d\n",
++			notify_type, generic->header.source_id);
+ 		goto err;
+-	default:
+-		pr_warning(FW_WARN GHES_PFX "Unknown notification type: %u for generic hardware error source: %d\n",
+-			   generic->notify.type, generic->header.source_id);
++	}
++
++	ghes_init_call = ghes_notify_tab[notify_type].init_call;
++	ghes_notif_name = ghes_notify_tab[notify_type].notif_name;
++	if (!ghes_init_call) {
++		pr_warn(GHES_PFX "Generic hardware error source: %d notified via %s is not supported!\n",
++			generic->header.source_id, ghes_notif_name);
+ 		goto err;
+ 	}
+ 
+ 	rc = -EIO;
+ 	if (generic->error_block_length <
+ 	    sizeof(struct acpi_generic_status)) {
+-		pr_warning(FW_BUG GHES_PFX "Invalid error block length: %u for generic hardware error source: %d\n",
+-			   generic->error_block_length,
+-			   generic->header.source_id);
++		pr_warn(FW_BUG GHES_PFX "Invalid error block length: %u for generic hardware error source: %d\n",
++			generic->error_block_length,
++			generic->header.source_id);
+ 		goto err;
+ 	}
+ 	ghes = ghes_new(generic);
+@@ -940,48 +1076,10 @@ static int ghes_probe(struct platform_device *ghes_dev)
+ 	if (rc < 0)
+ 		goto err;
+ 
+-	switch (generic->notify.type) {
+-	case ACPI_HEST_NOTIFY_POLLED:
+-		ghes->timer.function = ghes_poll_func;
+-		ghes->timer.data = (unsigned long)ghes;
+-		init_timer_deferrable(&ghes->timer);
+-		ghes_add_timer(ghes);
+-		break;
+-	case ACPI_HEST_NOTIFY_EXTERNAL:
+-		/* External interrupt vector is GSI */
+-		rc = acpi_gsi_to_irq(generic->notify.vector, &ghes->irq);
+-		if (rc) {
+-			pr_err(GHES_PFX "Failed to map GSI to IRQ for generic hardware error source: %d\n",
+-			       generic->header.source_id);
+-			goto err_edac_unreg;
+-		}
+-		rc = request_irq(ghes->irq, ghes_irq_func, 0, "GHES IRQ", ghes);
+-		if (rc) {
+-			pr_err(GHES_PFX "Failed to register IRQ for generic hardware error source: %d\n",
+-			       generic->header.source_id);
+-			goto err_edac_unreg;
+-		}
+-		break;
+-	case ACPI_HEST_NOTIFY_SCI:
+-		mutex_lock(&ghes_list_mutex);
+-		if (list_empty(&ghes_sci))
+-			register_acpi_hed_notifier(&ghes_notifier_sci);
+-		list_add_rcu(&ghes->list, &ghes_sci);
+-		mutex_unlock(&ghes_list_mutex);
+-		break;
+-	case ACPI_HEST_NOTIFY_NMI:
+-		len = ghes_esource_prealloc_size(generic);
+-		ghes_estatus_pool_expand(len);
+-		mutex_lock(&ghes_list_mutex);
+-		if (list_empty(&ghes_nmi))
+-			register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0,
+-						"ghes");
+-		list_add_rcu(&ghes->list, &ghes_nmi);
+-		mutex_unlock(&ghes_list_mutex);
+-		break;
+-	default:
+-		BUG();
+-	}
++	rc = (*ghes_init_call)(ghes);
++	if (rc)
++		goto err_edac_unreg;
++
+ 	platform_set_drvdata(ghes_dev, ghes);
+ 
+ 	return 0;
+@@ -999,45 +1097,24 @@ static int ghes_remove(struct platform_device *ghes_dev)
+ {
+ 	struct ghes *ghes;
+ 	struct acpi_hest_generic *generic;
+-	unsigned long len;
++	void (*ghes_remove_call)(struct ghes *ghes);
++	u8 notify_type;
+ 
+ 	ghes = platform_get_drvdata(ghes_dev);
+-	generic = ghes->generic;
+-
+ 	ghes->flags |= GHES_EXITING;
+-	switch (generic->notify.type) {
+-	case ACPI_HEST_NOTIFY_POLLED:
+-		del_timer_sync(&ghes->timer);
+-		break;
+-	case ACPI_HEST_NOTIFY_EXTERNAL:
+-		free_irq(ghes->irq, ghes);
+-		break;
+-	case ACPI_HEST_NOTIFY_SCI:
+-		mutex_lock(&ghes_list_mutex);
+-		list_del_rcu(&ghes->list);
+-		if (list_empty(&ghes_sci))
+-			unregister_acpi_hed_notifier(&ghes_notifier_sci);
+-		mutex_unlock(&ghes_list_mutex);
+-		break;
+-	case ACPI_HEST_NOTIFY_NMI:
+-		mutex_lock(&ghes_list_mutex);
+-		list_del_rcu(&ghes->list);
+-		if (list_empty(&ghes_nmi))
+-			unregister_nmi_handler(NMI_LOCAL, "ghes");
+-		mutex_unlock(&ghes_list_mutex);
+-		/*
+-		 * To synchronize with NMI handler, ghes can only be
+-		 * freed after NMI handler finishes.
+-		 */
+-		synchronize_rcu();
+-		len = ghes_esource_prealloc_size(generic);
+-		ghes_estatus_pool_shrink(len);
+-		break;
+-	default:
+-		BUG();
+-		break;
++
++	generic = ghes->generic;
++	notify_type = generic->notify.type;
++	if (notify_type >= ACPI_HEST_NOTIFY_RESERVED) {
++		pr_warn(FW_WARN GHES_PFX "Unknown notification type: %u for generic hardware error source: %d\n",
++			notify_type, generic->header.source_id);
++		return -EINVAL;
+ 	}
+ 
++	ghes_remove_call = ghes_notify_tab[notify_type].remove_call;
++	if (ghes_remove_call)
++		(*ghes_remove_call)(ghes);
++
+ 	ghes_fini(ghes);
+ 
+ 	ghes_edac_unregister(ghes);
+@@ -1075,7 +1152,7 @@ static int __init ghes_init(void)
+ 		return -EINVAL;
+ 	}
+ 
+-	init_irq_work(&ghes_proc_irq_work, ghes_proc_in_irq);
++	ghes_init_nmi();
+ 
+ 	rc = ghes_ioremap_init();
+ 	if (rc)
+-- 
+1.7.9.5
 
-Here I detached the USB stick:
-
-May 28 10:24:32 lahna kernel: usb 3-10.4: USB disconnect, device number 6
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
-May 28 10:24:32 lahna kernel: dput[/dev/block/8:33]; CPU 4 PID 576 [systemd-udevd]
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[3-10/3-10.4/3-10.4:1.0/host14]; CPU 1 PID 1683 [systemd-udevd]
-May 28 10:24:32 lahna kernel: shrink[3-10.4:1.0/host14/target14:0:0/subsystem]; CPU 1 PID 1683 [systemd-udevd]
-May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/rev]; CPU 1 PID 1683 [systemd-udevd]
-May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/vendor]; CPU 1 PID 1683 [systemd-udevd]
-May 28 10:24:32 lahna kernel: shrink[host14/target14:0:0/14:0:0:0/model]; CPU 1 PID 1683 [systemd-udevd]
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[/dev/block/8:32]; CPU 4 PID 576 [systemd-udevd]
-...
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 6 PID 1684 [systemd-udevd]
-May 28 10:24:32 lahna kernel: check_submounts_and_drop[0000:00:14.0/usb3/3-10/3-10.4]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-May 28 10:24:32 lahna kernel: shrink[usb3/3-10/3-10.4/ltm_capable]; CPU 7 PID 1685 [systemd-udevd]
-May 28 10:24:32 lahna kernel: A
-
-This goes on an on with a variable amount of 'A's printed.
