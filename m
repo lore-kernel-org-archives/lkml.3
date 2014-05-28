@@ -1,104 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366AbaE1WYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 18:24:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5954 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932337AbaE1WYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 18:24:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,930,1392192000"; 
-   d="scan'208";a="548038559"
-Message-ID: <538661FD.1040706@intel.com>
-Date: Wed, 28 May 2014 15:23:57 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755609AbaE1W0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 18:26:46 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48917 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008AbaE1W0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 18:26:43 -0400
+Date: Wed, 28 May 2014 16:26:40 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Greg KH <greg@kroah.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 09/15] thunderbolt: Handle hotplug events
+Message-ID: <20140528222640.GW11907@google.com>
+References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
+ <1401117492-2870-10-git-send-email-andreas.noever@gmail.com>
 MIME-Version: 1.0
-To: Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-Subject: Re: [PATCH] pci: Save and restore VFs as a part of a reset
-References: <20140505212346.18767.34117.stgit@ahduyck-cp2.jf.intel.com> <20140527222256.GC11907@google.com> <5385255D.5060204@intel.com> <CAErSpo5QU1LsKVqyGbT07mhF-t5L1y3NxD4JhJ6N3AM0XT0c2A@mail.gmail.com> <1401250378.3289.774.camel@ul30vt.home> <53861154.4080402@intel.com> <CAErSpo4htYwi3jfoxdj=W9VjVdd5gDjYcxg_i52VVz1sYQHL5A@mail.gmail.com> <5386483C.60506@redhat.com>
-In-Reply-To: <5386483C.60506@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401117492-2870-10-git-send-email-andreas.noever@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 01:34 PM, Don Dutile wrote:
-> On 05/28/2014 04:14 PM, Bjorn Helgaas wrote:
->> On Wed, May 28, 2014 at 10:39 AM, Alexander Duyck
->> <alexander.h.duyck@intel.com> wrote:
->>> On 05/27/2014 09:12 PM, Alex Williamson wrote:
->>>> On Tue, 2014-05-27 at 19:19 -0600, Bjorn Helgaas wrote:
->>
->>>>> Maybe resetting the PF should just fail if there's an active VF.  If
->>>>> you need to reset the PF, you'd have to unbind the VFs first.
->>>>
->>>> The use case is certainly questionable, personally I'm not going to
->>>> expect VFs to continue working after the PF is reset.  Driver binding
->>>> gets complicated, especially when KVM doesn't actually bind devices to
->>>> use them.  Hopefully we'll get that out of the tree some day though.  I
->>>> suppose we could -EBUSY the PF reset as long as VFs are enabled.
->>>
->>> What I could do is go through and notify the VFs that they are about to
->>> get hit by a reset.  What they do with that information would be up
->>> to them.
->>>
->>> So if the VFs are loaded on the host I could then at least allow them to
->>> recover by saving and restoring the config space within the driver
->>> themselves.
->>
->> I really like the idea of punting by failing the PF reset if there are
->> any active VFs.  That's a really easy way of making sure we aren't
->> going to blow up any guests.  What problems would it cause if we went
->> this route?
->>
-> I think this is the safest route.  PF<->VF interaction isn't architected,
-> and resetting the PF with active VFs will probably hang a number of SRIOV
-> implementations, requiring a system-level reset to correct the
-> compounded problem.
+On Mon, May 26, 2014 at 05:18:06PM +0200, Andreas Noever wrote:
+> We reveive a plug event callback whenever a thunderbolt device is added
 
-Well it still might be worth while to allow a full PCIe reset in cases
-where the hardware has gotten into a bad state.  It seems like it might
-be worthwhile to update the newly added reset notifier to allow for the
-device to indicate if it ready for a reset or not, with the default
-being to return -ENOTTY if the function is not implemented.
+s/reveive/receive/
 
+> or removed. This patch fills in the tb_handle_hotplug method and starts
+> reacting to these events by adding/removing switches from the hierarchy.
 > 
->>>>> This reminds me about an open problem: VFs can be on "virtual" buses,
->>>>> which aren't really connected in the hierarchy, and I don't think we
->>>>> have a nice way to iterate over them.  So probably pci_get_device() is
->>>>> the best we can do now.
->>>>
->>>> Yeah, those virtual buses don't have a bus->self, we just have to skip
->>>> to bus->parent->self.  pci_walk_bus() goes in the opposite direction,
->>>> but without an actual device hosting the bus, I don't see how it finds
->>>> it.  Thanks,
->>>
->>> It seems like we should be able to come up with something like
->>> pci_walk_vbus() though or something similar.  All we would need to do is
->>> search the VFs on the bus of the PF and all child busses to that bus if
->>> I am not mistaken.
->>
->> I don't think that's going to work because the virtual buses don't
->> appear as the child bus of anything.
->>
-> +1.
+> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+> ---
+>  drivers/thunderbolt/switch.c | 42 +++++++++++++++++++++++++++++++++++++++-
+>  drivers/thunderbolt/tb.c     | 46 +++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/thunderbolt/tb.h     |  3 +++
+>  3 files changed, 89 insertions(+), 2 deletions(-)
 > 
-
-Maybe I don't understand something but I have a function that I am
-already testing that seems to work for what I need.  Is there any reason
-I couldn't use the bus->children list to navigate through the bus list
-and get all of the children of a given bus?
-
-I'll submit a couple patches for feedback on those bits.
-
-Thanks,
-
-Alex
-
+> diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+> index 279b9c5..c092f7c 100644
+> --- a/drivers/thunderbolt/switch.c
+> +++ b/drivers/thunderbolt/switch.c
+> @@ -195,6 +195,24 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
+>  		sw->__unknown1, sw->__unknown4);
+>  }
+>  
+> +struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
+> +{
+> +	u8 next_port = route; /*
+> +			       * Routes use a stride of 8 bits,
+> +			       * eventhough a port index has 6 bits at most.
+> +			       * */
+> +	if (route == 0)
+> +		return sw;
+> +	if (next_port > sw->config.max_port_number)
+> +		return 0;
+> +	if (tb_is_upstream_port(&sw->ports[next_port]))
+> +		return 0;
+> +	if (!sw->ports[next_port].remote)
+> +		return 0;
+> +	return get_switch_at_route(sw->ports[next_port].remote->sw,
+> +				   route >> TB_ROUTE_SHIFT);
+> +}
+> +
+>  /**
+>   * tb_plug_events_active() - enable/disable plug events on a switch
+>   *
+> @@ -243,7 +261,8 @@ void tb_switch_free(struct tb_switch *sw)
+>  		sw->ports[i].remote = NULL;
+>  	}
+>  
+> -	tb_plug_events_active(sw, false);
+> +	if (!sw->is_unplugged)
+> +		tb_plug_events_active(sw, false);
+>  
+>  	kfree(sw->ports);
+>  	kfree(sw);
+> @@ -327,3 +346,24 @@ err:
+>  	return NULL;
+>  }
+>  
+> +/**
+> + * tb_sw_set_unpplugged() - set is_unplugged on switch and downstream switches
+> + */
+> +void tb_sw_set_unpplugged(struct tb_switch *sw)
+> +{
+> +	int i;
+> +	if (sw == sw->tb->root_switch) {
+> +		tb_sw_WARN(sw, "cannot unplug root switch\n");
+> +		return;
+> +	}
+> +	if (sw->is_unplugged) {
+> +		tb_sw_WARN(sw, "is_unplugged already set\n");
+> +		return;
+> +	}
+> +	sw->is_unplugged = true;
+> +	for (i = 0; i <= sw->config.max_port_number; i++) {
+> +		if (!tb_is_upstream_port(&sw->ports[i]) && sw->ports[i].remote)
+> +			tb_sw_set_unpplugged(sw->ports[i].remote->sw);
+> +	}
+> +}
+> +
+> diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+> index 3b716fd..1efcacc 100644
+> --- a/drivers/thunderbolt/tb.c
+> +++ b/drivers/thunderbolt/tb.c
+> @@ -71,11 +71,55 @@ static void tb_handle_hotplug(struct work_struct *work)
+>  {
+>  	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
+>  	struct tb *tb = ev->tb;
+> +	struct tb_switch *sw;
+> +	struct tb_port *port;
+>  	mutex_lock(&tb->lock);
+>  	if (!tb->hotplug_active)
+>  		goto out; /* during init, suspend or shutdown */
+>  
+> -	/* do nothing for now */
+> +	sw = get_switch_at_route(tb->root_switch, ev->route);
+> +	if (!sw) {
+> +		tb_warn(tb,
+> +			"hotplug event from non existent switch %llx:%x (unplug: %d)\n",
+> +			ev->route, ev->port, ev->unplug);
+> +		goto out;
+> +	}
+> +	if (ev->port > sw->config.max_port_number) {
+> +		tb_warn(tb,
+> +			"hotplug event from non existent port %llx:%x (unplug: %d)\n",
+> +			ev->route, ev->port, ev->unplug);
+> +		goto out;
+> +	}
+> +	port = &sw->ports[ev->port];
+> +	if (tb_is_upstream_port(port)) {
+> +		tb_warn(tb,
+> +			"hotplug event for upstream port %llx:%x (unplug: %d)\n",
+> +			ev->route, ev->port, ev->unplug);
+> +		goto out;
+> +	}
+> +	if (ev->unplug) {
+> +		if (port->remote) {
+> +			tb_port_info(port, "unplugged\n");
+> +			tb_sw_set_unpplugged(port->remote->sw);
+> +			tb_switch_free(port->remote->sw);
+> +			port->remote = NULL;
+> +		} else {
+> +			tb_port_info(port,
+> +				     "got unplug event for disconnected port, ignoring\n");
+> +		}
+> +	} else if (port->remote) {
+> +		tb_port_info(port,
+> +			     "got plug event for connected port, ignoring\n");
+> +	} else {
+> +		tb_port_info(port, "hotplug: scanning\n");
+> +		tb_scan_port(port);
+> +		if (!port->remote) {
+> +			tb_port_info(port, "hotplug: no switch found\n");
+> +		} else if (port->remote->sw->config.depth > 1) {
+> +			tb_sw_warn(port->remote->sw,
+> +				   "hotplug: chaining not supported\n");
+> +		}
+> +	}
+>  out:
+>  	mutex_unlock(&tb->lock);
+>  	kfree(ev);
+> diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+> index 70a66fe..661f182 100644
+> --- a/drivers/thunderbolt/tb.h
+> +++ b/drivers/thunderbolt/tb.h
+> @@ -20,6 +20,7 @@ struct tb_switch {
+>  	struct tb_port *ports;
+>  	struct tb *tb;
+>  	int cap_plug_events; /* offset, zero if not found */
+> +	bool is_unplugged; /* unplugged, will go away */
+>  };
+>  
+>  /**
+> @@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+>  
+>  struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
+>  void tb_switch_free(struct tb_switch *sw);
+> +void tb_sw_set_unpplugged(struct tb_switch *sw);
+> +struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
+>  
+>  int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
+>  
+> -- 
+> 1.9.3
+> 
