@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaE1QXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 12:23:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41818 "EHLO
+	id S1754760AbaE1Q2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 12:28:44 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41974 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512AbaE1QXH convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752387AbaE1Q2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 12:23:07 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 0/3] Qualcomm Resource Power Manager driver
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Wed, 28 May 2014 11:23:02 -0500
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F773CDFB-2957-49C0-99D3-E9CDCE33C378@codeaurora.org>
-References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-X-Mailer: Apple Mail (2.1874)
+	Wed, 28 May 2014 12:28:43 -0400
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: Heesub Shin <heesub.shin@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Dongjun Shin <d.j.shin@samsung.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] staging: ion: system heap and page pool fixes
+References: <1401098701-24049-1-git-send-email-heesub.shin@samsung.com>
+	<1401259980-26927-1-git-send-email-heesub.shin@samsung.com>
+Date: Wed, 28 May 2014 09:28:49 -0700
+In-Reply-To: <1401259980-26927-1-git-send-email-heesub.shin@samsung.com>
+	(Heesub Shin's message of "Wed, 28 May 2014 15:52:51 +0900")
+Message-ID: <vnkw8uplkgu6.fsf@mitchelh-linux.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 27 2014 at 11:52:51 PM, Heesub Shin <heesub.shin@samsung.com> wrote:
+> Hi,
+>
+> Here is my patchset with some modification, hoping reviews or comments
+> from you guys.
+>
+> v2:
+>  o No changes in the code, just reworded changelog
+>  o Reorder patch 
 
-On May 27, 2014, at 12:28 PM, Bjorn Andersson <bjorn.andersson@sonymobile.com> wrote:
+Some very nice cleanup. And I learned a new trick with page.lru :).
 
-> This series adds a regulator driver for the Resource Power Manager found in
-> Qualcomm 8660, 8960 and 8064 based devices.
-> 
-> The RPM driver exposes resources to its child devices, that can be accessed to
-> implement drivers for the regulators, clocks and bus frequency control that's
-> owned by the RPM in these devices.
+Reviewed-by: Mitchel Humpherys <mitchelh@codeaurora.org>
 
-Rather than adding yet another mfd driver, how about we put this in drivers/soc/qcom as a much better location for the low level rpm code.  Some code already merged in arm-soc for creation of drivers/soc/qcom/
-
-> 
-> Bjorn Andersson (3):
->  mfd: devicetree: bindings: Add Qualcomm RPM DT binding
->  mfd: qcom-rpm: Driver for the Qualcomm RPM
->  regulator: qcom-rpm: Regulator driver for the Qualcomm RPM
-> 
-> Documentation/devicetree/bindings/mfd/qcom,rpm.txt | 283 +++++++
-> drivers/mfd/Kconfig                                |  15 +
-> drivers/mfd/Makefile                               |   1 +
-> drivers/mfd/qcom_rpm.c                             | 554 ++++++++++++++
-> drivers/regulator/Kconfig                          |  12 +
-> drivers/regulator/Makefile                         |   1 +
-> drivers/regulator/qcom_rpm-regulator.c             | 852 +++++++++++++++++++++
-> include/dt-bindings/mfd/qcom_rpm.h                 | 148 ++++
-> include/linux/mfd/qcom_rpm.h                       |  13 +
-> 9 files changed, 1879 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/mfd/qcom,rpm.txt
-> create mode 100644 drivers/mfd/qcom_rpm.c
-> create mode 100644 drivers/regulator/qcom_rpm-regulator.c
-> create mode 100644 include/dt-bindings/mfd/qcom_rpm.h
-> create mode 100644 include/linux/mfd/qcom_rpm.h
-
-- k
+>
+> Heesub Shin (9):
+>   staging: ion: tidy up a bit
+>   staging: ion: simplify ion_page_pool_total()
+>   staging: ion: remove struct ion_page_pool_item
+>   staging: ion: use compound pages on high order pages for system heap
+>   staging: ion: remove order from struct page_info
+>   staging: ion: remove struct page_info
+>   staging: ion: remove order argument from free_buffer_page()
+>   staging: ion: shrink highmem pages on kswapd
+>   staging: ion: optimize struct ion_system_heap
+>
+>  drivers/staging/android/ion/ion_page_pool.c   |  49 ++++-------
+>  drivers/staging/android/ion/ion_priv.h        |   2 +-
+>  drivers/staging/android/ion/ion_system_heap.c | 121 ++++++++++----------------
+>  3 files changed, 67 insertions(+), 105 deletions(-)
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
