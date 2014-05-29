@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416AbaE2EE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:04:59 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53281 "EHLO
+	id S932258AbaE2D6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 23:58:35 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53184 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306AbaE2D6g (ORCPT
+	with ESMTP id S1753182AbaE2D6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 23:58:36 -0400
+	Wed, 28 May 2014 23:58:33 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 07/27] perf report: Cache cumulative callchains
-Date: Thu, 29 May 2014 12:58:10 +0900
-Message-Id: <1401335910-16832-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 03/27] perf hists: Add support for accumulated stat of hist entry
+Date: Thu, 29 May 2014 12:58:06 +0900
+Message-Id: <1401335910-16832-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
 References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
@@ -28,10 +28,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possble that a callchain has cycles or recursive calls.  In that
-case it'll end up having entries more than 100% overhead in the
-output.  In order to prevent such entries, cache each callchain node
-and skip if same entry already cumulated.
+Maintain accumulated stat information in hist_entry->stat_acc if
+symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
+vaules initially, and will be updated as callchain is processed later.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
@@ -39,100 +38,120 @@ Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 42 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ tools/perf/util/hist.c   | 28 ++++++++++++++++++++++++++--
+ tools/perf/util/sort.h   |  1 +
+ tools/perf/util/symbol.h |  1 +
+ 3 files changed, 28 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 37c28fc13dc3..bf03db528db6 100644
+index d8662356de20..dfff2ee8effb 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -700,7 +700,22 @@ static int
- iter_prepare_cumulative_entry(struct hist_entry_iter *iter __maybe_unused,
- 			      struct addr_location *al __maybe_unused)
+@@ -232,6 +232,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
+ 		return true;
+ 
+ 	he_stat__decay(&he->stat);
++	if (symbol_conf.cumulate_callchain)
++		he_stat__decay(he->stat_acc);
+ 
+ 	diff = prev_period - he->stat.period;
+ 
+@@ -279,12 +281,26 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+ 
+ static struct hist_entry *hist_entry__new(struct hist_entry *template)
  {
-+	struct hist_entry **he_cache;
+-	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
+-	struct hist_entry *he = zalloc(sizeof(*he) + callchain_size);
++	size_t callchain_size = 0;
++	struct hist_entry *he;
 +
- 	callchain_cursor_commit(&callchain_cursor);
++	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain)
++		callchain_size = sizeof(struct callchain_root);
 +
-+	/*
-+	 * This is for detecting cycles or recursions so that they're
-+	 * cumulated only one time to prevent entries more than 100%
-+	 * overhead.
-+	 */
-+	he_cache = malloc(sizeof(*he_cache) * (PERF_MAX_STACK_DEPTH + 1));
-+	if (he_cache == NULL)
-+		return -ENOMEM;
++	he = zalloc(sizeof(*he) + callchain_size);
+ 
+ 	if (he != NULL) {
+ 		*he = *template;
+ 
++		if (symbol_conf.cumulate_callchain) {
++			he->stat_acc = malloc(sizeof(he->stat));
++			if (he->stat_acc == NULL) {
++				free(he);
++				return NULL;
++			}
++			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
++		}
 +
-+	iter->priv = he_cache;
-+	iter->curr = 0;
-+
- 	return 0;
+ 		if (he->ms.map)
+ 			he->ms.map->referenced = true;
+ 
+@@ -296,6 +312,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 			 */
+ 			he->branch_info = malloc(sizeof(*he->branch_info));
+ 			if (he->branch_info == NULL) {
++				free(he->stat_acc);
+ 				free(he);
+ 				return NULL;
+ 			}
+@@ -359,6 +376,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 
+ 		if (!cmp) {
+ 			he_stat__add_period(&he->stat, period, weight);
++			if (symbol_conf.cumulate_callchain)
++				he_stat__add_period(he->stat_acc, period, weight);
+ 
+ 			/*
+ 			 * This mem info was allocated from sample__resolve_mem
+@@ -394,6 +413,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+ 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
++	if (symbol_conf.cumulate_callchain)
++		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
+ 	return he;
  }
  
-@@ -710,6 +725,7 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
+@@ -768,6 +789,7 @@ void hist_entry__free(struct hist_entry *he)
  {
- 	struct perf_evsel *evsel = iter->evsel;
- 	struct perf_sample *sample = iter->sample;
-+	struct hist_entry **he_cache = iter->priv;
- 	struct hist_entry *he;
- 	int err = 0;
- 
-@@ -720,6 +736,7 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
- 		return -ENOMEM;
- 
- 	iter->he = he;
-+	he_cache[iter->curr++] = he;
- 
- 	/*
- 	 * The iter->he will be over-written after ->add_next_entry()
-@@ -754,7 +771,29 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
- {
- 	struct perf_evsel *evsel = iter->evsel;
- 	struct perf_sample *sample = iter->sample;
-+	struct hist_entry **he_cache = iter->priv;
- 	struct hist_entry *he;
-+	struct hist_entry he_tmp = {
-+		.cpu = al->cpu,
-+		.thread = al->thread,
-+		.comm = thread__comm(al->thread),
-+		.ip = al->addr,
-+		.ms = {
-+			.map = al->map,
-+			.sym = al->sym,
-+		},
-+		.parent = iter->parent,
-+	};
-+	int i;
-+
-+	/*
-+	 * Check if there's duplicate entries in the callchain.
-+	 * It's possible that it has cycles or recursive calls.
-+	 */
-+	for (i = 0; i < iter->curr; i++) {
-+		if (hist_entry__cmp(he_cache[i], &he_tmp) == 0)
-+			return 0;
-+	}
- 
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
- 				sample->period, sample->weight,
-@@ -763,6 +802,7 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
- 		return -ENOMEM;
- 
- 	iter->he = he;
-+	he_cache[iter->curr++] = he;
- 
- 	return 0;
+ 	zfree(&he->branch_info);
+ 	zfree(&he->mem_info);
++	zfree(&he->stat_acc);
+ 	free_srcline(he->srcline);
+ 	free(he);
  }
-@@ -771,7 +811,9 @@ static int
- iter_finish_cumulative_entry(struct hist_entry_iter *iter,
- 			     struct addr_location *al __maybe_unused)
- {
-+	zfree(&iter->priv);
- 	iter->he = NULL;
-+
- 	return 0;
- }
+@@ -793,6 +815,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
  
+ 		if (!cmp) {
+ 			he_stat__add_stat(&iter->stat, &he->stat);
++			if (symbol_conf.cumulate_callchain)
++				he_stat__add_stat(iter->stat_acc, he->stat_acc);
+ 
+ 			if (symbol_conf.use_callchain) {
+ 				callchain_cursor_reset(&callchain_cursor);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 5f38d925e92f..c9ffa031becd 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -82,6 +82,7 @@ struct hist_entry {
+ 		struct list_head head;
+ 	} pairs;
+ 	struct he_stat		stat;
++	struct he_stat		*stat_acc;
+ 	struct map_symbol	ms;
+ 	struct thread		*thread;
+ 	struct comm		*comm;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 33ede53fa6b9..615c752dd767 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -109,6 +109,7 @@ struct symbol_conf {
+ 			show_nr_samples,
+ 			show_total_period,
+ 			use_callchain,
++			cumulate_callchain,
+ 			exclude_other,
+ 			show_cpu_utilization,
+ 			initialized,
 -- 
 1.9.2
 
