@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933588AbaE2QvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:51:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50882 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932790AbaE2QvH convert rfc822-to-8bit (ORCPT
+	id S934034AbaE2Qvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:51:47 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:53555 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932790AbaE2Qvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:51:07 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH v2 03/18] PCI: designware: Configuration space should be specified in 'reg'
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20140529163037.GC2552@obsidianresearch.com>
-Date: Thu, 29 May 2014 11:51:00 -0500
-Cc: Marek Vasut <marex@denx.de>, Liviu Dudau <liviu@dudau.co.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree <devicetree@vger.kernel.org>, tony@atomide.com,
-        linux-pci@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A9B853EE-65C6-4B2E-ABC0-1E64DE584E91@codeaurora.org>
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-4-git-send-email-kishon@ti.com> <98E18225-3C63-4106-901A-A5D3DEC268C8@codeaurora.org> <20140529151840.GD1677@bart.dudau.co.uk> <CF1BAF3F-E16E-4864-8052-8C3EC29000B0@codeaurora.org> <20140529163037.GC2552@obsidianresearch.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-X-Mailer: Apple Mail (2.1874)
+	Thu, 29 May 2014 12:51:46 -0400
+Message-ID: <1401382304.25908.5.camel@x220>
+Subject: [PATCH] sound: remove checks for CONFIG_BCM_CS4297A_CSWARM
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Thu, 29 May 2014 18:51:44 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 May 2014 16:51:44.0895 (UTC) FILETIME=[4605A0F0:01CF7B5E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Checks for CONFIG_BCM_CS4297A_CSWARM were added in v2.6.11. The related
+Kconfig symbol was never added so these checks always evaluated to true.
+Remove them.
 
-On May 29, 2014, at 11:30 AM, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-> On Thu, May 29, 2014 at 11:03:36AM -0500, Kumar Gala wrote:
-> 
->> Just because the kernel doesn’t handle this is NO reason to change
->> the way the DT works.
-> 
-> The OF specs do not specify how to process a config type ranges entry,
-> and we all mutually agreed that the only sane interpretation for such
-> a thing would be to describe an ECAM memory space so generic code
-> could potentially make use of it.
-> 
-> Since designware is not ECAM it should not use config ranges.
-> 
-> This has come up multiple times now, and the above is the consensus.
-> 
-> Jason
+ sound/oss/swarm_cs4297a.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-Well the designware controller does support ECAM, just that the current in kernel users don’t do cfg space that way.
-
-So do we continue to support the current users that use a cfg range for a non-ECAM space?  Or break their DT and convert them to using regs?
-
-- k
-
+diff --git a/sound/oss/swarm_cs4297a.c b/sound/oss/swarm_cs4297a.c
+index f851fd0e199c..a33e8ce8085b 100644
+--- a/sound/oss/swarm_cs4297a.c
++++ b/sound/oss/swarm_cs4297a.c
+@@ -2625,15 +2625,12 @@ static int __init cs4297a_init(void)
+ 	u32 pwr, id;
+ 	mm_segment_t fs;
+ 	int rval;
+-#ifndef CONFIG_BCM_CS4297A_CSWARM
+ 	u64 cfg;
+ 	int mdio_val;
+-#endif
+ 
+ 	CS_DBGOUT(CS_INIT | CS_FUNCTION, 2, printk(KERN_INFO 
+ 		"cs4297a: cs4297a_init_module()+ \n"));
+ 
+-#ifndef CONFIG_BCM_CS4297A_CSWARM
+         mdio_val = __raw_readq(KSEG1 + A_MAC_REGISTER(2, R_MAC_MDIO)) &
+                 (M_MAC_MDIO_DIR|M_MAC_MDIO_OUT);
+ 
+@@ -2659,7 +2656,6 @@ static int __init cs4297a_init(void)
+         __raw_writeq(mdio_val | M_MAC_GENC, KSEG1+A_MAC_REGISTER(2, R_MAC_MDIO));
+         /* Give the codec some time to finish resetting (start the bit clock) */
+         udelay(100);
+-#endif
+ 
+ 	if (!(s = kzalloc(sizeof(struct cs4297a_state), GFP_KERNEL))) {
+ 		CS_DBGOUT(CS_ERROR, 1, printk(KERN_ERR
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.9.3
 
