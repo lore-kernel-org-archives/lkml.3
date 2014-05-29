@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaE2HCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:02:14 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:48697 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951AbaE2HCM (ORCPT
+	id S1756512AbaE2HEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:04:31 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:62947 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199AbaE2HEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:02:12 -0400
-Date: Thu, 29 May 2014 16:01:27 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
-Cc: markh@compro.net, dan.carpenter@oracle.com,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Revert "staging: dgap: remove unneeded kfree() in
- dgap_tty_register_ports()"
-Message-ID: <20140529070127.GA1347@devel.8.8.4.4>
+	Thu, 29 May 2014 03:04:30 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: fix 'make help' message error
+References: <1400993449-24094-1-git-send-email-nasa4836@gmail.com>
+Date: Thu, 29 May 2014 16:04:24 +0900
+In-Reply-To: <1400993449-24094-1-git-send-email-nasa4836@gmail.com> (Jianyu
+	Zhan's message of "Sun, 25 May 2014 12:50:49 +0800")
+Message-ID: <87sintf4lj.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 0ade4a34fd439d62df46937e8f3e584eb0879579.
+Hi Jianyu,
 
-This patch removes kfree for serial_ports in dgap_tty_register_ports()
-if the "brd->printer_ports" allocation fails and serial_ports may be
-freed by calling dgap_tty_uninit() within other patch.
-That patch has an error handling but incomplete cleanup
-so it need to call kfree() for brd->serial_ports in
-dgap_tty_register_ports().
+On Sun, 25 May 2014 12:50:49 +0800, Jianyu Zhan wrote:
+> Currently 'make help' message has such hint:
+>
+>    use "make prefix=<path> <install target>" to install to a particular
+>        path like make prefix=/usr/local install install-doc
+>
+> But this is misleading, when I specify "prefix=/usr/local", it has got no
+> respect at all. Instead, what takes effect is the "DESTDIR" variable.
+> In this case, "DESTDIR" has a empty value, so the actual install
+> directory falls back $HOME, not '/usr/local'.
+>
+> Specifying "DESTDIR=/usr/local" will work as desired.
+>
+> This patch fixes the help message.
 
-Conflicts:
+I don't know what's the correct way to do this.  But it seems like the
+prefix was overwritten when given from user, so below patch will work
+also.
 
-	drivers/staging/dgap/dgap.c
----
- drivers/staging/dgap/dgap.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thanks,
+Namhyung
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 48c13c9..f0556ee 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -4145,8 +4145,10 @@ static int dgap_tty_register_ports(struct board_t *brd)
+
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 729bbdf5cec7..80a8a0a1c7e7 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -599,7 +599,7 @@ endif
  
- 	brd->printer_ports = kcalloc(brd->nasync, sizeof(*brd->printer_ports),
- 					GFP_KERNEL);
--	if (!brd->printer_ports)
-+	if (brd->printer_ports == NULL) {
-+		kfree(brd->serial_ports);
- 		return -ENOMEM;
-+	}
- 
- 	for (i = 0; i < brd->nasync; i++) {
- 		tty_port_init(&brd->serial_ports[i]);
--- 
-1.7.1
-
+ # Make the path relative to DESTDIR, not to prefix
+ ifndef DESTDIR
+-prefix = $(HOME)
++prefix ?= $(HOME)
+ endif
+ bindir_relative = bin
+ bindir = $(prefix)/$(bindir_relative)
