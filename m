@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530AbaE2ErE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:47:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58644 "EHLO
+	id S1756154AbaE2Erj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:47:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933139AbaE2Eim (ORCPT
+	with ESMTP id S933221AbaE2Eil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:42 -0400
+	Thu, 29 May 2014 00:38:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Liu Yu <allanyuliu@tencent.com>, Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 64/86] net: ipv6: send pkttoobig immediately if orig frag size > mtu
-Date: Wed, 28 May 2014 21:37:39 -0700
-Message-Id: <20140529043522.177277257@linuxfoundation.org>
+Subject: [PATCH 3.10 62/86] tcp_cubic: fix the range of delayed_ack
+Date: Wed, 28 May 2014 21:37:37 -0700
+Message-Id: <20140529043521.900121401@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,49 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Liu Yu <allanyuliu@tencent.com>
 
-[ Upstream commit 418a31561d594a2b636c1e2fa94ecd9e1245abb1 ]
+[ Upstream commit 0cda345d1b2201dd15591b163e3c92bad5191745 ]
 
-If conntrack defragments incoming ipv6 frags it stores largest original
-frag size in ip6cb and sets ->local_df.
+commit b9f47a3aaeab (tcp_cubic: limit delayed_ack ratio to prevent
+divide error) try to prevent divide error, but there is still a little
+chance that delayed_ack can reach zero. In case the param cnt get
+negative value, then ratio+cnt would overflow and may happen to be zero.
+As a result, min(ratio, ACK_RATIO_LIMIT) will calculate to be zero.
 
-We must thus first test the largest original frag size vs. mtu, and not
-vice versa.
+In some old kernels, such as 2.6.32, there is a bug that would
+pass negative param, which then ultimately leads to this divide error.
 
-Without this patch PKTTOOBIG is still generated in ip6_fragment() later
-in the stack, but
+commit 5b35e1e6e9c (tcp: fix tcp_trim_head() to adjust segment count
+with skb MSS) fixed the negative param issue. However,
+it's safe that we fix the range of delayed_ack as well,
+to make sure we do not hit a divide by zero.
 
-1) IPSTATS_MIB_INTOOBIGERRORS won't increment
-2) packet did (needlessly) traverse netfilter postrouting hook.
-
-Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Signed-off-by: Florian Westphal <fw@strlen.de>
+CC: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Liu Yu <allanyuliu@tencent.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_cubic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -347,12 +347,16 @@ static inline int ip6_forward_finish(str
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -408,7 +408,7 @@ static void bictcp_acked(struct sock *sk
+ 		ratio -= ca->delayed_ack >> ACK_RATIO_SHIFT;
+ 		ratio += cnt;
  
- static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
- {
--	if (skb->len <= mtu || skb->local_df)
-+	if (skb->len <= mtu)
- 		return false;
+-		ca->delayed_ack = min(ratio, ACK_RATIO_LIMIT);
++		ca->delayed_ack = clamp(ratio, 1U, ACK_RATIO_LIMIT);
+ 	}
  
-+	/* ipv6 conntrack defrag sets max_frag_size + local_df */
- 	if (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)
- 		return true;
- 
-+	if (skb->local_df)
-+		return false;
-+
- 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
- 		return false;
- 
+ 	/* Some calls are for duplicates without timetamps */
 
 
