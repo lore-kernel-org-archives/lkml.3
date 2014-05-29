@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004AbaE2VFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:05:34 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:56383 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299AbaE2VFd (ORCPT
+	id S933019AbaE2VGt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:06:49 -0400
+Received: from mtasvr1.telkomsigma.com ([118.97.213.187]:56955 "EHLO
+	mtasvr1.telkomsigma.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413AbaE2VGr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:05:33 -0400
+	Thu, 29 May 2014 17:06:47 -0400
+X-Greylist: delayed 541 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 May 2014 17:06:46 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <20140529080320.10062.15946@quantum>
-References: <20140529080320.10062.15946@quantum>
-Date: Thu, 29 May 2014 14:05:32 -0700
-X-Google-Sender-Auth: Qyg5q2BdukYh7FonSvKBQym0Blg
-Message-ID: <CA+55aFzHvp9=7gZFfV8qeGrzJfvKzY4OspWbMtvnhwt2Xcas6g@mail.gmail.com>
-Subject: Re: [GIT PULL] clk: fixes for 3.15, part 2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Humanitaria Help.
+To: Recipients <adhitya.wahu@bpjs-kesehatan.go.id>
+From: "Mrs. Margaret" <adhitya.wahu@bpjs-kesehatan.go.id>
+Date: Thu, 29 May 2014 21:53:40 +0100
+Reply-To: mlawson@mail2mark.com
+Message-Id: <20140529205308.2C85E80CE72@mtasvr1.telkomsigma.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 1:03 AM, Mike Turquette <mturquette@linaro.org> wrote:
->
-> Small number of user-visible regression fixes for clock drivers. There
-> is a memory leak fix for an ST platform, an infinite Loop Of Doom fix
-> for the recent changes to the basic clock divider (hopefully the last
-> fix for those recent changes) and some Tegra PLL changes which keep PCI
-> from being hosed on that platform.
+I am Mrs. Margaret Crawford, i write you this email to seek for your Humanitarian help, i have decided to donate part of my inheritance to you for humanitarian work and your personal use. As a result of my heart status. I need you to contact my Attoney. Mark lawson. with this email for a better information only if you are interested. Email: mlawson@mail2mark.com
 
-Hmm. I've pulled, but note that the key this is signed with (pgp
-fingerprint C325A4D4) doesn't seem to exist on the usual key servers.
+Thank you
+Mrs. Margaret Crawford
+____________________________________________________________________________________
 
-Have you changed your key and forgotten to send out the new one? You
-*used* to use key ID 5A7C9849..
+"Zero Problem 2014, Cakupan Semesta 2019"
 
-I've pulled, but as a result of the lacking key I want to verify this
-pull request explicitly.
+Mari kita bergotong royong sukseskan Sistem Jaminan Sosial Kesehatan, demi tercapainya Jaminan Kesehatan untuk Semesta Bagi Seluruh Rakyat Indonesia Tahun 
+2019
 
-              Linus
+HALLO BPJS KESEHATAN 500-400
