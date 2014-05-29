@@ -1,70 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352AbaE2Ld4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 07:33:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930AbaE2Ldz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 07:33:55 -0400
-Date: Thu, 29 May 2014 14:33:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
-        Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 4/4] virtio_ring: unify direct/indirect code paths.
-Message-ID: <20140529113317.GE30210@redhat.com>
-References: <87oayh6s3s.fsf@rustcorp.com.au>
- <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au>
- <1401348405-18614-5-git-send-email-rusty@rustcorp.com.au>
- <20140529075256.GZ30445@twins.programming.kicks-ass.net>
- <87iooo7skp.fsf@rustcorp.com.au>
+	id S1756734AbaE2Lk7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 07:40:59 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:61103 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924AbaE2Lk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 07:40:58 -0400
+Date: Thu, 29 May 2014 12:40:52 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH v4 1/3] mfd: intel_soc_pmic: Core driver
+Message-ID: <20140529114052.GI1954@lee--X1>
+References: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com>
+ <1401347968-24410-2-git-send-email-lejun.zhu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <87iooo7skp.fsf@rustcorp.com.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401347968-24410-2-git-send-email-lejun.zhu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 08:35:58PM +0930, Rusty Russell wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> > On Thu, May 29, 2014 at 04:56:45PM +0930, Rusty Russell wrote:
-> >> Before:
-> >> 	gcc 4.8.2: virtio_blk: stack used = 392
-> >> 	gcc 4.6.4: virtio_blk: stack used = 480
-> >> 
-> >> After:
-> >> 	gcc 4.8.2: virtio_blk: stack used = 408
-> >> 	gcc 4.6.4: virtio_blk: stack used = 432
-> >
-> > Is it worth it to make the good compiler worse? People are going to use
-> > the newer GCC more as time goes on anyhow.
+> This patch provides the common I2C driver code for Intel SoC PMICs.
 > 
-> No, but it's only 16 bytes of stack loss for a simplicity win:
+> Signed-off-by: Yang, Bin <bin.yang@intel.com>
+> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> ---
+> v2:
+> - Use regmap instead of creating our own I2C read/write callbacks.
+> - Add one missing EXPORT_SYMBOL.
+> - Remove duplicate code and put them into pmic_regmap_load_from_hw.
+> v3:
+> - Use regmap-irq. Remove our own pmic_regmap_* and IRQ handling code.
+> - Remove intel_soc_pmic_dev() and intel_soc_pmic_set_pdata().
+> - Use EXPORT_SYMBOL_GPL for exposed APIs.
+> - Use gpiod interface instead of gpio numbers.
+> - Remove redundant I2C IDs.
+> - Use managed allocations.
+> v4:
+> - Remove all exported APIs which are wrappers of regmap API, export
+>   the regmap in data structure instead.
+> - Combine I2C and core .c files.
+> - Clean up include files.
+> - Use intel_soc_pmic_ prefix to replace pmic_ and intel_pmic_.
+> - Fix various coding style issues.
+> ---
+>  drivers/mfd/intel_soc_pmic_core.c  | 164 +++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/intel_soc_pmic_core.h  |  32 ++++++++
+>  include/linux/mfd/intel_soc_pmic.h |  30 +++++++
+>  3 files changed, 226 insertions(+)
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.c
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.h
+>  create mode 100644 include/linux/mfd/intel_soc_pmic.h
 > 
->  virtio_ring.c |  120 +++++++++++++++++++++-------------------------------------
->  1 file changed, 45 insertions(+), 75 deletions(-)
-> 
-> Cheers,
-> Rusty.
+> diff --git a/drivers/mfd/intel_soc_pmic_core.c b/drivers/mfd/intel_soc_pmic_core.c
+> new file mode 100644
+> index 0000000..664eaef
+> --- /dev/null
+> +++ b/drivers/mfd/intel_soc_pmic_core.c
+> @@ -0,0 +1,164 @@
 
-I'm concerned that we are doing an extra descriptor walk now though.
-And desc == &vq.desc at the end is kind of ugly too.
+[...]
 
-How about
-		if (indirect)
-                        vq->vring.desc[i].next = i + 1;
-		else
-                        i = vq->vring.desc[i].next;
+> +static int intel_soc_pmic_find_gpio_irq(struct device *dev)
+> +{
+> +	struct gpio_desc *desc;
+> +	int irq;
+> +
+> +	desc = devm_gpiod_get_index(dev, KBUILD_MODNAME, 0);
 
-or something like this?
+What does "KBUILD_MODNAME" translate to?
 
+> +	if (IS_ERR(desc)) {
+> +		dev_dbg(dev, "Not using GPIO as interrupt.\n");
+
+You can't have a debug print, then return an err - use dev_err().
+
+[...]
+
+> +static int intel_soc_pmic_i2c_probe(struct i2c_client *i2c,
+> +				    const struct i2c_device_id *id)
+> +{
+> +	struct device *dev = &i2c->dev;
+> +	struct intel_soc_pmic_config *config =
+> +		(struct intel_soc_pmic_config *)id->driver_data;
+> +	struct intel_soc_pmic *pmic;
+> +	int ret;
+> +	int irq;
+> +
+> +	pmic = devm_kzalloc(dev, sizeof(*pmic), GFP_KERNEL);
+> +	dev_set_drvdata(dev, pmic);
+> +
+> +	pmic->regmap = devm_regmap_init_i2c(i2c, config->regmap_config);
+> +
+> +	irq = intel_soc_pmic_find_gpio_irq(dev);
+> +	if (irq < 0)
+> +		pmic->irq = i2c->irq;
+> +	else
+> +		pmic->irq = irq;
+
+pmic->irq = (irq < 0) ? i2c->irq : irq;
+
+> +	ret = regmap_add_irq_chip(pmic->regmap, pmic->irq,
+> +				  config->irq_flags | IRQF_ONESHOT,
+> +				  0, config->irq_chip,
+> +				  &pmic->irq_chip_data);
+> +	if (ret)
+> +		goto err;
+
+Just return ret here and remove the 'err:' label.
+
+[...]
+
+> +static const struct i2c_device_id intel_soc_pmic_i2c_id[] = {
+> +	{"INT33FD:00", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, intel_soc_pmic_i2c_id);
+> +
+> +static struct acpi_device_id intel_soc_pmic_acpi_match[] = {
+> +	{"INT33FD", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(acpi, intel_soc_pmic_acpi_match);
+
+Does ACPI have a match function to extact it's .driver_data attribute?
+
+If so, are you using it here? If not, why not?
+
+[...]
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
