@@ -1,139 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734AbaE2Lk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 07:40:59 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:61103 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924AbaE2Lk6 (ORCPT
+	id S1757033AbaE2Lnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 07:43:41 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:42991 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162AbaE2Lnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 07:40:58 -0400
-Date: Thu, 29 May 2014 12:40:52 +0100
+	Thu, 29 May 2014 07:43:40 -0400
+Date: Thu, 29 May 2014 12:43:34 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
 Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
         jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v4 1/3] mfd: intel_soc_pmic: Core driver
-Message-ID: <20140529114052.GI1954@lee--X1>
+Subject: Re: [PATCH v4 3/3] mfd: intel_soc_pmic: Build files
+Message-ID: <20140529114334.GJ1954@lee--X1>
 References: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com>
- <1401347968-24410-2-git-send-email-lejun.zhu@linux.intel.com>
+ <1401347968-24410-4-git-send-email-lejun.zhu@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401347968-24410-2-git-send-email-lejun.zhu@linux.intel.com>
+In-Reply-To: <1401347968-24410-4-git-send-email-lejun.zhu@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch provides the common I2C driver code for Intel SoC PMICs.
+> This patch adds Intel SoC PMIC support to the build files.
 > 
 > Signed-off-by: Yang, Bin <bin.yang@intel.com>
 > Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
 > ---
 > v2:
-> - Use regmap instead of creating our own I2C read/write callbacks.
-> - Add one missing EXPORT_SYMBOL.
-> - Remove duplicate code and put them into pmic_regmap_load_from_hw.
+> - Add select REGMAP_I2C.
 > v3:
-> - Use regmap-irq. Remove our own pmic_regmap_* and IRQ handling code.
-> - Remove intel_soc_pmic_dev() and intel_soc_pmic_set_pdata().
-> - Use EXPORT_SYMBOL_GPL for exposed APIs.
-> - Use gpiod interface instead of gpio numbers.
-> - Remove redundant I2C IDs.
-> - Use managed allocations.
+> - Add select REGMAP_IRQ.
 > v4:
-> - Remove all exported APIs which are wrappers of regmap API, export
->   the regmap in data structure instead.
-> - Combine I2C and core .c files.
-> - Clean up include files.
-> - Use intel_soc_pmic_ prefix to replace pmic_ and intel_pmic_.
-> - Fix various coding style issues.
+> - No change.
 > ---
->  drivers/mfd/intel_soc_pmic_core.c  | 164 +++++++++++++++++++++++++++++++++++++
->  drivers/mfd/intel_soc_pmic_core.h  |  32 ++++++++
->  include/linux/mfd/intel_soc_pmic.h |  30 +++++++
->  3 files changed, 226 insertions(+)
->  create mode 100644 drivers/mfd/intel_soc_pmic_core.c
->  create mode 100644 drivers/mfd/intel_soc_pmic_core.h
->  create mode 100644 include/linux/mfd/intel_soc_pmic.h
-> 
-> diff --git a/drivers/mfd/intel_soc_pmic_core.c b/drivers/mfd/intel_soc_pmic_core.c
-> new file mode 100644
-> index 0000000..664eaef
-> --- /dev/null
-> +++ b/drivers/mfd/intel_soc_pmic_core.c
-> @@ -0,0 +1,164 @@
+>  drivers/mfd/Kconfig  | 12 ++++++++++++
+>  drivers/mfd/Makefile |  3 +++
+>  2 files changed, 15 insertions(+)
 
-[...]
+These changes shouldn't really be in a separate patch.
 
-> +static int intel_soc_pmic_find_gpio_irq(struct device *dev)
-> +{
-> +	struct gpio_desc *desc;
-> +	int irq;
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 3383412..d987b71 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -241,6 +241,18 @@ config LPC_SCH
+>  	  LPC bridge function of the Intel SCH provides support for
+>  	  System Management Bus and General Purpose I/O.
+>  
+> +config INTEL_SOC_PMIC
+> +	bool "Support for Intel Atom SoC PMIC"
+> +	depends on I2C=y
+> +	select MFD_CORE
+> +	select REGMAP_I2C
+> +	select REGMAP_IRQ
+> +	help
+> +	  Select this option to enable support for the PMIC device
+> +	  on some Intel SoC systems. The PMIC provides ADC, GPIO,
+> +	  thermal, charger and related power management functions
+> +	  on these systems.
 > +
-> +	desc = devm_gpiod_get_index(dev, KBUILD_MODNAME, 0);
-
-What does "KBUILD_MODNAME" translate to?
-
-> +	if (IS_ERR(desc)) {
-> +		dev_dbg(dev, "Not using GPIO as interrupt.\n");
-
-You can't have a debug print, then return an err - use dev_err().
-
-[...]
-
-> +static int intel_soc_pmic_i2c_probe(struct i2c_client *i2c,
-> +				    const struct i2c_device_id *id)
-> +{
-> +	struct device *dev = &i2c->dev;
-> +	struct intel_soc_pmic_config *config =
-> +		(struct intel_soc_pmic_config *)id->driver_data;
-> +	struct intel_soc_pmic *pmic;
-> +	int ret;
-> +	int irq;
+>  config MFD_INTEL_MSIC
+>  	bool "Intel MSIC"
+>  	depends on INTEL_SCU_IPC
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 2851275..36dda4c 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -166,3 +166,6 @@ obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
+>  obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+>  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+>  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
 > +
-> +	pmic = devm_kzalloc(dev, sizeof(*pmic), GFP_KERNEL);
-> +	dev_set_drvdata(dev, pmic);
-> +
-> +	pmic->regmap = devm_regmap_init_i2c(i2c, config->regmap_config);
-> +
-> +	irq = intel_soc_pmic_find_gpio_irq(dev);
-> +	if (irq < 0)
-> +		pmic->irq = i2c->irq;
-> +	else
-> +		pmic->irq = irq;
-
-pmic->irq = (irq < 0) ? i2c->irq : irq;
-
-> +	ret = regmap_add_irq_chip(pmic->regmap, pmic->irq,
-> +				  config->irq_flags | IRQF_ONESHOT,
-> +				  0, config->irq_chip,
-> +				  &pmic->irq_chip_data);
-> +	if (ret)
-> +		goto err;
-
-Just return ret here and remove the 'err:' label.
-
-[...]
-
-> +static const struct i2c_device_id intel_soc_pmic_i2c_id[] = {
-> +	{"INT33FD:00", (kernel_ulong_t)&intel_soc_pmic_config_crc},
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, intel_soc_pmic_i2c_id);
-> +
-> +static struct acpi_device_id intel_soc_pmic_acpi_match[] = {
-> +	{"INT33FD", (kernel_ulong_t)&intel_soc_pmic_config_crc},
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(acpi, intel_soc_pmic_acpi_match);
-
-Does ACPI have a match function to extact it's .driver_data attribute?
-
-If so, are you using it here? If not, why not?
-
-[...]
+> +intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+> +obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
 
 -- 
 Lee Jones
