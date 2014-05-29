@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaE2XkT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 19:40:19 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:55356 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaE2XkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 19:40:18 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 30 May 2014 08:40:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+	id S1753522AbaE2Xkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 19:40:37 -0400
+Received: from ozlabs.org ([103.22.144.67]:55074 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753310AbaE2Xkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 19:40:35 -0400
+Date: Fri, 30 May 2014 09:40:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: abdoulaye berthe <berthe.ab@gmail.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, devel@driverdev.osuosl.org,
+        Alexandre Courbot <gnurou@gmail.com>,
+        patches@opensource.wolfsonmicro.com, linux-mips@linux-mips.org,
+        netdev@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-sh@vger.kernel.org, linux-wireless@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140529234051.GK10092@bbox>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
- <20140528223142.GO8554@dastard>
- <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
- <20140529013007.GF6677@dastard>
- <CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
- <20140529072633.GH6677@dastard>
- <CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
+        spear-devel@list.st.com, linux-samsungsoc@vger.kernel.org,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-leds@vger.kernel.org, m@bues.ch, linux-input@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH] gpio: removes all usage of gpiochip_remove retval
+Message-ID: <20140530094025.3b78301e@canb.auug.org.au>
+In-Reply-To: <CABprBybQ-Jyk95zCqnoWjjyzhNyHVbsbEhb=vA5d=ZYp95_bFA@mail.gmail.com>
+References: <1401400492-26175-1-git-send-email-berthe.ab@gmail.com>
+	<5387B149.20408@gmail.com>
+	<CABprBybQ-Jyk95zCqnoWjjyzhNyHVbsbEhb=vA5d=ZYp95_bFA@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/852XE2D+8ii.R+aAPw7pJ16"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+--Sig_/852XE2D+8ii.R+aAPw7pJ16
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, May 29, 2014 at 08:24:49AM -0700, Linus Torvalds wrote:
-> On Thu, May 29, 2014 at 12:26 AM, Dave Chinner <david@fromorbit.com> wrote:
-> >
-> > What concerns me about both __alloc_pages_nodemask() and
-> > kernel_map_pages is that when I look at the code I see functions
-> > that have no obvious stack usage problem. However, the compiler is
-> > producing functions with huge stack footprints and it's not at all
-> > obvious when I read the code. So in this case I'm more concerned
-> > that we have a major disconnect between the source code structure
-> > and the code that the compiler produces...
-> 
-> I agree. In fact, this is the main reason that Minchan's call trace
-> and this thread has actually convinced me that yes, we really do need
-> to make x86-64 have a 16kB stack (well, 16kB allocation - there's
-> still the thread info etc too).
-> 
-> Usually when we see the stack-smashing traces, they are because
-> somebody did something stupid. In this case, there are certainly
-> stupid details, and things I think we should fix, but there is *not*
-> the usual red flag of "Christ, somebody did something _really_ wrong".
-> 
-> So I'm not in fact arguing against Minchan's patch of upping
-> THREAD_SIZE_ORDER to 2 on x86-64, but at the same time stack size does
-> remain one of my "we really need to be careful" issues, so while I am
-> basically planning on applying that patch, I _also_ want to make sure
-> that we fix the problems we do see and not just paper them over.
+Hi abdoulaye,
 
-So, should I resend a patch w/o RFC in subject but with Acked-by from Dave?
-Or, you will do it by yourself?
+On Fri, 30 May 2014 01:16:22 +0200 abdoulaye berthe <berthe.ab@gmail.com> w=
+rote:
+>
+> The aim of this patch is to make gpiochip_remove() behavior consistent,
+> especially when issuing a remove request while the chipio chip is
+> still requested. A patch has been submitted to change the return value of
+> gpiochip_remove() from int to void. This one updates users of the return
+> value:
 
-> 
-> The 8kB stack has been somewhat restrictive and painful for a while,
-> and I'm ok with admitting that it is just getting _too_ damn painful,
-> but I don't want to just give up entirely when we have a known deep
-> stack case.
-> 
->                       Linus
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Then you need to keep these two patch in a series with this one first
+to make sure that the other patch is not applied without this one.
 
--- 
-Kind regards,
-Minchan Kim
+And you should add the above explanation to the changelog for this
+patch.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/852XE2D+8ii.R+aAPw7pJ16
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTh8VuAAoJEMDTa8Ir7ZwV8iEQAICWaN/UMPsdzewqsMiXXSMh
+C5svkPpUj+qDUSm6Z89xsBlSrNn5iaa06uiZllN8KLoLbhGpZ5xdGqmMalys33zc
+Bh2lJNCtozIbI1fMW63+W94wMtWNSnUAbX4szSpxbbaZQ3ig9ixXegji8nvONTqw
+QWNjGORnMPvzrCsTrv8/hNYlmeT/9WZwAwVLr9++ldM0fow/SfF251WvmNjheAcq
+2YCd1vEk7ZZ9aFDr463CKP3eeTKDtWaSrdoXLdIvs627tRtfhSuqQF1q6d8B1Vbk
+HR9xx3bANosgA/Fa7rHcWxw8lLr5EDXeaHJieT0I05kXPM1rSIh9tTGAeXivG/LH
+j+FWHe7P3v2qN+mvgqRHIndi1axUhm4ZbqG3Wcg8uAV+rGxemlmkZMWzdMPwzcRA
+YJKTVoc+LbLp4Yb1HpZ4hYbKvxu7iEf8OQJsb9bY3lnm8Rnax4VhQtn15aKn2fLr
+b8xSfM9iGeL1bgEyh5pK4BVgE1+N7Z/7qGfD95EAT9v5cX7di9y+eU8zXb0fmXRh
+V1rV2n9RfrbH3wE8DoR4yC2SeDcQl5F/CwII/zHkymzWTgGvpN4mhk06q0CPhxxO
+nZD317b7OuLQbDbZJ+o/92/XMlOt6Sanno1I27C19ahUMynJAo32O+xHIDdv5AKI
+Dom8qI4Ex3DKkwqflJzw
+=RG4V
+-----END PGP SIGNATURE-----
+
+--Sig_/852XE2D+8ii.R+aAPw7pJ16--
