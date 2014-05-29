@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154AbaE2Erj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:47:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58635 "EHLO
+	id S933551AbaE2Er5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:47:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58623 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933221AbaE2Eil (ORCPT
+	with ESMTP id S933209AbaE2Eik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:41 -0400
+	Thu, 29 May 2014 00:38:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Liu Yu <allanyuliu@tencent.com>, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Julian Anastasov <ja@ssi.bg>, Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 62/86] tcp_cubic: fix the range of delayed_ack
-Date: Wed, 28 May 2014 21:37:37 -0700
-Message-Id: <20140529043521.900121401@linuxfoundation.org>
+Subject: [PATCH 3.10 60/86] sctp: reset flowi4_oif parameter on route lookup
+Date: Wed, 28 May 2014 21:37:35 -0700
+Message-Id: <20140529043521.626067882@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -29,44 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Yu <allanyuliu@tencent.com>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-[ Upstream commit 0cda345d1b2201dd15591b163e3c92bad5191745 ]
+[ Upstream commit 85350871317a5adb35519d9dc6fc9e80809d42ad ]
 
-commit b9f47a3aaeab (tcp_cubic: limit delayed_ack ratio to prevent
-divide error) try to prevent divide error, but there is still a little
-chance that delayed_ack can reach zero. In case the param cnt get
-negative value, then ratio+cnt would overflow and may happen to be zero.
-As a result, min(ratio, ACK_RATIO_LIMIT) will calculate to be zero.
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in __ip_route_output_key()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
 
-In some old kernels, such as 2.6.32, there is a bug that would
-pass negative param, which then ultimately leads to this divide error.
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
 
-commit 5b35e1e6e9c (tcp: fix tcp_trim_head() to adjust segment count
-with skb MSS) fixed the negative param issue. However,
-it's safe that we fix the range of delayed_ack as well,
-to make sure we do not hit a divide by zero.
-
-CC: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: Liu Yu <allanyuliu@tencent.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_cubic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sctp/protocol.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_cubic.c
-+++ b/net/ipv4/tcp_cubic.c
-@@ -408,7 +408,7 @@ static void bictcp_acked(struct sock *sk
- 		ratio -= ca->delayed_ack >> ACK_RATIO_SHIFT;
- 		ratio += cnt;
- 
--		ca->delayed_ack = min(ratio, ACK_RATIO_LIMIT);
-+		ca->delayed_ack = clamp(ratio, 1U, ACK_RATIO_LIMIT);
- 	}
- 
- 	/* Some calls are for duplicates without timetamps */
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -498,8 +498,13 @@ static void sctp_v4_get_dst(struct sctp_
+ 			continue;
+ 		if ((laddr->state == SCTP_ADDR_SRC) &&
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+-			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			flowi4_update_output(fl4,
++					     asoc->base.sk->sk_bound_dev_if,
++					     RT_CONN_FLAGS(asoc->base.sk),
++					     daddr->v4.sin_addr.s_addr,
++					     laddr->a.v4.sin_addr.s_addr);
++
+ 			rt = ip_route_output_key(sock_net(sk), fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
 
 
