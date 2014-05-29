@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229AbaE2Khc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 06:37:32 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57009 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341AbaE2Khb (ORCPT
+	id S1757242AbaE2Kj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 06:39:29 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:28346 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752220AbaE2Kj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 06:37:31 -0400
-Message-ID: <53870DC8.40908@parallels.com>
-Date: Thu, 29 May 2014 14:36:56 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Vasily Kulikov <segoon@openwall.com>,
-        <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+	Thu, 29 May 2014 06:39:28 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AndMAN8Nh1N5LL1sPGdsb2JhbABZgweDRIUIonYGmB4BgQwXAwEBAQE4NYIlAQEFJxMcIxAIAxgJJQ8FJQMHGhOIQddlFxaFP4h9B4RAAQOZdJZzKw
+Date: Thu, 29 May 2014 20:39:05 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
- ns
-References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com> <5385DA19.2060008@parallels.com> <20140528182824.GA5057@cachalot> <53863889.9080509@parallels.com> <20140529055954.GA10354@cachalot> <5386F8EA.8050501@parallels.com> <5386FC0C.9000307@nod.at> <538700B5.5070601@parallels.com> <538703D0.7030308@nod.at> <5387059E.9010105@parallels.com> <538709A5.60000@nod.at>
-In-Reply-To: <538709A5.60000@nod.at>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.36.87]
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: virtio ring cleanups, which save stack on older gcc
+Message-ID: <20140529103905.GQ8554@dastard>
+References: <87oayh6s3s.fsf@rustcorp.com.au>
+ <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au>
+ <20140529074117.GI10092@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529074117.GI10092@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 02:19 PM, Richard Weinberger wrote:
-> Am 29.05.2014 12:02, schrieb Pavel Emelyanov:
->>>> We need to know what pid namespaces a task lives in and how pid, sid and
->>>> pgid look in all of them. A short example with pids only
->>>
->>> So use case is to checkpoint/restore nested containers? :)
->>
->> Yes, but there's one more scenario. AFAIK some applications create pid namespaces 
->> themselves, without starting what is typically called "a container" :) And when 
->> such an applications are run inside, well ... "more real" container (e.g. using
->> openvz, lxc or docker tools) we face this issue.
+On Thu, May 29, 2014 at 04:41:17PM +0900, Minchan Kim wrote:
+> Hello Rusty,
 > 
-> Do you know such an application?
+> On Thu, May 29, 2014 at 04:56:41PM +0930, Rusty Russell wrote:
+> > They don't make much difference: the easier fix is use gcc 4.8
+> > which drops stack required across virtio block's virtio_queue_rq
+> > down to that kmalloc in virtio_ring from 528 to 392 bytes.
+> > 
+> > Still, these (*lightly tested*) patches reduce to 432 bytes,
+> > even for gcc 4.6.4.  Posted here FYI.
+> 
+> I am testing with below which was hack for Dave's idea so don't have
+> a machine to test your patches until tomorrow.
+> So, I will queue your patches into testing machine tomorrow morning.
+> 
+> Thanks!
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index f5c6635b806c..95f169e85dbe 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4241,10 +4241,13 @@ EXPORT_SYMBOL_GPL(yield_to);
+>  void __sched io_schedule(void)
+>  {
+>  	struct rq *rq = raw_rq();
+> +	struct blk_plug *plug = current->plug;
+>  
+>  	delayacct_blkio_start();
+>  	atomic_inc(&rq->nr_iowait);
+> -	blk_flush_plug(current);
+> +	if (plug)
+> +		blk_flush_plug_list(plug, true);
+> +
 
-There were a couple of them reported on the criu mailing list, but I didn't
-track those :(
+Could simply be
 
-> I'm a aware of systemd which uses CLONE_NEWNET/NS to implement security features.
+-	blk_flush_plug(current);
++	blk_schedule_flush_plug(current);
 
-Yup, this is its typical behavior.
+Cheers,
 
-> We could add a directory like /proc/<pidX>/ns/proc/ which would contain everything
-> from /proc/<pidX inside the namespace>/.
-
-But how would it help to find out which $pid directories correspond to which
-to properly collect the pid mappings?
-
-> This needs definitely more discussion and must not solved by ad-hoc solutions.
-
-Absolutely.
-
-Thanks,
-Pavel
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
