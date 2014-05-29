@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479AbaE2Epn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:45:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58663 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933035AbaE2Eip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933258AbaE2Eip (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 29 May 2014 00:38:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58526 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933035AbaE2Ei2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 00:38:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Christensen <pch@ordbogen.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 67/86] macvlan: Dont propagate IFF_ALLMULTI changes on down interfaces.
-Date: Wed, 28 May 2014 21:37:42 -0700
-Message-Id: <20140529043522.559079852@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Subject: [PATCH 3.10 37/86] drm/radeon: call drm_edid_to_eld when we update the edid
+Date: Wed, 28 May 2014 21:37:12 -0700
+Message-Id: <20140529043518.487320634@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,39 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Christensen <pch@ordbogen.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-[ Upstream commit bbeb0eadcf9fe74fb2b9b1a6fea82cd538b1e556 ]
+commit 16086279353cbfecbb3ead474072dced17b97ddc upstream.
 
-Clearing the IFF_ALLMULTI flag on a down interface could cause an allmulti
-overflow on the underlying interface.
+This needs to be done to update some of the fields in
+the connector structure used by the audio code.
 
-Attempting the set IFF_ALLMULTI on the underlying interface would cause an
-error and the log message:
+Noticed by several users on irc.
 
-"allmulti touches root, set allmulti failed."
-
-Signed-off-by: Peter Christensen <pch@ordbogen.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/macvlan.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -420,8 +420,10 @@ static void macvlan_change_rx_flags(stru
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 	struct net_device *lowerdev = vlan->lowerdev;
- 
--	if (change & IFF_ALLMULTI)
--		dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	if (dev->flags & IFF_UP) {
-+		if (change & IFF_ALLMULTI)
-+			dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	}
- }
- 
- static void macvlan_set_mac_lists(struct net_device *dev)
+---
+ drivers/gpu/drm/radeon/radeon_display.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -729,6 +729,7 @@ int radeon_ddc_get_modes(struct radeon_c
+ 	if (radeon_connector->edid) {
+ 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
+ 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
++		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+ 		return ret;
+ 	}
+ 	drm_mode_connector_update_edid_property(&radeon_connector->base, NULL);
 
 
