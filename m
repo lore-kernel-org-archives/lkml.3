@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432AbaE2V16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:27:58 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:58785 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801AbaE2V1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:27:55 -0400
+	id S933350AbaE2V3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:29:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60860 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932526AbaE2V3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 17:29:15 -0400
+Date: Thu, 29 May 2014 18:28:12 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Scott Wood <scottwood@freescale.com>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-pcmcia@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PPC: 8xx: update MAINTAINERS entry
+Message-ID: <20140529212812.GA9000@amt.cnet>
+References: <1400916970.31526.78.camel@x220>
+ <1401387624.6603.161.camel@snotra.buserror.net>
+ <1401388744.25908.16.camel@x220>
+ <1401390275.25908.24.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <20140529210708.GA26023@roeck-us.net>
-References: <20140529043049.661315084@linuxfoundation.org>
-	<53874CE2.2010701@roeck-us.net>
-	<20140529182109.GA10142@kroah.com>
-	<20140529210708.GA26023@roeck-us.net>
-Date: Thu, 29 May 2014 14:27:54 -0700
-X-Google-Sender-Auth: o32PbhEXojVePU05yMIGA12DZUY
-Message-ID: <CA+55aFws44CBn4SOBdxrQ8T6kt6xXL3wFi-JNvW6fUPBWAxA=g@mail.gmail.com>
-Subject: Re: [PATCH 3.14 000/140] 3.14.5-stable review
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>, Michal Marek <mmarek@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, satoru.takeuchi@gmail.com,
-        Shuah Khan <shuah.kh@samsung.com>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401390275.25908.24.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 2:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Thu, May 29, 2014 at 11:21:09AM -0700, Greg Kroah-Hartman wrote:
->> On Thu, May 29, 2014 at 08:06:10AM -0700, Guenter Roeck wrote:
->> >
->> > alpha:defconfig                     - Fails with 'Inconsistent kallsyms data'. New failure; need to debug.
->> >
->> > Bisect points to commit 'vlan: Fix lockdep warning with stacked vlan devices' as culprit
->> > for the alpha:defconfig build failure. Reverting this patch fixes the problem.
->> > I looked at the patch, but I have no idea what may cause the failure.
->>
->> Odd.  Is this also broken in Linus's tree?
->>
-> Agreed, it is odd. As I said, not idea what is causing this.
-> v3.15-rc7 is fine.
 
-The bisection is almost certainly bogus, and this 'inconsistent
-kallsyms data' issue is not new. I thought we fixed it, but it's
-possible that there are alpha-specific issues and/or that it depends
-on binutils versions.
+Not involved in 8xx activities for years, update MAINTAINERS
+to reflect it.
 
-In particular, when we've seen it in the past, it has depended on
-exact alignment of code or data, which is why random changes
-(particularly to percpu data) can seem to trigger it. Basically, two
-symbols getting the same address and then being sorted differently by
-'nm' or similar.
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-See for example
-
-  http://marc.info/?l=linux-next&m=133267456809502&w=2
-
-where it hits ARM and rmk actually debugged that particular case.
-
-Adding Michal to the cc, because I have a dim memory of this being
-fixed, but I can't remember how. I hope Michal does.. Or maybe the
-fact that alpha is hit by this just means that I mis-remember.
-
-               Linus
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c47d268..ed7b606 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5349,7 +5349,6 @@ F:	arch/powerpc/*/*/*virtex*
+ 
+ LINUX FOR POWERPC EMBEDDED PPC8XX
+ M:	Vitaly Bordug <vitb@kernel.crashing.org>
+-M:	Marcelo Tosatti <marcelo@kvack.org>
+ W:	http://www.penguinppc.org/
+ L:	linuxppc-dev@lists.ozlabs.org
+ S:	Maintained
