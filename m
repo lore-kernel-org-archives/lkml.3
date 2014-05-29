@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982AbaE2ENR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:13:17 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:49224 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbaE2ENQ (ORCPT
+	id S1756023AbaE2ENU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:13:20 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:59512 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992AbaE2ENR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:13:16 -0400
+	Thu, 29 May 2014 00:13:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140529034625.GB10092@bbox>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-	<20140529034625.GB10092@bbox>
-Date: Wed, 28 May 2014 21:13:15 -0700
-X-Google-Sender-Auth: w41OdC9XKxv4wXcFUoH1G95mrF4
-Message-ID: <CA+55aFyoT1xuM-HsZ4GKt=FfDYs76oD7U-RBkZn-2PErj6ZZVw@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <5386AAF4.4090804@intel.com>
+References: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
+	<1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
+	<CACVXFVO6uW3KoVPoeb+O0txuY2Ji6BO1Sob1e-g7NmZBv9MPBQ@mail.gmail.com>
+	<CACVXFVNNc3dRshmMYNgS+pn54RC2dyQkJFOy1=HJdXfUfuhAMQ@mail.gmail.com>
+	<5386AAF4.4090804@intel.com>
+Date: Thu, 29 May 2014 12:13:16 +0800
+Message-ID: <CACVXFVPG4zNCyVPrvKwfyx0atPFtw+LoKrZbxXSkOqNySSiwEg@mail.gmail.com>
+Subject: Re: [PATCH] bio: decrease bi_iter.bi_size by len in the fail path
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Dongsu Park <dongsu.park@profitbricks.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Maurizio Lombardi <mlombard@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 8:46 PM, Minchan Kim <minchan@kernel.org> wrote:
+On Thu, May 29, 2014 at 11:35 AM, Jet Chen <jet.chen@intel.com> wrote:
+> On 05/29/2014 12:59 AM, Ming Lei wrote:
+>> On Wed, May 28, 2014 at 11:42 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>>> Hi Dongsu,
+>>>
+>>> On Wed, May 28, 2014 at 11:09 PM, Dongsu Park
+>>> <dongsu.park@profitbricks.com> wrote:
+>>>> From: Dongsu Park <dongsu.park@profitbricks.com>
+>>>>
+>>>> Commit 3979ef4dcf3d1de55a560a3a4016c30a835df44d ("bio-modify-
+>>>> __bio_add_page-to-accept-pages-that-dont-start-a-new-segment-v3")
+>>>> introduced a regression as reported by Jet Chen.
+>>>> That results in a kernel BUG at drivers/block/virtio_blk.c:166.
+>>>>
+>>>> To fix that, bi_iter.bi_size must be decreased by len, before
+>>>> recounting the number of physical segments.
+>>>>
+>>>> Tested on with kernel 3.15.0-rc7-next-20140527 on qemu guest,
+>>>> by running xfstests/ext4/271.
+>>>>
+>>>> Cc: Jens Axboe <axboe@kernel.dk>
+>>>> Cc: Jet Chen <jet.chen@intel.com>
+>>>> Cc: Maurizio Lombardi <mlombard@redhat.com>
+>>>> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
+>>>> ---
+>>>>  block/bio.c | 1 +
+>>>>  1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/block/bio.c b/block/bio.c
+>>>> index 0443694ccbb4..67d7cba1e5fd 100644
+>>>> --- a/block/bio.c
+>>>> +++ b/block/bio.c
+>>>> @@ -810,6 +810,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>>>>         bvec->bv_len = 0;
+>>>>         bvec->bv_offset = 0;
+>>>>         bio->bi_vcnt--;
+>>>> +       bio->bi_iter.bi_size -= len;
+>>>
+>>> Would you mind explaining why bi_iter.bi_size need to be
+>>> decreased by 'len'? In the failure path, it wasn't added by
+>>> 'len', was it?
+>>
+>> Actually, the correct thing may be like what did in the
+>> attached patch, as Maurizio discussed with me[1].
+>>
+>> Very interestingly, I have reproduced the problem one time
+>> with ext4/271 ext4/301 ext4/305, but won't with the attached
+>> patch after running it for 3 rounds.
+>>
+>> [tom@localhost xfstests]$ sudo ./check ext4/271 ext4/301 ext4/305
+>> FSTYP         -- ext4
+>> PLATFORM      -- Linux/x86_64 localhost 3.15.0-rc7-next-20140527+
+>> MKFS_OPTIONS  -- /dev/vdc
+>> MOUNT_OPTIONS -- -o acl,user_xattr /dev/vdc /mnt/scratch
+>>
+>> ext4/271 1s ... 1s
+>> ext4/301 31s ... 32s
+>> ext4/305 181s ... 180s
+>> Ran: ext4/271 ext4/301 ext4/305
+>> Passed all 3 tests
+>>
+>> Jet, could you test the attached patch?
 >
-> Yes. For example, with mark __alloc_pages_slowpath noinline_for_stack,
-> we can reduce 176byte.
+> sorry, could you specify which patch need me to test ?
+> actually I got confused. I only find
 
-Well, but it will then call that __alloc_pages_slowpath() function,
-which has a 176-byte stack frame.. Plus the call frame.
+Firstly, dongsu's patch is wrong, and it doesn't make sense to test
+that.
 
-Now, that only triggers for when the initial "__GFP_HARDWALL" case
-fails, but that's exactly what happens when we do need to do direct
-reclaim.
+Secondly, it is the patch attached in my last email, and the
+name is 'fix_compute_segments.patch'.
 
-That said, I *have* seen cases where the gcc spill code got really
-confused, and simplifying the function (by not inlining excessively)
-actually causes a truly smaller stack overall, despite the actual call
-frames etc.  But I think the gcc people fixed the kinds of things that
-caused *that* kind of stack slot explosion.
+Please let me know if you can find the patch, if you still can't, I
+may resend to you.
 
-And avoiding inlining can end up resulting in less stack, if the
-really deep parts don't happen to go through that function that got
-inlined (ie any call chain that wouldn't have gone through that
-"slowpath" function at all).
 
-But in this case, __alloc_pages_slowpath() is where we end up doing
-the actual direct reclaim anyway, so just uninlining doesn't actually
-help. Although it would probably make the asm code more readable ;)
-
-              Linus
+Thanks,
+-- 
+Ming Lei
