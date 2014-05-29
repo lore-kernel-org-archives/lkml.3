@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbaE1XzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 19:55:19 -0400
-Received: from ns.horizon.com ([71.41.210.147]:33695 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751915AbaE1XzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 19:55:17 -0400
-Date: 28 May 2014 19:55:16 -0400
-Message-ID: <20140528235516.13714.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tim.c.chen@linux.intel.com
-Subject: Re: [PATCH v2] crypto: crc32c-pclmul - Shrink K_table to 32-bit words
-Cc: david.m.cote@intel.com, herbert@gondor.apana.org.au,
-        james.guilford@intel.com, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, sandyw@twitter.com,
-        wajdi.k.feghali@intel.com
-In-Reply-To: <1401318135.2970.399.camel@schen9-DESK>
+	id S1754222AbaE2ACF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 20:02:05 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:38260 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739AbaE2ACD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 20:02:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140522130931.GV13658@twins.programming.kicks-ass.net>
+References: <20140411134243.160989490@infradead.org> <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
+ <20140522125818.GV30445@twins.programming.kicks-ass.net> <20140522130931.GV13658@twins.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 28 May 2014 17:01:41 -0700
+Message-ID: <CALCETrVBVOjs0EVqEz3qKtSHQg1agJzAyG4Ohqueky-zPF7uKA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you do a tcrypt speed measurement with and without your changes?
-> Check to see if there's any slowdown.  Please make sure you pin
-> the frequency of your cpu when running the test.  
+On Thu, May 22, 2014 at 6:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, May 22, 2014 at 02:58:18PM +0200, Peter Zijlstra wrote:
+>> ---
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 4ea7b3f1a087..a5da85fb3570 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -546,12 +546,38 @@ static bool set_nr_and_not_polling(struct task_struct *p)
+>>       struct thread_info *ti = task_thread_info(p);
+>>       return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
+>>  }
+>> +
+>> +/*
+>> + * Atomically set TIF_NEED_RESCHED if TIF_POLLING_NRFLAG is set.
+>> + */
+>> +static bool set_nr_if_polling(struct task_struct *p)
+>> +{
+>> +     struct thread_info *ti = task_thread_info(p);
+>> +     typeof(ti->flags) old, val = ti->flags;
+>> +
+>> +     for (;;) {
+>> +             if (!(val & _TIF_POLLING_NRFLAG))
+>> +                     return false;
+>> +             if (val & _TIF_NEED_RESCHED)
+>> +                     return true;
+>
+> Hmm, I think this is racy, false would be safer. If its already set we
+> might already be past the sched_ttwu_pending() invocation, while if its
+> clear and we're the one to set it, we're guaranteed not.
+>
+>> +             old = cmpxchg(&ti->flags, val, val | _TIF_NEED_RESCHED);
+>> +             if (old == val)
+>> +                     return true;
+>> +             val = old;
+>> +     }
+>> +}
 
-Sure thing; I was already inspired to do that based on your concerns.
-Do you have any particular buffer sizes or alignments you'd suggest?
+Do you have an updated patch?  After fixing the MIME flow damage
+(sigh), it doesn't apply to sched/core, which is my best guess for
+what it's based on.
 
-Since I'm changing only the three-part core, I was going to
-avoid unaligned or short buffers, stick with a single buffer so
-it stays in L1 D-cache, but vary the length so we use lots of
-the K_table.
+--Andy
 
-It's not the RAM I was worried about, but the D-cache wasted on
-on the K table.  Which doesn't affect the CRC code itself, but the
-surrounding kernel code.
-
-
-I'm also thinking of some ideas for handling even larger buffer sizes
-without having to interrupt the 3-way main loop.  Pclmulqdq can
-mutiply up to 4 32-bit values to produce a 128-bit result, which
-crc32 can efficiently reduce.  So if we have three tables, of
-x^(64*n) x^(4096*n), and x^(262144*n), each for n=0..63, we can
-multiply them all together to handle up to a 16 MiB chunk.
-
-The other option is to schedule the pclmulqdq in parallel with
-the crc32q iterations and, after arranging a staggered start,
-have a 4-part main loop, where 3 parts are performing crc32q
-iterations and the fourth is using SSE to shift itself
-forward (at which point it gets XORed into the data stream
-that one other part is working on).
-
-I haven't got all the details of that idea worked out in my head, but
-it seems possible.  I have to study the optimization guide in detail to
-see how many micro-ops the crc32q instruction from memory is (and thus
-how much of the decoder it requires).
-
-As of Nehalem, a small inner loop that fits in the decoded uop cache
-has the potential to be faster than a hugely unrolled one.
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
