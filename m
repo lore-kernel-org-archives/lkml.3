@@ -1,154 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934238AbaE2OfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:35:08 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:11859 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901AbaE2OfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 10:35:06 -0400
-X-Nat-Received: from [202.181.97.72]:12880 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1401374104.11070
-To: konrad.wilk@oracle.com
-Cc: dchinner@redhat.com, airlied@linux.ie, glommer@openvz.org, mgorman@suse.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker functions.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <alpine.DEB.2.00.1405200140010.20503@skynet.skynet.ie>
-	<201405210030.HBD65663.FFLVHOFMSJOtOQ@I-love.SAKURA.ne.jp>
-	<201405242322.AID86423.HOMLQJOtFFVOSF@I-love.SAKURA.ne.jp>
-	<20140528185445.GA23122@phenom.dumpdata.com>
-	<201405290647.DHI69200.HSFVFMFOJOLOQt@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405290647.DHI69200.HSFVFMFOJOLOQt@I-love.SAKURA.ne.jp>
-Message-Id: <201405292334.EAG00503.FLOOJFStHVQMFO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 29 May 2014 23:34:59 +0900
-Mime-Version: 1.0
+	id S933419AbaE2Oir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:38:47 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33538 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932605AbaE2Oiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 10:38:46 -0400
+Date: Thu, 29 May 2014 10:38:32 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] mm: page_alloc: Reset fair zone allocation policy only
+ when batch counts are expired
+Message-ID: <20140529143832.GJ2878@cmpxchg.org>
+References: <20140529090432.GY23991@suse.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 29052014 #8077899, status: clean
+Content-Disposition: inline
+In-Reply-To: <20140529090432.GY23991@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa wrote:
-> Konrad Rzeszutek Wilk wrote:
-> > On Sat, May 24, 2014 at 11:22:09PM +0900, Tetsuo Handa wrote:
-> > > Hello.
-> > > 
-> > > I tried to test whether it is OK (from point of view of reentrant) to use
-> > > mutex_lock() or mutex_lock_killable() inside shrinker functions when shrinker
-> > > functions do memory allocation, for drivers/gpu/drm/ttm/ttm_page_alloc_dma.c is
-> > > doing memory allocation with mutex lock held inside ttm_dma_pool_shrink_scan().
-> > > 
-> > > If I compile a test module shown below which mimics extreme case of what
-> > > ttm_dma_pool_shrink_scan() will do
-> > 
-> > And ttm_pool_shrink_scan.
+Hi Mel!
+
+On Thu, May 29, 2014 at 10:04:32AM +0100, Mel Gorman wrote:
+> The fair zone allocation policy round-robins allocations between zones on
+> a node to avoid age inversion problems during reclaim using a counter to
+> manage the round-robin. If the first allocation fails, the batch counts get
+> reset and the allocation is attempted again before going into the slow path.
+> There are at least two problems with this
 > 
-> I don't know why but ttm_pool_shrink_scan() does not take mutex.
+> 1. If the eligible zones are below the low watermark we reset the counts
+>    even though the batches might be fine.
+
+The idea behind setting the batches to high-low was that they should
+be roughly exhausted by the time the low watermark is hit.  And that
+misconception must be the crux of this patch, because if they *were*
+to exhaust together this patch wouldn't make a difference.
+
+But once they diverge, we reset the batches prematurely, which means
+not everybody is getting their fair share, and that reverts us back to
+an imbalance in zone utilization.
+
+So I think the changelog should include why this assumption was wrong.
+
+> 2. We potentially do batch resets even when the right choice is to fallback
+>    to other nodes.
+
+We only fall back to other nodes when the fairness cycle is over and
+all local zones have been considered fair and square.  Why *not* reset
+the batches and start a new fairness cycle at this point?  Remember
+that remote nodes are not - can not - be part of the fairness cycle.
+
+So I think this one is a red herring.
+
+> When resetting batch counts, it was expected that the count would be <=
+> 0 but the bizarre side-effect is that we are resetting counters that were
+> initially postive so (high - low - batch) potentially sets a high positive
+> batch count to close to 0. This leads to a premature reset in the near
+> future, more overhead and more ... screwing around.
+
+We're just adding the missing delta between the "should" and "is"
+value to the existing batch, so a high batch value means small delta,
+and we *add* a value close to 0, we don't *set* the batch close to 0.
+
+I think this one is a red herring as well.
+
+> The user-visible effect depends on zone sizes and a host of other effects
+> the obvious one is that single-node machines with multiple zones will see
+> degraded performance for streaming readers at least. The effect is also
+> visible on NUMA machines but it may be harder to identify in the midst of
+> other noise.
 > 
-Well, it seems to me that ttm_pool_shrink_scan() not taking mutex is a bug
-which could lead to stack overflow if kmalloc() in ttm_page_pool_free()
-triggered recursion.
+> Comparison is tiobench with data size 2*RAM on ext3 on a small single-node
+> machine and on an ext3 filesystem. Baseline kernel is mmotm with the
+> shrinker and proportional reclaim patches on top.
+> 
+>                                       3.15.0-rc5            3.15.0-rc5
+>                                   mmotm-20140528         fairzone-v1r1
+> Mean   SeqRead-MB/sec-1         120.95 (  0.00%)      133.59 ( 10.45%)
+> Mean   SeqRead-MB/sec-2         100.81 (  0.00%)      113.61 ( 12.70%)
+> Mean   SeqRead-MB/sec-4          93.75 (  0.00%)      104.75 ( 11.74%)
+> Mean   SeqRead-MB/sec-8          85.35 (  0.00%)       91.21 (  6.86%)
+> Mean   SeqRead-MB/sec-16         68.91 (  0.00%)       74.77 (  8.49%)
+> Mean   RandRead-MB/sec-1          1.08 (  0.00%)        1.07 ( -0.93%)
+> Mean   RandRead-MB/sec-2          1.28 (  0.00%)        1.25 ( -2.34%)
+> Mean   RandRead-MB/sec-4          1.54 (  0.00%)        1.51 ( -1.73%)
+> Mean   RandRead-MB/sec-8          1.67 (  0.00%)        1.70 (  2.20%)
+> Mean   RandRead-MB/sec-16         1.74 (  0.00%)        1.73 ( -0.19%)
+> Mean   SeqWrite-MB/sec-1        113.73 (  0.00%)      113.88 (  0.13%)
+> Mean   SeqWrite-MB/sec-2        103.76 (  0.00%)      104.13 (  0.36%)
+> Mean   SeqWrite-MB/sec-4         98.45 (  0.00%)       98.44 ( -0.01%)
+> Mean   SeqWrite-MB/sec-8         93.11 (  0.00%)       92.79 ( -0.34%)
+> Mean   SeqWrite-MB/sec-16        87.64 (  0.00%)       87.85 (  0.24%)
+> Mean   RandWrite-MB/sec-1         1.38 (  0.00%)        1.36 ( -1.21%)
+> Mean   RandWrite-MB/sec-2         1.35 (  0.00%)        1.35 (  0.25%)
+> Mean   RandWrite-MB/sec-4         1.33 (  0.00%)        1.35 (  1.00%)
+> Mean   RandWrite-MB/sec-8         1.31 (  0.00%)        1.29 ( -1.53%)
+> Mean   RandWrite-MB/sec-16        1.27 (  0.00%)        1.28 (  0.79%)
+> 
+> Streaming readers see a huge boost. Random random readers, sequential
+> writers and random writers are all in the noise.
 
-  shrink_slab()
-  => ttm_pool_shrink_scan()
-     => ttm_page_pool_free()
-        => kmalloc(GFP_KERNEL)
-           => shrink_slab()
-              => ttm_pool_shrink_scan()
-                 => ttm_page_pool_free()
-                    => kmalloc(GFP_KERNEL)
+Impressive, but I would really like to understand what's going on
+there.
 
-Maybe shrink_slab() should be updated not to call same shrinker in parallel?
+Did you record the per-zone allocation numbers by any chance as well,
+so we can see the difference in zone utilization?
 
-Also, it seems to me that ttm_dma_pool_shrink_scan() has potential division
-by 0 bug as described below. Is this patch correct?
-----------
->From 4a65744a300e14e5e202c5f13ba2759e1e797d29 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Thu, 29 May 2014 18:25:42 +0900
-Subject: [PATCH] gpu/drm/ttm: Use mutex_trylock() for shrinker functions.
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/page_alloc.c | 89 +++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------
+>  1 file changed, 47 insertions(+), 42 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 2c7d394..70d4264 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1919,6 +1919,28 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+>  
+>  #endif	/* CONFIG_NUMA */
+>  
+> +static void reset_alloc_batches(struct zonelist *zonelist,
+> +				enum zone_type high_zoneidx,
+> +				struct zone *preferred_zone)
+> +{
+> +	struct zoneref *z;
+> +	struct zone *zone;
+> +
+> +	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+> +		/*
+> +		 * Only reset the batches of zones that were actually
+> +		 * considered in the fairness pass, we don't want to
+> +		 * trash fairness information for zones that are not
+> +		 * actually part of this zonelist's round-robin cycle.
+> +		 */
+> +		if (!zone_local(preferred_zone, zone))
+> +			continue;
+> +		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+> +			high_wmark_pages(zone) - low_wmark_pages(zone) -
+> +			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+> +	}
+> +}
+> +
+>  /*
+>   * get_page_from_freelist goes through the zonelist trying to allocate
+>   * a page.
+> @@ -1936,6 +1958,7 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+>  	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+>  	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+>  				(gfp_mask & __GFP_WRITE);
+> +	bool batch_depleted = (alloc_flags & ALLOC_FAIR);
+>  
+>  zonelist_scan:
+>  	/*
+> @@ -1960,11 +1982,13 @@ zonelist_scan:
+>  		 * time the page has in memory before being reclaimed.
+>  		 */
+>  		if (alloc_flags & ALLOC_FAIR) {
+> -			if (!zone_local(preferred_zone, zone))
+> -				continue;
+>  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+>  				continue;
+> +			batch_depleted = false;
+> +			if (!zone_local(preferred_zone, zone))
+> +				continue;
 
-I can observe that RHEL7 environment stalls with 100% CPU usage when a
-certain type of memory pressure is given. While the shrinker functions
-are called by shrink_slab() before the OOM killer is triggered, the stall
-lasts for many minutes.
+This only resets the local batches once the first non-local zone's
+batch is exhausted as well.  Which means that once we start spilling,
+the fairness pass will never consider local zones again until the
+first spill-over target is exhausted too.  But no remote allocs are
+allowed during the fairness cycle, so you're creating a pass over the
+zonelist where only known-exhausted local zones are considered.
 
-One of reasons of this stall is that
-ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan() are called and
-are blocked at mutex_lock(&_manager->lock). GFP_KERNEL allocation with
-_manager->lock held causes someone (including kswapd) to deadlock when
-these functions are called due to memory pressure. This patch changes
-"mutex_lock();" to "if (!mutex_trylock()) return ...;" in order to
-avoid deadlock.
-
-At the same time, this patch fixes potential division by 0 due to
-unconditionally doing "% _manager->npools". This is because
-list_empty(&_manager->pools) being false does not guarantee that
-_manager->npools != 0 after taking the _manager->lock because
-_manager->npools is updated under the _manager->lock.
-
-At the same time, this patch moves updating of start_pool variable
-in order to avoid skipping when choosing a pool to shrink in
-round-robin style. The start_pool is changed from "atomic_t" to
-"unsigned int" because it is now updated under the _manager->lock.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: stable <stable@kernel.org> [3.3+]
----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index fb8259f..5e332b4 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1004,9 +1004,9 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
- static unsigned long
- ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- {
--	static atomic_t start_pool = ATOMIC_INIT(0);
-+	static unsigned int start_pool;
- 	unsigned idx = 0;
--	unsigned pool_offset = atomic_add_return(1, &start_pool);
-+	unsigned pool_offset;
- 	unsigned shrink_pages = sc->nr_to_scan;
- 	struct device_pools *p;
- 	unsigned long freed = 0;
-@@ -1014,8 +1014,11 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	if (list_empty(&_manager->pools))
- 		return SHRINK_STOP;
- 
--	mutex_lock(&_manager->lock);
--	pool_offset = pool_offset % _manager->npools;
-+	if (!mutex_trylock(&_manager->lock))
-+		return SHRINK_STOP;
-+	if (!_manager->npools)
-+		goto out;
-+	pool_offset = ++start_pool % _manager->npools;
- 	list_for_each_entry(p, &_manager->pools, pools) {
- 		unsigned nr_free;
- 
-@@ -1034,6 +1037,7 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 			 p->pool->dev_name, p->pool->name, current->pid,
- 			 nr_free, shrink_pages);
- 	}
-+out:
- 	mutex_unlock(&_manager->lock);
- 	return freed;
- }
-@@ -1044,7 +1048,8 @@ ttm_dma_pool_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
- 	struct device_pools *p;
- 	unsigned long count = 0;
- 
--	mutex_lock(&_manager->lock);
-+	if (!mutex_trylock(&_manager->lock))
-+		return 0;
- 	list_for_each_entry(p, &_manager->pools, pools)
- 		count += p->pool->npages_free;
- 	mutex_unlock(&_manager->lock);
--- 
-1.8.3.1
+What's going on there?
