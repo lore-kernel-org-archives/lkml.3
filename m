@@ -1,161 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886AbaE2M3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 08:29:54 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:57376 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756512AbaE2M3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 08:29:52 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Fred Brooks <frederick.brooks@microchip.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2 v2] staging: comedi: ni_daq_700: add AI range and input mode switching
-Date: Thu, 29 May 2014 13:29:26 +0100
-Message-Id: <1401366566-6209-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1401362147-5965-3-git-send-email-abbotti@mev.co.uk>
-References: <1401362147-5965-3-git-send-email-abbotti@mev.co.uk>
+	id S1756639AbaE2MjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 08:39:23 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52452 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908AbaE2MjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 08:39:22 -0400
+Message-ID: <53872A72.6040007@hitachi.com>
+Date: Thu, 29 May 2014 21:39:14 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH -tip ] [BUGFIX] perf/probe: Fix perf probe to find correct
+ variable DIE
+References: <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140529121930.30879.87092.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140529121930.30879.87092.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fred Brooks <frederick.brooks@microchip.com>
+Hi Arnaldo,
 
-Add support for switching the input range and the single-ended/
-differential input mode for the AI subdevice.  We needed to clear the
-FIFO of data before the conversion to handle card mode switching
-glitches.
+Here is the patch which fixes perf probe to find variable
+location correctly, on the recent dwarf format. This is not
+related to the SEGV issue which I fixed in previous mail.
 
-[ Minor whitespace fixes and driver comment reformatting.  - Ian ]
+Thank you,
 
-Signed-off-by: Fred Brooks <frederick.brooks@microchip.com>
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
-v2: Set authorship to Fred Brooks and updated patch description as
-suggested by Dan Carpenter.
----
- drivers/staging/comedi/drivers/ni_daq_700.c | 53 +++++++++++++++++++++++------
- 1 file changed, 43 insertions(+), 10 deletions(-)
+(2014/05/29 21:19), Masami Hiramatsu wrote:
+> Fix perf probe to find correct variable DIE which has location or
+> external instance by tracking down the lexical blocks.
+> 
+> Current die_find_variable() expects that the all variable DIEs
+> which has DW_TAG_variable have a location. However, since recent
+> dwarf information may have declaration variable DIEs at the
+> entry of function (subprogram), die_find_variable() returns it.
+> 
+> To solve this problem, it must track down the DIE tree to find
+> a DIE which has an actual location or a reference for external
+> instance.
+> 
+> e.g. finding a DIE which origin is <0xdc73>;
+> 
+>  <1><11496>: Abbrev Number: 95 (DW_TAG_subprogram)
+>     <11497>   DW_AT_abstract_origin: <0xdc42>
+>     <1149b>   DW_AT_low_pc      : 0x1850
+> [...]
+>  <2><114cc>: Abbrev Number: 119 (DW_TAG_variable) <- this is a declaration
+>     <114cd>   DW_AT_abstract_origin: <0xdc73>
+>  <2><114d1>: Abbrev Number: 119 (DW_TAG_variable)
+> [...]
+>  <3><115a7>: Abbrev Number: 105 (DW_TAG_lexical_block)
+>     <115a8>   DW_AT_ranges      : 0xaa0
+>  <4><115ac>: Abbrev Number: 96 (DW_TAG_variable) <- this has a location
+>     <115ad>   DW_AT_abstract_origin: <0xdc73>
+>     <115b1>   DW_AT_location    : 0x486c        (location list)
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/util/dwarf-aux.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+> index 7defd77..cc66c40 100644
+> --- a/tools/perf/util/dwarf-aux.c
+> +++ b/tools/perf/util/dwarf-aux.c
+> @@ -747,14 +747,17 @@ struct __find_variable_param {
+>  static int __die_find_variable_cb(Dwarf_Die *die_mem, void *data)
+>  {
+>  	struct __find_variable_param *fvp = data;
+> +	Dwarf_Attribute attr;
+>  	int tag;
+>  
+>  	tag = dwarf_tag(die_mem);
+>  	if ((tag == DW_TAG_formal_parameter ||
+>  	     tag == DW_TAG_variable) &&
+> -	    die_compare_name(die_mem, fvp->name))
+> +	    die_compare_name(die_mem, fvp->name) &&
+> +	/* Does the DIE have location information or external instance? */
+> +	    (dwarf_attr(die_mem, DW_AT_external, &attr) ||
+> +	     dwarf_attr(die_mem, DW_AT_location, &attr)))
+>  		return DIE_FIND_CB_END;
+> -
+>  	if (dwarf_haspc(die_mem, fvp->addr))
+>  		return DIE_FIND_CB_CONTINUE;
+>  	else
+> 
+> 
+> 
+> 
 
-diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
-index 55d80ef..e66c0b9 100644
---- a/drivers/staging/comedi/drivers/ni_daq_700.c
-+++ b/drivers/staging/comedi/drivers/ni_daq_700.c
-@@ -24,21 +24,30 @@
-  *   based on ni_daq_dio24 by Daniel Vecino Castel <dvecino@able.es>
-  * Devices: [National Instruments] PCMCIA DAQ-Card-700 (ni_daq_700)
-  * Status: works
-- * Updated: Wed, 19 Sep 2012 12:07:20 +0000
-+ * Updated: Wed, 21 May 2014 12:07:20 +0000
-  *
-  * The daqcard-700 appears in Comedi as a  digital I/O subdevice (0) with
-- * 16 channels and a analog input subdevice (1) with 16 single-ended channels.
-+ * 16 channels and a analog input subdevice (1) with 16 single-ended channels
-+ * or 8 differential channels, and three input ranges.
-  *
-  * Digital:  The channel 0 corresponds to the daqcard-700's output
-  * port, bit 0; channel 8 corresponds to the input port, bit 0.
-  *
-  * Digital direction configuration: channels 0-7 output, 8-15 input.
-  *
-- * Analog: The input  range is 0 to 4095 for -10 to +10 volts
-+ * Analog: The input  range is 0 to 4095 with a default of -10 to +10 volts.
-+ * Valid ranges:
-+ *       0 for -10 to 10V bipolar
-+ *       1 for -5 to 5V bipolar
-+ *       2 for -2.5 to 2.5V bipolar
-+ *
-  * IRQ is assigned but not used.
-  *
-  * Version 0.1	Original DIO only driver
-  * Version 0.2	DIO and basic AI analog input support on 16 se channels
-+ * Version 0.3	Add SE or DIFF mode and range switching +-10,+-5,+-2.5
-+ *		Clear the FIFO of data before the conversion to handle card
-+ *		mode switching glitches.
-  *
-  * Manuals:	Register level:	http://www.ni.com/pdf/manuals/340698.pdf
-  *		User Manual:	http://www.ni.com/pdf/manuals/320676d.pdf
-@@ -68,6 +77,17 @@
- #define CDA_R2		0x0A	/* RW 8bit */
- #define CMO_R		0x0B	/* RO 8bit */
- #define TIC_R		0x06	/* WO 8bit */
-+/* daqcard700 modes */
-+#define CMD_R3_DIFF     0x04    /* diff mode */
-+
-+static const struct comedi_lrange range_daq700_ai = {
-+	3,
-+	{
-+		BIP_RANGE(10),
-+		BIP_RANGE(5),
-+		BIP_RANGE(2.5)
-+	}
-+};
- 
- static int daq700_dio_insn_bits(struct comedi_device *dev,
- 				struct comedi_subdevice *s,
-@@ -130,20 +150,34 @@ static int daq700_ai_rinsn(struct comedi_device *dev,
- 			   struct comedi_subdevice *s,
- 			   struct comedi_insn *insn, unsigned int *data)
- {
--	int n, chan;
-+	int n;
- 	int d;
- 	int ret;
-+	unsigned int chan	= CR_CHAN(insn->chanspec);
-+	unsigned int aref	= CR_AREF(insn->chanspec);
-+	unsigned int range	= CR_RANGE(insn->chanspec);
-+	unsigned int r3_bits	= 0;
-+
-+	/* set channel input modes */
-+	if (aref == AREF_DIFF)
-+		r3_bits |= CMD_R3_DIFF;
-+	/* write channel mode/range */
-+	if (range >= 1)
-+		range++;        /* convert range to hardware value */
-+	outb(r3_bits | (range & 0x03), dev->iobase + CMD_R3);
- 
--	chan = CR_CHAN(insn->chanspec);
- 	/* write channel to multiplexer */
- 	/* set mask scan bit high to disable scanning */
--	outb(chan | 0x80, dev->iobase + CMD_R1);
-+	outb((chan & 0x0f) | 0x80, dev->iobase + CMD_R1);
- 
- 	/* convert n samples */
- 	for (n = 0; n < insn->n; n++) {
- 		/* trigger conversion with out0 L to H */
- 		outb(0x00, dev->iobase + CMD_R2); /* enable ADC conversions */
- 		outb(0x30, dev->iobase + CMO_R); /* mode 0 out0 L, from H */
-+		outb(0x00, dev->iobase + ADCLEAR_R);	/* clear the ADC FIFO */
-+		/* read 16bit junk from FIFO to clear */
-+		inw(dev->iobase + ADFIFO_R);
- 		/* mode 1 out0 H, L to H, start conversion */
- 		outb(0x32, dev->iobase + CMO_R);
- 
-@@ -219,11 +253,10 @@ static int daq700_auto_attach(struct comedi_device *dev,
- 	/* DAQCard-700 ai */
- 	s = &dev->subdevices[1];
- 	s->type = COMEDI_SUBD_AI;
--	/* we support single-ended (ground)  */
--	s->subdev_flags = SDF_READABLE | SDF_GROUND;
-+	s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_DIFF;
- 	s->n_chan = 16;
- 	s->maxdata = (1 << 12) - 1;
--	s->range_table = &range_bipolar10;
-+	s->range_table = &range_daq700_ai;
- 	s->insn_read = daq700_ai_rinsn;
- 	daq700_ai_config(dev, s);
- 
-@@ -260,5 +293,5 @@ module_comedi_pcmcia_driver(daq700_driver, daq700_cs_driver);
- MODULE_AUTHOR("Fred Brooks <nsaspook@nsaspook.com>");
- MODULE_DESCRIPTION(
- 	"Comedi driver for National Instruments PCMCIA DAQCard-700 DIO/AI");
--MODULE_VERSION("0.2.00");
-+MODULE_VERSION("0.3.00");
- MODULE_LICENSE("GPL");
+
 -- 
-1.9.2
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
