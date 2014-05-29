@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933870AbaE2FnS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:43:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57575 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755453AbaE2Een (ORCPT
+	id S1756595AbaE2Ftv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:49:51 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:36811 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571AbaE2Ftu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:34:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 004/140] KVM: x86: remove WARN_ON from get_kernel_ns()
-Date: Wed, 28 May 2014 21:32:23 -0700
-Message-Id: <20140529043050.131071360@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
-In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
-References: <20140529043049.661315084@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 29 May 2014 01:49:50 -0400
+MIME-Version: 1.0
+Date: Wed, 28 May 2014 22:49:49 -0700
+Message-ID: <CAPD3YnMZS=2UUJNgh1JBE5qQQinXyKsd0xx2+_Z8gSc4gcWGGw@mail.gmail.com>
+Subject: kdump kernel with SMP
+From: Luong Ngo <luong.ngo@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+I need advises with a problem of kdump kernel in SMP machine. The
+problem I see is when panic happens, if the panic occurs on core 0,
+kdump kernel would receive interrups, specifically the sata disk
+driver works fine, but if panic happens on any other core, kdump
+kernel seems to not get any interrupt. I add boot parameter to dump
+local APIC and IO APIC and it looks like all interrupts has the
+destination is APIC ID 0, which I believe means core 0, while local
+APIC has a different APIC ID. So I start looking around the kernel and
+find  a function call smp_processor_id() that seems to always return 0
+regardless what core is running. This return value ultimately
+determines the structure cpu_online_map that is returned by
+apic->target_cpus() inside IO APIC setup code.  That is what I believe
+is happening but not sure if what I understand is right or missing
+something here?
+I tried boot parameter max_irqs=0 and interrupts seem to work but I
+know that would disable SMP and IO APIC. Can kdump kernel be in SMP
+mode? Why does smp_processor_id returns 0 even though the core that
+panics is non 0, which cause IO APIC to be programmed with all dest
+APIC ID to be 0?
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
-
-commit b351c39cc9e0151cee9b8d52a1e714928faabb38 upstream.
-
-Function and callers can be preempted.
-
-https://bugzilla.kernel.org/show_bug.cgi?id=73721
-
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kvm/x86.c |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1109,7 +1109,6 @@ static inline u64 get_kernel_ns(void)
- {
- 	struct timespec ts;
- 
--	WARN_ON(preemptible());
- 	ktime_get_ts(&ts);
- 	monotonic_to_bootbased(&ts);
- 	return timespec_to_ns(&ts);
-
-
+Thanks a lot for your help.
+Regards,
+Luong
