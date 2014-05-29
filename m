@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310AbaE2SnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 14:43:09 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:8350
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751130AbaE2SnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 14:43:07 -0400
-Message-ID: <1401388979.6603.165.camel@snotra.buserror.net>
-Subject: Re: [PATCH] pcmcia: m8xx: remove checks for four macros
-From: Scott Wood <scottwood@freescale.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linux-pcmcia@lists.infradead.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 29 May 2014 13:42:59 -0500
-In-Reply-To: <1401388744.25908.16.camel@x220>
-References: <1400916970.31526.78.camel@x220>
-	 <1401387624.6603.161.camel@snotra.buserror.net>
-	 <1401388744.25908.16.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	id S1756369AbaE2Soh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 14:44:37 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:62036 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849AbaE2Sog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 14:44:36 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:d1b9:9316:96e:1a3c]
-X-ClientProxiedBy: BLUPR08CA0057.namprd08.prod.outlook.com (10.141.200.37) To
- BL2PR03MB387.namprd03.prod.outlook.com (10.141.91.152)
-X-Forefront-PRVS: 022649CC2C
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(428001)(199002)(189002)(24454002)(377424004)(51704005)(31966008)(74662001)(99396002)(76176999)(87286001)(50986999)(50226001)(88136002)(104166001)(19580405001)(74502001)(83322001)(86362001)(62966002)(4396001)(87976001)(77156001)(21056001)(101416001)(23676002)(102836001)(85852003)(81542001)(92566001)(20776003)(46102001)(92726001)(76482001)(42186004)(93916002)(89996001)(50466002)(80022001)(64706001)(19580395003)(77982001)(79102001)(33646001)(83072002)(81342001)(103116003)(47776003)(32563001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB387;H:[IPv6:2601:2:5800:3f7:d1b9:9316:96e:1a3c];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-OriginatorOrg: freescale.com
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <31766.1401387746@warthog.procyon.org.uk>
+References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
+	<28592.1401382081@warthog.procyon.org.uk>
+	<CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com>
+	<29026.1401383705@warthog.procyon.org.uk>
+	<CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com>
+	<29191.1401384252@warthog.procyon.org.uk>
+	<CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com>
+	<29410.1401385296@warthog.procyon.org.uk>
+	<CA+icZUU-BcgbZ2b0-Nbu=9g57c5WTJV3Him29cDnpuOp5W62Sw@mail.gmail.com>
+	<31766.1401387746@warthog.procyon.org.uk>
+Date: Thu, 29 May 2014 20:44:34 +0200
+Message-ID: <CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com>
+Subject: Re: Unionmount and overlayfs testsuite
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
+        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-29 at 20:39 +0200, Paul Bolle wrote:
-> On Thu, 2014-05-29 at 13:20 -0500, Scott Wood wrote:
-> > On Sat, 2014-05-24 at 09:36 +0200, Paul Bolle wrote:
-> > > This driver contains checks for four Kconfig macros. But the related
-> > > Kconfig symbols have never been part of the tree. Remove these checks
-> > > and the code they hide.
-> > > 
-> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > > ---
-> > > Untested.
-> > > 
-> > > This has been an issue ever since this driver was added in v2.6.15. Note
-> > > that there is no header named "*/cpld.h", so setting PRxK can't possibly
-> > > work.
-> > > 
-> > >  drivers/pcmcia/m8xx_pcmcia.c | 75 --------------------------------------------
-> > >  1 file changed, 75 deletions(-)
-> > 
-> > Does anything in this driver still work?  It looks like bitrot from the
-> > arch/ppc days, that sort of got updated to use the device tree -- but
-> > even after this patch there are lots of instances of CONFIG symbols
-> > being used to assert the exact hardware being used, rather than what
-> > hardware is supported.
-> 
-> I'm not sure I get what you're pointing at. Can you give one example?
+On Thu, May 29, 2014 at 8:22 PM, David Howells <dhowells@redhat.com> wrote:
+> Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>
+>> >         TEST_OVERLAYFS=1 ./run.sh
+>> >
+>> > right?
+>> >
+>>
+>> Yes (with my mount-patch applied).
+>>
+>> ( ...and... # umount /lower /upper /mnt )
+>
+> Can you put a couple of echo commands in settings.inc to show which side of
+> the if-statement it goes and also put:
+>
+>         echo TEST_OVERLAYFS is $TEST_OVERLAYFS
+>
+> in run.sh and mount_union.sh?
+>
 
-All the various stuff enabled by CONFIG_FADS, CONFIG_MPC885ADS, etc.
-such as the voltage_set() implementation.
+I retried with the new kernel-config...
 
--Scott
+# modprobe -v overlayfs
+insmod /lib/modules/3.15.0-rc7-58.1-iniza-lockdep/kernel/fs/overlayfs/overlayfs.ko
 
+...and echo-line changes...
 
+# LC_ALL=C TEST_OVERLAYFS="1" ./run.sh
+[ run.sh ] TEST_OVERLAYFS is 1
+***
+*** ./run.sh open-plain.test
+***
+[ mount_union.sh ] TEST_OVERLAYFS is 1
+TEST100: Open O_RDONLY
+ - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
+ - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
+TEST101: Open O_WRONLY
+ - open_file -w /mnt/a/foo101 -W q
+/mnt/a/foo101: Test file not on upper filesystem  (line 30)
+
+# LC_ALL=C df -h | egrep 'mnt|upper|lower'
+lower_layer     1.9G  240K  1.9G   1% /lower
+upper_layer     1.9G  4.0K  1.9G   1% /upper
+overlayfs       1.9G  4.0K  1.9G   1% /mnt
+
+# find /mnt/ /upper/ /lower/ -name foo101
+/mnt/a/foo101
+/upper/upper/a/foo101
+/lower/a/foo101
+
+# LC_ALL=C ll /mnt/a/foo101 /upper/upper/a/foo101 /lower/a/foo101
+-rw-r--r-- 1 bin bin 12 May 29 20:42 /lower/a/foo101
+-rw-r--r-- 1 bin bin 12 May 29 20:42 /mnt/a/foo101
+-rw-r--r-- 1 bin bin 12 May 29 20:42 /upper/upper/a/foo101
+
+# stat -c foo101 /mnt/ /upper/ /lower/
+foo101
+foo101
+foo101
+
+- Sedat -
