@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185AbaE2K2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 06:28:36 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:54218 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207AbaE2K2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 06:28:34 -0400
-From: Varka Bhadram <varkabhadram@gmail.com>
-X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
-To: alan@signal11.us
-Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, alex.aing@gmail.com,
-        Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next v3] mrf24j40: added device managed APIs
-Date: Thu, 29 May 2014 15:57:38 +0530
-Message-Id: <1401359258-7247-1-git-send-email-varkab@cdac.in>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757213AbaE2Kfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 06:35:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55797 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755934AbaE2Kfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 06:35:46 -0400
+Date: Thu, 29 May 2014 12:35:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, tony.luck@intel.com,
+        m.chehab@samsung.com, linux-acpi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140529103539.GB21718@pd.tnic>
+References: <1400142646-10127-1-git-send-email-gong.chen@linux.intel.com>
+ <1401247938-22125-1-git-send-email-gong.chen@linux.intel.com>
+ <1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+ <20140528112832.5f83c66b@gandalf.local.home>
+ <20140528163452.GF17196@pd.tnic>
+ <20140528125625.6f6dcf7f@gandalf.local.home>
+ <20140529074345.GA23484@gchen.bj.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140529074345.GA23484@gchen.bj.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-changes since v2:
-1. removed unwanted label implementation. 
+On Thu, May 29, 2014 at 03:43:45AM -0400, Chen, Gong wrote:
+> On Wed, May 28, 2014 at 12:56:25PM -0400, Steven Rostedt wrote:
+> > My concern is passing in a large string and wasting a lot of the ring
+> > buffer space. The max you can hold per event is just under a page size
+> > (4k). And all these strings add up. If it happens to be 512bytes, then
+> > you end up with one event per page.
+> I just don't understand why you say wasting memory. I just pass
+> a char * not a string array.
 
-When we use devm_* APIs ,probe() failed also the memory
-will be freed automatically. Thanks to Alex
+And this char * points to where?
 
--Varka Bhadram
++               __string(dimm_info, dimm_info)
++               __string(mem_loc, mem_loc)
 
-
-Signed-off-by: Varka Bhadram <varkab@cdac.in>
----
- drivers/net/ieee802154/mrf24j40.c |   30 ++++++++++++------------------
- 1 file changed, 12 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
-index 78a6552..f2b1345 100644
---- a/drivers/net/ieee802154/mrf24j40.c
-+++ b/drivers/net/ieee802154/mrf24j40.c
-@@ -618,12 +618,12 @@ static int mrf24j40_probe(struct spi_device *spi)
- 
- 	printk(KERN_INFO "mrf24j40: probe(). IRQ: %d\n", spi->irq);
- 
--	devrec = kzalloc(sizeof(struct mrf24j40), GFP_KERNEL);
-+	devrec = devm_kzalloc(&spi->dev, sizeof(struct mrf24j40), GFP_KERNEL);
- 	if (!devrec)
--		goto err_devrec;
--	devrec->buf = kzalloc(3, GFP_KERNEL);
-+		goto err_ret;
-+	devrec->buf = devm_kzalloc(&spi->dev, 3, GFP_KERNEL);
- 	if (!devrec->buf)
--		goto err_buf;
-+		goto err_ret;
- 
- 	spi->mode = SPI_MODE_0; /* TODO: Is this appropriate for right here? */
- 	if (spi->max_speed_hz > MAX_SPI_SPEED_HZ)
-@@ -676,12 +676,13 @@ static int mrf24j40_probe(struct spi_device *spi)
- 	val &= ~0x3; /* Clear RX mode (normal) */
- 	write_short_reg(devrec, REG_RXMCR, val);
- 
--	ret = request_threaded_irq(spi->irq,
--				   NULL,
--				   mrf24j40_isr,
--				   IRQF_TRIGGER_LOW|IRQF_ONESHOT,
--				   dev_name(&spi->dev),
--				   devrec);
-+	ret = devm_request_threaded_irq(&spi->dev,
-+					spi->irq,
-+					NULL,
-+					mrf24j40_isr,
-+					IRQF_TRIGGER_LOW|IRQF_ONESHOT,
-+					dev_name(&spi->dev),
-+					devrec);
- 
- 	if (ret) {
- 		dev_err(printdev(devrec), "Unable to get IRQ");
-@@ -696,10 +697,7 @@ err_read_reg:
- err_register_device:
- 	ieee802154_free_device(devrec->dev);
- err_alloc_dev:
--	kfree(devrec->buf);
--err_buf:
--	kfree(devrec);
--err_devrec:
-+err_ret:
- 	return ret;
- }
- 
-@@ -709,15 +707,11 @@ static int mrf24j40_remove(struct spi_device *spi)
- 
- 	dev_dbg(printdev(devrec), "remove\n");
- 
--	free_irq(spi->irq, devrec);
- 	ieee802154_unregister_device(devrec->dev);
- 	ieee802154_free_device(devrec->dev);
- 	/* TODO: Will ieee802154_free_device() wait until ->xmit() is
- 	 * complete? */
- 
--	/* Clean up the SPI stuff. */
--	kfree(devrec->buf);
--	kfree(devrec);
- 	return 0;
- }
- 
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
