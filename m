@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276AbaE2Eiq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:38:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58631 "EHLO
+	id S933449AbaE2Eol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:44:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933216AbaE2Eik (ORCPT
+	with ESMTP id S933271AbaE2Eiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:40 -0400
+	Thu, 29 May 2014 00:38:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Patrick McHardy <kaber@trash.net>, Andrian Nord <nightnord@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+        Li RongQing <roy.qing.li@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 61/86] Revert "macvlan : fix checksums error when we are in bridge mode"
-Date: Wed, 28 May 2014 21:37:36 -0700
-Message-Id: <20140529043521.764532521@linuxfoundation.org>
+Subject: [PATCH 3.10 69/86] ipv4: initialise the itag variable in __mkroute_input
+Date: Wed, 28 May 2014 21:37:44 -0700
+Message-Id: <20140529043522.825586564@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -31,59 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-[ Upstream commit f114890cdf84d753f6b41cd0cc44ba51d16313da ]
+[ Upstream commit fbdc0ad095c0a299e9abf5d8ac8f58374951149a ]
 
-This reverts commit 12a2856b604476c27d85a5f9a57ae1661fc46019.
-The commit above doesn't appear to be necessary any more as the
-checksums appear to be correctly computed/validated.
+the value of itag is a random value from stack, and may not be initiated by
+fib_validate_source, which called fib_combine_itag if CONFIG_IP_ROUTE_CLASSID
+is not set
 
-Additionally the above commit breaks kvm configurations where
-one VM is using a device that support checksum offload (virtio) and
-the other VM does not.
-In this case, packets leaving virtio device will have CHECKSUM_PARTIAL
-set.  The packets is forwarded to a macvtap that has offload features
-turned off.  Since we use CHECKSUM_UNNECESSARY, the host does does not
-update the checksum and thus a bad checksum is passed up to
-the guest.
+This will make the cached dst uncertainty
 
-CC: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Andrian Nord <nightnord@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Michael S. Tsirkin <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    3 ---
- 1 file changed, 3 deletions(-)
+ net/ipv4/route.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -261,11 +261,9 @@ static int macvlan_queue_xmit(struct sk_
- 	const struct macvlan_dev *vlan = netdev_priv(dev);
- 	const struct macvlan_port *port = vlan->port;
- 	const struct macvlan_dev *dest;
--	__u8 ip_summed = skb->ip_summed;
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1478,7 +1478,7 @@ static int __mkroute_input(struct sk_buf
+ 	struct in_device *out_dev;
+ 	unsigned int flags = 0;
+ 	bool do_cache;
+-	u32 itag;
++	u32 itag = 0;
  
- 	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
- 		const struct ethhdr *eth = (void *)skb->data;
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		/* send to other bridge ports directly */
- 		if (is_multicast_ether_addr(eth->h_dest)) {
-@@ -283,7 +281,6 @@ static int macvlan_queue_xmit(struct sk_
- 	}
- 
- xmit_world:
--	skb->ip_summed = ip_summed;
- 	skb->dev = vlan->lowerdev;
- 	return dev_queue_xmit(skb);
- }
+ 	/* get a working reference to the output device */
+ 	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
 
 
