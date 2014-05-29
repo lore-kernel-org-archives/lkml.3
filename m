@@ -1,296 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993AbaE2Qpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:45:41 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:58546 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756178AbaE2Qoc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:44:32 -0400
-From: Chaitanya Hazarey <c@24.io>
-To: dan.carpenter@oracle.com, gregkh@linuxfoundation.org,
-        burzalodowa@gmail.com, andrea.merello@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chaitanya Hazarey <c@24.io>
-Subject: [PATCH 3/5] Staging: rtl8192u: r8192U_wx.c Removed C99 comments
-Date: Thu, 29 May 2014 09:44:22 -0700
-Message-Id: <1401381864-28718-3-git-send-email-c@24.io>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401381864-28718-1-git-send-email-c@24.io>
-References: <1401381864-28718-1-git-send-email-c@24.io>
+	id S1757964AbaE2Qpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:45:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756902AbaE2Qpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 12:45:38 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140529163629.GN17233@tucsk.piliscsaba.szeredi.hu>
+References: <20140529163629.GN17233@tucsk.piliscsaba.szeredi.hu> <CAJfpeguyE0cg+RAEwOR89=qTGnr2OZFuhZ4tmAfkMLn5-DP_wg@mail.gmail.com> <27993.1401360881@warthog.procyon.org.uk> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28313.1401362925@warthog.procyon.org.uk> <20140529120734.GM17233@tucsk.piliscsaba.szeredi.hu> <22475.1401380602@warthog.procyon.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
+        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
+        ezk@fsl.cs.sunysb.edu, Sedat Dilek <sedat.dilek@gmail.com>,
+        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: Re: More kernel errors with overlay filesystem v22
+Date: Thu, 29 May 2014 17:44:58 +0100
+Message-ID: <28536.1401381898@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To address the error -
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-ERROR: do not use C99 // comments
+> generic_file_splice_write() uses I_MUTEX_CHILD.  Not sure why, though, parent
+> shouldn't be locked.  Maybe it's some remaining thing from the days when pipes
+> used the i_mutex on the pipe inode.  Probably should just remove that notation
+> and things will work.
 
-Removed all C99 comments.
+You should be so lucky! ;-)
 
-Signed-off-by: Chaitanya Hazarey <c@24.io>
----
- drivers/staging/rtl8192u/r8192U_wx.c | 130 +++++++++++++++++------------------
- 1 file changed, 65 insertions(+), 65 deletions(-)
+=============================================
+[ INFO: possible recursive locking detected ]
+3.15.0-rc6-fsdevel+ #367 Tainted: G        W    
+---------------------------------------------
+open-file/3284 is trying to acquire lock:
+ (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff81137121>] generic_file_splice_write+0x88/0x154
 
-diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index 7dc2a96..b533784 100644
---- a/drivers/staging/rtl8192u/r8192U_wx.c
-+++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -180,8 +180,8 @@ static int r8192_wx_set_crcmon(struct net_device *dev,
- 	      priv->crcmon ? "accepted" : "rejected");
- 
- 	if (prev != priv->crcmon && priv->up) {
--		//rtl8180_down(dev);
--		//rtl8180_up(dev);
-+		/* rtl8180_down(dev); */
-+		/* rtl8180_up(dev); */
- 	}
- 
- 	up(&priv->wx_sem);
-@@ -249,15 +249,15 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	/* ~5 Mb/s real (802.11b) */
- 	range->throughput = 5 * 1000 * 1000;
- 
--	// TODO: Not used in 802.11b?
--//	range->min_nwid;	/* Minimal NWID we are able to set */
--	// TODO: Not used in 802.11b?
--//	range->max_nwid;	/* Maximal NWID we are able to set */
-+	/* TODO: Not used in 802.11b? */
-+	/* range->min_nwid; */	/* Minimal NWID we are able to set */
-+	/* TODO: Not used in 802.11b? */
-+	/* range->max_nwid; */	/* Maximal NWID we are able to set */
- 
- 	/* Old Frequency (backward compat - moved lower ) */
--//	range->old_num_channels;
--//	range->old_num_frequency;
--//	range->old_freq[6]; /* Filler to keep "version" at the same offset */
-+	/* range->old_num_channels; */
-+	/* range->old_num_frequency; */
-+	/* range->old_freq[6]; */ /* Filler to keep "version" at the same offset */
- 	if (priv->rf_set_sens != NULL)
- 		range->sensitivity = priv->max_sens;	/* signal level threshold range */
- 
-@@ -292,26 +292,26 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	range->we_version_compiled = WIRELESS_EXT;
- 	range->we_version_source = 16;
- 
--//	range->retry_capa;	/* What retry options are supported */
--//	range->retry_flags;	/* How to decode max/min retry limit */
--//	range->r_time_flags;	/* How to decode max/min retry life */
--//	range->min_retry;	/* Minimal number of retries */
--//	range->max_retry;	/* Maximal number of retries */
--//	range->min_r_time;	/* Minimal retry lifetime */
--//	range->max_r_time;	/* Maximal retry lifetime */
-+	/* range->retry_capa; */	/* What retry options are supported */
-+	/* range->retry_flags; */	/* How to decode max/min retry limit */
-+	/* range->r_time_flags; */	/* How to decode max/min retry life */
-+	/* range->min_retry; */ 	/* Minimal number of retries */
-+	/* range->max_retry; */		/* Maximal number of retries */
-+	/* range->min_r_time; */	/* Minimal retry lifetime */
-+	/* range->max_r_time; */	/* Maximal retry lifetime */
- 
- 
- 	for (i = 0, val = 0; i < 14; i++) {
- 
--		// Include only legal frequencies for some countries
-+		/* Include only legal frequencies for some countries */
- 		if ((GET_DOT11D_INFO(priv->ieee80211)->channel_map)[i+1]) {
- 			range->freq[val].i = i + 1;
- 			range->freq[val].m = ieee80211_wlan_frequencies[i] * 100000;
- 			range->freq[val].e = 1;
- 			val++;
- 		} else {
--			// FIXME: do we need to set anything for channels
--			// we don't use ?
-+			/* FIXME: do we need to set anything for channels */
-+			/* we don't use ? */
- 		}
- 
- 		if (val == IW_MAX_FREQUENCIES)
-@@ -478,7 +478,7 @@ static int r8192_wx_set_wap(struct net_device *dev,
- 
- 	int ret;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
--//        struct sockaddr *temp = (struct sockaddr *)awrq;
-+	/* struct sockaddr *temp = (struct sockaddr *)awrq; */
- 	down(&priv->wx_sem);
- 
- 	ret = ieee80211_wx_set_wap(priv->ieee80211, info, awrq, extra);
-@@ -517,11 +517,11 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 	struct ieee80211_device *ieee = priv->ieee80211;
- 	int ret;
- 
--	//u32 TargetContent;
-+	/* u32 TargetContent; */
- 	u32 hwkey[4] = {0, 0, 0, 0};
- 	u8 mask = 0xff;
- 	u32 key_idx = 0;
--	//u8 broadcast_addr[6] ={	0xff,0xff,0xff,0xff,0xff,0xff};
-+	/* u8 broadcast_addr[6] ={	0xff,0xff,0xff,0xff,0xff,0xff}; */
- 	u8 zero_addr[4][6] = {	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
- 				{0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
- 				{0x00, 0x00, 0x00, 0x00, 0x00, 0x02},
-@@ -540,7 +540,7 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 
- 
- 
--	//sometimes, the length is zero while we do not type key value
-+	/* sometimes, the length is zero while we do not type key value */
- 	if (wrqu->encoding.length != 0) {
- 
- 		for (i = 0; i < 4; i++) {
-@@ -582,12 +582,12 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 			EnableHWSecurityConfig8192(dev);
- 
- 			setKey(dev,
--				key_idx,                //EntryNo
--				key_idx,                //KeyIndex
--				KEY_TYPE_WEP40,         //KeyType
-+				key_idx,                /* EntryNo */
-+				key_idx,                /* KeyIndex */
-+				KEY_TYPE_WEP40,         /* KeyType */
- 				zero_addr[key_idx],
--				0,                      //DefaultKey
--				hwkey);                 //KeyContent
-+				0,                      /* DefaultKey */
-+				hwkey);                 /* KeyContent */
- 
- 		}
- 
-@@ -596,12 +596,12 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 				EnableHWSecurityConfig8192(dev);
- 
- 			setKey(dev,
--				key_idx,                //EntryNo
--				key_idx,                //KeyIndex
--				KEY_TYPE_WEP104,        //KeyType
-+				key_idx,                /* EntryNo */
-+				key_idx,                /* KeyIndex */
-+				KEY_TYPE_WEP104,        /* KeyType */
- 				zero_addr[key_idx],
--				0,                      //DefaultKey
--				hwkey);                 //KeyContent
-+				0,                      /* DefaultKey */
-+				hwkey);                 /* KeyContent */
- 
- 		} else {
- 			printk("wrong type in WEP, not WEP40 and WEP104\n");
-@@ -742,7 +742,7 @@ exit:
- 	return err;
- }
- 
--//hw security need to reorganized.
-+/* hw security need to reorganized. */
- static int r8192_wx_set_enc_ext(struct net_device *dev,
- 					struct iw_request_info *info,
- 					union iwreq_data *wrqu, char *extra)
-@@ -763,10 +763,10 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 		struct iw_point *encoding = &wrqu->encoding;
- 		u8 idx = 0, alg = 0, group = 0;
- 		if ((encoding->flags & IW_ENCODE_DISABLED) || ext->alg == IW_ENCODE_ALG_NONE)
--			//none is not allowed to use hwsec WB 2008.07.01
-+			/* none is not allowed to use hwsec WB 2008.07.01 */
- 			goto end_hw_sec;
- 
--		// as IW_ENCODE_ALG_CCMP is defined to be 3 and KEY_TYPE_CCMP is defined to 4;
-+		/* as IW_ENCODE_ALG_CCMP is defined to be 3 and KEY_TYPE_CCMP is defined to 4; */
- 		alg =  (ext->alg == IW_ENCODE_ALG_CCMP)?KEY_TYPE_CCMP:ext->alg;
- 		idx = encoding->flags & IW_ENCODE_INDEX;
- 		if (idx)
-@@ -779,34 +779,34 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 			ieee->pairwise_key_type = alg;
- 			EnableHWSecurityConfig8192(dev);
- 		}
--		memcpy((u8 *)key, ext->key, 16); //we only get 16 bytes key.why? WB 2008.7.1
-+		memcpy((u8 *)key, ext->key, 16); /* we only get 16 bytes key.why? WB 2008.7.1 */
- 
- 		if ((alg & KEY_TYPE_WEP40) && (ieee->auth_mode != 2)) {
- 
- 			setKey(dev,
--					idx,//EntryNo
--					idx, //KeyIndex
--					alg,  //KeyType
--					zero, //MacAddr
--					0,              //DefaultKey
--					key);           //KeyContent
-+					idx,	/* EntryNao */
-+					idx,	/* KeyIndex */
-+					alg,	/* KeyType */
-+					zero,	/* MacAddr */
-+					0,	/* DefaultKey */
-+					key);	/* KeyContent */
- 		} else if (group) {
- 			ieee->group_key_type = alg;
- 			setKey(dev,
--					idx,//EntryNo
--					idx, //KeyIndex
--					alg,  //KeyType
--					broadcast_addr, //MacAddr
--					0,              //DefaultKey
--					key);           //KeyContent
--		} else {//pairwise key
-+					idx,	/* EntryNo */
-+					idx,	/* KeyIndex */
-+					alg,	/* KeyType */
-+					broadcast_addr,	/* MacAddr */
-+					0,		/* DefaultKey */
-+					key);		/* KeyContent */
-+		} else {	/* pairwise key */
- 			setKey(dev,
--					4,//EntryNo
--					idx, //KeyIndex
--					alg,  //KeyType
--					(u8 *)ieee->ap_mac_addr, //MacAddr
--					0,              //DefaultKey
--					key);           //KeyContent
-+					4,	/* EntryNo */
-+					idx,	/* KeyIndex */
-+					alg,	/* KeyType */
-+					(u8 *)ieee->ap_mac_addr,/* MacAddr */
-+					0,			/* DefaultKey */
-+					key);           	/* KeyContent */
- 		}
- 
- 
-@@ -914,13 +914,13 @@ static iw_handler r8192_wx_handlers[] = {
- 	r8192_wx_get_power,                    /* SIOCGIWPOWER */
- 	NULL,			/*---hole---*/
- 	NULL,			/*---hole---*/
--	r8192_wx_set_gen_ie,//NULL,			/* SIOCSIWGENIE */
-+	r8192_wx_set_gen_ie, /* NULL, */		/* SIOCSIWGENIE */
- 	NULL,			/* SIOCSIWGENIE */
- 
--	r8192_wx_set_auth,//NULL,			/* SIOCSIWAUTH */
--	NULL,//r8192_wx_get_auth,//NULL,			/* SIOCSIWAUTH */
-+	r8192_wx_set_auth,/* NULL, */			/* SIOCSIWAUTH */
-+	NULL,/* r8192_wx_get_auth, */ /* NULL, */	/* SIOCSIWAUTH */
- 	r8192_wx_set_enc_ext,			/* SIOCSIWENCODEEXT */
--	NULL,//r8192_wx_get_enc_ext,//NULL,			/* SIOCSIWENCODEEXT */
-+	NULL,/* r8192_wx_get_enc_ext, *//* NULL, */			/* SIOCSIWENCODEEXT */
- 	NULL,			/* SIOCSIWPMKSA */
- 	NULL,			 /*---hole---*/
- 
-@@ -953,14 +953,14 @@ static const struct iw_priv_args r8192_private_args[] = {
- 
- 
- static iw_handler r8192_private_handler[] = {
--//	r8192_wx_set_monitor,  /* SIOCIWFIRSTPRIV */
-+	/* r8192_wx_set_monitor, */ /* SIOCIWFIRSTPRIV */
- 	r8192_wx_set_crcmon,   /*SIOCIWSECONDPRIV*/
--//	r8192_wx_set_forceassociate,
--//	r8192_wx_set_beaconinterval,
--//	r8192_wx_set_monitor_type,
-+	/* r8192_wx_set_forceassociate, */
-+	/* r8192_wx_set_beaconinterval, */
-+	/* r8192_wx_set_monitor_type, */
- 	r8192_wx_set_scan_type,
- 	r8192_wx_set_rawtx,
--	//r8192_wx_null,
-+	/* r8192_wx_null, */
- 	r8192_wx_force_reset,
- };
- 
--- 
-1.9.1
+but task is already holding lock:
+ (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff8111cf8d>] lock_rename+0xd3/0xdc
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(&sb->s_type->i_mutex_key#9/2);
+  lock(&sb->s_type->i_mutex_key#9/2);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+4 locks held by open-file/3284:
+ #0:  (sb_writers#8){.+.+.+}, at: [<ffffffff8112bf5b>] mnt_want_write+0x1c/0x40
+ #1:  (&type->s_vfs_rename_key){+.+.+.}, at: [<ffffffff8111cef5>] lock_rename+0x3b/0xdc
+ #2:  (&sb->s_type->i_mutex_key#9/1){+.+.+.}, at: [<ffffffff8111cf78>] lock_rename+0xbe/0xdc
+ #3:  (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff8111cf8d>] lock_rename+0xd3/0xdc
+
+stack backtrace:
+CPU: 0 PID: 3284 Comm: open-file Tainted: G        W     3.15.0-rc6-fsdevel+ #367
+Hardware name:                  /DG965RY, BIOS MQ96510J.86A.0816.2006.0716.2308 07/16/2006
+ 0000000000000000 ffff88002219d7e0 ffffffff8148b779 ffffffff81ff9d80
+ ffff88002219d8a0 ffffffff81074b0e ffff88002219d820 ffff88002219d8a0
+ 0000000000000000 0000000000000000 ffff880000000003 ffffffff00000000
+Call Trace:
+ [<ffffffff8148b779>] dump_stack+0x4d/0x66
+ [<ffffffff81074b0e>] __lock_acquire+0x75a/0x1861
+ [<ffffffff810762b6>] lock_acquire+0x9c/0x112
+ [<ffffffff81137121>] ? generic_file_splice_write+0x88/0x154
+ [<ffffffff8148e5cf>] mutex_lock_nested+0x60/0x2ff
+ [<ffffffff81137121>] ? generic_file_splice_write+0x88/0x154
+ [<ffffffff81074399>] ? debug_check_no_locks_freed+0x11b/0x136
+ [<ffffffff81137121>] generic_file_splice_write+0x88/0x154
+ [<ffffffff8113777e>] direct_splice_actor+0x31/0x33
+ [<ffffffff81137329>] splice_direct_to_actor+0xc6/0x188
+ [<ffffffff8113774d>] ? opipe_prep.part.8+0x9e/0x9e
+ [<ffffffff8113745e>] do_splice_direct+0x73/0x9b
+ [<ffffffff811e3375>] ovl_copy_up_one+0x509/0x586
+ [<ffffffff811e3490>] ovl_copy_up+0x9e/0xd3
+ [<ffffffff811e0ba7>] ovl_dentry_open+0xbf/0xce
+ [<ffffffff8110fba8>] vfs_open+0x24/0x41
+ [<ffffffff8111d9fe>] do_last+0x943/0xbc9
+ [<ffffffff8111b9cd>] ? link_path_walk+0x64/0x744
+ [<ffffffff8111dec1>] path_openat+0x23d/0x61d
+ [<ffffffff8111ef52>] do_filp_open+0x35/0x7a
+ [<ffffffff8149114f>] ? _raw_spin_unlock+0x22/0x2d
+ [<ffffffff8112a0fc>] ? __alloc_fd+0xe5/0xf4
+ [<ffffffff81110aee>] do_sys_open+0x142/0x1d1
+ [<ffffffff8100d737>] ? syscall_trace_enter+0x197/0x1eb
+ [<ffffffff81110b96>] SyS_open+0x19/0x1b
+ [<ffffffff814924f4>] tracesys+0xdd/0xe2
 
