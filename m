@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474AbaE2VYv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:24:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18831 "EHLO mga09.intel.com"
+	id S933093AbaE2VY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:24:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60496 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932413AbaE2VYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:24:46 -0400
+	id S932109AbaE2VYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 17:24:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,936,1392192000"; 
-   d="scan'208";a="519900263"
+   d="scan'208";a="519900300"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dan Williams <dan.j.williams@intel.com>
@@ -16,9 +16,9 @@ Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
         linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [PATCH char-misc-next v2 1/8] misc: mic: Add mic bus and dma driver documentation
-Date: Thu, 29 May 2014 14:23:58 -0700
-Message-Id: <efaac8fbc2a1a538960db60376e99180f1a77d3d.1401397315.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next v2 8/8] misc: mic: add support for loading/unloading dma driver
+Date: Thu, 29 May 2014 14:24:05 -0700
+Message-Id: <6794c5147a03c2356ebb305b10c18e05e0c95a54.1401397315.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1401397315.git.sudeep.dutt@intel.com>
 References: <cover.1401397315.git.sudeep.dutt@intel.com>
@@ -30,97 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Siva Yerramreddy <yshivakrishna@gmail.com>
 
-Added an overview of mic bus and dma driver.
+modprobe dma driver upon start and remove it upon unload.
 
-Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
 Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
 ---
- Documentation/mic/mic_overview.txt | 67 +++++++++++++++++++++++---------------
- 1 file changed, 41 insertions(+), 26 deletions(-)
+ Documentation/mic/mpssd/mpss | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/mic/mic_overview.txt b/Documentation/mic/mic_overview.txt
-index b419292..77c5418 100644
---- a/Documentation/mic/mic_overview.txt
-+++ b/Documentation/mic/mic_overview.txt
-@@ -17,35 +17,50 @@ for applications. A key benefit of our solution is that it leverages
- the standard virtio framework for network, disk and console devices,
- though in our case the virtio framework is used across a PCIe bus.
+diff --git a/Documentation/mic/mpssd/mpss b/Documentation/mic/mpssd/mpss
+index 3136c68..cacbdb0 100755
+--- a/Documentation/mic/mpssd/mpss
++++ b/Documentation/mic/mpssd/mpss
+@@ -48,18 +48,18 @@ start()
+ 	fi
  
-+MIC PCIe card has a dma controller with 8 channels. These channels are
-+shared between the host s/w and the card s/w. 0 to 3 are used by host
-+and 4 to 7 by card. As the dma device doesn't show up as PCIe device,
-+a virtual bus called mic bus is created and virtual dma devices are
-+created on it by the host/card drivers. On host the channels are private
-+and used only by the host driver to transfer data for the virtio devices.
-+
- Here is a block diagram of the various components described above. The
- virtio backends are situated on the host rather than the card given better
- single threaded performance for the host compared to MIC, the ability of
- the host to initiate DMA's to/from the card using the MIC DMA engine and
- the fact that the virtio block storage backend can only be on the host.
+ 	echo -e $"Starting MPSS Stack"
+-	echo -e $"Loading MIC_HOST Module"
++	echo -e $"Loading MIC_X100_DMA & MIC_HOST Modules"
  
--                              |
--       +----------+           |             +----------+
--       | Card OS  |           |             | Host OS  |
--       +----------+           |             +----------+
--                              |
--+-------+ +--------+ +------+ | +---------+  +--------+ +--------+
--| Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
--| Net   | |Console | |Block | | |Net      |  |Console | |Block   |
--| Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
--+-------+ +--------+ +------+ | +---------+  +--------+ +--------+
--    |         |         |     |      |            |         |
--    |         |         |     |User  |            |         |
--    |         |         |     |------|------------|---------|-------
--    +-------------------+     |Kernel +--------------------------+
--              |               |       | Virtio over PCIe IOCTLs  |
--              |               |       +--------------------------+
--      +--------------+        |                   |
--      |Intel MIC     |        |            +---------------+
--      |Card Driver   |        |            |Intel MIC      |
--      +--------------+        |            |Host Driver    |
--              |               |            +---------------+
--              |               |                   |
--     +-------------------------------------------------------------+
--     |                                                             |
--     |                    PCIe Bus                                 |
--     +-------------------------------------------------------------+
-+                                      |
-+               +----------+           |             +----------+
-+               | Card OS  |           |             | Host OS  |
-+               +----------+           |             +----------+
-+                                      |
-+        +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
-+        | Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
-+        | Net   | |Console | |Block | | |Net      |  |Console | |Block   |
-+        | Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
-+        +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
-+            |         |         |     |      |            |         |
-+            |         |         |     |User  |            |         |
-+            |         |         |     |------|------------|---------|-------
-+            +-------------------+     |Kernel +--------------------------+
-+                      |               |       | Virtio over PCIe IOCTLs  |
-+                      |               |       +--------------------------+
-++-----------+         |               |                   |  +-----------+
-+| MIC DMA   |         |               |                   |  | MIC DMA   |
-+| Driver    |         |               |                   |  | Driver    |
-++-----------+         |               |                   |  +-----------+
-+      |               |               |                   |        |
-++---------------+     |               |                   |  +----------------+
-+|MIC virtual Bus|     |               |                   |  |MIC virtual Bus |
-++---------------+     |               |                   |  +----------------+
-+      |               |               |                   |              |
-+      |   +--------------+            |            +---------------+     |
-+      |   |Intel MIC     |            |            |Intel MIC      |     |
-+      +---|Card Driver   |            |            |Host Driver    |     |
-+          +--------------+            |            +---------------+-----+
-+                      |               |                   |
-+             +-------------------------------------------------------------+
-+             |                                                             |
-+             |                    PCIe Bus                                 |
-+             +-------------------------------------------------------------+
+-	# Ensure the driver is loaded
+-	if [ ! -d "$sysfs" ]; then
+-		modprobe mic_host
++	for f in "mic_host" "mic_x100_dma"
++	do
++		modprobe $f
+ 		RETVAL=$?
+ 		if [ $RETVAL -ne 0 ]; then
+ 			failure
+ 			echo
+ 			return $RETVAL
+ 		fi
+-	fi
++	done
+ 
+ 	# Start the daemon
+ 	echo -n $"Starting MPSSD "
+@@ -170,8 +170,8 @@ unload()
+ 	stop
+ 
+ 	sleep 5
+-	echo -n $"Removing MIC_HOST Module: "
+-	modprobe -r mic_host
++	echo -n $"Removing MIC_HOST & MIC_X100_DMA Modules: "
++	modprobe -r mic_host mic_x100_dma
+ 	RETVAL=$?
+ 	[ $RETVAL -ne 0 ] && failure || success
+ 	echo
 -- 
 1.8.2.1
 
