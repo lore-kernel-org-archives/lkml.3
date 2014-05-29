@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805AbaE2FDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:03:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58358 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932955AbaE2EiG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:06 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 3.10 05/86] netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
-Date: Wed, 28 May 2014 21:36:40 -0700
-Message-Id: <20140529043514.219721929@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
-In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
-References: <20140529043513.451722422@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S933819AbaE2FD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:03:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36131 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932950AbaE2EiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 00:38:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,932,1392192000"; 
+   d="scan'208";a="519457147"
+Message-ID: <5386B939.5050009@intel.com>
+Date: Thu, 29 May 2014 12:36:09 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Dongsu Park <dongsu.park@profitbricks.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Maurizio Lombardi <mlombard@redhat.com>
+Subject: Re: [PATCH] bio: decrease bi_iter.bi_size by len in the fail path
+References: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>	<1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>	<CACVXFVO6uW3KoVPoeb+O0txuY2Ji6BO1Sob1e-g7NmZBv9MPBQ@mail.gmail.com>	<CACVXFVNNc3dRshmMYNgS+pn54RC2dyQkJFOy1=HJdXfUfuhAMQ@mail.gmail.com>	<5386AAF4.4090804@intel.com> <CACVXFVPG4zNCyVPrvKwfyx0atPFtw+LoKrZbxXSkOqNySSiwEg@mail.gmail.com>
+In-Reply-To: <CACVXFVPG4zNCyVPrvKwfyx0atPFtw+LoKrZbxXSkOqNySSiwEg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 05/29/2014 12:13 PM, Ming Lei wrote:
+> On Thu, May 29, 2014 at 11:35 AM, Jet Chen <jet.chen@intel.com> wrote:
+>> On 05/29/2014 12:59 AM, Ming Lei wrote:
+>>> On Wed, May 28, 2014 at 11:42 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>>>> Hi Dongsu,
+>>>>
+>>>> On Wed, May 28, 2014 at 11:09 PM, Dongsu Park
+>>>> <dongsu.park@profitbricks.com> wrote:
+>>>>> From: Dongsu Park <dongsu.park@profitbricks.com>
+>>>>>
+>>>>> Commit 3979ef4dcf3d1de55a560a3a4016c30a835df44d ("bio-modify-
+>>>>> __bio_add_page-to-accept-pages-that-dont-start-a-new-segment-v3")
+>>>>> introduced a regression as reported by Jet Chen.
+>>>>> That results in a kernel BUG at drivers/block/virtio_blk.c:166.
+>>>>>
+>>>>> To fix that, bi_iter.bi_size must be decreased by len, before
+>>>>> recounting the number of physical segments.
+>>>>>
+>>>>> Tested on with kernel 3.15.0-rc7-next-20140527 on qemu guest,
+>>>>> by running xfstests/ext4/271.
+>>>>>
+>>>>> Cc: Jens Axboe <axboe@kernel.dk>
+>>>>> Cc: Jet Chen <jet.chen@intel.com>
+>>>>> Cc: Maurizio Lombardi <mlombard@redhat.com>
+>>>>> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
+>>>>> ---
+>>>>>   block/bio.c | 1 +
+>>>>>   1 file changed, 1 insertion(+)
+>>>>>
+>>>>> diff --git a/block/bio.c b/block/bio.c
+>>>>> index 0443694ccbb4..67d7cba1e5fd 100644
+>>>>> --- a/block/bio.c
+>>>>> +++ b/block/bio.c
+>>>>> @@ -810,6 +810,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>>>>>          bvec->bv_len = 0;
+>>>>>          bvec->bv_offset = 0;
+>>>>>          bio->bi_vcnt--;
+>>>>> +       bio->bi_iter.bi_size -= len;
+>>>>
+>>>> Would you mind explaining why bi_iter.bi_size need to be
+>>>> decreased by 'len'? In the failure path, it wasn't added by
+>>>> 'len', was it?
+>>>
+>>> Actually, the correct thing may be like what did in the
+>>> attached patch, as Maurizio discussed with me[1].
+>>>
+>>> Very interestingly, I have reproduced the problem one time
+>>> with ext4/271 ext4/301 ext4/305, but won't with the attached
+>>> patch after running it for 3 rounds.
+>>>
+>>> [tom@localhost xfstests]$ sudo ./check ext4/271 ext4/301 ext4/305
+>>> FSTYP         -- ext4
+>>> PLATFORM      -- Linux/x86_64 localhost 3.15.0-rc7-next-20140527+
+>>> MKFS_OPTIONS  -- /dev/vdc
+>>> MOUNT_OPTIONS -- -o acl,user_xattr /dev/vdc /mnt/scratch
+>>>
+>>> ext4/271 1s ... 1s
+>>> ext4/301 31s ... 32s
+>>> ext4/305 181s ... 180s
+>>> Ran: ext4/271 ext4/301 ext4/305
+>>> Passed all 3 tests
+>>>
+>>> Jet, could you test the attached patch?
+>>
+>> sorry, could you specify which patch need me to test ?
+>> actually I got confused. I only find
+>
+> Firstly, dongsu's patch is wrong, and it doesn't make sense to test
+> that.
+>
+> Secondly, it is the patch attached in my last email, and the
+> name is 'fix_compute_segments.patch'.
+>
+> Please let me know if you can find the patch, if you still can't, I
+> may resend to you.
+>
 
-------------------
+Just got your email which attached that patch, thanks. I guess there is some network problem on my side which leads to some latency.
+Will test it out.
 
-From: Andrey Vagin <avagin@openvz.org>
-
-commit 223b02d923ecd7c84cf9780bb3686f455d279279 upstream.
-
-"len" contains sizeof(nf_ct_ext) and size of extensions. In a worst
-case it can contain all extensions. Bellow you can find sizes for all
-types of extensions. Their sum is definitely bigger than 256.
-
-nf_ct_ext_types[0]->len = 24
-nf_ct_ext_types[1]->len = 32
-nf_ct_ext_types[2]->len = 24
-nf_ct_ext_types[3]->len = 32
-nf_ct_ext_types[4]->len = 152
-nf_ct_ext_types[5]->len = 2
-nf_ct_ext_types[6]->len = 16
-nf_ct_ext_types[7]->len = 8
-
-I have seen "len" up to 280 and my host has crashes w/o this patch.
-
-The right way to fix this problem is reducing the size of the ecache
-extension (4) and Florian is going to do this, but these changes will
-be quite large to be appropriate for a stable tree.
-
-Fixes: 5b423f6a40a0 (netfilter: nf_conntrack: fix racy timer handling with reliable)
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/net/netfilter/nf_conntrack_extend.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/include/net/netfilter/nf_conntrack_extend.h
-+++ b/include/net/netfilter/nf_conntrack_extend.h
-@@ -41,8 +41,8 @@ enum nf_ct_ext_id {
- /* Extensions: optional stuff which isn't permanently in struct. */
- struct nf_ct_ext {
- 	struct rcu_head rcu;
--	u8 offset[NF_CT_EXT_NUM];
--	u8 len;
-+	u16 offset[NF_CT_EXT_NUM];
-+	u16 len;
- 	char data[0];
- };
- 
-
-
+>
+> Thanks,
+>
