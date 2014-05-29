@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519AbaE2VXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:23:12 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:63827 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941AbaE2VXK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:23:10 -0400
-Message-ID: <1401398588.3645.60.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] vmalloc: use rcu list iterator to reduce vmap_area_lock
- contention
-From: Eric Dumazet <eric.dumazet@gmail.com>
+	id S1756294AbaE2VYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:24:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756127AbaE2VYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 17:24:20 -0400
+Date: Thu, 29 May 2014 17:23:08 -0400
+From: Dave Jones <davej@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Richard Yao <ryao@gentoo.org>
-Date: Thu, 29 May 2014 14:23:08 -0700
-In-Reply-To: <20140529130544.56213f048f331723329ff828@linux-foundation.org>
-References: <1401344554-3596-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <20140529130544.56213f048f331723329ff828@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: ocfs2: move_extents.c:  Fix to remove null pointer
+ checks that could never happen
+Message-ID: <20140529212308.GA16353@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+References: <1401222231-21656-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20140529140337.f999bfaaf9ffabce071962ea@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529140337.f999bfaaf9ffabce071962ea@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-29 at 13:05 -0700, Andrew Morton wrote:
-> On Thu, 29 May 2014 15:22:34 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > Richard Yao reported a month ago that his system have a trouble
-> > with vmap_area_lock contention during performance analysis
-> > by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
-> > stressfully, but he didn't answer it.
-> > 
-> > https://lkml.org/lkml/2014/4/10/416
-> > 
-> > Although I'm not sure that this is right usage or not, there is a solution
-> > reducing vmap_area_lock contention with no side-effect. That is just
-> > to use rcu list iterator in get_vmalloc_info(). This function only needs
-> > values on vmap_area structure, so we don't need to grab a spinlock.
-> 
-> The mixture of rcu protection and spinlock protection for
-> vmap_area_list is pretty confusing.  Are you able to describe the
-> overall design here?  When and why do we use one versus the other?
+On Thu, May 29, 2014 at 02:03:37PM -0700, Andrew Morton wrote:
+ > On Tue, 27 May 2014 22:23:51 +0200 Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+ > 
+ > > Removal of null pointer checks that could never happen
+ > 
+ > How do you know it never happens?
+ > 
+ > > --- a/fs/ocfs2/move_extents.c
+ > > +++ b/fs/ocfs2/move_extents.c
+ > > @@ -904,9 +904,6 @@ static int ocfs2_move_extents(struct ocfs2_move_extents_context *context)
+ > >  	struct buffer_head *di_bh = NULL;
+ > >  	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ > >  
+ > > -	if (!inode)
+ > > -		return -ENOENT;
+ > > -
+ > 
+ > If it's due to assuming that the previous statement would have oopsed
+ > then that is mistaken.  Is is sometimes the case that gcc will move the
+ > evaluation of inode->i_sb to after the test, so this function can be
+ > passed NULL and it will not oops.
 
-The spinlock protects writers.
+'sometimes' ?
 
-rcu can be used in this function because all RCU protocol is already
-respected by writers, since Nick Piggin commit db64fe02258f1507e13fe5
-("mm: rewrite vmap layer") back in linux-2.6.28
+You have a lot more faith in gcc than I do. What happens if we decide to
+switch to llvm one day ? Can we guarantee every compiler will implement
+the same magic ?  This seems fragile as hell to me.
 
-Specifically :
-   insertions use list_add_rcu(), 
-   deletions use list_del_rcu() and kfree_rcu().
-
-Note the rb tree is not used from rcu reader (it would not be safe),
-only the vmap_area_list has full RCU protection.
-
-Note that __purge_vmap_area_lazy() already uses this rcu protection.
-
-        rcu_read_lock();
-        list_for_each_entry_rcu(va, &vmap_area_list, list) {
-                if (va->flags & VM_LAZY_FREE) {
-                        if (va->va_start < *start)
-                                *start = va->va_start;
-                        if (va->va_end > *end)
-                                *end = va->va_end;
-                        nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
-                        list_add_tail(&va->purge_list, &valist);
-                        va->flags |= VM_LAZY_FREEING;
-                        va->flags &= ~VM_LAZY_FREE;
-                }
-        }
-        rcu_read_unlock();
-
+	Dave
 
