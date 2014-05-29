@@ -1,48 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaE2TcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:32:22 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:60445 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003AbaE2TcV (ORCPT
+	id S1756066AbaE2Tch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:32:37 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:53318 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaE2Tcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:32:21 -0400
-Date: Thu, 29 May 2014 12:32:18 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] CMA: use MIGRATE_SYNC in alloc_contig_range()
-In-Reply-To: <1401344750-3684-1-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.02.1405291229330.28183@chino.kir.corp.google.com>
-References: <1401344750-3684-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 29 May 2014 15:32:35 -0400
+Message-ID: <53878B5D.8040508@kernel.dk>
+Date: Thu, 29 May 2014 13:32:45 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Keith Busch <keith.busch@intel.com>,
+        =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>
+CC: willy@linux.intel.com, sbradshaw@micron.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] NVMe: basic conversion to blk-mq
+References: <1401317998-8980-1-git-send-email-m@bjorling.me> <1401317998-8980-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1405281929460.4995@AMR> <53874374.2020302@kernel.dk>
+In-Reply-To: <53874374.2020302@kernel.dk>
+Content-Type: multipart/mixed;
+ boundary="------------000109060703000506070609"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014, Joonsoo Kim wrote:
+This is a multi-part message in MIME format.
+--------------000109060703000506070609
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-> Before commit 'mm, compaction: embed migration mode in compact_control'
-> from David is merged, alloc_contig_range() used sync migration,
-> instead of sync_light migration. This doesn't break anything currently
-> because page isolation doesn't have any difference with sync and
-> sync_light, but it could in the future, so change back as it was.
+On 05/29/2014 08:25 AM, Jens Axboe wrote:
+>>> +static int nvme_submit_flush_sync(struct nvme_queue *nvmeq, struct
+>>> nvme_ns *ns)
+>>> +{
+>>> +    struct request *req;
+>>> +    struct nvme_command cmnd;
+>>> +
+>>> +    req = blk_mq_alloc_request(ns->queue, WRITE, GFP_KERNEL, false);
+>>> +    if (!req)
+>>> +        return -ENOMEM;
+>>> +
+>>> +    nvme_setup_flush(&cmnd, ns, req->tag);
+>>> +    nvme_submit_sync_cmd(req, &cmnd, NULL, NVME_IO_TIMEOUT);
+>>>
+>>>     return 0;
+>>> }
+>>
+>> It looks like this function above is being called from an interrupt
+>> context where we are already holding a spinlock. The sync command will
+>> try to take that same lock.
 > 
-> And pass cc->mode to migrate_pages(), instead of passing MIGRATE_SYNC
-> to migrate_pages().
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Yes, that code still looks very buggy. The initial alloc for
+> flush_cmd_info should also retry, not fail hard, if that alloc fails.
+> For the reinsert part, Matias, you want to look at the flush code in
+> blk-mq and how that handles it.
 
-Acked-by: David Rientjes <rientjes@google.com>
+There's an easy fix for this. Once it's managed by blk-mq, blk-mq will
+decompose requests for you. This means a flush with data will be turned
+into two commands for you, so we can kill this code attempting to handle
+flush request with data.
 
-Should probably be renamed 
-mm-compaction-embed-migration-mode-in-compact_control-fix-fix though since 
-it's based on another patch in -mm that properly does the s/sync/mode/ 
-conversion for CMA.
+Patch attached. Depending on how the series needs to look, the prep
+patch of support bio flush with data should just be dropped however. No
+point in adding that, and the removing it again.
+
+-- 
+Jens Axboe
+
+
+--------------000109060703000506070609
+Content-Type: text/x-patch;
+ name="nvme-flush.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="nvme-flush.patch"
+
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index ac695b336a98..23bd58dfa360 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -513,35 +513,11 @@ static void nvme_submit_flush(struct nvme_queue *nvmeq, struct nvme_ns *ns,
+ 	writel(nvmeq->sq_tail, nvmeq->q_db);
+ }
+ 
+-static int nvme_submit_flush_sync(struct nvme_queue *nvmeq, struct nvme_ns *ns)
+-{
+-	struct request *req;
+-	struct nvme_command cmnd;
+-
+-	req = blk_mq_alloc_request(ns->queue, WRITE, GFP_KERNEL, false);
+-	if (!req)
+-		return -ENOMEM;
+-
+-	nvme_setup_flush(&cmnd, ns, req->tag);
+-	nvme_submit_sync_cmd(req, &cmnd, NULL, NVME_IO_TIMEOUT);
+-
+-	return 0;
+-}
+-
+ struct flush_cmd_info {
+ 	struct nvme_ns *ns;
+ 	struct nvme_iod *iod;
+ };
+ 
+-static void req_flush_completion(struct nvme_queue *nvmeq, void *ctx,
+-						struct nvme_completion *cqe)
+-{
+-	struct flush_cmd_info *flush_cmd = ctx;
+-	nvme_submit_flush_sync(nvmeq, flush_cmd->ns);
+-	req_completion(nvmeq, flush_cmd->iod, cqe);
+-	kfree(flush_cmd);
+-}
+-
+ static int nvme_submit_iod(struct nvme_queue *nvmeq, struct nvme_iod *iod,
+ 							struct nvme_ns *ns)
+ {
+@@ -560,7 +536,7 @@ static int nvme_submit_iod(struct nvme_queue *nvmeq, struct nvme_iod *iod,
+ 		nvme_submit_discard(nvmeq, ns, req, iod);
+ 		goto end_submit;
+ 	}
+-	if (req->cmd_flags & REQ_FLUSH && !iod->nents) {
++	if (req->cmd_flags & REQ_FLUSH) {
+ 		nvme_submit_flush(nvmeq, ns, req->tag);
+ 		goto end_submit;
+ 	}
+@@ -615,16 +591,6 @@ static int nvme_submit_req_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
+ 
+ 	nvme_set_info(cmd, iod, req_completion);
+ 
+-	if ((req->cmd_flags & REQ_FLUSH) && psegs) {
+-		struct flush_cmd_info *flush_cmd = kmalloc(
+-				sizeof(struct flush_cmd_info), GFP_KERNEL);
+-		if (!flush_cmd)
+-			goto free_iod;
+-		flush_cmd->ns = ns;
+-		flush_cmd->iod = iod;
+-		nvme_set_info(cmd, flush_cmd, req_flush_completion);
+-	}
+-
+ 	if (req->cmd_flags & REQ_DISCARD) {
+ 		void *range;
+ 		/*
+@@ -655,7 +621,6 @@ static int nvme_submit_req_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
+ 
+  finish_cmd:
+ 	nvme_finish_cmd(nvmeq, req->tag, NULL);
+- free_iod:
+ 	nvme_free_iod(nvmeq->dev, iod);
+ 	return BLK_MQ_RQ_QUEUE_ERROR;
+ }
+
+--------------000109060703000506070609--
