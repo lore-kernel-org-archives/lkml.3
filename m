@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934594AbaE2Nwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:52:47 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59511 "EHLO
+	id S932388AbaE2Nwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:52:45 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59515 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933598AbaE2Ntd (ORCPT
+	by vger.kernel.org with ESMTP id S933622AbaE2Ntd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Pravin B Shelar <pshelar@nicira.com>,
+Cc: linux-kernel@vger.kernel.org, David Gibson <david@gibson.dropbear.id.au>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 101/103] ip_tunnel: Initialize the fallback device properly
-Date: Thu, 29 May 2014 15:49:26 +0200
-Message-Id: <9b60fabbe9b3577f82c8b9519c3cb351763b7d89.1401371259.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 074/103] rtnetlink: Warn when interface's information won't fit in our packet
+Date: Thu, 29 May 2014 15:48:59 +0200
+Message-Id: <5a6aea7c0eaa0a2a851f80aa646ebb65d76c51fe.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
@@ -25,39 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: David Gibson <david@gibson.dropbear.id.au>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 78ff4be45a4c51d8fb21ad92e4fabb467c6c3eeb ]
+[ Upstream commit 973462bbde79bb827824c73b59027a0aed5c9ca6 ]
 
-We need to initialize the fallback device to have a correct mtu
-set on this device. Otherwise the mtu is set to null and the device
-is unusable.
+Without IFLA_EXT_MASK specified, the information reported for a single
+interface in response to RTM_GETLINK is expected to fit within a netlink
+packet of NLMSG_GOODSIZE.
 
-Fixes: fd58156e456d ("IPIP: Use ip-tunneling code.")
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+If it doesn't, however, things will go badly wrong,  When listing all
+interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
+message in a packet as the end of the listing and omit information for
+that interface and all subsequent ones.  This can cause getifaddrs(3) to
+enter an infinite loop.
+
+This patch won't fix the problem, but it will WARN_ON() making it easier to
+track down what's going wrong.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Reviewed-by: Jiri Pirko <jpirko@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/ip_tunnel.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/core/rtnetlink.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index d626d4059a42..d9dbe0f78612 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -855,6 +855,7 @@ int ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
- 	 */
- 	if (!IS_ERR(itn->fb_tunnel_dev)) {
- 		itn->fb_tunnel_dev->features |= NETIF_F_NETNS_LOCAL;
-+		itn->fb_tunnel_dev->mtu = ip_tunnel_bind_dev(itn->fb_tunnel_dev);
- 		ip_tunnel_add(itn, netdev_priv(itn->fb_tunnel_dev));
- 	}
- 	rtnl_unlock();
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 37b492eaa4f8..d320d30fb6bb 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1070,6 +1070,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct hlist_head *head;
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
++	int err;
+ 
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1090,11 +1091,17 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 		hlist_for_each_entry_rcu(dev, head, index_hlist) {
+ 			if (idx < s_idx)
+ 				goto cont;
+-			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
+-					     NETLINK_CB(cb->skb).portid,
+-					     cb->nlh->nlmsg_seq, 0,
+-					     NLM_F_MULTI,
+-					     ext_filter_mask) <= 0)
++			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
++					       NETLINK_CB(cb->skb).portid,
++					       cb->nlh->nlmsg_seq, 0,
++					       NLM_F_MULTI,
++					       ext_filter_mask);
++			/* If we ran out of room on the first message,
++			 * we're in trouble
++			 */
++			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
++
++			if (err <= 0)
+ 				goto out;
+ 
+ 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
 -- 
 1.9.3
 
