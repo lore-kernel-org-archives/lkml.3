@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910AbaE2G0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:26:15 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42070 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755169AbaE2G0O (ORCPT
+	id S1756925AbaE2Gcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:32:47 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54734 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828AbaE2Gcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:26:14 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH] CMA: correct unlock target
-Date: Thu, 29 May 2014 15:29:18 +0900
-Message-Id: <1401344958-3790-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 29 May 2014 02:32:45 -0400
+Date: Thu, 29 May 2014 12:02:37 +0530
+From: Tushar Behera <trblinux@gmail.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: alan@signal11.us, alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, alex.aing@gmail.com,
+        Varka Bhadram <varkab@cdac.in>
+Subject: Re: [PATCH net-next v1] mrf24j40: add managed API's provided by
+ device layer
+Message-ID: <20140529063236.GA9679@linaro.org>
+References: <1401338421-15394-1-git-send-email-varkab@cdac.in>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401338421-15394-1-git-send-email-varkab@cdac.in>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'cma: Remove potential deadlock situation' introduces per cma area mutex
-for bitmap management. It is good, but there is one mistake. When we
-can't find appropriate area in bitmap, we release cma_mutex global lock
-rather than cma->lock and this is a bug. So fix it.
+On Thu, May 29, 2014 at 10:10:21AM +0530, Varka Bhadram wrote:
+> Hi,
+> 	Previous patch having bug in using managed API's. I fixed that.
+> 
+> Regards,
+> Varka Bhadram.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Only add relevant commit message here, no need to add 'Hi' and
+'Regards'.
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 6f6bffc..83969f8 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -331,7 +331,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
- 		pageno = bitmap_find_next_zero_area(cma->bitmap, cma->count,
- 						    start, count, mask);
- 		if (pageno >= cma->count) {
--			mutex_unlock(&cma_mutex);
-+			mutex_unlock(&cma->lock);
- 			break;
- 		}
- 		bitmap_set(cma->bitmap, pageno, count);
--- 
-1.7.9.5
+Something like ...
 
+"Added devres managed APIs"
+
+> 
+> Signed-off-by: Varka Bhadram <varkab@cdac.in>
+> ---
+>  drivers/net/ieee802154/mrf24j40.c |   21 +++++++++------------
+>  1 file changed, 9 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+> index 78a6552..f701cdb 100644
+> --- a/drivers/net/ieee802154/mrf24j40.c
+> +++ b/drivers/net/ieee802154/mrf24j40.c
+> @@ -618,10 +618,10 @@ static int mrf24j40_probe(struct spi_device *spi)
+>  
+>  	printk(KERN_INFO "mrf24j40: probe(). IRQ: %d\n", spi->irq);
+>  
+> -	devrec = kzalloc(sizeof(struct mrf24j40), GFP_KERNEL);
+> +	devrec = devm_kzalloc(&spi->dev, sizeof(struct mrf24j40), GFP_KERNEL);
+>  	if (!devrec)
+>  		goto err_devrec;
+> -	devrec->buf = kzalloc(3, GFP_KERNEL);
+> +	devrec->buf = kzalloc(&spi->dev, 3, GFP_KERNEL);
+
+devm_kzalloc()
+
+Without this, it should not build at all. So remember to compile test
+before sending the patches.
+
+--
+Warm regards,
+Tushar
