@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562AbaE2Ppx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:45:53 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:60548 "EHLO dev.rtsoft.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756520AbaE2Ppv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:45:51 -0400
-Message-ID: <5387562B.8070809@dev.rtsoft.ru>
-Date: Thu, 29 May 2014 19:45:47 +0400
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Organization: RTSoft Software Development Center
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S934524AbaE2Prs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:47:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39567 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932848AbaE2Prq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 11:47:46 -0400
+Date: Thu, 29 May 2014 08:51:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Satish Patel <satish.patel@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        rob@landley.net, tony@atomide.com, grant.likely@linaro.org,
+        robh+dt@kernel.org
+Subject: Re: [PATCH v3 1/5] sc_phy:SmartCard(SC) PHY interface to SC
+ controller
+Message-ID: <20140529155122.GA32214@kroah.com>
+References: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
+ <1401267437-22489-2-git-send-email-satish.patel@ti.com>
+ <20140528184408.GC30031@kroah.com>
+ <5386F657.9040805@ti.com>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lugovskoy@dev.rtsoft.ru
-Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
- on ULI hw
-References: <Pine.LNX.4.44L0.1405291139000.1285-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1405291139000.1285-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5386F657.9040805@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-29.05.2014 19:44, Alan Stern пишет:
-> On Thu, 29 May 2014, Nikita Yushchenko wrote:
+On Thu, May 29, 2014 at 02:26:55PM +0530, Satish Patel wrote:
 > 
->> 29.05.2014 18:42, One Thousand Gnomes пишет:
->>>> I don't know how linux usb subsystem should behave against such
->>>> "half-existing" hardware. Perhaps hanging is not the best idea...
->>>> but maybe it should be fixed elsewhere, e.g. by masking non-wired
->>>> devices in platform PCI setup. Perhaps controlled by some device-tree
->>>> key.
->>>
->>> Does it have a unique svid/sdid set for the platform - if so you could
->>> just blacklist that combination of vid/did/svid/sdid.
->>
->> Unfortunately vid/did/svid/sdid come from ULI 1553 southbridge chip,
->> that is used by other hardware as well. AFAIK it is still being
->> manufactured, and could appear in PCs or laptops.
 > 
->>> It would help to print the value of fminterval.
->>> And here to print the value obtained by the readl().
->>
->> I've checked these... all values read as 0xffffffff - which does not
->> look correct
-> 
-> You could have the platform setup code read one of those hardware
-> registers, such as FMINTERVAL.  If it obtains 0xffffffff, don't
-> register the OHCI controller as a platform device.
+> On 5/29/2014 12:14 AM, Greg KH wrote:
+> >On Wed, May 28, 2014 at 02:27:13PM +0530, Satish Patel wrote:
+> >>+/**
+> >>+ * struct sc_phy - The basic smart card phy structure
+> >>+ *
+> >>+ * @dev: phy device
+> >>+ * @pdata: pointer to phy's private data structure
+> >>+ * @set_config: called to set phy's configuration
+> >>+ * @get_config: called to get phy's configuration
+> >>+ * @activate_card: perform smart card activation
+> >>+ * @deactivate_card: perform smart card de-activation
+> >>+ * @warm_reset: execute smart card warm reset sequence
+> >>+ * @register_card_activity_cb: register call back to phy device.
+> >>+ * This call back will be called on card insert or remove event
+> >>+ *
+> >>+ * smart card controller uses this interface to communicate with
+> >>+ * smart card via phy.Some smart card phy has multiple slots for
+> >>+ * cards. This inerface also enables controller to communicate with
+> >>+ * one or more smart card connected over phy.
+> >>+ */
+> >>+struct sc_phy {
+> >>+	/* phy's device pointer */
+> >>+	struct device *dev;
+> >
+> >So this is the "parent", right?  Why not embed a struct device into this
+> >structure as well, further streaching out the device tree.
+> >
+> Do you mean to use "dev->p" for pdata ?
 
-It is not a platform_device, it is PCI device that is found via bus scan.
+No, use the device itself.
 
+> I have kept it outside, to give easeness/pragmatic focal for new phy driver
+> development. Driver can make this pointer null and use above pointer.
+
+Ick, no, that's not how the driver model works.  Each device in the
+system needs a struct device, don't try to "chain" off of an existing
+device like this.  Make it a "real" one.
+
+> >>+
+> >>+	/* phy's private data */
+> >>+	void *pdata;
+> >
+> >If you do the above, then this pointer is not needed.
+> >
+> >
+> >>+
+> >>+	/* notify data, passed by interface user as a part of
+> >>+	 * register_notify API. Data should be passed back when
+> >>+	 * notification raised to the interface user
+> >>+	 */
+> >>+	void *notify_data;
+> >
+> >What makes this different from the pdata?
+> pdata is phy's private data, while notify_data is something phy will send to
+> smart card controller on some event, like card remove/insert/timeout etc..
+
+That doesn't make much sense to me, why not just put that in the notify
+function callback itself?
+
+Please either use the existing phy layer of the kernel, or make a "real"
+subsystem here, don't try to put a tiny shim on top of an existing
+struct device for this driver, that's not how subsystems in Linux are
+done.
+
+thanks,
+
+greg k-h
