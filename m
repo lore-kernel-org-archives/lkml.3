@@ -1,343 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932881AbaE2Egx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:36:53 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:37405 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932803AbaE2Egv (ORCPT
+	id S932817AbaE2EgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:36:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58147 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756423AbaE2Efw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:36:51 -0400
-Message-ID: <1401338203.2618.11.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH v4] mutex: Documentation rewrite
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Cc: akpm@linux-foundation.org, tim.c.chen@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, hpa@zytor.com, waiman.long@hp.com,
-        jason.low2@hp.com, aswin@hp.com, linux-kernel@vger.kernel.org
-Date: Wed, 28 May 2014 21:36:43 -0700
-In-Reply-To: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
-References: <1400694115.2646.4.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 29 May 2014 00:35:52 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 111/140] net: cdc_mbim: __vlan_find_dev_deep need rcu_read_lock
+Date: Wed, 28 May 2014 21:34:10 -0700
+Message-Id: <20140529043103.858713939@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
+In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
+References: <20140529043049.661315084@linuxfoundation.org>
+User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Our mutexes have gone a long ways since the original implementation
-back in 2005/2006. However, the mutex-design.txt document is still
-stuck in the past, to the point where most of the information there
-is practically useless and, more important, simply incorrect. This
-patch pretty much rewrites it to resemble what we have nowadays.
+------------------
 
-Since regular semaphores are almost much extinct in the kernel
-(most users now rely on mutexes or rwsems), it no longer makes
-sense to have such a close comparison, which was copied from most
-of the cover letter when Ingo introduced the generic mutex subsystem.
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-Note that ww_mutexes are intentionally left out, leaving things as
-generic as possible.
+[ Upstream commit 4f4178f3bb1f470d7fb863ec531e08e20a0fd51c ]
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Fixes this warning introduced by commit 5b8f15f78e6f
+("net: cdc_mbim: handle IPv6 Neigbor Solicitations"):
+
+===============================
+[ INFO: suspicious RCU usage. ]
+3.15.0-rc3 #213 Tainted: G        W  O
+-------------------------------
+net/8021q/vlan_core.c:69 suspicious rcu_dereference_check() usage!
+
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 1
+no locks held by ksoftirqd/0/3.
+
+stack backtrace:
+CPU: 0 PID: 3 Comm: ksoftirqd/0 Tainted: G        W  O  3.15.0-rc3 #213
+Hardware name: LENOVO 2776LEG/2776LEG, BIOS 6EET55WW (3.15 ) 12/19/2011
+ 0000000000000001 ffff880232533bf0 ffffffff813a5ee6 0000000000000006
+ ffff880232530090 ffff880232533c20 ffffffff81076b94 0000000000000081
+ 0000000000000000 ffff8802085ac000 ffff88007fc8ea00 ffff880232533c50
+Call Trace:
+ [<ffffffff813a5ee6>] dump_stack+0x4e/0x68
+ [<ffffffff81076b94>] lockdep_rcu_suspicious+0xfa/0x103
+ [<ffffffff813978a6>] __vlan_find_dev_deep+0x54/0x94
+ [<ffffffffa04a1938>] cdc_mbim_rx_fixup+0x379/0x66a [cdc_mbim]
+ [<ffffffff813ab76f>] ? _raw_spin_unlock_irqrestore+0x3a/0x49
+ [<ffffffff81079671>] ? trace_hardirqs_on_caller+0x192/0x1a1
+ [<ffffffffa059bd10>] usbnet_bh+0x59/0x287 [usbnet]
+ [<ffffffff8104067d>] tasklet_action+0xbb/0xcd
+ [<ffffffff81040057>] __do_softirq+0x14c/0x30d
+ [<ffffffff81040237>] run_ksoftirqd+0x1f/0x50
+ [<ffffffff8105f13e>] smpboot_thread_fn+0x172/0x18e
+ [<ffffffff8105efcc>] ? SyS_setgroups+0xdf/0xdf
+ [<ffffffff810594b0>] kthread+0xb5/0xbd
+ [<ffffffff813a84b1>] ? __wait_for_common+0x13b/0x170
+ [<ffffffff810593fb>] ? __kthread_parkme+0x5c/0x5c
+ [<ffffffff813b147c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810593fb>] ? __kthread_parkme+0x5c/0x5c
+
+Fixes: 5b8f15f78e6f ("net: cdc_mbim: handle IPv6 Neigbor Solicitations")
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
-Changes from v3:
- - Corrected some details of optimistic spinning, per Waiman.
- - Rephrased some details of the slowpath for clarity, per Waiman.
+ drivers/net/usb/cdc_mbim.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-Changes from v2:
- - More grammar corrections from Randy.
-
-Changes from v1:
- - Grammar corrections from Tim.
- - Document cancelable MCS properties per Jason.
-
- Documentation/mutex-design.txt | 252 ++++++++++++++++++++++-------------------
- 1 file changed, 135 insertions(+), 117 deletions(-)
-
-diff --git a/Documentation/mutex-design.txt b/Documentation/mutex-design.txt
-index 1dfe62c..ee231ed 100644
---- a/Documentation/mutex-design.txt
-+++ b/Documentation/mutex-design.txt
-@@ -1,139 +1,157 @@
- Generic Mutex Subsystem
+--- a/drivers/net/usb/cdc_mbim.c
++++ b/drivers/net/usb/cdc_mbim.c
+@@ -204,17 +204,23 @@ static void do_neigh_solicit(struct usbn
+ 		return;
  
- started by Ingo Molnar <mingo@redhat.com>
-+updated by Davidlohr Bueso <davidlohr@hp.com>
+ 	/* need to send the NA on the VLAN dev, if any */
+-	if (tci)
++	rcu_read_lock();
++	if (tci) {
+ 		netdev = __vlan_find_dev_deep(dev->net, htons(ETH_P_8021Q),
+ 					      tci);
+-	else
++		if (!netdev) {
++			rcu_read_unlock();
++			return;
++		}
++	} else {
+ 		netdev = dev->net;
+-	if (!netdev)
+-		return;
++	}
++	dev_hold(netdev);
++	rcu_read_unlock();
  
--  "Why on earth do we need a new mutex subsystem, and what's wrong
--   with semaphores?"
-+What are mutexes?
-+-----------------
+ 	in6_dev = in6_dev_get(netdev);
+ 	if (!in6_dev)
+-		return;
++		goto out;
+ 	is_router = !!in6_dev->cnf.forwarding;
+ 	in6_dev_put(in6_dev);
  
--firstly, there's nothing wrong with semaphores. But if the simpler
--mutex semantics are sufficient for your code, then there are a couple
--of advantages of mutexes:
-+In the Linux kernel, mutexes refer to a particular locking primitive
-+that enforces serialization on shared memory systems, and not only to
-+the generic term referring to 'mutual exclusion' found in academia
-+or similar theoretical text books. Mutexes are sleeping locks which
-+behave similarly to binary semaphores, and were introduced in 2006[1]
-+as an alternative to these. This new data structure provided a number
-+of advantages, including simpler interfaces, and at that time smaller
-+code (see Disadvantages).
+@@ -224,6 +230,8 @@ static void do_neigh_solicit(struct usbn
+ 				 true /* solicited */,
+ 				 false /* override */,
+ 				 true /* inc_opt */);
++out:
++	dev_put(netdev);
+ }
  
-- - 'struct mutex' is smaller on most architectures: E.g. on x86,
--   'struct semaphore' is 20 bytes, 'struct mutex' is 16 bytes.
--   A smaller structure size means less RAM footprint, and better
--   CPU-cache utilization.
-+[1] http://lwn.net/Articles/164802/
- 
-- - tighter code. On x86 i get the following .text sizes when
--   switching all mutex-alike semaphores in the kernel to the mutex
--   subsystem:
-+Implementation
-+--------------
- 
--        text    data     bss     dec     hex filename
--     3280380  868188  396860 4545428  455b94 vmlinux-semaphore
--     3255329  865296  396732 4517357  44eded vmlinux-mutex
-+Mutexes are represented by 'struct mutex', defined in include/linux/mutex.h
-+and implemented in kernel/locking/mutex.c. These locks use a three
-+state atomic counter (->count) to represent the different possible
-+transitions that can occur during the lifetime of a lock:
- 
--   that's 25051 bytes of code saved, or a 0.76% win - off the hottest
--   codepaths of the kernel. (The .data savings are 2892 bytes, or 0.33%)
--   Smaller code means better icache footprint, which is one of the
--   major optimization goals in the Linux kernel currently.
-+	  1: unlocked
-+	  0: locked, no waiters
-+   negative: locked, with potential waiters
- 
-- - the mutex subsystem is slightly faster and has better scalability for
--   contended workloads. On an 8-way x86 system, running a mutex-based
--   kernel and testing creat+unlink+close (of separate, per-task files)
--   in /tmp with 16 parallel tasks, the average number of ops/sec is:
-+In its most basic form it also includes a wait-queue and a spinlock
-+that serializes access to it. CONFIG_SMP systems can also include
-+a pointer to the lock task owner (->owner) as well as a spinner MCS
-+lock (->osq), both described below in (ii).
- 
--    Semaphores:                        Mutexes:
-+When acquiring a mutex, there are three possible paths that can be
-+taken, depending on the state of the lock:
- 
--    $ ./test-mutex V 16 10             $ ./test-mutex V 16 10
--    8 CPUs, running 16 tasks.          8 CPUs, running 16 tasks.
--    checking VFS performance.          checking VFS performance.
--    avg loops/sec:      34713          avg loops/sec:      84153
--    CPU utilization:    63%            CPU utilization:    22%
-+(i) fastpath: tries to atomically acquire the lock by decrementing the
-+    counter. If it was already taken by another task it goes to the next
-+    possible path. This logic is architecture specific. On x86-64, the
-+    locking fastpath is 2 instructions:
- 
--   i.e. in this workload, the mutex based kernel was 2.4 times faster
--   than the semaphore based kernel, _and_ it also had 2.8 times less CPU
--   utilization. (In terms of 'ops per CPU cycle', the semaphore kernel
--   performed 551 ops/sec per 1% of CPU time used, while the mutex kernel
--   performed 3825 ops/sec per 1% of CPU time used - it was 6.9 times
--   more efficient.)
--
--   the scalability difference is visible even on a 2-way P4 HT box:
--
--    Semaphores:                        Mutexes:
--
--    $ ./test-mutex V 16 10             $ ./test-mutex V 16 10
--    4 CPUs, running 16 tasks.          8 CPUs, running 16 tasks.
--    checking VFS performance.          checking VFS performance.
--    avg loops/sec:      127659         avg loops/sec:      181082
--    CPU utilization:    100%           CPU utilization:    34%
--
--   (the straight performance advantage of mutexes is 41%, the per-cycle
--    efficiency of mutexes is 4.1 times better.)
--
-- - there are no fastpath tradeoffs, the mutex fastpath is just as tight
--   as the semaphore fastpath. On x86, the locking fastpath is 2
--   instructions:
--
--    c0377ccb <mutex_lock>:
--    c0377ccb:       f0 ff 08                lock decl (%eax)
--    c0377cce:       78 0e                   js     c0377cde <.text..lock.mutex>
--    c0377cd0:       c3                      ret
-+    0000000000000e10 <mutex_lock>:
-+    e21:   f0 ff 0b                lock decl (%rbx)
-+    e24:   79 08                   jns    e2e <mutex_lock+0x1e>
- 
-    the unlocking fastpath is equally tight:
- 
--    c0377cd1 <mutex_unlock>:
--    c0377cd1:       f0 ff 00                lock incl (%eax)
--    c0377cd4:       7e 0f                   jle    c0377ce5 <.text..lock.mutex+0x7>
--    c0377cd6:       c3                      ret
--
-- - 'struct mutex' semantics are well-defined and are enforced if
--   CONFIG_DEBUG_MUTEXES is turned on. Semaphores on the other hand have
--   virtually no debugging code or instrumentation. The mutex subsystem
--   checks and enforces the following rules:
--
--   * - only one task can hold the mutex at a time
--   * - only the owner can unlock the mutex
--   * - multiple unlocks are not permitted
--   * - recursive locking is not permitted
--   * - a mutex object must be initialized via the API
--   * - a mutex object must not be initialized via memset or copying
--   * - task may not exit with mutex held
--   * - memory areas where held locks reside must not be freed
--   * - held mutexes must not be reinitialized
--   * - mutexes may not be used in hardware or software interrupt
--   *   contexts such as tasklets and timers
--
--   furthermore, there are also convenience features in the debugging
--   code:
--
--   * - uses symbolic names of mutexes, whenever they are printed in debug output
--   * - point-of-acquire tracking, symbolic lookup of function names
--   * - list of all locks held in the system, printout of them
--   * - owner tracking
--   * - detects self-recursing locks and prints out all relevant info
--   * - detects multi-task circular deadlocks and prints out all affected
--   *   locks and tasks (and only those tasks)
-+    0000000000000bc0 <mutex_unlock>:
-+    bc8:   f0 ff 07                lock incl (%rdi)
-+    bcb:   7f 0a                   jg     bd7 <mutex_unlock+0x17>
-+
-+
-+(ii) midpath: aka optimistic spinning, tries to spin for acquisition
-+     while the lock owner is running and there are no other tasks ready
-+     to run that have higher priority (need_resched). The rationale is
-+     that if the lock owner is running, it is likely to release the lock
-+     soon. The mutex spinners are queued up using MCS lock so that only
-+     one spinner can compete for the mutex.
-+
-+     The MCS lock (proposed by Mellor-Crummey and Scott) is a simple spinlock
-+     with the desirable properties of being fair and with each cpu trying
-+     to acquire the lock spinning on a local variable. It avoids expensive
-+     cacheline bouncing that common test-and-set spinlock implementations
-+     incur. An MCS-like lock is specially tailored for optimistic spinning
-+     for sleeping lock implementation. An important feature of the customized
-+     MCS lock is that it has the extra property that spinners are able to exit
-+     the MCS spinlock queue when they need to reschedule. This further helps
-+     avoid situations where MCS spinners that need to reschedule would continue
-+     waiting to spin on mutex owner, only to go directly to slowpath upon
-+     obtaining the MCS lock.
-+
-+
-+(iii) slowpath: last resort, if the lock is still unable to be acquired,
-+      the task is added to the wait-queue and sleeps until woken up by the
-+      unlock path. Under normal circumstances it blocks as TASK_UNINTERRUPTIBLE.
-+
-+While formally kernel mutexes are sleepable locks, it is path (ii) that
-+makes them more practically a hybrid type. By simply not interrupting a
-+task and busy-waiting for a few cycles instead of immediately sleeping,
-+the performance of this lock has been seen to significantly improve a
-+number of workloads. Note that this technique is also used for rw-semaphores.
-+
-+Semantics
-+---------
-+
-+The mutex subsystem checks and enforces the following rules:
-+
-+    - Only one task can hold the mutex at a time.
-+    - Only the owner can unlock the mutex.
-+    - Multiple unlocks are not permitted.
-+    - Recursive locking/unlocking is not permitted.
-+    - A mutex must only be initialized via the API (see below).
-+    - A task may not exit with a mutex held.
-+    - Memory areas where held locks reside must not be freed.
-+    - Held mutexes must not be reinitialized.
-+    - Mutexes may not be used in hardware or software interrupt
-+      contexts such as tasklets and timers.
-+
-+These semantics are fully enforced when CONFIG DEBUG_MUTEXES is enabled.
-+In addition, the mutex debugging code also implements a number of other
-+features that make lock debugging easier and faster:
-+
-+    - Uses symbolic names of mutexes, whenever they are printed
-+      in debug output.
-+    - Point-of-acquire tracking, symbolic lookup of function names,
-+      list of all locks held in the system, printout of them.
-+    - Owner tracking.
-+    - Detects self-recursing locks and prints out all relevant info.
-+    - Detects multi-task circular deadlocks and prints out all affected
-+      locks and tasks (and only those tasks).
-+
-+
-+Interfaces
-+----------
-+Statically define the mutex:
-+   DEFINE_MUTEX(name);
-+
-+Dynamically initialize the mutex:
-+   mutex_init(mutex);
-+
-+Acquire the mutex, uninterruptible:
-+   void mutex_lock(struct mutex *lock);
-+   void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
-+   int  mutex_trylock(struct mutex *lock);
-+
-+Acquire the mutex, interruptible:
-+   int mutex_lock_interruptible_nested(struct mutex *lock,
-+				       unsigned int subclass);
-+   int mutex_lock_interruptible(struct mutex *lock);
-+
-+Acquire the mutex, interruptible, if dec to 0:
-+   int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
-+
-+Unlock the mutex:
-+   void mutex_unlock(struct mutex *lock);
-+
-+Test if the mutex is taken:
-+   int mutex_is_locked(struct mutex *lock);
- 
- Disadvantages
- -------------
- 
--The stricter mutex API means you cannot use mutexes the same way you
--can use semaphores: e.g. they cannot be used from an interrupt context,
--nor can they be unlocked from a different context that which acquired
--it. [ I'm not aware of any other (e.g. performance) disadvantages from
--using mutexes at the moment, please let me know if you find any. ]
--
--Implementation of mutexes
---------------------------
--
--'struct mutex' is the new mutex type, defined in include/linux/mutex.h and
--implemented in kernel/locking/mutex.c. It is a counter-based mutex with a
--spinlock and a wait-list. The counter has 3 states: 1 for "unlocked", 0 for
--"locked" and negative numbers (usually -1) for "locked, potential waiters
--queued".
--
--the APIs of 'struct mutex' have been streamlined:
--
-- DEFINE_MUTEX(name);
-+Unlike its original design and purpose, 'struct mutex' is larger than
-+most locks in the kernel. E.g: on x86-64 it is 40 bytes, almost twice
-+as large as 'struct semaphore' (24 bytes) and 8 bytes shy of the
-+'struct rw_semaphore' variant. Larger structure sizes mean more CPU
-+cache and memory footprint.
- 
-- mutex_init(mutex);
-+When to use mutexes
-+-------------------
- 
-- void mutex_lock(struct mutex *lock);
-- int  mutex_lock_interruptible(struct mutex *lock);
-- int  mutex_trylock(struct mutex *lock);
-- void mutex_unlock(struct mutex *lock);
-- int  mutex_is_locked(struct mutex *lock);
-- void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
-- int  mutex_lock_interruptible_nested(struct mutex *lock,
--                                      unsigned int subclass);
-- int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
-+Unless the strict semantics of mutexes are unsuitable and/or the critical
-+region prevents the lock from being shared, always prefer them to any other
-+locking primitive.
--- 
-1.8.1.4
-
+ static bool is_neigh_solicit(u8 *buf, size_t len)
 
 
