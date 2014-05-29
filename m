@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933383AbaE2Emj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:42:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58689 "EHLO
+	id S933395AbaE2Em4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:42:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933296AbaE2Eit (ORCPT
+	with ESMTP id S933290AbaE2Eit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:38:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Enrico Mioso <mrkiko.rs@gmail.com>,
         =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 75/86] net: qmi_wwan: add Telit LE920 newer firmware support
-Date: Wed, 28 May 2014 21:37:50 -0700
-Message-Id: <20140529043523.414060302@linuxfoundation.org>
+Subject: [PATCH 3.10 74/86] qmi_wwan: add ONDA MT689DC device ID (fwd)
+Date: Wed, 28 May 2014 21:37:49 -0700
+Message-Id: <20140529043523.350724059@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -31,13 +31,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-[ Upstream commit 905468fa4d54c3e572ed3045cd47cce37780716e ]
+[ Upstream commit d8eb8f9963a55ccf6ebafa4bfdb9f70c17067825 ]
 
-Newer firmware use a new pid and a different interface.
+Another QMI-speaking device by ZTE, re-branded by ONDA!
 
-Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+I'm connected ovr this device's QMI interface right now, so I can say I tested
+it! :)
+
+Note: a follow-up patch was posted to the linux-usb mailing list, to prevent
+the option driver from binding to the device's QMI interface, making it
+unusable.
+
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 Acked-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -47,13 +54,13 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/net/usb/qmi_wwan.c
 +++ b/drivers/net/usb/qmi_wwan.c
-@@ -715,6 +715,7 @@ static const struct usb_device_id produc
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
- 	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
-+	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x1e2d, 0x12d1, 4)},	/* Cinterion PLxx */
- 
- 	/* 4. Gobi 1000 devices */
+@@ -652,6 +652,7 @@ static const struct usb_device_id produc
+ 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0012, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0017, 3)},
++	{QMI_FIXED_INTF(0x19d2, 0x0019, 3)},	/* ONDA MT689DC */
+ 	{QMI_FIXED_INTF(0x19d2, 0x0021, 4)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0025, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0031, 4)},
 
 
