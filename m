@@ -1,281 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaE2X30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 19:29:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54480 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752044AbaE2X3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 19:29:23 -0400
-Date: Fri, 30 May 2014 01:29:19 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>, luto@mit.edu
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        xen-devel@lists.xenproject.org, systemd-devel@lists.freedesktop.org,
-        Ian Jackson <ian.jackson@eu.citrix.com>,
-        Jan Beulich <jbeulich@suse.com>, Keir Fraser <keir@xen.org>,
-        Tim Deegan <tim@xen.org>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, morgan@kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v5 12/14] autoconf: xen: enable explicit preference
-	option for xenstored preference
-Message-ID: <20140529232918.GG26450@wotan.suse.de>
-References: <1400589095-3872-1-git-send-email-mcgrof@do-not-panic.com> <1400589095-3872-13-git-send-email-mcgrof@do-not-panic.com> <1400687040.7272.28.camel@kazak.uk.xensource.com> <20140521230233.GA13289@wotan.suse.de> <1400753147.14637.10.camel@kazak.uk.xensource.com> <20140523232031.GA26450@wotan.suse.de> <1401269449.24800.7.camel@kazak.uk.xensource.com>
+	id S1751975AbaE2XgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 19:36:08 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40657 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaE2XgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 19:36:06 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 30 May 2014 08:36:38 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140529233638.GJ10092@bbox>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+ <1401260039-18189-2-git-send-email-minchan@kernel.org>
+ <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+ <20140528223142.GO8554@dastard>
+ <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+ <20140529013007.GF6677@dastard>
+ <20140529015830.GG6677@dastard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oLBj+sq0vYjzfsbl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401269449.24800.7.camel@kazak.uk.xensource.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140529015830.GG6677@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Dave,
 
---oLBj+sq0vYjzfsbl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 29, 2014 at 11:58:30AM +1000, Dave Chinner wrote:
+> On Thu, May 29, 2014 at 11:30:07AM +1000, Dave Chinner wrote:
+> > On Wed, May 28, 2014 at 03:41:11PM -0700, Linus Torvalds wrote:
+> > commit a237c1c5bc5dc5c76a21be922dca4826f3eca8ca
+> > Author: Jens Axboe <jaxboe@fusionio.com>
+> > Date:   Sat Apr 16 13:27:55 2011 +0200
+> > 
+> >     block: let io_schedule() flush the plug inline
+> >     
+> >     Linus correctly observes that the most important dispatch cases
+> >     are now done from kblockd, this isn't ideal for latency reasons.
+> >     The original reason for switching dispatches out-of-line was to
+> >     avoid too deep a stack, so by _only_ letting the "accidental"
+> >     flush directly in schedule() be guarded by offload to kblockd,
+> >     we should be able to get the best of both worlds.
+> >     
+> >     So add a blk_schedule_flush_plug() that offloads to kblockd,
+> >     and only use that from the schedule() path.
+> >     
+> >     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> > 
+> > And now we have too deep a stack due to unplugging from io_schedule()...
+> 
+> So, if we make io_schedule() push the plug list off to the kblockd
+> like is done for schedule()....
+> 
+> > > IOW, swap-out directly caused that extra 3kB of stack use in what was
+> > > a deep call chain (due to memory allocation). I really don't
+> > > understand why you are arguing anything else on a pure technicality.
+> > >
+> > > I thought you had some other argument for why swap was different, and
+> > > against removing that "page_is_file_cache()" special case in
+> > > shrink_page_list().
+> > 
+> > I've said in the past that swap is different to filesystem
+> > ->writepage implementations because it doesn't require significant
+> > stack to do block allocation and doesn't trigger IO deep in that
+> > allocation stack. Hence it has much lower stack overhead than the
+> > filesystem ->writepage implementations and so is much less likely to
+> > have stack issues.
+> > 
+> > This stack overflow shows us that just the memory reclaim + IO
+> > layers are sufficient to cause a stack overflow,
+> 
+> .... we solve this problem directly by being able to remove the IO
+> stack usage from the direct reclaim swap path.
+> 
+> IOWs, we don't need to turn swap off at all in direct reclaim
+> because all the swap IO can be captured in a plug list and
+> dispatched via kblockd. This could be done either by io_schedule()
+> or a new blk_flush_plug_list() wrapper that pushes the work to
+> kblockd...
 
-I'm cc'ing a few security folks as I'd appreciate review on the ideas here,
-in particular that of a launcher idea on system to replace alternatives on =
-the
-ExecStart=3D line of a systemd service unit file, alternative ideas are of
-course welcomed. I'm also Cc'ing systemd-devel as this subject was reviewed
-a little while ago with nothing concrete being recommended but instead a few
-options being now archived as possibilities. I'm looking for a bit wider
-review of the approaches and recomendations.
+I did below hacky test to apply your idea and the result is overflow again.
+So, again it would second stack expansion. Otherwise, we should prevent
+swapout in direct reclaim.
 
-Some general background for non xen folks: old xen requires the launch of
-a daemon which implements supports of the xenstore, which is the database
-that xen uses for information about guests / dom0. There are two supported
-daemons, xenstored (C version) and oxenstored (Ocaml version) but they do t=
-he
-same thing. Right now old init lets you override which one you pick through
-an environment variable on /etc/{sysconfig,default}/xencommons, the script
-will use the appropriate on there. Systemd doesn't let you use variables on
-the ExecStart line of a service unit file so alternatives are required.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index f5c6635b806c..95f169e85dbe 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4241,10 +4241,13 @@ EXPORT_SYMBOL_GPL(yield_to);
+ void __sched io_schedule(void)
+ {
+ 	struct rq *rq = raw_rq();
++	struct blk_plug *plug = current->plug;
+ 
+ 	delayacct_blkio_start();
+ 	atomic_inc(&rq->nr_iowait);
+-	blk_flush_plug(current);
++	if (plug)
++		blk_flush_plug_list(plug, true);
++
+ 	current->in_iowait = 1;
+ 	schedule();
+ 	current->in_iowait = 0;
 
-The reason I'm being very careful here this could set a precedent and at
-least for the launcher idea it'd require the usage of getenv() and execve(),
-and secure alternatives for these (secure_getenv(), execve_nosecurity())
-have either been merged or suggested before for Linux. The systemd discussi=
-on
-is only specific to Linux but if we have a launcher we could consider it for
-other supported OSes. All that said I'd like proper review of the security
-implications of *all* strategies but obviously in particular the launcher
-idea. I want to tread carefuly before setting precedents.
 
-Details below as we discuss the approach we can take on Xen.
+[ 1209.764725] kworker/u24:0 (23627) used greatest stack depth: 304 bytes left
+[ 1510.835509] kworker/u24:1 (25817) used greatest stack depth: 144 bytes left
+[ 3701.482790] PANIC: double fault, error_code: 0x0
+[ 3701.483297] CPU: 8 PID: 6117 Comm: kworker/u24:1 Not tainted 3.14.0+ #201
+[ 3701.483980] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[ 3701.484366] Workqueue: writeback bdi_writeback_workfn (flush-253:0)
+[ 3701.484366] task: ffff8800353c41c0 ti: ffff880000106000 task.ti: ffff880000106000
+[ 3701.484366] RIP: 0010:[<ffffffff810a5390>]  [<ffffffff810a5390>] __lock_acquire+0x170/0x1ca0
+[ 3701.484366] RSP: 0000:ffff880000105f58  EFLAGS: 00010046
+[ 3701.484366] RAX: 0000000000000001 RBX: ffff8800353c41c0 RCX: 0000000000000002
+[ 3701.484366] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffff81c4a1e0
+[ 3701.484366] RBP: ffff880000106048 R08: 0000000000000001 R09: 0000000000000001
+[ 3701.484366] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
+[ 3701.484366] R13: 0000000000000000 R14: ffffffff81c4a1e0 R15: 0000000000000000
+[ 3701.484366] FS:  0000000000000000(0000) GS:ffff880037d00000(0000) knlGS:0000000000000000
+[ 3701.484366] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3701.484366] CR2: ffff880000105f48 CR3: 0000000001c0b000 CR4: 00000000000006e0
+[ 3701.484366] Stack:
+[ 3701.484366] BUG: unable to handle kernel paging request at ffff880000105f58
+[ 3701.484366] IP: [<ffffffff81004e14>] show_stack_log_lvl+0x134/0x1a0
+[ 3701.484366] PGD 28c5067 PUD 28c6067 PMD 28c7067 PTE 8000000000105060
+[ 3701.484366] Thread overran stack, or stack corrupted
+[ 3701.484366] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[ 3701.484366] Dumping ftrace buffer:
+[ 3701.484366] ---------------------------------
+[ 3701.484366]    <...>-6117    8d..4 3786719374us : stack_trace_call:         Depth    Size   Location    (46 entries)
+[ 3701.484366]         -----    ----   --------
+[ 3701.484366]    <...>-6117    8d..4 3786719395us : stack_trace_call:   0)     7200       8   _raw_spin_lock_irqsave+0x51/0x60
+[ 3701.484366]    <...>-6117    8d..4 3786719395us : stack_trace_call:   1)     7192     296   get_page_from_freelist+0x886/0x920
+[ 3701.484366]    <...>-6117    8d..4 3786719395us : stack_trace_call:   2)     6896     352   __alloc_pages_nodemask+0x5e1/0xb20
+[ 3701.484366]    <...>-6117    8d..4 3786719396us : stack_trace_call:   3)     6544       8   alloc_pages_current+0x10f/0x1f0
+[ 3701.484366]    <...>-6117    8d..4 3786719396us : stack_trace_call:   4)     6536     168   new_slab+0x2c5/0x370
+[ 3701.484366]    <...>-6117    8d..4 3786719396us : stack_trace_call:   5)     6368       8   __slab_alloc+0x3a9/0x501
+[ 3701.484366]    <...>-6117    8d..4 3786719396us : stack_trace_call:   6)     6360      80   __kmalloc+0x1cb/0x200
+[ 3701.484366]    <...>-6117    8d..4 3786719396us : stack_trace_call:   7)     6280     376   vring_add_indirect+0x36/0x200
+[ 3701.484366]    <...>-6117    8d..4 3786719397us : stack_trace_call:   8)     5904     144   virtqueue_add_sgs+0x2e2/0x320
+[ 3701.484366]    <...>-6117    8d..4 3786719397us : stack_trace_call:   9)     5760     288   __virtblk_add_req+0xda/0x1b0
+[ 3701.484366]    <...>-6117    8d..4 3786719397us : stack_trace_call:  10)     5472      96   virtio_queue_rq+0xd3/0x1d0
+[ 3701.484366]    <...>-6117    8d..4 3786719397us : stack_trace_call:  11)     5376     128   __blk_mq_run_hw_queue+0x1ef/0x440
+[ 3701.484366]    <...>-6117    8d..4 3786719397us : stack_trace_call:  12)     5248      16   blk_mq_run_hw_queue+0x35/0x40
+[ 3701.484366]    <...>-6117    8d..4 3786719397us : stack_trace_call:  13)     5232      96   blk_mq_insert_requests+0xdb/0x160
+[ 3701.484366]    <...>-6117    8d..4 3786719398us : stack_trace_call:  14)     5136     112   blk_mq_flush_plug_list+0x12b/0x140
+[ 3701.484366]    <...>-6117    8d..4 3786719398us : stack_trace_call:  15)     5024     112   blk_flush_plug_list+0xc7/0x220
+[ 3701.484366]    <...>-6117    8d..4 3786719398us : stack_trace_call:  16)     4912     128   blk_mq_make_request+0x42a/0x600
+[ 3701.484366]    <...>-6117    8d..4 3786719398us : stack_trace_call:  17)     4784      48   generic_make_request+0xc0/0x100
+[ 3701.484366]    <...>-6117    8d..4 3786719398us : stack_trace_call:  18)     4736     112   submit_bio+0x86/0x160
+[ 3701.484366]    <...>-6117    8d..4 3786719398us : stack_trace_call:  19)     4624     160   __swap_writepage+0x198/0x230
+[ 3701.484366]    <...>-6117    8d..4 3786719399us : stack_trace_call:  20)     4464      32   swap_writepage+0x42/0x90
+[ 3701.484366]    <...>-6117    8d..4 3786719399us : stack_trace_call:  21)     4432     320   shrink_page_list+0x676/0xa80
+[ 3701.484366]    <...>-6117    8d..4 3786719399us : stack_trace_call:  22)     4112     208   shrink_inactive_list+0x262/0x4e0
+[ 3701.484366]    <...>-6117    8d..4 3786719399us : stack_trace_call:  23)     3904     304   shrink_lruvec+0x3e1/0x6a0
+[ 3701.484366]    <...>-6117    8d..4 3786719399us : stack_trace_call:  24)     3600      80   shrink_zone+0x3f/0x110
+[ 3701.484366]    <...>-6117    8d..4 3786719400us : stack_trace_call:  25)     3520     128   do_try_to_free_pages+0x156/0x4c0
+[ 3701.484366]    <...>-6117    8d..4 3786719400us : stack_trace_call:  26)     3392     208   try_to_free_pages+0xf7/0x1e0
+[ 3701.484366]    <...>-6117    8d..4 3786719400us : stack_trace_call:  27)     3184     352   __alloc_pages_nodemask+0x783/0xb20
+[ 3701.484366]    <...>-6117    8d..4 3786719400us : stack_trace_call:  28)     2832       8   alloc_pages_current+0x10f/0x1f0
+[ 3701.484366]    <...>-6117    8d..4 3786719400us : stack_trace_call:  29)     2824     200   __page_cache_alloc+0x13f/0x160
+[ 3701.484366]    <...>-6117    8d..4 3786719400us : stack_trace_call:  30)     2624      80   find_or_create_page+0x4c/0xb0
+[ 3701.484366]    <...>-6117    8d..4 3786719401us : stack_trace_call:  31)     2544     112   __getblk+0x109/0x2f0
+[ 3701.484366]    <...>-6117    8d..4 3786719401us : stack_trace_call:  32)     2432     224   ext4_ext_insert_extent+0x4d8/0x1270
+[ 3701.484366]    <...>-6117    8d..4 3786719401us : stack_trace_call:  33)     2208     256   ext4_ext_map_blocks+0x8d4/0x1010
+[ 3701.484366]    <...>-6117    8d..4 3786719401us : stack_trace_call:  34)     1952     160   ext4_map_blocks+0x325/0x530
+[ 3701.484366]    <...>-6117    8d..4 3786719401us : stack_trace_call:  35)     1792     384   ext4_writepages+0x6d1/0xce0
+[ 3701.484366]    <...>-6117    8d..4 3786719402us : stack_trace_call:  36)     1408      16   do_writepages+0x23/0x40
+[ 3701.484366]    <...>-6117    8d..4 3786719402us : stack_trace_call:  37)     1392      96   __writeback_single_inode+0x45/0x2e0
+[ 3701.484366]    <...>-6117    8d..4 3786719402us : stack_trace_call:  38)     1296     176   writeback_sb_inodes+0x2ad/0x500
+[ 3701.484366]    <...>-6117    8d..4 3786719402us : stack_trace_call:  39)     1120      80   __writeback_inodes_wb+0x9e/0xd0
+[ 3701.484366]    <...>-6117    8d..4 3786719402us : stack_trace_call:  40)     1040     160   wb_writeback+0x29b/0x350
+[ 3701.484366]    <...>-6117    8d..4 3786719402us : stack_trace_call:  41)      880     208   bdi_writeback_workfn+0x11c/0x480
+[ 3701.484366]    <...>-6117    8d..4 3786719403us : stack_trace_call:  42)      672     144   process_one_work+0x1d2/0x570
+[ 3701.484366]    <...>-6117    8d..4 3786719403us : stack_trace_call:  43)      528     112   worker_thread+0x116/0x370
+[ 3701.484366]    <...>-6117    8d..4 3786719403us : stack_trace_call:  44)      416     240   kthread+0xf3/0x110
+[ 3701.484366]    <...>-6117    8d..4 3786719403us : stack_trace_call:  45)      176     176   ret_from_fork+0x7c/0xb0
+[ 3701.484366] ---------------------------------
+[ 3701.484366] Modules linked in:
+[ 3701.484366] CPU: 8 PID: 6117 Comm: kworker/u24:1 Not tainted 3.14.0+ #201
+[ 3701.484366] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[ 3701.484366] Workqueue: writeback bdi_writeback_workfn (flush-253:0)
+[ 3701.484366] task: ffff8800353c41c0 ti: ffff880000106000 task.ti: ffff880000106000
+[ 3701.484366] RIP: 0010:[<ffffffff81004e14>]  [<ffffffff81004e14>] show_stack_log_lvl+0x134/0x1a0
+[ 3701.484366] RSP: 0000:ffff880037d06e58  EFLAGS: 00010046
+[ 3701.484366] RAX: 000000000000000c RBX: 0000000000000000 RCX: 0000000000000000
+[ 3701.484366] RDX: ffff880037cfffc0 RSI: ffff880037d06f58 RDI: 0000000000000000
+[ 3701.484366] RBP: ffff880037d06ea8 R08: ffffffff81a0804c R09: 0000000000000000
+[ 3701.484366] R10: 0000000000000002 R11: 0000000000000002 R12: ffff880037d06f58
+[ 3701.484366] R13: 0000000000000000 R14: ffff880000105f58 R15: ffff880037d03fc0
+[ 3701.484366] FS:  0000000000000000(0000) GS:ffff880037d00000(0000) knlGS:0000000000000000
+[ 3701.484366] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3701.484366] CR2: ffff880000105f58 CR3: 0000000001c0b000 CR4: 00000000000006e0
+[ 3701.484366] Stack:
+[ 3701.484366]  0000000000000000 ffff880000105f58 ffff880037d06f58 ffff880000105f58
+[ 3701.484366]  ffff880000106000 ffff880037d06f58 0000000000000040 ffff880037d06f58
+[ 3701.484366]  ffff880000105f58 0000000000000000 ffff880037d06ef8 ffffffff81004f1c
+[ 3701.484366] Call Trace:
+[ 3701.484366]  <#DF> 
+[ 3701.484366]  [<ffffffff81004f1c>] show_regs+0x9c/0x1f0
+[ 3701.484366]  [<ffffffff8103aa37>] df_debug+0x27/0x40
+[ 3701.484366]  [<ffffffff81003361>] do_double_fault+0x61/0x80
+[ 3701.484366]  [<ffffffff816f0907>] double_fault+0x27/0x30
+[ 3701.484366]  [<ffffffff810a5390>] ? __lock_acquire+0x170/0x1ca0
+[ 3701.484366]  <<EOE>> 
 
-On Wed, May 28, 2014 at 10:30:49AM +0100, Ian Campbell wrote:
-> On Sat, 2014-05-24 at 01:20 +0200, Luis R. Rodriguez wrote:
-> > On Thu, May 22, 2014 at 11:05:47AM +0100, Ian Campbell wrote:
-> > > On Thu, 2014-05-22 at 01:02 +0200, Luis R. Rodriguez wrote:
-> > > > > It might be reasonable for hotplugpath.sh to define
-> > > > > XENSTORE_xenstored=3D/path/to/xenstored
-> > > > > XENSTORE_oxenstored=3D/path/to/oxenstored
-> > > > >=20
-> > > > > and use the existing XENSTORED variable in sysconfig to select wh=
-ich.
-> > > >=20
-> > > > Ah but but hotplugpath.sh is one of those automatically generated f=
-iles
-> > > > and after my last patch in this series they are all now shared in o=
-ne
-> > > > master file, config/xen-environment-scripts.in, and since the we wa=
-nt
-> > > > to keep script file Shell / Python agnostic checking which one is s=
-et
-> > > > on sysconfig is not something reasonable to do on that master file.
-> > >=20
-> > > Well, it must be possible to change which xenstored implementation is
-> > > used by editing a single setting in /etc/{sysconfig,default}/xencommo=
-ns,
-> > > maybe that means more code somewhere, I don't know. idieally you would
-> > > be able to say
-> > > XENSTORE=3Dxenstored # C xenstore at default path
-> > > XENSTORE=3Doxenstored # Ocaml xenstore at default path
-> > > XENSTORE=3D/path/to/something # xenstored at some custom path.
-> >=20
-> > Agreed.
-> >=20
-> > > > My series of patches already deals with the old init and xencommons=
- script to
-> > > > start xenstore, it used the hotplugpath.sh for deducing the xenstore
-> > > > daemon it should use by default and switching this to rely on the s=
-ysconfig
-> > > > xencommons should be easy if it wasn't already dealt with there alr=
-eady.
-> > > >=20
-> > > > For systemd though we can't use varibles on ExecStart for the proce=
-ss, we
-> > > > however can use environment variables. We have a few options. Fedor=
-a's
-> > > > approach was to use two service unit files which conflicted with ea=
-ch other,
-> > > > although I'm sure we can work it out by using a target unit and let=
- folks
-> > > > flip it seems rather silly to me to maintain two service unit files=
- with
-> > > > identical entries. Therefore in my new approach usres would have to=
- manually
-> > > > edit the service file with the differnt path / binary. Another poss=
-ibility
-> > > > is to have a central launcher binary that just does getenv() and ex=
-ecve()
-> > > > on the desired binary. If this is agreeable I can work on it and it=
- could
-> > > > even be shared by the old init as well.
-> > >=20
-> > > Which is considered the most "systemd" approach?
-> >=20
-> > Systemd tries to even recommend to shy away from sysconfig/default dire=
-ctory for
-> > stashing entries, one can set environment variables within the service =
-unit itself,
-> > but if we are to maintain compatiblity with old stuff relying on syscon=
-fig seems
-> > the reasonable and accepted way, then we'd include that file as part of=
- the
-> > running environment, just as our systemd service unit files do now in t=
-his series.
->=20
-> I'm mostly concerned that people *not* using systemd can continue to
-> use /etc/{default,sysconfig}/xencommons in the way which they are used
-> to.
-
-Ah well that is already addressed in the series of patches, I'll be sure to=
- test
-flipping it with the xencommons edit on my next respin. I think in my series
-the xenstored variable was assumed coming from hotplug.sh and obviously we
-just want /etc/{default,sysconfig}/xencommons as expressed I just had missed
-that file.
-
-> For people who are using systemd the question is whether it is more or
-> less confusing to have an unused /etc/{default,sysconfig}/xencommons
-> sitting there vs. doing things in the less "systemd" way. The compromise
-> is perhaps to seed the defaults from /e/{d,s}/xencommons but allow them
-> to be changed in either that file or in the unit file? Is that possible?
-
-Environment variables cannot be used to replace the binary that systemd will
-execute on the ExecStart=3D line and this is why I mentioned the different
-possiblities available. As it stands right now then folks would have to edit
-the xenstored.service file and replace the full path of the binary to get
-a different xenstore to run, and then and reboot, right now on systemd the =
-file
-/e/{d,s}/xencommons could only be used to get daemon environment variables,
-not change the daemon. If we can live with that as a compromise in
-documentation then that would require only an edit to the file
-/e/{d,s}/xencommons and make sure its clear that the daemon override would
-only work on legacy init and not systemd. That's another option then, so to
-be clear there are these known options:
-
-  0) *Iff* we want to loose the /e/{d,s}/xencommons behavior we just docume=
-nt
-     that the /e/{d,s}/xencommons override is only for legacy init and have
-     folks edit the service file to change the preferred daemon. They'd
-     obviously just have to reboot.
-
-*Iff* we want to conserve the /e/{d,s}/xencommons behaviour we have a few o=
-ptions:
-
-  1) two service unit files and one target file, the downside is that the s=
-ervice
-     files are identical except for the ExecStart line, that seems silly th=
-en
-     as you'd have to maintain two files or at least once installed they'd =
-be
-     nearly identical.
-  2) two service unit files and use an alias for the general service name,
-     the same downside applies though.
-  3) we implement a launcher which will getenv() and execve() the appropria=
-te
-     daemon. To do this we can rename the C implementation to cxenstored,
-     the Ocaml daemon remain as oxenstored, and the launcher would get
-     the generic name xenstored. Although I had not mentioned before I am
-     making it clear now that I'd like a bit more review on this strategy
-     and the reasons for it.
-
-Options 1-2 would require no changes to other OSes. Option 3 however could
-be considered for integration on other OSes. When evaluating these options
-please note that any security issues with getenv() and execve() also have
-to be considered in light of the current strategy for legacy init which
-would rely on an environment file which allows full override on the binary.
-
-> > More details here:
-> >=20
-> > http://0pointer.de/blog/projects/on-etc-sysinit.html
-> >=20
-> > As for dynamic use daemons, there aren't good examples but the undocume=
-nted way
-> > of doing this but as a per a conversation at the LF Linux Collaboration=
- summit
-> > one way to deal with this is to use one service target files for defini=
-ng what
-> > we do, we'd have two separate service unit files for each cxenstored and
-> > oxenstored, the services that need to depend on it would depend on the =
-target,
-> > not the actual service unit files, the user then would have to enable o=
-ne or
-> > the other. A sysconfig edit however would not trigger a change, which i=
-s what
-> > we seem to want,
->=20
-> What do you mean? I don't expect editing sysconfig will automagically do
-> anything, some further action would be required, and since xenstored is
-> involved that further action most likely involves a reboot.
-
-Sorry dynamic was the wrong word, what I meant was a way that would not req=
-uire
-a service unit change but rather an environment file much as with the legac=
-y init
-approach.
-
-> Can a systemd unit "soft fail"? i.e. fail but not make a huge red
-> highlighted fuss about it?
-
-Not that I have seen documented.
-
-> Then each of the two units could check if
-> they were configured and softfail if not (expecting that the other one
-> is configured). Alternatively perhaps there is some sort of pre-check
-> hook which could be used to see if the unit can/should be run?
-
-Option 1) and 2) can be used for something like this if we did not want
-to have a system administrator ever involved in selectin between the two
-units, but it would then require adding code on both C version of xentored
-and on the ocaml oxenstored to getenv() on XENSTORED and fail to load if
-it didn't match. I am not sure if two service units that claim the same
-alias (option 2) would work well in a situation where one is expected
-to fail though. Likewise for the target (option 1). Seems a bit hacky,
-but then again so do all of these options and hence the wide review.
-
-IMHO the launcher is the cleanest solution and my preferred strategy
-provided of course all possible security concerns and any other concenrs
-check out well.
-
-  Luis
-
---oLBj+sq0vYjzfsbl
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.9 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTh8LOAAoJEPep4JnvMe6zaP8P/jgfsjkFM0/44CHZIa8w2rS/
-XEADll5iTsP6NgnfdHDHEl27z4bMQrN7gNtSSeWQJrpUVUdWBKgzAcz/KPR8Q9YT
-Ard+5Yw22DV2uJL7K2M/+ZC452WB5pdWGOnXS7hPdpng14tWEa+C4B/CdPctWj06
-M7yr/v2Cyv+qq/iwul98gRoGt7UkBjWiwmt5yHEuHXCguhlm4NB1pG4h2ND+2YLX
-s2vFY6VwBwAAQ92INRKvjLAS4Z2sTXu6xPBSi1UMwMcNLMW0GeHjaVAHVWhAs/cr
-730Fbh6y9jNlMHsJ9AE3pG8aGbb26h9BaqJxBtrV6mdbL+3GhLGSghe0kS1VAlPg
-ThT7VfrudlfRI44HbfNx+9xV3BsSjNpkHcV8b9tB5i1m8yeThajkUZrdSYcj4Zyn
-Ah6+II7wwYOHtt0kvEDJf9R4DBWthf1DGdZ6fzLhJu3DcHkWbnFJR5wnoNWEL4DH
-9fawKSbhUCgS+RvSafuSzqTghWq95kUDtMBFeDS/C2Y8KQoi6bBSKYZoDjb64D6m
-xj4PYyhPQLn6tGYG8Sq2jOywmD+2/DPajine0a6jLeaaR7lWw/IYc1vebjota5k4
-p9pm4HgrWblanOrYi30xwoKkcyJq8nFlyuLt/yN0G/TcqB7L3W7e6xfP8AzwC/OH
-iYNtcdWnJXOSZeueM3p7
-=Iubg
------END PGP SIGNATURE-----
-
---oLBj+sq0vYjzfsbl--
+-- 
+Kind regards,
+Minchan Kim
