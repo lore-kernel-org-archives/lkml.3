@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698AbaE2Vly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:41:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36738 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaE2Vlx (ORCPT
+	id S1755519AbaE2VpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:45:20 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:46232 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaE2VpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:41:53 -0400
-Date: Fri, 30 May 2014 00:41:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Chaitanya Hazarey <c@24.io>, Andrea Merello <andrea.merello@gmail.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ksenia Ragiadakou <burzalodowa@gmail.com>
-Subject: Re: [PATCH 1/2] Staging: rtl8192u: r8192U_wx.c Fixed a misplaced
- brace
-Message-ID: <20140529214115.GC15585@mwanda>
-References: <1401319428-20798-1-git-send-email-c@24.io>
- <20140529204317.GA9865@kroah.com>
- <CADadk9E3bhsr9_f13ugQNX_mtX1c4a5DM2=+ZVK76QUb+FAePg@mail.gmail.com>
- <20140529210051.GA21250@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529210051.GA21250@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 29 May 2014 17:45:19 -0400
+From: Larry Bassel <larry.bassel@linaro.org>
+To: catalin.marinas@arm.com, will.deacon@arm.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, khilman@linaro.org,
+        Larry Bassel <larry.bassel@linaro.org>
+Subject: [PATCH v6 0/2] context tracker support for arm64
+Date: Thu, 29 May 2014 14:45:02 -0700
+Message-Id: <1401399904-24471-1-git-send-email-larry.bassel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 02:00:51PM -0700, Greg KH wrote:
-> On Thu, May 29, 2014 at 01:43:01PM -0700, Chaitanya Hazarey wrote:
-> > I have 1/5 through to 5/5. Will resend rightaway with slightly changed
-> > subjects.
-> 
-> What does that have to do with patch 2/2 here?  You sent a 1/2 patch, so
-> obviously there should be a 2/2 somewhere...
-> 
-> confused,
+Implement and enable context tracking for arm64 (which is
+a prerequisite for FULL_NOHZ support). This patchset
+builds upon earlier work by Kevin Hilman and is based on
+Will Deacon's tree.
 
-Heh.  You recieved [patch 2/2] but you didn't like it.
-https://lkml.org/lkml/2014/5/28/818
+Changes v5 to v6:
 
-Meanwhile Chaitanya keeps resending these patches over and over so now
-I have around 5 million of them in my inbox.  Calm down, Chaitanya!
-Give us a little time to catch up before you resend.
+* Don't save far_el1 in x26 in el0_dbg path (not needed)
+* TIF_NOHZ processes go through the slow path (so no register
+save/restore is needed in ct_user_enter)
 
-The latest couple versions of the patches have been ok, btw.
+Changes v4 to v5:
 
-regards,
-dan carpenter
+* Improvement to code restoring far_el1 (suggested by Christopher Covington)
+* Improvement to register save/restore in ct_user_enter
+
+Changes v3 to v4:
+
+* Rename parameter of ct_user_exit from save to restore
+* Rebased patch to Will Deacon's tree (branch remotes/origin/aarch64
+of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux.git)
+
+Changes v2 to v3:
+
+* Save/restore necessary registers in ct_user_enter and ct_user_exit
+* Annotate "error paths" out of el0_sync with ct_user_exit
+
+Changes v1 to v2:
+
+* Save far_el1 in x26 temporarily
+
+Larry Bassel (2):
+  arm64: adjust el0_sync so that a function can be called
+  arm64: enable context tracking
+
+ arch/arm64/Kconfig                   |  1 +
+ arch/arm64/include/asm/thread_info.h |  4 +++
+ arch/arm64/kernel/entry.S            | 58 +++++++++++++++++++++++++++++++-----
+ 3 files changed, 56 insertions(+), 7 deletions(-)
+
+-- 
+1.8.3.2
 
