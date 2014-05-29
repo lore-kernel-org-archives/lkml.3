@@ -1,73 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608AbaE2PYw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:24:52 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:60231 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245AbaE2PYu (ORCPT
+	id S965005AbaE2P1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:27:11 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:59809 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933016AbaE2P1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:24:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140529072633.GH6677@dastard>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-	<20140528223142.GO8554@dastard>
-	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
-	<20140529013007.GF6677@dastard>
-	<CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
-	<20140529072633.GH6677@dastard>
-Date: Thu, 29 May 2014 08:24:49 -0700
-X-Google-Sender-Auth: QIzH8xGCkZT18mfzULIASPeFNaY
-Message-ID: <CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 May 2014 11:27:08 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jacob Shin <jacob.w.shin@gmail.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, xiakaixu <xiakaixu@huawei.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 3/4] perf tools: add hardware breakpoint bp_len test cases
+Date: Thu, 29 May 2014 17:26:52 +0200
+Message-Id: <1401377213-24551-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
+References: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 12:26 AM, Dave Chinner <david@fromorbit.com> wrote:
->
-> What concerns me about both __alloc_pages_nodemask() and
-> kernel_map_pages is that when I look at the code I see functions
-> that have no obvious stack usage problem. However, the compiler is
-> producing functions with huge stack footprints and it's not at all
-> obvious when I read the code. So in this case I'm more concerned
-> that we have a major disconnect between the source code structure
-> and the code that the compiler produces...
+From: Jacob Shin <jacob.w.shin@gmail.com>
 
-I agree. In fact, this is the main reason that Minchan's call trace
-and this thread has actually convinced me that yes, we really do need
-to make x86-64 have a 16kB stack (well, 16kB allocation - there's
-still the thread info etc too).
+Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
+Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: xiakaixu <xiakaixu@huawei.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/perf/tests/parse-events.c | 58 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
 
-Usually when we see the stack-smashing traces, they are because
-somebody did something stupid. In this case, there are certainly
-stupid details, and things I think we should fix, but there is *not*
-the usual red flag of "Christ, somebody did something _really_ wrong".
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index deba669..41ef91d 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -1114,6 +1114,49 @@ static int test__pinned_group(struct perf_evlist *evlist)
+ 	return 0;
+ }
+ 
++static int test__checkevent_breakpoint_len(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = perf_evlist__first(evlist);
++
++	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong bp_type", (HW_BREAKPOINT_R | HW_BREAKPOINT_W) ==
++					 evsel->attr.bp_type);
++	TEST_ASSERT_VAL("wrong bp_len", HW_BREAKPOINT_LEN_1 ==
++					evsel->attr.bp_len);
++
++	return 0;
++}
++
++static int test__checkevent_breakpoint_len_w(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = perf_evlist__first(evlist);
++
++	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong bp_type", HW_BREAKPOINT_W ==
++					 evsel->attr.bp_type);
++	TEST_ASSERT_VAL("wrong bp_len", HW_BREAKPOINT_LEN_2 ==
++					evsel->attr.bp_len);
++
++	return 0;
++}
++
++static int
++test__checkevent_breakpoint_len_rw_modifier(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = perf_evlist__first(evlist);
++
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++
++	return test__checkevent_breakpoint_rw(evlist);
++}
++
+ static int count_tracepoints(void)
+ {
+ 	char events_path[PATH_MAX];
+@@ -1389,6 +1432,21 @@ static struct evlist_test test__events[] = {
+ 		.check = test__pinned_group,
+ 		.id    = 41,
+ 	},
++	{
++		.name  = "mem:0/1",
++		.check = test__checkevent_breakpoint_len,
++		.id    = 42,
++	},
++	{
++		.name  = "mem:0/2:w",
++		.check = test__checkevent_breakpoint_len_w,
++		.id    = 43,
++	},
++	{
++		.name  = "mem:0/4:rw:u",
++		.check = test__checkevent_breakpoint_len_rw_modifier,
++		.id    = 44
++	},
+ #if defined(__s390x__)
+ 	{
+ 		.name  = "kvm-s390:kvm_s390_create_vm",
+-- 
+1.8.3.1
 
-So I'm not in fact arguing against Minchan's patch of upping
-THREAD_SIZE_ORDER to 2 on x86-64, but at the same time stack size does
-remain one of my "we really need to be careful" issues, so while I am
-basically planning on applying that patch, I _also_ want to make sure
-that we fix the problems we do see and not just paper them over.
-
-The 8kB stack has been somewhat restrictive and painful for a while,
-and I'm ok with admitting that it is just getting _too_ damn painful,
-but I don't want to just give up entirely when we have a known deep
-stack case.
-
-                      Linus
