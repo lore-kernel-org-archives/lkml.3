@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699AbaE2FAC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:00:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58419 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933014AbaE2EiM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933012AbaE2EiM (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 29 May 2014 00:38:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58358 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932949AbaE2EiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 00:38:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.10 15/86] parisc: fix epoll_pwait syscall on compat kernel
-Date: Wed, 28 May 2014 21:36:50 -0700
-Message-Id: <20140529043515.533414822@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sumit Saxena <sumit.saxena@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.10 03/86] SCSI: megaraid: missing bounds check in mimd_to_kioc()
+Date: Wed, 28 May 2014 21:36:38 -0700
+Message-Id: <20140529043513.941740227@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -26,30 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ab3e55b119c9653b19ea4edffb86f04db867ac98 upstream.
+commit 3de2260140417759c669d391613d583baf03b0cf upstream.
 
-This bug was detected with the libio-epoll-perl debian package where the
-test case IO-Ppoll-compat.t failed.
+pthru32->dataxferlen comes from the user so we need to check that it's
+not too large so we don't overflow the buffer.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/syscall_table.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/megaraid/megaraid_mm.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -392,7 +392,7 @@
- 	ENTRY_COMP(vmsplice)
- 	ENTRY_COMP(move_pages)		/* 295 */
- 	ENTRY_SAME(getcpu)
--	ENTRY_SAME(epoll_pwait)
-+	ENTRY_COMP(epoll_pwait)
- 	ENTRY_COMP(statfs64)
- 	ENTRY_COMP(fstatfs64)
- 	ENTRY_COMP(kexec_load)		/* 300 */
+--- a/drivers/scsi/megaraid/megaraid_mm.c
++++ b/drivers/scsi/megaraid/megaraid_mm.c
+@@ -486,6 +486,8 @@ mimd_to_kioc(mimd_t __user *umimd, mraid
+ 
+ 	pthru32->dataxferaddr	= kioc->buf_paddr;
+ 	if (kioc->data_dir & UIOC_WR) {
++		if (pthru32->dataxferlen > kioc->xferlen)
++			return -EINVAL;
+ 		if (copy_from_user(kioc->buf_vaddr, kioc->user_data,
+ 						pthru32->dataxferlen)) {
+ 			return (-EFAULT);
 
 
