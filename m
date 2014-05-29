@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805AbaE2IhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:37:20 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:33798 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756551AbaE2IhQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:37:16 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Joe Perches'" <joe@perches.com>, Cody P Schafer <dev@codyps.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: RE: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
- le}_to_cpu() and cpu_to_{be, le}() macros
-Thread-Topic: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
- le}_to_cpu() and cpu_to_{be, le}() macros
-Thread-Index: AQHPehtRSTTppVgBd0OVC+FRTYrw6JtVrLPQgADQNQCAAAHCgIAADZSAgACwchA=
-Date: Thu, 29 May 2014 08:36:11 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724FA5C@AcuExch.aculab.com>
-References: <1401236684-10579-1-git-send-email-dev@codyps.com>
-	 <1401236684-10579-12-git-send-email-dev@codyps.com>
-	 <063D6719AE5E284EB5DD2968C1650D6D1724EEAF@AcuExch.aculab.com>
-	 <CAPoQQ-17OHotfbczJvEoq=vAzu_+6-sV3M1ZAhDaQ45wB3NB4A@mail.gmail.com>
-	 <CAPoQQ-11vW3Q0=LcS-myNZ6hXeYBeu==_prwHJXHvLfkUSmZHQ@mail.gmail.com>
- <1401318025.19335.15.camel@joe-AO725>
-In-Reply-To: <1401318025.19335.15.camel@joe-AO725>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S933077AbaE2Iht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:37:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932814AbaE2Ihq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 04:37:46 -0400
+Date: Thu, 29 May 2014 10:37:32 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 13/14] perf tests: Add test for caching dso file
+ descriptors
+Message-ID: <20140529083732.GA1177@krava.brq.redhat.com>
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+ <1400174615-2121-14-git-send-email-jolsa@kernel.org>
+ <87d2f0huj7.fsf@sejong.aot.lge.com>
+ <20140527075436.GE12920@krava.brq.redhat.com>
+ <87oayhh2j6.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87oayhh2j6.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches
-> On Wed, 2014-05-28 at 17:11 -0500, Cody P Schafer wrote:
-> > On Wed, May 28, 2014 at 5:05 PM, Cody P Schafer <dev@codyps.com> wrote:
-> > > On Wed, May 28, 2014 at 3:45 AM, David Laight <David.Laight@aculab.com> wrote:
-> > >> From: Cody P Schafer
-> > >>> Rather manually specifying the size of the integer to be converted, key
-> > >>> off of the type size. Reduces duplicate size info and the occurance of
-> > >>> certain types of bugs (using the wrong sized conversion).
-> > >> ...
-> > >>> +#define be_to_cpu(v) \
-> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v, \
-> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint16_t), be16_to_cpu(v), \
-> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint32_t), be32_to_cpu(v), \
-> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint64_t), be64_to_cpu(v), \
-> > >>> +             (void)0))))
-> > >> ...
-> > >>
-> > >> I'm not at all sure that using the 'size' of the constant will reduce
-> > >> the number of bugs - it just introduces a whole new category of bugs.
-> > >
-> > > Certainly, if you mis-size the argument (and thus have missized one of
-> > > the variables containing the be value, probably a bug anyhow), there
-> > > will be problems.
-> > >
-> > > I put this interface together because of an actual bug I wrote into
-> > > the initial code of the hv_24x7 driver (resized a struct member
-> > > without adjusting the be*_to_cpu() sizing).
-> > > Having this "auto sizing" macro means I can avoid encoding the size of
-> > > a struct field in multiple places.
+On Thu, May 29, 2014 at 09:06:05AM +0900, Namhyung Kim wrote:
+> On Tue, 27 May 2014 09:54:36 +0200, Jiri Olsa wrote:
+> > On Tue, May 27, 2014 at 10:36:44AM +0900, Namhyung Kim wrote:
+> >> On Thu, 15 May 2014 19:23:34 +0200, Jiri Olsa wrote:
+> >> > Adding test that setup test_dso_data__fd_limit and test
+> >> > dso data file descriptors are cached appropriately.
+> >> 
+> >> [SNIP]
+> >> > +static long open_files_cnt(void)
+> >> > +{
+> >> > +	char path[PATH_MAX];
+> >> > +	struct dirent *dent;
+> >> > +	DIR *dir;
+> >> > +	long nr = 0;
+> >> > +	int n;
+> >> > +
+> >> > +	n = scnprintf(path, PATH_MAX, "%s/self/fd", procfs__mountpoint());
+> >> > +	TEST_ASSERT_VAL("couldn't get fd path", n < PATH_MAX);
+> >> 
+> >> Looks like an unnecessary check since the scnprintf() cannot return more
+> >> than (or equal to) PATH_MAX.
 > >
-> > To clarify, the point I'm making here is that this simply cuts out 1
-> > more place we can screw up endianness conversion sizing.
+> > once it's equal it's bad.. as the man says:
+> > "return value of size or more means that the output was  truncated"
 > 
-> It does screw up other types when you do things like:
-> 
-> 	u8 foo = some_function();
-> 
-> 	cpu_to_be(foo + 1);
-> 
-> the return value is sizeof(int) not u8
+> Did you see "sn"printf?
 
-And you'd have to be very, very careful with constants:
-#define SOME_CONST xxxxx
-	cp_to_be(SOME_CONST)
-isn't likely to be the right size.
-
-	David
-
-
-
+yes, I just double checked.. jirka
