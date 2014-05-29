@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934483AbaE2J0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 05:26:52 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:56818 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932814AbaE2J0v (ORCPT
+	id S934516AbaE2J1S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 05:27:18 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:57676 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932814AbaE2J1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 05:26:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: josh@joshtriplett.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit and 32-bit ports
-Date: Thu, 29 May 2014 11:26:44 +0200
-Message-ID: <16228376.RHijyT1ZPk@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53865820.7010309@zytor.com>
-References: <20140509191914.GA7286@jtriplet-mobl1> <63645237.lSKEVJUKkQ@wuerfel> <53865820.7010309@zytor.com>
+	Thu, 29 May 2014 05:27:16 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:HkeJgauObBNDlU17qNp36+ZwWaiRGp15SmiJTyGBLpy
- qRueM6jPD5K/KCoec0Tb9S145gvQYiboRDNwKG+2pPDVjgNS29
- dXt35WP4OZf+FReD3XJqwWAGl/Mg0UyM1xsoc+IDROpGA7YvMF
- vRBsO0o8/PIZaoLdwAk2AFDiHS3fazAeNNqb5IZElFDvfIU9qX
- XCaq2vasULJ3ahTo8XZuo5iwNvxVSNpvBi4mZmUplurxEKYl9B
- KDkcbJMjaHjOkCOTfodfHKDLUqMGo7bS+V6eBKdzoEDphhZmS8
- MPEyXSm8XnbcDAcJb3bVypKn/9rj0O8p41cj1fqbMW8o8dYgXF
- PpyHwm3591gPcgxjzbdA=
+In-Reply-To: <20140529091255.GB24233@leverpostej>
+References: <1401185895-3677-1-git-send-email-harinik@xilinx.com>
+	<1401185895-3677-2-git-send-email-harinik@xilinx.com>
+	<20140529091255.GB24233@leverpostej>
+Date: Thu, 29 May 2014 14:57:15 +0530
+Message-ID: <CAFcVECJXK4fFGV1iDm79Y6=xvPnPvzqWzL_XHMYuP_PTv7CZHw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] devicetree: Add Cadence WDT devicetree bindings documentation
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "wim@iguana.be" <wim@iguana.be>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "michals@xilinx.com" <michals@xilinx.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 May 2014 14:41:52 H. Peter Anvin wrote:
-> On 05/19/2014 05:36 AM, Arnd Bergmann wrote:
-> > 
-> > My feeling is that all devices we can think of fall into at least one
-> > of these categories:
-> > 
-> > * legacy PC stuff that needs only byte access
-> > * PCI devices that can be accessed through sysfs
-> > * devices on x86 that can be accessed using iopl
-> > 
-> 
-> I don't believe PCI I/O space devices can be accessed through sysfs, but
-> perhaps I'm wrong?  (mmapping I/O space is not portable.)
+Hi Mark,
 
-The interface is there, both a read/write and mmap on the resource
-bin_attribute. But it seems you're right, neither of them is implemented
-on all architectures.
+On Thu, May 29, 2014 at 2:42 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Tue, May 27, 2014 at 11:18:15AM +0100, Harini Katakam wrote:
+>> Add cadence-wdt bindings documentation.
+>>
+>> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+>> ---
+>>
+>> v2:
+>> No changes
 
-Only powerpc, microblaze, alpha, sparc and xtensa allow users to mmap
-I/O space, even though a lot of others could. The read-write interface
-is only defined for alpha, ia64, microblaze and powerpc.
+<snip>
 
-	Arnd
+>> +Optional properties
+>> +- reset                      : Reset interrupt.
+>
+> What does this mean? What type is this?
+>
+> I have no idea if this is a boolean telling the OS to reset the
+> interrupt initially, or an index describing which interrupt is the reset
+> interrupt in either the interrupts property or some HW registers.
+>
+
+The watchdog has an option to automatically reset when the counter
+reaches zero. This property is an input based on which this automatic
+reset is enabled or disabled.
+I will improve the description of this property.
+
+Regards,
+Harini
