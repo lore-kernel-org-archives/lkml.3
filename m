@@ -1,132 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935AbaE2U52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 16:57:28 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:52040 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140AbaE2U50 (ORCPT
+	id S1756214AbaE2U7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 16:59:12 -0400
+Received: from p01c12o143.mxlogic.net ([208.65.145.66]:47865 "EHLO
+	p01c12o143.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaE2U7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 16:57:26 -0400
-Date: Thu, 29 May 2014 22:57:20 +0200
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Ken Moffat <zarniwhoop@ntlworld.com>, Dave Airlie <airlied@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Resume from suspend broken in 3.15. (bisected)
-Message-ID: <20140529205720.GD19050@phenom.ffwll.local>
-Mail-Followup-To: Alex Deucher <alexdeucher@gmail.com>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	Ken Moffat <zarniwhoop@ntlworld.com>,
-	Dave Airlie <airlied@redhat.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20140528172521.GA9945@milliways>
- <20140528234927.GA18638@milliways>
- <CADnq5_PWigm5e4CwnfW+3TaohbFo82uDpiCMftL=OmRvCkJQzQ@mail.gmail.com>
- <20140529060311.GU17724@mwanda>
- <CADnq5_NxXDfGEquFZX_CnhNEAKEomijQCX+Hn3kQhAFBZOge1g@mail.gmail.com>
+	Thu, 29 May 2014 16:59:11 -0400
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 May 2014 16:59:11 EDT
+X-MXL-Hash: 53879f9f24b78f88-c17c0cce423384b7fe015f792c6be1ee3042ca9a
+X-MXL-Hash: 53879dbb76da6d1d-df211a3c3891c61de24a6037108252086e43a193
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, Joe Lawrence <joe.lawrence@stratus.com>
+Subject: [PATCH 0/2] block,scsi: fixup blk_get_request dead queue scenarios
+Date: Thu, 29 May 2014 16:48:47 -0400
+Message-ID: <1401396529-17275-1-git-send-email-joe.lawrence@stratus.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADnq5_NxXDfGEquFZX_CnhNEAKEomijQCX+Hn3kQhAFBZOge1g@mail.gmail.com>
-X-Originating-IP: [84.73.67.144]
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [134.111.199.152]
+X-AnalysisOut: [v=2.1 cv=S9JXwecP c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
+X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=ts4K_s6nORMA:10 a=_KQ]
+X-AnalysisOut: [qW7t0BisA:10 a=CdzKgOd8jloA:10 a=BLceEmwcHowA:10 a=uelBKuK]
+X-AnalysisOut: [pAAAA:8 a=YlVTAMxIAAAA:8 a=TSbVqHtbAAAA:8 a=ybkoTBZV1DTpBp]
+X-AnalysisOut: [Hn9ZIA:9]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014052923); S=0.200(2014051901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 10:47 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Thu, May 29, 2014 at 2:03 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->> On Wed, May 28, 2014 at 08:26:53PM -0400, Alex Deucher wrote:
->>> On Wed, May 28, 2014 at 7:49 PM, Ken Moffat <zarniwhoop@ntlworld.com> wrote:
->>> > On Wed, May 28, 2014 at 06:25:21PM +0100, Ken Moffat wrote:
->>> >> Hi Daniel,
->>> >>
->>> >
->>> >  [ correcting details, confirming that reverting this does fix the
->>> > problem, adding Cc:s ]
->>> >
->>> >>  I've only started full testing of 3.15 on one of my machines now
->>> >> that -rc7 has been released (this one had two issues in the radeon
->>> >> code, second was fixed in rc7).  Unfortunately, suspend to RAM
->>> >> (pm-suspend), or rather the wake-up, is broken on this box [ my
->>> >> other two boxes are fine in rc7 ].
->>> >>
->>> >> Bisection identified one of your commits -
->>> >>
->>> >> commit 25f397a429dfa43f22c278d0119a60a343aa568f
->>> >> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
->>> >> Date:   Fri Jul 19 18:57:11 2013 +0200
->>> >>
->>> >>     drm/crtc-helper: explicit DPMS on after modeset
->>> >>
->>> >>     Atm the crtc helper implementation of set_config has really
->>> >>     inconsisten semantics: If just an fb update is good enough, dpms state
->>> >>     will be left as-is, but if we do a full modeset we force everything to
->>> >>     dpms on.
->>> >>
->>> >>     This change has already been applied to the i915 modeset code in
->>> >>
->>> >> ('git show' stops at that point)
->>> >
->>> >  update : I've no idea what was going on there, nor for the problem
->>> > with attempting to revert it.  I've now gone back into git,
->>> > extracted the full commit to a file with 'git show', and then used
->>> > git apply -R to revert it from 3.15-rc7.  That version wakes up from
->>> > suspend to RAM, 3.15-rc7 itself did not.
->>> >
->>> >  Maybe I was still in git log when I thought I was on the command
->>> > line.  Anyway, snipping git's view of my failed attempt to revert
->>> > it, and adding Dan and Alex who were CC'd on the commit.
->>> >
->>>
->>> Duplicate of:
->>> https://bugzilla.kernel.org/show_bug.cgi?id=74751
->>> and also reported here:
->>> https://lkml.org/lkml/2014/5/2/388
->>> Unless there is a good reason to keep the commit, I'd say let's just revert it.
->>>
->>
->> Yes.  Let's revert it.
->
-> The actual bad commit is 177cf92de4aa97ec1435987e91696ed8b5023130, but
-> for some reason git bisect always comes up with
-> 25f397a429dfa43f22c278d0119a60a343aa568f which has been in the tree
-> for almost a year now.  I don't know why.
+Hello Jens,
 
-Quick patch which is worth a shot before we revert 177cf.
--Daniel
+This bug was originally reported against 3.10 and still exists in
+3.15-rc5 [1] [2].  
 
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index c2edb2d14030..cf5d299cc623 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1534,11 +1534,6 @@ int radeon_resume_kms(struct drm_device *dev, bool resume, bool fbcon)
- 
- 	radeon_restore_bios_scratch_regs(rdev);
- 
--	if (fbcon) {
--		radeon_fbdev_set_suspend(rdev, 0);
--		console_unlock();
--	}
--
- 	/* init dig PHYs, disp eng pll */
- 	if (rdev->is_atom_bios) {
- 		radeon_atom_encoder_init(rdev);
-@@ -1563,6 +1558,12 @@ int radeon_resume_kms(struct drm_device *dev, bool resume, bool fbcon)
- 	}
- 
- 	drm_kms_helper_poll_enable(dev);
-+
-+	if (fbcon) {
-+		radeon_fbdev_set_suspend(rdev, 0);
-+		console_unlock();
-+	}
-+
- 	return 0;
- }
- 
+These changes were tested on-top of 3.15-rc5 with user-program that
+opens a CD device, its media is removed, and then the program issues a
+CDROMEJECT ioctl.  Without this change, the kernel can crash in
+sg_scsi_ioctl on NULL request pointer.
+
+The first patch adds return checking to a few blk_get_request callers.
+The second patch is much larger, modifying the return value to include
+an ERR_PTR to indicate failure reason.  I didn't touch any of the IDE
+callers save one since all but that one assume success.  As such, the
+first can be merged without the second if the change is considered too
+dangerous.
+
+Feel free to drop any changes to files (like paride/pd.c) if they're
+considered deprecated.
+
+[1] http://thread.gmane.org/gmane.linux.scsi/80934
+[2] http://thread.gmane.org/gmane.linux.kernel/1502882
+
+Joe Lawrence (2):
+  block,scsi: verify return pointer from blk_get_request
+  block,scsi: convert and handle ERR_PTR from blk_get_request
+
+ block/blk-core.c                            | 34 ++++++++++++++---------------
+ block/bsg.c                                 |  8 +++----
+ block/scsi_ioctl.c                          | 13 ++++++++---
+ drivers/block/paride/pd.c                   |  2 ++
+ drivers/block/pktcdvd.c                     |  2 ++
+ drivers/block/sx8.c                         |  2 +-
+ drivers/cdrom/cdrom.c                       |  4 ++--
+ drivers/ide/ide-park.c                      |  2 +-
+ drivers/scsi/device_handler/scsi_dh_alua.c  |  2 +-
+ drivers/scsi/device_handler/scsi_dh_emc.c   |  2 +-
+ drivers/scsi/device_handler/scsi_dh_hp_sw.c |  4 ++--
+ drivers/scsi/device_handler/scsi_dh_rdac.c  |  2 +-
+ drivers/scsi/osd/osd_initiator.c            |  4 ++--
+ drivers/scsi/osst.c                         |  2 +-
+ drivers/scsi/scsi_error.c                   |  2 ++
+ drivers/scsi/scsi_lib.c                     |  2 +-
+ drivers/scsi/scsi_tgt_lib.c                 |  2 +-
+ drivers/scsi/sg.c                           |  4 ++--
+ drivers/scsi/st.c                           |  2 +-
+ drivers/target/target_core_pscsi.c          |  2 +-
+ 20 files changed, 55 insertions(+), 42 deletions(-)
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.3.1
+
