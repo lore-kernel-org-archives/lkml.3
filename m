@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933858AbaE2H0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:26:00 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:47761 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932664AbaE2HZ5 (ORCPT
+	id S933902AbaE2H0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:26:08 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:39213 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755243AbaE2H0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:25:57 -0400
-Date: Thu, 29 May 2014 00:25:54 -0700
+	Thu, 29 May 2014 03:26:05 -0400
+Date: Thu, 29 May 2014 00:26:02 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Himangi Saraogi <himangi774@gmail.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         julia.lawall@lip6.fr
-Subject: Re: [PATCH] Input: max8925_onkey :Allocate resources using managed
+Subject: Re: [PATCH] input: ab8500-ponkey: Allocate resources using managed
  interfaces
-Message-ID: <20140529072554.GI11817@core.coreip.homeip.net>
-References: <20140528201014.GA10607@himangi-Dell>
+Message-ID: <20140529072602.GJ11817@core.coreip.homeip.net>
+References: <20140528201200.GA10661@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140528201014.GA10607@himangi-Dell>
+In-Reply-To: <20140528201200.GA10661@himangi-Dell>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 01:40:14AM +0530, Himangi Saraogi wrote:
+On Thu, May 29, 2014 at 01:42:00AM +0530, Himangi Saraogi wrote:
 > This patch moves most data allocated in the probe function from
 > unmanaged interfaces to managed interfaces. The kfrees and error
-> handling code is done away with. The unnecesary labels are removed
-> and the function max8925_onkey_remove is removed as it becomes empty
-> after removing the no longer required function calls. Also,
+> handling code is done away with. Also, the unnecesary labels are
+> removed and the function ab8500_ponkey_remove is removed as it becomes
+> empty after removing the no longer required function calls. Also,
 > linux/device.h is added to make sure the devm_*() routine declarations
 > are unambiguously available.
 > 
@@ -75,111 +75,109 @@ Applied, thank you.
 
 > ---
 > To send to: Dmitry Torokhov <dmitry.torokhov@gmail.com>,linux-input@vger.kernel.org,linux-kernel@vger.kernel.org
->  drivers/input/misc/max8925_onkey.c | 52 +++++++++++---------------------------
->  1 file changed, 15 insertions(+), 37 deletions(-)
 > 
-> diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
-> index eef41cf..62899e5 100644
-> --- a/drivers/input/misc/max8925_onkey.c
-> +++ b/drivers/input/misc/max8925_onkey.c
-> @@ -26,6 +26,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/mfd/max8925.h>
->  #include <linux/slab.h>
-> +#include <linux/device.h>
+>  drivers/input/misc/ab8500-ponkey.c | 51 +++++++++++---------------------------
+>  1 file changed, 15 insertions(+), 36 deletions(-)
+> 
+> diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
+> index f2fbdd8..89fb1c6 100644
+> --- a/drivers/input/misc/ab8500-ponkey.c
+> +++ b/drivers/input/misc/ab8500-ponkey.c
+> @@ -7,6 +7,7 @@
+>   * AB8500 Power-On Key handler
+>   */
 >  
->  #define SW_INPUT		(1 << 7)	/* 0/1 -- up/down */
->  #define HARDRESET_EN		(1 << 7)
-> @@ -81,12 +82,11 @@ static int max8925_onkey_probe(struct platform_device *pdev)
->  		return -EINVAL;
+> +#include <linux/device.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/platform_device.h>
+> @@ -65,12 +66,11 @@ static int ab8500_ponkey_probe(struct platform_device *pdev)
+>  		return irq_dbr;
 >  	}
 >  
-> -	info = kzalloc(sizeof(struct max8925_onkey_info), GFP_KERNEL);
+> -	ponkey = kzalloc(sizeof(struct ab8500_ponkey), GFP_KERNEL);
 > -	input = input_allocate_device();
-> -	if (!info || !input) {
+> -	if (!ponkey || !input) {
 > -		error = -ENOMEM;
 > -		goto err_free_mem;
 > -	}
-> +	info = devm_kzalloc(&pdev->dev, sizeof(struct max8925_onkey_info),
-> +			    GFP_KERNEL);
+> +	ponkey = devm_kzalloc(&pdev->dev, sizeof(struct ab8500_ponkey),
+> +			      GFP_KERNEL);
 > +	input = devm_input_allocate_device(&pdev->dev);
-> +	if (!info || !input)
+> +	if (!ponkey || !input)
 > +		return -ENOMEM;
 >  
->  	info->idev = input;
->  	info->i2c = chip->i2c;
-> @@ -100,55 +100,34 @@ static int max8925_onkey_probe(struct platform_device *pdev)
->  	input->dev.parent = &pdev->dev;
+>  	ponkey->idev = input;
+>  	ponkey->ab8500 = ab8500;
+> @@ -82,52 +82,32 @@ static int ab8500_ponkey_probe(struct platform_device *pdev)
+>  
 >  	input_set_capability(input, EV_KEY, KEY_POWER);
 >  
-> -	error = request_threaded_irq(irq[0], NULL, max8925_onkey_handler,
-> -				     IRQF_ONESHOT, "onkey-down", info);
-> +	error = devm_request_threaded_irq(&pdev->dev, irq[0], NULL,
-> +					  max8925_onkey_handler, IRQF_ONESHOT,
-> +					  "onkey-down", info);
+> -	error = request_any_context_irq(ponkey->irq_dbf, ab8500_ponkey_handler,
+> -					0, "ab8500-ponkey-dbf", ponkey);
+> +	error = devm_request_any_context_irq(&pdev->dev, ponkey->irq_dbf,
+> +					     ab8500_ponkey_handler, 0,
+> +					     "ab8500-ponkey-dbf", ponkey);
 >  	if (error < 0) {
->  		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
->  			irq[0], error);
+>  		dev_err(ab8500->dev, "Failed to request dbf IRQ#%d: %d\n",
+>  			ponkey->irq_dbf, error);
 > -		goto err_free_mem;
 > +		return error;
 >  	}
 >  
-> -	error = request_threaded_irq(irq[1], NULL, max8925_onkey_handler,
-> -				     IRQF_ONESHOT, "onkey-up", info);
-> +	error = devm_request_threaded_irq(&pdev->dev, irq[1], NULL,
-> +					  max8925_onkey_handler, IRQF_ONESHOT,
-> +					  "onkey-up", info);
+> -	error = request_any_context_irq(ponkey->irq_dbr, ab8500_ponkey_handler,
+> -					0, "ab8500-ponkey-dbr", ponkey);
+> +	error = devm_request_any_context_irq(&pdev->dev, ponkey->irq_dbr,
+> +					     ab8500_ponkey_handler, 0,
+> +					     "ab8500-ponkey-dbr", ponkey);
 >  	if (error < 0) {
->  		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
->  			irq[1], error);
-> -		goto err_free_irq0;
+>  		dev_err(ab8500->dev, "Failed to request dbr IRQ#%d: %d\n",
+>  			ponkey->irq_dbr, error);
+> -		goto err_free_dbf_irq;
 > +		return error;
 >  	}
 >  
->  	error = input_register_device(info->idev);
+>  	error = input_register_device(ponkey->idev);
 >  	if (error) {
->  		dev_err(chip->dev, "Can't register input device: %d\n", error);
-> -		goto err_free_irq1;
+>  		dev_err(ab8500->dev, "Can't register input device: %d\n", error);
+> -		goto err_free_dbr_irq;
 > +		return error;
 >  	}
 >  
->  	platform_set_drvdata(pdev, info);
->  	device_init_wakeup(&pdev->dev, 1);
->  
+>  	platform_set_drvdata(pdev, ponkey);
 >  	return 0;
 > -
-> -err_free_irq1:
-> -	free_irq(irq[1], info);
-> -err_free_irq0:
-> -	free_irq(irq[0], info);
+> -err_free_dbr_irq:
+> -	free_irq(ponkey->irq_dbr, ponkey);
+> -err_free_dbf_irq:
+> -	free_irq(ponkey->irq_dbf, ponkey);
 > -err_free_mem:
 > -	input_free_device(input);
-> -	kfree(info);
+> -	kfree(ponkey);
 > -
 > -	return error;
 > -}
 > -
-> -static int max8925_onkey_remove(struct platform_device *pdev)
+> -static int ab8500_ponkey_remove(struct platform_device *pdev)
 > -{
-> -	struct max8925_onkey_info *info = platform_get_drvdata(pdev);
-> -	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+> -	struct ab8500_ponkey *ponkey = platform_get_drvdata(pdev);
 > -
-> -	free_irq(info->irq[0] + chip->irq_base, info);
-> -	free_irq(info->irq[1] + chip->irq_base, info);
-> -	input_unregister_device(info->idev);
-> -	kfree(info);
+> -	free_irq(ponkey->irq_dbf, ponkey);
+> -	free_irq(ponkey->irq_dbr, ponkey);
+> -	input_unregister_device(ponkey->idev);
+> -	kfree(ponkey);
 > -
 > -	return 0;
 >  }
 >  
->  #ifdef CONFIG_PM_SLEEP
-> @@ -190,7 +169,6 @@ static struct platform_driver max8925_onkey_driver = {
->  		.pm	= &max8925_onkey_pm_ops,
+>  #ifdef CONFIG_OF
+> @@ -144,7 +124,6 @@ static struct platform_driver ab8500_ponkey_driver = {
+>  		.of_match_table = of_match_ptr(ab8500_ponkey_match),
 >  	},
->  	.probe		= max8925_onkey_probe,
-> -	.remove		= max8925_onkey_remove,
+>  	.probe		= ab8500_ponkey_probe,
+> -	.remove		= ab8500_ponkey_remove,
 >  };
->  module_platform_driver(max8925_onkey_driver);
+>  module_platform_driver(ab8500_ponkey_driver);
 >  
 > -- 
 > 1.9.1
