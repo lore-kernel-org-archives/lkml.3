@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369AbaE2Soh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 14:44:37 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:62036 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849AbaE2Sog (ORCPT
+	id S1756405AbaE2SpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 14:45:14 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:42880 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaE2SpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 14:44:36 -0400
+	Thu, 29 May 2014 14:45:12 -0400
+Date: Thu, 29 May 2014 20:45:07 +0200
+From: Robin Schroer <sulamiification@gmail.com>
+To: olof@lixom.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/platform/chrome: coding style fixes
+Message-ID: <20140529184507.GA10635@shodan.fritz.box>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <31766.1401387746@warthog.procyon.org.uk>
-References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
-	<28592.1401382081@warthog.procyon.org.uk>
-	<CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com>
-	<29026.1401383705@warthog.procyon.org.uk>
-	<CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com>
-	<29191.1401384252@warthog.procyon.org.uk>
-	<CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com>
-	<29410.1401385296@warthog.procyon.org.uk>
-	<CA+icZUU-BcgbZ2b0-Nbu=9g57c5WTJV3Him29cDnpuOp5W62Sw@mail.gmail.com>
-	<31766.1401387746@warthog.procyon.org.uk>
-Date: Thu, 29 May 2014 20:44:34 +0200
-Message-ID: <CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com>
-Subject: Re: Unionmount and overlayfs testsuite
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 8:22 PM, David Howells <dhowells@redhat.com> wrote:
-> Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
->> >         TEST_OVERLAYFS=1 ./run.sh
->> >
->> > right?
->> >
->>
->> Yes (with my mount-patch applied).
->>
->> ( ...and... # umount /lower /upper /mnt )
->
-> Can you put a couple of echo commands in settings.inc to show which side of
-> the if-statement it goes and also put:
->
->         echo TEST_OVERLAYFS is $TEST_OVERLAYFS
->
-> in run.sh and mount_union.sh?
->
+added blank lines after declarations in some places
 
-I retried with the new kernel-config...
+Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+---
+ drivers/platform/chrome/chromeos_laptop.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-# modprobe -v overlayfs
-insmod /lib/modules/3.15.0-rc7-58.1-iniza-lockdep/kernel/fs/overlayfs/overlayfs.ko
+diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
+index 7f1a2e2..0e2785a 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -177,6 +177,7 @@ static int __find_i2c_adap(struct device *dev, void *data)
+ 	const char *name = data;
+ 	static const char *prefix = "i2c-";
+ 	struct i2c_adapter *adapter;
++
+ 	if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
+ 		return 0;
+ 	adapter = to_i2c_adapter(dev);
+@@ -231,6 +232,7 @@ static struct i2c_client *add_i2c_device(const char *name,
+ 						struct i2c_board_info *info)
+ {
+ 	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
++
+ 	return __add_probed_i2c_device(name,
+ 				       find_i2c_adapter_num(type),
+ 				       info,
+@@ -464,6 +466,7 @@ static struct platform_driver cros_platform_driver = {
+ static int __init chromeos_laptop_init(void)
+ {
+ 	int ret;
++
+ 	if (!dmi_check_system(chromeos_laptop_dmi_table)) {
+ 		pr_debug("%s unsupported system.\n", __func__);
+ 		return -ENODEV;
+-- 
+1.9.3
 
-...and echo-line changes...
-
-# LC_ALL=C TEST_OVERLAYFS="1" ./run.sh
-[ run.sh ] TEST_OVERLAYFS is 1
-***
-*** ./run.sh open-plain.test
-***
-[ mount_union.sh ] TEST_OVERLAYFS is 1
-TEST100: Open O_RDONLY
- - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
- - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
-TEST101: Open O_WRONLY
- - open_file -w /mnt/a/foo101 -W q
-/mnt/a/foo101: Test file not on upper filesystem  (line 30)
-
-# LC_ALL=C df -h | egrep 'mnt|upper|lower'
-lower_layer     1.9G  240K  1.9G   1% /lower
-upper_layer     1.9G  4.0K  1.9G   1% /upper
-overlayfs       1.9G  4.0K  1.9G   1% /mnt
-
-# find /mnt/ /upper/ /lower/ -name foo101
-/mnt/a/foo101
-/upper/upper/a/foo101
-/lower/a/foo101
-
-# LC_ALL=C ll /mnt/a/foo101 /upper/upper/a/foo101 /lower/a/foo101
--rw-r--r-- 1 bin bin 12 May 29 20:42 /lower/a/foo101
--rw-r--r-- 1 bin bin 12 May 29 20:42 /mnt/a/foo101
--rw-r--r-- 1 bin bin 12 May 29 20:42 /upper/upper/a/foo101
-
-# stat -c foo101 /mnt/ /upper/ /lower/
-foo101
-foo101
-foo101
-
-- Sedat -
