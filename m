@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182AbaE2Eig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:38:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58516 "EHLO
+	id S1756682AbaE2Eve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:51:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58587 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933138AbaE2Eib (ORCPT
+	with ESMTP id S933177AbaE2Eig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:31 -0400
+	Thu, 29 May 2014 00:38:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Petukhov <dmgenp@gmail.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 41/86] l2tp: take PMTU from tunnel UDP socket
-Date: Wed, 28 May 2014 21:37:16 -0700
-Message-Id: <20140529043519.065469620@linuxfoundation.org>
+Subject: [PATCH 3.10 46/86] gre: dont allow to add the same tunnel twice
+Date: Wed, 28 May 2014 21:37:21 -0700
+Message-Id: <20140529043519.700382770@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,34 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Petukhov <dmgenp@gmail.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit f34c4a35d87949fbb0e0f31eba3c054e9f8199ba ]
+[ Upstream commit 5a4552752d8f7f4cef1d98775ece7adb7616fde2 ]
 
-When l2tp driver tries to get PMTU for the tunnel destination, it uses
-the pointer to struct sock that represents PPPoX socket, while it
-should use the pointer that represents UDP socket of the tunnel.
+Before the patch, it was possible to add two times the same tunnel:
+ip l a gre1 type gre remote 10.16.0.121 local 10.16.0.249
+ip l a gre2 type gre remote 10.16.0.121 local 10.16.0.249
 
-Signed-off-by: Dmitry Petukhov <dmgenp@gmail.com>
+It was possible, because ip_tunnel_newlink() calls ip_tunnel_find() with the
+argument dev->type, which was set only later (when calling ndo_init handler
+in register_netdevice()). Let's set this type in the setup handler, which is
+called before newlink handler.
+
+Introduced by commit c54419321455 ("GRE: Refactor GRE tunneling code.").
+
+CC: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/l2tp/l2tp_ppp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/ip_gre.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -754,9 +754,9 @@ static int pppol2tp_connect(struct socke
- 	session->deref = pppol2tp_session_sock_put;
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -652,6 +652,7 @@ static const struct net_device_ops ipgre
+ static void ipgre_tunnel_setup(struct net_device *dev)
+ {
+ 	dev->netdev_ops		= &ipgre_netdev_ops;
++	dev->type		= ARPHRD_IPGRE;
+ 	ip_tunnel_setup(dev, ipgre_net_id);
+ }
  
- 	/* If PMTU discovery was enabled, use the MTU that was discovered */
--	dst = sk_dst_get(sk);
-+	dst = sk_dst_get(tunnel->sock);
- 	if (dst != NULL) {
--		u32 pmtu = dst_mtu(__sk_dst_get(sk));
-+		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
- 		if (pmtu != 0)
- 			session->mtu = session->mru = pmtu -
- 				PPPOL2TP_HEADER_OVERHEAD;
+@@ -690,7 +691,6 @@ static int ipgre_tunnel_init(struct net_
+ 	memcpy(dev->dev_addr, &iph->saddr, 4);
+ 	memcpy(dev->broadcast, &iph->daddr, 4);
+ 
+-	dev->type		= ARPHRD_IPGRE;
+ 	dev->flags		= IFF_NOARP;
+ 	dev->priv_flags		&= ~IFF_XMIT_DST_RELEASE;
+ 	dev->addr_len		= 4;
 
 
