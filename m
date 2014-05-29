@@ -1,99 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114AbaE2A0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 20:26:55 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:32899 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaE2A0y convert rfc822-to-8bit (ORCPT
+	id S1753991AbaE2Aeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 20:34:31 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:61217 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432AbaE2Ae3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 20:26:54 -0400
+	Wed, 28 May 2014 20:34:29 -0400
+Date: Wed, 28 May 2014 17:33:11 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michael Ellerman <mpe@ellerman.id.au>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, trinity@vger.kernel.org
+Subject: Re: BUG at mm/memory.c:1489!
+In-Reply-To: <1401265922.3355.4.camel@concordia>
+Message-ID: <alpine.LSU.2.11.1405281712310.7156@eggly.anvils>
+References: <1401265922.3355.4.camel@concordia>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140528234927.GA18638@milliways>
-References: <20140528172521.GA9945@milliways>
-	<20140528234927.GA18638@milliways>
-Date: Wed, 28 May 2014 20:26:53 -0400
-Message-ID: <CADnq5_PWigm5e4CwnfW+3TaohbFo82uDpiCMftL=OmRvCkJQzQ@mail.gmail.com>
-Subject: Re: Resume from suspend broken in 3.15. (bisected)
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 7:49 PM, Ken Moffat <zarniwhoop@ntlworld.com> wrote:
-> On Wed, May 28, 2014 at 06:25:21PM +0100, Ken Moffat wrote:
->> Hi Daniel,
->>
->
->  [ correcting details, confirming that reverting this does fix the
-> problem, adding Cc:s ]
->
->>  I've only started full testing of 3.15 on one of my machines now
->> that -rc7 has been released (this one had two issues in the radeon
->> code, second was fixed in rc7).  Unfortunately, suspend to RAM
->> (pm-suspend), or rather the wake-up, is broken on this box [ my
->> other two boxes are fine in rc7 ].
->>
->> Bisection identified one of your commits -
->>
->> commit 25f397a429dfa43f22c278d0119a60a343aa568f
->> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
->> Date:   Fri Jul 19 18:57:11 2013 +0200
->>
->>     drm/crtc-helper: explicit DPMS on after modeset
->>
->>     Atm the crtc helper implementation of set_config has really
->>     inconsisten semantics: If just an fb update is good enough, dpms state
->>     will be left as-is, but if we do a full modeset we force everything to
->>     dpms on.
->>
->>     This change has already been applied to the i915 modeset code in
->>
->> ('git show' stops at that point)
->
->  update : I've no idea what was going on there, nor for the problem
-> with attempting to revert it.  I've now gone back into git,
-> extracted the full commit to a file with 'git show', and then used
-> git apply -R to revert it from 3.15-rc7.  That version wakes up from
-> suspend to RAM, 3.15-rc7 itself did not.
->
->  Maybe I was still in git log when I thought I was on the command
-> line.  Anyway, snipping git's view of my failed attempt to revert
-> it, and adding Dan and Alex who were CC'd on the commit.
->
+On Wed, 28 May 2014, Michael Ellerman wrote:
+> Hey folks,
+> 
+> Anyone seen this before? Trinity hit it just now:
+> 
+> Linux Blade312-5 3.15.0-rc7 #306 SMP Wed May 28 17:51:18 EST 2014 ppc64
+> 
+> [watchdog] 27853 iterations. [F:22642 S:5174 HI:1276]
+> ------------[ cut here ]------------
+> kernel BUG at /home/michael/mmk-build/flow/mm/memory.c:1489!
+> cpu 0xc: Vector: 700 (Program Check) at [c000000384eaf960]
+>     pc: c0000000001ad6f0: .follow_page_mask+0x90/0x650
+>     lr: c0000000001ad6d8: .follow_page_mask+0x78/0x650
+>     sp: c000000384eafbe0
+>    msr: 8000000000029032
+>   current = 0xc0000003c27e1bc0
+>   paca    = 0xc000000001dc3000   softe: 0        irq_happened: 0x01
+>     pid   = 20800, comm = trinity-c12
+> kernel BUG at /home/michael/mmk-build/flow/mm/memory.c:1489!
+> enter ? for help
+> [c000000384eafcc0] c0000000001e5514 .SyS_move_pages+0x524/0x7d0
+> [c000000384eafe30] c00000000000a1d8 syscall_exit+0x0/0x98
+> --- Exception: c01 (System Call) at 00003fff795f30a8
+> SP (3ffff958f290) is in userspace
+> 
+> I've left it in the debugger, can dig into it a bit more tomorrow
+> if anyone has any clues.
 
-Duplicate of:
-https://bugzilla.kernel.org/show_bug.cgi?id=74751
-and also reported here:
-https://lkml.org/lkml/2014/5/2/388
-Unless there is a good reason to keep the commit, I'd say let's just revert it.
+Thanks for leaving it overnight, but this one is quite obvious,
+so go ahead and reboot whenever suits you.
 
-Alex
+Trinity didn't even need to do anything bizarre to get this: that
+ordinary path simply didn't get tried on powerpc or ia64 before.
 
->>
->>  The processor is an AMD A4 APU.  The symptoms after this commit are
->> that pm-suspend works (I invoke it from my keyboard's sleep key),
->> i.e. the power LED on the case goes out and the monitor goes black
->> and reports no signal.  When I press a key to resume, the power LED
->> comes on but the screen stays black.  Magic-SysRQ does not work and
->> I have to use the case switch to reboot.  That results in filesystem
->> errors which fsck fixes and warns about (probably, just a sign of
->> unclean shutdown).
->>
->>  The only thing in the log are a couple of messages from EXT4 at the
->> end of putting the box to sleep -
->> May 28 16:19:02 bluesbreaker kernel: [   39.440859] EXT4-fs (sda10): re-mounted. Opts: commit=0
->> May 28 16:19:02 bluesbreaker kernel: [   39.592318] EXT4-fs (sda13): re-mounted. Opts: commit=0
->> May 28 16:20:05 bluesbreaker syslogd 1.5.0: restart.
->>
->>  What can I do to help debug this ?
->>
-> ĸen
-> --
-> Nanny Ogg usually went to bed early. After all, she was an old lady.
-> Sometimes she went to bed as early as 6 a.m.
+Here's a patch which should fix it for you, but I believe leaves
+a race in common with other architectures.  I must turn away to
+other things, and hope Naoya-san can fix up the locking separately
+(or point out why it's already safe).
+
+[PATCH] mm: fix move_pages follow_page huge_addr BUG
+
+v3.12's e632a938d914 ("mm: migrate: add hugepage migration code to
+move_pages()") is okay on most arches, but on follow_huge_addr-style
+arches ia64 and powerpc, it hits my old BUG_ON(flags & FOLL_GET)
+from v2.6.15 deceb6cd17e6 ("mm: follow_page with inner ptlock").
+
+The point of the BUG_ON was that nothing needed FOLL_GET there at
+the time, and it was not clear that we have sufficient locking to
+use get_page() safely here on the outside - maybe the page found has
+already been freed and even reused when follow_huge_addr() returns.
+
+I suspect that e632a938d914's use of get_page() after return from
+follow_huge_pmd() has the same problem: what prevents a racing
+instance of move_pages() from already migrating away and freeing
+that page by then?  A reference to the page should be taken while
+holding suitable lock (huge_pte_lockptr?), to serialize against
+concurrent migration.
+
+But I'm not prepared to rework the hugetlb locking here myself;
+so for now just supply a patch to copy e632a938d914's get_page()
+after follow_huge_pmd() to after follow_huge_addr(): removing
+the BUG_ON(flags & FOLL_GET), but probably leaving a race.
+
+Fixes: e632a938d914 ("mm: migrate: add hugepage migration code to move_pages()")
+Reported-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: stable@vger.kernel.org # 3.12+
+---
+Whether this is a patch that should go in without fixing the locking,
+I don't know.  An unlikely race is better than a triggerable BUG?
+Or perhaps I'm just wrong about there being any such race.
+
+ mm/memory.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+--- 3.15-rc7/mm/memory.c	2014-04-27 23:55:53.608801152 -0700
++++ linux/mm/memory.c	2014-05-28 13:05:48.340124615 -0700
+@@ -1486,7 +1486,17 @@ struct page *follow_page_mask(struct vm_
+ 
+ 	page = follow_huge_addr(mm, address, flags & FOLL_WRITE);
+ 	if (!IS_ERR(page)) {
+-		BUG_ON(flags & FOLL_GET);
++		if (page && (flags & FOLL_GET)) {
++			/*
++			 * Refcount on tail pages are not well-defined and
++			 * shouldn't be taken. The caller should handle a NULL
++			 * return when trying to follow tail pages.
++			 */
++			if (PageHead(page))
++				get_page(page);
++			else
++				page = NULL;
++		}
+ 		goto out;
+ 	}
+ 
