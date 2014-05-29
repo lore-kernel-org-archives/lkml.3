@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911AbaE2QYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:24:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47258 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757878AbaE2QYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:24:05 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAJfpeguyE0cg+RAEwOR89=qTGnr2OZFuhZ4tmAfkMLn5-DP_wg@mail.gmail.com>
-References: <CAJfpeguyE0cg+RAEwOR89=qTGnr2OZFuhZ4tmAfkMLn5-DP_wg@mail.gmail.com> <27993.1401360881@warthog.procyon.org.uk> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28313.1401362925@warthog.procyon.org.uk> <20140529120734.GM17233@tucsk.piliscsaba.szeredi.hu>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, Sedat Dilek <sedat.dilek@gmail.com>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: More kernel errors with overlay filesystem v22
-Date: Thu, 29 May 2014 17:23:22 +0100
-Message-ID: <22475.1401380602@warthog.procyon.org.uk>
+	id S1757927AbaE2QYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:24:22 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:47871 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757491AbaE2QYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 12:24:20 -0400
+Date: Thu, 29 May 2014 11:24:15 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org
+Subject: Re: vmstat: On demand vmstat workers V5
+In-Reply-To: <20140529142602.GA20258@localhost.localdomain>
+Message-ID: <alpine.DEB.2.10.1405291121400.12545@gentwo.org>
+References: <alpine.DEB.2.10.1405121317270.29911@gentwo.org> <20140528152107.GB6507@localhost.localdomain> <alpine.DEB.2.10.1405281110210.22514@gentwo.org> <20140529003609.GG6507@localhost.localdomain> <alpine.DEB.2.10.1405290902180.11514@gentwo.org>
+ <20140529142602.GA20258@localhost.localdomain>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Thu, 29 May 2014, Frederic Weisbecker wrote:
 
-> Fixes pushed to overlayfs.v22 (and overlayfs.current).  Will
-> eventually fold these into the main overlayfs patch.
+> > Well yes and I am tying directly into that scheme there in cpu.c to
+> > display the active vmstat threads in sysfs. so its the same.
+>
+> I don't think so. Or is there something in vmstat that cpumask_var_t
+> definition depends upon?
 
-Okay... those are fixed.  Here's the next:
+This patch definitely ties the vmstat cpumask into the scheme in cpu.c
 
+> > I would like to have some way to display the activities on cpus in /sysfs
+> > like I have done here with the active vmstat workers.
+> >
+> > What I think we need is display cpumasks for
+> >
+> > 1. Cpus where the tick is currently off
+> > 2. Cpus that have dynticks enabled.
+> > 3. Cpus that are idle
+>
+> You should find all that in /proc/timer_list
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.15.0-rc6-fsdevel+ #367 Tainted: G        W    
----------------------------------------------
-open-file/3594 is trying to acquire lock:
- (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff81137121>] generic_file_splice_write+0x88/0x154
+True. I could actually drop the vmstat cpumask support.
 
-but task is already holding lock:
- (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff8111cf8d>] lock_rename+0xd3/0xdc
+> Now for CPUs that have full dynticks enabled, we probably need something
+> in sysfs. We could dump the nohz cpumask somewhere. For now you can only grep
+> the dmesg
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
+There is a nohz mode in /proc/timer_list right?
 
-       CPU0
-       ----
-  lock(&sb->s_type->i_mutex_key#9/2);
-  lock(&sb->s_type->i_mutex_key#9/2);
+> > 4. Cpus that are used for RCU.
+>
+> So, you mean those that aren't in extended grace period (between rcu_user_enter()/exit
+> or rcu_idle_enter/exit)?
 
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-4 locks held by open-file/3594:
- #0:  (sb_writers#8){.+.+.+}, at: [<ffffffff8112bf5b>] mnt_want_write+0x1c/0x40
- #1:  (&type->s_vfs_rename_key){+.+.+.}, at: [<ffffffff8111cef5>] lock_rename+0x3b/0xdc
- #2:  (&sb->s_type->i_mutex_key#9/1){+.+.+.}, at: [<ffffffff8111cf78>] lock_rename+0xbe/0xdc
- #3:  (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff8111cf8d>] lock_rename+0xd3/0xdc
-
-stack backtrace:
-CPU: 0 PID: 3594 Comm: open-file Tainted: G        W     3.15.0-rc6-fsdevel+ #367
-Hardware name:                  /DG965RY, BIOS MQ96510J.86A.0816.2006.0716.2308 07/16/2006
- 0000000000000000 ffff8800226357e0 ffffffff8148b779 ffffffff81ffa7a0
- ffff8800226358a0 ffffffff81074b0e ffff880022635820 ffff8800226358a0
- 0000000000000000 0000000000000000 ffff880000000003 ffffffff00000000
-Call Trace:
- [<ffffffff8148b779>] dump_stack+0x4d/0x66
- [<ffffffff81074b0e>] __lock_acquire+0x75a/0x1861
- [<ffffffff8100e1c7>] ? save_stack_trace+0x26/0x41
- [<ffffffff8107239e>] ? save_trace+0x3b/0x9b
- [<ffffffff810762b6>] lock_acquire+0x9c/0x112
- [<ffffffff81137121>] ? generic_file_splice_write+0x88/0x154
- [<ffffffff8148e5cf>] mutex_lock_nested+0x60/0x2ff
- [<ffffffff81137121>] ? generic_file_splice_write+0x88/0x154
- [<ffffffff81074399>] ? debug_check_no_locks_freed+0x11b/0x136
- [<ffffffff81137121>] generic_file_splice_write+0x88/0x154
- [<ffffffff8113777e>] direct_splice_actor+0x31/0x33
- [<ffffffff81137329>] splice_direct_to_actor+0xc6/0x188
- [<ffffffff8113774d>] ? opipe_prep.part.8+0x9e/0x9e
- [<ffffffff8113745e>] do_splice_direct+0x73/0x9b
- [<ffffffff811e3375>] ovl_copy_up_one+0x509/0x586
- [<ffffffff811e3490>] ovl_copy_up+0x9e/0xd3
- [<ffffffff811e0ba7>] ovl_dentry_open+0xbf/0xce
- [<ffffffff8110fba8>] vfs_open+0x24/0x41
- [<ffffffff8111d9fe>] do_last+0x943/0xbc9
- [<ffffffff8111b9cd>] ? link_path_walk+0x64/0x744
- [<ffffffff8111dec1>] path_openat+0x23d/0x61d
- [<ffffffff8111ef52>] do_filp_open+0x35/0x7a
- [<ffffffff8149114f>] ? _raw_spin_unlock+0x22/0x2d
- [<ffffffff8112a0fc>] ? __alloc_fd+0xe5/0xf4
- [<ffffffff81110aee>] do_sys_open+0x142/0x1d1
- [<ffffffff8100d737>] ? syscall_trace_enter+0x197/0x1eb
- [<ffffffff81110b96>] SyS_open+0x19/0x1b
- [<ffffffff814924f4>] tracesys+0xdd/0xe2
+No I mean cpus that have their RCU processing directed to another
+processor.
 
