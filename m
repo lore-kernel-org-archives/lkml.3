@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592AbaE2E50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:57:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58479 "EHLO
+	id S933073AbaE2EiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:38:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58454 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933076AbaE2EiT (ORCPT
+	with ESMTP id S933035AbaE2EiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:19 -0400
+	Thu, 29 May 2014 00:38:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 27/86] USB: io_ti: fix firmware download on big-endian machines
-Date: Wed, 28 May 2014 21:37:02 -0700
-Message-Id: <20140529043517.152708671@linuxfoundation.org>
+        Michael Ulbricht <michael.ulbricht@systec-electronic.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Oliver Neukum <oliver@neukum.org>
+Subject: [PATCH 3.10 20/86] USB: cdc-acm: Remove Motorola/Telit H24 serial interfaces from ACM driver
+Date: Wed, 28 May 2014 21:36:55 -0700
+Message-Id: <20140529043516.195193507@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -26,168 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
 
-commit 5509076d1b4485ce9fb07705fcbcd2695907ab5b upstream.
+commit 895d240d1db0b2736d779200788e4c4aea28a0c6 upstream.
 
-During firmware download the device expects memory addresses in
-big-endian byte order. As the wIndex parameter which hold the address is
-sent in little-endian byte order regardless of host byte order, we need
-to use swab16 rather than cpu_to_be16.
+By specifying NO_UNION_NORMAL the ACM driver does only use the first two
+USB interfaces (modem data & control). The AT Port, Diagnostic and NMEA
+interfaces are left to the USB serial driver.
 
-Also make sure to handle the struct ti_i2c_desc size parameter which is
-returned in little-endian byte order.
-
-Reported-by: Ludovic Drolez <ldrolez@debian.org>
-Tested-by: Ludovic Drolez <ldrolez@debian.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Oliver Neukum <oliver@neukum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |   50 +++++++++++++++++++++++++++++----------------
- 1 file changed, 33 insertions(+), 17 deletions(-)
+ drivers/usb/class/cdc-acm.c |   28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -29,6 +29,7 @@
- #include <linux/spinlock.h>
- #include <linux/mutex.h>
- #include <linux/serial.h>
-+#include <linux/swab.h>
- #include <linux/kfifo.h>
- #include <linux/ioctl.h>
- #include <linux/firmware.h>
-@@ -284,7 +285,7 @@ static int read_download_mem(struct usb_
- {
- 	int status = 0;
- 	__u8 read_length;
--	__be16 be_start_address;
-+	u16 be_start_address;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1574,13 +1574,27 @@ static const struct usb_device_id acm_id
+ 	},
+ 	/* Motorola H24 HSPA module: */
+ 	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
+-	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
+-	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
+-	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
+-	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
+-	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
+-	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
+-	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d92),   /* modem           + diagnostics        */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d93),   /* modem + AT port                      */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d95),   /* modem + AT port + diagnostics        */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d96),   /* modem                         + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d97),   /* modem           + diagnostics + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d99),   /* modem + AT port               + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d9a),   /* modem + AT port + diagnostics + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
  
- 	dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, length);
- 
-@@ -300,10 +301,14 @@ static int read_download_mem(struct usb_
- 		if (read_length > 1) {
- 			dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, read_length);
- 		}
--		be_start_address = cpu_to_be16(start_address);
-+		/*
-+		 * NOTE: Must use swab as wIndex is sent in little-endian
-+		 *       byte order regardless of host byte order.
-+		 */
-+		be_start_address = swab16((u16)start_address);
- 		status = ti_vread_sync(dev, UMPC_MEMORY_READ,
- 					(__u16)address_type,
--					(__force __u16)be_start_address,
-+					be_start_address,
- 					buffer, read_length);
- 
- 		if (status) {
-@@ -400,7 +405,7 @@ static int write_i2c_mem(struct edgeport
- 	struct device *dev = &serial->serial->dev->dev;
- 	int status = 0;
- 	int write_length;
--	__be16 be_start_address;
-+	u16 be_start_address;
- 
- 	/* We can only send a maximum of 1 aligned byte page at a time */
- 
-@@ -415,11 +420,16 @@ static int write_i2c_mem(struct edgeport
- 		__func__, start_address, write_length);
- 	usb_serial_debug_data(dev, __func__, write_length, buffer);
- 
--	/* Write first page */
--	be_start_address = cpu_to_be16(start_address);
-+	/*
-+	 * Write first page.
-+	 *
-+	 * NOTE: Must use swab as wIndex is sent in little-endian byte order
-+	 *       regardless of host byte order.
-+	 */
-+	be_start_address = swab16((u16)start_address);
- 	status = ti_vsend_sync(serial->serial->dev,
- 				UMPC_MEMORY_WRITE, (__u16)address_type,
--				(__force __u16)be_start_address,
-+				be_start_address,
- 				buffer,	write_length);
- 	if (status) {
- 		dev_dbg(dev, "%s - ERROR %d\n", __func__, status);
-@@ -442,11 +452,16 @@ static int write_i2c_mem(struct edgeport
- 			__func__, start_address, write_length);
- 		usb_serial_debug_data(dev, __func__, write_length, buffer);
- 
--		/* Write next page */
--		be_start_address = cpu_to_be16(start_address);
-+		/*
-+		 * Write next page.
-+		 *
-+		 * NOTE: Must use swab as wIndex is sent in little-endian byte
-+		 *       order regardless of host byte order.
-+		 */
-+		be_start_address = swab16((u16)start_address);
- 		status = ti_vsend_sync(serial->serial->dev, UMPC_MEMORY_WRITE,
- 				(__u16)address_type,
--				(__force __u16)be_start_address,
-+				be_start_address,
- 				buffer, write_length);
- 		if (status) {
- 			dev_err(dev, "%s - ERROR %d\n", __func__, status);
-@@ -593,8 +608,8 @@ static int get_descriptor_addr(struct ed
- 		if (rom_desc->Type == desc_type)
- 			return start_address;
- 
--		start_address = start_address + sizeof(struct ti_i2c_desc)
--							+ rom_desc->Size;
-+		start_address = start_address + sizeof(struct ti_i2c_desc) +
-+						le16_to_cpu(rom_desc->Size);
- 
- 	} while ((start_address < TI_MAX_I2C_SIZE) && rom_desc->Type);
- 
-@@ -607,7 +622,7 @@ static int valid_csum(struct ti_i2c_desc
- 	__u16 i;
- 	__u8 cs = 0;
- 
--	for (i = 0; i < rom_desc->Size; i++)
-+	for (i = 0; i < le16_to_cpu(rom_desc->Size); i++)
- 		cs = (__u8)(cs + buffer[i]);
- 
- 	if (cs != rom_desc->CheckSum) {
-@@ -661,7 +676,7 @@ static int check_i2c_image(struct edgepo
- 			break;
- 
- 		if ((start_address + sizeof(struct ti_i2c_desc) +
--					rom_desc->Size) > TI_MAX_I2C_SIZE) {
-+			le16_to_cpu(rom_desc->Size)) > TI_MAX_I2C_SIZE) {
- 			status = -ENODEV;
- 			dev_dbg(dev, "%s - structure too big, erroring out.\n", __func__);
- 			break;
-@@ -676,7 +691,8 @@ static int check_i2c_image(struct edgepo
- 			/* Read the descriptor data */
- 			status = read_rom(serial, start_address +
- 						sizeof(struct ti_i2c_desc),
--						rom_desc->Size, buffer);
-+						le16_to_cpu(rom_desc->Size),
-+						buffer);
- 			if (status)
- 				break;
- 
-@@ -685,7 +701,7 @@ static int check_i2c_image(struct edgepo
- 				break;
- 		}
- 		start_address = start_address + sizeof(struct ti_i2c_desc) +
--								rom_desc->Size;
-+						le16_to_cpu(rom_desc->Size);
- 
- 	} while ((rom_desc->Type != I2C_DESC_TYPE_ION) &&
- 				(start_address < TI_MAX_I2C_SIZE));
-@@ -724,7 +740,7 @@ static int get_manuf_info(struct edgepor
- 
- 	/* Read the descriptor data */
- 	status = read_rom(serial, start_address+sizeof(struct ti_i2c_desc),
--						rom_desc->Size, buffer);
-+					le16_to_cpu(rom_desc->Size), buffer);
- 	if (status)
- 		goto exit;
- 
+ 	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
+ 	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
 
 
