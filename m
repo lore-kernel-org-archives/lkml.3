@@ -1,146 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837AbaE2QXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:23:47 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60317 "EHLO e9.ny.us.ibm.com"
+	id S1757911AbaE2QYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:24:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47258 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757729AbaE2QXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:23:43 -0400
-Message-ID: <53875F09.3090607@linux.vnet.ibm.com>
-Date: Thu, 29 May 2014 12:23:37 -0400
-From: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
-Reply-To: jjherne@linux.vnet.ibm.com
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-References: <537119EF.2060102@oracle.com> <20140512200135.GL1421@htj.dyndns.org> <53718119.1090000@cn.fujitsu.com> <537180B9.6080407@oracle.com> <53739F3B.4060608@linux.vnet.ibm.com> <53758B12.8060609@cn.fujitsu.com> <20140516115737.GP11096@twins.programming.kicks-ass.net> <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140527142637.GB19143@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052916-7182-0000-0000-00000AB6127B
+	id S1757878AbaE2QYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 12:24:05 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAJfpeguyE0cg+RAEwOR89=qTGnr2OZFuhZ4tmAfkMLn5-DP_wg@mail.gmail.com>
+References: <CAJfpeguyE0cg+RAEwOR89=qTGnr2OZFuhZ4tmAfkMLn5-DP_wg@mail.gmail.com> <27993.1401360881@warthog.procyon.org.uk> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28313.1401362925@warthog.procyon.org.uk> <20140529120734.GM17233@tucsk.piliscsaba.szeredi.hu>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
+        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
+        ezk@fsl.cs.sunysb.edu, Sedat Dilek <sedat.dilek@gmail.com>,
+        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: More kernel errors with overlay filesystem v22
+Date: Thu, 29 May 2014 17:23:22 +0100
+Message-ID: <22475.1401380602@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2014 10:26 AM, Peter Zijlstra wrote:
-> On Tue, May 27, 2014 at 10:18:31AM -0400, Jason J. Herne wrote:
->> On 05/16/2014 12:29 PM, Peter Zijlstra wrote:
->>> On Sat, May 17, 2014 at 12:18:06AM +0800, Lai Jiangshan wrote:
->>>> so the scheduler/set_cpus_allowed_ptr()/cpu_active_mask should be the first
->>>> place to fix.
->>>
->>> I'm not arguing about that, not to mention that this is userspace
->>> exposed and nobody protects that.
->>>
->>> But I was expecting kernel stuff that calls it on hotplug to be
->>> serialized thusly, but apparently not so.
->>>
->>
->> Was a final patch posted for this issue? The discussion made it sound like
->> there were still a few things to figure out before we could resolve this
->> bug. I can recreate this as needed and I'm happy to test any patches.
->
->
-> https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=sched/urgent&id=6acbfb96976fc3350e30d964acb1dbbdf876d55e
->
-> which should make its way to Linus soonish I suppose.
->
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-I applied the patch on top of c7208164e66f63e3ec1759b98087849286410741 
-and I am still hitting the problem.
-Should I have applied to a different branch/commit to pick up any other 
-needed changes?
+> Fixes pushed to overlayfs.v22 (and overlayfs.current).  Will
+> eventually fold these into the main overlayfs patch.
 
-Patch applied:
+Okay... those are fixed.  Here's the next:
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index a9e710e..247979a 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -726,10 +726,12 @@ void set_cpu_present(unsigned int cpu, bool present)
-void set_cpu_online(unsigned int cpu, bool online)
-{
-- if (online)
-+ if (online) {
-cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
-- else
-+ cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
-+ } else {
-cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
-+ }
-}
-void set_cpu_active(unsigned int cpu, bool active)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 44e00ab..86f3890 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5076,7 +5076,6 @@ static int sched_cpu_active(struct notifier_block 
-*nfb,
-unsigned long action, void *hcpu)
-{
-switch (action & ~CPU_TASKS_FROZEN) {
-- case CPU_STARTING:
-case CPU_DOWN_FAILED:
-set_cpu_active((long)hcpu, true);
-return NOTIFY_OK;
 
-Here is the output from the recreation using this patch:
+=============================================
+[ INFO: possible recursive locking detected ]
+3.15.0-rc6-fsdevel+ #367 Tainted: G        W    
+---------------------------------------------
+open-file/3594 is trying to acquire lock:
+ (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff81137121>] generic_file_splice_write+0x88/0x154
 
-[ 3634.146233] ------------[ cut here ]------------
-[ 3634.146238] WARNING: at kernel/workqueue.c:2176
-[ 3634.146239] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat_ipv4 
-nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack 
-xt_CHECKSUM iptable_mangle bridge stp llc ip6table_filter ip6_tables 
-ebtable_nat ebtables iscsi_tcp libiscsi_tcp libiscsi 
-scsi_transport_iscsi qeth_l2 tape_3590 tape tape_class vhost_net tun 
-vhost macvtap macvlan eadm_sch qeth ccwgroup zfcp scsi_transport_fc 
-scsi_tgt qdio dasd_eckd_mod dasd_mod dm_multipath [last unloaded: kvm]
-[ 3634.146260] CPU: 6 PID: 28009 Comm: kworker/7:0 Not tainted 3.15.0-rc7 #1
-[ 3634.146263] Workqueue: \xffffff80           (null)
-[ 3634.146264] task: 000000025def32e0 ti: 000000026dca0000 task.ti: 
-000000026dca0000
-[ 3634.146266] Krnl PSW : 0404c00180000000 000000000015ad1a 
-(process_one_work+0x2e6/0x4c0)
-[ 3634.146272]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:0 
-PM:0 EA:3
-Krnl GPRS: 0000000000000000 0000000000bc649a 00000002764b0980 
-0000000000b94f40
-[ 3634.146275]            0000000000b94f40 0000000000000000 
-0000000000000000 0000000000bc6496
-[ 3634.146277]            0000000000000000 000000008b65b600 
-000000008b657000 000000008b657018
-[ 3634.146278]            00000002764b0980 0000000000b94f40 
-000000026dca3dd0 000000026dca3d70
-[ 3634.146287] Krnl Code: 000000000015ad0e: 95001000		cli	0(%r1),0
-            000000000015ad12: a774fece		brc	7,15aaae
-           #000000000015ad16: a7f40001		brc	15,15ad18
-           >000000000015ad1a: 92011000		mvi	0(%r1),1
-            000000000015ad1e: a7f4fec8		brc	15,15aaae
-            000000000015ad22: e31003180004	lg	%r1,792
-            000000000015ad28: 58301024		l	%r3,36(%r1)
-            000000000015ad2c: a73a0001		ahi	%r3,1
-[ 3634.146299] Call Trace:
-[ 3634.146301] ([<000000000015ace8>] process_one_work+0x2b4/0x4c0)
-[ 3634.146303]  [<000000000015c100>] worker_thread+0x178/0x39c
-[ 3634.146305]  [<0000000000164ba6>] kthread+0x10e/0x128
-[ 3634.146310]  [<000000000072d026>] kernel_thread_starter+0x6/0xc
-[ 3634.146312]  [<000000000072d020>] kernel_thread_starter+0x0/0xc
-[ 3634.146313] Last Breaking-Event-Address:
-[ 3634.146315]  [<000000000015ad16>] process_one_work+0x2e2/0x4c0
-[ 3634.146316] ---[ end trace 03f51c9126c24171 ]---
+but task is already holding lock:
+ (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff8111cf8d>] lock_rename+0xd3/0xdc
 
-I don't think this output provides anything new. Please let me know if I 
-can gather any more data.
+other info that might help us debug this:
+ Possible unsafe locking scenario:
 
--- 
--- Jason J. Herne (jjherne@linux.vnet.ibm.com)
+       CPU0
+       ----
+  lock(&sb->s_type->i_mutex_key#9/2);
+  lock(&sb->s_type->i_mutex_key#9/2);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+4 locks held by open-file/3594:
+ #0:  (sb_writers#8){.+.+.+}, at: [<ffffffff8112bf5b>] mnt_want_write+0x1c/0x40
+ #1:  (&type->s_vfs_rename_key){+.+.+.}, at: [<ffffffff8111cef5>] lock_rename+0x3b/0xdc
+ #2:  (&sb->s_type->i_mutex_key#9/1){+.+.+.}, at: [<ffffffff8111cf78>] lock_rename+0xbe/0xdc
+ #3:  (&sb->s_type->i_mutex_key#9/2){+.+.+.}, at: [<ffffffff8111cf8d>] lock_rename+0xd3/0xdc
+
+stack backtrace:
+CPU: 0 PID: 3594 Comm: open-file Tainted: G        W     3.15.0-rc6-fsdevel+ #367
+Hardware name:                  /DG965RY, BIOS MQ96510J.86A.0816.2006.0716.2308 07/16/2006
+ 0000000000000000 ffff8800226357e0 ffffffff8148b779 ffffffff81ffa7a0
+ ffff8800226358a0 ffffffff81074b0e ffff880022635820 ffff8800226358a0
+ 0000000000000000 0000000000000000 ffff880000000003 ffffffff00000000
+Call Trace:
+ [<ffffffff8148b779>] dump_stack+0x4d/0x66
+ [<ffffffff81074b0e>] __lock_acquire+0x75a/0x1861
+ [<ffffffff8100e1c7>] ? save_stack_trace+0x26/0x41
+ [<ffffffff8107239e>] ? save_trace+0x3b/0x9b
+ [<ffffffff810762b6>] lock_acquire+0x9c/0x112
+ [<ffffffff81137121>] ? generic_file_splice_write+0x88/0x154
+ [<ffffffff8148e5cf>] mutex_lock_nested+0x60/0x2ff
+ [<ffffffff81137121>] ? generic_file_splice_write+0x88/0x154
+ [<ffffffff81074399>] ? debug_check_no_locks_freed+0x11b/0x136
+ [<ffffffff81137121>] generic_file_splice_write+0x88/0x154
+ [<ffffffff8113777e>] direct_splice_actor+0x31/0x33
+ [<ffffffff81137329>] splice_direct_to_actor+0xc6/0x188
+ [<ffffffff8113774d>] ? opipe_prep.part.8+0x9e/0x9e
+ [<ffffffff8113745e>] do_splice_direct+0x73/0x9b
+ [<ffffffff811e3375>] ovl_copy_up_one+0x509/0x586
+ [<ffffffff811e3490>] ovl_copy_up+0x9e/0xd3
+ [<ffffffff811e0ba7>] ovl_dentry_open+0xbf/0xce
+ [<ffffffff8110fba8>] vfs_open+0x24/0x41
+ [<ffffffff8111d9fe>] do_last+0x943/0xbc9
+ [<ffffffff8111b9cd>] ? link_path_walk+0x64/0x744
+ [<ffffffff8111dec1>] path_openat+0x23d/0x61d
+ [<ffffffff8111ef52>] do_filp_open+0x35/0x7a
+ [<ffffffff8149114f>] ? _raw_spin_unlock+0x22/0x2d
+ [<ffffffff8112a0fc>] ? __alloc_fd+0xe5/0xf4
+ [<ffffffff81110aee>] do_sys_open+0x142/0x1d1
+ [<ffffffff8100d737>] ? syscall_trace_enter+0x197/0x1eb
+ [<ffffffff81110b96>] SyS_open+0x19/0x1b
+ [<ffffffff814924f4>] tracesys+0xdd/0xe2
 
