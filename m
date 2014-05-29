@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496AbaE2PWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:22:08 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:39752 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756219AbaE2PWG (ORCPT
+	id S1757568AbaE2PX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:23:57 -0400
+Received: from mail-yk0-f173.google.com ([209.85.160.173]:55610 "EHLO
+	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757339AbaE2PXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:22:06 -0400
+	Thu, 29 May 2014 11:23:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <53875A4B.2060604@ti.com>
-References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com>
-	<CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
-	<538459E8.6010701@ti.com>
-	<20140527084615.GC1801@lahna.fi.intel.com>
-	<53847F39.2010503@ti.com>
-	<CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
-	<20140529150058.GB6263@lahna.fi.intel.com>
-	<53875A4B.2060604@ti.com>
-Date: Thu, 29 May 2014 17:22:05 +0200
-Message-ID: <CACRpkdZk9hFUZCoWci15EGFsJ7gOWNyFH13gJjHB9EcQT4ONRQ@mail.gmail.com>
-Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+From: "Gideon D'souza" <gidisrael@gmail.com>
+Date: Thu, 29 May 2014 20:53:35 +0530
+Message-ID: <CAPNrq4zJzMwJ2nFwWA3sVc7hr7nYXBRPQomFgZ_1SX+iGxrr0A@mail.gmail.com>
+Subject: Pointers on debugging my machine not booting
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 6:03 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
+Hey guys,
 
-> Also, I'd like to note that GPIO IRQs can be accessible not only
-> when GPIO chips is added, but also when IRQ domain is registered
-> (at least it's valid for DT cases). In these cases gpiod_to_irq()
-> might be not used at all.
+So I usually have the latest mainline kernel (on my fedora box) I've
+recently sent it tiny refactoring patches.
 
-Yes. We concluded some time back that gpio_chip:s and
-irq_chip:s are orthogonal abstractions: you should be able
-to use one of them without paying any respect to the other.
+Today, I start my machine and it just doesn't start. I had 3.11, 3.12,
+and a few 3.14 rcs.
 
-We only added the ability to flag GPIO lines as used for
-IRQs so they would not be set to output by mistake...
-(Straightening up the semantics.)
+All show up booting, a few lines print on the screen about various
+things it does. At some random point the screen is just black and
+backlit and nothing happens. I tried all kernels, 3.11 and 3.12 and
+official fedora supported kernels. The rest I installed. Even the
+fedora rescue system doesn't work.
 
-The only real semantic dependence that really makes sense
-is .to_irq() which leads to this semantic registration ordering.
+I tried looking into remote debugging linux and keep just getting hits
+on virtual machine options. It's time I left my training wheels and I
+want to debug my actual machine and see what's going on.
 
-Yours,
-Linus Walleij
+Several of those kernels have debugging support on. I just don't get
+what wire I need to buy, what really is a JTAG and I just need a
+pointer on how to set it up. I have another windows machine and an OSX
+machine around.
+
+Any pointers (pun intended) will be greatly appreciated.
+
+Regards,
+Gideon
