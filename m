@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbaE2KUi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 06:20:38 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:36929 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756095AbaE2KUh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 06:20:37 -0400
-Date: Thu, 29 May 2014 12:20:25 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Yong Zhang <yong.zhang@windriver.com>, huawei.libin@huawei.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>
-Subject: Re: [PATCH V2] MIPS: change type of asid_cache to unsigned long
-Message-ID: <20140529102025.GF5157@linux-mips.org>
-References: <1400650563-1033-1-git-send-email-yong.zhang@windriver.com>
- <5384119E.7010606@huawei.com>
- <20140528200929.GA30528@drone.musicnaut.iki.fi>
- <5386F663.4010401@huawei.com>
+	id S1757207AbaE2KUq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 06:20:46 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756095AbaE2KUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 06:20:44 -0400
+Message-ID: <538709A5.60000@nod.at>
+Date: Thu, 29 May 2014 12:19:17 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5386F663.4010401@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: Vasily Kulikov <segoon@openwall.com>,
+        containers@lists.linux-foundation.org,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
+ ns
+References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com> <5385DA19.2060008@parallels.com> <20140528182824.GA5057@cachalot> <53863889.9080509@parallels.com> <20140529055954.GA10354@cachalot> <5386F8EA.8050501@parallels.com> <5386FC0C.9000307@nod.at> <538700B5.5070601@parallels.com> <538703D0.7030308@nod.at> <5387059E.9010105@parallels.com>
+In-Reply-To: <5387059E.9010105@parallels.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 04:57:07PM +0800, Li Zefan wrote:
+Am 29.05.2014 12:02, schrieb Pavel Emelyanov:
+>>> We need to know what pid namespaces a task lives in and how pid, sid and
+>>> pgid look in all of them. A short example with pids only
+>>
+>> So use case is to checkpoint/restore nested containers? :)
+> 
+> Yes, but there's one more scenario. AFAIK some applications create pid namespaces 
+> themselves, without starting what is typically called "a container" :) And when 
+> such an applications are run inside, well ... "more real" container (e.g. using
+> openvz, lxc or docker tools) we face this issue.
 
-> I don't think Ralf has committed it, so we'll send out a fix
-> with detailed changelog.
+Do you know such an application?
+I'm a aware of systemd which uses CLONE_NEWNET/NS to implement security features.
 
-It's queued to go upstream, commit e5eb925a1804c4a52994ba57f4f68ee7a9132905.
+We could add a directory like /proc/<pidX>/ns/proc/ which would contain everything
+from /proc/<pidX inside the namespace>/.
 
-  Ralf
+This needs definitely more discussion and must not solved by ad-hoc solutions.
+
+Thanks,
+//richard
