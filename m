@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933753AbaE2FBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:01:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58399 "EHLO
+	id S933738AbaE2FBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:01:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58405 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932992AbaE2EiK (ORCPT
+	with ESMTP id S932795AbaE2EiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:38:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tristan Bruns <tristan@tristanbruns.de>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 21/86] USB: cp210x: Add 8281 (Nanotec Plug & Drive)
-Date: Wed, 28 May 2014 21:36:56 -0700
-Message-Id: <20140529043516.327309335@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Alex Elder <elder@linaro.org>
+Subject: [PATCH 3.10 12/86] rbd: fix error paths in rbd_img_request_fill()
+Date: Wed, 28 May 2014 21:36:47 -0700
+Message-Id: <20140529043515.155959155@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,27 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tristan Bruns <tristan@tristanbruns.de>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 72b3007951010ce1bbf950e23b19d9839fa905a5 upstream.
+commit 42dd037c08c7cd6e3e9af7824b0c1d063f838885 upstream.
 
-Signed-off-by: Tristan Bruns <tristan@tristanbruns.de>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Doing rbd_obj_request_put() in rbd_img_request_fill() error paths is
+not only insufficient, but also triggers an rbd_assert() in
+rbd_obj_request_destroy():
+
+    Assertion failure in rbd_obj_request_destroy() at line 1867:
+
+    rbd_assert(obj_request->img_request == NULL);
+
+rbd_img_obj_request_add() adds obj_requests to the img_request, the
+opposite is rbd_img_obj_request_del().  Use it.
+
+Fixes: http://tracker.ceph.com/issues/7327
+
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Alex Elder <elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/block/rbd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -104,6 +104,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x8218) }, /* Lipowsky Industrie Elektronik GmbH, HARP-1 */
- 	{ USB_DEVICE(0x10C4, 0x822B) }, /* Modem EDGE(GSM) Comander 2 */
- 	{ USB_DEVICE(0x10C4, 0x826B) }, /* Cygnal Integrated Products, Inc., Fasttrax GPS demonstration module */
-+	{ USB_DEVICE(0x10C4, 0x8281) }, /* Nanotec Plug & Drive */
- 	{ USB_DEVICE(0x10C4, 0x8293) }, /* Telegesis ETRX2USB */
- 	{ USB_DEVICE(0x10C4, 0x82F9) }, /* Procyon AVS */
- 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -2278,7 +2278,7 @@ out_partial:
+ 	rbd_obj_request_put(obj_request);
+ out_unwind:
+ 	for_each_obj_request_safe(img_request, obj_request, next_obj_request)
+-		rbd_obj_request_put(obj_request);
++		rbd_img_obj_request_del(img_request, obj_request);
+ 
+ 	return -ENOMEM;
+ }
 
 
