@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002AbaE2AHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 20:07:20 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:35406 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaE2AHS convert rfc822-to-8bit (ORCPT
+	id S1755098AbaE2AJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 20:09:16 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:47882 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046AbaE2AJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 20:07:18 -0400
-Content-Type: text/plain; charset="utf-8"
+	Wed, 28 May 2014 20:09:15 -0400
+Date: Thu, 29 May 2014 02:09:11 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Petr Mladek <pmladek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dave Anderson <anderson@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kay Sievers <kay@vrfy.org>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
+Message-ID: <20140529000909.GC6507@localhost.localdomain>
+References: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
+ <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Cc: "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        "Randy Dunlap" <rdunlap@infradead.org>,
-        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
-        "Jisheng Zhang" <jszhang@marvell.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1400517811-24668-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Message-ID: <20140529000713.10062.99196@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2 00/10] Marvell Berlin full clock support
-Date: Wed, 28 May 2014 17:07:13 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sebastian Hesselbarth (2014-05-19 09:43:21)
-> Mike,
+On Thu, May 29, 2014 at 12:02:30AM +0200, Jiri Kosina wrote:
+> On Fri, 9 May 2014, Petr Mladek wrote:
 > 
-> this is v2 of the Berlin SoC clock driver [1] but with a reworked DT
-> binding as requested [2]. We decided to not even try to split up the chip
-> control registers that deal with pinmux, padmux, clock, reset, and evil
-> stuff we haven't even looked at. Instead we keep a single node that clock
-> driver will remap early, while proper platform_drivers use a regmap
-> instead. Although clock and other drivers share the same register range,
-> they use individual registers exclusively.
+> > printk() cannot be used safely in NMI context because it uses internal locks
+> > and thus could cause a deadlock. Unfortunately there are circumstances when
+> > calling printk from NMI is very useful. For example, all WARN.*(in_nmi())
+> > would be much more helpful if they didn't lockup the machine.
+> > 
+> > Another example would be arch_trigger_all_cpu_backtrace for x86 which uses NMI
+> > to dump traces on all CPU (either triggered by sysrq+l or from RCU stall
+> > detector).
 > 
-> There are some functional fixes in the single clock drivers, I noticed
-> while retesting each individial driver. There will be more to fixup but
-> without any drivers actually using the clocks, it is hard to tell what
-> isn't working now.
+> I am rather surprised that this patchset hasn't received a single review 
+> comment for 3 weeks.
 > 
-> Anyway, the current binding should match what you requested and having
-> a clock driver for v3.16 will really be a huge benefit for us to work
-> on more driver support.
+> Let me point out that the issues Petr is talking about in the cover letter 
+> are real -- we've actually seen the lockups triggered by RCU stall 
+> detector trying to dump stacks on all CPUs, and hard-locking machine up 
+> while doing so.
 > 
-> If you are fine with it, please take patches 2-7 and I'll pick up
-> 1,8-10 in berlin branch.
+> So this really needs to be solved.
 
-Patches #2-7 applied to clk-next.
+The lack of review may be partly due to a not very appealing changestat on an
+old codebase that is already unpopular:
 
-Thanks!
-Mike
+ Documentation/kernel-parameters.txt |   19 +-
+ kernel/printk/printk.c              | 1218 +++++++++++++++++++++++++----------
+ 2 files changed, 878 insertions(+), 359 deletions(-)
 
-> 
-> Sebastian
-> 
-> [1] https://lkml.kernel.org/r/1399839881-29895-1-git-send-email-sebastian.hesselbarth@gmail.com
-> [2] https://lkml.kernel.org/r/20140515044106.19795.57249@quantum
-> 
-> Alexandre Belloni (4):
->   clk: berlin: add driver for BG2x simple PLLs
->   clk: berlin: add driver for BG2x complex divider cells
->   clk: berlin: add core clock driver for BG2Q
->   ARM: dts: berlin: convert BG2Q to DT clock nodes
-> 
-> Sebastian Hesselbarth (6):
->   dt-binding: ARM: add clock binding docs for Marvell Berlin2 SoCs
->   clk: berlin: add binding include for Berlin SoC clock ids
->   clk: berlin: add driver for BG2x audio/video PLL
->   clk: berlin: add core clock driver for BG2/BG2CD
->   ARM: dts: berlin: convert BG2CD to DT clock nodes
->   ARM: dts: berlin: convert BG2 to DT clock nodes
-> 
->  .../devicetree/bindings/arm/marvell,berlin.txt     |  47 ++
->  arch/arm/boot/dts/berlin2.dtsi                     |  56 +-
->  arch/arm/boot/dts/berlin2cd.dtsi                   |  53 +-
->  arch/arm/boot/dts/berlin2q.dtsi                    |  54 +-
->  drivers/clk/Makefile                               |   1 +
->  drivers/clk/berlin/Makefile                        |   4 +
->  drivers/clk/berlin/berlin2-avpll.c                 | 393 ++++++++++++
->  drivers/clk/berlin/berlin2-avpll.h                 |  36 ++
->  drivers/clk/berlin/berlin2-div.c                   | 265 ++++++++
->  drivers/clk/berlin/berlin2-div.h                   |  89 +++
->  drivers/clk/berlin/berlin2-pll.c                   | 117 ++++
->  drivers/clk/berlin/berlin2-pll.h                   |  37 ++
->  drivers/clk/berlin/bg2.c                           | 691 +++++++++++++++++++++
->  drivers/clk/berlin/bg2q.c                          | 389 ++++++++++++
->  drivers/clk/berlin/common.h                        |  29 +
->  include/dt-bindings/clock/berlin2.h                |  45 ++
->  include/dt-bindings/clock/berlin2q.h               |  31 +
->  17 files changed, 2240 insertions(+), 97 deletions(-)
->  create mode 100644 drivers/clk/berlin/Makefile
->  create mode 100644 drivers/clk/berlin/berlin2-avpll.c
->  create mode 100644 drivers/clk/berlin/berlin2-avpll.h
->  create mode 100644 drivers/clk/berlin/berlin2-div.c
->  create mode 100644 drivers/clk/berlin/berlin2-div.h
->  create mode 100644 drivers/clk/berlin/berlin2-pll.c
->  create mode 100644 drivers/clk/berlin/berlin2-pll.h
->  create mode 100644 drivers/clk/berlin/bg2.c
->  create mode 100644 drivers/clk/berlin/bg2q.c
->  create mode 100644 drivers/clk/berlin/common.h
->  create mode 100644 include/dt-bindings/clock/berlin2.h
->  create mode 100644 include/dt-bindings/clock/berlin2q.h
-> 
-> ---
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Cc: Jisheng Zhang <jszhang@marvell.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> -- 
-> 1.9.1
-> 
+
+Your patches look clean and pretty nice actually. They must be seriously considered if
+we want to keep the current locked ring buffer design and extend it to multiple per context
+buffers. But I wonder if it's worth to continue that way with the printk ancient design.
+
+If it takes more than 1000 line changes (including 500 added) to make it finally work
+correctly with NMIs by working around its fundamental flaws, shouldn't we rather redesign
+it to use a lockless ring buffer like ftrace or perf ones?
