@@ -1,59 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934873AbaE2OLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:11:06 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59401 "EHLO
+	id S934701AbaE2OLE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:11:04 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59390 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933263AbaE2Ntc (ORCPT
+	by vger.kernel.org with ESMTP id S933269AbaE2Ntc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:32 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 056/103] drm/radeon: fix typo in spectre_golden_registers
-Date: Thu, 29 May 2014 15:48:41 +0200
-Message-Id: <946a34f2de502fd9b29871f41903c2197fc81733.1401371259.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 059/103] net: sctp: test if association is dead in sctp_wake_up_waiters
+Date: Thu, 29 May 2014 15:48:44 +0200
+Message-Id: <568491238ce069e51b20768f66c1449d4fb43807.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
 References: <cover.1401371258.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f1553174a207f68a4ec19d436003097e0a4dc405 upstream.
+[ Upstream commit 1e1cdf8ac78793e0875465e98a648df64694a8d0 ]
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
+In function sctp_wake_up_waiters(), we need to involve a test
+if the association is declared dead. If so, we don't have any
+reference to a possible sibling association anymore and need
+to invoke sctp_write_space() instead, and normally walk the
+socket's associations and notify them of new wmem space. The
+reason for special casing is that otherwise, we could run
+into the following issue when a sctp_primitive_SEND() call
+from sctp_sendmsg() fails, and tries to flush an association's
+outq, i.e. in the following way:
+
+sctp_association_free()
+`-> list_del(&asoc->asocs)         <-- poisons list pointer
+    asoc->base.dead = true
+    sctp_outq_free(&asoc->outqueue)
+    `-> __sctp_outq_teardown()
+     `-> sctp_chunk_free()
+      `-> consume_skb()
+       `-> sctp_wfree()
+        `-> sctp_wake_up_waiters() <-- dereferences poisoned pointers
+                                       if asoc->ep->sndbuf_policy=0
+
+Therefore, only walk the list in an 'optimized' way if we find
+that the current association is still active. We could also use
+list_del_init() in addition when we call sctp_association_free(),
+but as Vlad suggests, we want to trap such bugs and thus leave
+it poisoned as is.
+
+Why is it safe to resolve the issue by testing for asoc->base.dead?
+Parallel calls to sctp_sendmsg() are protected under socket lock,
+that is lock_sock()/release_sock(). Only within that path under
+lock held, we're setting skb/chunk owner via sctp_set_owner_w().
+Eventually, chunks are freed directly by an association still
+under that lock. So when traversing association list on destruction
+time from sctp_wake_up_waiters() via sctp_wfree(), a different
+CPU can't be running sctp_wfree() while another one calls
+sctp_association_free() as both happens under the same lock.
+Therefore, this can also not race with setting/testing against
+asoc->base.dead as we are guaranteed for this to happen in order,
+under lock. Further, Vlad says: the times we check asoc->base.dead
+is when we've cached an association pointer for later processing.
+In between cache and processing, the association may have been
+freed and is simply still around due to reference counts. We check
+asoc->base.dead under a lock, so it should always be safe to check
+and not race against sctp_association_free(). Stress-testing seems
+fine now, too.
+
+Fixes: cd253f9f357d ("net: sctp: wake up all assocs if sndbuf policy is per socket")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/cik.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sctp/socket.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 25370ac56b4b..bcefa1de3e97 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -1092,7 +1092,7 @@ static const u32 spectre_golden_registers[] =
- 	0x8a14, 0xf000003f, 0x00000007,
- 	0x8b24, 0xffffffff, 0x00ffffff,
- 	0x28350, 0x3f3f3fff, 0x00000082,
--	0x28355, 0x0000003f, 0x00000000,
-+	0x28354, 0x0000003f, 0x00000000,
- 	0x3e78, 0x00000001, 0x00000002,
- 	0x913c, 0xffff03df, 0x00000004,
- 	0xc768, 0x00000008, 0x00000008,
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index a20fa7f0aedc..dc496f2bc6c5 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -6575,6 +6575,12 @@ static void sctp_wake_up_waiters(struct sock *sk,
+ 	if (asoc->ep->sndbuf_policy)
+ 		return __sctp_write_space(asoc);
+ 
++	/* If association goes down and is just flushing its
++	 * outq, then just normally notify others.
++	 */
++	if (asoc->base.dead)
++		return sctp_write_space(sk);
++
+ 	/* Accounting for the sndbuf space is per socket, so we
+ 	 * need to wake up others, try to be fair and in case of
+ 	 * other associations, let them have a go first instead
 -- 
 1.9.3
 
