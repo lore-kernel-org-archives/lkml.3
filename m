@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258AbaE2Eip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:38:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58526 "EHLO
+	id S933491AbaE2Ep6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:45:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58657 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933035AbaE2Ei2 (ORCPT
+	with ESMTP id S933256AbaE2Eip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:28 -0400
+	Thu, 29 May 2014 00:38:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH 3.10 37/86] drm/radeon: call drm_edid_to_eld when we update the edid
-Date: Wed, 28 May 2014 21:37:12 -0700
-Message-Id: <20140529043518.487320634@linuxfoundation.org>
+        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
+        Christian Schmiedl <christian.schmiedl@gemalto.com>,
+        Nicolaus Colberg <nicolaus.colberg@gemalto.com>,
+        Aleksander Morgado <aleksander@lanedo.com>,
+        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 76/86] net: qmi_wwan: fix Cinterion PLXX product ID
+Date: Wed, 28 May 2014 21:37:51 -0700
+Message-Id: <20140529043523.555416792@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -30,32 +34,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Aleksander Morgado <aleksander@lanedo.com>
 
-commit 16086279353cbfecbb3ead474072dced17b97ddc upstream.
+[ Upstream commit 2d77f343343c4f38b8f94be1964bbbc6456a147f ]
 
-This needs to be done to update some of the fields in
-the connector structure used by the audio code.
+Cinterion PLXX LTE devices have a 0x0060 product ID, not 0x12d1.
 
-Noticed by several users on irc.
+The blacklisting in the serial/option driver does actually use the correct PID,
+as per commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db ('USB: Blacklisted
+Cinterion's PLxx WWAN Interface').
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Christian KÃ¶nig <christian.koenig@amd.com>
+CC: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+CC: Christian Schmiedl <christian.schmiedl@gemalto.com>
+CC: Nicolaus Colberg <nicolaus.colberg@gemalto.com>
+Signed-off-by: Aleksander Morgado <aleksander@lanedo.com>
+Acked-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Christian Schmiedl <christian.schmiedl@gemalto.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/usb/qmi_wwan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -729,6 +729,7 @@ int radeon_ddc_get_modes(struct radeon_c
- 	if (radeon_connector->edid) {
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
-+		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
- 		return ret;
- 	}
- 	drm_mode_connector_update_edid_property(&radeon_connector->base, NULL);
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -716,7 +716,7 @@ static const struct usb_device_id produc
+ 	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
+-	{QMI_FIXED_INTF(0x1e2d, 0x12d1, 4)},	/* Cinterion PLxx */
++	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
+ 
+ 	/* 4. Gobi 1000 devices */
+ 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
 
 
