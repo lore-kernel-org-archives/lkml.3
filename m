@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935076AbaE2OP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:15:57 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59354 "EHLO
+	id S935061AbaE2OPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:15:55 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59325 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933213AbaE2Ntb (ORCPT
+	by vger.kernel.org with ESMTP id S933161AbaE2Ntb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Richard Farina <sidhayn@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 041/103] Revert "USB: serial: add usbid for dell wwan card to sierra.c"
-Date: Thu, 29 May 2014 15:48:26 +0200
-Message-Id: <8e3e396462c30221a7ed37cdcf065ecf585c310d.1401371259.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Sachin Prabhu <sprabhu@redhat.com>,
+        Steve French <smfrench@gmail.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 029/103] cifs: Wait for writebacks to complete before attempting write.
+Date: Thu, 29 May 2014 15:48:14 +0200
+Message-Id: <e02f9eff60504d91b778d8bd50ed649d0ab6e2d6.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
@@ -23,38 +23,417 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Sachin Prabhu <sprabhu@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2e01280d2801c72878cf3a7119eac30077b463d5 upstream.
+commit c11f1df5003d534fd067f0168bfad7befffb3b5c upstream.
 
-This reverts commit 1ebca9dad5abe8b2ed4dbd186cd657fb47c1f321.
+Problem reported in Red Hat bz 1040329 for strict writes where we cache
+only when we hold oplock and write direct to the server when we don't.
 
-This device was erroneously added to the sierra driver even though it's
-not a Sierra device and was already handled by the option driver.
+When we receive an oplock break, we first change the oplock value for
+the inode in cifsInodeInfo->oplock to indicate that we no longer hold
+the oplock before we enqueue a task to flush changes to the backing
+device. Once we have completed flushing the changes, we return the
+oplock to the server.
 
-Cc: Richard Farina <sidhayn@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+There are 2 ways here where we can have data corruption
+1) While we flush changes to the backing device as part of the oplock
+break, we can have processes write to the file. These writes check for
+the oplock, find none and attempt to write directly to the server.
+These direct writes made while we are flushing from cache could be
+overwritten by data being flushed from the cache causing data
+corruption.
+2) While a thread runs in cifs_strict_writev, the machine could receive
+and process an oplock break after the thread has checked the oplock and
+found that it allows us to cache and before we have made changes to the
+cache. In that case, we end up with a dirty page in cache when we
+shouldn't have any. This will be flushed later and will overwrite all
+subsequent writes to the part of the file represented by this page.
+
+Before making any writes to the server, we need to confirm that we are
+not in the process of flushing data to the server and if we are, we
+should wait until the process is complete before we attempt the write.
+We should also wait for existing writes to complete before we process
+an oplock break request which changes oplock values.
+
+We add a version specific  downgrade_oplock() operation to allow for
+differences in the oplock values set for the different smb versions.
+
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/sierra.c | 1 -
- 1 file changed, 1 deletion(-)
+ fs/cifs/cifsfs.c    | 14 +++++++++-
+ fs/cifs/cifsglob.h  |  8 ++++++
+ fs/cifs/cifsproto.h |  3 +++
+ fs/cifs/file.c      | 31 +++++++++++++++++++---
+ fs/cifs/misc.c      | 74 +++++++++++++++++++++++++++++++++++++++++++++++++++--
+ fs/cifs/smb1ops.c   | 11 ++++++++
+ fs/cifs/smb2misc.c  | 18 ++++++++++---
+ fs/cifs/smb2ops.c   | 14 ++++++++++
+ 8 files changed, 164 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index de958c5b52e3..b6910b7ab7e2 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -291,7 +291,6 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
--       { USB_DEVICE(0x413C, 0x08133) }, /* Dell Computer Corp. Wireless 5720 VZW Mobile Broadband (EVDO Rev-A) Minicard GPS Port */
+diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+index 77fc5e181077..b38bd052ce6d 100644
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -253,6 +253,11 @@ cifs_alloc_inode(struct super_block *sb)
+ 	cifs_set_oplock_level(cifs_inode, 0);
+ 	cifs_inode->delete_pending = false;
+ 	cifs_inode->invalid_mapping = false;
++	clear_bit(CIFS_INODE_PENDING_OPLOCK_BREAK, &cifs_inode->flags);
++	clear_bit(CIFS_INODE_PENDING_WRITERS, &cifs_inode->flags);
++	clear_bit(CIFS_INODE_DOWNGRADE_OPLOCK_TO_L2, &cifs_inode->flags);
++	spin_lock_init(&cifs_inode->writers_lock);
++	cifs_inode->writers = 0;
+ 	cifs_inode->vfs_inode.i_blkbits = 14;  /* 2**14 = CIFS_MAX_MSGSIZE */
+ 	cifs_inode->server_eof = 0;
+ 	cifs_inode->uniqueid = 0;
+@@ -731,19 +736,26 @@ static ssize_t cifs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 				   unsigned long nr_segs, loff_t pos)
+ {
+ 	struct inode *inode = file_inode(iocb->ki_filp);
++	struct cifsInodeInfo *cinode = CIFS_I(inode);
+ 	ssize_t written;
+ 	int rc;
  
- 	{ }
- };
++	written = cifs_get_writer(cinode);
++	if (written)
++		return written;
++
+ 	written = generic_file_aio_write(iocb, iov, nr_segs, pos);
+ 
+ 	if (CIFS_CACHE_WRITE(CIFS_I(inode)))
+-		return written;
++		goto out;
+ 
+ 	rc = filemap_fdatawrite(inode->i_mapping);
+ 	if (rc)
+ 		cifs_dbg(FYI, "cifs_file_aio_write: %d rc on %p inode\n",
+ 			 rc, inode);
+ 
++out:
++	cifs_put_writer(cinode);
+ 	return written;
+ }
+ 
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index db95dca335ca..2f6f1ac52d3f 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -228,6 +228,8 @@ struct smb_version_operations {
+ 	/* verify the message */
+ 	int (*check_message)(char *, unsigned int);
+ 	bool (*is_oplock_break)(char *, struct TCP_Server_Info *);
++	void (*downgrade_oplock)(struct TCP_Server_Info *,
++					struct cifsInodeInfo *, bool);
+ 	/* process transaction2 response */
+ 	bool (*check_trans2)(struct mid_q_entry *, struct TCP_Server_Info *,
+ 			     char *, int);
+@@ -1072,6 +1074,12 @@ struct cifsInodeInfo {
+ 	unsigned int epoch;		/* used to track lease state changes */
+ 	bool delete_pending;		/* DELETE_ON_CLOSE is set */
+ 	bool invalid_mapping;		/* pagecache is invalid */
++	unsigned long flags;
++#define CIFS_INODE_PENDING_OPLOCK_BREAK   (0) /* oplock break in progress */
++#define CIFS_INODE_PENDING_WRITERS	  (1) /* Writes in progress */
++#define CIFS_INODE_DOWNGRADE_OPLOCK_TO_L2 (2) /* Downgrade oplock to L2 */
++	spinlock_t writers_lock;
++	unsigned int writers;		/* Number of writers on this inode */
+ 	unsigned long time;		/* jiffies of last update of inode */
+ 	u64  server_eof;		/* current file size on server -- protected by i_lock */
+ 	u64  uniqueid;			/* server inode number */
+diff --git a/fs/cifs/cifsproto.h b/fs/cifs/cifsproto.h
+index 45ccfbd8ea5f..c6bfe5b368f9 100644
+--- a/fs/cifs/cifsproto.h
++++ b/fs/cifs/cifsproto.h
+@@ -127,6 +127,9 @@ extern u64 cifs_UnixTimeToNT(struct timespec);
+ extern struct timespec cnvrtDosUnixTm(__le16 le_date, __le16 le_time,
+ 				      int offset);
+ extern void cifs_set_oplock_level(struct cifsInodeInfo *cinode, __u32 oplock);
++extern int cifs_get_writer(struct cifsInodeInfo *cinode);
++extern void cifs_put_writer(struct cifsInodeInfo *cinode);
++extern void cifs_done_oplock_break(struct cifsInodeInfo *cinode);
+ extern int cifs_unlock_range(struct cifsFileInfo *cfile,
+ 			     struct file_lock *flock, const unsigned int xid);
+ extern int cifs_push_mandatory_locks(struct cifsFileInfo *cfile);
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 81476e18a789..643a18491bed 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2611,12 +2611,20 @@ cifs_strict_writev(struct kiocb *iocb, const struct iovec *iov,
+ 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
+ 	ssize_t written;
+ 
++	written = cifs_get_writer(cinode);
++	if (written)
++		return written;
++
+ 	if (CIFS_CACHE_WRITE(cinode)) {
+ 		if (cap_unix(tcon->ses) &&
+ 		(CIFS_UNIX_FCNTL_CAP & le64_to_cpu(tcon->fsUnixInfo.Capability))
+-		    && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0))
+-			return generic_file_aio_write(iocb, iov, nr_segs, pos);
+-		return cifs_writev(iocb, iov, nr_segs, pos);
++		  && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0)) {
++			written = generic_file_aio_write(
++					iocb, iov, nr_segs, pos);
++			goto out;
++		}
++		written = cifs_writev(iocb, iov, nr_segs, pos);
++		goto out;
+ 	}
+ 	/*
+ 	 * For non-oplocked files in strict cache mode we need to write the data
+@@ -2636,6 +2644,8 @@ cifs_strict_writev(struct kiocb *iocb, const struct iovec *iov,
+ 			 inode);
+ 		cinode->oplock = 0;
+ 	}
++out:
++	cifs_put_writer(cinode);
+ 	return written;
+ }
+ 
+@@ -3647,6 +3657,13 @@ static int cifs_launder_page(struct page *page)
+ 	return rc;
+ }
+ 
++static int
++cifs_pending_writers_wait(void *unused)
++{
++	schedule();
++	return 0;
++}
++
+ void cifs_oplock_break(struct work_struct *work)
+ {
+ 	struct cifsFileInfo *cfile = container_of(work, struct cifsFileInfo,
+@@ -3654,8 +3671,15 @@ void cifs_oplock_break(struct work_struct *work)
+ 	struct inode *inode = cfile->dentry->d_inode;
+ 	struct cifsInodeInfo *cinode = CIFS_I(inode);
+ 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
++	struct TCP_Server_Info *server = tcon->ses->server;
+ 	int rc = 0;
+ 
++	wait_on_bit(&cinode->flags, CIFS_INODE_PENDING_WRITERS,
++			cifs_pending_writers_wait, TASK_UNINTERRUPTIBLE);
++
++	server->ops->downgrade_oplock(server, cinode,
++		test_bit(CIFS_INODE_DOWNGRADE_OPLOCK_TO_L2, &cinode->flags));
++
+ 	if (!CIFS_CACHE_WRITE(cinode) && CIFS_CACHE_READ(cinode) &&
+ 						cifs_has_mand_locks(cinode)) {
+ 		cifs_dbg(FYI, "Reset oplock to None for inode=%p due to mand locks\n",
+@@ -3692,6 +3716,7 @@ void cifs_oplock_break(struct work_struct *work)
+ 							     cinode);
+ 		cifs_dbg(FYI, "Oplock release rc = %d\n", rc);
+ 	}
++	cifs_done_oplock_break(cinode);
+ }
+ 
+ const struct address_space_operations cifs_addr_ops = {
+diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
+index 138a011633fe..912a52e5e8cc 100644
+--- a/fs/cifs/misc.c
++++ b/fs/cifs/misc.c
+@@ -472,8 +472,22 @@ is_valid_oplock_break(char *buffer, struct TCP_Server_Info *srv)
+ 				cifs_dbg(FYI, "file id match, oplock break\n");
+ 				pCifsInode = CIFS_I(netfile->dentry->d_inode);
+ 
+-				cifs_set_oplock_level(pCifsInode,
+-					pSMB->OplockLevel ? OPLOCK_READ : 0);
++				set_bit(CIFS_INODE_PENDING_OPLOCK_BREAK,
++					&pCifsInode->flags);
++
++				/*
++				 * Set flag if the server downgrades the oplock
++				 * to L2 else clear.
++				 */
++				if (pSMB->OplockLevel)
++					set_bit(
++					   CIFS_INODE_DOWNGRADE_OPLOCK_TO_L2,
++					   &pCifsInode->flags);
++				else
++					clear_bit(
++					   CIFS_INODE_DOWNGRADE_OPLOCK_TO_L2,
++					   &pCifsInode->flags);
++
+ 				queue_work(cifsiod_wq,
+ 					   &netfile->oplock_break);
+ 				netfile->oplock_break_cancelled = false;
+@@ -557,6 +571,62 @@ void cifs_set_oplock_level(struct cifsInodeInfo *cinode, __u32 oplock)
+ 		cinode->oplock = 0;
+ }
+ 
++static int
++cifs_oplock_break_wait(void *unused)
++{
++	schedule();
++	return signal_pending(current) ? -ERESTARTSYS : 0;
++}
++
++/*
++ * We wait for oplock breaks to be processed before we attempt to perform
++ * writes.
++ */
++int cifs_get_writer(struct cifsInodeInfo *cinode)
++{
++	int rc;
++
++start:
++	rc = wait_on_bit(&cinode->flags, CIFS_INODE_PENDING_OPLOCK_BREAK,
++				   cifs_oplock_break_wait, TASK_KILLABLE);
++	if (rc)
++		return rc;
++
++	spin_lock(&cinode->writers_lock);
++	if (!cinode->writers)
++		set_bit(CIFS_INODE_PENDING_WRITERS, &cinode->flags);
++	cinode->writers++;
++	/* Check to see if we have started servicing an oplock break */
++	if (test_bit(CIFS_INODE_PENDING_OPLOCK_BREAK, &cinode->flags)) {
++		cinode->writers--;
++		if (cinode->writers == 0) {
++			clear_bit(CIFS_INODE_PENDING_WRITERS, &cinode->flags);
++			wake_up_bit(&cinode->flags, CIFS_INODE_PENDING_WRITERS);
++		}
++		spin_unlock(&cinode->writers_lock);
++		goto start;
++	}
++	spin_unlock(&cinode->writers_lock);
++	return 0;
++}
++
++void cifs_put_writer(struct cifsInodeInfo *cinode)
++{
++	spin_lock(&cinode->writers_lock);
++	cinode->writers--;
++	if (cinode->writers == 0) {
++		clear_bit(CIFS_INODE_PENDING_WRITERS, &cinode->flags);
++		wake_up_bit(&cinode->flags, CIFS_INODE_PENDING_WRITERS);
++	}
++	spin_unlock(&cinode->writers_lock);
++}
++
++void cifs_done_oplock_break(struct cifsInodeInfo *cinode)
++{
++	clear_bit(CIFS_INODE_PENDING_OPLOCK_BREAK, &cinode->flags);
++	wake_up_bit(&cinode->flags, CIFS_INODE_PENDING_OPLOCK_BREAK);
++}
++
+ bool
+ backup_cred(struct cifs_sb_info *cifs_sb)
+ {
+diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
+index e6ed0dc3071b..58bd01efa05b 100644
+--- a/fs/cifs/smb1ops.c
++++ b/fs/cifs/smb1ops.c
+@@ -372,6 +372,16 @@ coalesce_t2(char *second_buf, struct smb_hdr *target_hdr)
+ 	return 0;
+ }
+ 
++static void
++cifs_downgrade_oplock(struct TCP_Server_Info *server,
++			struct cifsInodeInfo *cinode, bool set_level2)
++{
++	if (set_level2)
++		cifs_set_oplock_level(cinode, OPLOCK_READ);
++	else
++		cifs_set_oplock_level(cinode, 0);
++}
++
+ static bool
+ cifs_check_trans2(struct mid_q_entry *mid, struct TCP_Server_Info *server,
+ 		  char *buf, int malformed)
+@@ -957,6 +967,7 @@ struct smb_version_operations smb1_operations = {
+ 	.clear_stats = cifs_clear_stats,
+ 	.print_stats = cifs_print_stats,
+ 	.is_oplock_break = is_valid_oplock_break,
++	.downgrade_oplock = cifs_downgrade_oplock,
+ 	.check_trans2 = cifs_check_trans2,
+ 	.need_neg = cifs_need_neg,
+ 	.negotiate = cifs_negotiate,
+diff --git a/fs/cifs/smb2misc.c b/fs/cifs/smb2misc.c
+index fb3966265b6e..b8021fde987d 100644
+--- a/fs/cifs/smb2misc.c
++++ b/fs/cifs/smb2misc.c
+@@ -575,9 +575,21 @@ smb2_is_valid_oplock_break(char *buffer, struct TCP_Server_Info *server)
+ 				else
+ 					cfile->oplock_break_cancelled = false;
+ 
+-				server->ops->set_oplock_level(cinode,
+-				  rsp->OplockLevel ? SMB2_OPLOCK_LEVEL_II : 0,
+-				  0, NULL);
++				set_bit(CIFS_INODE_PENDING_OPLOCK_BREAK,
++					&cinode->flags);
++
++				/*
++				 * Set flag if the server downgrades the oplock
++				 * to L2 else clear.
++				 */
++				if (rsp->OplockLevel)
++					set_bit(
++					   CIFS_INODE_DOWNGRADE_OPLOCK_TO_L2,
++					   &cinode->flags);
++				else
++					clear_bit(
++					   CIFS_INODE_DOWNGRADE_OPLOCK_TO_L2,
++					   &cinode->flags);
+ 
+ 				queue_work(cifsiod_wq, &cfile->oplock_break);
+ 
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index 027a0c6f7ca0..13e505191364 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -646,6 +646,17 @@ smb2_query_symlink(const unsigned int xid, struct cifs_tcon *tcon,
+ }
+ 
+ static void
++smb2_downgrade_oplock(struct TCP_Server_Info *server,
++			struct cifsInodeInfo *cinode, bool set_level2)
++{
++	if (set_level2)
++		server->ops->set_oplock_level(cinode, SMB2_OPLOCK_LEVEL_II,
++						0, NULL);
++	else
++		server->ops->set_oplock_level(cinode, 0, 0, NULL);
++}
++
++static void
+ smb2_set_oplock_level(struct cifsInodeInfo *cinode, __u32 oplock,
+ 		      unsigned int epoch, bool *purge_cache)
+ {
+@@ -851,6 +862,7 @@ struct smb_version_operations smb20_operations = {
+ 	.clear_stats = smb2_clear_stats,
+ 	.print_stats = smb2_print_stats,
+ 	.is_oplock_break = smb2_is_valid_oplock_break,
++	.downgrade_oplock = smb2_downgrade_oplock,
+ 	.need_neg = smb2_need_neg,
+ 	.negotiate = smb2_negotiate,
+ 	.negotiate_wsize = smb2_negotiate_wsize,
+@@ -922,6 +934,7 @@ struct smb_version_operations smb21_operations = {
+ 	.clear_stats = smb2_clear_stats,
+ 	.print_stats = smb2_print_stats,
+ 	.is_oplock_break = smb2_is_valid_oplock_break,
++	.downgrade_oplock = smb2_downgrade_oplock,
+ 	.need_neg = smb2_need_neg,
+ 	.negotiate = smb2_negotiate,
+ 	.negotiate_wsize = smb2_negotiate_wsize,
+@@ -994,6 +1007,7 @@ struct smb_version_operations smb30_operations = {
+ 	.print_stats = smb2_print_stats,
+ 	.dump_share_caps = smb2_dump_share_caps,
+ 	.is_oplock_break = smb2_is_valid_oplock_break,
++	.downgrade_oplock = smb2_downgrade_oplock,
+ 	.need_neg = smb2_need_neg,
+ 	.negotiate = smb2_negotiate,
+ 	.negotiate_wsize = smb2_negotiate_wsize,
 -- 
 1.9.3
 
