@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934205AbaE2QFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:05:25 -0400
-Received: from mx2.netorek.fi ([213.157.84.84]:41965 "EHLO mx2.netorek.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933244AbaE2QFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:05:17 -0400
-Date: Sun, 19 Feb 2006 14:20:54 -0500
-From: Maurice Volaski <mvolaski@aecom.yu.edu>
-To: drbd-user@linbit.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [DRBD-user] drbd-0.7.15 crashed doing a full sync under 2.6.13
-Message-Id: <20140529153528.51D10205BDD@mx2.netorek.fi>
+	id S1757436AbaE2QH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:07:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40882 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294AbaE2QHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 12:07:25 -0400
+Date: Thu, 29 May 2014 09:11:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, devel@driverdev.osuosl.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Subject: Re: [PATCH] Revert "staging: dgap: remove unneeded kfree() in
+ dgap_tty_register_ports()"
+Message-ID: <20140529161101.GA802@kroah.com>
+References: <20140529070127.GA1347@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529070127.GA1347@devel.8.8.4.4>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First posted to drbd mailing list on 2/6 with no reply. It hasn't 
-happened since, but once is enough to mean something is wrong 
-somewhere.....
+On Thu, May 29, 2014 at 04:01:27PM +0900, Daeseok Youn wrote:
+> This reverts commit 0ade4a34fd439d62df46937e8f3e584eb0879579.
+> 
+> This patch removes kfree for serial_ports in dgap_tty_register_ports()
+> if the "brd->printer_ports" allocation fails and serial_ports may be
+> freed by calling dgap_tty_uninit() within other patch.
+> That patch has an error handling but incomplete cleanup
+> so it need to call kfree() for brd->serial_ports in
+> dgap_tty_register_ports().
+> 
+> Conflicts:
+> 
+> 	drivers/staging/dgap/dgap.c
+> ---
+>  drivers/staging/dgap/dgap.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 
-I did a resize of all the underlying LVMs and that proceeded very
-nicely since drbd automatically recognized the new sizes and
-resize2fs automatically figured out the new size, too.
-
-Anyway, bringing up the secondary automatically caused the primary to
-start a fully sync. The performance this time was very nice,
-averaging 50-55 MB per second across a total of 8 drbd resources, all
-syncing simultaneously. Each resource is an underlying logical volume
-and is assigned its own TCP port in drbd.conf. The primary has dual
-bonded gigabit in active load balancing mode and secondary is single
-gigabit.
-
-A total of 5600 GB has to be moved. I am estimating the resources
-were between 1/3 and 1/2 finished when the kernel panicked.
-
-The secondary, which is running the same kernel and drbd, did not
-panic. The drives in both systems are attached via LSI Logic SCSI
-cards and on the primary the driver is mptscsih; on the secondary it
-is sym53c8xx.
-
-Unfortunately, I never gotten an easy way to capture the text of a
-panic, and apparently attachments are excluded if the message exceeds
-40K, so I typed out the whole thing:
-
-ne_endio+243}
-<ffffffff8029460b.{__end_that_request_first+283}
-<ffffffff802d297c.{scsi_end_request+60}
-<ffffffff802d2d7b>{scsi_io_completion+651}
-<ffffffff802e1eb1>{sd_rw_intr+721}
-<ffffffff802d25cf>{scsi_device_unbusy+95}
-<ffffffff802cd722>{scsi_softirq+258}
-<ffffffff8013b111>{__do_softirq+113}
-<ffffffff8010ee63>{call_softirq+31}
-<ffffffff80110a55>{do_softirq+53} <ffffffff80119a0f>{do_IRQ+79}
-<ffffffff8010e20a>{ret_from_intr+0} <EOI>
-<ffffffff880bda221>{:drbd:drbd_bm_clear_bit+497}
-<ffffffff880bda21>{:drbd:drbd_bm_clear_bit+497}
-<ffffffff880ccc21>{:drbd:__drbd_set_in_sync+545}
-<ffffffff880c9140>{:drbd:got_BlockAck+96}
-<ffffffff880c9a99>{:drbd:drbd_asender+1081}
-<ffffffff880ce526>{:drbd:drbd_thread_setup+190}
-<ffffffff8010e91a>{child_rip+8}
-<ffffffff880ce460>{:drbd:drbd_thread_setup+0>
-<ffffffff8010e912>{child_rip+0}
-
-Code: 80 3b 00 7e f9 e9 89 fb ff ff e8 40 27 ef ff e9 01 fc ff ff
-console shuts up...
-   <0>Kernel panic --not syncing:Aiee, killing interrupt handler!
-
-keywords: crash, freeze, freezing, hang, hung, panic, locked up,
-scsi, thread, threads, interrupt handler, bug, race condition.
--- 
-
-Maurice Volaski, mvolaski@aecom.yu.edu
-Computing Support, Rose F. Kennedy Center
-Albert Einstein College of Medicine of Yeshiva University
-_______________________________________________
-drbd-user mailing list
-drbd-user@lists.linbit.com
-http://lists.linbit.com/mailman/listinfo/drbd-user
-
+-ENOSIGNEDOFFBY :(
 
