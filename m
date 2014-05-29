@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826AbaE2Ex4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:53:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58524 "EHLO
+	id S933128AbaE2Ey4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:54:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933132AbaE2Ei2 (ORCPT
+	with ESMTP id S933125AbaE2Ei0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:28 -0400
+	Thu, 29 May 2014 00:38:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.10 36/86] drm/qxl: unset a pointer in sync_obj_unref
-Date: Wed, 28 May 2014 21:37:11 -0700
-Message-Id: <20140529043518.341114445@linuxfoundation.org>
+        Francois WELLENREITER <f.wellenreiter@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 45/86] ipv6: Limit mtu to 65575 bytes
+Date: Wed, 28 May 2014 21:37:20 -0700
+Message-Id: <20140529043519.562840850@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,29 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 41ccec352f3c823931a7d9d2a9c7880c14d7415a upstream.
+[ Upstream commit 30f78d8ebf7f514801e71b88a10c948275168518 ]
 
-This fixes a BUG_ON(bo->sync_obj != NULL); in ttm_bo_release_list.
+Francois reported that setting big mtu on loopback device could prevent
+tcp sessions making progress.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+We do not support (yet ?) IPv6 Jumbograms and cook corrupted packets.
+
+We must limit the IPv6 MTU to (65535 + 40) bytes in theory.
+
+Tested:
+
+ifconfig lo mtu 70000
+netperf -H ::1
+
+Before patch : Throughput :   0.05 Mbits
+
+After patch : Throughput : 35484 Mbits
+
+Reported-by: Francois WELLENREITER <f.wellenreiter@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/qxl/qxl_ttm.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/ip6_route.h |    5 +++++
+ net/ipv6/route.c        |    5 +++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/qxl/qxl_ttm.c
-+++ b/drivers/gpu/drm/qxl/qxl_ttm.c
-@@ -431,6 +431,7 @@ static int qxl_sync_obj_flush(void *sync
+--- a/include/net/ip6_route.h
++++ b/include/net/ip6_route.h
+@@ -32,6 +32,11 @@ struct route_info {
+ #define RT6_LOOKUP_F_SRCPREF_PUBLIC	0x00000010
+ #define RT6_LOOKUP_F_SRCPREF_COA	0x00000020
  
- static void qxl_sync_obj_unref(void **sync_obj)
- {
-+	*sync_obj = NULL;
++/* We do not (yet ?) support IPv6 jumbograms (RFC 2675)
++ * Unlike IPv4, hdr->seg_len doesn't include the IPv6 header
++ */
++#define IP6_MAX_MTU (0xFFFF + sizeof(struct ipv6hdr))
++
+ /*
+  * rt6_srcprefs2flags() and rt6_flags2srcprefs() translate
+  * between IPV6_ADDR_PREFERENCES socket option values
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1236,7 +1236,7 @@ static unsigned int ip6_mtu(const struct
+ 	unsigned int mtu = dst_metric_raw(dst, RTAX_MTU);
+ 
+ 	if (mtu)
+-		return mtu;
++		goto out;
+ 
+ 	mtu = IPV6_MIN_MTU;
+ 
+@@ -1246,7 +1246,8 @@ static unsigned int ip6_mtu(const struct
+ 		mtu = idev->cnf.mtu6;
+ 	rcu_read_unlock();
+ 
+-	return mtu;
++out:
++	return min_t(unsigned int, mtu, IP6_MAX_MTU);
  }
  
- static void *qxl_sync_obj_ref(void *sync_obj)
+ static struct dst_entry *icmp6_dst_gc_list;
 
 
