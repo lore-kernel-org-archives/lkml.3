@@ -1,86 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757103AbaE2Gg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:36:59 -0400
-Received: from mail.siteground.com ([67.19.240.234]:40194 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaE2Gg6 (ORCPT
+	id S932444AbaE2Ghs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:37:48 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:64020 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaE2Ghq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:36:58 -0400
-Message-ID: <5386D58D.2080809@1h.com>
-Date: Thu, 29 May 2014 09:37:01 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: [RFC] Per-user namespace process accounting
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 29 May 2014 02:37:46 -0400
+From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org, airlied@linux.ie
+Cc: lee.jones@linaro.org, Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Subject: [PATCH v4 00/11] Add DRM for stih4xx platforms
+Date: Thu, 29 May 2014 08:36:56 +0200
+Message-Id: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This series of patches add the support of DRM/KMS drivers for STMicroelectronics
+chipsets stih416 and stih407.
 
-Hello,
+version 4:
+	- Remove depency between TVout it subdevices HDMI and HDA
+	- Rework and simplify VTG and VTAC code
+	- Fix numbers of typo and indentation
+	- Remove debug (will be push in separate patches)
+	- Fix remarks done in previous patcheset
+	
+	patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
+	on branch: drm_kms_for_next-v4
 
-I have the following proposition.
+version 3:
+	- Correctly split code between probe and bind funtions
+	- Squash some commits
+	- remove HQ-VDP device code to have a smaller patcheset,
+	  we will introduce it later.
 
-Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that multiple
-containers in different user namespaces share the process counters.
+	patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
+	on branch: drm_kms_for_next-v3
 
-So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any
-processes with ist own UID 99.
+version 2:
+	- Use componentized device instead of register sub-devices in master
+	driver probe function
+	- Fix Makefile and Kconfig to only allow built-in compilation
 
-I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps, but
-this brings another problem.
+	patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
+	on branch: drm_kms_for_next-v2
+	
+version 1:
+	- First path submission
 
-We are provisioning the containers from a template. The template has a lot of files 500k and more. And chowning these
-causes a lot of I/O and also slows down provisioning considerably.
+Hardware is split in two main blocks: Compositor and TVout. Each of them
+includes specific hardware IPs and the display timing are controlled by a specific
+Video Timing Generator hardware IP (VTG).
 
-The other problem is that when we migrate one container from one host machine to another the IDs may be already in use
-on the new machine and we need to chown all the files again.
+Compositor is made of the follow hardware IPs:
+ - GDP (Generic Display Pipeline) which is an entry point for graphic (RGB)
+   buffers
+ - VDP (Video Diplay Pipeline) which is an entry point for video (YUV) buffers
+ - HQVDP (High Quality Video Display Processor) that supports scaling,
+   deinterlacing and some miscellaneous image quality improvements.
+   It fetches the Video decoded buffers from memory, processes them and pushes
+   them to the Compositor through a HW dedicated bus.
+ - Mixer is responsible of mixing all the entries depending of their
+   respective z-order and layout
 
-Finally if we use different UID/GID maps we can not do live migration to another node because the UIDs may be already
-in use.
+TVout is divided in 3 parts:
+ - HDMI to generate HDMI signals, depending of chipset version HDMI phy can
+   change.
+ - HDA to generate signals for HD analog TV
+ - VIP to control/switch data path coming from Compositor
 
-So I'm proposing one hack modifying unshare_userns() to allocate new user_struct for the cred that is created for the
-first task creating the user_ns and free it in exit_creds().
+On stih416 compositor and Tvout are on different dies so a Video Trafic Advance
+inter-die Communication mechanism (VTAC) is needed.
 
-Can you please comment on that?
++---------------------------------------------+   +----------------------------------------+
+| +-------------------------------+   +----+  |   |  +----+   +--------------------------+ |
+| |                               |   |    |  |   |  |    |   |  +---------+     +----+  | |
+| | +----+              +------+  |   |    |  |   |  |    |   |  | VIP     |---->|HDMI|  | |
+| | |GPD +------------->|      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
+| | +----+              |Mixer |--|-->|    |  |   |  |    |---|->| switcher|             | |
+| |                     |      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
+| |                     |      |  |   |    |  |   |  |    |   |  |         |---->|HDA |  | |
+| |                     +------+  |   |VTAC|========>|VTAC|   |  +---------+     +----+  | |
+| |                               |   |    |  |   |  |    |   |                          | |
+| |         Compositor            |   |    |  |   |  |    |   |           TVout          | |
+| +-------------------------------+   |    |  |   |  |    |   +--------------------------+ |
+|                      ^              |    |  |   |  |    |             ^                  |
+|                      |              |    |  |   |  |    |             |                  |
+|               +--------------+      |    |  |   |  |    |      +-------------+           |
+|               | VTG (master) |----->|    |  |   |  |    |----->| VTG (slave) |           |
+|               +--------------+      +----+  |   |  +----+      +-------------+           |
+|Digital die                                  |   |                              Analog Die|
++---------------------------------------------+   +----------------------------------------+
 
-Or suggest a better solution?
+On stih407 Compositor and Tvout are on the same die
 
-Best regards,
-Marian
++-----------------------------------------------------------------+
+| +-------------------------------+  +--------------------------+ |
+| |                               |  |  +---------+     +----+  | |
+| | +----+              +------+  |  |  | VIP     |---->|HDMI|  | |
+| | |GPD +------------->|      |  |  |  |         |     +----+  | |
+| | +----+              |Mixer |--|--|->| switcher|             | |
+| | +----+   +-----+    |      |  |  |  |         |     +----+  | |
+| | |VDP +-->+HQVDP+--->|      |  |  |  |         |---->|HDA |  | |
+| | +----+   +-----+    +------+  |  |  +---------+     +----+  | |
+| |                               |  |                          | |
+| |         Compositor            |  |           TVout          | |
+| +-------------------------------+  +--------------------------+ |
+|                              ^        ^                         |
+|                              |        |                         |
+|                           +--------------+                      |
+|                           |     VTG      |                      |
+|                           +--------------+                      |
+|Digital die                                                      |
++-----------------------------------------------------------------+
 
+In addition of the drivers for the IPs listed before a thin I2C driver (hdmiddc) is used
+by HDMI driver to retrieve EDID for monitor.
 
-- -- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+To unify interfaces of GDP and VDP we create a "layer" interface called by
+compositor to control both GPD and VDP.
 
-iEYEARECAAYFAlOG1Y0ACgkQ4mt9JeIbjJQREACbBrax+ztBj2Y0P2jY3qYEUY9T
-JJ0AnAqLj3pqFFjXCkczEydV1V0LdzQ3
-=8M+P
------END PGP SIGNATURE-----
+Hardware have memory contraints (alignment, contiguous) so we use CMA drm helpers functions
+to allocate frame buffer.
+
+File naming convention is:
+ - sti_* for IPs drivers
+ - sti_drm_* for drm functions implementation.
+
+Benjamin Gaignard (11):
+  drm: sti: add bindings for DRM driver
+  drm: sti: add VTG driver
+  drm: sti: add VTAC drivers
+  drm: sti: add HDMI driver
+  drm: sti: add HDA driver
+  drm: sti: add TVOut driver
+  drm: sti: add GDP layer
+  drm: sti: add VID layer
+  drm: sti: add Mixer
+  drm: sti: add Compositor
+  drm: sti: Add DRM driver itself
+
+ .../devicetree/bindings/gpu/st,stih4xx.txt         | 189 ++++++
+ drivers/gpu/drm/Kconfig                            |   2 +
+ drivers/gpu/drm/Makefile                           |   1 +
+ drivers/gpu/drm/sti/Kconfig                        |  14 +
+ drivers/gpu/drm/sti/Makefile                       |  19 +
+ drivers/gpu/drm/sti/sti_compositor.c               | 265 ++++++++
+ drivers/gpu/drm/sti/sti_compositor.h               |  90 +++
+ drivers/gpu/drm/sti/sti_drm_connector.c            | 114 ++++
+ drivers/gpu/drm/sti/sti_drm_connector.h            |  55 ++
+ drivers/gpu/drm/sti/sti_drm_crtc.c                 | 436 ++++++++++++
+ drivers/gpu/drm/sti/sti_drm_crtc.h                 |  21 +
+ drivers/gpu/drm/sti/sti_drm_drv.c                  | 229 +++++++
+ drivers/gpu/drm/sti/sti_drm_drv.h                  |  35 +
+ drivers/gpu/drm/sti/sti_drm_encoder.c              | 108 +++
+ drivers/gpu/drm/sti/sti_drm_encoder.h              |  17 +
+ drivers/gpu/drm/sti/sti_drm_plane.c                | 192 ++++++
+ drivers/gpu/drm/sti/sti_drm_plane.h                |  17 +
+ drivers/gpu/drm/sti/sti_gdp.c                      | 512 ++++++++++++++
+ drivers/gpu/drm/sti/sti_gdp.h                      |  73 ++
+ drivers/gpu/drm/sti/sti_hda.c                      | 727 ++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_hdmi.c                     | 748 +++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_hdmi.h                     |  88 +++
+ drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c         | 336 +++++++++
+ drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h         |  14 +
+ drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c         | 211 ++++++
+ drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h         |  14 +
+ drivers/gpu/drm/sti/sti_layer.c                    | 312 +++++++++
+ drivers/gpu/drm/sti/sti_layer.h                    | 114 ++++
+ drivers/gpu/drm/sti/sti_mixer.c                    | 249 +++++++
+ drivers/gpu/drm/sti/sti_mixer.h                    |  52 ++
+ drivers/gpu/drm/sti/sti_tvout.c                    | 687 +++++++++++++++++++
+ drivers/gpu/drm/sti/sti_tvout.h                    |  18 +
+ drivers/gpu/drm/sti/sti_vid.c                      | 145 ++++
+ drivers/gpu/drm/sti/sti_vid.h                      |  33 +
+ drivers/gpu/drm/sti/sti_vtac.c                     | 211 ++++++
+ drivers/gpu/drm/sti/sti_vtg.c                      | 356 ++++++++++
+ drivers/gpu/drm/sti/sti_vtg.h                      |  28 +
+ 37 files changed, 6732 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpu/st,stih4xx.txt
+ create mode 100644 drivers/gpu/drm/sti/Kconfig
+ create mode 100644 drivers/gpu/drm/sti/Makefile
+ create mode 100644 drivers/gpu/drm/sti/sti_compositor.c
+ create mode 100644 drivers/gpu/drm/sti/sti_compositor.h
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.h
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.h
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.h
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.h
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.h
+ create mode 100644 drivers/gpu/drm/sti/sti_gdp.c
+ create mode 100644 drivers/gpu/drm/sti/sti_gdp.h
+ create mode 100644 drivers/gpu/drm/sti/sti_hda.c
+ create mode 100644 drivers/gpu/drm/sti/sti_hdmi.c
+ create mode 100644 drivers/gpu/drm/sti/sti_hdmi.h
+ create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c
+ create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h
+ create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c
+ create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h
+ create mode 100644 drivers/gpu/drm/sti/sti_layer.c
+ create mode 100644 drivers/gpu/drm/sti/sti_layer.h
+ create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
+ create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
+ create mode 100644 drivers/gpu/drm/sti/sti_tvout.c
+ create mode 100644 drivers/gpu/drm/sti/sti_tvout.h
+ create mode 100644 drivers/gpu/drm/sti/sti_vid.c
+ create mode 100644 drivers/gpu/drm/sti/sti_vid.h
+ create mode 100644 drivers/gpu/drm/sti/sti_vtac.c
+ create mode 100644 drivers/gpu/drm/sti/sti_vtg.c
+ create mode 100644 drivers/gpu/drm/sti/sti_vtg.h
+
+-- 
+1.9.1
+
