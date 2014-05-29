@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965197AbaE2Rxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:53:31 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40167 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932993AbaE2Rx3 (ORCPT
+	id S965231AbaE2Rxi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:53:38 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41476 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932993AbaE2Rxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:53:29 -0400
+	Thu, 29 May 2014 13:53:37 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 08/18] staging: rtl8188eu: Remove unused function rtl8188e_sreset_xmit_status_check()
-Date: Thu, 29 May 2014 23:20:48 +0530
-Message-Id: <1401385858-28722-8-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 09/18] staging:rtl8188eu: Remove function rtw_hal_sreset_linked_status_check()
+Date: Thu, 29 May 2014 23:20:49 +0530
+Message-Id: <1401385858-28722-9-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401385858-28722-1-git-send-email-navin.patidar@gmail.com>
 References: <1401385858-28722-1-git-send-email-navin.patidar@gmail.com>
@@ -21,99 +21,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove rtl8188e_sreset_xmit_status_check() and function pointer
-->sreset_xmit_status_check pointing to it.
+rtw_hal_sreset_linked_status_check() is a wrapper to call
+rtl8188e_sreset_linked_status_check(), which doesn't do anything
+useful.
+
+rtl8188e_sreset_linked_status_check() will also be removed later.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c  |    1 -
- drivers/staging/rtl8188eu/hal/rtl8188e_sreset.c    |   35 --------------------
- drivers/staging/rtl8188eu/include/hal_intf.h       |    1 -
- .../staging/rtl8188eu/include/rtl8188e_sreset.h    |    1 -
- 4 files changed, 38 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_mlme_ext.c |    2 --
+ drivers/staging/rtl8188eu/hal/hal_intf.c      |    6 ------
+ drivers/staging/rtl8188eu/include/hal_intf.h  |    1 -
+ 3 files changed, 9 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-index 070b43c..55eaf57 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-@@ -1873,7 +1873,6 @@ void rtl8188e_set_hal_ops(struct hal_ops *pHalFunc)
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
+index f5b49f3..b2a1251 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
+@@ -7549,8 +7549,6 @@ void linked_status_chk(struct adapter *padapter)
+ 	if (padapter->bRxRSSIDisplay)
+ 		_linked_rx_signal_strehgth_display(padapter);
  
- 	pHalFunc->sreset_init_value = &sreset_init_value;
- 	pHalFunc->silentreset = &rtl8188e_silentreset_for_specific_platform;
--	pHalFunc->sreset_xmit_status_check = &rtl8188e_sreset_xmit_status_check;
- 	pHalFunc->sreset_linked_status_check  = &rtl8188e_sreset_linked_status_check;
- 	pHalFunc->sreset_get_wifi_status  = &sreset_get_wifi_status;
+-	rtw_hal_sreset_linked_status_check(padapter);
+-
+ 	if (is_client_associated_to_ap(padapter)) {
+ 		/* linked infrastructure client mode */
  
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_sreset.c b/drivers/staging/rtl8188eu/hal/rtl8188e_sreset.c
-index 047b534..fd114c1 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188e_sreset.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188e_sreset.c
-@@ -26,41 +26,6 @@ void rtl8188e_silentreset_for_specific_platform(struct adapter *padapter)
- {
+diff --git a/drivers/staging/rtl8188eu/hal/hal_intf.c b/drivers/staging/rtl8188eu/hal/hal_intf.c
+index cf03d9c..7499ceb 100644
+--- a/drivers/staging/rtl8188eu/hal/hal_intf.c
++++ b/drivers/staging/rtl8188eu/hal/hal_intf.c
+@@ -380,12 +380,6 @@ void rtw_hal_sreset_reset(struct adapter *adapt)
+ 		adapt->HalFunc.silentreset(adapt);
  }
  
--void rtl8188e_sreset_xmit_status_check(struct adapter *padapter)
+-void rtw_hal_sreset_linked_status_check(struct adapter *adapt)
 -{
--	struct hal_data_8188e	*pHalData = GET_HAL_DATA(padapter);
--	struct sreset_priv *psrtpriv = &pHalData->srestpriv;
--
--	unsigned long current_time;
--	struct xmit_priv	*pxmitpriv = &padapter->xmitpriv;
--	unsigned int diff_time;
--	u32 txdma_status;
--
--	txdma_status = rtw_read32(padapter, REG_TXDMA_STATUS);
--	if (txdma_status != 0x00) {
--		DBG_88E("%s REG_TXDMA_STATUS:0x%08x\n", __func__, txdma_status);
--		rtw_write32(padapter, REG_TXDMA_STATUS, txdma_status);
--		rtl8188e_silentreset_for_specific_platform(padapter);
--	}
--	/* total xmit irp = 4 */
--	current_time = jiffies;
--	if (0 == pxmitpriv->free_xmitbuf_cnt) {
--		diff_time = jiffies_to_msecs(current_time - psrtpriv->last_tx_time);
--
--		if (diff_time > 2000) {
--			if (psrtpriv->last_tx_complete_time == 0) {
--				psrtpriv->last_tx_complete_time = current_time;
--			} else {
--				diff_time = jiffies_to_msecs(current_time - psrtpriv->last_tx_complete_time);
--				if (diff_time > 4000) {
--					DBG_88E("%s tx hang\n", __func__);
--					rtl8188e_silentreset_for_specific_platform(padapter);
--				}
--			}
--		}
--	}
+-	if (adapt->HalFunc.sreset_linked_status_check)
+-		adapt->HalFunc.sreset_linked_status_check(adapt);
 -}
 -
- void rtl8188e_sreset_linked_status_check(struct adapter *padapter)
+ u8   rtw_hal_sreset_get_wifi_status(struct adapter *adapt)
  {
- 	u32 rx_dma_status = 0;
+ 	u8 status = 0;
 diff --git a/drivers/staging/rtl8188eu/include/hal_intf.h b/drivers/staging/rtl8188eu/include/hal_intf.h
-index eb7df0e..85fd521 100644
+index 85fd521..5d67e90 100644
 --- a/drivers/staging/rtl8188eu/include/hal_intf.h
 +++ b/drivers/staging/rtl8188eu/include/hal_intf.h
-@@ -253,7 +253,6 @@ struct hal_ops {
+@@ -367,7 +367,6 @@ void	rtw_hal_antdiv_rssi_compared(struct adapter *padapter,
  
- 	void (*sreset_init_value)(struct adapter *padapter);
- 	void (*silentreset)(struct adapter *padapter);
--	void (*sreset_xmit_status_check)(struct adapter *padapter);
- 	void (*sreset_linked_status_check) (struct adapter *padapter);
- 	u8 (*sreset_get_wifi_status)(struct adapter *padapter);
+ void rtw_hal_sreset_init(struct adapter *padapter);
+ void rtw_hal_sreset_reset(struct adapter *padapter);
+-void rtw_hal_sreset_linked_status_check(struct adapter *padapter);
+ u8   rtw_hal_sreset_get_wifi_status(struct adapter *padapter);
  
-diff --git a/drivers/staging/rtl8188eu/include/rtl8188e_sreset.h b/drivers/staging/rtl8188eu/include/rtl8188e_sreset.h
-index a29e695..d4f0d72 100644
---- a/drivers/staging/rtl8188eu/include/rtl8188e_sreset.h
-+++ b/drivers/staging/rtl8188eu/include/rtl8188e_sreset.h
-@@ -25,7 +25,6 @@
- #include <rtw_sreset.h>
- 
- void rtl8188e_silentreset_for_specific_platform(struct adapter *padapter);
--void rtl8188e_sreset_xmit_status_check(struct adapter *padapter);
- void rtl8188e_sreset_linked_status_check(struct adapter *padapter);
- 
- #endif
+ int rtw_hal_iol_cmd(struct adapter  *adapter, struct xmit_frame *xmit_frame,
 -- 
 1.7.10.4
 
