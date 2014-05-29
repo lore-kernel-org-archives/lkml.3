@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964867AbaE2FKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:10:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58101 "EHLO
+	id S933987AbaE2FLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:11:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58095 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932714AbaE2Efr (ORCPT
+	with ESMTP id S932712AbaE2Efr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:35:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 124/140] net: filter: x86: fix JIT address randomization
-Date: Wed, 28 May 2014 21:34:23 -0700
-Message-Id: <20140529043105.313194436@linuxfoundation.org>
+        Antonio Quartulli <antonio@open-mesh.com>,
+        Simon Wunderlich <simon@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Antonio Quartulli <antonio@meshcoding.com>
+Subject: [PATCH 3.14 123/140] batman-adv: fix removing neigh_ifinfo
+Date: Wed, 28 May 2014 21:34:22 -0700
+Message-Id: <20140529043105.241412897@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -28,57 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Simon Wunderlich <simon@open-mesh.com>
 
-[ Upstream commit 773cd38f40b8834be991dbfed36683acc1dd41ee ]
+[ Upstream commit 709de13f0c532fe9c468c094aff069a725ed57fe ]
 
-bpf_alloc_binary() adds 128 bytes of room to JITed program image
-and rounds it up to the nearest page size. If image size is close
-to page size (like 4000), it is rounded to two pages:
-round_up(4000 + 4 + 128) == 8192
-then 'hole' is computed as 8192 - (4000 + 4) = 4188
-If prandom_u32() % hole selects a number >= PAGE_SIZE - sizeof(*header)
-then kernel will crash during bpf_jit_free():
+When an interface is removed separately, all neighbors need to be
+checked if they have a neigh_ifinfo structure for that particular
+interface. If that is the case, remove that ifinfo so any references to
+a hard interface can be freed.
 
-kernel BUG at arch/x86/mm/pageattr.c:887!
-Call Trace:
- [<ffffffff81037285>] change_page_attr_set_clr+0x135/0x460
- [<ffffffff81694cc0>] ? _raw_spin_unlock_irq+0x30/0x50
- [<ffffffff810378ff>] set_memory_rw+0x2f/0x40
- [<ffffffffa01a0d8d>] bpf_jit_free_deferred+0x2d/0x60
- [<ffffffff8106bf98>] process_one_work+0x1d8/0x6a0
- [<ffffffff8106bf38>] ? process_one_work+0x178/0x6a0
- [<ffffffff8106c90c>] worker_thread+0x11c/0x370
+This is a regression introduced by
+89652331c00f43574515059ecbf262d26d885717
+("batman-adv: split tq information in neigh_node struct")
 
-since bpf_jit_free() does:
-  unsigned long addr = (unsigned long)fp->bpf_func & PAGE_MASK;
-  struct bpf_binary_header *header = (void *)addr;
-to compute start address of 'bpf_binary_header'
-and header->pages will pass junk to:
-  set_memory_rw(addr, header->pages);
-
-Fix it by making sure that &header->image[prandom_u32() % hole] and &header
-are in the same page
-
-Fixes: 314beb9bcabfd ("x86: bpf_jit_comp: secure bpf jit against spraying attacks")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Antonio Quartulli <antonio@open-mesh.com>
+Signed-off-by: Simon Wunderlich <simon@open-mesh.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/x86/net/bpf_jit_comp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/batman-adv/originator.c |   46 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -171,7 +171,7 @@ static struct bpf_binary_header *bpf_all
- 	memset(header, 0xcc, sz); /* fill whole space with int3 instructions */
+--- a/net/batman-adv/originator.c
++++ b/net/batman-adv/originator.c
+@@ -702,6 +702,47 @@ free_orig_node:
+ }
  
- 	header->pages = sz / PAGE_SIZE;
--	hole = sz - (proglen + sizeof(*header));
-+	hole = min(sz - (proglen + sizeof(*header)), PAGE_SIZE - sizeof(*header));
+ /**
++ * batadv_purge_neigh_ifinfo - purge obsolete ifinfo entries from neighbor
++ * @bat_priv: the bat priv with all the soft interface information
++ * @neigh: orig node which is to be checked
++ */
++static void
++batadv_purge_neigh_ifinfo(struct batadv_priv *bat_priv,
++			  struct batadv_neigh_node *neigh)
++{
++	struct batadv_neigh_ifinfo *neigh_ifinfo;
++	struct batadv_hard_iface *if_outgoing;
++	struct hlist_node *node_tmp;
++
++	spin_lock_bh(&neigh->ifinfo_lock);
++
++	/* for all ifinfo objects for this neighinator */
++	hlist_for_each_entry_safe(neigh_ifinfo, node_tmp,
++				  &neigh->ifinfo_list, list) {
++		if_outgoing = neigh_ifinfo->if_outgoing;
++
++		/* always keep the default interface */
++		if (if_outgoing == BATADV_IF_DEFAULT)
++			continue;
++
++		/* don't purge if the interface is not (going) down */
++		if ((if_outgoing->if_status != BATADV_IF_INACTIVE) &&
++		    (if_outgoing->if_status != BATADV_IF_NOT_IN_USE) &&
++		    (if_outgoing->if_status != BATADV_IF_TO_BE_REMOVED))
++			continue;
++
++		batadv_dbg(BATADV_DBG_BATMAN, bat_priv,
++			   "neighbor/ifinfo purge: neighbor %pM, iface: %s\n",
++			   neigh->addr, if_outgoing->net_dev->name);
++
++		hlist_del_rcu(&neigh_ifinfo->list);
++		batadv_neigh_ifinfo_free_ref(neigh_ifinfo);
++	}
++
++	spin_unlock_bh(&neigh->ifinfo_lock);
++}
++
++/**
+  * batadv_purge_orig_ifinfo - purge obsolete ifinfo entries from originator
+  * @bat_priv: the bat priv with all the soft interface information
+  * @orig_node: orig node which is to be checked
+@@ -800,6 +841,11 @@ batadv_purge_orig_neighbors(struct batad
  
- 	/* insert a random number of int3 instructions before BPF code */
- 	*image_ptr = &header->image[prandom_u32() % hole];
+ 			hlist_del_rcu(&neigh_node->list);
+ 			batadv_neigh_node_free_ref(neigh_node);
++		} else {
++			/* only necessary if not the whole neighbor is to be
++			 * deleted, but some interface has been removed.
++			 */
++			batadv_purge_neigh_ifinfo(bat_priv, neigh_node);
+ 		}
+ 	}
+ 
 
 
