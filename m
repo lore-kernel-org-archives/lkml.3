@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934337AbaE2FXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:23:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57889 "EHLO
+	id S934346AbaE2FYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:24:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452AbaE2EfW (ORCPT
+	with ESMTP id S932442AbaE2EfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:22 -0400
+	Thu, 29 May 2014 00:35:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Francois WELLENREITER <f.wellenreiter@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 072/140] gre: dont allow to add the same tunnel twice
-Date: Wed, 28 May 2014 21:33:31 -0700
-Message-Id: <20140529043058.785901228@linuxfoundation.org>
+Subject: [PATCH 3.14 071/140] ipv6: Limit mtu to 65575 bytes
+Date: Wed, 28 May 2014 21:33:30 -0700
+Message-Id: <20140529043058.658989360@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -28,46 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 5a4552752d8f7f4cef1d98775ece7adb7616fde2 ]
+[ Upstream commit 30f78d8ebf7f514801e71b88a10c948275168518 ]
 
-Before the patch, it was possible to add two times the same tunnel:
-ip l a gre1 type gre remote 10.16.0.121 local 10.16.0.249
-ip l a gre2 type gre remote 10.16.0.121 local 10.16.0.249
+Francois reported that setting big mtu on loopback device could prevent
+tcp sessions making progress.
 
-It was possible, because ip_tunnel_newlink() calls ip_tunnel_find() with the
-argument dev->type, which was set only later (when calling ndo_init handler
-in register_netdevice()). Let's set this type in the setup handler, which is
-called before newlink handler.
+We do not support (yet ?) IPv6 Jumbograms and cook corrupted packets.
 
-Introduced by commit c54419321455 ("GRE: Refactor GRE tunneling code.").
+We must limit the IPv6 MTU to (65535 + 40) bytes in theory.
 
-CC: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Tested:
+
+ifconfig lo mtu 70000
+netperf -H ::1
+
+Before patch : Throughput :   0.05 Mbits
+
+After patch : Throughput : 35484 Mbits
+
+Reported-by: Francois WELLENREITER <f.wellenreiter@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_gre.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/ip6_route.h |    5 +++++
+ net/ipv6/route.c        |    5 +++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -463,6 +463,7 @@ static const struct net_device_ops ipgre
- static void ipgre_tunnel_setup(struct net_device *dev)
- {
- 	dev->netdev_ops		= &ipgre_netdev_ops;
-+	dev->type		= ARPHRD_IPGRE;
- 	ip_tunnel_setup(dev, ipgre_net_id);
+--- a/include/net/ip6_route.h
++++ b/include/net/ip6_route.h
+@@ -32,6 +32,11 @@ struct route_info {
+ #define RT6_LOOKUP_F_SRCPREF_PUBLIC	0x00000010
+ #define RT6_LOOKUP_F_SRCPREF_COA	0x00000020
+ 
++/* We do not (yet ?) support IPv6 jumbograms (RFC 2675)
++ * Unlike IPv4, hdr->seg_len doesn't include the IPv6 header
++ */
++#define IP6_MAX_MTU (0xFFFF + sizeof(struct ipv6hdr))
++
+ /*
+  * rt6_srcprefs2flags() and rt6_flags2srcprefs() translate
+  * between IPV6_ADDR_PREFERENCES socket option values
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1342,7 +1342,7 @@ static unsigned int ip6_mtu(const struct
+ 	unsigned int mtu = dst_metric_raw(dst, RTAX_MTU);
+ 
+ 	if (mtu)
+-		return mtu;
++		goto out;
+ 
+ 	mtu = IPV6_MIN_MTU;
+ 
+@@ -1352,7 +1352,8 @@ static unsigned int ip6_mtu(const struct
+ 		mtu = idev->cnf.mtu6;
+ 	rcu_read_unlock();
+ 
+-	return mtu;
++out:
++	return min_t(unsigned int, mtu, IP6_MAX_MTU);
  }
  
-@@ -501,7 +502,6 @@ static int ipgre_tunnel_init(struct net_
- 	memcpy(dev->dev_addr, &iph->saddr, 4);
- 	memcpy(dev->broadcast, &iph->daddr, 4);
- 
--	dev->type		= ARPHRD_IPGRE;
- 	dev->flags		= IFF_NOARP;
- 	dev->priv_flags		&= ~IFF_XMIT_DST_RELEASE;
- 	dev->addr_len		= 4;
+ static struct dst_entry *icmp6_dst_gc_list;
 
 
