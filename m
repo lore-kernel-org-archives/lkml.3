@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609AbaE2TBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:01:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39751 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaE2TBa (ORCPT
+	id S1755856AbaE2TCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:02:31 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57878 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146AbaE2TC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:01:30 -0400
-Message-ID: <53878407.3050409@wwwdotorg.org>
-Date: Thu, 29 May 2014 13:01:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 29 May 2014 15:02:29 -0400
+Date: Thu, 29 May 2014 21:02:27 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: SX1: remove check for CONFIG_SX1_OLD_FLASH
+Message-ID: <20140529190227.GB18230@amd.pavel.ucw.cz>
+References: <1400182902.11786.21.camel@x220>
+ <20140516211231.GF12881@atomide.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/5] efuse driver for Tegra
-References: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140516211231.GF12881@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 06:54 AM, Peter De Schrijver wrote:
-> This driver allows userspace to read the raw efuse data. Its userspace
-> interface is modelled after the sunxi_sid driver which provides similar
-> functionality for some Allwinner SoCs. It has been tested on
-> Tegra20 (ventana), Tegra30 (beaverboard), Tegra114 (dalmore) and
-> Tegra124 (jetson TK1).
-
-> Changes since v4:
+On Fri 2014-05-16 14:12:31, Tony Lindgren wrote:
+> * Paul Bolle <pebolle@tiscali.nl> [140515 12:42]:
+> > A check for CONFIG_SX1_OLD_FLASH was added in v2.6.24. But the related
+> > Kconfig symbol was never part of the tree. So we can remove some dead
+> > code.
 > 
-> * Provide fallback to hardcoded 0x70000800 in case the apbmisc DT node is
->   missing. This is exactly what the current code does and prevents a system
->   crash in that case due to an invalid memory access by tegra_read_chipid()
+> Thanks applying into omap-for-v3.16/board.
 
-Wouldn't it be better to simply return an error?
+Actually... It seems there are two variant of SX1, and this is very
+useful piece of documentation how the _other_ variant looks.
+
+And if someone is hacking linux on sx1, he can probably figure out
+#ifdef in .c file...
+
+IOW adding the config option might be better solution.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
