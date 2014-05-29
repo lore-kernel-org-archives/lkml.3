@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933420AbaE2Gkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:40:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59846 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756066AbaE2Gk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756062AbaE2Gk2 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 29 May 2014 02:40:28 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59921 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932739AbaE2GkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 02:40:24 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
-        <kishon@ti.com>, Dan Murphy <dmurphy@ti.com>
-Subject: [TEMP PATCH v2 17/18] PCI: host: pcie-dra7xx: use reset framework APIs to reset PCIe
-Date: Thu, 29 May 2014 12:08:19 +0530
-Message-ID: <1401345500-20188-18-git-send-email-kishon@ti.com>
+        <kishon@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v2 14/18] ARM: dts: dra7: Add dt data for PCIe PHY
+Date: Thu, 29 May 2014 12:08:16 +0530
+Message-ID: <1401345500-20188-15-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401345500-20188-1-git-send-email-kishon@ti.com>
 References: <1401345500-20188-1-git-send-email-kishon@ti.com>
@@ -24,73 +26,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get reset nodes from dt and use reset framework APIs to reset PCIe.
-This is needed since reset is handled by the SoC.
+Added dt data for PCIe PHY as a child node of ocp2scp3.
+The documention for this node can be found @ ../bindings/phy/ti-phy.txt.
 
-Cc: Dan Murphy <dmurphy@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Kumar Gala <galak@codeaurora.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- Documentation/devicetree/bindings/pci/ti-pci.txt |    4 ++++
- drivers/pci/host/pci-dra7xx.c                    |   10 ++++++++++
- 2 files changed, 14 insertions(+)
+ arch/arm/boot/dts/dra7.dtsi |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/pci/ti-pci.txt b/Documentation/devicetree/bindings/pci/ti-pci.txt
-index d07d2eb..3649c2e 100644
---- a/Documentation/devicetree/bindings/pci/ti-pci.txt
-+++ b/Documentation/devicetree/bindings/pci/ti-pci.txt
-@@ -22,6 +22,8 @@ PCIe Designware Controller
-    num-lanes,
-    interrupt-map-mask,
-    interrupt-map : as specified in ../designware-pcie.txt
-+ - resets: phandle used if reset is handled be soc
-+ - reset-names: name given to the phandle
- 
- Example:
- axi {
-@@ -45,6 +47,8 @@ axi {
- 		ti,hwmods = "pcie1";
- 		phys = <&pcie1_phy>;
- 		phy-names = "pcie-phy0";
-+		resets = <&prm_resets &device_reset>;
-+		reset-names = "reset";
- 		interrupt-map-mask = <0 0 0 7>;
- 		interrupt-map = <0 0 0 1 &pcie_intc 1>,
- 				<0 0 0 2 &pcie_intc 2>,
-diff --git a/drivers/pci/host/pci-dra7xx.c b/drivers/pci/host/pci-dra7xx.c
-index 8fb3a2e..17f5e6a 100644
---- a/drivers/pci/host/pci-dra7xx.c
-+++ b/drivers/pci/host/pci-dra7xx.c
-@@ -22,6 +22,7 @@
- #include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
- #include <linux/resource.h>
-+#include <linux/reset.h>
- #include <linux/types.h>
- 
- #include "pcie-designware.h"
-@@ -332,6 +333,7 @@ static int __init dra7xx_pcie_probe(struct platform_device *pdev)
- 	struct device *dev = &pdev->dev;
- 	struct device_node *np = dev->of_node;
- 	char name[10];
-+	struct reset_control *rstc;
- 
- 	dra7xx = devm_kzalloc(dev, sizeof(*dra7xx), GFP_KERNEL);
- 	if (!dra7xx)
-@@ -355,6 +357,14 @@ static int __init dra7xx_pcie_probe(struct platform_device *pdev)
- 	if (!base)
- 		return -ENOMEM;
- 
-+	rstc = devm_reset_control_get(dev, "reset");
-+	if (IS_ERR(rstc))
-+		return PTR_ERR(rstc);
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 3c7e7f2..eaeccaf 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -912,6 +912,45 @@
+ 				clock-names = "sysclk";
+ 				#phy-cells = <0>;
+ 			};
 +
-+	ret = reset_control_deassert(rstc);
-+	if (ret)
-+		return ret;
++			pcie1_phy: pciephy@4a094000 {
++				compatible = "ti,phy-pipe3-pcie";
++				reg = <0x4A094000 0x80>, /* phy_rx */
++				      <0x4A094400 0x64>; /* phy_tx */
++				reg-names = "phy_rx", "phy_tx";
++				ctrl-module = <&omap_control_pcie1phy>;
++				clocks = <&dpll_pcie_ref_ck>,
++					 <&dpll_pcie_ref_m2ldo_ck>,
++					 <&optfclk_pciephy1_32khz>,
++					 <&optfclk_pciephy1_clk>,
++					 <&optfclk_pciephy1_div_clk>,
++					 <&optfclk_pciephy_div>;
++				clock-names = "dpll_ref", "dpll_ref_m2",
++					      "wkupclk", "refclk",
++					      "div-clk", "phy-div";
++				#phy-cells = <0>;
++				ti,hwmods = "pcie1-phy";
++			};
 +
- 	phy_count = of_property_count_strings(np, "phy-names");
- 	if (phy_count < 0) {
- 		dev_err(dev, "unable to find the strings\n");
++			pcie2_phy: pciephy@4a095000 {
++				compatible = "ti,phy-pipe3-pcie";
++				reg = <0x4A095000 0x80>, /* phy_rx */
++				      <0x4A095400 0x64>; /* phy_tx */
++				reg-names = "phy_rx", "phy_tx";
++				ctrl-module = <&omap_control_pcie1phy>;
++				clocks = <&dpll_pcie_ref_ck>,
++					 <&dpll_pcie_ref_m2ldo_ck>,
++					 <&optfclk_pciephy2_32khz>,
++					 <&optfclk_pciephy2_clk>,
++					 <&optfclk_pciephy2_div_clk>,
++					 <&optfclk_pciephy_div>;
++				clock-names = "dpll_ref", "dpll_ref_m2",
++					      "wkupclk", "refclk",
++					      "div-clk", "phy-div";
++				#phy-cells = <0>;
++				ti,hwmods = "pcie2-phy";
++				status = "disabled";
++			};
+ 		};
+ 
+ 		omap_dwc3_1@48880000 {
 -- 
 1.7.9.5
 
