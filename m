@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201AbaE2EDV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:03:21 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53335 "EHLO
+	id S1756361AbaE2EEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:04:23 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53319 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590AbaE2D6g (ORCPT
+	with ESMTP id S1753182AbaE2D6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 May 2014 23:58:36 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 10/27] perf ui/hist: Add support to accumulated hist stat
-Date: Thu, 29 May 2014 12:58:13 +0900
-Message-Id: <1401335910-16832-11-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 09/27] perf tools: Save callchain info for each cumulative entry
+Date: Thu, 29 May 2014 12:58:12 +0900
+Message-Id: <1401335910-16832-10-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
 References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
@@ -28,16 +28,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print accumulated stat of a hist entry if requested.
-
-To do that, add new HPP_PERCENT_ACC_FNS macro and generate a
-perf_hpp_fmt using it.  The __hpp__sort_acc() function sorts entries
-by accumulated period value.  When accumulated periods of two entries
-are same (i.e. single path callchain) put the caller above since
-accumulation tends to put callers on higher position for obvious
-reason.
-
-Also add "overhead_children" output field to be selected by user.
+When accumulating callchain entry, also save current snapshot of the
+chain so that it can show the rest of the chain.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
@@ -45,233 +37,57 @@ Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c   | 99 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h |  4 ++
- tools/perf/util/sort.c |  1 +
- 3 files changed, 104 insertions(+)
+ tools/perf/util/hist.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 4484f5bd1b14..0ce3e79b2ca7 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -104,6 +104,18 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	return ret;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index bf03db528db6..c6f5f5251aad 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -738,6 +738,14 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
+ 	iter->he = he;
+ 	he_cache[iter->curr++] = he;
+ 
++	callchain_append(he->callchain, &callchain_cursor, sample->period);
++
++	/*
++	 * We need to re-initialize the cursor since callchain_append()
++	 * advanced the cursor to the end.
++	 */
++	callchain_cursor_commit(&callchain_cursor);
++
+ 	/*
+ 	 * The iter->he will be over-written after ->add_next_entry()
+ 	 * called so inc stats for the original entry now.
+@@ -760,8 +768,6 @@ iter_next_cumulative_entry(struct hist_entry_iter *iter,
+ 	if (node == NULL)
+ 		return 0;
+ 
+-	callchain_cursor_advance(&callchain_cursor);
+-
+ 	return fill_callchain_info(al, node, iter->hide_unresolved);
  }
  
-+int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
-+		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_snprint_fn print_fn, bool fmt_percent)
-+{
-+	if (!symbol_conf.cumulate_callchain) {
-+		return snprintf(hpp->buf, hpp->size, "%*s",
-+				fmt_percent ? 8 : 12, "N/A");
-+	}
+@@ -785,6 +791,11 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
+ 		.parent = iter->parent,
+ 	};
+ 	int i;
++	struct callchain_cursor cursor;
 +
-+	return __hpp__fmt(hpp, he, get_field, fmt, print_fn, fmt_percent);
-+}
++	callchain_cursor_snapshot(&cursor, &callchain_cursor);
 +
- static int field_cmp(u64 field_a, u64 field_b)
- {
- 	if (field_a > field_b)
-@@ -160,6 +172,24 @@ out:
- 	return ret;
++	callchain_cursor_advance(&callchain_cursor);
+ 
+ 	/*
+ 	 * Check if there's duplicate entries in the callchain.
+@@ -804,6 +815,7 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
+ 	iter->he = he;
+ 	he_cache[iter->curr++] = he;
+ 
++	callchain_append(he->callchain, &cursor, sample->period);
+ 	return 0;
  }
  
-+static int __hpp__sort_acc(struct hist_entry *a, struct hist_entry *b,
-+			   hpp_field_fn get_field)
-+{
-+	s64 ret = 0;
-+
-+	if (symbol_conf.cumulate_callchain) {
-+		/*
-+		 * Put caller above callee when they have equal period.
-+		 */
-+		ret = field_cmp(get_field(a), get_field(b));
-+		if (ret)
-+			return ret;
-+
-+		ret = b->callchain->max_depth - a->callchain->max_depth;
-+	}
-+	return ret;
-+}
-+
- #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
- static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
- 			       struct perf_hpp *hpp,			\
-@@ -242,6 +272,34 @@ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
- 	return __hpp__sort(a, b, he_get_##_field);				\
- }
- 
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+			      hpp_color_scnprintf, true);			\
-+}
-+
-+#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, fmt,		\
-+			      hpp_entry_scnprintf, true);			\
-+}
-+
-+#define __HPP_SORT_ACC_FN(_type, _field)					\
-+static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
-+{										\
-+	return __hpp__sort_acc(a, b, he_get_acc_##_field);			\
-+}
-+
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
- static u64 he_get_raw_##_field(struct hist_entry *he)				\
- {										\
-@@ -270,18 +328,27 @@ __HPP_COLOR_PERCENT_FN(_type, _field)					\
- __HPP_ENTRY_PERCENT_FN(_type, _field)					\
- __HPP_SORT_FN(_type, _field)
- 
-+#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
-+__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-+__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-+__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_SORT_ACC_FN(_type, _field)
-+
- #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_ENTRY_RAW_FN(_type, _field)					\
- __HPP_SORT_RAW_FN(_type, _field)
- 
-+__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
- 
- HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
- HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
- HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
- HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
- HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
-+HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period, 8, 8)
- 
- HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
- HPP_RAW_FNS(period, "Period", period, 12, 12)
-@@ -303,6 +370,17 @@ static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
- 		.sort	= hpp__sort_ ## _name,		\
- 	}
- 
-+#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
-+	{						\
-+		.header	= hpp__header_ ## _name,	\
-+		.width	= hpp__width_ ## _name,		\
-+		.color	= hpp__color_ ## _name,		\
-+		.entry	= hpp__entry_ ## _name,		\
-+		.cmp	= hpp__nop_cmp,			\
-+		.collapse = hpp__nop_cmp,		\
-+		.sort	= hpp__sort_ ## _name,		\
-+	}
-+
- #define HPP__PRINT_FNS(_name)				\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
-@@ -319,6 +397,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	HPP__COLOR_PRINT_FNS(overhead_us),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_us),
-+	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
- 	HPP__PRINT_FNS(samples),
- 	HPP__PRINT_FNS(period)
- };
-@@ -328,16 +407,23 @@ LIST_HEAD(perf_hpp__sort_list);
- 
- 
- #undef HPP__COLOR_PRINT_FNS
-+#undef HPP__COLOR_ACC_PRINT_FNS
- #undef HPP__PRINT_FNS
- 
- #undef HPP_PERCENT_FNS
-+#undef HPP_PERCENT_ACC_FNS
- #undef HPP_RAW_FNS
- 
- #undef __HPP_HEADER_FN
- #undef __HPP_WIDTH_FN
- #undef __HPP_COLOR_PERCENT_FN
- #undef __HPP_ENTRY_PERCENT_FN
-+#undef __HPP_COLOR_ACC_PERCENT_FN
-+#undef __HPP_ENTRY_ACC_PERCENT_FN
- #undef __HPP_ENTRY_RAW_FN
-+#undef __HPP_SORT_FN
-+#undef __HPP_SORT_ACC_FN
-+#undef __HPP_SORT_RAW_FN
- 
- 
- void perf_hpp__init(void)
-@@ -361,6 +447,13 @@ void perf_hpp__init(void)
- 	if (field_order)
- 		return;
- 
-+	if (symbol_conf.cumulate_callchain) {
-+		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
-+
-+		perf_hpp__format[PERF_HPP__OVERHEAD].header =
-+						hpp__header_overhead_self;
-+	}
-+
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 
- 	if (symbol_conf.show_cpu_utilization) {
-@@ -383,6 +476,12 @@ void perf_hpp__init(void)
- 	list = &perf_hpp__format[PERF_HPP__OVERHEAD].sort_list;
- 	if (list_empty(list))
- 		list_add(list, &perf_hpp__sort_list);
-+
-+	if (symbol_conf.cumulate_callchain) {
-+		list = &perf_hpp__format[PERF_HPP__OVERHEAD_ACC].sort_list;
-+		if (list_empty(list))
-+			list_add(list, &perf_hpp__sort_list);
-+	}
- }
- 
- void perf_hpp__column_register(struct perf_hpp_fmt *format)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 78409f95d012..efd73e489027 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -228,6 +228,7 @@ enum {
- 	PERF_HPP__OVERHEAD_US,
- 	PERF_HPP__OVERHEAD_GUEST_SYS,
- 	PERF_HPP__OVERHEAD_GUEST_US,
-+	PERF_HPP__OVERHEAD_ACC,
- 	PERF_HPP__SAMPLES,
- 	PERF_HPP__PERIOD,
- 
-@@ -254,6 +255,9 @@ typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	       hpp_field_fn get_field, const char *fmt,
- 	       hpp_snprint_fn print_fn, bool fmt_percent);
-+int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
-+		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_snprint_fn print_fn, bool fmt_percent);
- 
- static inline void advance_hpp(struct perf_hpp *hpp, int inc)
- {
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 901b9bece2ee..9da8931d2394 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1061,6 +1061,7 @@ static struct hpp_dimension hpp_sort_dimensions[] = {
- 	DIM(PERF_HPP__OVERHEAD_US, "overhead_us"),
- 	DIM(PERF_HPP__OVERHEAD_GUEST_SYS, "overhead_guest_sys"),
- 	DIM(PERF_HPP__OVERHEAD_GUEST_US, "overhead_guest_us"),
-+	DIM(PERF_HPP__OVERHEAD_ACC, "overhead_children"),
- 	DIM(PERF_HPP__SAMPLES, "sample"),
- 	DIM(PERF_HPP__PERIOD, "period"),
- };
 -- 
 1.9.2
 
