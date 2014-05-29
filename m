@@ -1,59 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948AbaE2Duq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 23:50:46 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:42916 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaE2Dup (ORCPT
+	id S1755967AbaE2Dve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 23:51:34 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:65099 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755952AbaE2Dvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 23:50:45 -0400
-Date: Wed, 28 May 2014 22:50:41 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] mm/zswap : NUMA aware allocation for zswap_dstmem
-Message-ID: <20140529035041.GB18063@cerebellum.variantweb.net>
-References: <1401209749.5367.245.camel@edumazet-glaptop2.roam.corp.google.com>
+	Wed, 28 May 2014 23:51:33 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 29 May 2014 12:52:05 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au, mst@redhat.com,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [PATCH 1/2] ftrace: print stack usage right before Oops
+Message-ID: <20140529035205.GD10092@bbox>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+ <20140528121832.747aaf75@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401209749.5367.245.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140528121832.747aaf75@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 09:55:49AM -0700, Eric Dumazet wrote:
-> From: Eric Dumazet <edumazet@google.com>
+On Wed, May 28, 2014 at 12:18:32PM -0400, Steven Rostedt wrote:
+> On Wed, 28 May 2014 15:53:58 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
 > 
-> zswap_dstmem is a percpu block of memory, which should
-> be allocated using kmalloc_node(), to get better NUMA
-> locality.
+> > While I played with my own feature(ex, something on the way to reclaim),
+> > kernel went to oops easily. I guessed reason would be stack overflow
+> > and wanted to prove it.
+> > 
+> > I found stack tracer which would be very useful for me but kernel went
+> > oops before my user program gather the information via
+> > "watch cat /sys/kernel/debug/tracing/stack_trace" so I couldn't get an
+> > stack usage of each functions.
+> > 
+> > What I want was that emit the kernel stack usage when kernel goes oops.
+> > 
+> > This patch records callstack of max stack usage into ftrace buffer
+> > right before Oops and print that information with ftrace_dump_on_oops.
+> > At last, I can find a culprit. :)
+> > 
 > 
-> Without it, all the blocks are allocated from a single node.
-> 
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> This is not dependent on patch 2/2, nor is 2/2 dependent on this patch,
+> I'll review this as if 2/2 does not exist.
 
-Acked-by: Seth Jennings <sjennings@variantweb.net>
+Yeb, Thanks!
 
-> ---
->  mm/zswap.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/zswap.c b/mm/zswap.c
-> index aeaef0fb5624..008388fe7b0f 100644
-> --- a/mm/zswap.c
-> +++ b/mm/zswap.c
-> @@ -347,7 +347,7 @@ static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
->  			return NOTIFY_BAD;
->  		}
->  		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
-> -		dst = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
-> +		dst = kmalloc_node(PAGE_SIZE * 2, GFP_KERNEL, cpu_to_node(cpu));
->  		if (!dst) {
->  			pr_err("can't allocate compressor buffer\n");
->  			crypto_free_comp(tfm);
 > 
 > 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  kernel/trace/trace_stack.c | 32 ++++++++++++++++++++++++++++++--
+> >  1 file changed, 30 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+> > index 5aa9a5b9b6e2..5eb88e60bc5e 100644
+> > --- a/kernel/trace/trace_stack.c
+> > +++ b/kernel/trace/trace_stack.c
+> > @@ -51,6 +51,30 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
+> >  int stack_tracer_enabled;
+> >  static int last_stack_tracer_enabled;
+> >  
+> > +static inline void print_max_stack(void)
+> > +{
+> > +	long i;
+> > +	int size;
+> > +
+> > +	trace_printk("        Depth    Size   Location"
+> > +			   "    (%d entries)\n"
+> 
+> Please do not break strings just to satisfy that silly 80 character
+> limit. Even Linus Torvalds said that's pretty stupid.
+
+I just copied existing code from trace_stack.c.
+Okay, I will fix. :)
+
+> 
+> Also, do not use trace_printk(). It is not made to be included in a
+> production kernel. It reserves special buffers to make it as fast as
+> possible, and those buffers should not be created in production
+> systems. In fact, I will probably add for 3.16 a big warning message
+> when trace_printk() is used.
+> 
+> Since this is a bug, why not just use printk() instead?
+
+Thanks for the info. I will use printk(KERN_EMERG).
+
+> 
+> BTW, wouldn't this this function crash as well if the stack is already
+> bad?
+
+It wasn't crashed until code has data from corrupted threadinfo.
+
+> 
+> -- Steve
+> 
+> > +			   "        -----    ----   --------\n",
+> > +			   max_stack_trace.nr_entries - 1);
+> > +
+> > +	for (i = 0; i < max_stack_trace.nr_entries; i++) {
+> > +		if (stack_dump_trace[i] == ULONG_MAX)
+> > +			break;
+> > +		if (i+1 == max_stack_trace.nr_entries ||
+> > +				stack_dump_trace[i+1] == ULONG_MAX)
+> > +			size = stack_dump_index[i];
+> > +		else
+> > +			size = stack_dump_index[i] - stack_dump_index[i+1];
+> > +
+> > +		trace_printk("%3ld) %8d   %5d   %pS\n", i, stack_dump_index[i],
+> > +				size, (void *)stack_dump_trace[i]);
+> > +	}
+> > +}
+> > +
+> >  static inline void
+> >  check_stack(unsigned long ip, unsigned long *stack)
+> >  {
+> > @@ -149,8 +173,12 @@ check_stack(unsigned long ip, unsigned long *stack)
+> >  			i++;
+> >  	}
+> >  
+> > -	BUG_ON(current != &init_task &&
+> > -		*(end_of_stack(current)) != STACK_END_MAGIC);
+> > +	if ((current != &init_task &&
+> > +		*(end_of_stack(current)) != STACK_END_MAGIC)) {
+> > +		print_max_stack();
+> > +		BUG();
+> > +	}
+> > +
+> >   out:
+> >  	arch_spin_unlock(&max_stack_lock);
+> >  	local_irq_restore(flags);
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
