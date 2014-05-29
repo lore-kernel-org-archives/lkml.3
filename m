@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639AbaE2IJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:09:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43081 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756330AbaE2IJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:09:52 -0400
-Date: Thu, 29 May 2014 10:09:48 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Petr Mladek <pmladek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Dave Anderson <anderson@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kay Sievers <kay@vrfy.org>, Michal Hocko <mhocko@suse.cz>,
-        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
-In-Reply-To: <20140529000909.GC6507@localhost.localdomain>
-Message-ID: <alpine.LNX.2.00.1405290959270.17241@pobox.suse.cz>
-References: <1399626665-29817-1-git-send-email-pmladek@suse.cz> <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz> <20140529000909.GC6507@localhost.localdomain>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756281AbaE2IJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:09:46 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:50958 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741AbaE2IJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 04:09:43 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <5386EB3E.5090007@lge.com>
+Date: Thu, 29 May 2014 17:09:34 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] CMA: aggressively allocate the pages on cma reserved
+ memory when not used
+References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com> <1401260672-28339-3-git-send-email-iamjoonsoo.kim@lge.com> <5386E0CA.5040201@lge.com> <20140529074847.GA7554@js1304-P5Q-DELUXE>
+In-Reply-To: <20140529074847.GA7554@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014, Frederic Weisbecker wrote:
 
-> > I am rather surprised that this patchset hasn't received a single review 
-> > comment for 3 weeks.
-> > 
-> > Let me point out that the issues Petr is talking about in the cover letter 
-> > are real -- we've actually seen the lockups triggered by RCU stall 
-> > detector trying to dump stacks on all CPUs, and hard-locking machine up 
-> > while doing so.
-> > 
-> > So this really needs to be solved.
-> 
-> The lack of review may be partly due to a not very appealing changestat 
-> on an old codebase that is already unpopular:
-> 
->  Documentation/kernel-parameters.txt |   19 +-
->  kernel/printk/printk.c              | 1218 +++++++++++++++++++++++++----------
->  2 files changed, 878 insertions(+), 359 deletions(-)
-> 
-> 
-> Your patches look clean and pretty nice actually. They must be seriously 
-> considered if we want to keep the current locked ring buffer design and 
-> extend it to multiple per context buffers. But I wonder if it's worth to 
-> continue that way with the printk ancient design.
-> 
-> If it takes more than 1000 line changes (including 500 added) to make it 
-> finally work correctly with NMIs by working around its fundamental 
-> flaws, shouldn't we rather redesign it to use a lockless ring buffer 
-> like ftrace or perf ones?
+>>> +
+>>>    /*
+>>>     * Do the hard work of removing an element from the buddy allocator.
+>>>     * Call me with the zone->lock already held.
+>>> @@ -1143,10 +1223,15 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+>>>    static struct page *__rmqueue(struct zone *zone, unsigned int order,
+>>>    						int migratetype)
+>>>    {
+>>> -	struct page *page;
+>>> +	struct page *page = NULL;
+>>> +
+>>> +	if (IS_ENABLED(CONFIG_CMA) &&
+>>
+>> You might know that CONFIG_CMA is enabled and there is no CMA memory, because CONFIG_CMA_SIZE_MBYTES can be zero.
+>> Is IS_ENABLED(CONFIG_CMA) alright in that case?
+>
+> next line checks whether zone->managed_cma_pages is positive or not.
+> If there is no CMA memory, zone->managed_cma_pages will be zero and
+> we will skip to call __rmqueue_cma().
 
-Yeah, printk() has grown over years to a stinking pile of you-know-what, 
-no argument to that.
+Is IS_ENABLED(CONFIG_CMA) necessary?
+What about if (migratetype == MIGRATE_MOVABLE && zone->managed_cma_pages) ?
 
-I also agree that performing a massive rewrite, which will make it use a 
-lockless buffer, and therefore ultimately solve all its problems 
-(scheduler deadlocks, NMI deadlocks, xtime_lock deadlocks) at once, is 
-necessary in the long run.
-
-On the other hand, I am completely sure that the diffstat for such rewrite 
-is going to be much more scary :)
-
-This is not adding fancy features to printk(), where we really should be 
-saying no; horrible commits like 7ff9554bb5 is exactly something that 
-should be pushed against *heavily*. But bugfixes for hard machine lockups 
-are a completely different story to me (until we have a whole new printk() 
-buffer handling implementation).
-
--- 
-Jiri Kosina
-SUSE Labs
+>
+> Thanks for review!!!
+>
+> Thanks.
+>
+>
