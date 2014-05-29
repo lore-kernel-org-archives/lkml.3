@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409AbaE2EnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:43:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58689 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933285AbaE2Eit (ORCPT
+	id S964780AbaE2En0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:43:26 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:62602 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932808AbaE2EnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:49 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 73/86] net: qmi_wwan: add TP-LINK MA260
-Date: Wed, 28 May 2014 21:37:48 -0700
-Message-Id: <20140529043523.291065506@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
-In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
-References: <20140529043513.451722422@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 29 May 2014 00:43:22 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 2/2] perf script: handle the num array type in python properly
+References: <1401207274-8170-1-git-send-email-bigeasy@linutronix.de>
+	<1401207274-8170-2-git-send-email-bigeasy@linutronix.de>
+Date: Thu, 29 May 2014 13:43:20 +0900
+In-Reply-To: <1401207274-8170-2-git-send-email-bigeasy@linutronix.de>
+	(Sebastian Andrzej Siewior's message of "Tue, 27 May 2014 18:14:34
+	+0200")
+Message-ID: <87d2exgpp3.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 27 May 2014 18:14:34 +0200, Sebastian Andrzej Siewior wrote:
+> The raw_syscalls:sys_enter tracer for instance passes has one argument
+> named 'arg' which is an array of 6 integers. Right the python scripts
+> gets only 0 passed as an argument. The reason is that
+> pevent_read_number() can not handle data types of 48 and returns always
+> 0.
+> This patch changes this by passing num array as list of nums which fit
+> the description. As a result python will now see a list named arg which
+> contains 6 (integer) items.
 
-------------------
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+But this requires a change in generation time as I faced a type error
+when try to print an array argument as number.  I'll post a separate
+patch for this.
 
-[ Upstream commit d0b5e516298fba30774e2df22cfbd00ecb09c298 ]
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/usb/qmi_wwan.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -712,6 +712,7 @@ static const struct usb_device_id produc
- 	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
- 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
-+	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x1e2d, 0x12d1, 4)},	/* Cinterion PLxx */
- 
-
-
+Thanks,
+Namhyung
