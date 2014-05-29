@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869AbaE2Pvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:51:54 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52242 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757650AbaE2Pvx (ORCPT
+	id S965173AbaE2Pzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:55:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57032 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965074AbaE2Pzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:51:53 -0400
-X-Originating-IP: 50.43.32.211
-Date: Thu, 29 May 2014 08:51:47 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH V2 3/3] lib/debugobjects.c: convert printk(KERN_DEBUG to
- pr_debug
-Message-ID: <20140529155147.GC31286@thin>
-References: <20140529092532.850a410f6df7b3ae57726a41@skynet.be>
+	Thu, 29 May 2014 11:55:39 -0400
+Message-ID: <53875876.2020001@wwwdotorg.org>
+Date: Thu, 29 May 2014 09:55:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529092532.850a410f6df7b3ae57726a41@skynet.be>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Kevin Hilman <khilman@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org
+CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linaro-kernel@lists.linaro.org, Nicolas Pitre <nico@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Michal Marek <mmarek@suse.cz>,
+        "open list:KERNEL BUILD + fi..." <linux-kbuild@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scripts/dtc: pad DTBs to facilitate later modification
+References: <1400888507-11637-1-git-send-email-khilman@linaro.org>
+In-Reply-To: <1400888507-11637-1-git-send-email-khilman@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 09:25:32AM +0200, Fabian Frederick wrote:
-> Direct conversion of one KERN_DEBUG message without DEBUG definition
-> (suggested by Josh Triplett)
+On 05/23/2014 05:41 PM, Kevin Hilman wrote:
+> By default, add some padding to the DT blobs to facilitate later
+> patching.
 > 
-> That message will now be disabled by default.
-> (see Documentation/CodingStyle Chapter 13)
+> An example need for DTB patching is the need to modifiy the command
+> line on platforms where ATAGS are not (or cannot) be used to pass the
+> commandline.  For example, we do not support a big-endian kernel
+> reading ATAGS from a little-endian u-boot, so the only way to pass a
+> command line in the DT.
 > 
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> Also, without ATAG support (or if u-boot was built without
+> CONFIG_INITRD_TAG) the only way to pass an initrd is by adding an
+> initrd= option to command line (in the DT).
+> 
+> Therefore, to facilitate adding to the DT command line directly in the
+> DTB, add some padding.
+> 
+> Cc: Nicolas Pitre <nico@linaro.org>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+> I kinda pulled 64 bytes out of the air here since it's enough to add
+> some common things to the commandline like debug, earlyprink
+> initrd=<addr>,<size>, etc., but I'm certainlly not opposed to more
+> padding.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Conceptually,
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
->  lib/debugobjects.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-> index b628247..547f7f9 100644
-> --- a/lib/debugobjects.c
-> +++ b/lib/debugobjects.c
-> @@ -1061,8 +1061,8 @@ static int __init debug_objects_replace_static_objects(void)
->  	}
->  	local_irq_enable();
->  
-> -	printk(KERN_DEBUG "ODEBUG: %d of %d active objects replaced\n", cnt,
-> -	       obj_pool_used);
-> +	pr_debug("%d of %d active objects replaced\n",
-> +		 cnt, obj_pool_used);
->  	return 0;
->  free:
->  	hlist_for_each_entry_safe(obj, tmp, &objects, node) {
-> -- 
-> 1.9.1
+But I would expect a pad of something like 4KB to be more future-proof.
+U-Boot appears to use 4KB on ARM at least:
+
+./arch/arm/dts/Makefile:37:DTC_FLAGS += -R 4 -p 0x1000
