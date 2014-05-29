@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934500AbaE2F2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:28:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57814 "EHLO
+	id S1756336AbaE2EfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:35:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351AbaE2EfL (ORCPT
+	with ESMTP id S1756283AbaE2EfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:11 -0400
+	Thu, 29 May 2014 00:35:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 051/140] serial: omap: Fix missing pm_runtime_resume handling by simplifying code
-Date: Wed, 28 May 2014 21:33:10 -0700
-Message-Id: <20140529043055.989714164@linuxfoundation.org>
+        Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 035/140] mm/hugetlb.c: add cond_resched_lock() in return_unused_surplus_pages()
+Date: Wed, 28 May 2014 21:32:54 -0700
+Message-Id: <20140529043053.898044123@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -26,121 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
 
-commit d758c9c1b36b4d9a141c2146c70398d756167ed1 upstream.
+commit 7848a4bf51b34f41fcc9bd77e837126d99ae84e3 upstream.
 
-The lack of pm_runtime_resume handling for the device state leads into
-device wake-up interrupts not working after a while for runtime PM.
+soft lockup in freeing gigantic hugepage fixed in commit 55f67141a892 "mm:
+hugetlb: fix softlockup when a large number of hugepages are freed." can
+happen in return_unused_surplus_pages(), so let's fix it.
 
-Also, serial-omap is confused about the use of device_may_wakeup.
-The checks for device_may_wakeup should only be done for suspend and
-resume, not for pm_runtime_suspend and pm_runtime_resume. The wake-up
-events for PM runtime should always be enabled.
-
-The lack of pm_runtime_resume handling leads into device wake-up
-interrupts not working after a while for runtime PM.
-
-Rather than try to patch over the issue of adding complex tests to
-the pm_runtime_resume, let's fix the issues properly:
-
-1. Make serial_omap_enable_wakeup deal with all internal PM state
-   handling so we don't need to test for up->wakeups_enabled elsewhere.
-
-   Later on once omap3 boots in device tree only mode we can also
-   remove the up->wakeups_enabled flag and rely on the wake-up
-   interrupt enable/disable state alone.
-
-2. Do the device_may_wakeup checks in suspend and resume only,
-   for runtime PM the wake-up events need to be always enabled.
-
-3. Finally just call serial_omap_enable_wakeup and make sure we
-   call it also in pm_runtime_resume.
-
-4. Note that we also have to use disable_irq_nosync as serial_omap_irq
-   calls pm_runtime_get_sync.
-
-Fixes: 2a0b965cfb6e (serial: omap: Add support for optional wake-up)
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/omap-serial.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ mm/hugetlb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -225,14 +225,19 @@ static inline void serial_omap_enable_wa
- 	if (enable)
- 		enable_irq(up->wakeirq);
- 	else
--		disable_irq(up->wakeirq);
-+		disable_irq_nosync(up->wakeirq);
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1134,6 +1134,7 @@ static void return_unused_surplus_pages(
+ 	while (nr_pages--) {
+ 		if (!free_pool_huge_page(h, &node_states[N_MEMORY], 1))
+ 			break;
++		cond_resched_lock(&hugetlb_lock);
+ 	}
  }
  
- static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- {
- 	struct omap_uart_port_info *pdata = dev_get_platdata(up->dev);
- 
-+	if (enable == up->wakeups_enabled)
-+		return;
-+
- 	serial_omap_enable_wakeirq(up, enable);
-+	up->wakeups_enabled = enable;
-+
- 	if (!pdata || !pdata->enable_wakeup)
- 		return;
- 
-@@ -1488,6 +1493,11 @@ static int serial_omap_suspend(struct de
- 	uart_suspend_port(&serial_omap_reg, &up->port);
- 	flush_work(&up->qos_work);
- 
-+	if (device_may_wakeup(dev))
-+		serial_omap_enable_wakeup(up, true);
-+	else
-+		serial_omap_enable_wakeup(up, false);
-+
- 	return 0;
- }
- 
-@@ -1495,6 +1505,9 @@ static int serial_omap_resume(struct dev
- {
- 	struct uart_omap_port *up = dev_get_drvdata(dev);
- 
-+	if (device_may_wakeup(dev))
-+		serial_omap_enable_wakeup(up, false);
-+
- 	uart_resume_port(&serial_omap_reg, &up->port);
- 
- 	return 0;
-@@ -1870,17 +1883,7 @@ static int serial_omap_runtime_suspend(s
- 
- 	up->context_loss_cnt = serial_omap_get_context_loss_count(up);
- 
--	if (device_may_wakeup(dev)) {
--		if (!up->wakeups_enabled) {
--			serial_omap_enable_wakeup(up, true);
--			up->wakeups_enabled = true;
--		}
--	} else {
--		if (up->wakeups_enabled) {
--			serial_omap_enable_wakeup(up, false);
--			up->wakeups_enabled = false;
--		}
--	}
-+	serial_omap_enable_wakeup(up, true);
- 
- 	up->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
- 	schedule_work(&up->qos_work);
-@@ -1894,6 +1897,8 @@ static int serial_omap_runtime_resume(st
- 
- 	int loss_cnt = serial_omap_get_context_loss_count(up);
- 
-+	serial_omap_enable_wakeup(up, false);
-+
- 	if (loss_cnt < 0) {
- 		dev_dbg(dev, "serial_omap_get_context_loss_count failed : %d\n",
- 			loss_cnt);
 
 
