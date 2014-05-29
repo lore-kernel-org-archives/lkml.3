@@ -1,199 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933212AbaE2V0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:26:08 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:58243 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738AbaE2V0F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:26:05 -0400
-Message-ID: <5387A5E7.5040905@linaro.org>
-Date: Thu, 29 May 2014 22:25:59 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Bjorn Andersson <bjorn@kryo.se>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT binding
-References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>	<1401211721-19712-2-git-send-email-bjorn.andersson@sonymobile.com>	<53875E17.6010406@linaro.org> <CAJAp7Ogi8s+_HHUA0zt3dM6ssDHxeQ1xNFvvO7AbSyz9o6n+9w@mail.gmail.com>
-In-Reply-To: <CAJAp7Ogi8s+_HHUA0zt3dM6ssDHxeQ1xNFvvO7AbSyz9o6n+9w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S933161AbaE2VZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:25:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18831 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932845AbaE2VYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 17:24:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,936,1392192000"; 
+   d="scan'208";a="519900291"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: [PATCH char-misc-next v2 7/8] misc: mic: add dma support in card driver
+Date: Thu, 29 May 2014 14:24:04 -0700
+Message-Id: <1fa90e028af4b72fe86844338b758c54a3bed57d.1401397315.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1401397315.git.sudeep.dutt@intel.com>
+References: <cover.1401397315.git.sudeep.dutt@intel.com>
+In-Reply-To: <cover.1401397315.git.sudeep.dutt@intel.com>
+References: <cover.1401397315.git.sudeep.dutt@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Siva Yerramreddy <yshivakrishna@gmail.com>
 
+This patch adds a dma device on the mic virtual bus
 
-On 29/05/14 19:38, Bjorn Andersson wrote:
-> On Thu, May 29, 2014 at 9:19 AM, Srinivas Kandagatla
-> <srinivas.kandagatla@linaro.org> wrote:
->>> +- reg:
->>> +       Usage: required
->>> +       Value type: <prop-encoded-array>
->>> +       Definition: two entries specifying the RPM's message ram and ipc
->>> register
->>> +
->>> +- reg-names:
->>> +       Usage: required
->>> +       Value type: <string-array>
->>> +       Definition: must contain the following, in order:
->>> +                   "msg_ram"
->>> +                   "ipc"
->>
->>
->> +1 for kumar's comment.
->>
->> cant enforce the order here. should fix it in the driver.
->>
->
-> Yes I can, this is as decided by the devicetree maintainers. The order
-> of e.g. reg and interrupts must be defined.
->
-Does not make sense. Unless Am missing something obvious.
-Having reg-names/interrupt-names would give driver flexibility to get 
-the resources by name, as long as the order of reg and reg-names match.
+Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
+Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+---
+ drivers/misc/mic/Kconfig           |  2 +-
+ drivers/misc/mic/card/mic_device.h |  8 ++++--
+ drivers/misc/mic/card/mic_x100.c   | 55 +++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 61 insertions(+), 4 deletions(-)
 
-So the order of reg is really not really necessary. Unless the driver is 
-coded to access it via index.
+diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
+index bf76313..cc4eef0 100644
+--- a/drivers/misc/mic/Kconfig
++++ b/drivers/misc/mic/Kconfig
+@@ -39,7 +39,7 @@ comment "Intel MIC Card Driver"
+ 
+ config INTEL_MIC_CARD
+ 	tristate "Intel MIC Card Driver"
+-	depends on 64BIT && X86
++	depends on 64BIT && X86 && INTEL_MIC_BUS
+ 	select VIRTIO
+ 	help
+ 	  This enables card driver support for the Intel Many Integrated
+diff --git a/drivers/misc/mic/card/mic_device.h b/drivers/misc/mic/card/mic_device.h
+index e12a0c2..844be8f 100644
+--- a/drivers/misc/mic/card/mic_device.h
++++ b/drivers/misc/mic/card/mic_device.h
+@@ -31,6 +31,7 @@
+ #include <linux/io.h>
+ #include <linux/irqreturn.h>
+ #include <linux/interrupt.h>
++#include <linux/mic_bus.h>
+ 
+ /**
+  * struct mic_intr_info - Contains h/w specific interrupt sources info
+@@ -71,6 +72,7 @@ struct mic_device {
+  * @hotplug_work: Hot plug work for adding/removing virtio devices.
+  * @irq_info: The OS specific irq information
+  * @intr_info: H/W specific interrupt information.
++ * @dma_mbdev: dma device on the MIC virtual bus.
+  */
+ struct mic_driver {
+ 	char name[20];
+@@ -81,6 +83,7 @@ struct mic_driver {
+ 	struct work_struct hotplug_work;
+ 	struct mic_irq_info irq_info;
+ 	struct mic_intr_info intr_info;
++	struct mbus_device *dma_mbdev;
+ };
+ 
+ /**
+@@ -117,8 +120,9 @@ mic_mmio_write(struct mic_mw *mw, u32 val, u32 offset)
+ int mic_driver_init(struct mic_driver *mdrv);
+ void mic_driver_uninit(struct mic_driver *mdrv);
+ int mic_next_card_db(void);
+-struct mic_irq *mic_request_card_irq(irq_handler_t handler,
+-	irq_handler_t thread_fn, const char *name, void *data, int intr_src);
++struct mic_irq *
++mic_request_card_irq(irq_handler_t handler, irq_handler_t thread_fn,
++		     const char *name, void *data, int intr_src);
+ void mic_free_card_irq(struct mic_irq *cookie, void *data);
+ u32 mic_read_spad(struct mic_device *mdev, unsigned int idx);
+ void mic_send_intr(struct mic_device *mdev, int doorbell);
+diff --git a/drivers/misc/mic/card/mic_x100.c b/drivers/misc/mic/card/mic_x100.c
+index 2868945..55c9465 100644
+--- a/drivers/misc/mic/card/mic_x100.c
++++ b/drivers/misc/mic/card/mic_x100.c
+@@ -148,6 +148,47 @@ void mic_card_unmap(struct mic_device *mdev, void __iomem *addr)
+ 	iounmap(addr);
+ }
+ 
++static inline struct mic_driver *mbdev_to_mdrv(struct mbus_device *mbdev)
++{
++	return dev_get_drvdata(mbdev->dev.parent);
++}
++
++static struct mic_irq *
++_mic_request_threaded_irq(struct mbus_device *mbdev,
++			  irq_handler_t handler, irq_handler_t thread_fn,
++			  const char *name, void *data, int intr_src)
++{
++	int rc = 0;
++	unsigned int irq = intr_src;
++	unsigned long cookie = irq;
++
++	rc  = request_threaded_irq(irq, handler, thread_fn, 0, name, data);
++	if (rc) {
++		dev_err(mbdev_to_mdrv(mbdev)->dev,
++			"request_threaded_irq failed rc = %d\n", rc);
++		return ERR_PTR(rc);
++	}
++	return (struct mic_irq *)cookie;
++}
++
++static void _mic_free_irq(struct mbus_device *mbdev,
++			  struct mic_irq *cookie, void *data)
++{
++	unsigned long irq = (unsigned long)cookie;
++	free_irq(irq, data);
++}
++
++static void _mic_ack_interrupt(struct mbus_device *mbdev, int num)
++{
++	mic_ack_interrupt(&mbdev_to_mdrv(mbdev)->mdev);
++}
++
++static struct mbus_hw_ops mbus_hw_ops = {
++	.request_threaded_irq = _mic_request_threaded_irq,
++	.free_irq = _mic_free_irq,
++	.ack_interrupt = _mic_ack_interrupt,
++};
++
+ static int __init mic_probe(struct platform_device *pdev)
+ {
+ 	struct mic_driver *mdrv = &g_drv;
+@@ -166,13 +207,24 @@ static int __init mic_probe(struct platform_device *pdev)
+ 		goto done;
+ 	}
+ 	mic_hw_intr_init(mdrv);
++	platform_set_drvdata(pdev, mdrv);
++	mdrv->dma_mbdev = mbus_register_device(mdrv->dev, MBUS_DEV_DMA_MIC,
++					       NULL, &mbus_hw_ops,
++					       mdrv->mdev.mmio.va);
++	if (IS_ERR(mdrv->dma_mbdev)) {
++		rc = PTR_ERR(mdrv->dma_mbdev);
++		dev_err(&pdev->dev, "mbus_add_device failed rc %d\n", rc);
++		goto iounmap;
++	}
+ 	rc = mic_driver_init(mdrv);
+ 	if (rc) {
+ 		dev_err(&pdev->dev, "mic_driver_init failed rc %d\n", rc);
+-		goto iounmap;
++		goto remove_dma;
+ 	}
+ done:
+ 	return rc;
++remove_dma:
++	mbus_unregister_device(mdrv->dma_mbdev);
+ iounmap:
+ 	iounmap(mdev->mmio.va);
+ 	return rc;
+@@ -184,6 +236,7 @@ static int mic_remove(struct platform_device *pdev)
+ 	struct mic_device *mdev = &mdrv->mdev;
+ 
+ 	mic_driver_uninit(mdrv);
++	mbus_unregister_device(mdrv->dma_mbdev);
+ 	iounmap(mdev->mmio.va);
+ 	return 0;
+ }
+-- 
+1.8.2.1
 
-Hardly 1/2 bindings documents enforce this.
-
-
->>> += SUBDEVICES
->>> +
->>> +The RPM exposes resources to its subnodes. The below bindings specify the
->>> set
->>> +of valid subnodes that can operate on these resources.
->>
->>
->> Why should these devices be on sub nodes?
->>
->> Any reason not to implement it like this,
->>
->> rpm: rpm@108000 {
->>          compatible = "qcom,rpm-msm8960";
->>
->>          reg = <0x108000 0x1000 0x2011008 0x4>;
->>
->>          interrupts = <0 19 0>, <0 21 0>, <0 22 0>;
->>          interrupt-names = "ack", "err", "wakeup";
->> };
->>
->> pm8921_s1: pm8921-s1 {
->>          compatible = "qcom,rpm-pm8921-smps";
->>
->>          regulator-min-microvolt = <1225000>;
->>          regulator-max-microvolt = <1225000>;
->>          regulator-always-on;
->>
->>          qcom,rpm = <&rpm QCOM_RPM_PM8921_S1>;
->>          qcom,switch-mode-frequency = <3200000>;
->>          qcom,hpm-threshold = <100000>;
->> };
->>
->> This would simplify the driver code too and handle the interface neatly then
->> depending on device hierarchy.
->> rpm would be a interface library to the clients. Makes the drivers more
->> independent, and re-usable if we do this way.
->
-> The subnodes doesn't describe separate pieces of hardware but rather
-> pieces of the rpm, that's why they should live inside the rpm. There
-> will not be any re-use of these drivers outside having a rpm as
-> parent.
->
-> I do have some patches for family b, where I'm moving things around a
-> little bit in the implementation to be able to re-use child-devices
-> where that makes sense (clock implementation is the same for the two).
-> But that is implementation specific and does not affect the dt.
->
-Good point, Am more of thinking of some other SOCs might have similar pmic.
-
->
-> Implementation wise, having the individual subnodes as children in the
-> device model makes a lot of sense, as the children should be probed
-> when the rpm appears and when the rpm goes away it should bring down
-> all subnodes. If there was any power management it would be the same
-> thing.
-Thats great, you have already thought about it.
->
-> So I think this makes for a cleaner implementation; all I need to do
-> is to call of_platform_populate at the end of the probe and in remove
-> I need to tell the children that they should go away. I do not need to
-> support any phandle based lookups and separate life cycle management.
->
-Am ok with either approaches.
-
->>
->> [...
->>
->>> +- qcom,force-mode-none:
->>> +       Usage: optional (default if no other qcom,force-mode is specified)
->>> +       Value type: <empty>
->>> +       Defintion: indicates that the regulator should not be forced to
->>> any
->>> +                  particular mode
->>> +
->>> +- qcom,force-mode-lpm:
->>> +       Usage: optional
->>> +       Value type: <empty>
->>> +       Definition: indicates that the regulator should be forced to
->>> operate in
->>> +                   low-power-mode
->>> +
->>> +- qcom,force-mode-auto:
->>> +       Usage: optional (only available for 8960/8064)
->>> +       Value type: <empty>
->>> +       Definition: indicates that the regulator should be automatically
->>> pick
->>> +                   operating mode
->>> +
->>> +- qcom,force-mode-hpm:
->>> +       Usage: optional (only available for 8960/8064)
->>> +       Value type: <empty>
->>> +       Definition: indicates that the regulator should be forced to
->>> operate in
->>> +                   high-power-mode
->>> +
->>> +- qcom,force-mode-bypass: (only for 8960/8064)
->>> +       Usage: optional (only available for 8960/8064)
->>> +       Value type: <empty>
->>> +       Definition: indicates that the regulator should be forced to
->>> operate in
->>> +                   bypass mode
->>> +
->>
->> ...]
->>
->> Probably qcom,force-mode:
->>          Usage: optional.
->>          Value type: <string>
->>
->>          Definition: must be one of:
->>          "none"
->>          "lpm"
->>          "auto"
->>          "hpm"
->>          "bypass"
->>
->> Makes it much simpler, as they seems to be mutually exclusive. simillar
->> comments apply to other bindings too.
->
-> Please see my answer to Kumar.
->
-Ok. I don’t have a strong feeling on any of those 3 approaches.
-
-Thanks,
-srini
->
-> Thanks for the comments!
->
-> Regards,
-> Bjorn
->
