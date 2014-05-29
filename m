@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933165AbaE2Rfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:35:32 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:33443 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513AbaE2Rfa (ORCPT
+	id S933461AbaE2Rgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:36:46 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:49885 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932372AbaE2Rgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:35:30 -0400
+	Thu, 29 May 2014 13:36:45 -0400
 MIME-Version: 1.0
 Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <29026.1401383705@warthog.procyon.org.uk>
+In-Reply-To: <29191.1401384252@warthog.procyon.org.uk>
 References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
 	<28592.1401382081@warthog.procyon.org.uk>
 	<CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com>
 	<29026.1401383705@warthog.procyon.org.uk>
-Date: Thu, 29 May 2014 19:35:29 +0200
-Message-ID: <CA+icZUWeyh3GEUr9+naecGVECUp4mXNQuOuj--r78f2f5UdgdA@mail.gmail.com>
+	<CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com>
+	<29191.1401384252@warthog.procyon.org.uk>
+Date: Thu, 29 May 2014 19:36:42 +0200
+Message-ID: <CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com>
 Subject: Re: Unionmount and overlayfs testsuite
 From: Sedat Dilek <sedat.dilek@gmail.com>
 To: David Howells <dhowells@redhat.com>
@@ -33,52 +35,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 7:15 PM, David Howells <dhowells@redhat.com> wrote:
+On Thu, May 29, 2014 at 7:24 PM, David Howells <dhowells@redhat.com> wrote:
 > Sedat Dilek <sedat.dilek@gmail.com> wrote:
 >
->> # grep LOCKDEP /boot/config-3.15.0-rc7-58.1-iniza-small
->> CONFIG_LOCKDEP_SUPPORT=y
+>> /mnt/a/foo101: Test file not on upper filesystem  (line 30)
 >
-> That's not LOCKDEP, merely support for it.  What I see:
->
->         warthog>grep LOCKDEP build/.config
->         CONFIG_LOCKDEP_SUPPORT=y
->         CONFIG_LOCKDEP=y
+> Now check dmesg.
 >
 
-I cannot set CONFIG_LOCKDEP=y ...
-
-[ lib/Kconfig.debug ]
-...
-config LOCKDEP
-        bool
-        depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT &&
-STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
-        select STACKTRACE
-        select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390
-&& !MICROBLAZE && !ARC
-        select KALLSYMS
-        select KALLSYMS_ALL
-
-...where I have all depends and selects...
-
-$ egrep 'DEBUG_KERNEL|TRACE_IRQFLAGS_SUPPORT|STACKTRACE_SUPPORT|LOCKDEP_SUPPORT'
-/boot/config-3.15.0-rc7-58.1-iniza-small | sort
-CONFIG_DEBUG_KERNEL=y
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_STACKTRACE_SUPPORT=y
-CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-CONFIG_USER_STACKTRACE_SUPPORT=y
-
-$ egrep 'STACKTRACE|FRAME_POINTER|KALLSYMS|KALLSYMS_ALL'
-/boot/config-3.15.0-rc7-58.1-iniza-small | sort
-CONFIG_ARCH_WANT_FRAME_POINTERS=y
-CONFIG_FRAME_POINTER=y
-CONFIG_KALLSYMS_ALL=y
-CONFIG_KALLSYMS=y
-CONFIG_SCHED_OMIT_FRAME_POINTER=y
-CONFIG_STACKTRACE_SUPPORT=y
-CONFIG_STACKTRACE=y
-CONFIG_USER_STACKTRACE_SUPPORT=y
+[ 1384.995334] tmpfs: No value for mount option 'union'
 
 - Sedat -
