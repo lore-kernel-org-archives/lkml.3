@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbaE2CHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 22:07:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21657 "EHLO mx1.redhat.com"
+	id S1755359AbaE2CJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 22:09:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5520 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753573AbaE2CHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 22:07:41 -0400
-Date: Thu, 29 May 2014 10:08:37 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] export efi.flags to sysfs
-Message-ID: <20140529020837.GB2068@darkstar.nay.redhat.com>
-References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
- <20140527133411.GG10994@redhat.com>
- <20140528021359.GC2820@darkstar.nay.redhat.com>
- <20140528124029.GF14863@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528124029.GF14863@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753044AbaE2CJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 22:09:36 -0400
+Message-ID: <1401329367.13555.25.camel@localhost>
+Subject: Re: [PATCH v2 2/2] audit: Mark CONFIG_AUDITSYSCALL BROKEN and
+ update help text
+From: Eric Paris <eparis@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Philipp Kern <pkern@google.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, "H. J. Lu" <hjl.tools@gmail.com>,
+        security@kernel.org, greg@kroah.com, linux-audit@redhat.com
+Date: Wed, 28 May 2014 22:09:27 -0400
+In-Reply-To: <ff8ecb985119c06510e2c45c078b41cd5df3aaea.1401327752.git.luto@amacapital.net>
+References: <cover.1401327752.git.luto@amacapital.net>
+	 <ff8ecb985119c06510e2c45c078b41cd5df3aaea.1401327752.git.luto@amacapital.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/14 at 08:40am, Vivek Goyal wrote:
-> On Wed, May 28, 2014 at 10:13:59AM +0800, Dave Young wrote:
-> > On 05/27/14 at 09:34am, Vivek Goyal wrote:
-> > > On Mon, May 26, 2014 at 04:39:35PM +0800, Dave Young wrote:
-> > > > 
-> > > > For efi=old_map and any old_map quirks like SGI UV in current
-> > > > tree kexec/kdump will fail because it depends on the new 1:1 mapping.
-> > > > 
-> > > > Thus export the mapping method to sysfs so kexec tools can switch
-> > > > to original way to boot.
-> > > > 
-> > > > Since we have efi.flags for all efi facilities so let's just export the
-> > > > efi.flags itself, it maybe useful for other arches and use cases.
-> > > > 
-> > > 
-> > > Does it require any documentation in Documentation/ABI/..
-> > 
-> > Yes, it's necessary. Will do in next version.
-> > 
-> > I'm still discussing with Matt, exporting efi.flags seems not a good way
-> > because they are more internal interfaces. 
-> > 
-> > Probably I should export only a file 'old_map' instead.
+NAK
+
+On Wed, 2014-05-28 at 18:44 -0700, Andy Lutomirski wrote:
+> Here are some issues with the code:
+>  - It thinks that syscalls have four arguments.
+
+Not true at all.  It records the registers that would hold the first 4
+entries on syscall entry, for use later if needed, as getting those
+later on some arches is not feasible (see ia64).  It makes no assumption
+about how many syscalls a function has.
+
+>  - It's a performance disaster.
+
+Only if you enable it.  If you don't use audit it is a single branch.
+Hardly a disaster.
+
+>  - It assumes that syscall numbers are between 0 and 2048.
+
+There could well be a bug here.  Not questioning that.  Although that
+would be patch 1/2
+
+>  - It's unclear whether it's supposed to be reliable.
+
+Unclear to whom?
+
+>  - It's broken on things like x32.
+>  - It can't support ARM OABI.
+
+Some arches aren't supported?  And that makes it BROKEN?  
+
+>  - Its approach to freeing memory is terrifying.
+
+What?
+
+None of your reasons hold water.  Bugs need to be fixed.  Try reporting
+them...  This is just stupid.
+
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  init/Kconfig | 13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
 > 
-> How does /sys/firmware/efi/runtime-map/* look like with old mapping? Can't
-> we look at it and figure out if it is 1:1 or not.
-
-There's phys_addr and virt_addr, (virt_addr - phys_addr) will always be
--64G for 1:1 map, ioremapped addresses space is different.
-
-So this is a good idea, we can do this way to avoid more ABI.
-
-Thanks
-Dave
-
-
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 9d3585b..24d4b53 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -296,13 +296,16 @@ config HAVE_ARCH_AUDITSYSCALL
+>  	bool
+>  
+>  config AUDITSYSCALL
+> -	bool "Enable system-call auditing support"
+> -	depends on AUDIT && HAVE_ARCH_AUDITSYSCALL
+> +	bool "Enable system-call auditing support (not recommended)"
+> +	depends on AUDIT && HAVE_ARCH_AUDITSYSCALL && BROKEN
+>  	default y if SECURITY_SELINUX
+>  	help
+> -	  Enable low-overhead system-call auditing infrastructure that
+> -	  can be used independently or with another kernel subsystem,
+> -	  such as SELinux.
+> +	  Enable system-call auditing infrastructure that can be used
+> +	  independently or with another kernel subsystem, such as
+> +	  SELinux.
+> +
+> +	  AUDITSYSCALL has serious performance and correctness issues.
+> +	  Use it with extreme caution.
+>  
+>  config AUDIT_WATCH
+>  	def_bool y
 
 
