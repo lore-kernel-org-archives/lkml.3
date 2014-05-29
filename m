@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942AbaE2INd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:13:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38864 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751149AbaE2INa (ORCPT
+	id S932681AbaE2INz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:13:55 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:42263 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932560AbaE2INx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:13:30 -0400
-Date: Thu, 29 May 2014 09:10:36 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [for-next][PATCH] ftrace: Make CALLER_ADDRx macros more generic
-Message-ID: <20140529081036.GF29812@arm.com>
-References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
- <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org>
- <20140416135217.GF1001@arm.com>
- <535E3040.7090402@linaro.org>
- <20140527091019.54a8d2d6@gandalf.local.home>
- <20140527184940.GA26035@arm.com>
- <5386C543.6070104@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5386C543.6070104@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 29 May 2014 04:13:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiwJANnrhlNXQ3h6/2dsb2JhbABZgwerNwoFAZgegREXdIJTExwjGIECJBOIRgHXX4VViH2ERwEDj0CKNAGLGIgQgzo7
+Date: Thu, 29 May 2014 10:13:51 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH V2 2/3] init/calibrate.c: use __func__ in logging
+Message-Id: <20140529101351.db8973890c873f2878efe4e3@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 06:27:31AM +0100, AKASHI Takahiro wrote:
-> Hi Will
+-coalesce formats in all pr_info
+-use __func__ in pr_notice and pr_info (Calibrating delay -> calibrate_delay()).
 
-Hi Akashi,
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ init/calibrate.c | 35 ++++++++++++++++++-----------------
+ 1 file changed, 18 insertions(+), 17 deletions(-)
 
-> On 05/28/2014 03:49 AM, Will Deacon wrote:
-> > On Tue, May 27, 2014 at 02:10:19PM +0100, Steven Rostedt wrote:
-> >> Will,
-> >>
-> >> I made a separate branch called ftrace/arm64 as shown below. You can
-> >> pull that branch to base the rest of Akashi-san's patches on top of it.
-> >> The branch is based on top of v3.15-rc5.
-> >
-> > Thanks Steve, I'll pull that in.
-> >
-> > Akashi: please can you re-send your series, based on the branch below and
-> > including the acks/reviewed-by tags you got for v6 of the patches?
-> 
-> Sorry again to have missed your e-mail :-)
+diff --git a/init/calibrate.c b/init/calibrate.c
+index 0d747bb..fb9be44 100644
+--- a/init/calibrate.c
++++ b/init/calibrate.c
+@@ -95,8 +95,8 @@ static unsigned long calibrate_delay_direct(void)
+ 		 * >= 12.5% apart, redo calibration.
+ 		 */
+ 		if (start >= post_end)
+-			pr_notice("calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
+-				  start, post_end);
++			pr_notice("%s() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
++				  __func__, start, post_end);
+ 		if (start < post_end && pre_start != 0 && pre_end != 0 &&
+ 		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
+ 			good_timer_count++;
+@@ -132,13 +132,13 @@ static unsigned long calibrate_delay_direct(void)
+ 		good_timer_count = 0;
+ 		if ((measured_times[max] - estimate) <
+ 				(estimate - measured_times[min])) {
+-			pr_notice("calibrate_delay_direct() dropping min bogoMips estimate %d = %lu\n",
+-				  min, measured_times[min]);
++			pr_notice("%s() dropping min bogoMips estimate %d = %lu\n",
++				  __func__, min, measured_times[min]);
+ 			measured_times[min] = 0;
+ 			min = max;
+ 		} else {
+-			pr_notice("calibrate_delay_direct() dropping max bogoMips estimate %d = %lu\n",
+-				  max, measured_times[max]);
++			pr_notice("%s() dropping max bogoMips estimate %d = %lu\n",
++				  __func__, max, measured_times[max]);
+ 			measured_times[max] = 0;
+ 			max = min;
+ 		}
+@@ -156,8 +156,9 @@ static unsigned long calibrate_delay_direct(void)
+ 
+ 	}
+ 
+-	pr_notice("calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.\nProbably due to long platform "
+-		  "interrupts. Consider using \"lpj=\" boot option.\n");
++	pr_notice("%s() failed to get a good estimate for loops_per_jiffy.\n"
++		  "Probably due to long platform interrupts. Consider using \"lpj=\" boot option.\n",
++		  __func__);
+ 	return 0;
+ }
+ #else
+@@ -266,26 +267,26 @@ void calibrate_delay(void)
+ 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+ 		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
+ 		if (!printed)
+-			pr_info("Calibrating delay loop (skipped) "
+-				"already calibrated this CPU");
++			pr_info("%s() loop (skipped) already calibrated this CPU",
++				__func__);
+ 	} else if (preset_lpj) {
+ 		lpj = preset_lpj;
+ 		if (!printed)
+-			pr_info("Calibrating delay loop (skipped) "
+-				"preset value.. ");
++			pr_info("%s() loop (skipped) preset value.. ",
++				__func__);
+ 	} else if ((!printed) && lpj_fine) {
+ 		lpj = lpj_fine;
+-		pr_info("Calibrating delay loop (skipped), "
+-			"value calculated using timer frequency.. ");
++		pr_info("%s() loop (skipped), value calculated using timer frequency.. ",
++			__func__);
+ 	} else if ((lpj = calibrate_delay_is_known())) {
+ 		;
+ 	} else if ((lpj = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+-			pr_info("Calibrating delay using timer "
+-				"specific routine.. ");
++			pr_info("%s() using timer specific routine.. ",
++				__func__);
+ 	} else {
+ 		if (!printed)
+-			pr_info("Calibrating delay loop... ");
++			pr_info("%s() loop... ", __func__);
+ 		lpj = calibrate_delay_converge();
+ 	}
+ 	per_cpu(cpu_loops_per_jiffy, this_cpu) = lpj;
+-- 
+1.9.1
 
-You should fix your filters!
-
-> I'm sure that you can successfully apply all my patch series, without any
-> modification, from:
->      v6 arm64: prerequisites for audit and ftrace
->      v8 arm64: Add ftrace support
-> except for the patch, "[v8 1/8] ftrace: make CALLER_ADDRx macros more generic,"
-> which was replaced by a new version and already appears in Steven's repo.
-
-Yeah, you're right, I've managed to pick patches 2-8 from that posting --
-thanks.
-
-Will
