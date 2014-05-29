@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934278AbaE2FWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:22:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57924 "EHLO
+	id S934293AbaE2FWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:22:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57909 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932505AbaE2EfZ (ORCPT
+	with ESMTP id S932486AbaE2EfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:25 -0400
+	Thu, 29 May 2014 00:35:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Daniel Borkman <dborkman@redhat.com>,
-        Martin Filip <nexus+kernel@smoula.net>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 078/140] net: Start with correct mac_len in skb_network_protocol
-Date: Wed, 28 May 2014 21:33:37 -0700
-Message-Id: <20140529043059.611180189@linuxfoundation.org>
+Subject: [PATCH 3.14 076/140] filter: prevent nla extensions to peek beyond the end of the message
+Date: Wed, 28 May 2014 21:33:35 -0700
+Message-Id: <20140529043059.351357559@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -30,45 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 1e785f48d29a09b6cf96db7b49b6320dada332e1 ]
+[ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
 
-Sometimes, when the packet arrives at skb_mac_gso_segment()
-its skb->mac_len already accounts for some of the mac lenght
-headers in the packet.  This seems to happen when forwarding
-through and OpenSSL tunnel.
+The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
+for a minimal message length before testing the supplied offset to be
+within the bounds of the message. This allows the subtraction of the nla
+header to underflow and therefore -- as the data type is unsigned --
+allowing far to big offset and length values for the search of the
+netlink attribute.
 
-When we start looking for any vlan headers in skb_network_protocol()
-we seem to ignore any of the already known mac headers and start
-with an ETH_HLEN.  This results in an incorrect offset, dropped
-TSO frames and general slowness of the connection.
+The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
+also wrong. It has the minuend and subtrahend mixed up, therefore
+calculates a huge length value, allowing to overrun the end of the
+message while looking for the netlink attribute.
 
-We can start counting from the known skb->mac_len
-and return at least that much if all mac level headers
-are known and accounted for.
+The following three BPF snippets will trigger the bugs when attached to
+a UNIX datagram socket and parsing a message with length 1, 2 or 3.
 
-Fixes: 53d6471cef17262d3ad1c7ce8982a234244f68ec (net: Account for all vlan headers in skb_mac_gso_segment)
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Daniel Borkman <dborkman@redhat.com>
-Tested-by: Martin Filip <nexus+kernel@smoula.net>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+ ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
+ | ld	#0x87654321
+ | ldx	#42
+ | ld	#nla
+ | ret	a
+ `---
+
+ ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
+ | ld	#0x87654321
+ | ldx	#42
+ | ld	#nlan
+ | ret	a
+ `---
+
+ ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
+ | ; (needs a fake netlink header at offset 0)
+ | ld	#0
+ | ldx	#42
+ | ld	#nlan
+ | ret	a
+ `---
+
+Fix the first issue by ensuring the message length fulfills the minimal
+size constrains of a nla header. Fix the second bug by getting the math
+for the remainder calculation right.
+
+Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
+Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/filter.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2289,7 +2289,7 @@ EXPORT_SYMBOL(skb_checksum_help);
- __be16 skb_network_protocol(struct sk_buff *skb, int *depth)
- {
- 	__be16 type = skb->protocol;
--	int vlan_depth = ETH_HLEN;
-+	int vlan_depth = skb->mac_len;
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -355,6 +355,8 @@ load_b:
  
- 	/* Tunnel gso handlers can set protocol to ethernet. */
- 	if (type == htons(ETH_P_TEB)) {
+ 			if (skb_is_nonlinear(skb))
+ 				return 0;
++			if (skb->len < sizeof(struct nlattr))
++				return 0;
+ 			if (A > skb->len - sizeof(struct nlattr))
+ 				return 0;
+ 
+@@ -371,11 +373,13 @@ load_b:
+ 
+ 			if (skb_is_nonlinear(skb))
+ 				return 0;
++			if (skb->len < sizeof(struct nlattr))
++				return 0;
+ 			if (A > skb->len - sizeof(struct nlattr))
+ 				return 0;
+ 
+ 			nla = (struct nlattr *)&skb->data[A];
+-			if (nla->nla_len > A - skb->len)
++			if (nla->nla_len > skb->len - A)
+ 				return 0;
+ 
+ 			nla = nla_find_nested(nla, X);
 
 
