@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903AbaE2P1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:27:04 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:49626 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757436AbaE2P1B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757642AbaE2P1B (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 29 May 2014 11:27:01 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Jacob Shin <jacob.w.shin@gmail.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, xiakaixu <xiakaixu@huawei.com>
-Subject: [PATCH 0/4] perf: Support AMD range breakpoints
-Date: Thu, 29 May 2014 17:26:49 +0200
-Message-Id: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:50481 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219AbaE2P07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 11:26:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <53847FA1.60509@mm-sol.com>
+References: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
+	<1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
+	<CABuKBe+B_Ga-w4aA4dApDTa26rCuhetRTJku27Madm+fHtDcLA@mail.gmail.com>
+	<53834578.9090305@mm-sol.com>
+	<CABuKBeJXqSi=6XY5Fg7mg_daQ4D8ornS-kn7NDPktCtro7yNNw@mail.gmail.com>
+	<53847FA1.60509@mm-sol.com>
+Date: Thu, 29 May 2014 17:26:58 +0200
+Message-ID: <CABuKBeLHOKK+DsVPBGPDmeSqceSTMGZeOd74-Jp4Z9vUWDZ_yQ@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] ARM: debug: qcom: add UART addresses to Kconfig help
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, sboyd@codeaurora.org,
+        rvaswani@codeaurora.org, davidb@codeaurora.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2014-05-27 14:05 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
+> On 05/26/2014 08:17 PM, Matthias Brugger wrote:
+>> 2014-05-26 15:45 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
+>>> On 23.05.14, 19:39, Matthias Brugger wrote:
+>>>>
+>>>> 2014-05-23 17:12 GMT+02:00 Georgi Djakov <gdjakov@mm-sol.com>:
+>>>>>
+>>>>> Add information about the APQ8084 debug UART physical and virtual
+>>>>> addresses in the DEBUG_QCOM_UARTDM Kconfig help section.
+>>>>> Requires: https://lkml.org/lkml/2014/4/14/312
+>>>>>
+>>>>> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+>>>>> ---
+>>>>>  arch/arm/Kconfig.debug |    1 +
+>>>>>  1 file changed, 1 insertion(+)
+>>>>>
+>>>>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>>>>> index 40ee328..e71723d 100644
+>>>>> --- a/arch/arm/Kconfig.debug
+>>>>> +++ b/arch/arm/Kconfig.debug
+>>>>> @@ -376,6 +376,7 @@ choice
+>>>>>                   their output to the serial port on Qualcomm devices.
+>>>>>
+>>>>>                   ARCH      DEBUG_UART_PHYS   DEBUG_UART_BASE
+>>>>> +                 APQ8084   0xf995e000        0xfa75e000
+>>>>>                   MSM8X60   0x19c40000        0xf0040000
+>>>>>                   MSM8960   0x16440000        0xf0040000
+>>>>>                   MSM8974   0xf991e000        0xfa71e000
+>>>>
+>>>>
+>>>> You don't have any uart defined in your dts. You should add them
+>>>> before any adding low level debug support.
+>>>> Otherwise there might be problems in booting a multi-platform kernel.
+>>>>
+>>>
+>>> Thanks for the comment! As the uart depends on clocks, i am adding it to the
+>>> dts as part of my global clock controller patchset [1].
+>>> In this patch i am just adding some information to the help section.
+>>> Do you see any problem with this?
+>>
+>> Are the patches for the clock controller applied already?
+>> If not, I would consider to add this patch to clock controller series.
+>>
+>
+> No, they are not applied yet. The uart dts definition depends on clocks, but the
+> DEBUG_LL support does not. And the DEBUG_LL support is already there as it is
+> common with other SoCs. I am sorry, but i don't see dependency between the dts
+> definition and this patch. Could you explain please?
 
-I've made it wait too much so I'm posting that for review now. This
-implements range breakpoints on some AMD machine by extending the length
-field.
+IMHO the dependancy is that DEBUG_LL uses the uart device, and this is
+added when you add the dts.
+AFAIK there can arise problems with multi-platform kernels if the uart
+is not present.
 
-Any comment?
+>
+> Thanks,
+> Georgi
+>
 
-Thanks.
 
-Jacob Shin (4):
-  perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
-  perf tools: allow user to specify hardware breakpoint bp_len
-  perf tools: add hardware breakpoint bp_len test cases
-  perf/x86: Remove get_hbp_len and replace with bp_len
-
- arch/x86/include/asm/cpufeature.h        |  2 ++
- arch/x86/include/asm/debugreg.h          |  5 +++
- arch/x86/include/asm/hw_breakpoint.h     |  1 +
- arch/x86/include/uapi/asm/msr-index.h    |  4 +++
- arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
- arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++---------------
- tools/perf/Documentation/perf-record.txt |  7 ++--
- tools/perf/tests/parse-events.c          | 58 ++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.c           | 21 ++++++------
- tools/perf/util/parse-events.h           |  2 +-
- tools/perf/util/parse-events.l           |  1 +
- tools/perf/util/parse-events.y           | 26 ++++++++++++--
- 12 files changed, 148 insertions(+), 43 deletions(-)
 
 -- 
-1.8.3.1
-
+motzblog.wordpress.com
