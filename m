@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933890AbaE2PLD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:11:03 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60805 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933154AbaE2PK6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:10:58 -0400
+	id S1757400AbaE2POd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:14:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37282 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756143AbaE2POc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 11:14:32 -0400
+Message-ID: <53875A4B.2060604@ti.com>
+Date: Thu, 29 May 2014 19:03:23 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140529133036.GJ18016@ZenIV.linux.org.uk>
-References: <20140528073751.GB1757@lahna.fi.intel.com>
-	<20140528115701.GY18016@ZenIV.linux.org.uk>
-	<20140528131136.GA1643@lahna.fi.intel.com>
-	<20140528141937.GZ18016@ZenIV.linux.org.uk>
-	<20140528183954.GA18016@ZenIV.linux.org.uk>
-	<20140529031149.GE18016@ZenIV.linux.org.uk>
-	<20140529035233.GF18016@ZenIV.linux.org.uk>
-	<20140529053444.GI18016@ZenIV.linux.org.uk>
-	<20140529105107.GB1938@lahna.fi.intel.com>
-	<20140529110439.GA2006@lahna.fi.intel.com>
-	<20140529133036.GJ18016@ZenIV.linux.org.uk>
-Date: Thu, 29 May 2014 08:10:57 -0700
-X-Google-Sender-Auth: 93gDwwJfg6Hn0RxI_hfzgCDfbA0
-Message-ID: <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Alexandre Courbot <gnurou@gmail.com>,
+        "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        <jacob.jun.pan@linux.intel.com>, <bin.yang@intel.com>
+Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com> <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com> <538459E8.6010701@ti.com> <20140527084615.GC1801@lahna.fi.intel.com> <53847F39.2010503@ti.com> <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com> <20140529150058.GB6263@lahna.fi.intel.com>
+In-Reply-To: <20140529150058.GB6263@lahna.fi.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 6:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Great...  OK, saner splitup of that sucker (equivalent to combination of
-> these two patches) is in vfs.git#for-linus.
->
-> Review and testing would be very welcome.
+Hi All,
 
-So looking at the "dealing with the rest of shrink_dentry_list()
-livelock" patch, I think the "release the parents" case is now big and
-complicated enough to be split into a function of its own.
+On 05/29/2014 06:00 PM, Mika Westerberg wrote:
+> On Thu, May 29, 2014 at 03:37:37PM +0200, Linus Walleij wrote:
+>> My idea is that you should call gpiochip_add() *first* and then
+>> add the IRQs to the chip. In succession.
+>>
+>> Rationale: with dynamic GPIO numbers, gpio_to_irq()
+>> cannot reasonably be working before the gpiochip is added,
+>> so it should be added first, then the irqchip. Since irq_to_gpio()
+>> is *NOT* to be used (rather obliterated), this is the sequence
+>> we mandate.
+> 
+> Thanks for the explanation. Makes sense.
+> 
 
-However, I have a bigger question too: the "release the parent" case
-_should_ be possible to do with just a "dput()" on the parent, and the
-only reason we're doing the special case is that since we are
-shrinking things, we try to be more aggressive and shrink all the
-parents if possible. Right?
+Thanks a lot Linus for your comments here :)
 
-If so, though, that brings up two questions:
+Also, I'd like to note that GPIO IRQs can be accessible not only
+when GPIO chips is added, but also when IRQ domain is registered
+(at least it's valid for DT cases). In these cases gpiod_to_irq()
+might be not used at all.
 
- (a) do we really want to be that aggressive? Can we ever traverse
-_past_ the point we're actually trying to shrink in
-shrink_dcache_parent()?
+Regards,
+-grygorii
 
- (b) why does the "dput()" (or rather, the dentry_kill()) locking
-logic have to retain the old trylock case rather than share the parent
-locking logic?
+ 
 
-I'm assuming the answer to (b) is that we can't afford to drop the
-dentry lock in dentry_kill(), but I'd like that answer to the "Why" to
-be documented somewhere.
-
-I don't much care what the answer to (a) is, but again, it would be
-good to have that mentioned somewhere.
-
-                 Linus
