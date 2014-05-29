@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732AbaE2Nte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:49:34 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59294 "EHLO
+	id S934640AbaE2Nwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:52:50 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59507 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932666AbaE2Nt3 (ORCPT
+	by vger.kernel.org with ESMTP id S933577AbaE2Ntd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:49:29 -0400
+	Thu, 29 May 2014 09:49:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, AceLan Kao <acelan.kao@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 003/103] HID: usbhid: merge the sis quirk
-Date: Thu, 29 May 2014 15:47:48 +0200
-Message-Id: <f49f5d56ccdeeccd1f3a245edbf189e5dc83f9eb.1401371258.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, dingtianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 070/103] vlan: Fix lockdep warning when vlan dev handle notification
+Date: Thu, 29 May 2014 15:48:55 +0200
+Message-Id: <059590c8e26afc293aa92d64964038ed35abca3e.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
@@ -23,73 +23,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 765e5fbd3e04ba753b2585e9f852fdcd34b95d10 upstream.
+[ Upstream commit dc8eaaa006350d24030502a4521542e74b5cb39f ]
 
-USB_VENDOR_ID_SIS and USB_VENDOR_ID_SIS2_TOUCH are identical,
-so refine the code and merge the quirks.
+When I open the LOCKDEP config and run these steps:
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+modprobe 8021q
+vconfig add eth2 20
+vconfig add eth2.20 30
+ifconfig eth2 xx.xx.xx.xx
+
+then the Call Trace happened:
+
+[32524.386288] =============================================
+[32524.386293] [ INFO: possible recursive locking detected ]
+[32524.386298] 3.14.0-rc2-0.7-default+ #35 Tainted: G           O
+[32524.386302] ---------------------------------------------
+[32524.386306] ifconfig/3103 is trying to acquire lock:
+[32524.386310]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
+[32524.386326]
+[32524.386326] but task is already holding lock:
+[32524.386330]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
+[32524.386341]
+[32524.386341] other info that might help us debug this:
+[32524.386345]  Possible unsafe locking scenario:
+[32524.386345]
+[32524.386350]        CPU0
+[32524.386352]        ----
+[32524.386354]   lock(&vlan_netdev_addr_lock_key/1);
+[32524.386359]   lock(&vlan_netdev_addr_lock_key/1);
+[32524.386364]
+[32524.386364]  *** DEADLOCK ***
+[32524.386364]
+[32524.386368]  May be due to missing lock nesting notation
+[32524.386368]
+[32524.386373] 2 locks held by ifconfig/3103:
+[32524.386376]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81431d42>] rtnl_lock+0x12/0x20
+[32524.386387]  #1:  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
+[32524.386398]
+[32524.386398] stack backtrace:
+[32524.386403] CPU: 1 PID: 3103 Comm: ifconfig Tainted: G           O 3.14.0-rc2-0.7-default+ #35
+[32524.386409] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[32524.386414]  ffffffff81ffae40 ffff8800d9625ae8 ffffffff814f68a2 ffff8800d9625bc8
+[32524.386421]  ffffffff810a35fb ffff8800d8a8d9d0 00000000d9625b28 ffff8800d8a8e5d0
+[32524.386428]  000003cc00000000 0000000000000002 ffff8800d8a8e5f8 0000000000000000
+[32524.386435] Call Trace:
+[32524.386441]  [<ffffffff814f68a2>] dump_stack+0x6a/0x78
+[32524.386448]  [<ffffffff810a35fb>] __lock_acquire+0x7ab/0x1940
+[32524.386454]  [<ffffffff810a323a>] ? __lock_acquire+0x3ea/0x1940
+[32524.386459]  [<ffffffff810a4874>] lock_acquire+0xe4/0x110
+[32524.386464]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
+[32524.386471]  [<ffffffff814fc07a>] _raw_spin_lock_nested+0x2a/0x40
+[32524.386476]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
+[32524.386481]  [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
+[32524.386489]  [<ffffffffa0500cab>] vlan_dev_set_rx_mode+0x2b/0x50 [8021q]
+[32524.386495]  [<ffffffff8141addf>] __dev_set_rx_mode+0x5f/0xb0
+[32524.386500]  [<ffffffff8141af8b>] dev_set_rx_mode+0x2b/0x40
+[32524.386506]  [<ffffffff8141b3cf>] __dev_open+0xef/0x150
+[32524.386511]  [<ffffffff8141b177>] __dev_change_flags+0xa7/0x190
+[32524.386516]  [<ffffffff8141b292>] dev_change_flags+0x32/0x80
+[32524.386524]  [<ffffffff8149ca56>] devinet_ioctl+0x7d6/0x830
+[32524.386532]  [<ffffffff81437b0b>] ? dev_ioctl+0x34b/0x660
+[32524.386540]  [<ffffffff814a05b0>] inet_ioctl+0x80/0xa0
+[32524.386550]  [<ffffffff8140199d>] sock_do_ioctl+0x2d/0x60
+[32524.386558]  [<ffffffff81401a52>] sock_ioctl+0x82/0x2a0
+[32524.386568]  [<ffffffff811a7123>] do_vfs_ioctl+0x93/0x590
+[32524.386578]  [<ffffffff811b2705>] ? rcu_read_lock_held+0x45/0x50
+[32524.386586]  [<ffffffff811b39e5>] ? __fget_light+0x105/0x110
+[32524.386594]  [<ffffffff811a76b1>] SyS_ioctl+0x91/0xb0
+[32524.386604]  [<ffffffff815057e2>] system_call_fastpath+0x16/0x1b
+
+========================================================================
+
+The reason is that all of the addr_lock_key for vlan dev have the same class,
+so if we change the status for vlan dev, the vlan dev and its real dev will
+hold the same class of addr_lock_key together, so the warning happened.
+
+we should distinguish the lock depth for vlan dev and its real dev.
+
+v1->v2: Convert the vlan_netdev_addr_lock_key to an array of eight elements, which
+	could support to add 8 vlan id on a same vlan dev, I think it is enough for current
+	scene, because a netdev's name is limited to IFNAMSIZ which could not hold 8 vlan id,
+	and the vlan dev would not meet the same class key with its real dev.
+
+	The new function vlan_dev_get_lockdep_subkey() will return the subkey and make the vlan
+	dev could get a suitable class key.
+
+v2->v3: According David's suggestion, I use the subclass to distinguish the lock key for vlan dev
+	and its real dev, but it make no sense, because the difference for subclass in the
+	lock_class_key doesn't mean that the difference class for lock_key, so I use lock_depth
+	to distinguish the different depth for every vlan dev, the same depth of the vlan dev
+	could have the same lock_class_key, I import the MAX_LOCK_DEPTH from the include/linux/sched.h,
+	I think it is enough here, the lockdep should never exceed that value.
+
+v3->v4: Add a huge array of locking keys will waste static kernel memory and is not a appropriate method,
+	we could use _nested() variants to fix the problem, calculate the depth for every vlan dev,
+	and use the depth as the subclass for addr_lock_key.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hid/hid-ids.h           | 5 ++---
- drivers/hid/usbhid/hid-quirks.c | 6 +++---
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ net/8021q/vlan_dev.c | 46 +++++++++++++++++++++++++++++++++++++++++-----
+ net/core/dev.c       |  1 +
+ 2 files changed, 42 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index aeeea796f595..6c63cde6b2af 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -753,9 +753,10 @@
- #define USB_VENDOR_ID_SIGMATEL		0x066F
- #define USB_DEVICE_ID_SIGMATEL_STMP3780	0x3780
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index d1537dcd4df8..1b89bc7468de 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -512,10 +512,48 @@ static void vlan_dev_change_rx_flags(struct net_device *dev, int change)
+ 	}
+ }
  
--#define USB_VENDOR_ID_SIS2_TOUCH	0x0457
-+#define USB_VENDOR_ID_SIS_TOUCH		0x0457
- #define USB_DEVICE_ID_SIS9200_TOUCH	0x9200
- #define USB_DEVICE_ID_SIS817_TOUCH	0x0817
-+#define USB_DEVICE_ID_SIS_TS		0x1013
++static int vlan_calculate_locking_subclass(struct net_device *real_dev)
++{
++	int subclass = 0;
++
++	while (is_vlan_dev(real_dev)) {
++		subclass++;
++		real_dev = vlan_dev_priv(real_dev)->real_dev;
++	}
++
++	return subclass;
++}
++
++static void vlan_dev_mc_sync(struct net_device *to, struct net_device *from)
++{
++	int err = 0, subclass;
++
++	subclass = vlan_calculate_locking_subclass(to);
++
++	spin_lock_nested(&to->addr_list_lock, subclass);
++	err = __hw_addr_sync(&to->mc, &from->mc, to->addr_len);
++	if (!err)
++		__dev_set_rx_mode(to);
++	spin_unlock(&to->addr_list_lock);
++}
++
++static void vlan_dev_uc_sync(struct net_device *to, struct net_device *from)
++{
++	int err = 0, subclass;
++
++	subclass = vlan_calculate_locking_subclass(to);
++
++	spin_lock_nested(&to->addr_list_lock, subclass);
++	err = __hw_addr_sync(&to->uc, &from->uc, to->addr_len);
++	if (!err)
++		__dev_set_rx_mode(to);
++	spin_unlock(&to->addr_list_lock);
++}
++
+ static void vlan_dev_set_rx_mode(struct net_device *vlan_dev)
+ {
+-	dev_mc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
+-	dev_uc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
++	vlan_dev_mc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
++	vlan_dev_uc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
+ }
  
- #define USB_VENDOR_ID_SKYCABLE			0x1223
- #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
-@@ -937,7 +938,5 @@
- #define USB_VENDOR_ID_PRIMAX	0x0461
- #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
+ /*
+@@ -624,9 +662,7 @@ static int vlan_dev_init(struct net_device *dev)
  
--#define USB_VENDOR_ID_SIS	0x0457
--#define USB_DEVICE_ID_SIS_TS	0x1013
+ 	SET_NETDEV_DEVTYPE(dev, &vlan_type);
  
- #endif
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 0db9a67278ba..37307dc2d1f7 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -84,8 +84,9 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
--	{ USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS9200_TOUCH, HID_QUIRK_NOGET },
--	{ USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS817_TOUCH, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_SIS_TOUCH, USB_DEVICE_ID_SIS9200_TOUCH, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_SIS_TOUCH, USB_DEVICE_ID_SIS817_TOUCH, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_SIS_TOUCH, USB_DEVICE_ID_SIS_TS, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
-@@ -114,7 +115,6 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
--	{ USB_VENDOR_ID_SIS, USB_DEVICE_ID_SIS_TS, HID_QUIRK_NO_INIT_REPORTS },
+-	if (is_vlan_dev(real_dev))
+-		subclass = 1;
+-
++	subclass = vlan_calculate_locking_subclass(dev);
+ 	vlan_dev_set_lockdep_class(dev, subclass);
  
- 	{ 0, 0 }
- };
+ 	vlan_dev_priv(dev)->vlan_pcpu_stats = alloc_percpu(struct vlan_pcpu_stats);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index b32797590b40..7f1bff869511 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4968,6 +4968,7 @@ void __dev_set_rx_mode(struct net_device *dev)
+ 	if (ops->ndo_set_rx_mode)
+ 		ops->ndo_set_rx_mode(dev);
+ }
++EXPORT_SYMBOL(__dev_set_rx_mode);
+ 
+ void dev_set_rx_mode(struct net_device *dev)
+ {
 -- 
 1.9.3
 
