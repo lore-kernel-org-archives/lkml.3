@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654AbaE2Feu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:34:50 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54846 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933267AbaE2Fer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 01:34:47 -0400
-Date: Thu, 29 May 2014 06:34:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140529053444.GI18016@ZenIV.linux.org.uk>
-References: <20140527040026.GT18016@ZenIV.linux.org.uk>
- <20140527070409.GA1801@lahna.fi.intel.com>
- <20140528031955.GW18016@ZenIV.linux.org.uk>
- <20140528073751.GB1757@lahna.fi.intel.com>
- <20140528115701.GY18016@ZenIV.linux.org.uk>
- <20140528131136.GA1643@lahna.fi.intel.com>
- <20140528141937.GZ18016@ZenIV.linux.org.uk>
- <20140528183954.GA18016@ZenIV.linux.org.uk>
- <20140529031149.GE18016@ZenIV.linux.org.uk>
- <20140529035233.GF18016@ZenIV.linux.org.uk>
+	id S934663AbaE2Fez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:34:55 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:56161 "EHLO dev.rtsoft.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933267AbaE2Few (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 01:34:52 -0400
+Message-ID: <5386C6F9.7070202@dev.rtsoft.ru>
+Date: Thu, 29 May 2014 09:34:49 +0400
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Organization: RTSoft Software Development Center
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529035233.GF18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lugovskoy@dev.rtsoft.ru
+Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
+ on ULI hw
+References: <Pine.LNX.4.44L0.1405281014320.1552-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1405281014320.1552-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 04:52:33AM +0100, Al Viro wrote:
-> On Thu, May 29, 2014 at 04:11:49AM +0100, Al Viro wrote:
-> > On Wed, May 28, 2014 at 07:39:54PM +0100, Al Viro wrote:
-> > 
-> > > OK, the warnings about averting your eyes very much apply; the thing below
-> > > definitely needs more massage before it becomes acceptable (and no, it's
-> > > not a single commit; I'm not that insane), but it changes behaviour in the
-> > > way described above.  Could you check if the livelock persists with it?
-> > > No trace-generating code in there, so the logs should be compact enough...
-> > 
-> > Here's an updated patch, hopefully slightly less vomit-inducing.  Should
-> > give the same behaviour as the previous one...  Again, it's a cumulative
-> > diff - I'm still massaging the splitup here.
+> It would help to print the value of fminterval.
+> And here to print the value obtained by the readl().
+
+I've checked these... all values read as 0xffffffff - which does not
+look correct
+
+readl(base + OHCI_CONTROL) several lines before returns 0x00000000
+Read of HcRevision register (base + 0x0) at the same point returns
+0x00000110.
+
+If I comment out access to OHCI_FMINTERVAL, then, after writing OHCI_HCR
+to CMDSTATUS, read of OHCI_CMDSTATUS immediately returns zero, and
+routine succeeds.
+
+>> irq 26: nobody cared (try booting with the "irqpoll" option)
+>> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc6-dirty #5
+>> Call Trace:
+>> [effe5ed0] [c000726c] show_stack+0x48/0x15c (unreliable)
+>> [effe5f10] [c05eece4] dump_stack+0x78/0xa0
+>> [effe5f20] [c0087acc] __report_bad_irq+0x38/0x100
+>> [effe5f40] [c0088060] note_interrupt+0x224/0x280
+>> [effe5f70] [c008563c] handle_irq_event_percpu+0xc8/0x178
+>> [effe5fa0] [c0085730] handle_irq_event+0x44/0x74
+>> [effe5fc0] [c0088f88] handle_fasteoi_irq+0xd4/0x1d0
+>> [effe5fd0] [c0084d20] generic_handle_irq+0x30/0x50
+>> [effe5fe0] [c00048d0] __do_irq+0x2c/0x70
+>> [effe5ff0] [c000d9a0] call_do_irq+0x24/0x3c
+>> [ef047d10] [c00049a0] do_IRQ+0x8c/0xf8
+>> [ef047d30] [c000f598] ret_from_except+0x0/0x18
+>> --- Exception: 501 at quirk_usb_early_handoff+0x794/0x85c
+>>     LR = quirk_usb_early_handoff+0x788/0x85c
 > 
-> BTW, it still leaves the "proceed to parent" case in shrink_dentry_list();
-> in theory, it's also vulnerable to the same livelock.  Can be dealt pretty
-> much the same way; I'd rather leave that one for right after -final, though,
-> if the already posted variant turns out to be sufficient...
+> That exception looks very suspicious.  Do you know what it means?
 
-... which is (presumably) dealt with the incremental I'd just sent to Linus;
-seeing what kind of dumb mistakes I'm making, I'd better call it quits for
-tonight - it's 1:30am here and I didn't have anywhere near enough sleep
-yesterday.  I'd appeciate if you could test the patch immediately
-upthread (from Message-ID: <20140529031149.GE18016@ZenIV.linux.org.uk>)
-and see if it helps.  There's an incremental on top of it (from
-Message-ID: <20140529052621.GH18016@ZenIV.linux.org.uk>) that might or
-might not be a good idea.
+This is just what powerpc backtraces show for hardware interrupt.
+I.e. hardware interrupt happened at quirk_usb_early_handoff+0x794/0x85c
 
-I'm crawling to bed right now; back in ~7 hours...
+> 
+> It looks like this IRQ 26 stuff has no connection with OHCI, right?
+
+26 is a virtual number, assigned by irq_of_parse_and_map() call.
+Physically it is MPIC internal IRQ 9, which is PCI Express port 2 IRQ.
+(ULI1553 southbridge is connected to PCI Express port 2).
+This is not interrupt from PCI/PCIe device, but interrupt from
+controller itself. However, per code in fsl_pci_pme_handle(), none of
+bits in status register are set (otherwise it won't return IRQ_NONE, and
+kernel won't claim that "nobody cared"). Looks bogus.
+
+>> A2
+>> A3
+>> A4
+>> A5
+>> A4
+>> A5
+>> A4
+>> A5
+>> A4
+>> A5
+>> A4
+>>
+>> and hang.
+> 
+> Meaning that it stops completely, not that it goes into an infinite 
+> loop?
+
+Yes, it hangs.
+
+
+>> I think problem is caused by access to OHCI regs from PCI quirks - before
+>> driver was initialized. ULI1553 southbridge chip could be in strange state
+>> at this point.
+> 
+> If that is the cause, we ought to be able to see it from the values
+> printed out by the debugging statements.  And if that is so, it's a
+> serious problem.  The southbridge chip really should be working at this
+> point, because the quirk_usb_handoff_* routines need to be able to
+> communicate with the host controllers.
+
+In this case, communication looks possible.
+However, read of OHCI_FMINTERVAL register somehow breaks it.
+
+Nikita
