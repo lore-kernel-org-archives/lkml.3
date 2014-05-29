@@ -1,99 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218AbaE2Gmg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:42:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59913 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933313AbaE2GkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:40:20 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
-        <kishon@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v2 13/18] ARM: dts: dra7xx-clocks: Add missing clocks for second PCIe PHY instance
-Date: Thu, 29 May 2014 12:08:15 +0530
-Message-ID: <1401345500-20188-14-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401345500-20188-1-git-send-email-kishon@ti.com>
-References: <1401345500-20188-1-git-send-email-kishon@ti.com>
+	id S1756515AbaE2GnG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:43:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46363 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409AbaE2GnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 02:43:05 -0400
+Date: Thu, 29 May 2014 08:43:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 1/1] rename {before/after}_atomic_{inc/dec} to
+ {before/after}_atomic
+Message-ID: <20140529064302.GG19143@laptop.programming.kicks-ass.net>
+References: <5386B75A.3010806@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5386B75A.3010806@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added missing clocks used by second instance of PCIe PHY.
-The documention for this nodes can be found @ ../bindings/clock/ti/gate.txt.
+On Thu, May 29, 2014 at 12:28:10AM -0400, Pranith Kumar wrote:
+>  There is no reason to have separete barriers for atomic_inc and atomic_dec. 
+>  All the architectures use the same barriers for both.
+> 
+>  We can simplify it and just have {before/after}_atomic after renaming.
+> 
+>  I used coccinelle script to do the renames in the C files and did the rename by hand in the headers.
+> 
+> v2: 
+> * remove duplicate macros in missed files
+> * correct indentation
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Kumar Gala <galak@codeaurora.org>
-Signed-off-by: Keerthy <j-keerthy@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/dra7xx-clocks.dtsi |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+See http://marc.info/?l=linux-kernel&m=139782635207358 and the 20 or so
+patches afterwards.
 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index 3d8c9c2..a9ff0dc 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -1173,6 +1173,14 @@
- 		ti,bit-shift = <8>;
- 	};
- 
-+	optfclk_pciephy2_32khz: optfclk_pciephy_32khz@4a0093b4 {
-+		compatible = "ti,gate-clock";
-+		clocks = <&sys_32k_ck>;
-+		#clock-cells = <0>;
-+		reg = <0x13b4>;
-+		ti,bit-shift = <8>;
-+	};
-+
- 	optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
- 		compatible = "ti,divider-clock";
- 		clocks = <&apll_pcie_ck>;
-@@ -1191,6 +1199,14 @@
- 		ti,bit-shift = <9>;
- 	};
- 
-+	optfclk_pciephy2_clk: optfclk_pciephy_clk@4a0093b4 {
-+		compatible = "ti,gate-clock";
-+		clocks = <&apll_pcie_ck>;
-+		#clock-cells = <0>;
-+		reg = <0x13b4>;
-+		ti,bit-shift = <9>;
-+	};
-+
- 	optfclk_pciephy1_div_clk: optfclk_pciephy_div_clk@4a0093b0 {
- 		compatible = "ti,gate-clock";
- 		clocks = <&optfclk_pciephy_div>;
-@@ -1199,6 +1215,14 @@
- 		ti,bit-shift = <10>;
- 	};
- 
-+	optfclk_pciephy2_div_clk: optfclk_pciephy_div_clk@4a0093b4 {
-+		compatible = "ti,gate-clock";
-+		clocks = <&optfclk_pciephy_div>;
-+		#clock-cells = <0>;
-+		reg = <0x13b4>;
-+		ti,bit-shift = <10>;
-+	};
-+
- 	apll_pcie_clkvcoldo: apll_pcie_clkvcoldo {
- 		#clock-cells = <0>;
- 		compatible = "fixed-factor-clock";
--- 
-1.7.9.5
-
+This has already been done. See a -next tree or so near you.
