@@ -1,103 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaE2XyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 19:54:06 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:61302 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaE2XyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 19:54:03 -0400
-Date: Thu, 29 May 2014 16:54:00 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Marcelo Tosatti <mtosatti@redhat.com>
-cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
- allocations (v5)
-In-Reply-To: <20140529232819.GA29803@amt.cnet>
-Message-ID: <alpine.DEB.2.02.1405291638300.9336@chino.kir.corp.google.com>
-References: <20140523193706.GA22854@amt.cnet> <20140526185344.GA19976@amt.cnet> <53858A06.8080507@huawei.com> <20140528224324.GA1132@amt.cnet> <20140529184303.GA20571@amt.cnet> <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
- <20140529232819.GA29803@amt.cnet>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754015AbaE2Xyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 19:54:36 -0400
+Received: from ns.horizon.com ([71.41.210.147]:42972 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752280AbaE2Xyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 19:54:35 -0400
+Date: 29 May 2014 19:54:32 -0400
+Message-ID: <20140529235432.19207.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tim.c.chen@linux.intel.com
+Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink K_table
+Cc: herbert@gondor.apana.org.au, james.guilford@intel.com, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1401319694.2970.411.camel@schen9-DESK>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014, Marcelo Tosatti wrote:
+Sorry for the delay; my Ivy Bridge test machine isn't in my
+office and getting to the console to tweak the BIOS is a
+bit of a bother.
 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 3d54c41..3bbc23f 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -2374,6 +2374,7 @@ static struct cpuset *nearest_hardwall_ancestor(struct cpuset *cs)
->   * variable 'wait' is not set, and the bit ALLOC_CPUSET is not set
->   * in alloc_flags.  That logic and the checks below have the combined
->   * affect that:
-> + *	gfp_zone(mask) < policy_zone - any node ok
->   *	in_interrupt - any node ok (current task context irrelevant)
->   *	GFP_ATOMIC   - any node ok
->   *	TIF_MEMDIE   - any node ok
-> @@ -2392,6 +2393,10 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
->  
->  	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
->  		return 1;
-> +#ifdef CONFIG_NUMA
-> +	if (gfp_zone(gfp_mask) < policy_zone)
-> +		return 1;
-> +#endif
->  	might_sleep_if(!(gfp_mask & __GFP_HARDWALL));
->  	if (node_isset(node, current->mems_allowed))
->  		return 1;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5dba293..0fd6923 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2723,6 +2723,11 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
->  		return NULL;
->  
-> +#ifdef CONFIG_NUMA
-> +	if (!nodemask && gfp_zone(gfp_mask) < policy_zone)
-> +		nodemask = &node_states[N_MEMORY];
-> +#endif
-> +
->  retry_cpuset:
->  	cpuset_mems_cookie = read_mems_allowed_begin();
->  
+Anyway, i7-4930K, turbo boost & hyperthreading disabled,
+$ cat /sys/devices/system/cpu/cpu?/cpufreq/scaling_governor
+performance
+performance
+performance
+performance
+performance
+performance
 
-When I said that my point about mempolicies needs more thought, I wasn't 
-expecting that there would be no discussion -- at least _something_ that 
-would say why we don't care about the mempolicy case.
+Oddly, though, CPU speed still seems to be fluctuating:
+$ grep MHz /proc/cpuinfo
+cpu MHz         : 1255.875
+cpu MHz         : 3168.375
+cpu MHz         : 3062.125
+cpu MHz         : 1468.375
+cpu MHz         : 1309.000
+cpu MHz         : 2212.125
+$ grep MHz /proc/cpuinfo
+cpu MHz         : 1255.875
+cpu MHz         : 2690.250
+cpu MHz         : 1255.875
+cpu MHz         : 2530.875
+cpu MHz         : 2212.125
+cpu MHz         : 1521.500
 
-The motivation here is identical for both cpusets and mempolicies.  What 
-is the significant difference between attaching a process to a cpuset 
-without access to lowmem and a process doing set_mempolicy(MPOL_BIND) 
-without access to lowmem?  Is it because the process should know what it's 
-doing if it asks for a mempolicy that doesn't include lowmem?  If so, is 
-the cpusets case different because the cpuset attacher isn't held to the 
-same standard?
+It does this even if I set scaling_min_freq to 3400000.
+Very annoying.  Should I be using a different
+scaling_governor than intel_pstate?
 
-I'd argue that an application may never know if it needs to allocate 
-GFP_DMA32 or not since its a property of the hardware that its running on 
-and my driver may need to access lowmem while yours may not.  I may even 
-configure CONFIG_ZONE_DMA=n and CONFIG_ZONE_DMA32=n because I know the 
-_hardware_ requirements of my platforms.
+>> It doesn't look like a slowdown; more like a 1% speedup.
+>
+> You will need to throw away the first few iterations of
+> the test to account for cache warming effects.
 
-If there is no difference, then why are we allowing the exception for 
-cpusets and not mempolicies?
+You're absolutely right; that's exactly *why* I ran it 24 times and
+listed them all separately.  The "1%" number was B.S. and I was not
+thinking when I quoted it.
 
-I really think you want to allow both cpusets and mempolicies.  I'd like 
-to hear Christoph's thoughts on it as well, though.
+What I had legitimately noticed was that the code with the patch took
+slightly fewer cycles most of the time, even after discounting the
+first few.  Not statistically significant, but enough to argue that it
+didn't cause a noticeable slowdown.
 
-Furthermore, I don't know why you're opposed to the comments that Andrew 
-added here.  In the first version of this patch, I suggested a comment and 
-you referred to a kernel/cpuset.c comment.  Nowhere in the above change to 
-the page allocator would make anyone think of cpusets or what it is trying 
-to do.  Please comment the code accordingly so your intention is 
-understood for everybody else who happens upon your code.
+
+Anyway, two iterations each of "modprobe tcrypt mode=319".
+
+Old code:
+[ 1530.513529] 
+[ 1530.513529] testing speed of crc32c
+[ 1530.513535] test  0 (   16 byte blocks,   16 bytes per update,   1 updates):     75 cycles/operation,    4 cycles/byte
+[ 1530.513537] test  1 (   64 byte blocks,   16 bytes per update,   4 updates):    413 cycles/operation,    6 cycles/byte
+[ 1530.513540] test  2 (   64 byte blocks,   64 bytes per update,   1 updates):     88 cycles/operation,    1 cycles/byte
+[ 1530.513542] test  3 (  256 byte blocks,   16 bytes per update,  16 updates):   1327 cycles/operation,    5 cycles/byte
+[ 1530.513548] test  4 (  256 byte blocks,   64 bytes per update,   4 updates):    503 cycles/operation,    1 cycles/byte
+[ 1530.513551] test  5 (  256 byte blocks,  256 bytes per update,   1 updates):    178 cycles/operation,    0 cycles/byte
+[ 1530.513553] test  6 ( 1024 byte blocks,   16 bytes per update,  64 updates):   4972 cycles/operation,    4 cycles/byte
+[ 1530.513572] test  7 ( 1024 byte blocks,  256 bytes per update,   4 updates):    806 cycles/operation,    0 cycles/byte
+[ 1530.513576] test  8 ( 1024 byte blocks, 1024 bytes per update,   1 updates):    370 cycles/operation,    0 cycles/byte
+[ 1530.513579] test  9 ( 2048 byte blocks,   16 bytes per update, 128 updates):   9835 cycles/operation,    4 cycles/byte
+[ 1530.513615] test 10 ( 2048 byte blocks,  256 bytes per update,   8 updates):   1461 cycles/operation,    0 cycles/byte
+[ 1530.513622] test 11 ( 2048 byte blocks, 1024 bytes per update,   2 updates):    847 cycles/operation,    0 cycles/byte
+[ 1530.513626] test 12 ( 2048 byte blocks, 2048 bytes per update,   1 updates):    495 cycles/operation,    0 cycles/byte
+[ 1530.513630] test 13 ( 4096 byte blocks,   16 bytes per update, 256 updates):  19571 cycles/operation,    4 cycles/byte
+[ 1530.513700] test 14 ( 4096 byte blocks,  256 bytes per update,  16 updates):   2758 cycles/operation,    0 cycles/byte
+[ 1530.513711] test 15 ( 4096 byte blocks, 1024 bytes per update,   4 updates):   1676 cycles/operation,    0 cycles/byte
+[ 1530.513718] test 16 ( 4096 byte blocks, 4096 bytes per update,   1 updates):    859 cycles/operation,    0 cycles/byte
+[ 1530.513722] test 17 ( 8192 byte blocks,   16 bytes per update, 512 updates):  39012 cycles/operation,    4 cycles/byte
+[ 1530.513861] test 18 ( 8192 byte blocks,  256 bytes per update,  32 updates):   5417 cycles/operation,    0 cycles/byte
+[ 1530.513882] test 19 ( 8192 byte blocks, 1024 bytes per update,   8 updates):   3162 cycles/operation,    0 cycles/byte
+[ 1530.513894] test 20 ( 8192 byte blocks, 4096 bytes per update,   2 updates):   1678 cycles/operation,    0 cycles/byte
+[ 1530.513901] test 21 ( 8192 byte blocks, 8192 bytes per update,   1 updates):   1653 cycles/operation,    0 cycles/byte
+
+[ 1662.359717] 
+[ 1662.359717] testing speed of crc32c
+[ 1662.359723] test  0 (   16 byte blocks,   16 bytes per update,   1 updates):     80 cycles/operation,    5 cycles/byte
+[ 1662.359725] test  1 (   64 byte blocks,   16 bytes per update,   4 updates):    430 cycles/operation,    6 cycles/byte
+[ 1662.359729] test  2 (   64 byte blocks,   64 bytes per update,   1 updates):     81 cycles/operation,    1 cycles/byte
+[ 1662.359730] test  3 (  256 byte blocks,   16 bytes per update,  16 updates):   1324 cycles/operation,    5 cycles/byte
+[ 1662.359736] test  4 (  256 byte blocks,   64 bytes per update,   4 updates):    503 cycles/operation,    1 cycles/byte
+[ 1662.359740] test  5 (  256 byte blocks,  256 bytes per update,   1 updates):    171 cycles/operation,    0 cycles/byte
+[ 1662.359741] test  6 ( 1024 byte blocks,   16 bytes per update,  64 updates):   4983 cycles/operation,    4 cycles/byte
+[ 1662.359760] test  7 ( 1024 byte blocks,  256 bytes per update,   4 updates):    832 cycles/operation,    0 cycles/byte
+[ 1662.359764] test  8 ( 1024 byte blocks, 1024 bytes per update,   1 updates):    366 cycles/operation,    0 cycles/byte
+[ 1662.359768] test  9 ( 2048 byte blocks,   16 bytes per update, 128 updates):   9839 cycles/operation,    4 cycles/byte
+[ 1662.359804] test 10 ( 2048 byte blocks,  256 bytes per update,   8 updates):   1437 cycles/operation,    0 cycles/byte
+[ 1662.359810] test 11 ( 2048 byte blocks, 1024 bytes per update,   2 updates):    862 cycles/operation,    0 cycles/byte
+[ 1662.359815] test 12 ( 2048 byte blocks, 2048 bytes per update,   1 updates):    494 cycles/operation,    0 cycles/byte
+[ 1662.359818] test 13 ( 4096 byte blocks,   16 bytes per update, 256 updates):  19553 cycles/operation,    4 cycles/byte
+[ 1662.359901] test 14 ( 4096 byte blocks,  256 bytes per update,  16 updates):   2761 cycles/operation,    0 cycles/byte
+[ 1662.359912] test 15 ( 4096 byte blocks, 1024 bytes per update,   4 updates):   1715 cycles/operation,    0 cycles/byte
+[ 1662.359919] test 16 ( 4096 byte blocks, 4096 bytes per update,   1 updates):    852 cycles/operation,    0 cycles/byte
+[ 1662.359928] test 17 ( 8192 byte blocks,   16 bytes per update, 512 updates):  39016 cycles/operation,    4 cycles/byte
+[ 1662.360069] test 18 ( 8192 byte blocks,  256 bytes per update,  32 updates):   5538 cycles/operation,    0 cycles/byte
+[ 1662.360090] test 19 ( 8192 byte blocks, 1024 bytes per update,   8 updates):   3280 cycles/operation,    0 cycles/byte
+[ 1662.360102] test 20 ( 8192 byte blocks, 4096 bytes per update,   2 updates):   1695 cycles/operation,    0 cycles/byte
+[ 1662.360110] test 21 ( 8192 byte blocks, 8192 bytes per update,   1 updates):   1639 cycles/operation,    0 cycles/byte
+
+New code:
+[  710.814463] 
+[  710.814463] testing speed of crc32c
+[  710.814469] test  0 (   16 byte blocks,   16 bytes per update,   1 updates):     80 cycles/operation,    5 cycles/byte
+[  710.814472] test  1 (   64 byte blocks,   16 bytes per update,   4 updates):    410 cycles/operation,    6 cycles/byte
+[  710.814476] test  2 (   64 byte blocks,   64 bytes per update,   1 updates):     94 cycles/operation,    1 cycles/byte
+[  710.814477] test  3 (  256 byte blocks,   16 bytes per update,  16 updates):   1327 cycles/operation,    5 cycles/byte
+[  710.814483] test  4 (  256 byte blocks,   64 bytes per update,   4 updates):    492 cycles/operation,    1 cycles/byte
+[  710.814486] test  5 (  256 byte blocks,  256 bytes per update,   1 updates):    175 cycles/operation,    0 cycles/byte
+[  710.814488] test  6 ( 1024 byte blocks,   16 bytes per update,  64 updates):   4970 cycles/operation,    4 cycles/byte
+[  710.814507] test  7 ( 1024 byte blocks,  256 bytes per update,   4 updates):    797 cycles/operation,    0 cycles/byte
+[  710.814511] test  8 ( 1024 byte blocks, 1024 bytes per update,   1 updates):    370 cycles/operation,    0 cycles/byte
+[  710.814514] test  9 ( 2048 byte blocks,   16 bytes per update, 128 updates):   9846 cycles/operation,    4 cycles/byte
+[  710.814551] test 10 ( 2048 byte blocks,  256 bytes per update,   8 updates):   1452 cycles/operation,    0 cycles/byte
+[  710.814557] test 11 ( 2048 byte blocks, 1024 bytes per update,   2 updates):    840 cycles/operation,    0 cycles/byte
+[  710.814561] test 12 ( 2048 byte blocks, 2048 bytes per update,   1 updates):    497 cycles/operation,    0 cycles/byte
+[  710.814564] test 13 ( 4096 byte blocks,   16 bytes per update, 256 updates):  19563 cycles/operation,    4 cycles/byte
+[  710.814635] test 14 ( 4096 byte blocks,  256 bytes per update,  16 updates):   2764 cycles/operation,    0 cycles/byte
+[  710.814646] test 15 ( 4096 byte blocks, 1024 bytes per update,   4 updates):   1646 cycles/operation,    0 cycles/byte
+[  710.814653] test 16 ( 4096 byte blocks, 4096 bytes per update,   1 updates):    858 cycles/operation,    0 cycles/byte
+[  710.814657] test 17 ( 8192 byte blocks,   16 bytes per update, 512 updates):  39020 cycles/operation,    4 cycles/byte
+[  710.814796] test 18 ( 8192 byte blocks,  256 bytes per update,  32 updates):   5422 cycles/operation,    0 cycles/byte
+[  710.814816] test 19 ( 8192 byte blocks, 1024 bytes per update,   8 updates):   3182 cycles/operation,    0 cycles/byte
+[  710.814829] test 20 ( 8192 byte blocks, 4096 bytes per update,   2 updates):   1669 cycles/operation,    0 cycles/byte
+[  710.814836] test 21 ( 8192 byte blocks, 8192 bytes per update,   1 updates):   1636 cycles/operation,    0 cycles/byte
+
+[ 1751.451733] 
+[ 1751.451733] testing speed of crc32c
+[ 1751.451739] test  0 (   16 byte blocks,   16 bytes per update,   1 updates):     75 cycles/operation,    4 cycles/byte
+[ 1751.451741] test  1 (   64 byte blocks,   16 bytes per update,   4 updates):    414 cycles/operation,    6 cycles/byte
+[ 1751.451745] test  2 (   64 byte blocks,   64 bytes per update,   1 updates):     87 cycles/operation,    1 cycles/byte
+[ 1751.451746] test  3 (  256 byte blocks,   16 bytes per update,  16 updates):   1329 cycles/operation,    5 cycles/byte
+[ 1751.451752] test  4 (  256 byte blocks,   64 bytes per update,   4 updates):    499 cycles/operation,    1 cycles/byte
+[ 1751.451756] test  5 (  256 byte blocks,  256 bytes per update,   1 updates):    170 cycles/operation,    0 cycles/byte
+[ 1751.451757] test  6 ( 1024 byte blocks,   16 bytes per update,  64 updates):   4964 cycles/operation,    4 cycles/byte
+[ 1751.451776] test  7 ( 1024 byte blocks,  256 bytes per update,   4 updates):    836 cycles/operation,    0 cycles/byte
+[ 1751.451780] test  8 ( 1024 byte blocks, 1024 bytes per update,   1 updates):    370 cycles/operation,    0 cycles/byte
+[ 1751.451784] test  9 ( 2048 byte blocks,   16 bytes per update, 128 updates):   9844 cycles/operation,    4 cycles/byte
+[ 1751.451820] test 10 ( 2048 byte blocks,  256 bytes per update,   8 updates):   1468 cycles/operation,    0 cycles/byte
+[ 1751.451826] test 11 ( 2048 byte blocks, 1024 bytes per update,   2 updates):    835 cycles/operation,    0 cycles/byte
+[ 1751.451830] test 12 ( 2048 byte blocks, 2048 bytes per update,   1 updates):    493 cycles/operation,    0 cycles/byte
+[ 1751.451834] test 13 ( 4096 byte blocks,   16 bytes per update, 256 updates):  19564 cycles/operation,    4 cycles/byte
+[ 1751.451904] test 14 ( 4096 byte blocks,  256 bytes per update,  16 updates):   2776 cycles/operation,    0 cycles/byte
+[ 1751.451915] test 15 ( 4096 byte blocks, 1024 bytes per update,   4 updates):   1662 cycles/operation,    0 cycles/byte
+[ 1751.451922] test 16 ( 4096 byte blocks, 4096 bytes per update,   1 updates):    858 cycles/operation,    0 cycles/byte
+[ 1751.451927] test 17 ( 8192 byte blocks,   16 bytes per update, 512 updates):  39531 cycles/operation,    4 cycles/byte
+[ 1751.452067] test 18 ( 8192 byte blocks,  256 bytes per update,  32 updates):   5427 cycles/operation,    0 cycles/byte
+[ 1751.452088] test 19 ( 8192 byte blocks, 1024 bytes per update,   8 updates):   3175 cycles/operation,    0 cycles/byte
+[ 1751.452100] test 20 ( 8192 byte blocks, 4096 bytes per update,   2 updates):   1666 cycles/operation,    0 cycles/byte
+[ 1751.452107] test 21 ( 8192 byte blocks, 8192 bytes per update,   1 updates):   1634 cycles/operation,    0 cycles/byte
+
+The tests are pretty short, but there's no obvious slowdown.  Particularly
+on the tests with > 200 byte per update where the modified code paths are
+found.
+
+Of course, whether the timing is valid is an interesting question.
