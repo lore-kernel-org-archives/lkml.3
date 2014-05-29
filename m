@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852AbaE2Tjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:39:33 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35118 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781AbaE2Tjb (ORCPT
+	id S1755920AbaE2Tmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:42:32 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59344 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049AbaE2Tmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:39:31 -0400
-Message-ID: <53878CFC.2090506@kernel.dk>
-Date: Thu, 29 May 2014 13:39:40 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 29 May 2014 15:42:31 -0400
+Date: Thu, 29 May 2014 21:42:23 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: SX1: remove check for CONFIG_SX1_OLD_FLASH
+Message-ID: <20140529194223.GA20722@amd.pavel.ucw.cz>
+References: <1400182902.11786.21.camel@x220>
+ <20140516211231.GF12881@atomide.com>
+ <20140529190227.GB18230@amd.pavel.ucw.cz>
+ <20140529191738.GA18567@atomide.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org
-Subject: Re: block: remove dead code in scsi_ioctl:blk_verify_command
-References: <20140529191130.GA10405@redhat.com>
-In-Reply-To: <20140529191130.GA10405@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529191738.GA18567@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 01:11 PM, Dave Jones wrote:
-> filter gets assigned the address of blk_default_cmd_filter on
-> entry to this function, so the !filter condition can never be true.
+On Thu 2014-05-29 12:17:39, Tony Lindgren wrote:
+> * Pavel Machek <pavel@ucw.cz> [140529 12:03]:
+> > On Fri 2014-05-16 14:12:31, Tony Lindgren wrote:
+> > > * Paul Bolle <pebolle@tiscali.nl> [140515 12:42]:
+> > > > A check for CONFIG_SX1_OLD_FLASH was added in v2.6.24. But the related
+> > > > Kconfig symbol was never part of the tree. So we can remove some dead
+> > > > code.
+> > > 
+> > > Thanks applying into omap-for-v3.16/board.
+> > 
+> > Actually... It seems there are two variant of SX1, and this is very
+> > useful piece of documentation how the _other_ variant looks.
+> > 
+> > And if someone is hacking linux on sx1, he can probably figure out
+> > #ifdef in .c file...
+> > 
+> > IOW adding the config option might be better solution.
 > 
-> Signed-off-by: Dave Jones <davej@redhat.com>
-> 
-> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-> index 26487972ac54..9c28a5b38042 100644
-> --- a/block/scsi_ioctl.c
-> +++ b/block/scsi_ioctl.c
-> @@ -205,10 +205,6 @@ int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
->  	if (capable(CAP_SYS_RAWIO))
->  		return 0;
->  
-> -	/* if there's no filter set, assume we're filtering everything out */
-> -	if (!filter)
-> -		return -EPERM;
-> -
->  	/* Anybody who can open the device can do a read-safe command */
->  	if (test_bit(cmd[0], filter->read_ok))
->  		return 0;
+> Or just a comment saying the same?
 
-Thanks Dave, applied.
-
+Yes, #if 0 with a comment would do the same trick.
+									Pavel
 -- 
-Jens Axboe
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
