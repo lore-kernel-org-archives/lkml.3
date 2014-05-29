@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078AbaE2NlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:41:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932646AbaE2NlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:41:13 -0400
-Date: Thu, 29 May 2014 15:41:01 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH -tip ] [BUGFIX] perf/probe: Fix perf probe to find
- correct variable DIE
-Message-ID: <20140529134100.GE1177@krava.brq.redhat.com>
-References: <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp>
- <20140529121930.30879.87092.stgit@ltc230.yrl.intra.hitachi.co.jp>
- <53872A72.6040007@hitachi.com>
+	id S932812AbaE2NpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:45:00 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:60220 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932437AbaE2No7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 09:44:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53872A72.6040007@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401218804-77997-1-git-send-email-eric.ernst@linux.intel.com>
+References: <1401218804-77997-1-git-send-email-eric.ernst@linux.intel.com>
+Date: Thu, 29 May 2014 15:44:59 +0200
+Message-ID: <CACRpkdaR0E_fnFZaX7zYmxtLjEuRKr_XW7B8HavpkkjArmy35A@mail.gmail.com>
+Subject: Re: [PATCH 1/1] PINCTRL: Warn if direct IRQ GPIO set to output
+From: Linus Walleij <linus.walleij@linaro.org>
+To: eric.ernst@linux.intel.com,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Gross <mark.gross@intel.com>,
+        "Holmberg, Hans" <hans.holmberg@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 09:39:14PM +0900, Masami Hiramatsu wrote:
-> Hi Arnaldo,
-> 
-> Here is the patch which fixes perf probe to find variable
-> location correctly, on the recent dwarf format. This is not
-> related to the SEGV issue which I fixed in previous mail.
-> 
-> Thank you,
+On Tue, May 27, 2014 at 9:26 PM,  <eric.ernst@linux.intel.com> wrote:
 
-hi,
-I took both patches to my perf/core.. will check
-if Ingo wants the segfault fix via perf/urgent
+> From: Eric Ernst <eric.ernst@linux.intel.com>
+>
+> For Baytrail, you should never set a GPIO set to direct_irq
+> to output mode.  When direct_irq_en is set for a GPIO, it is
+> tied directly to an APIC internally, and making the pad output
+> does not make any sense. Assert a WARN() in the event this happens.
+>
+> Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
 
-thanks,
-jirka
+Can I get some ACK from the author's of this driver on Eric's patch?
+
+Eric, you *are* aware of what the gpio_lock_as_irq() and
+gpio_unlock_as_irq() in the .irq_request_resources are doing
+right? Is this patch just some extra safety measure?
+
+Yours,
+Linus Walleij
