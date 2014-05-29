@@ -1,140 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250AbaE2Ky3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 06:54:29 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:36421 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752427AbaE2Ky1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 06:54:27 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Arnaldo Carvalho de Melo'" <acme@kernel.org>
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        =?Windows-1252?Q?Ondrej_B=EDlka?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Elie De Brauwer" <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "Steven Whitehouse" <steve@chygwyn.com>,
-        =?Windows-1252?Q?R=E9mi_Denis-Courmont?= 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        "Chris Friesen" <chris.friesen@windriver.com>
-Subject: RE: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
-Thread-Topic: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness
- [RESEND]
-Thread-Index: AQHPeoaBBF42JoL2CUKh/KaMaW27r5tWGHxAgAA9vQCAAQahgA==
-Date: Thu, 29 May 2014 10:53:22 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724FB67@AcuExch.aculab.com>
-References: <537E0961.8040005@gmail.com> <20140526134647.GB8176@kernel.org>
- <20140526211706.GA25474@kernel.org> <5384BEC5.2080607@gmail.com>
- <20140527192115.GD25474@kernel.org>
- <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com>
- <20140527203010.GA2764@kernel.org> <5385D47A.3070401@gmail.com>
- <20140528150720.GB2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
- <20140528195004.GD2764@kernel.org>
-In-Reply-To: <20140528195004.GD2764@kernel.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932618AbaE2Kz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 06:55:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757218AbaE2KzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 06:55:24 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
+References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@gmail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Kernel errors with overlay filesystem v22
+Date: Thu, 29 May 2014 11:54:41 +0100
+Message-ID: <27993.1401360881@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: 'Arnaldo Carvalho de 
-...
-> > > So, yes, the user _can_ process the packets already copied to userspace,
-> > > i.e. no packet loss, and then, on the next call, will receive the signal
-> > > notification.
-> 
-> > The application shouldn't need to see an EINTR response, any signal handler
-> > should be run when the system call returns to user (regardless of the
-> > system call result code).
-> > If that doesn't happen Linux is badly broken!
-> > >From an application point of view this is exactly the same as the signal
-> > occurring just before/after the kernel entry/exit for the system call.
-> >
-> > The call should just return early with success status.
-> > No need to preserve the EINTR response for later.
-> >
-> > The same might be appropriate for other errors - maybe including EFAULT
-> > copying non-initial messages to userspace.
-> > Put the message being processed back on the socket queue and return
-> > success with the (non-zero) partial message count.
-> 
-> We don't need to put anything back, if we get an EFAULT for a datagram,
-> then we stop processing that packet, _dropping_ it (and that is just
-> like recvmsg works, look at __skb_recv_datagram, the skb_unlink there,
-> and udp_recvmsg, what happens if skb_copy_and_csum_datagram_iovec fails)
-> and stop the batch, and if no datagrams were received, return the error
-> straight away.
-> 
-> But if some datagrams were successfully received, and at that point
-> _already_ removed from queues and sent successfully to userspace,
-> recvmmsg will return the number of successfully copied datagrams and
-> store the error so that it can return on the next syscall,
 
-That just doesn't make any sense.
-Saving an errno code would only make any sense if the error were a
-property of the socket - but EFAULT is a property of the system call,
-and EINTR a property of the process (it exists so that the process
-can return to userspace to execute a signal handler - relying on
-SIGALRM to timeout blocking system calls is a recipe for disaster).
+When I run my unionmount testsuite against overlayfs, I get the following
+lockdep warning (unionmount is not in the kernel sources in this test):
 
-The next system call could be from an entirely different process,
-neither EFAULT nor EINTR would mean anything to it at all.
-
-ISTR that returning EFAULT generates a signal that will typically
-terminate the process.
-You definitely don't want to send one to a different process.
-
-> Please refer to the original discussion on how to report how many
-> successfully copied datagrams and also report that it stopped before the
-> timeout and the number of requested datagrams in a batch:
-> 
-> http://lkml.kernel.org/r/200905221022.48790.remi.denis-courmont@nokia.com
-
-I do remember the original problem.
-I don't recall error reporting being referenced.
-
-> What is being discussed here is how to return the EFAULT that may happen
-> _after_ datagram processing, be it interrupted by an EFAULT, signal, or
-> plain returning all that was requested, with no errors.
-
-I remember some discussions from an XNET standards meeting (I've forgotten
-exactly which errors on which calls were being discussed).
-My recollection is that you return success with a partial transfer
-count for ANY error that happens after some data has been transferred.
-The actual error will be returned when it happens again on the next
-system call - Note the AGAIN, not a saved error.
-
-Things like blocking send/write being interrupted spring to mind.
-Possibly even copyin/out failures part way through a read/write call.
-
-> This EFAULT _after_ datagram processing may happen when updating the
-> remaining timeout, because then how can userspace both receive the
-> number of successfully copied datagrams (in any of the cases mentioned
-> in the previous paragraph) and know that that timeout can't be used
-> because there was a problem while trying to copy it to userspace
-> (EFAULT)?
-
-Failure to write the control structure back to userspace probably
-deserves an EFAULT return - the application is buggy.
-IIRC normal recvmsg() copies out the control structure at the end
-of processing - that can fail.
-I wouldn't worry about datagram discards on any of those late
-EFAULT conditions.
-
-	David
+================================================
+[ BUG: lock held when returning to user space! ]
+3.15.0-rc6-fsdevel+ #363 Tainted: G        W    
+------------------------------------------------
+mount/4183 is leaving the kernel with locks still held!
+1 lock held by mount/4183:
+ #0:  (sb_writers#8){.+.+.+}, at: [<ffffffff8112bf5b>] mnt_want_write+0x1c/0x40
 
 
+The mounts involved look like:
 
+lower_layer /lower tmpfs ro,seclabel,relatime 0 0
+upper_layer /upper tmpfs rw,seclabel,relatime 0 0
+overlayfs /mnt overlayfs rw,relatime,lowerdir=/lower,upperdir=/upper/upper,workdir=/upper/work 0 0
+
+I get a busy inodes warning on unmounting /upper (/mnt unmounts okay):
+
+BUG: Dentry ffff88002795feb8{i=2e8e,n=work}  still in use (1) [unmount of tmpfs tmpfs]
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 2981 at /data/fs/linux-2.6-fscache/fs/dcache.c:1262 umount_check+0x76/0x7a()
+Modules linked in:
+CPU: 0 PID: 2981 Comm: umount Tainted: G        W     3.15.0-rc6-fsdevel+ #363
+Hardware name:                  /DG965RY, BIOS MQ96510J.86A.0816.2006.0716.2308 07/16/2006
+ 0000000000000000 ffff8800383b7d38 ffffffff8148b669 0000000000000000
+ ffff8800383b7d70 ffffffff81038887 ffffffff81125407 ffff8800279368a0
+ 00000000000005d0 ffff88003b76f630 ffff88002795feb8 ffff8800383b7d80
+Call Trace:
+ [<ffffffff8148b669>] dump_stack+0x4d/0x66
+ [<ffffffff81038887>] warn_slowpath_common+0x7a/0x93
+ [<ffffffff81125407>] ? umount_check+0x76/0x7a
+ [<ffffffff8103893f>] warn_slowpath_null+0x15/0x17
+ [<ffffffff81125407>] umount_check+0x76/0x7a
+ [<ffffffff811238bc>] d_walk+0x134/0x2ff
+ [<ffffffff811251ab>] ? do_one_tree+0x21/0x34
+ [<ffffffff81125391>] ? dget_parent+0x13f/0x13f
+ [<ffffffff811251ab>] do_one_tree+0x21/0x34
+ [<ffffffff81125dbf>] shrink_dcache_for_umount+0x42/0x6b
+ [<ffffffff81112e73>] generic_shutdown_super+0x1c/0xe8
+ [<ffffffff8111309b>] kill_anon_super+0xd/0x17
+ [<ffffffff811130c3>] kill_litter_super+0x1e/0x21
+ [<ffffffff8111344e>] deactivate_locked_super+0x27/0x48
+ [<ffffffff81113ff5>] deactivate_super+0x39/0x3c
+ [<ffffffff8112bc50>] mntput_no_expire+0x237/0x258
+ [<ffffffff8112d001>] ? SyS_umount+0x3ba/0x3db
+ [<ffffffff8112d001>] SyS_umount+0x3ba/0x3db
+ [<ffffffff814923f4>] ? tracesys+0xdd/0xe2
+ [<ffffffff8100d737>] ? syscall_trace_enter+0x197/0x1eb
+ [<ffffffff814923f4>] tracesys+0xdd/0xe2
+---[ end trace 11bb9aeb6ce29610 ]---
+VFS: Busy inodes after unmount of tmpfs. Self-destruct in 5 seconds.  Have a nice day...
