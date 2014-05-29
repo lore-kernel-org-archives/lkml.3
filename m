@@ -1,125 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817AbaE2EgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:36:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58147 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423AbaE2Efw (ORCPT
+	id S932897AbaE2EhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:37:20 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:58483 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932867AbaE2EhR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:52 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 111/140] net: cdc_mbim: __vlan_find_dev_deep need rcu_read_lock
-Date: Wed, 28 May 2014 21:34:10 -0700
-Message-Id: <20140529043103.858713939@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
-In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
-References: <20140529043049.661315084@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 29 May 2014 00:37:17 -0400
 MIME-Version: 1.0
+In-Reply-To: <5385A638.2000001@linaro.org>
+References: <CANuQgHGSA+R__raSa_tzrgpceqLD2SZw+s0XQUHGF4wscgh6Kg@mail.gmail.com>
+	<1400227438-27155-1-git-send-email-chander.kashyap@linaro.org>
+	<53831795.9070006@gmail.com>
+	<CANuQgHH284A9QY7M5zGbSE-mXjm2KDqr54VWmtKVkbma3zZvvw@mail.gmail.com>
+	<015f01cf7a2e$3b141590$b13c40b0$@samsung.com>
+	<5385A638.2000001@linaro.org>
+Date: Thu, 29 May 2014 10:07:15 +0530
+Message-ID: <CANuQgHGM_PsDO0RmEKDVXSs1u50VMuLrx-=0sYhDut1gSjspcg@mail.gmail.com>
+Subject: Re: [PATCH v6 0/6] add cpuidle support for Exynos5420
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 28 May 2014 14:32, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+> On 05/28/2014 06:35 AM, Kukjin Kim wrote:
+>>
+>> Chander Kashyap wrote:
+>>>
+>>>
+>>> On 26 May 2014 15:59, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>>>
+>>>> Hi Chander,
+>>>>
+>>>> On 16.05.2014 10:03, Chander Kashyap wrote:
+>>>>>
+>>>>> Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7
+>>>
+>>> cores.
+>>>>>
+>>>>>
+>>>>> This patchset adds cpuidle support for Exynos5420 SoC based on
+>>>>> generic big.little cpuidle driver.
+>>>>>
+>>>>> Tested on SMDK5420.
+>>>>>
+>>>>> This patch set depends on:
+>>>>>        1. [PATCH 0/5] MCPM backend for Exynos5420
+>>>>>           http://www.spinics.net/lists/arm-kernel/msg331100.html
+>>>>> Changelog is in respective patches.
+>>>>> Chander Kashyap (5):
+>>>>>    driver: cpuidle-big-little: add of_device_id structure
+>>>>>    arm: exynos: add generic function to calculate cpu number
+>>>>>    cpuidle: config: Add ARCH_EXYNOS entry to select cpuidle-big-little
+>>>>>      driver
+>>>>>    driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
+>>>>>    exynos: cpuidle: do not allow cpuidle registration for Exynos5420
+>>>>>    mcpm: exynos: populate suspend and powered_up callbacks
+>>>>>
+>>>>>   arch/arm/mach-exynos/exynos.c        |    4 +++-
+>>>>>   arch/arm/mach-exynos/mcpm-exynos.c   |   36
+>>>
+>>> ++++++++++++++++++++++++++++++++++
+>>>>>
+>>>>>   arch/arm/mach-exynos/regs-pmu.h      |    9 +++++++++
+>>>>>   drivers/cpuidle/Kconfig.arm          |    2 +-
+>>>>>   drivers/cpuidle/cpuidle-big_little.c |   12 +++++++++++-
+>>>>>   5 files changed, 60 insertions(+), 3 deletions(-)
+>>>>>
+>>>>
+>>>> For the whole series,
+>>>>
+>>>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>>>
+>>>
+>>> Thanks Tomasz.
+>>>
+>>> Dear Kukjin,
+>>> Can you take these patches.
+>>>>
+>>>>
+>> When I looked at this series quickly, looks good to me but I need to get
+>> ack from cpuidle maintainer Rafael or Daniel.
+>
+>
+> Acked the different cpuidle bits.
 
-------------------
-
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-
-[ Upstream commit 4f4178f3bb1f470d7fb863ec531e08e20a0fd51c ]
-
-Fixes this warning introduced by commit 5b8f15f78e6f
-("net: cdc_mbim: handle IPv6 Neigbor Solicitations"):
-
-===============================
-[ INFO: suspicious RCU usage. ]
-3.15.0-rc3 #213 Tainted: G        W  O
--------------------------------
-net/8021q/vlan_core.c:69 suspicious rcu_dereference_check() usage!
-
-other info that might help us debug this:
-
-rcu_scheduler_active = 1, debug_locks = 1
-no locks held by ksoftirqd/0/3.
-
-stack backtrace:
-CPU: 0 PID: 3 Comm: ksoftirqd/0 Tainted: G        W  O  3.15.0-rc3 #213
-Hardware name: LENOVO 2776LEG/2776LEG, BIOS 6EET55WW (3.15 ) 12/19/2011
- 0000000000000001 ffff880232533bf0 ffffffff813a5ee6 0000000000000006
- ffff880232530090 ffff880232533c20 ffffffff81076b94 0000000000000081
- 0000000000000000 ffff8802085ac000 ffff88007fc8ea00 ffff880232533c50
-Call Trace:
- [<ffffffff813a5ee6>] dump_stack+0x4e/0x68
- [<ffffffff81076b94>] lockdep_rcu_suspicious+0xfa/0x103
- [<ffffffff813978a6>] __vlan_find_dev_deep+0x54/0x94
- [<ffffffffa04a1938>] cdc_mbim_rx_fixup+0x379/0x66a [cdc_mbim]
- [<ffffffff813ab76f>] ? _raw_spin_unlock_irqrestore+0x3a/0x49
- [<ffffffff81079671>] ? trace_hardirqs_on_caller+0x192/0x1a1
- [<ffffffffa059bd10>] usbnet_bh+0x59/0x287 [usbnet]
- [<ffffffff8104067d>] tasklet_action+0xbb/0xcd
- [<ffffffff81040057>] __do_softirq+0x14c/0x30d
- [<ffffffff81040237>] run_ksoftirqd+0x1f/0x50
- [<ffffffff8105f13e>] smpboot_thread_fn+0x172/0x18e
- [<ffffffff8105efcc>] ? SyS_setgroups+0xdf/0xdf
- [<ffffffff810594b0>] kthread+0xb5/0xbd
- [<ffffffff813a84b1>] ? __wait_for_common+0x13b/0x170
- [<ffffffff810593fb>] ? __kthread_parkme+0x5c/0x5c
- [<ffffffff813b147c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810593fb>] ? __kthread_parkme+0x5c/0x5c
-
-Fixes: 5b8f15f78e6f ("net: cdc_mbim: handle IPv6 Neigbor Solicitations")
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/usb/cdc_mbim.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
-
---- a/drivers/net/usb/cdc_mbim.c
-+++ b/drivers/net/usb/cdc_mbim.c
-@@ -204,17 +204,23 @@ static void do_neigh_solicit(struct usbn
- 		return;
- 
- 	/* need to send the NA on the VLAN dev, if any */
--	if (tci)
-+	rcu_read_lock();
-+	if (tci) {
- 		netdev = __vlan_find_dev_deep(dev->net, htons(ETH_P_8021Q),
- 					      tci);
--	else
-+		if (!netdev) {
-+			rcu_read_unlock();
-+			return;
-+		}
-+	} else {
- 		netdev = dev->net;
--	if (!netdev)
--		return;
-+	}
-+	dev_hold(netdev);
-+	rcu_read_unlock();
- 
- 	in6_dev = in6_dev_get(netdev);
- 	if (!in6_dev)
--		return;
-+		goto out;
- 	is_router = !!in6_dev->cnf.forwarding;
- 	in6_dev_put(in6_dev);
- 
-@@ -224,6 +230,8 @@ static void do_neigh_solicit(struct usbn
- 				 true /* solicited */,
- 				 false /* override */,
- 				 true /* inc_opt */);
-+out:
-+	dev_put(netdev);
- }
- 
- static bool is_neigh_solicit(u8 *buf, size_t len)
+Hi Kukjin,
+Can you take it now?
 
 
+>
+> Thanks
+>   -- Daniel
+>
+>
+> --
+>  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+>
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+>
+
+
+
+-- 
+with warm regards,
+Chander Kashyap
