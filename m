@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933636AbaE2Grf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:47:35 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:38247 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757117AbaE2Gh4 (ORCPT
+	id S1756763AbaE2Gr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:47:58 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:53796 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774AbaE2Ghy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:37:56 -0400
+	Thu, 29 May 2014 02:37:54 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: lee.jones@linaro.org, Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v4 06/11] drm: sti: add TVOut driver
-Date: Thu, 29 May 2014 08:37:02 +0200
-Message-Id: <1401345427-5299-7-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v4 05/11] drm: sti: add HDA driver
+Date: Thu, 29 May 2014 08:37:01 +0200
+Message-Id: <1401345427-5299-6-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
 References: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
@@ -21,742 +21,759 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TVout hardware block is responsible to dispatch the data flow coming
-from compositor block to any of the output (HDMI or Analog TV).
-It control when output are start/stop and configure according the
-require flow path.
+Add driver to support analog TV ouput.
 
-TVout is the parent of HDMI and HDA drivers and bind them at runtime.
+As HDMI driver HDA use sti_connector structure to provide
+helper functions.
 
 Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- drivers/gpu/drm/sti/Makefile    |   3 +-
- drivers/gpu/drm/sti/sti_tvout.c | 678 ++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/sti/sti_tvout.h |  18 ++
- 3 files changed, 698 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/sti/sti_tvout.c
- create mode 100644 drivers/gpu/drm/sti/sti_tvout.h
+ drivers/gpu/drm/sti/Makefile  |   3 +-
+ drivers/gpu/drm/sti/sti_hda.c | 723 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 725 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpu/drm/sti/sti_hda.c
 
 diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
-index df47171..dcc9568 100644
+index 5521a85..df47171 100644
 --- a/drivers/gpu/drm/sti/Makefile
 +++ b/drivers/gpu/drm/sti/Makefile
-@@ -4,4 +4,5 @@ obj-$(CONFIG_DRM_STI) += \
+@@ -3,4 +3,5 @@ obj-$(CONFIG_DRM_STI) += \
+ 	sti_vtac.o \
  	sti_hdmi.o \
  	sti_hdmi_tx3g0c55phy.o \
- 	sti_hdmi_tx3g4c28phy.o \
--	sti_hda.o
-+	sti_hda.o \
-+	sti_tvout.o
+-	sti_hdmi_tx3g4c28phy.o
 \ No newline at end of file
-diff --git a/drivers/gpu/drm/sti/sti_tvout.c b/drivers/gpu/drm/sti/sti_tvout.c
++	sti_hdmi_tx3g4c28phy.o \
++	sti_hda.o
+diff --git a/drivers/gpu/drm/sti/sti_hda.c b/drivers/gpu/drm/sti/sti_hda.c
 new file mode 100644
-index 0000000..d778e35
+index 0000000..9a6278d
 --- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_tvout.c
-@@ -0,0 +1,678 @@
++++ b/drivers/gpu/drm/sti/sti_hda.c
+@@ -0,0 +1,723 @@
 +/*
 + * Copyright (C) STMicroelectronics SA 2014
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Vincent Abriou <vincent.abriou@st.com>
-+ *          for STMicroelectronics.
++ * Author: Fabien Dessenne <fabien.dessenne@st.com> for STMicroelectronics.
 + * License terms:  GNU General Public License (GPL), version 2
 + */
 +
 +#include <linux/clk.h>
 +#include <linux/component.h>
 +#include <linux/module.h>
-+#include <linux/of_platform.h>
 +#include <linux/platform_device.h>
-+#include <linux/reset.h>
 +
 +#include <drm/drmP.h>
-+#include <drm/drm_crtc_helper.h>
 +
 +#include "sti_drm_connector.h"
 +#include "sti_drm_encoder.h"
-+#include "sti_tvout.h"
 +
-+/* glue registers */
-+#define TVO_CSC_MAIN_M0                  0x000
-+#define TVO_CSC_MAIN_M1                  0x004
-+#define TVO_CSC_MAIN_M2                  0x008
-+#define TVO_CSC_MAIN_M3                  0x00c
-+#define TVO_CSC_MAIN_M4                  0x010
-+#define TVO_CSC_MAIN_M5                  0x014
-+#define TVO_CSC_MAIN_M6                  0x018
-+#define TVO_CSC_MAIN_M7                  0x01c
-+#define TVO_MAIN_IN_VID_FORMAT           0x030
-+#define TVO_CSC_AUX_M0                   0x100
-+#define TVO_CSC_AUX_M1                   0x104
-+#define TVO_CSC_AUX_M2                   0x108
-+#define TVO_CSC_AUX_M3                   0x10c
-+#define TVO_CSC_AUX_M4                   0x110
-+#define TVO_CSC_AUX_M5                   0x114
-+#define TVO_CSC_AUX_M6                   0x118
-+#define TVO_CSC_AUX_M7                   0x11c
-+#define TVO_AUX_IN_VID_FORMAT            0x130
-+#define TVO_VIP_HDF                      0x400
-+#define TVO_HD_SYNC_SEL                  0x418
-+#define TVO_HD_DAC_CFG_OFF               0x420
-+#define TVO_VIP_HDMI                     0x500
-+#define TVO_HDMI_FORCE_COLOR_0           0x504
-+#define TVO_HDMI_FORCE_COLOR_1           0x508
-+#define TVO_HDMI_CLIP_VALUE_B_CB         0x50c
-+#define TVO_HDMI_CLIP_VALUE_Y_G          0x510
-+#define TVO_HDMI_CLIP_VALUE_R_CR         0x514
-+#define TVO_HDMI_SYNC_SEL                0x518
-+#define TVO_HDMI_DFV_OBS                 0x540
++/* HDformatter registers */
++#define HDA_ANA_CFG                     0x0000
++#define HDA_ANA_SCALE_CTRL_Y            0x0004
++#define HDA_ANA_SCALE_CTRL_CB           0x0008
++#define HDA_ANA_SCALE_CTRL_CR           0x000C
++#define HDA_ANA_ANC_CTRL                0x0010
++#define HDA_ANA_SRC_Y_CFG               0x0014
++#define HDA_COEFF_Y_PH1_TAP123          0x0018
++#define HDA_COEFF_Y_PH1_TAP456          0x001C
++#define HDA_COEFF_Y_PH2_TAP123          0x0020
++#define HDA_COEFF_Y_PH2_TAP456          0x0024
++#define HDA_COEFF_Y_PH3_TAP123          0x0028
++#define HDA_COEFF_Y_PH3_TAP456          0x002C
++#define HDA_COEFF_Y_PH4_TAP123          0x0030
++#define HDA_COEFF_Y_PH4_TAP456          0x0034
++#define HDA_ANA_SRC_C_CFG               0x0040
++#define HDA_COEFF_C_PH1_TAP123          0x0044
++#define HDA_COEFF_C_PH1_TAP456          0x0048
++#define HDA_COEFF_C_PH2_TAP123          0x004C
++#define HDA_COEFF_C_PH2_TAP456          0x0050
++#define HDA_COEFF_C_PH3_TAP123          0x0054
++#define HDA_COEFF_C_PH3_TAP456          0x0058
++#define HDA_COEFF_C_PH4_TAP123          0x005C
++#define HDA_COEFF_C_PH4_TAP456          0x0060
++#define HDA_SYNC_AWGI                   0x0300
 +
-+#define TVO_IN_FMT_SIGNED                BIT(0)
-+#define TVO_SYNC_EXT                     BIT(4)
++/* HDA_ANA_CFG */
++#define CFG_AWG_ASYNC_EN                BIT(0)
++#define CFG_AWG_ASYNC_HSYNC_MTD         BIT(1)
++#define CFG_AWG_ASYNC_VSYNC_MTD         BIT(2)
++#define CFG_AWG_SYNC_DEL                BIT(3)
++#define CFG_AWG_FLTR_MODE_SHIFT         4
++#define CFG_AWG_FLTR_MODE_MASK          (0xF << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_AWG_FLTR_MODE_SD            (0 << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_AWG_FLTR_MODE_ED            (1 << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_AWG_FLTR_MODE_HD            (2 << CFG_AWG_FLTR_MODE_SHIFT)
++#define CFG_SYNC_ON_PBPR_MASK           BIT(8)
++#define CFG_PREFILTER_EN_MASK           BIT(9)
++#define CFG_PBPR_SYNC_OFF_SHIFT         16
++#define CFG_PBPR_SYNC_OFF_MASK          (0x7FF << CFG_PBPR_SYNC_OFF_SHIFT)
++#define CFG_PBPR_SYNC_OFF_VAL           0x117 /* Voltage dependent. stiH416 */
 +
-+#define TVO_VIP_REORDER_R_SHIFT          24
-+#define TVO_VIP_REORDER_G_SHIFT          20
-+#define TVO_VIP_REORDER_B_SHIFT          16
-+#define TVO_VIP_REORDER_MASK             0x3
-+#define TVO_VIP_REORDER_Y_G_SEL          0
-+#define TVO_VIP_REORDER_CB_B_SEL         1
-+#define TVO_VIP_REORDER_CR_R_SEL         2
++/* Default scaling values */
++#define SCALE_CTRL_Y_DFLT               0x00C50256
++#define SCALE_CTRL_CB_DFLT              0x00DB0249
++#define SCALE_CTRL_CR_DFLT              0x00DB0249
 +
-+#define TVO_VIP_CLIP_SHIFT               8
-+#define TVO_VIP_CLIP_MASK                0x7
-+#define TVO_VIP_CLIP_DISABLED            0
-+#define TVO_VIP_CLIP_EAV_SAV             1
-+#define TVO_VIP_CLIP_LIMITED_RANGE_RGB_Y 2
-+#define TVO_VIP_CLIP_LIMITED_RANGE_CB_CR 3
-+#define TVO_VIP_CLIP_PROG_RANGE          4
++/* Video DACs control */
++#define VIDEO_DACS_CONTROL_MASK         0x0FFF
++#define VIDEO_DACS_CONTROL_SYSCFG2535   0x085C /* for stih416 */
++#define DAC_CFG_HD_OFF_SHIFT            5
++#define DAC_CFG_HD_OFF_MASK             (0x7 << DAC_CFG_HD_OFF_SHIFT)
++#define VIDEO_DACS_CONTROL_SYSCFG5072   0x0120 /* for stih407 */
++#define DAC_CFG_HD_HZUVW_OFF_MASK       BIT(1)
 +
-+#define TVO_VIP_RND_SHIFT                4
-+#define TVO_VIP_RND_MASK                 0x3
-+#define TVO_VIP_RND_8BIT_ROUNDED         0
-+#define TVO_VIP_RND_10BIT_ROUNDED        1
-+#define TVO_VIP_RND_12BIT_ROUNDED        2
 +
-+#define TVO_VIP_SEL_INPUT_MASK           0xf
-+#define TVO_VIP_SEL_INPUT_MAIN           0x0
-+#define TVO_VIP_SEL_INPUT_AUX            0x8
-+#define TVO_VIP_SEL_INPUT_FORCE_COLOR    0xf
-+#define TVO_VIP_SEL_INPUT_BYPASS_MASK    0x1
-+#define TVO_VIP_SEL_INPUT_BYPASSED       1
++/* Upsampler values for the alternative 2X Filter */
++#define SAMPLER_COEF_NB                 8
++#define HDA_ANA_SRC_Y_CFG_ALT_2X        0x01130000
++static u32 coef_y_alt_2x[] = {
++	0x00FE83FB, 0x1F900401, 0x00000000, 0x00000000,
++	0x00F408F9, 0x055F7C25, 0x00000000, 0x00000000
++};
 +
-+#define TVO_SYNC_MAIN_VTG_SET_REF        0x00
-+#define TVO_SYNC_MAIN_VTG_SET_1          0x01
-+#define TVO_SYNC_MAIN_VTG_SET_2          0x02
-+#define TVO_SYNC_MAIN_VTG_SET_3          0x03
-+#define TVO_SYNC_MAIN_VTG_SET_4          0x04
-+#define TVO_SYNC_MAIN_VTG_SET_5          0x05
-+#define TVO_SYNC_MAIN_VTG_SET_6          0x06
-+#define TVO_SYNC_AUX_VTG_SET_REF         0x10
-+#define TVO_SYNC_AUX_VTG_SET_1           0x11
-+#define TVO_SYNC_AUX_VTG_SET_2           0x12
-+#define TVO_SYNC_AUX_VTG_SET_3           0x13
-+#define TVO_SYNC_AUX_VTG_SET_4           0x14
-+#define TVO_SYNC_AUX_VTG_SET_5           0x15
-+#define TVO_SYNC_AUX_VTG_SET_6           0x16
++#define HDA_ANA_SRC_C_CFG_ALT_2X        0x01750004
++static u32 coef_c_alt_2x[] = {
++	0x001305F7, 0x05274BD0, 0x00000000, 0x00000000,
++	0x0004907C, 0x09C80B9D, 0x00000000, 0x00000000
++};
 +
-+#define TVO_SYNC_HD_DCS_SHIFT            8
++/* Upsampler values for the 4X Filter */
++#define HDA_ANA_SRC_Y_CFG_4X            0x01ED0005
++#define HDA_ANA_SRC_C_CFG_4X            0x01ED0004
++static u32 coef_yc_4x[] = {
++	0x00FC827F, 0x008FE20B, 0x00F684FC, 0x050F7C24,
++	0x00F4857C, 0x0A1F402E, 0x00FA027F, 0x0E076E1D
++};
 +
-+/* enum listing the supported output data format */
-+enum sti_tvout_video_out_type {
-+	STI_TVOUT_VIDEO_OUT_RGB,
-+	STI_TVOUT_VIDEO_OUT_YUV,
++/* AWG instructions for some video modes */
++#define AWG_MAX_INST                    64
++
++/* 720p@50 */
++static u32 AWGi_720p_50[] = {
++	0x00000971, 0x00000C26, 0x0000013B, 0x00000CDA,
++	0x00000104, 0x00000E7E, 0x00000E7F, 0x0000013B,
++	0x00000D8E, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C26, 0x0000003B, 0x00000FB4, 0x00000FB5,
++	0x00000104, 0x00001AE8
++};
++
++#define NN_720p_50 ARRAY_SIZE(AWGi_720p_50)
++
++/* 720p@60 */
++static u32 AWGi_720p_60[] = {
++	0x00000971, 0x00000C26, 0x0000013B, 0x00000CDA,
++	0x00000104, 0x00000E7E, 0x00000E7F, 0x0000013B,
++	0x00000C44, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C26, 0x0000003B, 0x00000F0F, 0x00000F10,
++	0x00000104, 0x00001AE8
++};
++
++#define NN_720p_60 ARRAY_SIZE(AWGi_720p_60)
++
++/* 1080p@30 */
++static u32 AWGi_1080p_30[] = {
++	0x00000971, 0x00000C2A, 0x0000013B, 0x00000C56,
++	0x00000104, 0x00000FDC, 0x00000FDD, 0x0000013B,
++	0x00000C2A, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C2A, 0x0000003B, 0x00000EBE, 0x00000EBF,
++	0x00000EBF, 0x00000104, 0x00001A2F, 0x00001C4B,
++	0x00001C52
++};
++
++#define NN_1080p_30 ARRAY_SIZE(AWGi_1080p_30)
++
++/* 1080p@25 */
++static u32 AWGi_1080p_25[] = {
++	0x00000971, 0x00000C2A, 0x0000013B, 0x00000C56,
++	0x00000104, 0x00000FDC, 0x00000FDD, 0x0000013B,
++	0x00000DE2, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C2A, 0x0000003B, 0x00000F51, 0x00000F51,
++	0x00000F52, 0x00000104, 0x00001A2F, 0x00001C4B,
++	0x00001C52
++};
++
++#define NN_1080p_25 ARRAY_SIZE(AWGi_1080p_25)
++
++/* 1080p@24 */
++static u32 AWGi_1080p_24[] = {
++	0x00000971, 0x00000C2A, 0x0000013B, 0x00000C56,
++	0x00000104, 0x00000FDC, 0x00000FDD, 0x0000013B,
++	0x00000E50, 0x00000104, 0x00001804, 0x00000971,
++	0x00000C2A, 0x0000003B, 0x00000F76, 0x00000F76,
++	0x00000F76, 0x00000104, 0x00001A2F, 0x00001C4B,
++	0x00001C52
++};
++
++#define NN_1080p_24 ARRAY_SIZE(AWGi_1080p_24)
++
++/* 720x480p@60 */
++static u32 AWGi_720x480p_60[] = {
++	0x00000904, 0x00000F18, 0x0000013B, 0x00001805,
++	0x00000904, 0x00000C3D, 0x0000003B, 0x00001A06
++};
++
++#define NN_720x480p_60 ARRAY_SIZE(AWGi_720x480p_60)
++
++/* Video mode category */
++enum sti_hda_vid_cat {
++	VID_SD,
++	VID_ED,
++	VID_HD_74M,
++	VID_HD_148M
++};
++
++struct sti_hda_video_config {
++	struct drm_display_mode mode;
++	u32 *awg_instr;
++	int nb_instr;
++	enum sti_hda_vid_cat vid_cat;
++};
++
++/* HD analog supported modes
++ * Interlaced modes may be added when supported by the whole display chain
++ */
++static const struct sti_hda_video_config hda_supported_modes[] = {
++	/* 1080p30 74.250Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74250, 1920, 2008,
++		   2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_30, NN_1080p_30, VID_HD_74M},
++	/* 1080p30 74.176Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74176, 1920, 2008,
++		   2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_30, NN_1080p_30, VID_HD_74M},
++	/* 1080p24 74.250Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74250, 1920, 2558,
++		   2602, 2750, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_24, NN_1080p_24, VID_HD_74M},
++	/* 1080p24 74.176Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74176, 1920, 2558,
++		   2602, 2750, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_24, NN_1080p_24, VID_HD_74M},
++	/* 1080p25 74.250Mhz */
++	{{DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 74250, 1920, 2448,
++		   2492, 2640, 0, 1080, 1084, 1089, 1125, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_1080p_25, NN_1080p_25, VID_HD_74M},
++	/* 720p60 74.250Mhz */
++	{{DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1390,
++		   1430, 1650, 0, 720, 725, 730, 750, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_720p_60, NN_720p_60, VID_HD_74M},
++	/* 720p60 74.176Mhz */
++	{{DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74176, 1280, 1390,
++		   1430, 1650, 0, 720, 725, 730, 750, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_720p_60, NN_720p_60, VID_HD_74M},
++	/* 720p50 74.250Mhz */
++	{{DRM_MODE("1280x720", DRM_MODE_TYPE_DRIVER, 74250, 1280, 1720,
++		   1760, 1980, 0, 720, 725, 730, 750, 0,
++		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC)},
++	 AWGi_720p_50, NN_720p_50, VID_HD_74M},
++	/* 720x480p60 27.027Mhz */
++	{{DRM_MODE("720x480", DRM_MODE_TYPE_DRIVER, 27027, 720, 736,
++		   798, 858, 0, 480, 489, 495, 525, 0,
++		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC)},
++	 AWGi_720x480p_60, NN_720x480p_60, VID_ED},
++	/* 720x480p60 27.000Mhz */
++	{{DRM_MODE("720x480", DRM_MODE_TYPE_DRIVER, 27000, 720, 736,
++		   798, 858, 0, 480, 489, 495, 525, 0,
++		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC)},
++	 AWGi_720x480p_60, NN_720x480p_60, VID_ED}
 +};
 +
 +/**
-+ * STI TVout structure
++ * STI hd analog structure
 + *
-+ * @dev: pointer to driver device
-+ * @regs: registers
-+ * @reset: reset control of the tvout
++ * @dev: driver device
++ * @drm_dev: pointer to drm device
++ * @mode: current display mode selected
++ * @regs: HD analog register
++ * @video_dacs_ctrl: video DACS control register
++ * @enabled: true if HD analog is enabled else false
 + */
-+struct sti_tvout {
-+	struct device *dev;
++struct sti_hda {
++	struct device dev;
++	struct drm_device *drm_dev;
++	struct drm_display_mode mode;
 +	void __iomem *regs;
-+	struct reset_control *reset;
++	void __iomem *video_dacs_ctrl;
++	struct clk *clk_pix;
++	struct clk *clk_hddac;
++	bool enabled;
 +};
 +
-+/* preformatter conversion matrix */
-+static const u32 rgb_to_ycbcr_601[8] = {
-+	0xF927082E, 0x04C9FEAB, 0x01D30964, 0xFA95FD3D,
-+	0x0000082E, 0x00002000, 0x00002000, 0x00000000
-+};
-+
-+/* 709 RGB to YCbCr */
-+static const u32 rgb_to_ycbcr_709[8] = {
-+	0xF891082F, 0x0367FF40, 0x01280B71, 0xF9B1FE20,
-+	0x0000082F, 0x00002000, 0x00002000, 0x00000000
-+};
-+
-+static u32 tvout_read(struct sti_tvout *tvout, int offset)
++static u32 hda_read(struct sti_hda *hda, int offset)
 +{
-+	return readl(tvout->regs + offset);
++	return readl(hda->regs + offset);
 +}
 +
-+static void tvout_write(struct sti_tvout *tvout, u32 val, int offset)
++static void hda_write(struct sti_hda *hda, u32 val, int offset)
 +{
-+	writel(val, tvout->regs + offset);
++	writel(val, hda->regs + offset);
 +}
 +
 +/**
-+ * Set the clipping mode of a VIP
++ * Search for a video mode in the supported modes table
 + *
-+ * @tvout: tvout structure
-+ * @cr_r:
-+ * @y_g:
-+ * @cb_b:
++ * @mode: mode being searched
++ * @idx: index of the found mode
++ *
++ * Return true if mode is found
 + */
-+static void tvout_vip_set_color_order(struct sti_tvout *tvout,
-+				      u32 cr_r, u32 y_g, u32 cb_b)
++static bool hda_get_mode_idx(struct drm_display_mode mode, int *idx)
 +{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	val &= ~(TVO_VIP_REORDER_MASK << TVO_VIP_REORDER_R_SHIFT);
-+	val &= ~(TVO_VIP_REORDER_MASK << TVO_VIP_REORDER_G_SHIFT);
-+	val &= ~(TVO_VIP_REORDER_MASK << TVO_VIP_REORDER_B_SHIFT);
-+	val |= cr_r << TVO_VIP_REORDER_R_SHIFT;
-+	val |= y_g << TVO_VIP_REORDER_G_SHIFT;
-+	val |= cb_b << TVO_VIP_REORDER_B_SHIFT;
-+
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Set the clipping mode of a VIP
-+ *
-+ * @tvout: tvout structure
-+ * @range: clipping range
-+ */
-+static void tvout_vip_set_clip_mode(struct sti_tvout *tvout, u32 range)
-+{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	val &= ~(TVO_VIP_CLIP_MASK << TVO_VIP_CLIP_SHIFT);
-+	val |= range << TVO_VIP_CLIP_SHIFT;
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Set the rounded value of a VIP
-+ *
-+ * @tvout: tvout structure
-+ * @rnd: rounded val per component
-+ */
-+static void tvout_vip_set_rnd(struct sti_tvout *tvout, u32 rnd)
-+{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	val &= ~(TVO_VIP_RND_MASK << TVO_VIP_RND_SHIFT);
-+	val |= rnd << TVO_VIP_RND_SHIFT;
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Select the VIP input
-+ *
-+ * @tvout: tvout structure
-+ * @sel_input: selected_input (main/aux + conv)
-+ */
-+static void tvout_vip_set_sel_input(struct sti_tvout *tvout,
-+				    bool main_path,
-+				    bool sel_input_logic_inverted,
-+				    enum sti_tvout_video_out_type video_out)
-+{
-+	u32 sel_input;
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	if (main_path)
-+		sel_input = TVO_VIP_SEL_INPUT_MAIN;
-+	else
-+		sel_input = TVO_VIP_SEL_INPUT_AUX;
-+
-+	switch (video_out) {
-+	case STI_TVOUT_VIDEO_OUT_RGB:
-+		sel_input |= TVO_VIP_SEL_INPUT_BYPASSED;
-+		break;
-+	case STI_TVOUT_VIDEO_OUT_YUV:
-+		sel_input &= ~TVO_VIP_SEL_INPUT_BYPASSED;
-+		break;
-+	}
-+
-+	/* on stih407 chip the sel_input bypass mode logic is inverted */
-+	if (sel_input_logic_inverted)
-+		sel_input = sel_input ^ TVO_VIP_SEL_INPUT_BYPASS_MASK;
-+
-+	val &= ~TVO_VIP_SEL_INPUT_MASK;
-+	val |= sel_input;
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Select the input video signed or unsigned
-+ *
-+ * @tvout: tvout structure
-+ * @in_vid_signed: used video input format
-+ */
-+static void tvout_vip_set_in_vid_fmt(struct sti_tvout *tvout, u32 in_vid_fmt)
-+{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	val &= ~TVO_IN_FMT_SIGNED;
-+	val |= in_vid_fmt;
-+	tvout_write(tvout, val, TVO_MAIN_IN_VID_FORMAT);
-+}
-+
-+/**
-+ * Start VIP block for HDMI output
-+ *
-+ * @tvout: pointer on tvout structure
-+ * @main_path: true if main path has to be used in the vip configuration
-+ *	  else aux path is used.
-+ */
-+static void tvout_hdmi_start(struct sti_tvout *tvout, bool main_path)
-+{
-+	struct device_node *node = tvout->dev->of_node;
-+	bool sel_input_logic_inverted = false;
-+
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	if (main_path) {
-+		DRM_DEBUG_DRIVER("main vip for hdmi\n");
-+		/* select the input sync for hdmi = VTG set 1 */
-+		writel(TVO_SYNC_MAIN_VTG_SET_1,
-+		       tvout->regs + TVO_HDMI_SYNC_SEL);
-+	} else {
-+		DRM_DEBUG_DRIVER("aux vip for hdmi\n");
-+		/* select the input sync for hdmi = VTG set 1 */
-+		writel(TVO_SYNC_AUX_VTG_SET_1, tvout->regs + TVO_HDMI_SYNC_SEL);
-+	}
-+
-+	/* set color channel order */
-+	tvout_vip_set_color_order(tvout,
-+				  TVO_VIP_REORDER_CR_R_SEL,
-+				  TVO_VIP_REORDER_Y_G_SEL,
-+				  TVO_VIP_REORDER_CB_B_SEL);
-+
-+	/* set clipping mode (Limited range RGB/Y) */
-+	tvout_vip_set_clip_mode(tvout, TVO_VIP_CLIP_LIMITED_RANGE_RGB_Y);
-+
-+	/* set round mode (rounded to 8-bit per component) */
-+	tvout_vip_set_rnd(tvout, TVO_VIP_RND_8BIT_ROUNDED);
-+
-+	if (of_device_is_compatible(node, "st,stih407-tvout")) {
-+		/* set input video format */
-+		tvout_vip_set_in_vid_fmt(tvout->regs + TVO_MAIN_IN_VID_FORMAT,
-+					 TVO_IN_FMT_SIGNED);
-+		sel_input_logic_inverted = true;
-+	}
-+
-+	/* input selection */
-+	tvout_vip_set_sel_input(tvout, main_path,
-+			sel_input_logic_inverted, STI_TVOUT_VIDEO_OUT_RGB);
-+}
-+
-+/**
-+ * Prepare/configure VIP block for HDMI output
-+ *
-+ * @tvout: pointer on tvout structure
-+ */
-+static void tvout_hdmi_prepare(struct sti_tvout *tvout)
-+{
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	/* reset VIP register */
-+	writel(0x00000000, tvout->regs + TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Disable HDMI VIP
-+ *
-+ * @tvout: pointer on tvout structure
-+ */
-+static void tvout_hdmi_stop(struct sti_tvout *tvout)
-+{
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	/* reset VIP register */
-+	writel(0x00000000, tvout->regs + TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Start HDF VIP and HD DAC
-+ *
-+ * @tvout: pointer on tvout structure
-+ * @main_path: true if main path has to be used in the vip configuration
-+ *	  else aux path is used.
-+ */
-+static void tvout_hda_start(struct sti_tvout *tvout, bool main_path)
-+{
-+	struct device_node *node = tvout->dev->of_node;
-+	bool sel_input_logic_inverted = false;
-+
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	if (!main_path) {
-+		DRM_ERROR("HD Analog on aux not implemented\n");
-+		return;
-+	}
-+
-+	DRM_DEBUG_DRIVER("main vip for HDF\n");
-+
-+	/* set color channel order */
-+	tvout_vip_set_color_order(tvout->regs + TVO_VIP_HDF,
-+				  TVO_VIP_REORDER_CR_R_SEL,
-+				  TVO_VIP_REORDER_Y_G_SEL,
-+				  TVO_VIP_REORDER_CB_B_SEL);
-+
-+	/* set clipping mode (Limited range RGB/Y) */
-+	tvout_vip_set_clip_mode(tvout->regs + TVO_VIP_HDF,
-+				TVO_VIP_CLIP_LIMITED_RANGE_CB_CR);
-+
-+	/* set round mode (rounded to 10-bit per component) */
-+	tvout_vip_set_rnd(tvout->regs + TVO_VIP_HDF, TVO_VIP_RND_10BIT_ROUNDED);
-+
-+	if (of_device_is_compatible(node, "st,stih407-tvout")) {
-+		/* set input video format */
-+		tvout_vip_set_in_vid_fmt(tvout, TVO_IN_FMT_SIGNED);
-+		sel_input_logic_inverted = true;
-+	}
-+
-+	/* Input selection */
-+	tvout_vip_set_sel_input(tvout->regs + TVO_VIP_HDF,
-+				main_path,
-+				sel_input_logic_inverted,
-+				STI_TVOUT_VIDEO_OUT_YUV);
-+
-+	/* select the input sync for HD analog = VTG set 3
-+	 * and HD DCS = VTG set 2 */
-+	writel((TVO_SYNC_MAIN_VTG_SET_2 << TVO_SYNC_HD_DCS_SHIFT) |
-+	       TVO_SYNC_MAIN_VTG_SET_3, tvout->regs + TVO_HD_SYNC_SEL);
-+
-+	/* power up HD DAC */
-+	writel(0, tvout->regs + TVO_HD_DAC_CFG_OFF);
-+}
-+
-+/**
-+ * Prepare/configure HDF VIP and HD DAC
-+ *
-+ * @tvout: pointer on tvout structure
-+ */
-+static void tvout_hda_prepare(struct sti_tvout *tvout)
-+{
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	/* reset VIP register */
-+	writel(0x00000000, tvout->regs + TVO_VIP_HDF);
-+
-+	/* power down HD DAC */
-+	writel(1, tvout->regs + TVO_HD_DAC_CFG_OFF);
-+}
-+
-+/**
-+ * Stop HDF VIP and HD DAC
-+ *
-+ * @tvout: pointer on tvout structure
-+ */
-+static void tvout_hda_stop(struct sti_tvout *tvout)
-+{
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	/* reset VIP register */
-+	writel(0x00000000, tvout->regs + TVO_VIP_HDF);
-+
-+	/* power down HD DAC */
-+	writel(1, tvout->regs + TVO_HD_DAC_CFG_OFF);
-+}
-+
-+/**
-+ * Forward drm display mode information to the connector
-+ *
-+ * @c: drm_connector
-+ * @mode: mode to be set
-+ * @main_path: indicated if the connector use the main or auxillary data path
-+ *
-+ * Return negative value if error occurs
-+ */
-+int sti_tvout_set_mode(struct drm_connector *c,
-+		struct drm_display_mode *mode, bool main_path)
-+{
-+	struct sti_connector *connector = to_sti_connector(c);
-+
-+	if (connector)
-+		if (connector->set_mode)
-+			return connector->set_mode(c, mode, main_path);
-+
-+	return -EINVAL;
-+}
-+
-+/**
-+ * Prepare / initialize depending on the connector type
-+ *
-+ * @connector: drm_connector
-+ *
-+ * Return negative value if error occurs
-+ */
-+int sti_tvout_prepare(struct drm_connector *c)
-+{
-+	struct sti_connector *connector = to_sti_connector(c);
-+	struct sti_tvout *tvout = dev_get_drvdata(connector->master);
-+	int ret;
-+
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	if (connector)
-+		if (connector->prepare)
-+			connector->prepare(c);
-+
-+	switch (connector->type) {
-+	case STI_CONNECTOR_HDMI:
-+		tvout_hdmi_prepare(tvout);
-+		ret = 0;
-+		break;
-+	case STI_CONNECTOR_HDA:
-+		tvout_hda_prepare(tvout);
-+		ret = 0;
-+		break;
-+	case STI_CONNECTOR_DVO:
-+	case STI_CONNECTOR_DENC:
-+	default:
-+		/* not yet supported */
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * Commit / start depending on the connector type
-+ *
-+ * @tvout: pointer on tvout structure
-+ * @type: type of connector
-+ * @main_path: true if main path need to be use (false for aux path)
-+ *
-+ * Return negative value if error occurs
-+ */
-+int sti_tvout_commit(struct drm_connector *c, bool main_path)
-+{
-+	struct sti_connector *connector = to_sti_connector(c);
-+	struct sti_tvout *tvout = dev_get_drvdata(connector->master);
-+	int type = connector->type;
-+	u32 matrix_offset;
 +	unsigned int i;
 +
-+	dev_dbg(tvout->dev, "%s\n", __func__);
++	for (i = 0; i < ARRAY_SIZE(hda_supported_modes); i++)
++		if (drm_mode_equal(&hda_supported_modes[i].mode, &mode)) {
++			*idx = i;
++			return true;
++		}
++	return false;
++}
 +
-+	if (!connector)
-+		return -EINVAL;
++/**
++ * Enable the HD DACS
++ *
++ * @hda: pointer to HD analog structure
++ * @enable: true if HD DACS need to be enabled, else false
++ */
++static void hda_enable_hd_dacs(struct sti_hda *hda, bool enable)
++{
++	u32 mask;
 +
-+	if (connector->start) {
-+		if (connector->start(c)) {
-+			DRM_ERROR("Unable to properly start connector\n");
-+			return -EINVAL;
++	if (hda->video_dacs_ctrl) {
++		u32 val;
++
++		switch ((u32)hda->video_dacs_ctrl & VIDEO_DACS_CONTROL_MASK) {
++		case VIDEO_DACS_CONTROL_SYSCFG2535:
++			mask = DAC_CFG_HD_OFF_MASK;
++			break;
++		case VIDEO_DACS_CONTROL_SYSCFG5072:
++			mask = DAC_CFG_HD_HZUVW_OFF_MASK;
++			break;
++		default:
++			DRM_INFO("Video DACS control register not supported!");
++			return;
++		}
++
++		val = readl(hda->video_dacs_ctrl);
++		if (enable)
++			val &= ~mask;
++		else
++			val |= mask;
++
++		writel(val, hda->video_dacs_ctrl);
++	}
++
++}
++
++/**
++ * Configure AWG, writing instructions
++ *
++ * @hda: pointer to HD analog structure
++ * @awg_instr: pointer to AWG instructions table
++ * @nb: nb of AWG instructions
++ */
++static void sti_hda_configure_awg(struct sti_hda *hda, u32 *awg_instr, int nb)
++{
++	unsigned int i;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	for (i = 0; i < nb; i++)
++		hda_write(hda, awg_instr[i], HDA_SYNC_AWGI + i * 4);
++	for (i = nb; i < AWG_MAX_INST; i++)
++		hda_write(hda, 0, HDA_SYNC_AWGI + i * 4);
++}
++
++/**
++ * Get modes
++ *
++ * @drm_connector: pointer on the drm connector
++ *
++ * Return number of modes
++ */
++static int sti_hda_get_modes(struct drm_connector *drm_connector)
++{
++	struct drm_device *dev = drm_connector->dev;
++	struct drm_display_mode *mode;
++	unsigned int i;
++	int count = 0;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	for (i = 0; i < ARRAY_SIZE(hda_supported_modes); i++) {
++		mode = drm_mode_duplicate(dev, &hda_supported_modes[i].mode);
++		if (!mode)
++			continue;
++		mode->vrefresh = drm_mode_vrefresh(mode);
++
++		/* the first mode is the preferred mode */
++		if (i == 0)
++			mode->type |= DRM_MODE_TYPE_PREFERRED;
++
++		drm_mode_probed_add(drm_connector, mode);
++		count++;
++	}
++
++	drm_mode_sort(&drm_connector->modes);
++
++	return count;
++}
++
++static int sti_hda_start(struct drm_connector *connector)
++{
++	struct sti_connector *sti_connector = to_sti_connector(connector);
++	struct sti_hda *hda = dev_get_drvdata(sti_connector->dev);
++	u32 val, i, mode_idx;
++	u32 src_filter_y, src_filter_c;
++	u32 *coef_y, *coef_c;
++	u32 filter_mode;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	/* Prepare/enable clocks */
++	if (clk_prepare_enable(hda->clk_pix))
++		DRM_ERROR("Failed to prepare/enable hda_pix clk\n");
++	if (clk_prepare_enable(hda->clk_hddac))
++		DRM_ERROR("Failed to prepare/enable hda_hddac clk\n");
++
++	hda->enabled = true;
++
++	if (!hda_get_mode_idx(hda->mode, &mode_idx)) {
++		DRM_ERROR("Undefined mode\n");
++		return 1;
++	}
++
++	switch (hda_supported_modes[mode_idx].vid_cat) {
++	case VID_HD_148M:
++		DRM_ERROR("Beyond HD analog capabilities\n");
++		return 1;
++	case VID_HD_74M:
++		/* HD use alternate 2x filter */
++		filter_mode = CFG_AWG_FLTR_MODE_HD;
++		src_filter_y = HDA_ANA_SRC_Y_CFG_ALT_2X;
++		src_filter_c = HDA_ANA_SRC_C_CFG_ALT_2X;
++		coef_y = coef_y_alt_2x;
++		coef_c = coef_c_alt_2x;
++		break;
++	case VID_ED:
++		/* ED uses 4x filter */
++		filter_mode = CFG_AWG_FLTR_MODE_ED;
++		src_filter_y = HDA_ANA_SRC_Y_CFG_4X;
++		src_filter_c = HDA_ANA_SRC_C_CFG_4X;
++		coef_y = coef_yc_4x;
++		coef_c = coef_yc_4x;
++		break;
++	case VID_SD:
++		DRM_ERROR("Not supported\n");
++		return 1;
++	default:
++		DRM_ERROR("Undefined resolution\n");
++		return 1;
++	}
++	DRM_DEBUG_DRIVER("Using HDA mode #%d\n", mode_idx);
++
++	/* Enable HD Video DACs */
++	hda_enable_hd_dacs(hda, true);
++
++	/* Configure scaler */
++	hda_write(hda, SCALE_CTRL_Y_DFLT, HDA_ANA_SCALE_CTRL_Y);
++	hda_write(hda, SCALE_CTRL_CB_DFLT, HDA_ANA_SCALE_CTRL_CB);
++	hda_write(hda, SCALE_CTRL_CR_DFLT, HDA_ANA_SCALE_CTRL_CR);
++
++	/* Configure sampler */
++	hda_write(hda , src_filter_y, HDA_ANA_SRC_Y_CFG);
++	hda_write(hda, src_filter_c,  HDA_ANA_SRC_C_CFG);
++	for (i = 0; i < SAMPLER_COEF_NB; i++) {
++		hda_write(hda, coef_y[i], HDA_COEFF_Y_PH1_TAP123 + i * 4);
++		hda_write(hda, coef_c[i], HDA_COEFF_C_PH1_TAP123 + i * 4);
++	}
++
++	/* Configure main HDFormatter */
++	val = 0;
++	val |= (hda->mode.flags & DRM_MODE_FLAG_INTERLACE) ?
++	    0 : CFG_AWG_ASYNC_VSYNC_MTD;
++	val |= (CFG_PBPR_SYNC_OFF_VAL << CFG_PBPR_SYNC_OFF_SHIFT);
++	val |= filter_mode;
++	hda_write(hda, val, HDA_ANA_CFG);
++
++	/* Configure AWG */
++	sti_hda_configure_awg(hda, hda_supported_modes[mode_idx].awg_instr,
++			      hda_supported_modes[mode_idx].nb_instr);
++
++	/* Enable AWG */
++	val = hda_read(hda, HDA_ANA_CFG);
++	val |= CFG_AWG_ASYNC_EN;
++	hda_write(hda, val, HDA_ANA_CFG);
++
++	return 0;
++}
++
++static void sti_hda_stop(struct drm_connector *connector)
++{
++	struct sti_connector *sti_connector = to_sti_connector(connector);
++	struct sti_hda *hda = dev_get_drvdata(sti_connector->dev);
++	u32 val;
++
++	if (!hda->enabled)
++		return;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	/* Disable HD DAC and AWG */
++	val = hda_read(hda, HDA_ANA_CFG);
++	val &= ~CFG_AWG_ASYNC_EN;
++	hda_write(hda, val, HDA_ANA_CFG);
++
++	hda_enable_hd_dacs(hda, false);
++
++	/* Disable/unprepare hda clock */
++	clk_disable_unprepare(hda->clk_hddac);
++	clk_disable_unprepare(hda->clk_pix);
++
++	hda->enabled = false;
++}
++
++#define CLK_TOLERANCE_HZ 50
++
++static int sti_hda_check_mode(struct drm_connector *connector,
++			      struct drm_display_mode *mode)
++{
++	struct sti_connector *sti_connector = to_sti_connector(connector);
++	struct sti_hda *hda = dev_get_drvdata(sti_connector->dev);
++	int target = mode->clock * 1000;
++	int target_min = target - CLK_TOLERANCE_HZ;
++	int target_max = target + CLK_TOLERANCE_HZ;
++	int result;
++	int idx;
++
++	if (!hda_get_mode_idx(*mode, &idx)) {
++		return MODE_BAD;
++	} else {
++		result = clk_round_rate(hda->clk_pix, target);
++
++		DRM_DEBUG_DRIVER("target rate = %d => available rate = %d\n",
++				 target, result);
++
++		if ((result < target_min) || (result > target_max)) {
++			DRM_DEBUG_DRIVER("hda pixclk=%d not supported\n",
++					 target);
++			return MODE_BAD;
 +		}
 +	}
 +
-+	/* set preformatter matrix */
-+	matrix_offset = main_path ? TVO_CSC_MAIN_M0 : TVO_CSC_AUX_M0;
-+	for (i = 0; i < 8; i++)
-+		writel(rgb_to_ycbcr_601[i],
-+		       tvout->regs + matrix_offset + (i * 4));
-+
-+	switch (type) {
-+	case STI_CONNECTOR_HDMI:
-+		tvout_hdmi_start(tvout, main_path);
-+		return 0;
-+	case STI_CONNECTOR_HDA:
-+		tvout_hda_start(tvout, main_path);
-+		return 0;
-+	case STI_CONNECTOR_DVO:
-+	case STI_CONNECTOR_DENC:
-+	default:
-+		/* not yet supported */
-+		return -EINVAL;
-+	}
++	return MODE_OK;
 +}
 +
-+/**
-+ * Disable / stop the tvout depending on the connector type
-+ *
-+ * @tvout: pointer on tvout structure
-+ * @type: type of connector
-+ */
-+void sti_tvout_disable(struct drm_connector *c)
++static int sti_hda_set_mode(struct drm_connector *connector,
++			    struct drm_display_mode *mode, bool main_path)
 +{
-+	struct sti_connector *connector = to_sti_connector(c);
-+	struct sti_tvout *tvout = dev_get_drvdata(connector->master);
-+	int type = connector->type;
++	struct sti_connector *sti_connector = to_sti_connector(connector);
++	struct sti_hda *hda = dev_get_drvdata(sti_connector->dev);
++	u32 mode_idx;
++	int hddac_rate;
++	int ret;
 +
-+	switch (type) {
-+	case STI_CONNECTOR_HDMI:
-+		tvout_hdmi_stop(tvout);
-+		break;
-+	case STI_CONNECTOR_HDA:
-+		tvout_hda_stop(tvout);
-+		break;
-+	case STI_CONNECTOR_DVO:
-+	case STI_CONNECTOR_DENC:
-+	default:
-+		/* not yet supported */
-+		return;
++	DRM_DEBUG_DRIVER("\n");
++
++	memcpy(&hda->mode, mode, sizeof(struct drm_display_mode));
++
++	if (!hda_get_mode_idx(hda->mode, &mode_idx)) {
++		DRM_ERROR("Undefined mode\n");
++		return 1;
 +	}
 +
-+	if (connector)
-+		if (connector->stop)
-+			connector->stop(c);
-+}
++	switch (hda_supported_modes[mode_idx].vid_cat) {
++	case VID_HD_74M:
++		/* HD use alternate 2x filter */
++		hddac_rate = mode->clock * 1000 * 2;
++		break;
++	case VID_ED:
++		/* ED uses 4x filter */
++		hddac_rate = mode->clock * 1000 * 4;
++		break;
++	default:
++		DRM_ERROR("Undefined mode\n");
++		return 1;
++	}
 +
-+static int sti_tvout_bind(struct device *dev, struct device *master, void *data)
-+{
++	/* HD DAC = 148.5Mhz or 108 Mhz */
++	ret = clk_set_rate(hda->clk_hddac, hddac_rate);
++	if (ret < 0) {
++		DRM_ERROR("Cannot set rate (%dHz) for hda_hddac clk\n",
++			  hddac_rate);
++		return ret;
++	}
++
++	/* HDformatter clock = compositor clock */
++	ret = clk_set_rate(hda->clk_pix, mode->clock * 1000);
++	if (ret < 0) {
++		DRM_ERROR("Cannot set rate (%dHz) for hda_pix clk\n",
++			  mode->clock * 1000);
++		return ret;
++	}
++
 +	return 0;
 +}
 +
-+static void sti_tvout_unbind(struct device *dev, struct device *master,
-+	void *data)
++static int sti_hda_detect(struct drm_connector *connector)
++{
++	return connector_status_connected;
++}
++
++static bool sti_hda_is_enabled(struct drm_connector *connector)
++{
++	struct sti_connector *sti_connector = to_sti_connector(connector);
++	struct sti_hda *hda = dev_get_drvdata(sti_connector->dev);
++
++	return hda->enabled;
++}
++
++static void sti_hda_prepare(struct drm_connector *connector)
++{
++	struct sti_connector *sti_connector = to_sti_connector(connector);
++	struct sti_hda *hda = dev_get_drvdata(sti_connector->dev);
++
++	DRM_DEBUG_DRIVER("\n");
++
++	/* reset HDF */
++	hda_write(hda, 0, HDA_ANA_CFG);
++	hda_write(hda, 0, HDA_ANA_ANC_CTRL);
++}
++
++static int sti_hda_bind(struct device *dev, struct device *master, void *data)
++{
++	struct sti_hda *hda = dev_get_drvdata(dev);
++	struct drm_device *drm_dev = data;
++	struct drm_encoder *encoder;
++	struct sti_connector *connector;
++
++	/* Set the drm device handle */
++	hda->drm_dev = drm_dev;
++
++	encoder = devm_kzalloc(dev, sizeof(*encoder), GFP_KERNEL);
++	if (!encoder)
++		return -ENOMEM;
++
++	encoder->possible_crtcs = ENCODER_MAIN_CRTC_MASK;
++	encoder->possible_clones = 1 << STI_CONNECTOR_HDMI;
++
++	connector = devm_kzalloc(dev, sizeof(*connector), GFP_KERNEL);
++	if (!connector)
++		return -ENOMEM;
++
++	connector->dev = dev;
++	connector->master = master;
++	connector->encoder = encoder;
++	connector->start = sti_hda_start;
++	connector->stop = sti_hda_stop;
++	connector->get_modes = sti_hda_get_modes;
++	connector->check_mode = sti_hda_check_mode;
++	connector->set_mode = sti_hda_set_mode;
++	connector->detect = sti_hda_detect;
++	connector->is_enabled = sti_hda_is_enabled;
++	connector->prepare = sti_hda_prepare;
++	connector->type = STI_CONNECTOR_HDA;
++
++	return 0;
++}
++
++static void sti_hda_unbind(struct device *dev,
++		struct device *master, void *data)
 +{
 +	/* do nothing */
 +}
 +
-+static const struct component_ops sti_tvout_ops = {
-+	.bind	= sti_tvout_bind,
-+	.unbind	= sti_tvout_unbind,
++static const struct component_ops sti_hda_ops = {
++	.bind = sti_hda_bind,
++	.unbind = sti_hda_unbind,
 +};
 +
-+static int compare_of(struct device *dev, void *data)
-+{
-+	struct device_node *np = data;
-+
-+	return dev->of_node == np;
-+}
-+
-+static int sti_tvout_add_components(struct device *master, struct master *m)
-+{
-+	struct device_node *np	= master->of_node;
-+	struct device_node *child_np;
-+
-+	child_np = of_get_next_available_child(np, NULL);
-+
-+	while (child_np) {
-+		DRM_INFO("TVout add child %s\n", child_np->name);
-+		component_master_add_child(m, compare_of, child_np);
-+		of_node_put(child_np);
-+		child_np = of_get_next_available_child(np, child_np);
-+	}
-+
-+	return 0;
-+}
-+
-+static int sti_tvout_master_bind(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static void sti_tvout_master_unbind(struct device *dev)
-+{
-+	/* do nothing */
-+}
-+
-+static const struct component_master_ops sti_tvout_master_ops = {
-+	.add_components = sti_tvout_add_components,
-+	.bind = sti_tvout_master_bind,
-+	.unbind = sti_tvout_master_unbind,
-+};
-+
-+static int sti_tvout_probe(struct platform_device *pdev)
++static int sti_hda_probe(struct platform_device *pdev)
 +{
 +	struct device *dev = &pdev->dev;
-+	struct device_node *node = dev->of_node;
-+	struct sti_tvout *tvout;
++	struct sti_hda *hda;
 +	struct resource *res;
 +
 +	DRM_INFO("%s\n", __func__);
 +
-+	if (!node)
-+		return -ENODEV;
-+
-+	tvout = devm_kzalloc(dev, sizeof(*tvout), GFP_KERNEL);
-+	if (!tvout)
++	hda = devm_kzalloc(dev, sizeof(*hda), GFP_KERNEL);
++	if (!hda)
 +		return -ENOMEM;
 +
-+	DRM_INFO("%s tvout %p\n", __func__, tvout);
++	hda->dev = pdev->dev;
 +
-+	tvout->dev = dev;
-+	DRM_INFO("%s tvout->dev %p\n", __func__, tvout->dev);
-+
-+	/* get Memory ressources */
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "tvout-reg");
++	/* Get resources */
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "hda-reg");
 +	if (!res) {
-+		DRM_ERROR("Invalid glue resource\n");
++		DRM_ERROR("Invalid hda resource\n");
 +		return -ENOMEM;
 +	}
-+	tvout->regs = devm_ioremap_nocache(dev, res->start, resource_size(res));
-+	if (IS_ERR(tvout->regs))
-+		return PTR_ERR(tvout->regs);
++	hda->regs = devm_ioremap_nocache(dev, res->start, resource_size(res));
++	if (IS_ERR(hda->regs))
++		return PTR_ERR(hda->regs);
 +
-+	/* get reset resources */
-+	tvout->reset = devm_reset_control_get(dev, "tvout");
-+	/* take tvout out of reset */
-+	if (!IS_ERR(tvout->reset))
-+		reset_control_deassert(tvout->reset);
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++			"video-dacs-ctrl");
++	if (res) {
++		hda->video_dacs_ctrl = devm_ioremap_nocache(dev, res->start,
++				resource_size(res));
++		if (IS_ERR(hda->video_dacs_ctrl))
++			return PTR_ERR(hda->video_dacs_ctrl);
++	} else {
++		/* If no existing video-dacs-ctrl resource continue the probe */
++		DRM_DEBUG_DRIVER("No video-dacs-ctrl resource\n");
++		hda->video_dacs_ctrl = NULL;
++	}
 +
-+	platform_set_drvdata(pdev, tvout);
++	/* Get clock resources */
++	hda->clk_pix = devm_clk_get(dev, "pix");
++	if (IS_ERR(hda->clk_pix)) {
++		DRM_ERROR("Cannot get hda_pix clock\n");
++		return PTR_ERR(hda->clk_pix);
++	}
 +
-+	of_platform_populate(node, NULL, NULL, dev);
++	hda->clk_hddac = devm_clk_get(dev, "hddac");
++	if (IS_ERR(hda->clk_hddac)) {
++		DRM_ERROR("Cannot get hda_hddac clock\n");
++		return PTR_ERR(hda->clk_hddac);
++	}
 +
-+	component_master_add(&pdev->dev, &sti_tvout_master_ops);
++	platform_set_drvdata(pdev, hda);
 +
-+	return component_add(&pdev->dev, &sti_tvout_ops);
++	return component_add(&pdev->dev, &sti_hda_ops);
 +}
 +
-+static int sti_tvout_remove(struct platform_device *pdev)
++static int sti_hda_remove(struct platform_device *pdev)
 +{
-+	component_master_del(&pdev->dev, &sti_tvout_master_ops);
-+	component_del(&pdev->dev, &sti_tvout_ops);
++	component_del(&pdev->dev, &sti_hda_ops);
 +	return 0;
 +}
 +
-+static struct of_device_id tvout_of_match[] = {
-+	{ .compatible = "st,stih416-tvout", },
-+	{ .compatible = "st,stih407-tvout", },
++static struct of_device_id hda_of_match[] = {
++	{ .compatible = "st,stih416-hda", },
++	{ .compatible = "st,stih407-hda", },
 +	{ /* end node */ }
 +};
-+MODULE_DEVICE_TABLE(of, tvout_of_match);
++MODULE_DEVICE_TABLE(of, hda_of_match);
 +
-+struct platform_driver sti_tvout_driver = {
++struct platform_driver sti_hda_driver = {
 +	.driver = {
-+		.name = "sti-tvout",
++		.name = "sti-hda",
 +		.owner = THIS_MODULE,
-+		.of_match_table = tvout_of_match,
++		.of_match_table = hda_of_match,
 +	},
-+	.probe = sti_tvout_probe,
-+	.remove = sti_tvout_remove,
++	.probe = sti_hda_probe,
++	.remove = sti_hda_remove,
 +};
 +
-+module_platform_driver(sti_tvout_driver);
-diff --git a/drivers/gpu/drm/sti/sti_tvout.h b/drivers/gpu/drm/sti/sti_tvout.h
-new file mode 100644
-index 0000000..81dceff
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_tvout.h
-@@ -0,0 +1,18 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2014
-+ * Author: Vincent Abriou <vincent.abriou@st.com> for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#ifndef _STI_TVOUT_H_
-+#define _STI_TVOUT_H_
-+
-+#include <drm/drmP.h>
-+
-+int  sti_tvout_set_mode(struct drm_connector *c,
-+		struct drm_display_mode *mode, bool main_path);
-+int  sti_tvout_prepare(struct drm_connector *c);
-+int  sti_tvout_commit(struct drm_connector *c, bool main_path);
-+void sti_tvout_disable(struct drm_connector *c);
-+
-+#endif
++module_platform_driver(sti_hda_driver);
 -- 
 1.9.1
 
