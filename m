@@ -1,117 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337AbaE2Q3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:29:25 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:58991 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaE2Q3Y (ORCPT
+	id S1757770AbaE2Q3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:29:45 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:42418 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757514AbaE2Q3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:29:24 -0400
-Date: Thu, 29 May 2014 09:29:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, hughd@google.com, viresh.kumar@linaro.org,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org
-Subject: Re: vmstat: On demand vmstat workers V5
-Message-ID: <20140529162918.GK22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.10.1405121317270.29911@gentwo.org>
- <20140528152107.GB6507@localhost.localdomain>
- <alpine.DEB.2.10.1405281110210.22514@gentwo.org>
- <20140529003609.GG6507@localhost.localdomain>
- <alpine.DEB.2.10.1405290902180.11514@gentwo.org>
- <20140529142602.GA20258@localhost.localdomain>
+	Thu, 29 May 2014 12:29:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529142602.GA20258@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052916-0928-0000-0000-00000243B6D4
+In-Reply-To: <20140529162307.GL18016@ZenIV.linux.org.uk>
+References: <20140528141937.GZ18016@ZenIV.linux.org.uk>
+	<20140528183954.GA18016@ZenIV.linux.org.uk>
+	<20140529031149.GE18016@ZenIV.linux.org.uk>
+	<20140529035233.GF18016@ZenIV.linux.org.uk>
+	<20140529053444.GI18016@ZenIV.linux.org.uk>
+	<20140529105107.GB1938@lahna.fi.intel.com>
+	<20140529110439.GA2006@lahna.fi.intel.com>
+	<20140529133036.GJ18016@ZenIV.linux.org.uk>
+	<CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
+	<20140529154454.GK18016@ZenIV.linux.org.uk>
+	<20140529162307.GL18016@ZenIV.linux.org.uk>
+Date: Thu, 29 May 2014 09:29:42 -0700
+X-Google-Sender-Auth: n9VRHhVcA92q4pAbDnjuTuYvAiw
+Message-ID: <CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 04:26:05PM +0200, Frederic Weisbecker wrote:
-> On Thu, May 29, 2014 at 09:07:44AM -0500, Christoph Lameter wrote:
-> > On Thu, 29 May 2014, Frederic Weisbecker wrote:
-> > 
-> > > The cpumasks in cpu.c are special as they are the base of the cpumask_var_t
-> > > definition. They are necessary to define nr_cpu_bits which is the base of
-> > > cpumask_var_t allocations. As such they must stay lower level and defined
-> > > on top of NR_CPUS.
-> > >
-> > > But most other cases don't need that huge static bitmap. I actually haven't
-> > > seen any other struct cpumask than isn't based on cpumask_var_t.
-> > 
-> > Well yes and I am tying directly into that scheme there in cpu.c to
-> > display the active vmstat threads in sysfs. so its the same.
-> 
-> I don't think so. Or is there something in vmstat that cpumask_var_t
-> definition depends upon?
-> 
-> > 
-> > > Please post it on a new thread so it gets noticed by others.
-> > 
-> > Ok. Will do when we got agreement on the cpumask issue.
-> > 
-> > I would like to have some way to display the activities on cpus in /sysfs
-> > like I have done here with the active vmstat workers.
-> > 
-> > What I think we need is display cpumasks for
-> > 
-> > 1. Cpus where the tick is currently off
-> > 2. Cpus that have dynticks enabled.
-> > 3. Cpus that are idle
-> 
-> You should find all that in /proc/timer_list
-> 
-> Now for CPUs that have full dynticks enabled, we probably need something
-> in sysfs. We could dump the nohz cpumask somewhere. For now you can only grep
-> the dmesg
-> 
-> > 4. Cpus that are used for RCU.
-> 
-> So, you mean those that aren't in extended grace period (between rcu_user_enter()/exit
-> or rcu_idle_enter/exit)?
-> 
-> Paul?
+On Thu, May 29, 2014 at 9:23 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> BTW, lock_parent() might be better off if in contended case it would not
+> bother with rename_lock and did something like this:
+> again:
 
-We are clearly going to have to be very careful to avoid cache thrashing,
-so methods that update a CPU mask on each transition, as the saying goes,
-"need not apply".
+Ack. I think that's much better.
 
-So we need a function like __rcu_is_watching(), but that takes the
-CPU number as an argument.  Something like the following:
-
-include/linux/rcutree.h:
-
-	bool rcu_is_watching_cpu(int cpu);
-
-kernel/rcu/tree.c:
-
-	bool rcu_is_watching_cpu(int cpu)
-	{
-		return atomic_read(per_cpu(&rcu_dynticks.dynticks), cpu) & 0x1;
-	}
-
-include/linux/rcutiny.h:
-
-	static inline bool rcu_is_watching_cpu(int cpu)
-	{
-		return true;
-	}
-
-This could then be invoked from the appropriate sysfs or /proc setup.
-
-							Thanx, Paul
-
+             Linus
