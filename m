@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573AbaE2CvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 22:51:14 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:41219 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaE2CvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 22:51:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140529015830.GG6677@dastard>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-	<20140528223142.GO8554@dastard>
-	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
-	<20140529013007.GF6677@dastard>
-	<20140529015830.GG6677@dastard>
-Date: Wed, 28 May 2014 19:51:11 -0700
-X-Google-Sender-Auth: Os5xTb5EAEXskFxJDq9tBtMNu3s
-Message-ID: <CA+55aFzb8MXOhbmcjNcRQRCGK4ZPK0WU0JaHdVRyEhKOfDkF6Q@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932213AbaE2Cy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 22:54:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16282 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755232AbaE2Cy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 22:54:57 -0400
+Message-ID: <1401332086.13555.45.camel@localhost>
+Subject: Re: [PATCH v2 2/2] audit: Mark CONFIG_AUDITSYSCALL BROKEN and
+ update help text
+From: Eric Paris <eparis@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Philipp Kern <pkern@google.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. J. Lu" <hjl.tools@gmail.com>,
+        "security@kernel.org" <security@kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, linux-audit@redhat.com
+Date: Wed, 28 May 2014 22:54:46 -0400
+In-Reply-To: <CALCETrWr+_fo=q+LBT-WLJGXLWK6vEeFa=KC=LSMYehi=c-r4A@mail.gmail.com>
+References: <cover.1401327752.git.luto@amacapital.net>
+	 <ff8ecb985119c06510e2c45c078b41cd5df3aaea.1401327752.git.luto@amacapital.net>
+	 <1401329367.13555.25.camel@localhost>
+	 <CALCETrWr+_fo=q+LBT-WLJGXLWK6vEeFa=KC=LSMYehi=c-r4A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Crossed emails ]
+On Wed, 2014-05-28 at 19:40 -0700, Andy Lutomirski wrote:
+> On Wed, May 28, 2014 at 7:09 PM, Eric Paris <eparis@redhat.com> wrote:
+> > NAK
+> >
+> > On Wed, 2014-05-28 at 18:44 -0700, Andy Lutomirski wrote:
+> >> Here are some issues with the code:
+> >>  - It thinks that syscalls have four arguments.
+> >
+> > Not true at all.  It records the registers that would hold the first 4
+> > entries on syscall entry, for use later if needed, as getting those
+> > later on some arches is not feasible (see ia64).  It makes no assumption
+> > about how many syscalls a function has.
+> 
+> What about a5 and a6?
 
-On Wed, May 28, 2014 at 6:58 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, May 29, 2014 at 11:30:07AM +1000, Dave Chinner wrote:
->>
->> And now we have too deep a stack due to unplugging from io_schedule()...
->
-> So, if we make io_schedule() push the plug list off to the kblockd
-> like is done for schedule()....
+On the couple of syscalls where a5 and a6 had any state that was
+actually wanted by someone (mainly just the fd on mmap) audit collects
+it later in the actual syscall.
 
-We might have a few different cases.
+> >>  - It assumes that syscall numbers are between 0 and 2048.
+> >
+> > There could well be a bug here.  Not questioning that.  Although that
+> > would be patch 1/2
+> 
+> Even with patch 1, it still doesn't handle large syscall numbers -- it
+> just assumes they're not audited.
 
-The cases where we *do* care about latency is when we are waiting for
-the IO ourselves (ie in wait_on_page() and friends), and those end up
-using io_schedule() too.
+That's because we haven't had large syscall numbers.  That's the whole
+point of an arch doing select HAVE_ARCH_AUDITSYSCALL.  If they don't
+meet the requirements, they shouldn't be selecting it....
 
-So in *that* case we definitely have a latency argument for doing it
-directly, and we shouldn't kick it off to kblockd. That's very much a
-"get this started as soon as humanly possible".
+> >>  - It's unclear whether it's supposed to be reliable.
+> >
+> > Unclear to whom?
+> 
+> To me.
+> 
+> If some inode access or selinux rule triggers an audit, is the auditsc
+> code guaranteed to write an exit record?  And see below...
 
-But the "wait_iff_congested()" code that also uses io_schedule()
-should push it out to kblockd, methinks.
+This is an honest question:  Do you want to discuss these things, or
+would you be happier if I shut up, fix the bugs you found, and leave
+things be?  I don't want to have an argument, I'm happy to have a
+discussion if you think that will be beneficial...
 
->> This stack overflow shows us that just the memory reclaim + IO
->> layers are sufficient to cause a stack overflow,
->
-> .... we solve this problem directly by being able to remove the IO
-> stack usage from the direct reclaim swap path.
->
-> IOWs, we don't need to turn swap off at all in direct reclaim
-> because all the swap IO can be captured in a plug list and
-> dispatched via kblockd. This could be done either by io_schedule()
-> or a new blk_flush_plug_list() wrapper that pushes the work to
-> kblockd...
-
-That would work. That said, I personally would not mind to see that
-"swap is special" go away, if possible. Because it can be behind a
-filesystem too. Christ, even NFS (and people used to fight that tooth
-and nail!) is back as a swap target..
-
-                Linus
