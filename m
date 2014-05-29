@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934393AbaE2FZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:25:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57866 "EHLO
+	id S934404AbaE2FZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:25:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370AbaE2EfT (ORCPT
+	with ESMTP id S932303AbaE2EfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:19 -0400
+	Thu, 29 May 2014 00:35:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Petukhov <dmgenp@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 067/140] l2tp: take PMTU from tunnel UDP socket
-Date: Wed, 28 May 2014 21:33:26 -0700
-Message-Id: <20140529043058.137204243@linuxfoundation.org>
+Subject: [PATCH 3.14 066/140] net: sctp: test if association is dead in sctp_wake_up_waiters
+Date: Wed, 28 May 2014 21:33:25 -0700
+Message-Id: <20140529043057.995888849@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,34 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Petukhov <dmgenp@gmail.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit f34c4a35d87949fbb0e0f31eba3c054e9f8199ba ]
+[ Upstream commit 1e1cdf8ac78793e0875465e98a648df64694a8d0 ]
 
-When l2tp driver tries to get PMTU for the tunnel destination, it uses
-the pointer to struct sock that represents PPPoX socket, while it
-should use the pointer that represents UDP socket of the tunnel.
+In function sctp_wake_up_waiters(), we need to involve a test
+if the association is declared dead. If so, we don't have any
+reference to a possible sibling association anymore and need
+to invoke sctp_write_space() instead, and normally walk the
+socket's associations and notify them of new wmem space. The
+reason for special casing is that otherwise, we could run
+into the following issue when a sctp_primitive_SEND() call
+from sctp_sendmsg() fails, and tries to flush an association's
+outq, i.e. in the following way:
 
-Signed-off-by: Dmitry Petukhov <dmgenp@gmail.com>
+sctp_association_free()
+`-> list_del(&asoc->asocs)         <-- poisons list pointer
+    asoc->base.dead = true
+    sctp_outq_free(&asoc->outqueue)
+    `-> __sctp_outq_teardown()
+     `-> sctp_chunk_free()
+      `-> consume_skb()
+       `-> sctp_wfree()
+        `-> sctp_wake_up_waiters() <-- dereferences poisoned pointers
+                                       if asoc->ep->sndbuf_policy=0
+
+Therefore, only walk the list in an 'optimized' way if we find
+that the current association is still active. We could also use
+list_del_init() in addition when we call sctp_association_free(),
+but as Vlad suggests, we want to trap such bugs and thus leave
+it poisoned as is.
+
+Why is it safe to resolve the issue by testing for asoc->base.dead?
+Parallel calls to sctp_sendmsg() are protected under socket lock,
+that is lock_sock()/release_sock(). Only within that path under
+lock held, we're setting skb/chunk owner via sctp_set_owner_w().
+Eventually, chunks are freed directly by an association still
+under that lock. So when traversing association list on destruction
+time from sctp_wake_up_waiters() via sctp_wfree(), a different
+CPU can't be running sctp_wfree() while another one calls
+sctp_association_free() as both happens under the same lock.
+Therefore, this can also not race with setting/testing against
+asoc->base.dead as we are guaranteed for this to happen in order,
+under lock. Further, Vlad says: the times we check asoc->base.dead
+is when we've cached an association pointer for later processing.
+In between cache and processing, the association may have been
+freed and is simply still around due to reference counts. We check
+asoc->base.dead under a lock, so it should always be safe to check
+and not race against sctp_association_free(). Stress-testing seems
+fine now, too.
+
+Fixes: cd253f9f357d ("net: sctp: wake up all assocs if sndbuf policy is per socket")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/l2tp/l2tp_ppp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/sctp/socket.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -756,9 +756,9 @@ static int pppol2tp_connect(struct socke
- 	session->deref = pppol2tp_session_sock_put;
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -6604,6 +6604,12 @@ static void sctp_wake_up_waiters(struct
+ 	if (asoc->ep->sndbuf_policy)
+ 		return __sctp_write_space(asoc);
  
- 	/* If PMTU discovery was enabled, use the MTU that was discovered */
--	dst = sk_dst_get(sk);
-+	dst = sk_dst_get(tunnel->sock);
- 	if (dst != NULL) {
--		u32 pmtu = dst_mtu(__sk_dst_get(sk));
-+		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
- 		if (pmtu != 0)
- 			session->mtu = session->mru = pmtu -
- 				PPPOL2TP_HEADER_OVERHEAD;
++	/* If association goes down and is just flushing its
++	 * outq, then just normally notify others.
++	 */
++	if (asoc->base.dead)
++		return sctp_write_space(sk);
++
+ 	/* Accounting for the sndbuf space is per socket, so we
+ 	 * need to wake up others, try to be fair and in case of
+ 	 * other associations, let them have a go first instead
 
 
