@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934298AbaE2NvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:51:02 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59539 "EHLO
+	id S934429AbaE2NvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:51:06 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59524 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933641AbaE2Nte (ORCPT
+	by vger.kernel.org with ESMTP id S932416AbaE2Nte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 057/103] drm/i915/tv: fix gen4 composite s-video tv-out
-Date: Thu, 29 May 2014 15:48:42 +0200
-Message-Id: <007f639ee9166b2ecd7357dd7773e1d855e74c2e.1401371259.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nikolay Aleksandrov <nikolay@redhat.com>,
+        Zenghui Shi <zshi@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        <linux-net-drivers@solarflare.com>,
+        Shradha Shah <sshah@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 097/103] sfc: fix calling of free_irq with already free vector
+Date: Thu, 29 May 2014 15:49:22 +0200
+Message-Id: <ce37c23f8c394e6bd271557044cbbdd0d2f7b9c9.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
@@ -23,56 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e1f23f3dd817f53f622e486913ac662add46eeed upstream.
+[ Upstream commit 1c3639005f48492e5f2d965779efd814e80f8b15 ]
 
-This is *not* bisected, but the likely regression is
+If the sfc driver is in legacy interrupt mode (either explicitly by
+using interrupt_mode module param or by falling back to it) it will
+hit a warning at kernel/irq/manage.c because it will try to free an irq
+which wasn't allocated by it in the first place because the MSI(X) irqs are
+zero and it'll try to free them unconditionally. So fix it by checking if
+we're in legacy mode and freeing the appropriate irqs.
 
-commit c35614380d5c956bfda20eab2755b2f5a7d6f1e7
-Author: Zhao Yakui <yakui.zhao@intel.com>
-Date:   Tue Nov 24 09:48:48 2009 +0800
+CC: Zenghui Shi <zshi@redhat.com>
+CC: Ben Hutchings <ben@decadent.org.uk>
+CC: <linux-net-drivers@solarflare.com>
+CC: Shradha Shah <sshah@solarflare.com>
+CC: David S. Miller <davem@davemloft.net>
 
-    drm/i915: Don't set up the TV port if it isn't in the BIOS table.
-
-The commit does not check for all TV device types that might be present
-in the VBT, disabling TV out for the missing ones. Add composite
-S-video.
-
-Reported-and-tested-by: Matthew Khouzam <matthew.khouzam@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73362
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Fixes: 1899c111a535 ("sfc: Fix IRQ cleanup in case of a probe failure")
+Reported-by: Zenghui Shi <zshi@redhat.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Shradha Shah <sshah@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/i915/intel_tv.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/nic.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index dd6f84bf6c22..a1e980938fef 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1530,9 +1530,14 @@ static int tv_is_present_in_vbt(struct drm_device *dev)
- 		/*
- 		 * If the device type is not TV, continue.
- 		 */
--		if (p_child->device_type != DEVICE_TYPE_INT_TV &&
--			p_child->device_type != DEVICE_TYPE_TV)
-+		switch (p_child->device_type) {
-+		case DEVICE_TYPE_INT_TV:
-+		case DEVICE_TYPE_TV:
-+		case DEVICE_TYPE_TV_SVIDEO_COMPOSITE:
-+			break;
-+		default:
- 			continue;
-+		}
- 		/* Only when the addin_offset is non-zero, it is regarded
- 		 * as present.
- 		 */
+diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
+index 9826594c8a48..65087178a0a7 100644
+--- a/drivers/net/ethernet/sfc/nic.c
++++ b/drivers/net/ethernet/sfc/nic.c
+@@ -155,13 +155,15 @@ void efx_nic_fini_interrupt(struct efx_nic *efx)
+ 	efx->net_dev->rx_cpu_rmap = NULL;
+ #endif
+ 
+-	/* Disable MSI/MSI-X interrupts */
+-	efx_for_each_channel(channel, efx)
+-		free_irq(channel->irq, &efx->msi_context[channel->channel]);
+-
+-	/* Disable legacy interrupt */
+-	if (efx->legacy_irq)
++	if (EFX_INT_MODE_USE_MSI(efx)) {
++		/* Disable MSI/MSI-X interrupts */
++		efx_for_each_channel(channel, efx)
++			free_irq(channel->irq,
++				 &efx->msi_context[channel->channel]);
++	} else {
++		/* Disable legacy interrupt */
+ 		free_irq(efx->legacy_irq, efx);
++	}
+ }
+ 
+ /* Register dump */
 -- 
 1.9.3
 
