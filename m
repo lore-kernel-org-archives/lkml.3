@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028AbaE2MNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 08:13:15 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:57326 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753066AbaE2MNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 08:13:14 -0400
-Message-ID: <53872455.6040601@mev.co.uk>
-Date: Thu, 29 May 2014 13:13:09 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757287AbaE2MO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 08:14:26 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:57494 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756254AbaE2MOY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 08:14:24 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: <driverdev-devel@linuxdriverproject.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fred Brooks <frederick.brooks@microchip.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] staging: comedi: ni_daq_700: add AI range and input
- mode switching
-References: <1401362147-5965-1-git-send-email-abbotti@mev.co.uk> <1401362147-5965-3-git-send-email-abbotti@mev.co.uk> <20140529115131.GA15585@mwanda>
-In-Reply-To: <20140529115131.GA15585@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+In-Reply-To: <1401358423-31532-1-git-send-email-daniel.thompson@linaro.org>
+References: <1396010535-2654-1-git-send-email-daniel.thompson@linaro.org> <1401358423-31532-1-git-send-email-daniel.thompson@linaro.org>
+From: Barry Song <baohua@kernel.org>
+Date: Thu, 29 May 2014 20:14:02 +0800
+X-Google-Sender-Auth: 6Jv6oAhQ2UswobArcRwEaizfvvw
+Message-ID: <CAGsJ_4ypSdP-i35BaQaciPo-g=+8Z5-T2MV5zgDP98BMciGbGw@mail.gmail.com>
+Subject: Re: [PATCH tty-next] serial: sirf: Fix compilation failure
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Jiri Slaby <jslaby@suse.cz>, Qipan Li <Qipan.Li@csr.com>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/05/29 12:51 PM, Dan Carpenter wrote:
-> These days, I don't barely look at comedi changes at all because you
-> guys do such a great job.  I just had a process/git comment on this one.
-> Normally, these changelogs look like:
-> 
-> From: Fred Brooks <frederick.brooks@microchip.com>
-> 
-> Add support for switching the input range and the
-> single-ended/differential input mode for the AI subdevice.  We needed to
-> clear the FIFO of data before the conversion to handle card mode
-> switching glitches.
-> 
-> [ I made some style changes.  - Ian ]
-> 
-> If the first line of the email is From: then git assigns authorship
-> credit automatically.
+2014-05-29 18:13 GMT+08:00 Daniel Thompson <daniel.thompson@linaro.org>:
+> After 07d410e0) serial: sirf: fix spinlock deadlock issue it is no longer
+> possiblet to compile this driver. The rename of one of the spinlocks is
+> faulty. After looking at the original patch I believe this is the correct
+> fix.
+>
+> Compile tested using ARM's multi_v7_defconfig
+>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Barry Song <baohua@kernel.org>
+> Cc: Qipan Li <Qipan.Li@csr.com>
+> Cc: linux-serial@vger.kernel.org
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 
-Okay, I'll repost it with a better comment.
+Qipan prepared a same patch to fix this. since you have sent,
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>             )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587              )=-
+Acked-by: Barry Song <baohua@kernel.org>
+
+
+> ---
+>
+> Notes:
+>     Sorry to resend within a few minutes. Patch is identical to parent but the
+>     subject line has been corrected. The original 'v6' was just utterly
+>     wrong! This patch is a not-previously-shared patch to fix a build
+>     regression that appears in tty-next.
+>
+>  drivers/tty/serial/sirfsoc_uart.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/tty/serial/sirfsoc_uart.c b/drivers/tty/serial/sirfsoc_uart.c
+> index 236f892..1f2be48 100644
+> --- a/drivers/tty/serial/sirfsoc_uart.c
+> +++ b/drivers/tty/serial/sirfsoc_uart.c
+> @@ -704,7 +704,7 @@ static void sirfsoc_uart_rx_dma_complete_tl(unsigned long param)
+>         struct sirfsoc_int_en *uint_en = &sirfport->uart_reg->uart_int_en;
+>         unsigned long flags;
+>         struct dma_tx_state tx_state;
+> -       spin_lock_irqsave(&port->rx_lock, flags);
+> +       spin_lock_irqsave(&port->lock, flags);
+>         while (DMA_COMPLETE == dmaengine_tx_status(sirfport->rx_dma_chan,
+>                         sirfport->rx_dma_items[sirfport->rx_completed].cookie, &tx_state)) {
+>                 sirfsoc_uart_insert_rx_buf_to_tty(sirfport,
+> --
+> 1.9.0
+>
