@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949AbaE2Nxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:53:49 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59504 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933570AbaE2Ntd (ORCPT
+	id S964988AbaE2NyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:54:01 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:62301 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932945AbaE2Nx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:49:33 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 103/103] net-gro: reset skb->truesize in napi_reuse_skb()
-Date: Thu, 29 May 2014 15:49:28 +0200
-Message-Id: <ac993cf25a957b332864e3200644b50e179826fc.1401371259.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
-References: <cover.1401371258.git.jslaby@suse.cz>
+	Thu, 29 May 2014 09:53:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
+References: <20140529131650.2329.3197.sendpatchset@w520>
+	<20140529131732.2329.50630.sendpatchset@w520>
+	<20140529132034.GB15585@mwanda>
+	<CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
+Date: Thu, 29 May 2014 22:53:57 +0900
+Message-ID: <CANqRtoQDQLsWOyRSbQmtbmJc_qO=5X3ZMK12ZuwZ-FSR1iWCog@mail.gmail.com>
+Subject: Re: [PATCH v2 04/05] staging: board: Initial board staging support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+On Thu, May 29, 2014 at 10:27 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> Hi Dan,
+>
+> On Thu, May 29, 2014 at 10:20 PM, Dan Carpenter
+> <dan.carpenter@oracle.com> wrote:
+>> On Thu, May 29, 2014 at 10:17:32PM +0900, Magnus Damm wrote:
+>>> --- /dev/null
+>>> +++ work/drivers/staging/board/Kconfig        2014-05-29 21:40:41.000000000 +0900
+>>> @@ -0,0 +1,7 @@
+>>> +config STAGING_BOARD
+>>> +     boolean "Staging Board Support"
+>>> +     help
+>>> +       Select to enable per-board staging support code.
+>>> +
+>>> +       If in doubt, say N here.
+>>> +
+>>
+>> Actually, you're probably going to need to add a bunch of dependencies
+>> here or it will break "make randconfig" right away.  Sorry that I forgot
+>> about this in the first review.
+>
+> Good point, thanks for checking. I will have a look at this and add
+> dependencies to make sure it builds on a wide range of platforms.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+To begin with, this hunk fixes the i386_defconfig + staging board build.
 
-===============
+--- 0011/drivers/staging/board/Kconfig
++++ work/drivers/staging/board/Kconfig    2014-05-29 22:32:39.000000000 +0900
+@@ -1,5 +1,6 @@
+ config STAGING_BOARD
+     boolean "Staging Board Support"
++    depends on OF && OF_ADDRESS
+     help
+       Select to enable per-board staging support code.
 
-[ Upstream commit e33d0ba8047b049c9262fdb1fcafb93cb52ceceb ]
+Actually, there are not many dependencies - I believe the OF bits is about it.
 
-Recycling skb always had been very tough...
+Cheers,
 
-This time it appears GRO layer can accumulate skb->truesize
-adjustments made by drivers when they attach a fragment to skb.
-
-skb_gro_receive() can only subtract from skb->truesize the used part
-of a fragment.
-
-I spotted this problem seeing TcpExtPruneCalled and
-TcpExtTCPRcvCollapsed that were unexpected with a recent kernel, where
-TCP receive window should be sized properly to accept traffic coming
-from a driver not overshooting skb->truesize.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/core/dev.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 5a50e98aee2c..01d53d62a2ec 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3959,6 +3959,7 @@ static void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
- 	skb->vlan_tci = 0;
- 	skb->dev = napi->dev;
- 	skb->skb_iif = 0;
-+	skb->truesize = SKB_TRUESIZE(skb_end_offset(skb));
- 
- 	napi->skb = skb;
- }
--- 
-1.9.3
-
+/ magnus
