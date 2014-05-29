@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965010AbaE2Nyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:54:49 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59500 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933558AbaE2Ntd (ORCPT
+	id S934082AbaE2Nz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:55:26 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34233 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932786AbaE2NzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:49:33 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 102/103] ipv4: initialise the itag variable in __mkroute_input
-Date: Thu, 29 May 2014 15:49:27 +0200
-Message-Id: <ee08bba5f0f2c32f12a465542ad4b6a42c4a1417.1401371259.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
-References: <cover.1401371258.git.jslaby@suse.cz>
+	Thu, 29 May 2014 09:55:22 -0400
+Date: Thu, 29 May 2014 15:55:10 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org
+Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
+Message-ID: <20140529135510.GG11074@laptop.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li RongQing <roy.qing.li@gmail.com>
+On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
+> The scheduler tries to compute how many tasks a group of CPUs can handle by
+> assuming that a task's load is SCHED_LOAD_SCALE and a CPU capacity is
+> SCHED_POWER_SCALE.
+> We can now have a better idea of the utilization of a group fo CPUs thanks to
+> group_actitvity and deduct how many capacity is still available.
+> 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Right, so as Preeti already mentioned, this wrecks SMT. It also seems to
+loose the aggressive spread, where we want to run 1 task on each 'core'
+before we start 'balancing'.
 
-===============
+So I think we should be able to fix this by setting PREFER_SIBLING on
+the SMT domain, that way we'll get single tasks running on each SMT
+domain before filling them up until capacity.
 
-[ Upstream commit fbdc0ad095c0a299e9abf5d8ac8f58374951149a ]
-
-the value of itag is a random value from stack, and may not be initiated by
-fib_validate_source, which called fib_combine_itag if CONFIG_IP_ROUTE_CLASSID
-is not set
-
-This will make the cached dst uncertainty
-
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/ipv4/route.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index ae8aadbbb3c7..2b681867164d 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1525,7 +1525,7 @@ static int __mkroute_input(struct sk_buff *skb,
- 	struct in_device *out_dev;
- 	unsigned int flags = 0;
- 	bool do_cache;
--	u32 itag;
-+	u32 itag = 0;
- 
- 	/* get a working reference to the output device */
- 	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
--- 
-1.9.3
-
+Now, its been a while since I looked at PREFER_SIBLING, and I've not yet
+looked at what your patch does to it, but it seems to me that that is
+the first direction we should look for an answer to this.
