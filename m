@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698AbaE2UXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 16:23:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23996 "EHLO mx1.redhat.com"
+	id S932444AbaE2U3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 16:29:24 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:56728 "EHLO smtp.nebula.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755805AbaE2UXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 16:23:52 -0400
-Subject: [PATCH] iommu/intel: GAW only gets smaller by adding devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: iommu@lists.linux-foundation.org
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        mspeder@users.sourceforge.net
-Date: Thu, 29 May 2014 14:23:17 -0600
-Message-ID: <20140529202304.10925.20871.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1752336AbaE2U3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 16:29:23 -0400
+Date: Thu, 29 May 2014 23:28:08 +0300
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux <linux@openrisc.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4] openrisc: irq: use irqchip framework
+Message-ID: <20140529202806.GA9387@chokladfabriken.org>
+References: <1401136302-27654-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+ <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
+ <53843508.7060007@southpole.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53843508.7060007@southpole.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As analyzed in https://bugzilla.kernel.org/show_bug.cgi?id=76331
-we can have multiple DRHDs in a system and each may support different
-guest address widths.  We can add a device behind a less capable DRHD
-to a domain so long as the lesser DRHD can map the existing domain
-page table.  We should never increase the address width as a result
-of adding a device to the domain.  The current code simply updates
-the width to the last added device.  Change to keep it at the
-minumum DRHD width.
+On Tue, May 27, 2014 at 08:47:36AM +0200, Jonas Bonn wrote:
+> On 05/26/2014 10:52 PM, Geert Uytterhoeven wrote:
+> > CC devicetree for the bindings
+> > 
+> > On Mon, May 26, 2014 at 10:31 PM, Stefan Kristiansson
+> > <stefan.kristiansson@saunalahti.fi> wrote:
+> >> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
+> >> @@ -0,0 +1,23 @@
+> >> +OpenRISC 1000 Programmable Interrupt Controller
+> >> +
+> >> +Required properties:
+> >> +
+> >> +- compatible : should be "opencores,or1k-pic-level" for variants with
+> >> +  level triggered interrupt lines, "opencores,or1k-pic-edge" for variants with
+> >> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
+> >> +  with the non-spec compliant or1200 type implementation.
+> >> +
+> >> +  "opencores,or1k-pic" is also provided as an alias to "opencores,or1200-pic",
+> >> +  but this is only for backwards compatibility.
+> 
+> I still think this identifier needs to be versioned.  Use the same
+> version number as we have on the cpu identifier since the OR1200 PIC
+> hasn't changed since then; i.e. opencores,or1200-pic-rtlsvnXYZ.
+> 
 
-Reported-by: mspeder@users.sourceforge.net
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
----
- drivers/iommu/intel-iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I can change that if you *really* insist on it...
+But I don't understand the purpose of the versioning here,
+there will never be any other or1200-pic version than the one that currently
+exists, so IMO "or1200" should be enough versioning information.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index e68f44b..cd41d8d 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4276,7 +4276,7 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
- 		       __func__, addr_width, dmar_domain->max_addr);
- 		return -EFAULT;
- 	}
--	dmar_domain->gaw = addr_width;
-+	dmar_domain->gaw = min(addr_width, dmar_domain->gaw);
- 
- 	/*
- 	 * Knock out extra levels of page tables if necessary
-
+Stefan
