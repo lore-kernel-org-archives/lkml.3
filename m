@@ -1,109 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934404AbaE2FZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:25:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57839 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303AbaE2EfS (ORCPT
+	id S934432AbaE2F00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:26:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54834 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934410AbaE2F0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 066/140] net: sctp: test if association is dead in sctp_wake_up_waiters
-Date: Wed, 28 May 2014 21:33:25 -0700
-Message-Id: <20140529043057.995888849@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
-In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
-References: <20140529043049.661315084@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 29 May 2014 01:26:23 -0400
+Date: Thu, 29 May 2014 06:26:21 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140529052621.GH18016@ZenIV.linux.org.uk>
+References: <20140527070409.GA1801@lahna.fi.intel.com>
+ <20140528031955.GW18016@ZenIV.linux.org.uk>
+ <20140528073751.GB1757@lahna.fi.intel.com>
+ <20140528115701.GY18016@ZenIV.linux.org.uk>
+ <20140528131136.GA1643@lahna.fi.intel.com>
+ <20140528141937.GZ18016@ZenIV.linux.org.uk>
+ <20140528183954.GA18016@ZenIV.linux.org.uk>
+ <20140529031149.GE18016@ZenIV.linux.org.uk>
+ <CA+55aFyHCF1+DfxndzxkGLLoNErRF2MA0YWtdx7UOTJ=gQWhEw@mail.gmail.com>
+ <20140529051647.GG18016@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529051647.GG18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Thu, May 29, 2014 at 06:16:47AM +0100, Al Viro wrote:
+> On Wed, May 28, 2014 at 09:21:00PM -0700, Linus Torvalds wrote:
+> > On Wed, May 28, 2014 at 8:11 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > Here's an updated patch, hopefully slightly less vomit-inducing.
+> > 
+> > Hmm. Less vomit-inducing, except for this part:
+> 
+> > Ugh, that just *screams* for a helper function. Something like
+> > 
+> >         parent = get_parent_and_lock(dentry);
+> > 
+> > or whatever, with that trylock/renamelock dance separated out. The
+> > rule would be that it would lock the "dentry", and return the
+> > (similarly locked) parent. Or NULL for a root dentry, of course.
+> > 
+> > Please?
+> 
+> Already done in my current tree; see below for the next commit in there...
+> I can separate that helper from the rest (dealing with the same livelock
+> for dentry_kill(dentry, 1) caller in shrink_dentry_list()).  All of that
+> is very much subject to reordering, resplitting, writing more decent commit
+> messages, etc.
 
-------------------
+Except that it's from the wrong branch ;-/  Correct one follows:
 
-From: Daniel Borkmann <dborkman@redhat.com>
+commit fb860957449c07c6f1a1dd911e83a635b6f11f21
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Thu May 29 00:37:49 2014 -0400
 
-[ Upstream commit 1e1cdf8ac78793e0875465e98a648df64694a8d0 ]
+    deal with "put the parent" side of shrink_dentry_list()
 
-In function sctp_wake_up_waiters(), we need to involve a test
-if the association is declared dead. If so, we don't have any
-reference to a possible sibling association anymore and need
-to invoke sctp_write_space() instead, and normally walk the
-socket's associations and notify them of new wmem space. The
-reason for special casing is that otherwise, we could run
-into the following issue when a sctp_primitive_SEND() call
-from sctp_sendmsg() fails, and tries to flush an association's
-outq, i.e. in the following way:
-
-sctp_association_free()
-`-> list_del(&asoc->asocs)         <-- poisons list pointer
-    asoc->base.dead = true
-    sctp_outq_free(&asoc->outqueue)
-    `-> __sctp_outq_teardown()
-     `-> sctp_chunk_free()
-      `-> consume_skb()
-       `-> sctp_wfree()
-        `-> sctp_wake_up_waiters() <-- dereferences poisoned pointers
-                                       if asoc->ep->sndbuf_policy=0
-
-Therefore, only walk the list in an 'optimized' way if we find
-that the current association is still active. We could also use
-list_del_init() in addition when we call sctp_association_free(),
-but as Vlad suggests, we want to trap such bugs and thus leave
-it poisoned as is.
-
-Why is it safe to resolve the issue by testing for asoc->base.dead?
-Parallel calls to sctp_sendmsg() are protected under socket lock,
-that is lock_sock()/release_sock(). Only within that path under
-lock held, we're setting skb/chunk owner via sctp_set_owner_w().
-Eventually, chunks are freed directly by an association still
-under that lock. So when traversing association list on destruction
-time from sctp_wake_up_waiters() via sctp_wfree(), a different
-CPU can't be running sctp_wfree() while another one calls
-sctp_association_free() as both happens under the same lock.
-Therefore, this can also not race with setting/testing against
-asoc->base.dead as we are guaranteed for this to happen in order,
-under lock. Further, Vlad says: the times we check asoc->base.dead
-is when we've cached an association pointer for later processing.
-In between cache and processing, the association may have been
-freed and is simply still around due to reference counts. We check
-asoc->base.dead under a lock, so it should always be safe to check
-and not race against sctp_association_free(). Stress-testing seems
-fine now, too.
-
-Fixes: cd253f9f357d ("net: sctp: wake up all assocs if sndbuf policy is per socket")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/socket.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -6604,6 +6604,12 @@ static void sctp_wake_up_waiters(struct
- 	if (asoc->ep->sndbuf_policy)
- 		return __sctp_write_space(asoc);
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 6c2a92e..628a791 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -793,30 +793,34 @@ restart:
+ }
+ EXPORT_SYMBOL(d_prune_aliases);
  
-+	/* If association goes down and is just flushing its
-+	 * outq, then just normally notify others.
-+	 */
-+	if (asoc->base.dead)
-+		return sctp_write_space(sk);
-+
- 	/* Accounting for the sndbuf space is per socket, so we
- 	 * need to wake up others, try to be fair and in case of
- 	 * other associations, let them have a go first instead
-
-
+-static void shrink_dentry_list(struct list_head *list)
++static inline struct dentry *lock_parent(struct dentry *dentry)
+ {
+-	struct dentry *dentry, *parent;
++	struct dentry *parent = dentry->d_parent;
++	if (IS_ROOT(dentry))
++		return NULL;
++	if (unlikely(!spin_trylock(&parent->d_lock))) {
++		spin_unlock(&dentry->d_lock);
++		read_seqlock_excl(&rename_lock);
++		parent = NULL;
++		if (!IS_ROOT(dentry)) {
++			parent = dentry->d_parent;
++			spin_lock(&parent->d_lock);
++		}
++		read_sequnlock_excl(&rename_lock);
++		spin_lock(&dentry->d_lock);
++	}
++	return parent;
++}
+ 
++static void shrink_dentry_list(struct list_head *list)
++{
+ 	while (!list_empty(list)) {
+ 		struct inode *inode;
+-		dentry = list_entry(list->prev, struct dentry, d_lru);
++		struct dentry *dentry = list_entry(list->prev, struct dentry, d_lru);
++		struct dentry *parent;
+ 
+-		parent = NULL;
+ 		spin_lock(&dentry->d_lock);
+-		if (!IS_ROOT(dentry)) {
+-			parent = dentry->d_parent;
+-			if (unlikely(!spin_trylock(&parent->d_lock))) {
+-				spin_unlock(&dentry->d_lock);
+-				parent = NULL;
+-				read_seqlock_excl(&rename_lock);
+-				if (!IS_ROOT(dentry)) {
+-					parent = dentry->d_parent;
+-					spin_lock(&parent->d_lock);
+-				}
+-				read_sequnlock_excl(&rename_lock);
+-				spin_lock(&dentry->d_lock);
+-			}
+-		}
++		parent = lock_parent(dentry);
+ 
+ 		/*
+ 		 * The dispose list is isolated and dentries are not accounted
+@@ -864,8 +868,26 @@ static void shrink_dentry_list(struct list_head *list)
+ 		 * fragmentation.
+ 		 */
+ 		dentry = parent;
+-		while (dentry && !lockref_put_or_lock(&dentry->d_lockref))
+-			dentry = dentry_kill(dentry);
++		while (dentry && !lockref_put_or_lock(&dentry->d_lockref)) {
++			parent = lock_parent(dentry);
++			if (dentry->d_lockref.count != 1) {
++				dentry->d_lockref.count--;
++				spin_unlock(&dentry->d_lock);
++				if (parent)
++					spin_unlock(&parent->d_lock);
++				break;
++			}
++			inode = dentry->d_inode;	/* can't be NULL */
++			if (unlikely(!spin_trylock(&inode->i_lock))) {
++				spin_unlock(&dentry->d_lock);
++				if (parent)
++					spin_unlock(&parent->d_lock);
++				cpu_relax();
++				continue;
++			}
++			__dentry_kill(dentry);
++			dentry = parent;
++		}
+ 	}
+ }
+ 
