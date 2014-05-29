@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934184AbaE2OrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:47:10 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:24947 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782AbaE2OrH (ORCPT
+	id S934510AbaE2Or7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:47:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20308 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932940AbaE2Or5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 10:47:07 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-15; format=flowed
-X-AuditID: cbfec7f5-b7f626d000004b39-2a-538748676016
-Content-transfer-encoding: 8BIT
-Message-id: <53874862.5080809@samsung.com>
-Date: Thu, 29 May 2014 18:46:58 +0400
-From: Tarek Dakhran <t.dakhran@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>,
-        Kevin Hilman <khilman@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
-Subject: Re: [PATCH v11 0/3] Exynos 5410 support
-References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
- <7hr43f9mmn.fsf@paris.lan> <538737CA.4070709@suse.de>
-In-reply-to: <538737CA.4070709@suse.de>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t/xK7rpHu3BBus6tCyaNxVbTFp3gMni
-	4fqbLBbzj5xjteh/s5DV4v+j16wW516tZLToXXCVzeLr4RWMFmeb3rBbbHp8jdViYdsSFovL
-	u+awWcw4v4/J4vZlXoul1y8yWTydcJHNYsL0tSwW615OZ7Fo3XuE3WLLzw5Gi989n5gt1s94
-	zWJxbMYSRoupM36wO0h6rJm3htGjpbmHzeNyXy+Tx99VL5g9ds66y+6xcvkXNo9NqzrZPF6t
-	nsnqcefaHjaPzUvqPV5dY/Ho27KK0WP7tXnMHptPV3t83iQXwB/FZZOSmpNZllqkb5fAlXG0
-	tY+p4D9nxb/l0xkbGFs4uhg5OSQETCRe7jrHDmGLSVy4t56ti5GLQ0hgKaPE/s7HzCAJXgFB
-	iR+T77F0MXJwMAvISxy5lA1h2kgcnJ8GUiEk8IFR4sl1S4hqLYnu9q1gI1kEVCW2flnMDFLO
-	JqAtsWWHF4gpKhAh8fiCEEiFiECcRPvGBawgS5kFnrNJHHh8D6xVWMBA4saszYwQ42slls6+
-	wgpicwqoS3R0X2KawCgwC8ltsxBum4Vw2wJG5lWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsY
-	IZH+dQfj0mNWhxgFOBiVeHgzXNqDhVgTy4orcw8xSnAwK4nw6pkAhXhTEiurUovy44tKc1KL
-	DzEycXBKNTCaJRXXv3p6+8jpiJkHgo8d0/AM10/vT/VX10o91nq731Xi6XH9iTLpYU/m5QnU
-	7S/Tibmwwi67dKLj2XkzuS4ZeBy4s31mzZ7mSp4nq3ycRe6E5sQx+KtyiZbwPy2s3cHLVd1X
-	OzX1zuc52izF+5XN331J4TIubDAP3XRf8730nhlM0rnXrZVYijMSDbWYi4oTAQaiX0jSAgAA
+	Thu, 29 May 2014 10:47:57 -0400
+Message-ID: <5387486D.20108@oracle.com>
+Date: Thu, 29 May 2014 10:47:09 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>
+Subject: Re: perf: use after free in perf_remove_from_context
+References: <5370EBE9.6@oracle.com> <20140514162943.GR30445@twins.programming.kicks-ass.net> <53739A9A.5010703@oracle.com> <20140514163535.GS30445@twins.programming.kicks-ass.net> <538676A7.6090306@oracle.com> <20140529075723.GA30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140529075723.GA30445@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andreas,
-
-On 05/29/2014 05:36 PM, Andreas Färber wrote:
-> Hi Tarek and Kevin,
->
-> Am 27.05.2014 19:06, schrieb Kevin Hilman:
->> Tarek Dakhran <t.dakhran@samsung.com> writes:
+On 05/29/2014 03:57 AM, Peter Zijlstra wrote:
+> On Wed, May 28, 2014 at 07:52:07PM -0400, Sasha Levin wrote:
+>> On 05/14/2014 12:35 PM, Peter Zijlstra wrote:
+>>> On Wed, May 14, 2014 at 12:32:26PM -0400, Sasha Levin wrote:
+>>>>> -----BEGIN PGP SIGNED MESSAGE-----
+>>>>> Hash: SHA1
+>>>>>
+>>>>> On 05/14/2014 12:29 PM, Peter Zijlstra wrote:
+>>>>>>> On Mon, May 12, 2014 at 11:42:33AM -0400, Sasha Levin wrote:
+>>>>>>>>> Hi all,
+>>>>>>>>>
+>>>>>>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next kernel I've stumbled on the following spew. Maybe related to the very recent change in freeing on task exit?
+>>>>>>>>>
+>>>>>>>>> [ 2509.827261] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC [ 2509.830379] Dumping ftrace buffer: [ 2509.830379]    (ftrace buffer empty) [ 2509.830379] Modules linked in: [ 2509.830379] CPU: 47 PID: 43306 Comm: trinity-c126 Tainted: G        W     3.15.0-rc5-next-20140512-sasha-00019-ga20bc00-dirty #456
+>>>>>>>
+>>>>>>> Any particular trinity setup? And would you happen to have the seed of that run?
+>>>>>
+>>>>> Nothing special about trinity options. 400 threads and blacklisting some of the
+>>>>> destructive syscalls (umount, reboot, etc).
+>>>>>
+>>>>> I don't have the seed, but that problem did reproduce again tonight so I can test
+>>>>> out debug code if you have something in mind.
+>>> Nah, I drew a pretty big blank, which is why I wanted to see if I could
+>>> reproduce. If you could share your trinity cmdline I'd be much obliged.
+>>> While I did manage to clone (the repo moved since last time) and build
+>>> it, I'm not really that handy with it and want to avoid destroying my
+>>> machine if possible ;-)
 >>
->>> The series of patches represent support of Exynos 5410 SoC
->>>
->>> The Exynos 5410 is the first Samsung SoC based on big.LITTLE architecture
->>>
->>> Patches add new platform description, support of clock controller and device
->>> tree for Exynos 5410.
->>>
->>> Has been build on Samsung Linux Kernel
->>>    (branch: for-next, commit: 97eae6c Merge branch 'v3.16-next/multiplatform' into for-next)
->>>
->>> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
->>> 		    2) Exynos 5410 reference board (multi_v7_defconfig)
->>> 		    3) Odroid-XU board (exynos_defconfig)
->>> 		    4) Odroid-XU board (multi_v7_defconfig)
->> Tested-by: Kevin Hilman <khilman@linaro.org>
->>
->> FYI, I boot tested this on an odroid-xu (exynos_defconfig and
->> multi_v7_defconfig.)
-> Could you clarify: Are you using exynos5410-smdk5410.dts with the
-> ODROID-XU or do you have some upcoming exynos5410-odroidxu.dts based on
-> exynos5410.dtsi?
-We use exynos5410-smdk5410.dts for booting ODROID-XU.
+>> Anything I could do to help out with this? It reproduces pretty easily on my
+>> configuration so I'd be happy to test out whatever might help.
+> 
+> Yeah, it takes me days to test anything, and my last guess panned out to
+> nothing, at which point I decided I needed to look at the things I'd
+> neglected for a bit :/
+> 
+> Could you see if the below makes any difference? I'll try and get back
+> to tracking this.
+> 
+> ---
+>  kernel/events/core.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 9efb1e7858ac..851dc9dc5643 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -7497,8 +7497,10 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
+>  	 */
+>  	mutex_lock(&child_ctx->mutex);
+>  
+> +	rcu_read_lock();
+>  	list_for_each_entry_rcu(child_event, &child_ctx->event_list, event_entry)
+>  		__perf_event_exit_task(child_event, child_ctx, child);
+> +	rcu_read_unlock();
+>  
+>  	mutex_unlock(&child_ctx->mutex);
+>  
+> 
 
->
-> Thanks,
-> Andreas
->
+It doesn't work out well because we later lock a mutex in sync_child_event().
 
 
--- 
-Best regards,
-     Tarek Dakhran
-
+Thanks,
+Sasha
