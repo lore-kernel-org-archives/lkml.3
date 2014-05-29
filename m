@@ -1,131 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaE2D1B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 23:27:01 -0400
-Received: from ns.horizon.com ([71.41.210.147]:21969 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755157AbaE2D1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 23:27:00 -0400
-Date: 28 May 2014 23:26:55 -0400
-Message-ID: <20140529032655.27479.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tim.c.chen@linux.intel.com
-Subject: Re: [PATCH v2] crypto: crc32c-pclmul - Shrink K_table to 32-bit words
-Cc: david.m.cote@intel.com, herbert@gondor.apana.org.au,
-        james.guilford@intel.com, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, sandyw@twitter.com,
-        wajdi.k.feghali@intel.com
-In-Reply-To: <1401318135.2970.399.camel@schen9-DESK>
+	id S1755716AbaE2DgA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 23:36:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16702 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264AbaE2Df7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 23:35:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,932,1392192000"; 
+   d="scan'208";a="548165091"
+Message-ID: <5386AAF4.4090804@intel.com>
+Date: Thu, 29 May 2014 11:35:16 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Ming Lei <tom.leiming@gmail.com>,
+        Dongsu Park <dongsu.park@profitbricks.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Maurizio Lombardi <mlombard@redhat.com>
+Subject: Re: [PATCH] bio: decrease bi_iter.bi_size by len in the fail path
+References: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>	<1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>	<CACVXFVO6uW3KoVPoeb+O0txuY2Ji6BO1Sob1e-g7NmZBv9MPBQ@mail.gmail.com> <CACVXFVNNc3dRshmMYNgS+pn54RC2dyQkJFOy1=HJdXfUfuhAMQ@mail.gmail.com>
+In-Reply-To: <CACVXFVNNc3dRshmMYNgS+pn54RC2dyQkJFOy1=HJdXfUfuhAMQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you do a tcrypt speed measurement with and without your changes?
-> Check to see if there's any slowdown.  Please make sure you pin
-> the frequency of your cpu when running the test.  
+On 05/29/2014 12:59 AM, Ming Lei wrote:
+> On Wed, May 28, 2014 at 11:42 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> Hi Dongsu,
+>>
+>> On Wed, May 28, 2014 at 11:09 PM, Dongsu Park
+>> <dongsu.park@profitbricks.com> wrote:
+>>> From: Dongsu Park <dongsu.park@profitbricks.com>
+>>>
+>>> Commit 3979ef4dcf3d1de55a560a3a4016c30a835df44d ("bio-modify-
+>>> __bio_add_page-to-accept-pages-that-dont-start-a-new-segment-v3")
+>>> introduced a regression as reported by Jet Chen.
+>>> That results in a kernel BUG at drivers/block/virtio_blk.c:166.
+>>>
+>>> To fix that, bi_iter.bi_size must be decreased by len, before
+>>> recounting the number of physical segments.
+>>>
+>>> Tested on with kernel 3.15.0-rc7-next-20140527 on qemu guest,
+>>> by running xfstests/ext4/271.
+>>>
+>>> Cc: Jens Axboe <axboe@kernel.dk>
+>>> Cc: Jet Chen <jet.chen@intel.com>
+>>> Cc: Maurizio Lombardi <mlombard@redhat.com>
+>>> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
+>>> ---
+>>>  block/bio.c | 1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> diff --git a/block/bio.c b/block/bio.c
+>>> index 0443694ccbb4..67d7cba1e5fd 100644
+>>> --- a/block/bio.c
+>>> +++ b/block/bio.c
+>>> @@ -810,6 +810,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>>>         bvec->bv_len = 0;
+>>>         bvec->bv_offset = 0;
+>>>         bio->bi_vcnt--;
+>>> +       bio->bi_iter.bi_size -= len;
+>>
+>> Would you mind explaining why bi_iter.bi_size need to be
+>> decreased by 'len'? In the failure path, it wasn't added by
+>> 'len', was it?
 > 
-> e.g.
-> echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> Actually, the correct thing may be like what did in the
+> attached patch, as Maurizio discussed with me[1].
+> 
+> Very interestingly, I have reproduced the problem one time
+> with ext4/271 ext4/301 ext4/305, but won't with the attached
+> patch after running it for 3 rounds.
+> 
+> [tom@localhost xfstests]$ sudo ./check ext4/271 ext4/301 ext4/305
+> FSTYP         -- ext4
+> PLATFORM      -- Linux/x86_64 localhost 3.15.0-rc7-next-20140527+
+> MKFS_OPTIONS  -- /dev/vdc
+> MOUNT_OPTIONS -- -o acl,user_xattr /dev/vdc /mnt/scratch
+> 
+> ext4/271 1s ... 1s
+> ext4/301 31s ... 32s
+> ext4/305 181s ... 180s
+> Ran: ext4/271 ext4/301 ext4/305
+> Passed all 3 tests
+> 
+> Jet, could you test the attached patch?
 
-I just now re-read your e-mail and noticed you suggested a specific tool.
-Oops, I haven't run that yet.  I just made up my own in user space.
-As I mentioned, since the changes are to the main loop that operates on
-aligned buffers in multiples of 24 bytes, I focused my benchmarking there:
+sorry, could you specify which patch need me to test ?
+actually I got confused. I only find
+	
+	[PATCH V3] bio: modify __bio_add_page() to accept pages that don't start a new segment
 
-#define BUFFER 6114
-static unsigned char buf[BUFFER] __attribute__ ((aligned(8)));
-#define ITER 24 /* Number of test iterations */
+in this mail thread. is it need to be tested ?
 
-uint32_t
-do_test(uint32_t crc, uint32_t (*f)(void const *, unsigned, uint32_t))
-{
-	int i, j;
-	for (i = 0; i < BUFFER; i += 8)
-		for (j = i+24; j <= BUFFER; j += 24)
-			crc = f(buf+i, j-i, crc);
-	return crc;
-}
+on next/master branch,
 
-uint32_t
-time_test(uint64_t *time, uint32_t crc, uint32_t (*f)(void const *, unsigned, ui
-nt32_t))
-{
-	uint64_t start = rdtsc();
-	crc = do_test(crc, f);
-	*time = rdtsc() - start;
-	return crc;
-}
+commit 3979ef4dcf3d1de55a560a3a4016c30a835df44d
+Author: Maurizio Lombardi <mlombard@redhat.com>
+Date:   Sat May 17 23:17:30 2014 +1000
 
-The actual test goes in ABBA order to reduce bias:
+    bio-modify-__bio_add_page-to-accept-pages-that-dont-start-a-new-segment-v3
 
-	for (i = 0; i < ITER; i += 2) {
-		crc1 = time_test(times[i]+0, crc1, crc_pcl_1);
-		crc2 = time_test(times[i]+1, crc2, crc_pcl_2);
-		crc2 = time_test(times[i+1]+1, crc2, crc_pcl_2);
-		crc1 = time_test(times[i+1]+0, crc1, crc_pcl_1);
-	}
+    Changes in V3:
 
-crc_pcl_1 is the old code, crc_pcl_2 is my revised version.
+    In case of error, V2 restored the previous number of segments but left
+    the BIO_SEG_FLAG set.
+    To avoid problems, after the page is removed from the bio vec,
+    V3 performs a recount of the segments in the error code path.
 
+    Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+    Cc: Al Viro <viro@zeniv.linux.org.uk>
+    Cc: Christoph Hellwig <hch@lst.de>
+    Cc: Kent Overstreet <kmo@daterainc.com>
+    Cc: Jens Axboe <axboe@kernel.dk>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-The results are as follows (the last line is a total):
+commit fceb38f36f4fecabf9ca33aa44a3f943f133cb78
+Author: Maurizio Lombardi <mlombard@redhat.com>
+Date:   Sat May 17 23:17:30 2014 +1000
 
-        Old code     New code
- 0:     85009953     71812457 (-13197496)
- 1:     57408829     63361572 (+5952743)
- 2:     52552399     49195266 (-3357133)
- 3:     43595130     45988364 (+2393234)
- 4:     41541760     39714198 (-1827562)
- 5:     36576082     38021344 (+1445262)
- 6:     35307854     34150656 (-1157198)
- 7:     32182230     33134236 (+952006)
- 8:     31341596     31307004 (-34592)
- 9:     31340900     31329408 (-11492)
-10:     31344884     31329144 (-15740)
-11:     31334144     31312492 (-21652)
-12:     31338992     31330356 (-8636)
-13:     31343744     31311344 (-32400)
-14:     31339000     31340196 (+1196)
-15:     31337492     31313988 (-23504)
-16:     31341688     31334040 (-7648)
-17:     31341804     31308936 (-32868)
-18:     31339936     31332020 (-7916)
-19:     31323228     31324240 (+1012)
-20:     31339744     31331768 (-7976)
-21:     31321536     31332688 (+11152)
-22:     31340280     31335212 (-5068)
-23:     31332056     31335768 (+3712)
-24:    885575261    876586697 (-8988564)
+    bio: modify __bio_add_page() to accept pages that don't start a new segment
 
-I swapped the link order of the two .o files in case cache
-placement made a difference:
+    The original behaviour is to refuse to add a new page if the maximum
+    number of segments has been reached, regardless of the fact the page we
 
- 0:     84305981     71483150 (-12822831)
- 1:     57341376     63129024 (+5787648)
- 2:     52361618     49240069 (-3121549)
- 3:     43520576     45822670 (+2302094)
- 4:     41500104     39684116 (-1815988)
- 5:     36542864     37940196 (+1397332)
- 6:     35281570     34144348 (-1137222)
- 7:     32149420     33088652 (+939232)
- 8:     31342368     31329056 (-13312)
- 9:     31338788     31313212 (-25576)
-10:     31336324     31335612 (-712)
-11:     31341892     31319576 (-22316)
-12:     31336224     31322808 (-13416)
-13:     31338560     31315084 (-23476)
-14:     31338332     31332976 (-5356)
-15:     31337300     31315088 (-22212)
-16:     31334300     31330884 (-3416)
-17:     31318660     31329916 (+11256)
-18:     31334984     31327740 (-7244)
-19:     31315084     31327768 (+12684)
-20:     31334708     31345872 (+11164)
-21:     31325988     31330948 (+4960)
-22:     31333956     31339800 (+5844)
-23:     31322880     31327316 (+4436)
-24:    884333857    875775881 (-8557976)
+3979ef4dcf3d1de55a560a3a4016c30a835df44d is the first bad commit.
 
-It doesn't look like a slowdown; more like a 1% speedup.
-
-I'll figure out tcrypt in a bit.
+> 
+> [1], https://lkml.org/lkml/2014/5/27/327
+> 
+> 
+> Thanks,
+> 
