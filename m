@@ -1,39 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978AbaE2K1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 06:27:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30465 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750723AbaE2K1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 06:27:33 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140528160653.GL17233@tucsk.piliscsaba.szeredi.hu>
-References: <20140528160653.GL17233@tucsk.piliscsaba.szeredi.hu> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <25513.1401069402@jrobl>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, "J. R. Okajima" <hooanon05g@gmail.com>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@gmail.com, mszeredi@suse.cz
-Subject: Re: [PATCH 00/13] overlay filesystem v22
-Date: Thu, 29 May 2014 11:26:44 +0100
-Message-ID: <27746.1401359204@warthog.procyon.org.uk>
+	id S1757185AbaE2K2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 06:28:36 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:54218 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756207AbaE2K2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 06:28:34 -0400
+From: Varka Bhadram <varkabhadram@gmail.com>
+X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
+To: alan@signal11.us
+Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, alex.aing@gmail.com,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next v3] mrf24j40: added device managed APIs
+Date: Thu, 29 May 2014 15:57:38 +0530
+Message-Id: <1401359258-7247-1-git-send-email-varkab@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+changes since v2:
+1. removed unwanted label implementation. 
 
-> Perfect solution would be an invisible temp directory.  This needs filesystem
-> support, but perhaps not so difficult.  Again could be done later without
-> backward compatibility issues.
+When we use devm_* APIs ,probe() failed also the memory
+will be freed automatically. Thanks to Alex
 
-Maybe make a tempfile and hardlink it into place when complete.  That's what
-unionmount is doing.
+-Varka Bhadram
 
-David
+
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
+---
+ drivers/net/ieee802154/mrf24j40.c |   30 ++++++++++++------------------
+ 1 file changed, 12 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+index 78a6552..f2b1345 100644
+--- a/drivers/net/ieee802154/mrf24j40.c
++++ b/drivers/net/ieee802154/mrf24j40.c
+@@ -618,12 +618,12 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 
+ 	printk(KERN_INFO "mrf24j40: probe(). IRQ: %d\n", spi->irq);
+ 
+-	devrec = kzalloc(sizeof(struct mrf24j40), GFP_KERNEL);
++	devrec = devm_kzalloc(&spi->dev, sizeof(struct mrf24j40), GFP_KERNEL);
+ 	if (!devrec)
+-		goto err_devrec;
+-	devrec->buf = kzalloc(3, GFP_KERNEL);
++		goto err_ret;
++	devrec->buf = devm_kzalloc(&spi->dev, 3, GFP_KERNEL);
+ 	if (!devrec->buf)
+-		goto err_buf;
++		goto err_ret;
+ 
+ 	spi->mode = SPI_MODE_0; /* TODO: Is this appropriate for right here? */
+ 	if (spi->max_speed_hz > MAX_SPI_SPEED_HZ)
+@@ -676,12 +676,13 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 	val &= ~0x3; /* Clear RX mode (normal) */
+ 	write_short_reg(devrec, REG_RXMCR, val);
+ 
+-	ret = request_threaded_irq(spi->irq,
+-				   NULL,
+-				   mrf24j40_isr,
+-				   IRQF_TRIGGER_LOW|IRQF_ONESHOT,
+-				   dev_name(&spi->dev),
+-				   devrec);
++	ret = devm_request_threaded_irq(&spi->dev,
++					spi->irq,
++					NULL,
++					mrf24j40_isr,
++					IRQF_TRIGGER_LOW|IRQF_ONESHOT,
++					dev_name(&spi->dev),
++					devrec);
+ 
+ 	if (ret) {
+ 		dev_err(printdev(devrec), "Unable to get IRQ");
+@@ -696,10 +697,7 @@ err_read_reg:
+ err_register_device:
+ 	ieee802154_free_device(devrec->dev);
+ err_alloc_dev:
+-	kfree(devrec->buf);
+-err_buf:
+-	kfree(devrec);
+-err_devrec:
++err_ret:
+ 	return ret;
+ }
+ 
+@@ -709,15 +707,11 @@ static int mrf24j40_remove(struct spi_device *spi)
+ 
+ 	dev_dbg(printdev(devrec), "remove\n");
+ 
+-	free_irq(spi->irq, devrec);
+ 	ieee802154_unregister_device(devrec->dev);
+ 	ieee802154_free_device(devrec->dev);
+ 	/* TODO: Will ieee802154_free_device() wait until ->xmit() is
+ 	 * complete? */
+ 
+-	/* Clean up the SPI stuff. */
+-	kfree(devrec->buf);
+-	kfree(devrec);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
