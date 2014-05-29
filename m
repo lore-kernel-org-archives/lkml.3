@@ -1,223 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444AbaE2Ghs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:37:48 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64020 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaE2Ghq (ORCPT
+	id S1756458AbaE2Ghx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:37:53 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52380 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774AbaE2Ghs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:37:46 -0400
+	Thu, 29 May 2014 02:37:48 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: lee.jones@linaro.org, Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v4 00/11] Add DRM for stih4xx platforms
-Date: Thu, 29 May 2014 08:36:56 +0200
-Message-Id: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v4 01/11] drm: sti: add bindings for DRM driver
+Date: Thu, 29 May 2014 08:36:57 +0200
+Message-Id: <1401345427-5299-2-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
+References: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches add the support of DRM/KMS drivers for STMicroelectronics
-chipsets stih416 and stih407.
+Add DRM/KMS driver bindings documentation.
+Describe the required properties for each of the hardware IPs drivers.
 
-version 4:
-	- Remove depency between TVout it subdevices HDMI and HDA
-	- Rework and simplify VTG and VTAC code
-	- Fix numbers of typo and indentation
-	- Remove debug (will be push in separate patches)
-	- Fix remarks done in previous patcheset
-	
-	patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
-	on branch: drm_kms_for_next-v4
-
-version 3:
-	- Correctly split code between probe and bind funtions
-	- Squash some commits
-	- remove HQ-VDP device code to have a smaller patcheset,
-	  we will introduce it later.
-
-	patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
-	on branch: drm_kms_for_next-v3
-
-version 2:
-	- Use componentized device instead of register sub-devices in master
-	driver probe function
-	- Fix Makefile and Kconfig to only allow built-in compilation
-
-	patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
-	on branch: drm_kms_for_next-v2
-	
-version 1:
-	- First path submission
-
-Hardware is split in two main blocks: Compositor and TVout. Each of them
-includes specific hardware IPs and the display timing are controlled by a specific
-Video Timing Generator hardware IP (VTG).
-
-Compositor is made of the follow hardware IPs:
- - GDP (Generic Display Pipeline) which is an entry point for graphic (RGB)
-   buffers
- - VDP (Video Diplay Pipeline) which is an entry point for video (YUV) buffers
- - HQVDP (High Quality Video Display Processor) that supports scaling,
-   deinterlacing and some miscellaneous image quality improvements.
-   It fetches the Video decoded buffers from memory, processes them and pushes
-   them to the Compositor through a HW dedicated bus.
- - Mixer is responsible of mixing all the entries depending of their
-   respective z-order and layout
-
-TVout is divided in 3 parts:
- - HDMI to generate HDMI signals, depending of chipset version HDMI phy can
-   change.
- - HDA to generate signals for HD analog TV
- - VIP to control/switch data path coming from Compositor
-
-On stih416 compositor and Tvout are on different dies so a Video Trafic Advance
-inter-die Communication mechanism (VTAC) is needed.
-
-+---------------------------------------------+   +----------------------------------------+
-| +-------------------------------+   +----+  |   |  +----+   +--------------------------+ |
-| |                               |   |    |  |   |  |    |   |  +---------+     +----+  | |
-| | +----+              +------+  |   |    |  |   |  |    |   |  | VIP     |---->|HDMI|  | |
-| | |GPD +------------->|      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
-| | +----+              |Mixer |--|-->|    |  |   |  |    |---|->| switcher|             | |
-| |                     |      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
-| |                     |      |  |   |    |  |   |  |    |   |  |         |---->|HDA |  | |
-| |                     +------+  |   |VTAC|========>|VTAC|   |  +---------+     +----+  | |
-| |                               |   |    |  |   |  |    |   |                          | |
-| |         Compositor            |   |    |  |   |  |    |   |           TVout          | |
-| +-------------------------------+   |    |  |   |  |    |   +--------------------------+ |
-|                      ^              |    |  |   |  |    |             ^                  |
-|                      |              |    |  |   |  |    |             |                  |
-|               +--------------+      |    |  |   |  |    |      +-------------+           |
-|               | VTG (master) |----->|    |  |   |  |    |----->| VTG (slave) |           |
-|               +--------------+      +----+  |   |  +----+      +-------------+           |
-|Digital die                                  |   |                              Analog Die|
-+---------------------------------------------+   +----------------------------------------+
-
-On stih407 Compositor and Tvout are on the same die
-
-+-----------------------------------------------------------------+
-| +-------------------------------+  +--------------------------+ |
-| |                               |  |  +---------+     +----+  | |
-| | +----+              +------+  |  |  | VIP     |---->|HDMI|  | |
-| | |GPD +------------->|      |  |  |  |         |     +----+  | |
-| | +----+              |Mixer |--|--|->| switcher|             | |
-| | +----+   +-----+    |      |  |  |  |         |     +----+  | |
-| | |VDP +-->+HQVDP+--->|      |  |  |  |         |---->|HDA |  | |
-| | +----+   +-----+    +------+  |  |  +---------+     +----+  | |
-| |                               |  |                          | |
-| |         Compositor            |  |           TVout          | |
-| +-------------------------------+  +--------------------------+ |
-|                              ^        ^                         |
-|                              |        |                         |
-|                           +--------------+                      |
-|                           |     VTG      |                      |
-|                           +--------------+                      |
-|Digital die                                                      |
-+-----------------------------------------------------------------+
-
-In addition of the drivers for the IPs listed before a thin I2C driver (hdmiddc) is used
-by HDMI driver to retrieve EDID for monitor.
-
-To unify interfaces of GDP and VDP we create a "layer" interface called by
-compositor to control both GPD and VDP.
-
-Hardware have memory contraints (alignment, contiguous) so we use CMA drm helpers functions
-to allocate frame buffer.
-
-File naming convention is:
- - sti_* for IPs drivers
- - sti_drm_* for drm functions implementation.
-
-Benjamin Gaignard (11):
-  drm: sti: add bindings for DRM driver
-  drm: sti: add VTG driver
-  drm: sti: add VTAC drivers
-  drm: sti: add HDMI driver
-  drm: sti: add HDA driver
-  drm: sti: add TVOut driver
-  drm: sti: add GDP layer
-  drm: sti: add VID layer
-  drm: sti: add Mixer
-  drm: sti: add Compositor
-  drm: sti: Add DRM driver itself
-
- .../devicetree/bindings/gpu/st,stih4xx.txt         | 189 ++++++
- drivers/gpu/drm/Kconfig                            |   2 +
- drivers/gpu/drm/Makefile                           |   1 +
- drivers/gpu/drm/sti/Kconfig                        |  14 +
- drivers/gpu/drm/sti/Makefile                       |  19 +
- drivers/gpu/drm/sti/sti_compositor.c               | 265 ++++++++
- drivers/gpu/drm/sti/sti_compositor.h               |  90 +++
- drivers/gpu/drm/sti/sti_drm_connector.c            | 114 ++++
- drivers/gpu/drm/sti/sti_drm_connector.h            |  55 ++
- drivers/gpu/drm/sti/sti_drm_crtc.c                 | 436 ++++++++++++
- drivers/gpu/drm/sti/sti_drm_crtc.h                 |  21 +
- drivers/gpu/drm/sti/sti_drm_drv.c                  | 229 +++++++
- drivers/gpu/drm/sti/sti_drm_drv.h                  |  35 +
- drivers/gpu/drm/sti/sti_drm_encoder.c              | 108 +++
- drivers/gpu/drm/sti/sti_drm_encoder.h              |  17 +
- drivers/gpu/drm/sti/sti_drm_plane.c                | 192 ++++++
- drivers/gpu/drm/sti/sti_drm_plane.h                |  17 +
- drivers/gpu/drm/sti/sti_gdp.c                      | 512 ++++++++++++++
- drivers/gpu/drm/sti/sti_gdp.h                      |  73 ++
- drivers/gpu/drm/sti/sti_hda.c                      | 727 ++++++++++++++++++++
- drivers/gpu/drm/sti/sti_hdmi.c                     | 748 +++++++++++++++++++++
- drivers/gpu/drm/sti/sti_hdmi.h                     |  88 +++
- drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c         | 336 +++++++++
- drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h         |  14 +
- drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c         | 211 ++++++
- drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h         |  14 +
- drivers/gpu/drm/sti/sti_layer.c                    | 312 +++++++++
- drivers/gpu/drm/sti/sti_layer.h                    | 114 ++++
- drivers/gpu/drm/sti/sti_mixer.c                    | 249 +++++++
- drivers/gpu/drm/sti/sti_mixer.h                    |  52 ++
- drivers/gpu/drm/sti/sti_tvout.c                    | 687 +++++++++++++++++++
- drivers/gpu/drm/sti/sti_tvout.h                    |  18 +
- drivers/gpu/drm/sti/sti_vid.c                      | 145 ++++
- drivers/gpu/drm/sti/sti_vid.h                      |  33 +
- drivers/gpu/drm/sti/sti_vtac.c                     | 211 ++++++
- drivers/gpu/drm/sti/sti_vtg.c                      | 356 ++++++++++
- drivers/gpu/drm/sti/sti_vtg.h                      |  28 +
- 37 files changed, 6732 insertions(+)
+Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+---
+ .../devicetree/bindings/gpu/st,stih4xx.txt         | 189 +++++++++++++++++++++
+ 1 file changed, 189 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/gpu/st,stih4xx.txt
- create mode 100644 drivers/gpu/drm/sti/Kconfig
- create mode 100644 drivers/gpu/drm/sti/Makefile
- create mode 100644 drivers/gpu/drm/sti/sti_compositor.c
- create mode 100644 drivers/gpu/drm/sti/sti_compositor.h
- create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.c
- create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.h
- create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.c
- create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.h
- create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.c
- create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.h
- create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.c
- create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.h
- create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.c
- create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.h
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.c
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.h
- create mode 100644 drivers/gpu/drm/sti/sti_hda.c
- create mode 100644 drivers/gpu/drm/sti/sti_hdmi.c
- create mode 100644 drivers/gpu/drm/sti/sti_hdmi.h
- create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c
- create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h
- create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c
- create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h
- create mode 100644 drivers/gpu/drm/sti/sti_layer.c
- create mode 100644 drivers/gpu/drm/sti/sti_layer.h
- create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
- create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
- create mode 100644 drivers/gpu/drm/sti/sti_tvout.c
- create mode 100644 drivers/gpu/drm/sti/sti_tvout.h
- create mode 100644 drivers/gpu/drm/sti/sti_vid.c
- create mode 100644 drivers/gpu/drm/sti/sti_vid.h
- create mode 100644 drivers/gpu/drm/sti/sti_vtac.c
- create mode 100644 drivers/gpu/drm/sti/sti_vtg.c
- create mode 100644 drivers/gpu/drm/sti/sti_vtg.h
 
+diff --git a/Documentation/devicetree/bindings/gpu/st,stih4xx.txt b/Documentation/devicetree/bindings/gpu/st,stih4xx.txt
+new file mode 100644
+index 0000000..59a59a7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpu/st,stih4xx.txt
+@@ -0,0 +1,189 @@
++STMicroelectronics stih4xx platforms
++
++- sti-vtg: video timing generator
++  Required properties:
++  - compatible: "st,vtg"
++  - reg: Physical base address of the IP registers and length of memory mapped region.
++  Optional properties:
++  - interrupts : VTG interrupt number to the CPU.
++  - st,slave: phandle on a slave vtg
++
++- sti-vtac: video timing advanced inter dye communication Rx and TX
++  Required properties:
++  - compatible: "st,vtac-main" or "st,vtac-aux"
++  - reg: Physical base address of the IP registers and length of memory mapped region.
++  - clocks: from common clock binding: handle hardware IP needed clocks, the
++    number of clocks may depend of the SoC type.
++    See ../clocks/clock-bindings.txt for details.
++  - clock-names: names of the clocks listed in clocks property in the same
++    order.
++
++- sti-display-subsystem: Master device for DRM sub-components
++  This device must be the parent of all the sub-components and is responsible
++  of bind them.
++  Required properties:
++  - compatible: "st,sti-display-subsystem"
++  - ranges: to allow probing of subdevices
++
++- sti-compositor: frame compositor engine
++  must be a child of sti-display-subsystem
++  Required properties:
++  - compatible: "st,stih<chip>-compositor"
++  - reg: Physical base address of the IP registers and length of memory mapped region.
++  - clocks: from common clock binding: handle hardware IP needed clocks, the
++    number of clocks may depend of the SoC type.
++    See ../clocks/clock-bindings.txt for details.
++  - clock-names: names of the clocks listed in clocks property in the same
++    order.
++  - resets: resets to be used by the device
++    See ../reset/reset.txt for details.
++  - reset-names: names of the resets listed in resets property in the same
++    order.
++  - st,vtg: phandle(s) on vtg device (main and aux) nodes.
++
++- sti-tvout: video out hardware block
++  must be a child of sti-display-subsystem
++  Required properties:
++  - compatible: "st,stih<chip>-tvout"
++  - reg: Physical base address of the IP registers and length of memory mapped region.
++  - reg-names: names of the mapped memory regions listed in regs property in
++    the same order.
++  - resets: resets to be used by the device
++    See ../reset/reset.txt for details.
++  - reset-names: names of the resets listed in resets property in the same
++    order.
++  - ranges: to allow probing of subdevices
++
++- sti-hdmi: hdmi output block
++  must be a child of sti-tvout
++  Required properties:
++  - compatible: "st,stih<chip>-hdmi";
++  - reg: Physical base address of the IP registers and length of memory mapped region.
++  - reg-names: names of the mapped memory regions listed in regs property in
++    the same order.
++  - interrupts : HDMI interrupt number to the CPU.
++  - interrupt-names: name of the interrupts listed in interrupts property in
++    the same order
++  - clocks: from common clock binding: handle hardware IP needed clocks, the
++    number of clocks may depend of the SoC type.
++  - clock-names: names of the clocks listed in clocks property in the same
++    order.
++  - hdmi,hpd-gpio: gpio id to detect if an hdmi cable is plugged or not.
++
++sti-hda:
++  Required properties:
++  must be a child of sti-tvout
++  - compatible: "st,stih<chip>-hda"
++  - reg: Physical base address of the IP registers and length of memory mapped region.
++  - reg-names: names of the mapped memory regions listed in regs property in
++    the same order.
++  - clocks: from common clock binding: handle hardware IP needed clocks, the
++    number of clocks may depend of the SoC type.
++    See ../clocks/clock-bindings.txt for details.
++  - clock-names: names of the clocks listed in clocks property in the same
++    order.
++
++Example:
++
++/ {
++	...
++
++	vtg_main_slave: sti-vtg-main-slave@fe85A800 {
++		compatible	= "st,vtg";
++		reg		= <0xfe85A800 0x300>;
++		interrupts	= <GIC_SPI 175 IRQ_TYPE_NONE>;
++	};
++
++	vtg_main: sti-vtg-main-master@fd348000 {
++		compatible	= "st,vtg";
++		reg		= <0xfd348000 0x400>;
++		st,slave	= <&vtg_main_slave>;
++	};
++
++	vtg_aux_slave: sti-vtg-aux-slave@fd348400 {
++		compatible	= "st,vtg";
++		reg		= <0xfe858200 0x300>;
++		interrupts	= <GIC_SPI 176 IRQ_TYPE_NONE>;
++	};
++
++	vtg_aux: sti-vtg-aux-master@fd348400 {
++		compatible	= "st,vtg";
++		reg		= <0xfd348400 0x400>;
++		st,slave	= <&vtg_aux_slave>;
++	};
++
++
++	sti-vtac-rx-main@fee82800 {
++		compatible	= "st,vtac-main";
++		reg		= <0xfee82800 0x200>;
++		clock-names     = "vtac";
++		clocks          = <&CLK_M_A2_DIV0 CLK_M_VTAC_MAIN_PHY>;
++	};
++
++	sti-vtac-rx-aux@fee82a00 {
++		compatible	= "st,vtac-aux";
++		reg		= <0xfee82a00 0x200>;
++		clock-names     = "vtac";
++		clocks          = <&CLK_M_A2_DIV0 CLK_M_VTAC_AUX_PHY>;
++	};
++
++	sti-vtac-tx-main@fd349000 {
++		compatible	= "st,vtac-main";
++		reg		= <0xfd349000 0x200>, <0xfd320000 0x10000>;
++		clock-names     = "vtac";
++		clocks           = <&CLK_S_A1_HS CLK_S_VTAC_TX_PHY>;
++	};
++
++	sti-vtac-tx-aux@fd349200 {
++		compatible	= "st,vtac-aux";
++		reg		= <0xfd349200 0x200>, <0xfd320000 0x10000>;
++		clock-names     = "vtac";
++		clocks          = <&CLK_S_A1_HS CLK_S_VTAC_TX_PHY>;
++	};
++
++	sti-display-subsystem {
++		compatible = "st,sti-display-subsystem";
++		ranges;
++
++		sti-compositor@fd340000 {
++			compatible	= "st,stih416-compositor";
++			reg		= <0xfd340000 0x1000>;
++			clock-names	= "compo_main", "compo_aux",
++			                  "pix_main", "pix_aux";
++			clocks          = <&CLK_M_A2_DIV1 CLK_M_COMPO_MAIN>, <&CLK_M_A2_DIV1 CLK_M_COMPO_AUX>,
++					  <&CLOCKGEN_C_VCC CLK_S_PIX_MAIN>, <&CLOCKGEN_C_VCC CLK_S_PIX_AUX>;
++			reset-names     = "compo-main", "compo-aux";
++			resets          = <&softreset STIH416_COMPO_M_SOFTRESET>, <&softreset STIH416_COMPO_A_SOFTRESET>;
++			st,vtg		= <&vtg_main>, <&vtg_aux>;
++		};
++
++		sti-tvout@fe000000 {
++			compatible	= "st,stih416-tvout";
++			reg		= <0xfe000000 0x1000>, <0xfe85a000 0x400>, <0xfe830000 0x10000>;
++			reg-names	= "tvout-reg", "hda-reg", "syscfg";
++			reset-names     = "tvout";
++			resets          = <&softreset STIH416_HDTVOUT_SOFTRESET>;
++			ranges;
++
++			sti-hdmi@fe85c000 {
++				compatible	= "st,stih416-hdmi";
++				reg		= <0xfe85c000 0x1000>, <0xfe830000 0x10000>;
++				reg-names	= "hdmi-reg", "syscfg";
++				interrupts	= <GIC_SPI 173 IRQ_TYPE_NONE>;
++				interrupt-names	= "irq";
++				clock-names	= "pix", "tmds", "phy", "audio";
++				clocks          = <&CLOCKGEN_C_VCC CLK_S_PIX_HDMI>, <&CLOCKGEN_C_VCC CLK_S_TMDS_HDMI>, <&CLOCKGEN_C_VCC CLK_S_HDMI_REJECT_PLL>, <&CLOCKGEN_B1 CLK_S_PCM_0>;
++				hdmi,hpd-gpio	= <&PIO2 5>;
++			};
++
++			sti-hda@fe85a000 {
++				compatible	= "st,stih416-hda";
++				reg		= <0xfe85a000 0x400>, <0xfe83085c 0x4>;
++				reg-names	= "hda-reg", "video-dacs-ctrl";
++				clock-names	= "pix", "hddac";
++				clocks          = <&CLOCKGEN_C_VCC CLK_S_PIX_HD>, <&CLOCKGEN_C_VCC CLK_S_HDDAC>;
++			};
++		};
++	};
++	...
++};
 -- 
 1.9.1
 
