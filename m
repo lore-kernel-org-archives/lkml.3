@@ -1,283 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934282AbaE2JGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 05:06:52 -0400
-Received: from spostino.sms.unimo.it ([155.185.44.3]:41514 "EHLO
-	spostino.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934058AbaE2JGt (ORCPT
+	id S965032AbaE2JLO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 05:11:14 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:56405 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965005AbaE2JLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 05:06:49 -0400
-From: Paolo Valente <paolo.valente@unimore.it>
-To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Cc: Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Paolo Valente <paolo.valente@unimore.it>
-Subject: [PATCH RFC - TAKE TWO - 03/12] block, bfq: improve throughput boosting
-Date: Thu, 29 May 2014 11:05:34 +0200
-Message-Id: <1401354343-5527-4-git-send-email-paolo.valente@unimore.it>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
-UNIMORE-X-SA-Score: -2.9
+	Thu, 29 May 2014 05:11:13 -0400
+Date: Thu, 29 May 2014 18:10:27 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, dan.carpenter@oracle.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] staging: dgap: remove useless dgap_probe1() function
+Message-ID: <20140529091027.GA3783@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The feedback-loop algorithm used by BFQ to compute queue (process)
-budgets is basically a set of three update rules, one for each of the
-main reasons why a queue may be expired. If many processes suddenly
-switch from sporadic I/O to greedy and sequential I/O, then these
-rules are quite slow to assign large budgets to these processes, and
-hence to achieve a high throughput. On the opposite side, BFQ assigns
-the maximum possible budget B_max to a just-created queue. This allows
-a high throughput to be achieved immediately if the associated process
-is I/O-bound and performs sequential I/O from the beginning. But it
-also increases the worst-case latency experienced by the first
-requests issued by the process, because the larger the budget of a
-queue waiting for service is, the later the queue will be served by
-B-WF2Q+ (Subsec 3.3 in [1]). This is detrimental for an interactive or
-soft real-time application.
+The dgap_probe1() function is just calling dgap_found_board().
+So it is removed and dgap_found_board() is called directly.
 
-To tackle these throughput and latency problems, on one hand this
-patch changes the initial budget value to B_max/2. On the other hand,
-it re-tunes the three rules, adopting a more aggressive,
-multiplicative increase/linear decrease scheme. This scheme trades
-latency for throughput more than before, and tends to assign large
-budgets quickly to processes that are or become I/O-bound. For two of
-the expiration reasons, the new version of the rules also contains
-some more little improvements, briefly described below.
-
-*No more backlog.* In this case, the budget was larger than the number
-of sectors actually read/written by the process before it stopped
-doing I/O. Hence, to reduce latency for the possible future I/O
-requests of the process, the old rule simply set the next budget to
-the number of sectors actually consumed by the process. However, if
-there are still outstanding requests, then the process may have not
-yet issued its next request just because it is still waiting for the
-completion of some of the still outstanding ones. If this sub-case
-holds true, then the new rule, instead of decreasing the budget,
-doubles it, proactively, in the hope that: 1) a larger budget will fit
-the actual needs of the process, and 2) the process is sequential and
-hence a higher throughput will be achieved by serving the process
-longer after granting it access to the device.
-
-*Budget timeout*. The original rule set the new budget to the maximum
-value B_max, to maximize throughput and let all processes experiencing
-budget timeouts receive the same share of the device time. In our
-experiments we verified that this sudden jump to B_max did not provide
-sensible benefits; rather it increased the latency of processes
-performing sporadic and short I/O. The new rule only doubles the
-budget.
-
-[1] P. Valente and M. Andreolini, "Improving Application
-    Responsiveness with the BFQ Disk I/O Scheduler", Proceedings of
-    the 5th Annual International Systems and Storage Conference
-    (SYSTOR '12), June 2012.
-    Slightly extended version:
-http://www.algogroup.unimo.it/people/paolo/disk_sched/bf1-v1-suite-results.pdf
-
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- block/bfq-cgroup.c  |  2 ++
- block/bfq-ioc.c     |  2 ++
- block/bfq-iosched.c | 88 ++++++++++++++++++++++++++++-------------------------
- block/bfq-sched.c   |  2 ++
- block/bfq.h         |  2 ++
- 5 files changed, 55 insertions(+), 41 deletions(-)
+ drivers/staging/dgap/dgap.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/block/bfq-cgroup.c b/block/bfq-cgroup.c
-index 00a7a1b..805fe5e 100644
---- a/block/bfq-cgroup.c
-+++ b/block/bfq-cgroup.c
-@@ -7,6 +7,8 @@
-  * Copyright (C) 2008 Fabio Checconi <fabio@gandalf.sssup.it>
-  *		      Paolo Valente <paolo.valente@unimore.it>
-  *
-+ * Copyright (C) 2010 Paolo Valente <paolo.valente@unimore.it>
-+ *
-  * Licensed under the GPL-2 as detailed in the accompanying COPYING.BFQ
-  * file.
-  */
-diff --git a/block/bfq-ioc.c b/block/bfq-ioc.c
-index adfb5a1..7f6b000 100644
---- a/block/bfq-ioc.c
-+++ b/block/bfq-ioc.c
-@@ -6,6 +6,8 @@
-  *
-  * Copyright (C) 2008 Fabio Checconi <fabio@gandalf.sssup.it>
-  *		      Paolo Valente <paolo.valente@unimore.it>
-+ *
-+ * Copyright (C) 2010 Paolo Valente <paolo.valente@unimore.it>
-  */
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 48c13c9..808c717 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -76,7 +76,6 @@ static void dgap_poll_handler(ulong dummy);
+ static int dgap_init_pci(void);
+ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+ static void dgap_remove_one(struct pci_dev *dev);
+-static int dgap_probe1(struct pci_dev *pdev, int card_type);
+ static int dgap_do_remap(struct board_t *brd);
+ static irqreturn_t dgap_intr(int irq, void *voidbrd);
  
- /**
-diff --git a/block/bfq-iosched.c b/block/bfq-iosched.c
-index b2cbfce..49ff1da 100644
---- a/block/bfq-iosched.c
-+++ b/block/bfq-iosched.c
-@@ -7,6 +7,8 @@
-  * Copyright (C) 2008 Fabio Checconi <fabio@gandalf.sssup.it>
-  *		      Paolo Valente <paolo.valente@unimore.it>
-  *
-+ * Copyright (C) 2010 Paolo Valente <paolo.valente@unimore.it>
-+ *
-  * Licensed under the GPL-2 as detailed in the accompanying COPYING.BFQ
-  * file.
-  *
-@@ -101,9 +103,6 @@ struct kmem_cache *bfq_pool;
- #define BFQQ_SEEK_THR	 (sector_t)(8 * 1024)
- #define BFQQ_SEEKY(bfqq) ((bfqq)->seek_mean > BFQQ_SEEK_THR)
+@@ -577,7 +576,7 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (rc)
+ 		return -EIO;
  
--/* Budget feedback step. */
--#define BFQ_BUDGET_STEP         128
--
- /* Min samples used for peak rate estimation (for autotuning). */
- #define BFQ_PEAK_RATE_SAMPLES	32
+-	rc = dgap_probe1(pdev, ent->driver_data);
++	rc = dgap_found_board(pdev, ent->driver_data);
+ 	if (rc)
+ 		return rc;
  
-@@ -537,36 +536,6 @@ static inline unsigned long bfq_max_budget(struct bfq_data *bfqd)
- 		return bfqd->bfq_max_budget;
+@@ -585,11 +584,6 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	return dgap_firmware_load(pdev, ent->driver_data);
  }
  
-- /*
-- * bfq_default_budget - return the default budget for @bfqq on @bfqd.
-- * @bfqd: the device descriptor.
-- * @bfqq: the queue to consider.
-- *
-- * We use 3/4 of the @bfqd maximum budget as the default value
-- * for the max_budget field of the queues.  This lets the feedback
-- * mechanism to start from some middle ground, then the behavior
-- * of the process will drive the heuristics towards high values, if
-- * it behaves as a greedy sequential reader, or towards small values
-- * if it shows a more intermittent behavior.
-- */
--static unsigned long bfq_default_budget(struct bfq_data *bfqd,
--					struct bfq_queue *bfqq)
+-static int dgap_probe1(struct pci_dev *pdev, int card_type)
 -{
--	unsigned long budget;
--
--	/*
--	 * When we need an estimate of the peak rate we need to avoid
--	 * to give budgets that are too short due to previous measurements.
--	 * So, in the first 10 assignments use a ``safe'' budget value.
--	 */
--	if (bfqd->budgets_assigned < 194 && bfqd->bfq_user_max_budget == 0)
--		budget = bfq_default_max_budget;
--	else
--		budget = bfqd->bfq_max_budget;
--
--	return budget - budget / 4;
+-	return dgap_found_board(pdev, card_type);
 -}
 -
- /*
-  * Return min budget, which is a fraction of the current or default
-  * max budget (trying with 1/32)
-@@ -730,13 +699,51 @@ static void __bfq_bfqq_recalc_budget(struct bfq_data *bfqd,
- 		 * for throughput.
- 		 */
- 		case BFQ_BFQQ_TOO_IDLE:
--			if (budget > min_budget + BFQ_BUDGET_STEP)
--				budget -= BFQ_BUDGET_STEP;
--			else
--				budget = min_budget;
-+			/*
-+			 * This is the only case where we may reduce
-+			 * the budget: if there is no request of the
-+			 * process still waiting for completion, then
-+			 * we assume (tentatively) that the timer has
-+			 * expired because the batch of requests of
-+			 * the process could have been served with a
-+			 * smaller budget.  Hence, betting that
-+			 * process will behave in the same way when it
-+			 * becomes backlogged again, we reduce its
-+			 * next budget.  As long as we guess right,
-+			 * this budget cut reduces the latency
-+			 * experienced by the process.
-+			 *
-+			 * However, if there are still outstanding
-+			 * requests, then the process may have not yet
-+			 * issued its next request just because it is
-+			 * still waiting for the completion of some of
-+			 * the still outstanding ones.  So in this
-+			 * subcase we do not reduce its budget, on the
-+			 * contrary we increase it to possibly boost
-+			 * the throughput, as discussed in the
-+			 * comments to the BUDGET_TIMEOUT case.
-+			 */
-+			if (bfqq->dispatched > 0) /* still outstanding reqs */
-+				budget = min(budget * 2, bfqd->bfq_max_budget);
-+			else {
-+				if (budget > 5 * min_budget)
-+					budget -= 4 * min_budget;
-+				else
-+					budget = min_budget;
-+			}
- 			break;
- 		case BFQ_BFQQ_BUDGET_TIMEOUT:
--			budget = bfq_default_budget(bfqd, bfqq);
-+			/*
-+			 * We double the budget here because: 1) it
-+			 * gives the chance to boost the throughput if
-+			 * this is not a seeky process (which may have
-+			 * bumped into this timeout because of, e.g.,
-+			 * ZBR), 2) together with charge_full_budget
-+			 * it helps give seeky processes higher
-+			 * timestamps, and hence be served less
-+			 * frequently.
-+			 */
-+			budget = min(budget * 2, bfqd->bfq_max_budget);
- 			break;
- 		case BFQ_BFQQ_BUDGET_EXHAUSTED:
- 			/*
-@@ -748,8 +755,7 @@ static void __bfq_bfqq_recalc_budget(struct bfq_data *bfqd,
- 			 * definitely increase the budget of this good
- 			 * candidate to boost the disk throughput.
- 			 */
--			budget = min(budget + 8 * BFQ_BUDGET_STEP,
--				     bfqd->bfq_max_budget);
-+			budget = min(budget * 4, bfqd->bfq_max_budget);
- 			break;
- 		case BFQ_BFQQ_NO_MORE_REQUESTS:
- 		       /*
-@@ -1408,7 +1414,7 @@ static void bfq_init_bfqq(struct bfq_data *bfqd, struct bfq_queue *bfqq,
- 	}
- 
- 	/* Tentative initial value to trade off between thr and lat */
--	bfqq->max_budget = bfq_default_budget(bfqd, bfqq);
-+	bfqq->max_budget = (2 * bfq_max_budget(bfqd)) / 3;
- 	bfqq->pid = pid;
- }
- 
-diff --git a/block/bfq-sched.c b/block/bfq-sched.c
-index 8801b6c..075e472 100644
---- a/block/bfq-sched.c
-+++ b/block/bfq-sched.c
-@@ -6,6 +6,8 @@
-  *
-  * Copyright (C) 2008 Fabio Checconi <fabio@gandalf.sssup.it>
-  *		      Paolo Valente <paolo.valente@unimore.it>
-+ *
-+ * Copyright (C) 2010 Paolo Valente <paolo.valente@unimore.it>
-  */
- 
- #ifdef CONFIG_CGROUP_BFQIO
-diff --git a/block/bfq.h b/block/bfq.h
-index b982567..a334eb4 100644
---- a/block/bfq.h
-+++ b/block/bfq.h
-@@ -6,6 +6,8 @@
-  *
-  * Copyright (C) 2008 Fabio Checconi <fabio@gandalf.sssup.it>
-  *		      Paolo Valente <paolo.valente@unimore.it>
-+ *
-+ * Copyright (C) 2010 Paolo Valente <paolo.valente@unimore.it>
-  */
- 
- #ifndef _BFQ_H
+ static void dgap_remove_one(struct pci_dev *dev)
+ {
+ 	/* Do Nothing */
 -- 
-1.9.2
+1.7.1
 
