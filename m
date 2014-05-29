@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716AbaE2EwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:52:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58579 "EHLO
+	id S1756731AbaE2Ew3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:52:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58575 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933167AbaE2Eif (ORCPT
+	with ESMTP id S933136AbaE2Eie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:35 -0400
+	Thu, 29 May 2014 00:38:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kozlov <xeb@mail.ru>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 51/86] ip6_gre: dont allow to remove the fb_tunnel_dev
-Date: Wed, 28 May 2014 21:37:26 -0700
-Message-Id: <20140529043520.404997873@linuxfoundation.org>
+Subject: [PATCH 3.10 50/86] filter: prevent nla extensions to peek beyond the end of the message
+Date: Wed, 28 May 2014 21:37:25 -0700
+Message-Id: <20140529043520.269192726@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -28,52 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 54d63f787b652755e66eb4dd8892ee6d3f5197fc ]
+[ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
 
-It's possible to remove the FB tunnel with the command 'ip link del ip6gre0' but
-this is unsafe, the module always supposes that this device exists. For example,
-ip6gre_tunnel_lookup() may use it unconditionally.
+The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
+for a minimal message length before testing the supplied offset to be
+within the bounds of the message. This allows the subtraction of the nla
+header to underflow and therefore -- as the data type is unsigned --
+allowing far to big offset and length values for the search of the
+netlink attribute.
 
-Let's add a rtnl handler for dellink, which will never remove the FB tunnel (we
-let ip6gre_destroy_tunnels() do the job).
+The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
+also wrong. It has the minuend and subtrahend mixed up, therefore
+calculates a huge length value, allowing to overrun the end of the
+message while looking for the netlink attribute.
 
-Introduced by commit c12b395a4664 ("gre: Support GRE over IPv6").
+The following three BPF snippets will trigger the bugs when attached to
+a UNIX datagram socket and parsing a message with length 1, 2 or 3.
 
-CC: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+ ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
+ | ld	#0x87654321
+ | ldx	#42
+ | ld	#nla
+ | ret	a
+ `---
+
+ ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
+ | ld	#0x87654321
+ | ldx	#42
+ | ld	#nlan
+ | ret	a
+ `---
+
+ ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
+ | ; (needs a fake netlink header at offset 0)
+ | ld	#0
+ | ldx	#42
+ | ld	#nlan
+ | ret	a
+ `---
+
+Fix the first issue by ensuring the message length fulfills the minimal
+size constrains of a nla header. Fix the second bug by getting the math
+for the remainder calculation right.
+
+Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
+Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_gre.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ net/core/filter.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -1549,6 +1549,15 @@ static int ip6gre_changelink(struct net_
- 	return 0;
- }
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -355,6 +355,8 @@ load_b:
  
-+static void ip6gre_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct ip6gre_net *ign = net_generic(net, ip6gre_net_id);
-+
-+	if (dev != ign->fb_tunnel_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
- static size_t ip6gre_get_size(const struct net_device *dev)
- {
- 	return
-@@ -1626,6 +1635,7 @@ static struct rtnl_link_ops ip6gre_link_
- 	.validate	= ip6gre_tunnel_validate,
- 	.newlink	= ip6gre_newlink,
- 	.changelink	= ip6gre_changelink,
-+	.dellink	= ip6gre_dellink,
- 	.get_size	= ip6gre_get_size,
- 	.fill_info	= ip6gre_fill_info,
- };
+ 			if (skb_is_nonlinear(skb))
+ 				return 0;
++			if (skb->len < sizeof(struct nlattr))
++				return 0;
+ 			if (A > skb->len - sizeof(struct nlattr))
+ 				return 0;
+ 
+@@ -371,11 +373,13 @@ load_b:
+ 
+ 			if (skb_is_nonlinear(skb))
+ 				return 0;
++			if (skb->len < sizeof(struct nlattr))
++				return 0;
+ 			if (A > skb->len - sizeof(struct nlattr))
+ 				return 0;
+ 
+ 			nla = (struct nlattr *)&skb->data[A];
+-			if (nla->nla_len > A - skb->len)
++			if (nla->nla_len > skb->len - A)
+ 				return 0;
+ 
+ 			nla = nla_find_nested(nla, X);
 
 
