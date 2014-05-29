@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283AbaE2SjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 14:39:08 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:57938 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754999AbaE2SjG (ORCPT
+	id S1756236AbaE2SkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 14:40:12 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:48640 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105AbaE2SkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 14:39:06 -0400
-Message-ID: <1401388744.25908.16.camel@x220>
-Subject: Re: [PATCH] pcmcia: m8xx: remove checks for four macros
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-pcmcia@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Thu, 29 May 2014 20:39:04 +0200
-In-Reply-To: <1401387624.6603.161.camel@snotra.buserror.net>
-References: <1400916970.31526.78.camel@x220>
-	 <1401387624.6603.161.camel@snotra.buserror.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 May 2014 18:39:04.0783 (UTC) FILETIME=[447E8DF0:01CF7B6D]
-X-RcptDomain: vger.kernel.org
+	Thu, 29 May 2014 14:40:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140529181844.GA12492@kroah.com>
+References: <20140529190129.6d3272fd@canb.auug.org.au>
+	<20140529181844.GA12492@kroah.com>
+Date: Thu, 29 May 2014 11:40:09 -0700
+Message-ID: <CAPcyv4hot6QGUKANfUqqNQk07C+G9gKgW8kgnkT82JMHCgyh1g@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the usb tree
+From: Dan Williams <dan.j.williams@intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-29 at 13:20 -0500, Scott Wood wrote:
-> On Sat, 2014-05-24 at 09:36 +0200, Paul Bolle wrote:
-> > This driver contains checks for four Kconfig macros. But the related
-> > Kconfig symbols have never been part of the tree. Remove these checks
-> > and the code they hide.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Untested.
-> > 
-> > This has been an issue ever since this driver was added in v2.6.15. Note
-> > that there is no header named "*/cpld.h", so setting PRxK can't possibly
-> > work.
-> > 
-> >  drivers/pcmcia/m8xx_pcmcia.c | 75 --------------------------------------------
-> >  1 file changed, 75 deletions(-)
-> 
-> Does anything in this driver still work?  It looks like bitrot from the
-> arch/ppc days, that sort of got updated to use the device tree -- but
-> even after this patch there are lots of instances of CONFIG symbols
-> being used to assert the exact hardware being used, rather than what
-> hardware is supported.
+On Thu, May 29, 2014 at 11:18 AM, Greg KH <greg@kroah.com> wrote:
+> On Thu, May 29, 2014 at 07:01:29PM +1000, Stephen Rothwell wrote:
+>> Hi Greg,
+>>
+>> After merging the usb tree, today's linux-next build (sparc64 defconfig)
+>> failed like this:
+>>
+>> drivers/usb/core/hub.c: In function 'port_event':
+>> drivers/usb/core/hub.c:4853:2: error: implicit declaration of function 'hub_handle_remote_wakeup' [-Werror=implicit-function-declaration]
+>>
+>> Caused by commits af376a461cf0 ("usb: refactor port handling in
+>> hub_events()") and 7e73be227b15 ("usb: hub_handle_remote_wakeup()
+>> depends on CONFIG_PM_RUNTIME=y") This build has CONFIG_PM not set ...
+>>
+>> I have added this fix patch for today (there is probably a better way):
+>>
+>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date: Thu, 29 May 2014 18:55:06 +1000
+>> Subject: [PATCH] usb: hub_handle_remote_wakeup() only exists for CONFIG_PM=y
+>>
+>> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+>> ---
+>>  drivers/usb/core/hub.c | 6 ++++++
+>>  1 file changed, 6 insertions(+)
+>>
+>> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+>> index 5672752bfd2c..879b66e13370 100644
+>> --- a/drivers/usb/core/hub.c
+>> +++ b/drivers/usb/core/hub.c
+>> @@ -3977,6 +3977,12 @@ EXPORT_SYMBOL_GPL(usb_disable_ltm);
+>>  void usb_enable_ltm(struct usb_device *udev) { }
+>>  EXPORT_SYMBOL_GPL(usb_enable_ltm);
+>>
+>> +static int hub_handle_remote_wakeup(struct usb_hub *hub, unsigned int port,
+>> +             u16 portstatus, u16 portchange)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>>  #endif       /* CONFIG_PM */
+>>
+>>
+>
+> Dan, any objection to me taking this patch?
+>
+> thanks,
+>
 
-I'm not sure I get what you're pointing at. Can you give one example?
+None.  That's identical to the one I have in my queue.  I was only
+holding off to send it along with the pending updates to patch 18 and
+19 per Alan's concerns.
 
-> Is anyone actively maintaining/testing this code?
+Acked-by: Dan Williams <dan.j.williams@intel.com>
 
-Related observation: doing
-    scripts/get_maintainer.pl -f drivers/pcmcia/m8xx_pcmcia.c --no-git-fallback --no-keywords
+Side note, as you mentioned before, git trees are horrible for review
+purposes, but they are good for sanity checking.  In retrospect I
+should have kept this series in a kbuild-robot visible branch.
 
-just gave me
-    linux-pcmcia@lists.infradead.org (open list:PCMCIA SUBSYSTEM)
-    linux-kernel@vger.kernel.org (open list)
-
-Note that there's no person responsible for PCMCIA. That's why I
-included the people (and lists) maintaining PPC8XX and PPC.
-
-
-Paul Bolle
-
+--
+Dan
