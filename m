@@ -1,46 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346AbaE2LR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 07:17:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30729 "EHLO mx1.redhat.com"
+	id S932331AbaE2LS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 07:18:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753066AbaE2LR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 07:17:26 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <27993.1401360881@warthog.procyon.org.uk>
-References: <27993.1401360881@warthog.procyon.org.uk> <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        sedat.dilek@gmail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: Re: Kernel errors with overlay filesystem v22
-Date: Thu, 29 May 2014 12:16:42 +0100
-Message-ID: <28186.1401362202@warthog.procyon.org.uk>
+	id S1750930AbaE2LSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 07:18:55 -0400
+Date: Thu, 29 May 2014 14:18:42 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        Minchan Kim <minchan@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 3/4] virtio_ring: assume sgs are always well-formed.
+Message-ID: <20140529111842.GC30210@redhat.com>
+References: <87oayh6s3s.fsf@rustcorp.com.au>
+ <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au>
+ <1401348405-18614-4-git-send-email-rusty@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401348405-18614-4-git-send-email-rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+On Thu, May 29, 2014 at 04:56:44PM +0930, Rusty Russell wrote:
+> We used to have several callers which just used arrays.  They're
+> gone, so we can use sg_next() everywhere, simplifying the code.
+> 
+> Before:
+> 	gcc 4.8.2: virtio_blk: stack used = 392
+> 	gcc 4.6.4: virtio_blk: stack used = 528
+> 
+> After:
+> 	gcc 4.8.2: virtio_blk: stack used = 392
+> 	gcc 4.6.4: virtio_blk: stack used = 480
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-> ================================================
-> [ BUG: lock held when returning to user space! ]
-> 3.15.0-rc6-fsdevel+ #363 Tainted: G        W    
-> ------------------------------------------------
-> mount/4183 is leaving the kernel with locks still held!
-> 1 lock held by mount/4183:
->  #0:  (sb_writers#8){.+.+.+}, at: [<ffffffff8112bf5b>] mnt_want_write+0x1c/0x40
 
-This comes from the:
+Nice cleanup.
 
-+ mount -t overlayfs overlayfs /mnt -olowerdir=/lower,upperdir=/upper/upper,workdir=/upper/work
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-command.
 
-David
+> ---
+>  drivers/virtio/virtio_ring.c | 68 +++++++++++++-------------------------------
+>  1 file changed, 19 insertions(+), 49 deletions(-)
+> 
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> index f6ad99ffdc40..5d29cd85d6cf 100644
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -107,28 +107,10 @@ struct vring_virtqueue
+>  
+>  #define to_vvq(_vq) container_of(_vq, struct vring_virtqueue, vq)
+>  
+> -static inline struct scatterlist *sg_next_chained(struct scatterlist *sg,
+> -						  unsigned int *count)
+> -{
+> -	return sg_next(sg);
+> -}
+> -
+> -static inline struct scatterlist *sg_next_arr(struct scatterlist *sg,
+> -					      unsigned int *count)
+> -{
+> -	if (--(*count) == 0)
+> -		return NULL;
+> -	return sg + 1;
+> -}
+> -
+>  /* Set up an indirect table of descriptors and add it to the queue. */
+>  static inline int vring_add_indirect(struct vring_virtqueue *vq,
+>  				     struct scatterlist *sgs[],
+> -				     struct scatterlist *(*next)
+> -				       (struct scatterlist *, unsigned int *),
+>  				     unsigned int total_sg,
+> -				     unsigned int total_out,
+> -				     unsigned int total_in,
+>  				     unsigned int out_sgs,
+>  				     unsigned int in_sgs,
+>  				     gfp_t gfp)
+> @@ -155,7 +137,7 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
+>  	/* Transfer entries from the sg lists into the indirect page */
+>  	i = 0;
+>  	for (n = 0; n < out_sgs; n++) {
+> -		for (sg = sgs[n]; sg; sg = next(sg, &total_out)) {
+> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
+>  			desc[i].flags = VRING_DESC_F_NEXT;
+>  			desc[i].addr = sg_phys(sg);
+>  			desc[i].len = sg->length;
+> @@ -164,7 +146,7 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
+>  		}
+>  	}
+>  	for (; n < (out_sgs + in_sgs); n++) {
+> -		for (sg = sgs[n]; sg; sg = next(sg, &total_in)) {
+> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
+>  			desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
+>  			desc[i].addr = sg_phys(sg);
+>  			desc[i].len = sg->length;
+> @@ -197,10 +179,7 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
+>  
+>  static inline int virtqueue_add(struct virtqueue *_vq,
+>  				struct scatterlist *sgs[],
+> -				struct scatterlist *(*next)
+> -				  (struct scatterlist *, unsigned int *),
+> -				unsigned int total_out,
+> -				unsigned int total_in,
+> +				unsigned int total_sg,
+>  				unsigned int out_sgs,
+>  				unsigned int in_sgs,
+>  				void *data,
+> @@ -208,7 +187,7 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+>  {
+>  	struct vring_virtqueue *vq = to_vvq(_vq);
+>  	struct scatterlist *sg;
+> -	unsigned int i, n, avail, uninitialized_var(prev), total_sg;
+> +	unsigned int i, n, avail, uninitialized_var(prev);
+>  	int head;
+>  
+>  	START_USE(vq);
+> @@ -233,13 +212,10 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+>  	}
+>  #endif
+>  
+> -	total_sg = total_in + total_out;
+> -
+>  	/* If the host supports indirect descriptor tables, and we have multiple
+>  	 * buffers, then go indirect. FIXME: tune this threshold */
+>  	if (vq->indirect && total_sg > 1 && vq->vq.num_free) {
+> -		head = vring_add_indirect(vq, sgs, next, total_sg, total_out,
+> -					  total_in,
+> +		head = vring_add_indirect(vq, sgs, total_sg, 
+>  					  out_sgs, in_sgs, gfp);
+>  		if (likely(head >= 0))
+>  			goto add_head;
+> @@ -265,7 +241,7 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+>  
+>  	head = i = vq->free_head;
+>  	for (n = 0; n < out_sgs; n++) {
+> -		for (sg = sgs[n]; sg; sg = next(sg, &total_out)) {
+> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
+>  			vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
+>  			vq->vring.desc[i].addr = sg_phys(sg);
+>  			vq->vring.desc[i].len = sg->length;
+> @@ -274,7 +250,7 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+>  		}
+>  	}
+>  	for (; n < (out_sgs + in_sgs); n++) {
+> -		for (sg = sgs[n]; sg; sg = next(sg, &total_in)) {
+> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
+>  			vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
+>  			vq->vring.desc[i].addr = sg_phys(sg);
+>  			vq->vring.desc[i].len = sg->length;
+> @@ -335,29 +311,23 @@ int virtqueue_add_sgs(struct virtqueue *_vq,
+>  		      void *data,
+>  		      gfp_t gfp)
+>  {
+> -	unsigned int i, total_out, total_in;
+> +	unsigned int i, total_sg = 0;
+>  
+>  	/* Count them first. */
+> -	for (i = total_out = total_in = 0; i < out_sgs; i++) {
+> -		struct scatterlist *sg;
+> -		for (sg = sgs[i]; sg; sg = sg_next(sg))
+> -			total_out++;
+> -	}
+> -	for (; i < out_sgs + in_sgs; i++) {
+> +	for (i = 0; i < out_sgs + in_sgs; i++) {
+>  		struct scatterlist *sg;
+>  		for (sg = sgs[i]; sg; sg = sg_next(sg))
+> -			total_in++;
+> +			total_sg++;
+>  	}
+> -	return virtqueue_add(_vq, sgs, sg_next_chained,
+> -			     total_out, total_in, out_sgs, in_sgs, data, gfp);
+> +	return virtqueue_add(_vq, sgs, total_sg, out_sgs, in_sgs, data, gfp);
+>  }
+>  EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
+>  
+>  /**
+>   * virtqueue_add_outbuf - expose output buffers to other end
+>   * @vq: the struct virtqueue we're talking about.
+> - * @sgs: array of scatterlists (need not be terminated!)
+> - * @num: the number of scatterlists readable by other side
+> + * @sg: scatterlist (must be well-formed and terminated!)
+> + * @num: the number of entries in @sg readable by other side
+>   * @data: the token identifying the buffer.
+>   * @gfp: how to do memory allocations (if necessary).
+>   *
+> @@ -367,19 +337,19 @@ EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
+>   * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
+>   */
+>  int virtqueue_add_outbuf(struct virtqueue *vq,
+> -			 struct scatterlist sg[], unsigned int num,
+> +			 struct scatterlist *sg, unsigned int num,
+>  			 void *data,
+>  			 gfp_t gfp)
+>  {
+> -	return virtqueue_add(vq, &sg, sg_next_arr, num, 0, 1, 0, data, gfp);
+> +	return virtqueue_add(vq, &sg, num, 1, 0, data, gfp);
+>  }
+>  EXPORT_SYMBOL_GPL(virtqueue_add_outbuf);
+>  
+>  /**
+>   * virtqueue_add_inbuf - expose input buffers to other end
+>   * @vq: the struct virtqueue we're talking about.
+> - * @sgs: array of scatterlists (need not be terminated!)
+> - * @num: the number of scatterlists writable by other side
+> + * @sg: scatterlist (must be well-formed and terminated!)
+> + * @num: the number of entries in @sg writable by other side
+>   * @data: the token identifying the buffer.
+>   * @gfp: how to do memory allocations (if necessary).
+>   *
+> @@ -389,11 +359,11 @@ EXPORT_SYMBOL_GPL(virtqueue_add_outbuf);
+>   * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
+>   */
+>  int virtqueue_add_inbuf(struct virtqueue *vq,
+> -			struct scatterlist sg[], unsigned int num,
+> +			struct scatterlist *sg, unsigned int num,
+>  			void *data,
+>  			gfp_t gfp)
+>  {
+> -	return virtqueue_add(vq, &sg, sg_next_arr, 0, num, 0, 1, data, gfp);
+> +	return virtqueue_add(vq, &sg, num, 0, 1, data, gfp);
+>  }
+>  EXPORT_SYMBOL_GPL(virtqueue_add_inbuf);
+>  
+> -- 
+> 1.9.1
