@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611AbaE2OHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:07:53 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:48012 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757460AbaE2OHu (ORCPT
+	id S1757630AbaE2OIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:08:37 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:42427 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965127AbaE2OGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 10:07:50 -0400
-Date: Thu, 29 May 2014 09:07:44 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org
-Subject: Re: vmstat: On demand vmstat workers V5
-In-Reply-To: <20140529003609.GG6507@localhost.localdomain>
-Message-ID: <alpine.DEB.2.10.1405290902180.11514@gentwo.org>
-References: <alpine.DEB.2.10.1405121317270.29911@gentwo.org> <20140528152107.GB6507@localhost.localdomain> <alpine.DEB.2.10.1405281110210.22514@gentwo.org> <20140529003609.GG6507@localhost.localdomain>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 29 May 2014 10:06:05 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/5] clk: bcm281xx: add an initialized flag
+Date: Thu, 29 May 2014 09:05:57 -0500
+Message-Id: <1401372361-18842-2-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401372361-18842-1-git-send-email-elder@linaro.org>
+References: <1401372361-18842-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014, Frederic Weisbecker wrote:
+Add a flag that tracks whether a clock has already been initialized.
+This will be used by the next patch to avoid initializing a clock
+more than once when it's listed as a prerequisite.
 
-> The cpumasks in cpu.c are special as they are the base of the cpumask_var_t
-> definition. They are necessary to define nr_cpu_bits which is the base of
-> cpumask_var_t allocations. As such they must stay lower level and defined
-> on top of NR_CPUS.
->
-> But most other cases don't need that huge static bitmap. I actually haven't
-> seen any other struct cpumask than isn't based on cpumask_var_t.
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/bcm/clk-kona.c | 17 +++++++++++++++--
+ drivers/clk/bcm/clk-kona.h |  7 +++++++
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-Well yes and I am tying directly into that scheme there in cpu.c to
-display the active vmstat threads in sysfs. so its the same.
-
-> Please post it on a new thread so it gets noticed by others.
-
-Ok. Will do when we got agreement on the cpumask issue.
-
-I would like to have some way to display the activities on cpus in /sysfs
-like I have done here with the active vmstat workers.
-
-What I think we need is display cpumasks for
-
-1. Cpus where the tick is currently off
-2. Cpus that have dynticks enabled.
-3. Cpus that are idle
-4. Cpus that are used for RCU.
-
+diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
+index 95af2e6..9691b62 100644
+--- a/drivers/clk/bcm/clk-kona.c
++++ b/drivers/clk/bcm/clk-kona.c
+@@ -27,6 +27,9 @@
+ #define CCU_ACCESS_PASSWORD      0xA5A500
+ #define CLK_GATE_DELAY_LOOP      2000
+ 
++#define clk_is_initialized(_clk)	FLAG_TEST((_clk), KONA, INITIALIZED)
++#define clk_set_initialized(_clk)	FLAG_SET((_clk), KONA, INITIALIZED)
++
+ /* Bitfield operations */
+ 
+ /* Produces a mask of set bits covering a range of a 32-bit value */
+@@ -1246,13 +1249,23 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
+ 
+ static bool __kona_clk_init(struct kona_clk *bcm_clk)
+ {
++	bool ret;
++
++	if (clk_is_initialized(bcm_clk))
++		return true;
++
+ 	switch (bcm_clk->type) {
+ 	case bcm_clk_peri:
+-		return __peri_clk_init(bcm_clk);
++		ret = __peri_clk_init(bcm_clk);
++		break;
+ 	default:
++		ret = false;
+ 		BUG();
+ 	}
+-	return -EINVAL;
++	if (ret)
++		clk_set_initialized(bcm_clk);
++
++	return ret;
+ }
+ 
+ /* Set a CCU and all its clocks into their desired initial state */
+diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
+index 2537b30..10e238d 100644
+--- a/drivers/clk/bcm/clk-kona.h
++++ b/drivers/clk/bcm/clk-kona.h
+@@ -406,6 +406,7 @@ struct kona_clk {
+ 	struct clk_init_data init_data;	/* includes name of this clock */
+ 	struct ccu_data *ccu;	/* ccu this clock is associated with */
+ 	enum bcm_clk_type type;
++	u32 flags;		/* BCM_CLK_KONA_FLAGS_* below */
+ 	union {
+ 		void *data;
+ 		struct peri_clk_data *peri;
+@@ -414,6 +415,12 @@ struct kona_clk {
+ #define to_kona_clk(_hw) \
+ 	container_of(_hw, struct kona_clk, hw)
+ 
++/*
++ * Kona clock flags:
++ *   INITIALIZED	clock has been initialized already
++ */
++#define BCM_CLK_KONA_FLAGS_INITIALIZED	((u32)1 << 0)	/* Clock initialized */
++
+ /* Initialization macro for an entry in a CCU's kona_clks[] array. */
+ #define KONA_CLK(_ccu_name, _clk_name, _type)				\
+ 	{								\
+-- 
+1.9.1
 
