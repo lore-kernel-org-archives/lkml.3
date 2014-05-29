@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406AbaE2Thh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:37:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754049AbaE2Thg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:37:36 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com>
-References: <CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com> <29026.1401383705@warthog.procyon.org.uk> <CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com> <29191.1401384252@warthog.procyon.org.uk> <CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com> <29410.1401385296@warthog.procyon.org.uk> <CA+icZUU-BcgbZ2b0-Nbu=9g57c5WTJV3Him29cDnpuOp5W62Sw@mail.gmail.com> <31766.1401387746@warthog.procyon.org.uk>
-To: sedat.dilek@gmail.com
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        mszeredi@suse.cz
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Thu, 29 May 2014 20:35:43 +0100
-Message-ID: <19229.1401392143@warthog.procyon.org.uk>
+	id S932852AbaE2Tjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:39:33 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:35118 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932781AbaE2Tjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 15:39:31 -0400
+Message-ID: <53878CFC.2090506@kernel.dk>
+Date: Thu, 29 May 2014 13:39:40 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+Subject: Re: block: remove dead code in scsi_ioctl:blk_verify_command
+References: <20140529191130.GA10405@redhat.com>
+In-Reply-To: <20140529191130.GA10405@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On 05/29/2014 01:11 PM, Dave Jones wrote:
+> filter gets assigned the address of blk_default_cmd_filter on
+> entry to this function, so the !filter condition can never be true.
+> 
+> Signed-off-by: Dave Jones <davej@redhat.com>
+> 
+> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+> index 26487972ac54..9c28a5b38042 100644
+> --- a/block/scsi_ioctl.c
+> +++ b/block/scsi_ioctl.c
+> @@ -205,10 +205,6 @@ int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
+>  	if (capable(CAP_SYS_RAWIO))
+>  		return 0;
+>  
+> -	/* if there's no filter set, assume we're filtering everything out */
+> -	if (!filter)
+> -		return -EPERM;
+> -
+>  	/* Anybody who can open the device can do a read-safe command */
+>  	if (test_bit(cmd[0], filter->read_ok))
+>  		return 0;
 
-> # LC_ALL=C TEST_OVERLAYFS="1" ./run.sh
-> [ run.sh ] TEST_OVERLAYFS is 1
-> ***
-> *** ./run.sh open-plain.test
-> ***
-> [ mount_union.sh ] TEST_OVERLAYFS is 1
-> TEST100: Open O_RDONLY
->  - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
->  - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
-> TEST101: Open O_WRONLY
->  - open_file -w /mnt/a/foo101 -W q
-> /mnt/a/foo101: Test file not on upper filesystem  (line 30)
+Thanks Dave, applied.
 
-This looks like what I see when I run it:
+-- 
+Jens Axboe
 
-	[root@andromeda union-testsuite]# TEST_OVERLAYFS=1 ./run.sh 
-	***
-	*** ./run.sh open-plain.test
-	***
-	umount: /mnt: not mounted
-	TEST100: Open O_RDONLY
-	 - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
-	 - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
-	TEST101: Open O_WRONLY
-	 - open_file -w /mnt/a/foo101 -W q
-	/mnt/a/foo101: Test file not on upper filesystem  (line 30)
-
-I think the problem is that the script expecting the "upper" fs inodes to have
-the overlay superblock dev ID and not the upper superblock dev ID.  That
-should be easily fixable.
-
-David
