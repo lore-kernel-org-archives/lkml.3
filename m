@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638AbaE2E6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:58:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58462 "EHLO
+	id S933030AbaE2EiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:38:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933040AbaE2EiQ (ORCPT
+	with ESMTP id S932953AbaE2EiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:16 -0400
+	Thu, 29 May 2014 00:38:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [PATCH 3.10 32/86] usb: option: add Alcatel L800MA
-Date: Wed, 28 May 2014 21:37:07 -0700
-Message-Id: <20140529043517.817262354@linuxfoundation.org>
+        Roman Pen <r.peniaev@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.10 04/86] blktrace: fix accounting of partially completed requests
+Date: Wed, 28 May 2014 21:36:39 -0700
+Message-Id: <20140529043514.078984106@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,41 +28,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Roman Pen <r.peniaev@gmail.com>
 
-commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
+commit af5040da01ef980670b3741b3e10733ee3e33566 upstream.
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/00/00 - serial AT+PPP
-2: ff/ff/ff - QMI/wwan
-3: 08/06/50 - storage
+trace_block_rq_complete does not take into account that request can
+be partially completed, so we can get the following incorrect output
+of blkparser:
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+  C   R 232 + 240 [0]
+  C   R 240 + 232 [0]
+  C   R 248 + 224 [0]
+  C   R 256 + 216 [0]
+
+but should be:
+
+  C   R 232 + 8 [0]
+  C   R 240 + 8 [0]
+  C   R 248 + 8 [0]
+  C   R 256 + 8 [0]
+
+Also, the whole output summary statistics of completed requests and
+final throughput will be incorrect.
+
+This patch takes into account real completion size of the request and
+fixes wrong completion accounting.
+
+Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ block/blk-core.c             |    2 +-
+ include/trace/events/block.h |   33 ++++++++++++++++++++++++++++++---
+ kernel/trace/blktrace.c      |   20 +++++++++++---------
+ 3 files changed, 42 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -287,6 +287,7 @@ static void option_instat_callback(struc
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
- #define ALCATEL_PRODUCT_X220_X500D		0x0017
- #define ALCATEL_PRODUCT_L100V			0x011e
-+#define ALCATEL_PRODUCT_L800MA			0x0203
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2299,7 +2299,7 @@ bool blk_update_request(struct request *
+ 	if (!req->bio)
+ 		return false;
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1501,6 +1502,8 @@ static const struct usb_device_id option
- 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
-+	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+-	trace_block_rq_complete(req->q, req);
++	trace_block_rq_complete(req->q, req, nr_bytes);
+ 
+ 	/*
+ 	 * For fs requests, rq is just carrier of independent bio's
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -132,6 +132,7 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * block_rq_complete - block IO operation completed by device driver
+  * @q: queue containing the block operation request
+  * @rq: block operations request
++ * @nr_bytes: number of completed bytes
+  *
+  * The block_rq_complete tracepoint event indicates that some portion
+  * of operation request has been completed by the device driver.  If
+@@ -139,11 +140,37 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * do for the request. If @rq->bio is non-NULL then there is
+  * additional work required to complete the request.
+  */
+-DEFINE_EVENT(block_rq_with_error, block_rq_complete,
++TRACE_EVENT(block_rq_complete,
+ 
+-	TP_PROTO(struct request_queue *q, struct request *rq),
++	TP_PROTO(struct request_queue *q, struct request *rq,
++		 unsigned int nr_bytes),
+ 
+-	TP_ARGS(q, rq)
++	TP_ARGS(q, rq, nr_bytes),
++
++	TP_STRUCT__entry(
++		__field(  dev_t,	dev			)
++		__field(  sector_t,	sector			)
++		__field(  unsigned int,	nr_sector		)
++		__field(  int,		errors			)
++		__array(  char,		rwbs,	RWBS_LEN	)
++		__dynamic_array( char,	cmd,	blk_cmd_buf_len(rq)	)
++	),
++
++	TP_fast_assign(
++		__entry->dev	   = rq->rq_disk ? disk_devt(rq->rq_disk) : 0;
++		__entry->sector    = blk_rq_pos(rq);
++		__entry->nr_sector = nr_bytes >> 9;
++		__entry->errors    = rq->errors;
++
++		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, nr_bytes);
++		blk_dump_cmd(__get_str(cmd), rq);
++	),
++
++	TP_printk("%d,%d %s (%s) %llu + %u [%d]",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->rwbs, __get_str(cmd),
++		  (unsigned long long)__entry->sector,
++		  __entry->nr_sector, __entry->errors)
+ );
+ 
+ DECLARE_EVENT_CLASS(block_rq,
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -685,6 +685,7 @@ void blk_trace_shutdown(struct request_q
+  * blk_add_trace_rq - Add a trace for a request oriented action
+  * @q:		queue the io is for
+  * @rq:		the source request
++ * @nr_bytes:	number of completed bytes
+  * @what:	the action
+  *
+  * Description:
+@@ -692,7 +693,7 @@ void blk_trace_shutdown(struct request_q
+  *
+  **/
+ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
+-			     u32 what)
++			     unsigned int nr_bytes, u32 what)
+ {
+ 	struct blk_trace *bt = q->blk_trace;
+ 
+@@ -701,11 +702,11 @@ static void blk_add_trace_rq(struct requ
+ 
+ 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
+ 		what |= BLK_TC_ACT(BLK_TC_PC);
+-		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
++		__blk_add_trace(bt, 0, nr_bytes, rq->cmd_flags,
+ 				what, rq->errors, rq->cmd_len, rq->cmd);
+ 	} else  {
+ 		what |= BLK_TC_ACT(BLK_TC_FS);
+-		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
++		__blk_add_trace(bt, blk_rq_pos(rq), nr_bytes,
+ 				rq->cmd_flags, what, rq->errors, 0, NULL);
+ 	}
+ }
+@@ -713,33 +714,34 @@ static void blk_add_trace_rq(struct requ
+ static void blk_add_trace_rq_abort(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ABORT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ABORT);
+ }
+ 
+ static void blk_add_trace_rq_insert(void *ignore,
+ 				    struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_INSERT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_INSERT);
+ }
+ 
+ static void blk_add_trace_rq_issue(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ISSUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ISSUE);
+ }
+ 
+ static void blk_add_trace_rq_requeue(void *ignore,
+ 				     struct request_queue *q,
+ 				     struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_REQUEUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_REQUEUE);
+ }
+ 
+ static void blk_add_trace_rq_complete(void *ignore,
+ 				      struct request_queue *q,
+-				      struct request *rq)
++				      struct request *rq,
++				      unsigned int nr_bytes)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_COMPLETE);
++	blk_add_trace_rq(q, rq, nr_bytes, BLK_TA_COMPLETE);
+ }
+ 
+ /**
 
 
