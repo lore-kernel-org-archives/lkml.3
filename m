@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426AbaE2Ens (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:43:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58685 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933280AbaE2Eis (ORCPT
+	id S964792AbaE2Enw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:43:52 -0400
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:61010 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932858AbaE2Ent (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:48 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 72/86] net: qmi_wwan: add Option GTM681W
-Date: Wed, 28 May 2014 21:37:47 -0700
-Message-Id: <20140529043523.213423805@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
-In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
-References: <20140529043513.451722422@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 29 May 2014 00:43:49 -0400
+Message-ID: <5386BB13.1070908@gmail.com>
+Date: Thu, 29 May 2014 00:44:03 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: peterz@infradead.org, paulmck@linux.vnet.ibm.com
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 1/1] rename {before/after}_atomic_{inc/dec} to
+ {before/after}_atomic
+References: <5386B75A.3010806@gmail.com>
+In-Reply-To: <5386B75A.3010806@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 05/29/2014 12:28 AM, Pranith Kumar wrote:
 
-------------------
+> diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
+> index 3031bac..a5635ad 100644
+> --- a/kernel/sched/cpupri.c
+> +++ b/kernel/sched/cpupri.c
+> @@ -164,7 +164,7 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+>  		 * do a write memory barrier, and then update the count, to
+>  		 * make sure the vector is visible when count is set.
+>  		 */
+> -		smp_mb__before_atomic_inc();
+> +		smp_mb__before_atomic();
+>  		atomic_inc(&(vec)->count);
+>  		do_mb = 1;
+>  	}
+> @@ -184,14 +184,14 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+>  		 * the new priority vec.
+>  		 */
+>  		if (do_mb)
+> -			smp_mb__after_atomic_inc();
+> +			smp_mb__after_atomic();
+>  
+>  		/*
+>  		 * When removing from the vector, we decrement the counter first
+>  		 * do a memory barrier and then clear the mask.
+>  		 */
+>  		atomic_dec(&(vec)->count);
+> -		smp_mb__after_atomic_inc();
+> +		smp_mb__after_atomic();
+>  		cpumask_clear_cpu(cpu, vec->mask);
+>  	}
+>  
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+We should at the least fix this :)
 
-[ Upstream commit aa3aba1cbcbe823bba623c7cab33d84ddf0fb6cd ]
-
-A standard Gobi 3000 reference design module.
-
-Reported-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/usb/qmi_wwan.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -747,6 +747,7 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9265)},	/* Asus Gobi 2000 Modem device (VR305) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9235)},	/* Top Global Gobi 2000 Modem device (VR306) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9275)},	/* iRex Technologies Gobi 2000 Modem device (VR307) */
-+	{QMI_GOBI_DEVICE(0x0af0, 0x8120)},	/* Option GTM681W */
- 	{QMI_GOBI_DEVICE(0x1199, 0x68a5)},	/* Sierra Wireless Modem */
- 	{QMI_GOBI_DEVICE(0x1199, 0x68a9)},	/* Sierra Wireless Modem */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9001)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
 
 
