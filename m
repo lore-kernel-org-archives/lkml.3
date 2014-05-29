@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaE2EfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57828 "EHLO
+	id S934385AbaE2FZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:25:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57872 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756342AbaE2EfQ (ORCPT
+	with ESMTP id S932393AbaE2EfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:16 -0400
+	Thu, 29 May 2014 00:35:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH 3.14 061/140] drm/radeon: fix endian swap on hawaii clear state buffer setup
-Date: Wed, 28 May 2014 21:33:20 -0700
-Message-Id: <20140529043057.326649149@linuxfoundation.org>
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tobias Brunner <tobias@strongswan.org>,
+        Florian Westphal <fw@strlen.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 068/140] net: core: dont account for udp header size when computing seglen
+Date: Wed, 28 May 2014 21:33:27 -0700
+Message-Id: <20140529043058.276202928@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,32 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit a8947f576728a66bd3aac629bd8ca021a010c808 upstream.
+[ Upstream commit 6d39d589bb76ee8a1c6cde6822006ae0053decff ]
 
-Need to swap on BE.
+In case of tcp, gso_size contains the tcpmss.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
+For UFO (udp fragmentation offloading) skbs, gso_size is the fragment
+payload size, i.e. we must not account for udp header size.
+
+Otherwise, when using virtio drivers, a to-be-forwarded UFO GSO packet
+will be needlessly fragmented in the forward path, because we think its
+individual segments are too large for the outgoing link.
+
+Fixes: fe6cc55f3a9a053 ("net: ip, ipv6: handle gso skbs in forwarding path")
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Tobias Brunner <tobias@strongswan.org>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/radeon/cik.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/skbuff.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -6521,8 +6521,8 @@ void cik_get_csb_buffer(struct radeon_de
- 		buffer[count++] = cpu_to_le32(0x00000000);
- 		break;
- 	case CHIP_HAWAII:
--		buffer[count++] = 0x3a00161a;
--		buffer[count++] = 0x0000002e;
-+		buffer[count++] = cpu_to_le32(0x3a00161a);
-+		buffer[count++] = cpu_to_le32(0x0000002e);
- 		break;
- 	default:
- 		buffer[count++] = cpu_to_le32(0x00000000);
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -3951,12 +3951,14 @@ EXPORT_SYMBOL_GPL(skb_scrub_packet);
+ unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
+ {
+ 	const struct skb_shared_info *shinfo = skb_shinfo(skb);
+-	unsigned int hdr_len;
+ 
+ 	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
+-		hdr_len = tcp_hdrlen(skb);
+-	else
+-		hdr_len = sizeof(struct udphdr);
+-	return hdr_len + shinfo->gso_size;
++		return tcp_hdrlen(skb) + shinfo->gso_size;
++
++	/* UFO sets gso_size to the size of the fragmentation
++	 * payload, i.e. the size of the L4 (UDP) header is already
++	 * accounted for.
++	 */
++	return shinfo->gso_size;
+ }
+ EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
 
 
