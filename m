@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414AbaE2Efv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58074 "EHLO
+	id S964832AbaE2FIC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:08:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58155 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932601AbaE2Efp (ORCPT
+	with ESMTP id S1756429AbaE2Efy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:45 -0400
+	Thu, 29 May 2014 00:35:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antonio Quartulli <antonio@open-mesh.com>,
-        Simon Wunderlich <simon@open-mesh.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Antonio Quartulli <antonio@meshcoding.com>
-Subject: [PATCH 3.14 120/140] batman-adv: fix neigh_ifinfo imbalance
-Date: Wed, 28 May 2014 21:34:19 -0700
-Message-Id: <20140529043105.043564643@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 113/140] net: ipv6: send pkttoobig immediately if orig frag size > mtu
+Date: Wed, 28 May 2014 21:34:12 -0700
+Message-Id: <20140529043104.127821384@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -29,36 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wunderlich <simon@open-mesh.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit c1e517fbbcdb13f50662af4edc11c3251fe44f86 ]
+[ Upstream commit 418a31561d594a2b636c1e2fa94ecd9e1245abb1 ]
 
-The neigh_ifinfo object must be freed if it has been used in
-batadv_iv_ogm_process_per_outif().
+If conntrack defragments incoming ipv6 frags it stores largest original
+frag size in ip6cb and sets ->local_df.
 
-This is a regression introduced by
-89652331c00f43574515059ecbf262d26d885717
-("batman-adv: split tq information in neigh_node struct")
+We must thus first test the largest original frag size vs. mtu, and not
+vice versa.
 
-Reported-by: Antonio Quartulli <antonio@open-mesh.com>
-Signed-off-by: Simon Wunderlich <simon@open-mesh.com>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+Without this patch PKTTOOBIG is still generated in ip6_fragment() later
+in the stack, but
+
+1) IPSTATS_MIB_INTOOBIGERRORS won't increment
+2) packet did (needlessly) traverse netfilter postrouting hook.
+
+Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/bat_iv_ogm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/ip6_output.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/batman-adv/bat_iv_ogm.c
-+++ b/net/batman-adv/bat_iv_ogm.c
-@@ -1545,6 +1545,8 @@ out_neigh:
- 	if ((orig_neigh_node) && (!is_single_hop_neigh))
- 		batadv_orig_node_free_ref(orig_neigh_node);
- out:
-+	if (router_ifinfo)
-+		batadv_neigh_ifinfo_free_ref(router_ifinfo);
- 	if (router)
- 		batadv_neigh_node_free_ref(router);
- 	if (router_router)
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -344,12 +344,16 @@ static unsigned int ip6_dst_mtu_forward(
+ 
+ static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
+ {
+-	if (skb->len <= mtu || skb->local_df)
++	if (skb->len <= mtu)
+ 		return false;
+ 
++	/* ipv6 conntrack defrag sets max_frag_size + local_df */
+ 	if (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)
+ 		return true;
+ 
++	if (skb->local_df)
++		return false;
++
+ 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
+ 		return false;
+ 
 
 
