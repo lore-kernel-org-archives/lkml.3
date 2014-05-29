@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527AbaE2FlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:41:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57614 "EHLO
+	id S1756495AbaE2FlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:41:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57610 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756095AbaE2Ees (ORCPT
+	with ESMTP id S1756096AbaE2Ees (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:34:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
+        Giuseppe Longo <giuseppelng@gmail.com>,
         Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.14 011/140] netfilter: Cant fail and free after table replacement
-Date: Wed, 28 May 2014 21:32:30 -0700
-Message-Id: <20140529043050.982053477@linuxfoundation.org>
+Subject: [PATCH 3.14 012/140] netfilter: nf_tables: set names cannot be larger than 15 bytes
+Date: Wed, 28 May 2014 21:32:31 -0700
+Message-Id: <20140529043051.040236974@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,91 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit c58dd2dd443c26d856a168db108a0cd11c285bf3 upstream.
+commit a9bdd8365684810e3de804f8c51e52c26a5eccbb upstream.
 
-All xtables variants suffer from the defect that the copy_to_user()
-to copy the counters to user memory may fail after the table has
-already been exchanged and thus exposed. Return an error at this
-point will result in freeing the already exposed table. Any
-subsequent packet processing will result in a kernel panic.
+Currently, nf_tables trims off the set name if it exceeeds 15
+bytes, so explicitly reject set names that are too large.
 
-We can't copy the counters before exposing the new tables as we
-want provide the counter state after the old table has been
-unhooked. Therefore convert this into a silent error.
-
-Cc: Florian Westphal <fw@strlen.de>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Reported-by: Giuseppe Longo <giuseppelng@gmail.com>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bridge/netfilter/ebtables.c |    5 ++---
- net/ipv4/netfilter/arp_tables.c |    6 ++++--
- net/ipv4/netfilter/ip_tables.c  |    6 ++++--
- net/ipv6/netfilter/ip6_tables.c |    6 ++++--
- 4 files changed, 14 insertions(+), 9 deletions(-)
+ net/netfilter/nf_tables_api.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -1044,10 +1044,9 @@ static int do_replace_finish(struct net
- 	if (repl->num_counters &&
- 	   copy_to_user(repl->counters, counterstmp,
- 	   repl->num_counters * sizeof(struct ebt_counter))) {
--		ret = -EFAULT;
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ebtables: counters copy to user failed while replacing table\n");
- 	}
--	else
--		ret = 0;
+--- a/net/netfilter/nf_tables_api.c
++++ b/net/netfilter/nf_tables_api.c
+@@ -1934,7 +1934,8 @@ static const struct nft_set_ops *nft_sel
  
- 	/* decrease module count and free resources */
- 	EBT_ENTRY_ITERATE(table->entries, table->entries_size,
---- a/net/ipv4/netfilter/arp_tables.c
-+++ b/net/ipv4/netfilter/arp_tables.c
-@@ -1044,8 +1044,10 @@ static int __do_replace(struct net *net,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("arptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
---- a/net/ipv4/netfilter/ip_tables.c
-+++ b/net/ipv4/netfilter/ip_tables.c
-@@ -1231,8 +1231,10 @@ __do_replace(struct net *net, const char
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1241,8 +1241,10 @@ __do_replace(struct net *net, const char
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ip6tables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
+ static const struct nla_policy nft_set_policy[NFTA_SET_MAX + 1] = {
+ 	[NFTA_SET_TABLE]		= { .type = NLA_STRING },
+-	[NFTA_SET_NAME]			= { .type = NLA_STRING },
++	[NFTA_SET_NAME]			= { .type = NLA_STRING,
++					    .len = IFNAMSIZ - 1 },
+ 	[NFTA_SET_FLAGS]		= { .type = NLA_U32 },
+ 	[NFTA_SET_KEY_TYPE]		= { .type = NLA_U32 },
+ 	[NFTA_SET_KEY_LEN]		= { .type = NLA_U32 },
 
 
