@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548AbaE2NKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:10:44 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:47673 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757094AbaE2NKm (ORCPT
+	id S932627AbaE2NME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:12:04 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45238 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143AbaE2NMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:10:42 -0400
+	Thu, 29 May 2014 09:12:02 -0400
+Date: Thu, 29 May 2014 14:11:51 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Greg Ungerer <gerg@uclinux.org>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: rcu alignment warning tripping on m68k
+Message-ID: <20140529141151.21ed6f95@alan.etchedpixels.co.uk>
+In-Reply-To: <538696A0.5090601@uclinux.org>
+References: <538696A0.5090601@uclinux.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140529125910.GE14570@redhat.com>
-References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
-	<20140527030058.GB2372@darkstar.nay.redhat.com>
-	<CAL01qpvqa-8u2MZ=8wE8gsiprFLbN4U3AbEX9+h7FuemXNR93Q@mail.gmail.com>
-	<20140528020935.GB2820@darkstar.nay.redhat.com>
-	<20140528145140.GN14863@redhat.com>
-	<CAL01qpsb5_Gh31uqm7yB6HP2rKQkhFWWTu+U4JAR54XR5bfbZw@mail.gmail.com>
-	<20140529125910.GE14570@redhat.com>
-Date: Thu, 29 May 2014 14:10:41 +0100
-Message-ID: <CAL01qpuNS0u89gaR9pCKUoCVRkADhPO4mZueEyK8nP84=OfDaA@mail.gmail.com>
-Subject: Re: [PATCH] export efi.flags to sysfs
-From: "Fleming, Matt" <matt.fleming@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, "bp@alien8.de" <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 May 2014 13:59, Vivek Goyal <vgoyal@redhat.com> wrote:
->
-> Only second kernel boots with "noefi" and this parameter is appened by
-> kexec-tools to second kernel command line. So first kernel will still
-> boot *without noefi* and kexec-tools wil think that this system support
-> booting second kernel with UEFI enabled.
->
-> I don't know if we export /sys/firmware/efi/runtime-map/ in case of
-> non 1:1 mapping or not. Dave and Boris will know better.
+On Thu, 29 May 2014 12:08:32 +1000
+Greg Ungerer <gerg@uclinux.org> wrote:
 
-Looking at the code the answer is: yes. I think that's the bug right there.
+> Hi All,
+> 
+> Inside kernel/rcy/tree.c in __call_rcu() it does an alignment check on
+> the head pointer passed in. This trips on m68k systems, because they only
+> need alignment of 32bit quantities to 16bit boundaries.
 
-By exporting entries in /sys/firmware/efi/runtime-map we're saying
-"These mappings persist across kexec, you can trust that they won't
-change", for SGI UV (which currently uses the quirk) or if you boot
-with efi=old_map on the command line, that's simply not true.
+__alignof perhaps ?
 
-So, it would seem to me that we're missing a "if
-(efi_enabled(OLD_MAP))" in drivers/firmware/efi/runtime-map.c.
-Borislav, Dave? What do you guys think?
-
-This is all assuming that the root of the regression is that
-kexec-tools sees entries in /sys/firmware/efi/runtime-map/ and says
-"Yay! EFI boot!".
+or just an ARCH_ define ?
