@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829AbaE2JkN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 05:40:13 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:52881 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055AbaE2JkK (ORCPT
+	id S1756871AbaE2Jlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 05:41:52 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46383 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756119AbaE2Jlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 05:40:10 -0400
-Message-ID: <53870188.5060209@linux.vnet.ibm.com>
-Date: Thu, 29 May 2014 15:14:40 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 29 May 2014 05:41:50 -0400
+Message-ID: <538700B5.5070601@parallels.com>
+Date: Thu, 29 May 2014 13:41:09 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, gleb@redhat.com,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, waiman.long@hp.com, davej@redhat.com,
-        oleg@redhat.com, x86@kernel.org, jeremy@goop.org,
-        paul.gortmaker@windriver.com, ak@linux.intel.com, jasowang@redhat.com,
-        fernando_b1@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, mtosatti@redhat.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] Implement Batched (group) ticket lock
-References: <1401279399-23854-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <53865B53.7050809@redhat.com>
-In-Reply-To: <53865B53.7050809@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Richard Weinberger <richard@nod.at>
+CC: Vasily Kulikov <segoon@openwall.com>,
+        <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
+ ns
+References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com> <5385DA19.2060008@parallels.com> <20140528182824.GA5057@cachalot> <53863889.9080509@parallels.com> <20140529055954.GA10354@cachalot> <5386F8EA.8050501@parallels.com> <5386FC0C.9000307@nod.at>
+In-Reply-To: <5386FC0C.9000307@nod.at>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14052909-3864-0000-0000-00000E7EA57E
+X-Originating-IP: [10.24.36.87]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 03:25 AM, Rik van Riel wrote:
-> On 05/28/2014 08:16 AM, Raghavendra K T wrote:
->
-> This patch looks very promising.
-
-Thank you Rik.
-
-[...]
+On 05/29/2014 01:21 PM, Richard Weinberger wrote:
+> Am 29.05.2014 11:07, schrieb Pavel Emelyanov:
+>> On 05/29/2014 09:59 AM, Vasily Kulikov wrote:
+>>> On Wed, May 28, 2014 at 23:27 +0400, Pavel Emelyanov wrote:
+>>>> On 05/28/2014 10:28 PM, Vasily Kulikov wrote:
+>>>>> On Wed, May 28, 2014 at 16:44 +0400, Pavel Emelyanov wrote:
+>>>>> It will be simplier
+>>>>> to parse the file -- if 'ns_ids' file contains some ID then this ID for
+>>>>> every ns can be obtained regardless of the specific ID name (SID, PID,
+>>>>> PGID, etc.).
+>>>>
+>>>> True, but given a task PID how to determine which pid namespaces it lives in
+>>>> to get the idea of how PIDs map to each other? Maybe we need some explicit
+>>>> API for converting (ID, NS1, NS2) into (ID)?
+>>>
+>>> AFAIU the idea of the patch is to add a new debugging information which
+>>> can be trivially obtained via 'cat /proc/...':
 >>
->> - My kernbench/ebizzy test on baremetal (32 cpu +ht sandybridge) did not seem to
->>    show the impact of extra cmpxchg. but there should be effect of extra cmpxchg.
->
-> Canceled out by better NUMA locality?
+>> I agree, but this ability will be very useful by checkpoint-restore project
+>> too and I'd really appreciate if the API we have for that would be scalable
+>> enough. Per-task proc file works for me, but how about sid-s and pgid-s?
+> 
+> What kind of information does CRIU need?
 
-Yes perhaps. it was even slightly better.
+We need to know what pid namespaces a task lives in and how pid, sid and
+pgid look in all of them. A short example with pids only
 
-[...]
->> - we can further add dynamically changing batch_size implementation (inspiration and
->>    hint by Paul McKenney) as necessary.
->
-> I could see a larger batch size being beneficial.
->
-> Currently the maximum wait time for a spinlock on a system
-> with N CPUs is N times the length of the largest critical
-> section.
->
-> Having the batch size set equal to the number of CPUs would only
-> double that, and better locality (CPUs local to the current
-> lock holder winning the spinlock operation) might speed things
-> up enough to cancel that part of that out again...
+Task t1 with pid 2, lives in init pid ns calls clone(CLONE_NEWPID), creates
+ns1 with task t2 having pid (3, 1), then t2 calls clone(CLONE_NEWPID) again
+and creates ns2 with task t3 having pid (4, 5, 1). I.e. the trees look like 
+this:
 
-having batch size = number of cpus would definitely help contended cases
-especially on larger machines (by my experience with testing on a 4
-node 32 core machine). +ht case should make it even more
-beneficial.
+    init_pid_ns    ns1         ns2
+t1  2
+t2   `- 3          1 
+t3       `- 4      `- 5        1
 
-My only botheration was overhead in undercommit cases because of extra
-cmpxchg.
-So may be batch_size = total cpus / numa node be optimal?...
+Also note, that /proc/pid/ns will show us that t1 lives in init_pid_ns,
+t2 lives in ns1 and t3 lives in ns2.
 
-[...]
->> +#define TICKET_LOCK_INC_SHIFT 1
->> +#define __TICKET_LOCK_TAIL_INC (1<<TICKET_LOCK_INC_SHIFT)
->> +
->>   #ifdef CONFIG_PARAVIRT_SPINLOCKS
->> -#define __TICKET_LOCK_INC	2
->>   #define TICKET_SLOWPATH_FLAG	((__ticket_t)1)
->>   #else
->> -#define __TICKET_LOCK_INC	1
->>   #define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
->>   #endif
->
-> For the !CONFIG_PARAVIRT case, TICKET_LOCK_INC_SHIFT used to be 0,
-> now you are making it one. Probably not an issue, since even people
-> who compile with 128 < CONFIG_NR_CPUS <= 256 will likely have their
-> spinlocks padded out to 32 or 64 bits anyway in most data structures.
+Now if we come from init pid ns with criu and try to dump task with pid 3
+(i.e. the t2), the existing kernel API can tell us that:
 
-Yes..
+a) t2 lives in ns1 != init_pid_ns (via /proc/pid/ns link)
+b) t3 lives in ns2 != init_pid_ns
+c) t2 has pid 3 (via init's /proc) in init ns and pid 1 in its ns (via t2's /proc)
+d) t3 has pid 4 in init ns and pid 1 in its ns
 
-[...]
->> +#define TICKET_BATCH    0x4 /* 4 waiters can contend simultaneously */
->> +#define TICKET_LOCK_BATCH_MASK (~(TICKET_BATCH<<TICKET_LOCK_INC_SHIFT) + \
->> +				  TICKET_LOCK_TAIL_INC - 1)
->
-> I do not see the value in having TICKET_BATCH declared with a
-> hexadecimal number,
+what we also need to know and don't yet have an API for is
 
-yes.. It had only helped me to make the idea readable to myself, I
-could get rid of this if needed.
+e) ns2 is the child of ns1
+f) t3 has pid 5 in ns1
 
-and it may be worth making sure the code
-> does not compile if someone tried a TICKET_BATCH value that
-> is not a power of 2.
-
-I agree.  will have BUILD_BUG for not power of 2 in next version.
-But yes it reminds me that I wanted to have TICKET_BATCH = 1 for
-!CONFIG_PARAVIRT so that we continue to have original fair lock version.
-Does that make sense? I left it after thinking about same kernel running
-on host/guest which would anyway will have CONFIG_PARAVIRT on.
-
+Thanks,
+Pavel
