@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723AbaE2TVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:21:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47130 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044AbaE2TVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:21:13 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+icZUWo9eD=0KqVapZ_2vWZfWrrSWauaXMRNvkmdy+4cXgAig@mail.gmail.com>
-References: <CA+icZUWo9eD=0KqVapZ_2vWZfWrrSWauaXMRNvkmdy+4cXgAig@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com> <29026.1401383705@warthog.procyon.org.uk> <CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com> <29191.1401384252@warthog.procyon.org.uk> <CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com> <29410.1401385296@warthog.procyon.org.uk> <CA+icZUU-BcgbZ2b0-Nbu=9g57c5WTJV3Him29cDnpuOp5W62Sw@mail.gmail.com> <31766.1401387746@warthog.procyon.org.uk> <CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com>
-To: sedat.dilek@gmail.com
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        mszeredi@suse.cz
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Thu, 29 May 2014 20:20:20 +0100
-Message-ID: <32659.1401391220@warthog.procyon.org.uk>
+	id S932465AbaE2TXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:23:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44847 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaE2TXA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 15:23:00 -0400
+Message-ID: <53878911.9090508@wwwdotorg.org>
+Date: Thu, 29 May 2014 13:22:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/5] efuse driver for Tegra
+References: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com> <20140528061645.252c2fbc.akpm@linux-foundation.org>
+In-Reply-To: <20140528061645.252c2fbc.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On 05/28/2014 07:16 AM, Andrew Morton wrote:
+> On Wed, 28 May 2014 15:54:32 +0300 Peter De Schrijver <pdeschrijver@nvidia.com> wrote:
+> 
+>> This driver allows userspace to read the raw efuse data.
+> 
+> The patchset uses an inexplicable mixture of "fuse" and "efuse".
+> Given that the kernel already has a "fuse", it would be nice if
+> this code could use "efuse" everywhere.
 
-> Hmm, why is the generated binary callled "open-file" and in the
-> scripts I see "open_file"?
-
-grep is your friend:-)  Look in tool_box.inc
-
-David
+I didn't check every instance, but a mix of those two terms seems
+reasonable. "fuse" is the type of HW object; it's a generic HW term that
+exists outside the scope of this patch. While the conflict with Linux's
+filesystem is unfortunate, it's a name collision that I think we'll
+simply have to live with; it's not created by this patch. "efuse" is the
+name of the Tegra module that hosts Tegra's fuses.
