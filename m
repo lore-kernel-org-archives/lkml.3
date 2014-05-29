@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaE2Xxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 19:53:36 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:57286 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751329AbaE2Xxf (ORCPT
+	id S1753841AbaE2XyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 19:54:06 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:61302 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521AbaE2XyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 19:53:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtfQAC3Ih1N5LL1sPGdsb2JhbABZgWwCAYEYg0SFCKJxAQEBAQEBBpgYAYEIFwMBAQEBODWCJQEBBTocIxAIAxgJJQ8FJQMHGhOIQddaFxaFP4h9B4MrgRUEmXSLGotaKw
-Date: Fri, 30 May 2014 09:53:08 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140529235308.GA14410@dastard>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
- <20140528223142.GO8554@dastard>
- <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
- <20140529013007.GF6677@dastard>
- <CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
- <20140529072633.GH6677@dastard>
- <CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
+	Thu, 29 May 2014 19:54:03 -0400
+Date: Thu, 29 May 2014 16:54:00 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Marcelo Tosatti <mtosatti@redhat.com>
+cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations (v5)
+In-Reply-To: <20140529232819.GA29803@amt.cnet>
+Message-ID: <alpine.DEB.2.02.1405291638300.9336@chino.kir.corp.google.com>
+References: <20140523193706.GA22854@amt.cnet> <20140526185344.GA19976@amt.cnet> <53858A06.8080507@huawei.com> <20140528224324.GA1132@amt.cnet> <20140529184303.GA20571@amt.cnet> <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
+ <20140529232819.GA29803@amt.cnet>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 08:24:49AM -0700, Linus Torvalds wrote:
-> On Thu, May 29, 2014 at 12:26 AM, Dave Chinner <david@fromorbit.com> wrote:
-> >
-> > What concerns me about both __alloc_pages_nodemask() and
-> > kernel_map_pages is that when I look at the code I see functions
-> > that have no obvious stack usage problem. However, the compiler is
-> > producing functions with huge stack footprints and it's not at all
-> > obvious when I read the code. So in this case I'm more concerned
-> > that we have a major disconnect between the source code structure
-> > and the code that the compiler produces...
-> 
-> I agree. In fact, this is the main reason that Minchan's call trace
-> and this thread has actually convinced me that yes, we really do need
-> to make x86-64 have a 16kB stack (well, 16kB allocation - there's
-> still the thread info etc too).
-> 
-> Usually when we see the stack-smashing traces, they are because
-> somebody did something stupid. In this case, there are certainly
-> stupid details, and things I think we should fix, but there is *not*
-> the usual red flag of "Christ, somebody did something _really_ wrong".
-> 
-> So I'm not in fact arguing against Minchan's patch of upping
-> THREAD_SIZE_ORDER to 2 on x86-64, but at the same time stack size does
-> remain one of my "we really need to be careful" issues, so while I am
-> basically planning on applying that patch, I _also_ want to make sure
-> that we fix the problems we do see and not just paper them over.
-> 
-> The 8kB stack has been somewhat restrictive and painful for a while,
-> and I'm ok with admitting that it is just getting _too_ damn painful,
-> but I don't want to just give up entirely when we have a known deep
-> stack case.
+On Thu, 29 May 2014, Marcelo Tosatti wrote:
 
-That sounds like a plan. Perhaps it would be useful to add a
-WARN_ON_ONCE(stack_usage > 8k) (or some other arbitrary depth beyond
-8k) so that we get some indication that we're hitting a deep stack
-but the system otherwise keeps functioning. That gives us some
-motivation to keep stack usage down but isn't a fatal problem like
-it is now....
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 3d54c41..3bbc23f 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -2374,6 +2374,7 @@ static struct cpuset *nearest_hardwall_ancestor(struct cpuset *cs)
+>   * variable 'wait' is not set, and the bit ALLOC_CPUSET is not set
+>   * in alloc_flags.  That logic and the checks below have the combined
+>   * affect that:
+> + *	gfp_zone(mask) < policy_zone - any node ok
+>   *	in_interrupt - any node ok (current task context irrelevant)
+>   *	GFP_ATOMIC   - any node ok
+>   *	TIF_MEMDIE   - any node ok
+> @@ -2392,6 +2393,10 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
+>  
+>  	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
+>  		return 1;
+> +#ifdef CONFIG_NUMA
+> +	if (gfp_zone(gfp_mask) < policy_zone)
+> +		return 1;
+> +#endif
+>  	might_sleep_if(!(gfp_mask & __GFP_HARDWALL));
+>  	if (node_isset(node, current->mems_allowed))
+>  		return 1;
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 5dba293..0fd6923 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2723,6 +2723,11 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>  	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
+>  		return NULL;
+>  
+> +#ifdef CONFIG_NUMA
+> +	if (!nodemask && gfp_zone(gfp_mask) < policy_zone)
+> +		nodemask = &node_states[N_MEMORY];
+> +#endif
+> +
+>  retry_cpuset:
+>  	cpuset_mems_cookie = read_mems_allowed_begin();
+>  
 
-Cheers,
+When I said that my point about mempolicies needs more thought, I wasn't 
+expecting that there would be no discussion -- at least _something_ that 
+would say why we don't care about the mempolicy case.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+The motivation here is identical for both cpusets and mempolicies.  What 
+is the significant difference between attaching a process to a cpuset 
+without access to lowmem and a process doing set_mempolicy(MPOL_BIND) 
+without access to lowmem?  Is it because the process should know what it's 
+doing if it asks for a mempolicy that doesn't include lowmem?  If so, is 
+the cpusets case different because the cpuset attacher isn't held to the 
+same standard?
+
+I'd argue that an application may never know if it needs to allocate 
+GFP_DMA32 or not since its a property of the hardware that its running on 
+and my driver may need to access lowmem while yours may not.  I may even 
+configure CONFIG_ZONE_DMA=n and CONFIG_ZONE_DMA32=n because I know the 
+_hardware_ requirements of my platforms.
+
+If there is no difference, then why are we allowing the exception for 
+cpusets and not mempolicies?
+
+I really think you want to allow both cpusets and mempolicies.  I'd like 
+to hear Christoph's thoughts on it as well, though.
+
+Furthermore, I don't know why you're opposed to the comments that Andrew 
+added here.  In the first version of this patch, I suggested a comment and 
+you referred to a kernel/cpuset.c comment.  Nowhere in the above change to 
+the page allocator would make anyone think of cpusets or what it is trying 
+to do.  Please comment the code accordingly so your intention is 
+understood for everybody else who happens upon your code.
