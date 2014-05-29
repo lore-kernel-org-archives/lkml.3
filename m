@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972AbaE2Dwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 23:52:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54734 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaE2Dwg (ORCPT
+	id S1755997AbaE2DyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 23:54:12 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:59903 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755590AbaE2DyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 23:52:36 -0400
-Date: Thu, 29 May 2014 04:52:33 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140529035233.GF18016@ZenIV.linux.org.uk>
-References: <20140527031415.GS18016@ZenIV.linux.org.uk>
- <20140527040026.GT18016@ZenIV.linux.org.uk>
- <20140527070409.GA1801@lahna.fi.intel.com>
- <20140528031955.GW18016@ZenIV.linux.org.uk>
- <20140528073751.GB1757@lahna.fi.intel.com>
- <20140528115701.GY18016@ZenIV.linux.org.uk>
- <20140528131136.GA1643@lahna.fi.intel.com>
- <20140528141937.GZ18016@ZenIV.linux.org.uk>
- <20140528183954.GA18016@ZenIV.linux.org.uk>
- <20140529031149.GE18016@ZenIV.linux.org.uk>
+	Wed, 28 May 2014 23:54:10 -0400
+Message-ID: <5386AF53.4070403@ahsoftware.de>
+Date: Thu, 29 May 2014 05:53:55 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529031149.GE18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Brian Norris <computersforpeace@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 01/27] mtd: nand: introduce function to fix a common bug
+ in most nand-drivers not showing a device in sysfs
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de> <1401142372-14148-2-git-send-email-holler@ahsoftware.de> <20140528084344.GB4285@norris-Latitude-E6410> <53863056.2070405@ahsoftware.de> <20140528201018.GA3599@ld-irv-0074> <53865071.5060501@ahsoftware.de> <20140528214921.GC3599@ld-irv-0074>
+In-Reply-To: <20140528214921.GC3599@ld-irv-0074>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 04:11:49AM +0100, Al Viro wrote:
-> On Wed, May 28, 2014 at 07:39:54PM +0100, Al Viro wrote:
-> 
-> > OK, the warnings about averting your eyes very much apply; the thing below
-> > definitely needs more massage before it becomes acceptable (and no, it's
-> > not a single commit; I'm not that insane), but it changes behaviour in the
-> > way described above.  Could you check if the livelock persists with it?
-> > No trace-generating code in there, so the logs should be compact enough...
-> 
-> Here's an updated patch, hopefully slightly less vomit-inducing.  Should
-> give the same behaviour as the previous one...  Again, it's a cumulative
-> diff - I'm still massaging the splitup here.
+Am 28.05.2014 23:49, schrieb Brian Norris:
+> On Wed, May 28, 2014 at 11:09:05PM +0200, Alexander Holler wrote:
+>> I'm very sorry, but I find such discussions extremly tiresome.
+>>
+>> If you just would have suggested that one if to prevent that someone who
+>> doesn't c&p existing code would end up with a clobbered name (which he
+>> obviously can't miss if he ever would test his new or changed driver),
+>> than I maybe would have send a v2 with that if. But all the other noise
+>> just made me to want I never had send (again) a patch to LKML. It is
+>> almost impossible to avoid such answers and it turns every patch posting
+>> into a endless story where people do want to discuss every line or even
+>> character of totally silly things.
+>
+> It would help if you brought a more open attitude to the table.
 
-BTW, it still leaves the "proceed to parent" case in shrink_dentry_list();
-in theory, it's also vulnerable to the same livelock.  Can be dealt pretty
-much the same way; I'd rather leave that one for right after -final, though,
-if the already posted variant turns out to be sufficient...
+Your doesn't accept that other people do write code different than you 
+and you want to tell me I have to bring a more open attitude to the table?
+
+
