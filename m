@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874AbaE2HUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:20:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35488 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932421AbaE2HUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:20:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,932,1392192000"; 
-   d="scan'208";a="546602602"
-From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-To: lee.jones@linaro.org, broonie@kernel.org, sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
-        bin.yang@intel.com, lejun.zhu@linux.intel.com
-Subject: [PATCH v4 3/3] mfd: intel_soc_pmic: Build files
-Date: Thu, 29 May 2014 15:19:28 +0800
-Message-Id: <1401347968-24410-4-git-send-email-lejun.zhu@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com>
-References: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com>
+	id S933050AbaE2HU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:20:28 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:9255 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932421AbaE2HUY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 03:20:24 -0400
+X-IronPort-AV: E=Sophos;i="4.98,932,1392159600"; 
+   d="scan'208";a="76949224"
+Date: Thu, 29 May 2014 09:20:20 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Himangi Saraogi <himangi774@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: touchscreen : Introduce the use of the managed
+ version of kzalloc
+In-Reply-To: <20140529071510.GF11817@core.coreip.homeip.net>
+Message-ID: <alpine.DEB.2.02.1405290919110.1996@localhost6.localdomain6>
+References: <20140528180214.GA5957@himangi-Dell> <20140529071510.GF11817@core.coreip.homeip.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Intel SoC PMIC support to the build files.
+> > @@ -618,39 +619,22 @@ static int mrstouch_probe(struct platform_device *pdev)
+> >  	input_set_abs_params(tsdev->input, ABS_PRESSURE,
+> >  			     MRST_PRESSURE_MIN, MRST_PRESSURE_MAX, 0, 0);
+> >  
+> > -	err = request_threaded_irq(tsdev->irq, NULL, mrstouch_pendet_irq,
+> > -				   IRQF_ONESHOT, "mrstouch", tsdev);
+> > +	err = devm_request_threaded_irq(&pdev->dev, tsdev->irq, NULL,
+> > +					mrstouch_pendet_irq, IRQF_ONESHOT,
+> > +					"mrstouch", tsdev);
+> >  	if (err) {
+> >  		dev_err(tsdev->dev, "unable to allocate irq\n");
+> > -		goto err_free_mem;
+> > +		return -ENOMEM;
+> 
+> This is bad conversion. We used to report 'err' returned by
+> request_threaded_irq, but now we always report -ENOMEM. I fixed it up
+> here and in other places and applied.
 
-Signed-off-by: Yang, Bin <bin.yang@intel.com>
-Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
----
-v2:
-- Add select REGMAP_I2C.
-v3:
-- Add select REGMAP_IRQ.
-v4:
-- No change.
----
- drivers/mfd/Kconfig  | 12 ++++++++++++
- drivers/mfd/Makefile |  3 +++
- 2 files changed, 15 insertions(+)
+Sorry to have missed that.  I guess you got the one on the call to 
+mrstouch_adc_init as well?
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 3383412..d987b71 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -241,6 +241,18 @@ config LPC_SCH
- 	  LPC bridge function of the Intel SCH provides support for
- 	  System Management Bus and General Purpose I/O.
- 
-+config INTEL_SOC_PMIC
-+	bool "Support for Intel Atom SoC PMIC"
-+	depends on I2C=y
-+	select MFD_CORE
-+	select REGMAP_I2C
-+	select REGMAP_IRQ
-+	help
-+	  Select this option to enable support for the PMIC device
-+	  on some Intel SoC systems. The PMIC provides ADC, GPIO,
-+	  thermal, charger and related power management functions
-+	  on these systems.
-+
- config MFD_INTEL_MSIC
- 	bool "Intel MSIC"
- 	depends on INTEL_SCU_IPC
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 2851275..36dda4c 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -166,3 +166,6 @@ obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
- obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
-+
-+intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
-+obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
--- 
-1.8.3.2
-
+thanks,
+julia
