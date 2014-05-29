@@ -1,109 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705AbaE2Pds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:33:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54641 "EHLO mail.kernel.org"
+	id S1757586AbaE2Pf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:35:27 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:60474 "EHLO dev.rtsoft.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757526AbaE2Pdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:33:47 -0400
-Date: Thu, 29 May 2014 12:33:42 -0300
-From: "'Arnaldo Carvalho de Melo'" <acme@kernel.org>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Ondrej =?iso-8859-1?Q?B=EDlka?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Elie De Brauwer <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <steve@chygwyn.com>,
-        =?iso-8859-1?Q?R=E9mi?= Denis-Courmont 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Chris Friesen <chris.friesen@windriver.com>
-Subject: [PATCH/RFC] Handle EFAULT in partial recvmmsg was Re: [PATCH/RFC]
- Re: recvmmsg() timeout behavior strangeness [RESEND]
-Message-ID: <20140529153342.GJ2764@kernel.org>
-References: <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com>
- <20140527203010.GA2764@kernel.org>
- <5385D47A.3070401@gmail.com>
- <20140528150720.GB2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
- <20140528195004.GD2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724FB67@AcuExch.aculab.com>
- <20140529135547.GG2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724FC78@AcuExch.aculab.com>
- <20140529141705.GI2764@kernel.org>
+	id S1756219AbaE2Pf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 11:35:26 -0400
+Message-ID: <538753BB.6060500@dev.rtsoft.ru>
+Date: Thu, 29 May 2014 19:35:23 +0400
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Organization: RTSoft Software Development Center
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529141705.GI2764@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lugovskoy@dev.rtsoft.ru
+Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
+ on ULI hw
+References: <Pine.LNX.4.44L0.1405281014320.1552-100000@iolanthe.rowland.org>	<5386C6F9.7070202@dev.rtsoft.ru>	<5387450C.7030207@dev.rtsoft.ru> <20140529154217.6248ae95@alan.etchedpixels.co.uk> <53875339.7050408@dev.rtsoft.ru>
+In-Reply-To: <53875339.7050408@dev.rtsoft.ru>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 29, 2014 at 11:17:05AM -0300, 'Arnaldo Carvalho de Melo' escreveu:
-> Em Thu, May 29, 2014 at 02:06:04PM +0000, David Laight escreveu:
-> > From: 'Arnaldo Carvalho de Melo'
-> > ...
-> > > > I remember some discussions from an XNET standards meeting (I've forgotten
-> > > > exactly which errors on which calls were being discussed).
-> > > > My recollection is that you return success with a partial transfer
-> > > > count for ANY error that happens after some data has been transferred.
-> > > > The actual error will be returned when it happens again on the next
-> > > > system call - Note the AGAIN, not a saved error.
- 
-> > > A saved error, for the right entity, in the recvmmsg case, that
-> > > basically is batching multiple recvmsg syscalls, doesn't sound like a
-> > > problem, i.e. the idea is to, as much as possible, mimic what multiple
-> > > recvmsg calls would do, but reduce its in/out kernel (and inside kernel
-> > > subsystems) overhead.
- 
-> > > Perhaps we can have something in between, i.e. for things like EFAULT,
-> > > we should report straight away, effectively dropping whatever datagrams
-> > > successfully received in the current batch, do you agree?
-  
-> > Not unreasonable - EFAULT shouldn't happen unless the application
-> > is buggy.
- 
-> Ok.
+29.05.2014 19:33, Nikita Yushchenko пишет:
+> 29.05.2014 18:42, One Thousand Gnomes пишет:
+>>> I don't know how linux usb subsystem should behave against such
+>>> "half-existing" hardware. Perhaps hanging is not the best idea...
+>>> but maybe it should be fixed elsewhere, e.g. by masking non-wired
+>>> devices in platform PCI setup. Perhaps controlled by some device-tree
+>>> key.
+>>
+>> Does it have a unique svid/sdid set for the platform - if so you could
+>> just blacklist that combination of vid/did/svid/sdid.
+> 
+> Unfortunately vid/did/svid/sdid come from ULI 1553 southbridge chip,
+> that is used by other hardware as well. AFAIK it is still being
+> manufactured, and could appear in PCs or laptops.
 
-So the patch below should handle it, and record that the packets were
-dropped, not at the transport level, like UDP_MIB_INERRORS, for
-instance, would indicate, but at the batching, recvmmsg level, so
-perhaps we'll need a MIB variable for that.
+Sorry I mistyped in entire thread... Chip is ULI M1575.
 
-Also a counterpart to the trace_kfree_skb(skb, udp_recvmsg) tracepoint
-for dropwatch and similar tools to use, Neil?
+Nikita
 
-I'm keeping this separate from the timeout update patch.
-
-- Arnaldo
-
-diff --git a/net/socket.c b/net/socket.c
-index abf56b2a14f9..63491f015912 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2415,13 +2415,17 @@ out_put:
- 		return datagrams;
- 
- 	if (datagrams != 0) {
-+		if (err == -EFAULT) {
-+			atomic_add(datagrams, &sock->sk->sk_drops);
-+			return -EFAULT;
-+		}
- 		/*
- 		 * We may return less entries than requested (vlen) if the
- 		 * sock is non block and there aren't enough datagrams...
- 		 */
- 		if (err != -EAGAIN) {
- 			/*
--			 * ... or  if recvmsg returns an error after we
-+			 * ... or if recvmsg returns a socket error after we
- 			 * received some datagrams, where we record the
- 			 * error to return on the next call or if the
- 			 * app asks about it using getsockopt(SO_ERROR).
