@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935139AbaE2OS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:18:28 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59336 "EHLO
+	id S935124AbaE2OS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:18:27 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59330 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933173AbaE2Ntb (ORCPT
+	by vger.kernel.org with ESMTP id S933165AbaE2Ntb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Roman Pen <r.peniaev@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@fb.com>,
+Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 023/103] blktrace: fix accounting of partially completed requests
-Date: Thu, 29 May 2014 15:48:08 +0200
-Message-Id: <5104b40a981d26212ced149fbd43ad0b6b72910b.1401371259.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 017/103] scsi: fix our current target reap infrastructure
+Date: Thu, 29 May 2014 15:48:02 +0200
+Message-Id: <b51845d41c715e18ffbb413da213e72667e852ec.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
@@ -26,191 +23,282 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roman Pen <r.peniaev@gmail.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit af5040da01ef980670b3741b3e10733ee3e33566 upstream.
+commit e63ed0d7a98014fdfc2cfeb3f6dada313dcabb59 upstream.
 
-trace_block_rq_complete does not take into account that request can
-be partially completed, so we can get the following incorrect output
-of blkparser:
+This patch eliminates the reap_ref and replaces it with a proper kref.
+On last put of this kref, the target is removed from visibility in
+sysfs.  The final call to scsi_target_reap() for the device is done from
+__scsi_remove_device() and only if the device was made visible.  This
+ensures that the target disappears as soon as the last device is gone
+rather than waiting until final release of the device (which is often
+too long).
 
-  C   R 232 + 240 [0]
-  C   R 240 + 232 [0]
-  C   R 248 + 224 [0]
-  C   R 256 + 216 [0]
-
-but should be:
-
-  C   R 232 + 8 [0]
-  C   R 240 + 8 [0]
-  C   R 248 + 8 [0]
-  C   R 256 + 8 [0]
-
-Also, the whole output summary statistics of completed requests and
-final throughput will be incorrect.
-
-This patch takes into account real completion size of the request and
-fixes wrong completion accounting.
-
-Signed-off-by: Roman Pen <r.peniaev@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Reviewed-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- block/blk-core.c             |  2 +-
- include/trace/events/block.h | 33 ++++++++++++++++++++++++++++++---
- kernel/trace/blktrace.c      | 20 +++++++++++---------
- 3 files changed, 42 insertions(+), 13 deletions(-)
+ drivers/scsi/scsi_scan.c   | 99 ++++++++++++++++++++++++++++------------------
+ drivers/scsi/scsi_sysfs.c  | 20 +++++++---
+ include/scsi/scsi_device.h |  3 +-
+ 3 files changed, 75 insertions(+), 47 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index fce4b9387f36..bf214ae98937 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2297,7 +2297,7 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
- 	if (!req->bio)
- 		return false;
- 
--	trace_block_rq_complete(req->q, req);
-+	trace_block_rq_complete(req->q, req, nr_bytes);
- 
- 	/*
- 	 * For fs requests, rq is just carrier of independent bio's
-diff --git a/include/trace/events/block.h b/include/trace/events/block.h
-index 4c2301d2ef1a..2aaf370c462b 100644
---- a/include/trace/events/block.h
-+++ b/include/trace/events/block.h
-@@ -132,6 +132,7 @@ DEFINE_EVENT(block_rq_with_error, block_rq_requeue,
-  * block_rq_complete - block IO operation completed by device driver
-  * @q: queue containing the block operation request
-  * @rq: block operations request
-+ * @nr_bytes: number of completed bytes
-  *
-  * The block_rq_complete tracepoint event indicates that some portion
-  * of operation request has been completed by the device driver.  If
-@@ -139,11 +140,37 @@ DEFINE_EVENT(block_rq_with_error, block_rq_requeue,
-  * do for the request. If @rq->bio is non-NULL then there is
-  * additional work required to complete the request.
-  */
--DEFINE_EVENT(block_rq_with_error, block_rq_complete,
-+TRACE_EVENT(block_rq_complete,
- 
--	TP_PROTO(struct request_queue *q, struct request *rq),
-+	TP_PROTO(struct request_queue *q, struct request *rq,
-+		 unsigned int nr_bytes),
- 
--	TP_ARGS(q, rq)
-+	TP_ARGS(q, rq, nr_bytes),
-+
-+	TP_STRUCT__entry(
-+		__field(  dev_t,	dev			)
-+		__field(  sector_t,	sector			)
-+		__field(  unsigned int,	nr_sector		)
-+		__field(  int,		errors			)
-+		__array(  char,		rwbs,	RWBS_LEN	)
-+		__dynamic_array( char,	cmd,	blk_cmd_buf_len(rq)	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	   = rq->rq_disk ? disk_devt(rq->rq_disk) : 0;
-+		__entry->sector    = blk_rq_pos(rq);
-+		__entry->nr_sector = nr_bytes >> 9;
-+		__entry->errors    = rq->errors;
-+
-+		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, nr_bytes);
-+		blk_dump_cmd(__get_str(cmd), rq);
-+	),
-+
-+	TP_printk("%d,%d %s (%s) %llu + %u [%d]",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->rwbs, __get_str(cmd),
-+		  (unsigned long long)__entry->sector,
-+		  __entry->nr_sector, __entry->errors)
- );
- 
- DECLARE_EVENT_CLASS(block_rq,
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index 7f727b34280d..e0e5f73db5a4 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -703,6 +703,7 @@ void blk_trace_shutdown(struct request_queue *q)
-  * blk_add_trace_rq - Add a trace for a request oriented action
-  * @q:		queue the io is for
-  * @rq:		the source request
-+ * @nr_bytes:	number of completed bytes
-  * @what:	the action
-  *
-  * Description:
-@@ -710,7 +711,7 @@ void blk_trace_shutdown(struct request_queue *q)
-  *
-  **/
- static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
--			     u32 what)
-+			     unsigned int nr_bytes, u32 what)
- {
- 	struct blk_trace *bt = q->blk_trace;
- 
-@@ -719,11 +720,11 @@ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
- 
- 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
- 		what |= BLK_TC_ACT(BLK_TC_PC);
--		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
-+		__blk_add_trace(bt, 0, nr_bytes, rq->cmd_flags,
- 				what, rq->errors, rq->cmd_len, rq->cmd);
- 	} else  {
- 		what |= BLK_TC_ACT(BLK_TC_FS);
--		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
-+		__blk_add_trace(bt, blk_rq_pos(rq), nr_bytes,
- 				rq->cmd_flags, what, rq->errors, 0, NULL);
- 	}
- }
-@@ -731,33 +732,34 @@ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
- static void blk_add_trace_rq_abort(void *ignore,
- 				   struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_ABORT);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ABORT);
- }
- 
- static void blk_add_trace_rq_insert(void *ignore,
- 				    struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_INSERT);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_INSERT);
- }
- 
- static void blk_add_trace_rq_issue(void *ignore,
- 				   struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_ISSUE);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ISSUE);
- }
- 
- static void blk_add_trace_rq_requeue(void *ignore,
- 				     struct request_queue *q,
- 				     struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_REQUEUE);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_REQUEUE);
- }
- 
- static void blk_add_trace_rq_complete(void *ignore,
- 				      struct request_queue *q,
--				      struct request *rq)
-+				      struct request *rq,
-+				      unsigned int nr_bytes)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_COMPLETE);
-+	blk_add_trace_rq(q, rq, nr_bytes, BLK_TA_COMPLETE);
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index 307a81137607..5fad646ee6e5 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -371,6 +371,31 @@ static struct scsi_target *__scsi_find_target(struct device *parent,
  }
  
  /**
++ * scsi_target_reap_ref_release - remove target from visibility
++ * @kref: the reap_ref in the target being released
++ *
++ * Called on last put of reap_ref, which is the indication that no device
++ * under this target is visible anymore, so render the target invisible in
++ * sysfs.  Note: we have to be in user context here because the target reaps
++ * should be done in places where the scsi device visibility is being removed.
++ */
++static void scsi_target_reap_ref_release(struct kref *kref)
++{
++	struct scsi_target *starget
++		= container_of(kref, struct scsi_target, reap_ref);
++
++	transport_remove_device(&starget->dev);
++	device_del(&starget->dev);
++	starget->state = STARGET_DEL;
++	scsi_target_destroy(starget);
++}
++
++static void scsi_target_reap_ref_put(struct scsi_target *starget)
++{
++	kref_put(&starget->reap_ref, scsi_target_reap_ref_release);
++}
++
++/**
+  * scsi_alloc_target - allocate a new or find an existing target
+  * @parent:	parent of the target (need not be a scsi host)
+  * @channel:	target channel number (zero if no channels)
+@@ -392,7 +417,7 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
+ 		+ shost->transportt->target_size;
+ 	struct scsi_target *starget;
+ 	struct scsi_target *found_target;
+-	int error;
++	int error, ref_got;
+ 
+ 	starget = kzalloc(size, GFP_KERNEL);
+ 	if (!starget) {
+@@ -401,7 +426,7 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
+ 	}
+ 	dev = &starget->dev;
+ 	device_initialize(dev);
+-	starget->reap_ref = 1;
++	kref_init(&starget->reap_ref);
+ 	dev->parent = get_device(parent);
+ 	dev_set_name(dev, "target%d:%d:%d", shost->host_no, channel, id);
+ 	dev->bus = &scsi_bus_type;
+@@ -441,29 +466,36 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
+ 	return starget;
+ 
+  found:
+-	found_target->reap_ref++;
++	/*
++	 * release routine already fired if kref is zero, so if we can still
++	 * take the reference, the target must be alive.  If we can't, it must
++	 * be dying and we need to wait for a new target
++	 */
++	ref_got = kref_get_unless_zero(&found_target->reap_ref);
++
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+-	if (found_target->state != STARGET_DEL) {
++	if (ref_got) {
+ 		put_device(dev);
+ 		return found_target;
+ 	}
+-	/* Unfortunately, we found a dying target; need to
+-	 * wait until it's dead before we can get a new one */
++	/*
++	 * Unfortunately, we found a dying target; need to wait until it's
++	 * dead before we can get a new one.  There is an anomaly here.  We
++	 * *should* call scsi_target_reap() to balance the kref_get() of the
++	 * reap_ref above.  However, since the target being released, it's
++	 * already invisible and the reap_ref is irrelevant.  If we call
++	 * scsi_target_reap() we might spuriously do another device_del() on
++	 * an already invisible target.
++	 */
+ 	put_device(&found_target->dev);
+-	flush_scheduled_work();
++	/*
++	 * length of time is irrelevant here, we just want to yield the CPU
++	 * for a tick to avoid busy waiting for the target to die.
++	 */
++	msleep(1);
+ 	goto retry;
+ }
+ 
+-static void scsi_target_reap_usercontext(struct work_struct *work)
+-{
+-	struct scsi_target *starget =
+-		container_of(work, struct scsi_target, ew.work);
+-
+-	transport_remove_device(&starget->dev);
+-	device_del(&starget->dev);
+-	scsi_target_destroy(starget);
+-}
+-
+ /**
+  * scsi_target_reap - check to see if target is in use and destroy if not
+  * @starget: target to be checked
+@@ -474,28 +506,11 @@ static void scsi_target_reap_usercontext(struct work_struct *work)
+  */
+ void scsi_target_reap(struct scsi_target *starget)
+ {
+-	struct Scsi_Host *shost = dev_to_shost(starget->dev.parent);
+-	unsigned long flags;
+-	enum scsi_target_state state;
+-	int empty = 0;
+-
+-	spin_lock_irqsave(shost->host_lock, flags);
+-	state = starget->state;
+-	if (--starget->reap_ref == 0 && list_empty(&starget->devices)) {
+-		empty = 1;
+-		starget->state = STARGET_DEL;
+-	}
+-	spin_unlock_irqrestore(shost->host_lock, flags);
+-
+-	if (!empty)
+-		return;
+-
+-	BUG_ON(state == STARGET_DEL);
+-	if (state == STARGET_CREATED)
++	BUG_ON(starget->state == STARGET_DEL);
++	if (starget->state == STARGET_CREATED)
+ 		scsi_target_destroy(starget);
+ 	else
+-		execute_in_process_context(scsi_target_reap_usercontext,
+-					   &starget->ew);
++		scsi_target_reap_ref_put(starget);
+ }
+ 
+ /**
+@@ -1532,6 +1547,10 @@ struct scsi_device *__scsi_add_device(struct Scsi_Host *shost, uint channel,
+ 	}
+ 	mutex_unlock(&shost->scan_mutex);
+ 	scsi_autopm_put_target(starget);
++	/*
++	 * paired with scsi_alloc_target().  Target will be destroyed unless
++	 * scsi_probe_and_add_lun made an underlying device visible
++	 */
+ 	scsi_target_reap(starget);
+ 	put_device(&starget->dev);
+ 
+@@ -1612,8 +1631,10 @@ static void __scsi_scan_target(struct device *parent, unsigned int channel,
+ 
+  out_reap:
+ 	scsi_autopm_put_target(starget);
+-	/* now determine if the target has any children at all
+-	 * and if not, nuke it */
++	/*
++	 * paired with scsi_alloc_target(): determine if the target has
++	 * any children at all and if not, nuke it
++	 */
+ 	scsi_target_reap(starget);
+ 
+ 	put_device(&starget->dev);
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 40c639491b27..dfb007c95b98 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -332,17 +332,14 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+ {
+ 	struct scsi_device *sdev;
+ 	struct device *parent;
+-	struct scsi_target *starget;
+ 	struct list_head *this, *tmp;
+ 	unsigned long flags;
+ 
+ 	sdev = container_of(work, struct scsi_device, ew.work);
+ 
+ 	parent = sdev->sdev_gendev.parent;
+-	starget = to_scsi_target(parent);
+ 
+ 	spin_lock_irqsave(sdev->host->host_lock, flags);
+-	starget->reap_ref++;
+ 	list_del(&sdev->siblings);
+ 	list_del(&sdev->same_target_siblings);
+ 	list_del(&sdev->starved_entry);
+@@ -362,8 +359,6 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+ 	/* NULL queue means the device can't be used */
+ 	sdev->request_queue = NULL;
+ 
+-	scsi_target_reap(scsi_target(sdev));
+-
+ 	kfree(sdev->inquiry);
+ 	kfree(sdev);
+ 
+@@ -1018,6 +1013,13 @@ void __scsi_remove_device(struct scsi_device *sdev)
+ 		sdev->host->hostt->slave_destroy(sdev);
+ 	transport_destroy_device(dev);
+ 
++	/*
++	 * Paired with the kref_get() in scsi_sysfs_initialize().  We have
++	 * remoed sysfs visibility from the device, so make the target
++	 * invisible if this was the last device underneath it.
++	 */
++	scsi_target_reap(scsi_target(sdev));
++
+ 	put_device(dev);
+ }
+ 
+@@ -1080,7 +1082,7 @@ void scsi_remove_target(struct device *dev)
+ 			continue;
+ 		if (starget->dev.parent == dev || &starget->dev == dev) {
+ 			/* assuming new targets arrive at the end */
+-			starget->reap_ref++;
++			kref_get(&starget->reap_ref);
+ 			spin_unlock_irqrestore(shost->host_lock, flags);
+ 			if (last)
+ 				scsi_target_reap(last);
+@@ -1164,6 +1166,12 @@ void scsi_sysfs_device_initialize(struct scsi_device *sdev)
+ 	list_add_tail(&sdev->same_target_siblings, &starget->devices);
+ 	list_add_tail(&sdev->siblings, &shost->__devices);
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
++	/*
++	 * device can now only be removed via __scsi_remove_device() so hold
++	 * the target.  Target will be held in CREATED state until something
++	 * beneath it becomes visible (in which case it moves to RUNNING)
++	 */
++	kref_get(&starget->reap_ref);
+ }
+ 
+ int scsi_is_sdev_device(const struct device *dev)
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index d65fbec2533d..b4f1effc9216 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -257,7 +257,7 @@ struct scsi_target {
+ 	struct list_head	siblings;
+ 	struct list_head	devices;
+ 	struct device		dev;
+-	unsigned int		reap_ref; /* protected by the host lock */
++	struct kref		reap_ref; /* last put renders target invisible */
+ 	unsigned int		channel;
+ 	unsigned int		id; /* target id ... replace
+ 				     * scsi_device.id eventually */
+@@ -284,7 +284,6 @@ struct scsi_target {
+ #define SCSI_DEFAULT_TARGET_BLOCKED	3
+ 
+ 	char			scsi_level;
+-	struct execute_work	ew;
+ 	enum scsi_target_state	state;
+ 	void 			*hostdata; /* available to low-level driver */
+ 	unsigned long		starget_data[0]; /* for the transport */
 -- 
 1.9.3
 
