@@ -1,52 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965261AbaE2OeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:34:13 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54672 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933281AbaE2OeL (ORCPT
+	id S934238AbaE2OfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:35:08 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:11859 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932901AbaE2OfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 10:34:11 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53874550.7090908@roeck-us.net>
-Date: Thu, 29 May 2014 07:33:52 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/103] 3.12.21-stable review
-References: <cover.1401371258.git.jslaby@suse.cz>
-In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 29 May 2014 10:35:06 -0400
+X-Nat-Received: from [202.181.97.72]:12880 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1401374104.11070
+To: konrad.wilk@oracle.com
+Cc: dchinner@redhat.com, airlied@linux.ie, glommer@openvz.org, mgorman@suse.de,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] gpu/drm/ttm: Use mutex_lock_killable() for shrinker functions.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <alpine.DEB.2.00.1405200140010.20503@skynet.skynet.ie>
+	<201405210030.HBD65663.FFLVHOFMSJOtOQ@I-love.SAKURA.ne.jp>
+	<201405242322.AID86423.HOMLQJOtFFVOSF@I-love.SAKURA.ne.jp>
+	<20140528185445.GA23122@phenom.dumpdata.com>
+	<201405290647.DHI69200.HSFVFMFOJOLOQt@I-love.SAKURA.ne.jp>
+In-Reply-To: <201405290647.DHI69200.HSFVFMFOJOLOQt@I-love.SAKURA.ne.jp>
+Message-Id: <201405292334.EAG00503.FLOOJFStHVQMFO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 29 May 2014 23:34:59 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 29052014 #8077899, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 06:48 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.21 release.
-> There are 103 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Mon Jun  2 13:47:39 2014
-> Anything received after that time might be too late.
->
+Tetsuo Handa wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Sat, May 24, 2014 at 11:22:09PM +0900, Tetsuo Handa wrote:
+> > > Hello.
+> > > 
+> > > I tried to test whether it is OK (from point of view of reentrant) to use
+> > > mutex_lock() or mutex_lock_killable() inside shrinker functions when shrinker
+> > > functions do memory allocation, for drivers/gpu/drm/ttm/ttm_page_alloc_dma.c is
+> > > doing memory allocation with mutex lock held inside ttm_dma_pool_shrink_scan().
+> > > 
+> > > If I compile a test module shown below which mimics extreme case of what
+> > > ttm_dma_pool_shrink_scan() will do
+> > 
+> > And ttm_pool_shrink_scan.
+> 
+> I don't know why but ttm_pool_shrink_scan() does not take mutex.
+> 
+Well, it seems to me that ttm_pool_shrink_scan() not taking mutex is a bug
+which could lead to stack overflow if kmalloc() in ttm_page_pool_free()
+triggered recursion.
 
-Build results:
-	total: 143 pass: 133 skipped: 7 fail: 3
+  shrink_slab()
+  => ttm_pool_shrink_scan()
+     => ttm_page_pool_free()
+        => kmalloc(GFP_KERNEL)
+           => shrink_slab()
+              => ttm_pool_shrink_scan()
+                 => ttm_page_pool_free()
+                    => kmalloc(GFP_KERNEL)
 
-Qemu tests all passed.
+Maybe shrink_slab() should be updated not to call same shrinker in parallel?
 
-For reference, failing builds are
+Also, it seems to me that ttm_dma_pool_shrink_scan() has potential division
+by 0 bug as described below. Is this patch correct?
+----------
+>From 4a65744a300e14e5e202c5f13ba2759e1e797d29 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Thu, 29 May 2014 18:25:42 +0900
+Subject: [PATCH] gpu/drm/ttm: Use mutex_trylock() for shrinker functions.
 
-unicore32:defconfig		- still fails for all releases
-powerpc:ppc64e_defconfig	- fail if built with binutils 2.4; patch pending
-powerpc:chroma_defconfig	- fail if built with binutils 2.4; patch pending
+I can observe that RHEL7 environment stalls with 100% CPU usage when a
+certain type of memory pressure is given. While the shrinker functions
+are called by shrink_slab() before the OOM killer is triggered, the stall
+lasts for many minutes.
 
-Results are as expected. Details are available at http://server.roeck-us.net:8010/builders.
+One of reasons of this stall is that
+ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan() are called and
+are blocked at mutex_lock(&_manager->lock). GFP_KERNEL allocation with
+_manager->lock held causes someone (including kswapd) to deadlock when
+these functions are called due to memory pressure. This patch changes
+"mutex_lock();" to "if (!mutex_trylock()) return ...;" in order to
+avoid deadlock.
 
-Guenter
+At the same time, this patch fixes potential division by 0 due to
+unconditionally doing "% _manager->npools". This is because
+list_empty(&_manager->pools) being false does not guarantee that
+_manager->npools != 0 after taking the _manager->lock because
+_manager->npools is updated under the _manager->lock.
 
+At the same time, this patch moves updating of start_pool variable
+in order to avoid skipping when choosing a pool to shrink in
+round-robin style. The start_pool is changed from "atomic_t" to
+"unsigned int" because it is now updated under the _manager->lock.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: stable <stable@kernel.org> [3.3+]
+---
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index fb8259f..5e332b4 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -1004,9 +1004,9 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+ static unsigned long
+ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ {
+-	static atomic_t start_pool = ATOMIC_INIT(0);
++	static unsigned int start_pool;
+ 	unsigned idx = 0;
+-	unsigned pool_offset = atomic_add_return(1, &start_pool);
++	unsigned pool_offset;
+ 	unsigned shrink_pages = sc->nr_to_scan;
+ 	struct device_pools *p;
+ 	unsigned long freed = 0;
+@@ -1014,8 +1014,11 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 	if (list_empty(&_manager->pools))
+ 		return SHRINK_STOP;
+ 
+-	mutex_lock(&_manager->lock);
+-	pool_offset = pool_offset % _manager->npools;
++	if (!mutex_trylock(&_manager->lock))
++		return SHRINK_STOP;
++	if (!_manager->npools)
++		goto out;
++	pool_offset = ++start_pool % _manager->npools;
+ 	list_for_each_entry(p, &_manager->pools, pools) {
+ 		unsigned nr_free;
+ 
+@@ -1034,6 +1037,7 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 			 p->pool->dev_name, p->pool->name, current->pid,
+ 			 nr_free, shrink_pages);
+ 	}
++out:
+ 	mutex_unlock(&_manager->lock);
+ 	return freed;
+ }
+@@ -1044,7 +1048,8 @@ ttm_dma_pool_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
+ 	struct device_pools *p;
+ 	unsigned long count = 0;
+ 
+-	mutex_lock(&_manager->lock);
++	if (!mutex_trylock(&_manager->lock))
++		return 0;
+ 	list_for_each_entry(p, &_manager->pools, pools)
+ 		count += p->pool->npages_free;
+ 	mutex_unlock(&_manager->lock);
+-- 
+1.8.3.1
