@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122AbaE2BoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 21:44:13 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:51260 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754904AbaE2BoK (ORCPT
+	id S1755237AbaE2BoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 21:44:22 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:41078 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059AbaE2BoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 21:44:10 -0400
+	Wed, 28 May 2014 21:44:12 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Andy Lutomirski <luto@amacapital.net>, Philipp Kern <pkern@google.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
         "H. J. Lu" <hjl.tools@gmail.com>, Eric Paris <eparis@redhat.com>,
         security@kernel.org, greg@kroah.com, linux-audit@redhat.com
-Cc: stable@vger.kernel.org
-Subject: [PATCH v2 1/2] auditsc: audit_krule mask accesses need bounds checking
-Date: Wed, 28 May 2014 18:44:00 -0700
-Message-Id: <833bd6cb411ad1d4e293629c6c34c4abca27a840.1401327752.git.luto@amacapital.net>
+Subject: [PATCH v2 2/2] audit: Mark CONFIG_AUDITSYSCALL BROKEN and update help text
+Date: Wed, 28 May 2014 18:44:01 -0700
+Message-Id: <ff8ecb985119c06510e2c45c078b41cd5df3aaea.1401327752.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1401327752.git.luto@amacapital.net>
 References: <cover.1401327752.git.luto@amacapital.net>
@@ -25,78 +24,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes an easy DoS and possible information disclosure.
+Here are some issues with the code:
+ - It thinks that syscalls have four arguments.
+ - It's a performance disaster.
+ - It assumes that syscall numbers are between 0 and 2048.
+ - It's unclear whether it's supposed to be reliable.
+ - It's broken on things like x32.
+ - It can't support ARM OABI.
+ - Its approach to freeing memory is terrifying.
 
-This does nothing about the broken state of x32 auditing.
-
-Cc: stable@vger.kernel.org
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- kernel/auditsc.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ init/Kconfig | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index f251a5e..7ccd9db 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -728,6 +728,22 @@ static enum audit_state audit_filter_task(struct task_struct *tsk, char **key)
- 	return AUDIT_BUILD_CONTEXT;
- }
+diff --git a/init/Kconfig b/init/Kconfig
+index 9d3585b..24d4b53 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -296,13 +296,16 @@ config HAVE_ARCH_AUDITSYSCALL
+ 	bool
  
-+static bool audit_in_mask(const struct audit_krule *rule, unsigned long val)
-+{
-+	int word, bit;
+ config AUDITSYSCALL
+-	bool "Enable system-call auditing support"
+-	depends on AUDIT && HAVE_ARCH_AUDITSYSCALL
++	bool "Enable system-call auditing support (not recommended)"
++	depends on AUDIT && HAVE_ARCH_AUDITSYSCALL && BROKEN
+ 	default y if SECURITY_SELINUX
+ 	help
+-	  Enable low-overhead system-call auditing infrastructure that
+-	  can be used independently or with another kernel subsystem,
+-	  such as SELinux.
++	  Enable system-call auditing infrastructure that can be used
++	  independently or with another kernel subsystem, such as
++	  SELinux.
 +
-+	if (val > 0xffffffff)
-+		return false;
-+
-+	word = AUDIT_WORD(val);
-+	if (word >= AUDIT_BITMASK_SIZE)
-+		return false;
-+
-+	bit = AUDIT_BIT(val);
-+
-+	return rule->mask[word] & bit;
-+}
-+
- /* At syscall entry and exit time, this filter is called if the
-  * audit_state is not low enough that auditing cannot take place, but is
-  * also not high enough that we already know we have to write an audit
-@@ -745,11 +761,8 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
++	  AUDITSYSCALL has serious performance and correctness issues.
++	  Use it with extreme caution.
  
- 	rcu_read_lock();
- 	if (!list_empty(list)) {
--		int word = AUDIT_WORD(ctx->major);
--		int bit  = AUDIT_BIT(ctx->major);
--
- 		list_for_each_entry_rcu(e, list, list) {
--			if ((e->rule.mask[word] & bit) == bit &&
-+			if (audit_in_mask(&e->rule, ctx->major) &&
- 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
- 					       &state, false)) {
- 				rcu_read_unlock();
-@@ -769,20 +782,16 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
- static int audit_filter_inode_name(struct task_struct *tsk,
- 				   struct audit_names *n,
- 				   struct audit_context *ctx) {
--	int word, bit;
- 	int h = audit_hash_ino((u32)n->ino);
- 	struct list_head *list = &audit_inode_hash[h];
- 	struct audit_entry *e;
- 	enum audit_state state;
- 
--	word = AUDIT_WORD(ctx->major);
--	bit  = AUDIT_BIT(ctx->major);
--
- 	if (list_empty(list))
- 		return 0;
- 
- 	list_for_each_entry_rcu(e, list, list) {
--		if ((e->rule.mask[word] & bit) == bit &&
-+		if (audit_in_mask(&e->rule, ctx->major) &&
- 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
- 			ctx->current_state = state;
- 			return 1;
+ config AUDIT_WATCH
+ 	def_bool y
 -- 
 1.9.3
 
