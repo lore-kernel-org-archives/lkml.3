@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934547AbaE2SOE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 14:14:04 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:47064 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933103AbaE2SOC convert rfc822-to-8bit (ORCPT
+	id S934270AbaE2SPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 14:15:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56313 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932790AbaE2SPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 14:14:02 -0400
+	Thu, 29 May 2014 14:15:10 -0400
+X-Sasl-enc: 3uSeuUoO4WTmeKTDqtG31Kq0/C4HB7bs5qFvmlIuGvbF 1401387308
+Date: Thu, 29 May 2014 11:18:44 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: linux-next: build failure after merge of the usb tree
+Message-ID: <20140529181844.GA12492@kroah.com>
+References: <20140529190129.6d3272fd@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <8CA95B37-E5EE-46BE-ABFD-64AA3BBF4E96@codeaurora.org>
-References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<F773CDFB-2957-49C0-99D3-E9CDCE33C378@codeaurora.org>
-	<CAJAp7Ojb7PvuNYJkPyKx+iehi0bF6rdYvYmfrDz21mebxMN1qg@mail.gmail.com>
-	<8CA95B37-E5EE-46BE-ABFD-64AA3BBF4E96@codeaurora.org>
-Date: Thu, 29 May 2014 11:14:00 -0700
-Message-ID: <CAJAp7OjYSPLiJXOfY_v=zC+S-_1ryFw29Du6mcp9nQ3v_cj5Jw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Qualcomm Resource Power Manager driver
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529190129.6d3272fd@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:06 AM, Kumar Gala <galak@codeaurora.org> wrote:
-> It is the purpose so that as we see common patterns between either drivers/soc/<VENDOR> we can refactor in the future.  However, we need to all a little time for those patterns to emerge rather than shoe horning in drivers into places that don’t make sense.
+On Thu, May 29, 2014 at 07:01:29PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the usb tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
+> 
+> drivers/usb/core/hub.c: In function 'port_event':
+> drivers/usb/core/hub.c:4853:2: error: implicit declaration of function 'hub_handle_remote_wakeup' [-Werror=implicit-function-declaration]
+> 
+> Caused by commits af376a461cf0 ("usb: refactor port handling in
+> hub_events()") and 7e73be227b15 ("usb: hub_handle_remote_wakeup()
+> depends on CONFIG_PM_RUNTIME=y") This build has CONFIG_PM not set ...
+> 
+> I have added this fix patch for today (there is probably a better way):
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 29 May 2014 18:55:06 +1000
+> Subject: [PATCH] usb: hub_handle_remote_wakeup() only exists for CONFIG_PM=y
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/usb/core/hub.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 5672752bfd2c..879b66e13370 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -3977,6 +3977,12 @@ EXPORT_SYMBOL_GPL(usb_disable_ltm);
+>  void usb_enable_ltm(struct usb_device *udev) { }
+>  EXPORT_SYMBOL_GPL(usb_enable_ltm);
+>  
+> +static int hub_handle_remote_wakeup(struct usb_hub *hub, unsigned int port,
+> +		u16 portstatus, u16 portchange)
+> +{
+> +	return 0;
+> +}
+> +
+>  #endif	/* CONFIG_PM */
+>  
+>  
 
-Sounds reasonable, I'll move it for v2.
+Dan, any objection to me taking this patch?
 
->
->>
->> If I move the rpm driver, are there any conclusion to where I should
->> move the dt binding documentation?
->
-> devicetree/bindings/soc/qcom
-> include/dt-bindings/soc
+thanks,
 
-Thanks.
-
-Regards,
-Bjorn
+greg k-h
