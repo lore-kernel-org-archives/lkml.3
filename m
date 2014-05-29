@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568AbaE2PX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:23:57 -0400
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:55610 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339AbaE2PXz (ORCPT
+	id S1757608AbaE2PYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:24:52 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:60231 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756245AbaE2PYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:23:55 -0400
+	Thu, 29 May 2014 11:24:50 -0400
 MIME-Version: 1.0
-From: "Gideon D'souza" <gidisrael@gmail.com>
-Date: Thu, 29 May 2014 20:53:35 +0530
-Message-ID: <CAPNrq4zJzMwJ2nFwWA3sVc7hr7nYXBRPQomFgZ_1SX+iGxrr0A@mail.gmail.com>
-Subject: Pointers on debugging my machine not booting
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140529072633.GH6677@dastard>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+	<1401260039-18189-2-git-send-email-minchan@kernel.org>
+	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+	<20140528223142.GO8554@dastard>
+	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+	<20140529013007.GF6677@dastard>
+	<CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
+	<20140529072633.GH6677@dastard>
+Date: Thu, 29 May 2014 08:24:49 -0700
+X-Google-Sender-Auth: QIzH8xGCkZT18mfzULIASPeFNaY
+Message-ID: <CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey guys,
+On Thu, May 29, 2014 at 12:26 AM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> What concerns me about both __alloc_pages_nodemask() and
+> kernel_map_pages is that when I look at the code I see functions
+> that have no obvious stack usage problem. However, the compiler is
+> producing functions with huge stack footprints and it's not at all
+> obvious when I read the code. So in this case I'm more concerned
+> that we have a major disconnect between the source code structure
+> and the code that the compiler produces...
 
-So I usually have the latest mainline kernel (on my fedora box) I've
-recently sent it tiny refactoring patches.
+I agree. In fact, this is the main reason that Minchan's call trace
+and this thread has actually convinced me that yes, we really do need
+to make x86-64 have a 16kB stack (well, 16kB allocation - there's
+still the thread info etc too).
 
-Today, I start my machine and it just doesn't start. I had 3.11, 3.12,
-and a few 3.14 rcs.
+Usually when we see the stack-smashing traces, they are because
+somebody did something stupid. In this case, there are certainly
+stupid details, and things I think we should fix, but there is *not*
+the usual red flag of "Christ, somebody did something _really_ wrong".
 
-All show up booting, a few lines print on the screen about various
-things it does. At some random point the screen is just black and
-backlit and nothing happens. I tried all kernels, 3.11 and 3.12 and
-official fedora supported kernels. The rest I installed. Even the
-fedora rescue system doesn't work.
+So I'm not in fact arguing against Minchan's patch of upping
+THREAD_SIZE_ORDER to 2 on x86-64, but at the same time stack size does
+remain one of my "we really need to be careful" issues, so while I am
+basically planning on applying that patch, I _also_ want to make sure
+that we fix the problems we do see and not just paper them over.
 
-I tried looking into remote debugging linux and keep just getting hits
-on virtual machine options. It's time I left my training wheels and I
-want to debug my actual machine and see what's going on.
+The 8kB stack has been somewhat restrictive and painful for a while,
+and I'm ok with admitting that it is just getting _too_ damn painful,
+but I don't want to just give up entirely when we have a known deep
+stack case.
 
-Several of those kernels have debugging support on. I just don't get
-what wire I need to buy, what really is a JTAG and I just need a
-pointer on how to set it up. I have another windows machine and an OSX
-machine around.
-
-Any pointers (pun intended) will be greatly appreciated.
-
-Regards,
-Gideon
+                      Linus
