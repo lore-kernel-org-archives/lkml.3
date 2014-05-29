@@ -1,366 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081AbaE2WGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 18:06:17 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:47565 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754046AbaE2WGP (ORCPT
+	id S932927AbaE2WLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 18:11:38 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:41262 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340AbaE2WLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 18:06:15 -0400
-Date: Thu, 29 May 2014 15:04:57 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: mpe@ellerman.id.au, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, benh@kernel.crashing.org,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, trinity@vger.kernel.org
-Subject: Re: [PATCH] hugetlb: restrict hugepage_migration_support() to x86_64
- (Re: BUG at mm/memory.c:1489!)
-In-Reply-To: <53877dd1.0350c20a.2dde.ffff99d7SMTPIN_ADDED_BROKEN@mx.google.com>
-Message-ID: <alpine.LSU.2.11.1405291408430.10286@eggly.anvils>
-References: <1401265922.3355.4.camel@concordia> <alpine.LSU.2.11.1405281712310.7156@eggly.anvils> <1401353983.4930.15.camel@concordia> <53877dd1.0350c20a.2dde.ffff99d7SMTPIN_ADDED_BROKEN@mx.google.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Thu, 29 May 2014 18:11:36 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5387A96C.6080404@linaro.org>
+References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1401211721-19712-3-git-send-email-bjorn.andersson@sonymobile.com>
+	<53875E2A.7050902@linaro.org>
+	<CAJAp7Ogd5CCsyBhQmaDsy6SAG+YPAPzEJWP0fSKHK1kov3Z6cw@mail.gmail.com>
+	<5387A96C.6080404@linaro.org>
+Date: Thu, 29 May 2014 15:11:35 -0700
+Message-ID: <CAJAp7Ogo1uQXG5Fwa9AFEiS+K=7i+UJTQABmjPCW3ba-EYr04Q@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014, Naoya Horiguchi wrote:
-> 
-> Curretly hugepage migration is available for all archs which support pmd-level
-> hugepage, but testing is done only for x86_64 and there're bugs for other archs.
+On Thu, May 29, 2014 at 2:41 PM, Srinivas Kandagatla
+<srinivas.kandagatla@linaro.org> wrote:
+>> Although we will not have more than one rpm in a system and therefore not
+>> instatiate this driver multiple times I do not want to run it off the
+>> global
+>> state.
+>>
+> I agree.
+>
+> Why not make a separate data structure for the qcom_of_data?
+>
 
-And even for x86_64 I think: the follow_huge_pmd() locking issue I
-mentioned.  But I agree that's a different kind of bug, and probably
-not cause to disable the feature even on x86_64 at this stage - but
-cause to fix it in a different patch Cc stable when you have a moment.
+That might make sense, definitely worth a spin.
 
-> So to avoid breaking such archs, this patch limits the availability strictly to
-> x86_64 until developers of other archs get interested in enabling this feature.
+>>> Should't you use the platform_get_resource_byname here?
+[...]
+> But my point on platform_get_resource_byname is to remove the dependency on
+> the resource ordering, It is very difficult to catch errors resulting in
+> wrong ordered resources in DT.
+>
 
-Hmm, I don't like the sound of "until developers of other archs get
-interested in enabling this feature".  Your choice, I suppose, but I
-had been expecting you to give them a little more help than that, by
-fixing up the follow_huge_addr() and locking as you expect it to be
-(and whatever Michael's subsequent remove_migration_pte() crash comes
-from - maybe obvious with a little thought, but I haven't), then
-pinging those architectures to give it a try and enable if they wish.
+Sorry, forgot to answer the first part of your question.
 
-Perhaps I'm expecting too much, and you haven't the time; doubt I have.
+The order in dt must be fixed, hence there isn't really any reason to
+use the byname; as long as it doesn't add any context or such here. We
+had a long long discussion with the dt guys about this a few months
+back.
 
-I believe your patch below is incomplete, or perhaps you were
-expecting to layer it on top of my follow_huge_addr get_page one.
-No, I think we should throw mine away if you're going to disable
-the feature on most architectures for now (and once the locking is
-corrected, my get_page after follow_huge_addr will be wrong anyway).
+>>>> +       ret = irq_set_irq_wake(irq_ack, 1);
+>>>> +       if (ret)
+>>>> +               dev_warn(&pdev->dev, "failed to mark ack irq as
+>>>> wakeup\n");
+>>>> +
+>>>
+>>>
+>>> ..]
+>>>
+>>> Shouln't these be set as part of the pm suspend call, if the device is
+>>> wakeup capable?
+>>>
+>>>
+>>
+>> Is there any reason to toggle this?
+>>
+>> I'm not sure when this interrupt will actually be fired, but I don't see
+>> any
+>> harm in keeping it wakup enabled at all times.
+>
+>
+> Typically the wake-up source is driven/enabled by the user. When the system
+> goes to low-power state it would enable the wakeup on the irq. And when
+> there is an interrupt it would wake up the system as part of resuming from
+> low-power state.
+>
 
-What I think you're missing is an adjustment to your 71ea2efb1e93
-("mm: migrate: remove VM_HUGETLB from vma flag check in vma_migratable()"):
-doesn't vma_migratable() need to test VM_HUGETLB when
-!CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION?  Then we are saved from
-reaching the follow_huge_addr() BUG; and avoid the weird preparation
-for migrating HUGETLB pages on architectures which do not support it.
+But the RPM is the user; the ack irq is used to acknowledge requests
+or to notify the Linux system about some event. If these happens when
+the system is asleep it's always expected (in current implementation
+at least) to wake up the system; hence I mark it as a wake irq.
 
-But yes, I think your disablement approach is the right thing for 3.15.
+> Again if you what this interrupt to wakeup the system, I would expect
+> pm_wakeup_event/related calls in the interrupt handler too.
+>
 
-> 
-> Reported-by: Michael Ellerman <mpe@ellerman.id.au>
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org # 3.12+
-> ---
->  arch/arm/mm/hugetlbpage.c     |  5 -----
->  arch/arm64/mm/hugetlbpage.c   |  5 -----
->  arch/ia64/mm/hugetlbpage.c    |  5 -----
->  arch/metag/mm/hugetlbpage.c   |  5 -----
->  arch/mips/mm/hugetlbpage.c    |  5 -----
->  arch/powerpc/mm/hugetlbpage.c | 10 ----------
->  arch/s390/mm/hugetlbpage.c    |  5 -----
->  arch/sh/mm/hugetlbpage.c      |  5 -----
->  arch/sparc/mm/hugetlbpage.c   |  5 -----
->  arch/tile/mm/hugetlbpage.c    |  5 -----
->  arch/x86/Kconfig              |  4 ++++
->  arch/x86/mm/hugetlbpage.c     | 10 ----------
->  include/linux/hugetlb.h       | 10 ++++++----
->  mm/Kconfig                    |  3 +++
->  14 files changed, 13 insertions(+), 69 deletions(-)
-> 
-> diff --git a/arch/arm/mm/hugetlbpage.c b/arch/arm/mm/hugetlbpage.c
-> index 54ee6163c181..66781bf34077 100644
-> --- a/arch/arm/mm/hugetlbpage.c
-> +++ b/arch/arm/mm/hugetlbpage.c
-> @@ -56,8 +56,3 @@ int pmd_huge(pmd_t pmd)
->  {
->  	return pmd_val(pmd) && !(pmd_val(pmd) & PMD_TABLE_BIT);
->  }
-> -
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
-> diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
-> index 5e9aec358306..2fc8258bab2d 100644
-> --- a/arch/arm64/mm/hugetlbpage.c
-> +++ b/arch/arm64/mm/hugetlbpage.c
-> @@ -54,11 +54,6 @@ int pud_huge(pud_t pud)
->  	return !(pud_val(pud) & PUD_TABLE_BIT);
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
-> -
->  static __init int setup_hugepagesz(char *opt)
->  {
->  	unsigned long ps = memparse(opt, &opt);
-> diff --git a/arch/ia64/mm/hugetlbpage.c b/arch/ia64/mm/hugetlbpage.c
-> index 68232db98baa..76069c18ee42 100644
-> --- a/arch/ia64/mm/hugetlbpage.c
-> +++ b/arch/ia64/mm/hugetlbpage.c
-> @@ -114,11 +114,6 @@ int pud_huge(pud_t pud)
->  	return 0;
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 0;
-> -}
-> -
->  struct page *
->  follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd, int write)
->  {
-> diff --git a/arch/metag/mm/hugetlbpage.c b/arch/metag/mm/hugetlbpage.c
-> index 042431509b56..3c52fa6d0f8e 100644
-> --- a/arch/metag/mm/hugetlbpage.c
-> +++ b/arch/metag/mm/hugetlbpage.c
-> @@ -110,11 +110,6 @@ int pud_huge(pud_t pud)
->  	return 0;
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
-> -
->  struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  			     pmd_t *pmd, int write)
->  {
-> diff --git a/arch/mips/mm/hugetlbpage.c b/arch/mips/mm/hugetlbpage.c
-> index 77e0ae036e7c..4ec8ee10d371 100644
-> --- a/arch/mips/mm/hugetlbpage.c
-> +++ b/arch/mips/mm/hugetlbpage.c
-> @@ -84,11 +84,6 @@ int pud_huge(pud_t pud)
->  	return (pud_val(pud) & _PAGE_HUGE) != 0;
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
-> -
->  struct page *
->  follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  		pmd_t *pmd, int write)
-> diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-> index eb923654ba80..7e70ae968e5f 100644
-> --- a/arch/powerpc/mm/hugetlbpage.c
-> +++ b/arch/powerpc/mm/hugetlbpage.c
-> @@ -86,11 +86,6 @@ int pgd_huge(pgd_t pgd)
->  	 */
->  	return ((pgd_val(pgd) & 0x3) != 0x0);
->  }
-> -
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
->  #else
->  int pmd_huge(pmd_t pmd)
->  {
-> @@ -106,11 +101,6 @@ int pgd_huge(pgd_t pgd)
->  {
->  	return 0;
->  }
-> -
-> -int pmd_huge_support(void)
-> -{
-> -	return 0;
-> -}
->  #endif
->  
->  pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
-> diff --git a/arch/s390/mm/hugetlbpage.c b/arch/s390/mm/hugetlbpage.c
-> index 0727a55d87d9..0ff66a7e29bb 100644
-> --- a/arch/s390/mm/hugetlbpage.c
-> +++ b/arch/s390/mm/hugetlbpage.c
-> @@ -220,11 +220,6 @@ int pud_huge(pud_t pud)
->  	return 0;
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
-> -
->  struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  			     pmd_t *pmdp, int write)
->  {
-> diff --git a/arch/sh/mm/hugetlbpage.c b/arch/sh/mm/hugetlbpage.c
-> index 0d676a41081e..d7762349ea48 100644
-> --- a/arch/sh/mm/hugetlbpage.c
-> +++ b/arch/sh/mm/hugetlbpage.c
-> @@ -83,11 +83,6 @@ int pud_huge(pud_t pud)
->  	return 0;
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 0;
-> -}
-> -
->  struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  			     pmd_t *pmd, int write)
->  {
-> diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
-> index 9bd9ce80bf77..d329537739c6 100644
-> --- a/arch/sparc/mm/hugetlbpage.c
-> +++ b/arch/sparc/mm/hugetlbpage.c
-> @@ -231,11 +231,6 @@ int pud_huge(pud_t pud)
->  	return 0;
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 0;
-> -}
-> -
->  struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  			     pmd_t *pmd, int write)
->  {
-> diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
-> index 0cb3bbaa580c..e514899e1100 100644
-> --- a/arch/tile/mm/hugetlbpage.c
-> +++ b/arch/tile/mm/hugetlbpage.c
-> @@ -166,11 +166,6 @@ int pud_huge(pud_t pud)
->  	return !!(pud_val(pud) & _PAGE_HUGE_PAGE);
->  }
->  
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
-> -
->  struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  			     pmd_t *pmd, int write)
->  {
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 25d2c6f7325e..0cf6a7d0a93e 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1871,6 +1871,10 @@ config ARCH_ENABLE_SPLIT_PMD_PTLOCK
->  	def_bool y
->  	depends on X86_64 || X86_PAE
->  
-> +config ARCH_ENABLE_HUGEPAGE_MIGRATION
-> +	def_bool y
-> +	depends on X86_64 || MIGRATION
-> +
+There is no power management here. I'll have to look into what value
+this would add. I have to get back to you on this.
 
-Should that be X86_64 && MIGRATION?  X86_64 && HUGETLB_PAGE && MIGRATION?
-Maybe it doesn't matter.
-
-Yes, I agree a per-arch config option is better than all those
-pmd_huge_support() functions, especially all the ones saying 0.
-
->  menu "Power management and ACPI options"
->  
->  config ARCH_HIBERNATION_HEADER
-> diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> index 8c9f647ff9e1..8b977ebf9388 100644
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -58,11 +58,6 @@ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  {
->  	return NULL;
->  }
-> -
-> -int pmd_huge_support(void)
-> -{
-> -	return 0;
-> -}
->  #else
->  
->  struct page *
-> @@ -80,11 +75,6 @@ int pud_huge(pud_t pud)
->  {
->  	return !!(pud_val(pud) & _PAGE_PSE);
->  }
-> -
-> -int pmd_huge_support(void)
-> -{
-> -	return 1;
-> -}
->  #endif
->  
->  #ifdef CONFIG_HUGETLB_PAGE
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 63214868c5b2..61c2e349af64 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -385,15 +385,18 @@ static inline pgoff_t basepage_index(struct page *page)
->  
->  extern void dissolve_free_huge_pages(unsigned long start_pfn,
->  				     unsigned long end_pfn);
-> -int pmd_huge_support(void);
->  /*
-> - * Currently hugepage migration is enabled only for pmd-based hugepage.
-> + * Currently hugepage migration is enabled only for x86_64.
-
-You don't want to have to update that comment every time an architecture
-opts in.  No need for any comment here, I think, the name is good enough
-(though hugepage_migration_supported() would be better).
-
->   * This function will be updated when hugepage migration is more widely
->   * supported.
->   */
->  static inline int hugepage_migration_support(struct hstate *h)
->  {
-> -	return pmd_huge_support() && (huge_page_shift(h) == PMD_SHIFT);
-> +#ifdef CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION
-> +	return huge_page_shift(h) == PMD_SHIFT;
-> +#else
-> +	return 0;
-> +#endif
->  }
->  
->  static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
-> @@ -443,7 +446,6 @@ static inline pgoff_t basepage_index(struct page *page)
->  	return page->index;
->  }
->  #define dissolve_free_huge_pages(s, e)	do {} while (0)
-> -#define pmd_huge_support()	0
->  #define hugepage_migration_support(h)	0
->  
->  static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index ebe5880c29d6..1e22701c972b 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -264,6 +264,9 @@ config MIGRATION
->  	  pages as migration can relocate pages to satisfy a huge page
->  	  allocation instead of reclaiming.
->  
-> +config ARCH_ENABLE_HUGEPAGE_MIGRATION
-> +	boolean
-> +
-
-I don't remember how duplicated config entries work,
-so cannot comment on that.
-
->  config PHYS_ADDR_T_64BIT
->  	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
->  
-> -- 
-> 1.9.3
+Regards,
+Bjorn
