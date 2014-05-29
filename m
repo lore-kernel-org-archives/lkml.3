@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965360AbaE2Ryf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:54:35 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:54016 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965348AbaE2Rya (ORCPT
+	id S965376AbaE2Rym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:54:42 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:61266 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965348AbaE2Ryj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:54:30 -0400
+	Thu, 29 May 2014 13:54:39 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 15/18] staging: rtl8188eu: Remove "last_tx_complete_time" from struct sreset_priv
-Date: Thu, 29 May 2014 23:20:55 +0530
-Message-Id: <1401385858-28722-15-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 16/18] staging: rtl8188eu: Remove Hal8188EReg.h file
+Date: Thu, 29 May 2014 23:20:56 +0530
+Message-Id: <1401385858-28722-16-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401385858-28722-1-git-send-email-navin.patidar@gmail.com>
 References: <1401385858-28722-1-git-send-email-navin.patidar@gmail.com>
@@ -21,63 +21,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-value stored in variable last_tx_complete_time isn't being used
-by driver.
+Driver doesn't need Hal8188EReg.h file.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_sreset.c      |    1 -
- drivers/staging/rtl8188eu/include/rtw_sreset.h   |    1 -
- drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c |    5 -----
- 3 files changed, 7 deletions(-)
+ drivers/staging/rtl8188eu/include/Hal8188EReg.h |   46 -----------------------
+ drivers/staging/rtl8188eu/include/odm_precomp.h |    1 -
+ 2 files changed, 47 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/include/Hal8188EReg.h
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_sreset.c b/drivers/staging/rtl8188eu/core/rtw_sreset.c
-index cc21f3d..3b846d3 100644
---- a/drivers/staging/rtl8188eu/core/rtw_sreset.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_sreset.c
-@@ -26,7 +26,6 @@ void sreset_init_value(struct adapter *padapter)
- 	struct sreset_priv *psrtpriv = &pHalData->srestpriv;
- 
- 	psrtpriv->Wifi_Error_Status = WIFI_STATUS_SUCCESS;
--	psrtpriv->last_tx_complete_time = 0;
- }
- 
- u8 sreset_get_wifi_status(struct adapter *padapter)
-diff --git a/drivers/staging/rtl8188eu/include/rtw_sreset.h b/drivers/staging/rtl8188eu/include/rtw_sreset.h
-index 6cf792f..580e850 100644
---- a/drivers/staging/rtl8188eu/include/rtw_sreset.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_sreset.h
-@@ -25,7 +25,6 @@
- 
- struct sreset_priv {
- 	u8	Wifi_Error_Status;
--	unsigned long last_tx_complete_time;
- };
- 
- #include <rtl8188e_hal.h>
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c b/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
-index 4622efa..0b5fbb9 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
-@@ -71,8 +71,6 @@ static void usb_write_port_complete(struct urb *purb, struct pt_regs *regs)
- 	struct xmit_buf *pxmitbuf = (struct xmit_buf *)purb->context;
- 	struct adapter	*padapter = pxmitbuf->padapter;
- 	struct xmit_priv	*pxmitpriv = &padapter->xmitpriv;
--	struct hal_data_8188e	*haldata;
+diff --git a/drivers/staging/rtl8188eu/include/Hal8188EReg.h b/drivers/staging/rtl8188eu/include/Hal8188EReg.h
+deleted file mode 100644
+index d880b0c..0000000
+--- a/drivers/staging/rtl8188eu/include/Hal8188EReg.h
++++ /dev/null
+@@ -1,46 +0,0 @@
+-/******************************************************************************
+- *
+- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of version 2 of the GNU General Public License as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+- *
+- *
+- ******************************************************************************/
+-/*  */
+-/*  File Name: Hal8188EReg.h */
+-/*  */
+-/*  Description: */
+-/*  */
+-/*  This file is for RTL8188E register definition. */
+-/*  */
+-/*  */
+-/*  */
+-#ifndef	__HAL_8188E_REG_H__
+-#define __HAL_8188E_REG_H__
 -
- 
- 	switch (pxmitbuf->flags) {
- 	case VO_QUEUE_INX:
-@@ -137,9 +135,6 @@ static void usb_write_port_complete(struct urb *purb, struct pt_regs *regs)
- 		}
- 	}
- 
--	haldata = GET_HAL_DATA(padapter);
--	haldata->srestpriv.last_tx_complete_time = jiffies;
+-/*  */
+-/*  Register Definition */
+-/*  */
+-#define TRX_ANTDIV_PATH             0x860
+-#define RX_ANTDIV_PATH              0xb2c
+-#define	ODM_R_A_AGC_CORE1_8188E		0xc50
 -
- check_completion:
- 	rtw_sctx_done_err(&pxmitbuf->sctx,
- 			  purb->status ? RTW_SCTX_DONE_WRITE_PORT_ERR :
+-
+-/*  */
+-/*  Bitmap Definition */
+-/*  */
+-#define	BIT_FA_RESET_8188E			BIT0
+-
+-
+-#endif
+diff --git a/drivers/staging/rtl8188eu/include/odm_precomp.h b/drivers/staging/rtl8188eu/include/odm_precomp.h
+index 2eb769b3..7cc2cc9 100644
+--- a/drivers/staging/rtl8188eu/include/odm_precomp.h
++++ b/drivers/staging/rtl8188eu/include/odm_precomp.h
+@@ -49,7 +49,6 @@
+ #include "HalHWImg8188E_MAC.h"
+ #include "HalHWImg8188E_RF.h"
+ #include "HalHWImg8188E_BB.h"
+-#include "Hal8188EReg.h"
+ 
+ #include "odm_RegConfig8188E.h"
+ #include "odm_RTL8188E.h"
 -- 
 1.7.10.4
 
