@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934063AbaE2FN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:13:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58048 "EHLO
+	id S934113AbaE2FO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:14:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932645AbaE2Efl (ORCPT
+	with ESMTP id S932627AbaE2Efj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:41 -0400
+	Thu, 29 May 2014 00:35:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julio Araujo <julio.araujo@wllctel.com.br>,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Julian Anastasov <ja@ssi.bg>, Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 096/140] net: qmi_wwan: add Olivetti Olicard 500
-Date: Wed, 28 May 2014 21:33:55 -0700
-Message-Id: <20140529043101.875975210@linuxfoundation.org>
+Subject: [PATCH 3.14 092/140] sctp: reset flowi4_oif parameter on route lookup
+Date: Wed, 28 May 2014 21:33:51 -0700
+Message-Id: <20140529043101.421938447@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,34 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-[ Upstream commit efc0b25c3add97717ece57bf5319792ca98f348e ]
+[ Upstream commit 85350871317a5adb35519d9dc6fc9e80809d42ad ]
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/ff/ff - serial AT+PPP
-2: 08/06/50 - storage
-3: ff/ff/ff - serial
-4: ff/ff/ff - QMI/wwan
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in __ip_route_output_key()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
 
-Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
+
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/qmi_wwan.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sctp/protocol.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -736,6 +736,7 @@ static const struct usb_device_id produc
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
-+	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
- 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
- 	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
- 
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -491,8 +491,13 @@ static void sctp_v4_get_dst(struct sctp_
+ 			continue;
+ 		if ((laddr->state == SCTP_ADDR_SRC) &&
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+-			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			flowi4_update_output(fl4,
++					     asoc->base.sk->sk_bound_dev_if,
++					     RT_CONN_FLAGS(asoc->base.sk),
++					     daddr->v4.sin_addr.s_addr,
++					     laddr->a.v4.sin_addr.s_addr);
++
+ 			rt = ip_route_output_key(sock_net(sk), fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
 
 
