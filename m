@@ -1,33 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054AbaE2EiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:38:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58443 "EHLO
+	id S933638AbaE2E6r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:58:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932953AbaE2EiO (ORCPT
+	with ESMTP id S933040AbaE2EiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:14 -0400
+	Thu, 29 May 2014 00:38:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, David Vrabel <david.vrabel@citrix.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Anvin <hpa@zytor.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.10 19/86] mm: use paravirt friendly ops for NUMA hinting ptes
-Date: Wed, 28 May 2014 21:36:54 -0700
-Message-Id: <20140529043516.078943174@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [PATCH 3.10 32/86] usb: option: add Alcatel L800MA
+Date: Wed, 28 May 2014 21:37:07 -0700
+Message-Id: <20140529043517.817262354@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,120 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 29c7787075c92ca8af353acd5301481e6f37082f upstream.
+commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
 
-David Vrabel identified a regression when using automatic NUMA balancing
-under Xen whereby page table entries were getting corrupted due to the
-use of native PTE operations.  Quoting him
+Device interface layout:
+0: ff/ff/ff - serial
+1: ff/00/00 - serial AT+PPP
+2: ff/ff/ff - QMI/wwan
+3: 08/06/50 - storage
 
-	Xen PV guest page tables require that their entries use machine
-	addresses if the preset bit (_PAGE_PRESENT) is set, and (for
-	successful migration) non-present PTEs must use pseudo-physical
-	addresses.  This is because on migration MFNs in present PTEs are
-	translated to PFNs (canonicalised) so they may be translated back
-	to the new MFN in the destination domain (uncanonicalised).
-
-	pte_mknonnuma(), pmd_mknonnuma(), pte_mknuma() and pmd_mknuma()
-	set and clear the _PAGE_PRESENT bit using pte_set_flags(),
-	pte_clear_flags(), etc.
-
-	In a Xen PV guest, these functions must translate MFNs to PFNs
-	when clearing _PAGE_PRESENT and translate PFNs to MFNs when setting
-	_PAGE_PRESENT.
-
-His suggested fix converted p[te|md]_[set|clear]_flags to using
-paravirt-friendly ops but this is overkill.  He suggested an alternative
-of using p[te|md]_modify in the NUMA page table operations but this is
-does more work than necessary and would require looking up a VMA for
-protections.
-
-This patch modifies the NUMA page table operations to use paravirt
-friendly operations to set/clear the flags of interest.  Unfortunately
-this will take a performance hit when updating the PTEs on
-CONFIG_PARAVIRT but I do not see a way around it that does not break
-Xen.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David Vrabel <david.vrabel@citrix.com>
-Tested-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Anvin <hpa@zytor.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Noonan <steven@uplinklabs.net>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/asm-generic/pgtable.h |   31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -620,32 +620,47 @@ static inline int pmd_numa(pmd_t pmd)
- #ifndef pte_mknonnuma
- static inline pte_t pte_mknonnuma(pte_t pte)
- {
--	pte = pte_clear_flags(pte, _PAGE_NUMA);
--	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
-+	pteval_t val = pte_val(pte);
-+
-+	val &= ~_PAGE_NUMA;
-+	val |= (_PAGE_PRESENT|_PAGE_ACCESSED);
-+	return __pte(val);
- }
- #endif
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -287,6 +287,7 @@ static void option_instat_callback(struc
+ #define ALCATEL_PRODUCT_X060S_X200		0x0000
+ #define ALCATEL_PRODUCT_X220_X500D		0x0017
+ #define ALCATEL_PRODUCT_L100V			0x011e
++#define ALCATEL_PRODUCT_L800MA			0x0203
  
- #ifndef pmd_mknonnuma
- static inline pmd_t pmd_mknonnuma(pmd_t pmd)
- {
--	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
--	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
-+	pmdval_t val = pmd_val(pmd);
-+
-+	val &= ~_PAGE_NUMA;
-+	val |= (_PAGE_PRESENT|_PAGE_ACCESSED);
-+
-+	return __pmd(val);
- }
- #endif
- 
- #ifndef pte_mknuma
- static inline pte_t pte_mknuma(pte_t pte)
- {
--	pte = pte_set_flags(pte, _PAGE_NUMA);
--	return pte_clear_flags(pte, _PAGE_PRESENT);
-+	pteval_t val = pte_val(pte);
-+
-+	val &= ~_PAGE_PRESENT;
-+	val |= _PAGE_NUMA;
-+
-+	return __pte(val);
- }
- #endif
- 
- #ifndef pmd_mknuma
- static inline pmd_t pmd_mknuma(pmd_t pmd)
- {
--	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
--	return pmd_clear_flags(pmd, _PAGE_PRESENT);
-+	pmdval_t val = pmd_val(pmd);
-+
-+	val &= ~_PAGE_PRESENT;
-+	val |= _PAGE_NUMA;
-+
-+	return __pmd(val);
- }
- #endif
- #else
+ #define PIRELLI_VENDOR_ID			0x1266
+ #define PIRELLI_PRODUCT_C100_1			0x1002
+@@ -1501,6 +1502,8 @@ static const struct usb_device_id option
+ 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
++	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
 
 
