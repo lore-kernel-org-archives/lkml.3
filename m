@@ -1,65 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaE2SgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 14:36:17 -0400
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:30275
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751206AbaE2SgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 14:36:16 -0400
-Message-ID: <1401387624.6603.161.camel@snotra.buserror.net>
-Subject: Re: [PATCH] pcmcia: m8xx: remove checks for four macros
-From: Scott Wood <scottwood@freescale.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linux-pcmcia@lists.infradead.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>
-Date: Thu, 29 May 2014 13:20:24 -0500
-In-Reply-To: <1400916970.31526.78.camel@x220>
-References: <1400916970.31526.78.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	id S1756222AbaE2Sib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 14:38:31 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:35116 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaE2Si3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 14:38:29 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:d1b9:9316:96e:1a3c]
-X-ClientProxiedBy: DM2PR06CA006.namprd06.prod.outlook.com (10.141.96.36) To
- DM2PR03MB397.namprd03.prod.outlook.com (10.141.84.139)
-X-Forefront-PRVS: 022649CC2C
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(428001)(189002)(199002)(51704005)(377424004)(24454002)(103116003)(81542001)(93916002)(20776003)(4396001)(86362001)(33646001)(64706001)(31966008)(76482001)(47776003)(99396002)(23676002)(81342001)(79102001)(50986999)(76176999)(89996001)(92726001)(92566001)(80022001)(62966002)(87976001)(83072002)(88136002)(85852003)(50226001)(77982001)(74502001)(42186004)(101416001)(46102001)(74662001)(77156001)(19580405001)(83322001)(19580395003)(102836001)(21056001)(87286001)(50466002)(104166001)(32563001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB397;H:[IPv6:2601:2:5800:3f7:d1b9:9316:96e:1a3c];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <53875E17.6010406@linaro.org>
+References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1401211721-19712-2-git-send-email-bjorn.andersson@sonymobile.com>
+	<53875E17.6010406@linaro.org>
+Date: Thu, 29 May 2014 11:38:28 -0700
+Message-ID: <CAJAp7Ogi8s+_HHUA0zt3dM6ssDHxeQ1xNFvvO7AbSyz9o6n+9w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT binding
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-05-24 at 09:36 +0200, Paul Bolle wrote:
-> This driver contains checks for four Kconfig macros. But the related
-> Kconfig symbols have never been part of the tree. Remove these checks
-> and the code they hide.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested.
-> 
-> This has been an issue ever since this driver was added in v2.6.15. Note
-> that there is no header named "*/cpld.h", so setting PRxK can't possibly
-> work.
-> 
->  drivers/pcmcia/m8xx_pcmcia.c | 75 --------------------------------------------
->  1 file changed, 75 deletions(-)
+On Thu, May 29, 2014 at 9:19 AM, Srinivas Kandagatla
+<srinivas.kandagatla@linaro.org> wrote:
+>> +- reg:
+>> +       Usage: required
+>> +       Value type: <prop-encoded-array>
+>> +       Definition: two entries specifying the RPM's message ram and ipc
+>> register
+>> +
+>> +- reg-names:
+>> +       Usage: required
+>> +       Value type: <string-array>
+>> +       Definition: must contain the following, in order:
+>> +                   "msg_ram"
+>> +                   "ipc"
+>
+>
+> +1 for kumar's comment.
+>
+> cant enforce the order here. should fix it in the driver.
+>
 
-Does anything in this driver still work?  It looks like bitrot from the
-arch/ppc days, that sort of got updated to use the device tree -- but
-even after this patch there are lots of instances of CONFIG symbols
-being used to assert the exact hardware being used, rather than what
-hardware is supported.
+Yes I can, this is as decided by the devicetree maintainers. The order
+of e.g. reg and interrupts must be defined.
 
-Is anyone actively maintaining/testing this code?
+>> += SUBDEVICES
+>> +
+>> +The RPM exposes resources to its subnodes. The below bindings specify the
+>> set
+>> +of valid subnodes that can operate on these resources.
+>
+>
+> Why should these devices be on sub nodes?
+>
+> Any reason not to implement it like this,
+>
+> rpm: rpm@108000 {
+>         compatible = "qcom,rpm-msm8960";
+>
+>         reg = <0x108000 0x1000 0x2011008 0x4>;
+>
+>         interrupts = <0 19 0>, <0 21 0>, <0 22 0>;
+>         interrupt-names = "ack", "err", "wakeup";
+> };
+>
+> pm8921_s1: pm8921-s1 {
+>         compatible = "qcom,rpm-pm8921-smps";
+>
+>         regulator-min-microvolt = <1225000>;
+>         regulator-max-microvolt = <1225000>;
+>         regulator-always-on;
+>
+>         qcom,rpm = <&rpm QCOM_RPM_PM8921_S1>;
+>         qcom,switch-mode-frequency = <3200000>;
+>         qcom,hpm-threshold = <100000>;
+> };
+>
+> This would simplify the driver code too and handle the interface neatly then
+> depending on device hierarchy.
+> rpm would be a interface library to the clients. Makes the drivers more
+> independent, and re-usable if we do this way.
 
--Sott
+The subnodes doesn't describe separate pieces of hardware but rather
+pieces of the rpm, that's why they should live inside the rpm. There
+will not be any re-use of these drivers outside having a rpm as
+parent.
+
+I do have some patches for family b, where I'm moving things around a
+little bit in the implementation to be able to re-use child-devices
+where that makes sense (clock implementation is the same for the two).
+But that is implementation specific and does not affect the dt.
 
 
+Implementation wise, having the individual subnodes as children in the
+device model makes a lot of sense, as the children should be probed
+when the rpm appears and when the rpm goes away it should bring down
+all subnodes. If there was any power management it would be the same
+thing.
+
+So I think this makes for a cleaner implementation; all I need to do
+is to call of_platform_populate at the end of the probe and in remove
+I need to tell the children that they should go away. I do not need to
+support any phandle based lookups and separate life cycle management.
+
+>
+> [...
+>
+>> +- qcom,force-mode-none:
+>> +       Usage: optional (default if no other qcom,force-mode is specified)
+>> +       Value type: <empty>
+>> +       Defintion: indicates that the regulator should not be forced to
+>> any
+>> +                  particular mode
+>> +
+>> +- qcom,force-mode-lpm:
+>> +       Usage: optional
+>> +       Value type: <empty>
+>> +       Definition: indicates that the regulator should be forced to
+>> operate in
+>> +                   low-power-mode
+>> +
+>> +- qcom,force-mode-auto:
+>> +       Usage: optional (only available for 8960/8064)
+>> +       Value type: <empty>
+>> +       Definition: indicates that the regulator should be automatically
+>> pick
+>> +                   operating mode
+>> +
+>> +- qcom,force-mode-hpm:
+>> +       Usage: optional (only available for 8960/8064)
+>> +       Value type: <empty>
+>> +       Definition: indicates that the regulator should be forced to
+>> operate in
+>> +                   high-power-mode
+>> +
+>> +- qcom,force-mode-bypass: (only for 8960/8064)
+>> +       Usage: optional (only available for 8960/8064)
+>> +       Value type: <empty>
+>> +       Definition: indicates that the regulator should be forced to
+>> operate in
+>> +                   bypass mode
+>> +
+>
+> ...]
+>
+> Probably qcom,force-mode:
+>         Usage: optional.
+>         Value type: <string>
+>
+>         Definition: must be one of:
+>         "none"
+>         "lpm"
+>         "auto"
+>         "hpm"
+>         "bypass"
+>
+> Makes it much simpler, as they seems to be mutually exclusive. simillar
+> comments apply to other bindings too.
+
+Please see my answer to Kumar.
+
+
+Thanks for the comments!
+
+Regards,
+Bjorn
