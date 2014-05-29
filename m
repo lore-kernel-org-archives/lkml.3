@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470AbaE2OlQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:41:16 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:41754 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757366AbaE2OlN convert rfc822-to-8bit (ORCPT
+	id S933622AbaE2On1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:43:27 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:33803 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932423AbaE2On0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 10:41:13 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Arnaldo Carvalho de Melo'" <acme@kernel.org>
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        =?Windows-1252?Q?Ondrej_B=EDlka?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Elie De Brauwer" <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "Steven Whitehouse" <steve@chygwyn.com>,
-        =?Windows-1252?Q?R=E9mi_Denis-Courmont?= 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        "Chris Friesen" <chris.friesen@windriver.com>
-Subject: RE: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
-Thread-Topic: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness
- [RESEND]
-Thread-Index: AQHPeoaBBF42JoL2CUKh/KaMaW27r5tWGHxAgAA9vQCAAQahgIAAKLeAgAARU2D///ShgIAAFHjg
-Date: Thu, 29 May 2014 14:40:08 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724FCAB@AcuExch.aculab.com>
-References: <20140527192115.GD25474@kernel.org>
- <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com>
- <20140527203010.GA2764@kernel.org> <5385D47A.3070401@gmail.com>
- <20140528150720.GB2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
- <20140528195004.GD2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724FB67@AcuExch.aculab.com>
- <20140529135547.GG2764@kernel.org>
- <063D6719AE5E284EB5DD2968C1650D6D1724FC78@AcuExch.aculab.com>
- <20140529141705.GI2764@kernel.org>
-In-Reply-To: <20140529141705.GI2764@kernel.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 May 2014 10:43:26 -0400
+Date: Thu, 29 May 2014 10:43:21 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Fabian Frederick <fabf@skynet.be>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH V2 3/3] init/calibrate.c: no prefix in logging
+Message-ID: <20140529144321.GB32669@windriver.com>
+References: <20140529101458.047becb88f3ba83196045465@skynet.be>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140529101458.047becb88f3ba83196045465@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: 'Arnaldo Carvalho de Melo'
-> Em Thu, May 29, 2014 at 02:06:04PM +0000, David Laight escreveu:
-> > From: 'Arnaldo Carvalho de Melo'
-> > ...
-> > > > I remember some discussions from an XNET standards meeting (I've forgotten
-> > > > exactly which errors on which calls were being discussed).
-> > > > My recollection is that you return success with a partial transfer
-> > > > count for ANY error that happens after some data has been transferred.
-> > > > The actual error will be returned when it happens again on the next
-> > > > system call - Note the AGAIN, not a saved error.
-> 
-> > > A saved error, for the right entity, in the recvmmsg case, that
-> > > basically is batching multiple recvmsg syscalls, doesn't sound like a
-> > > problem, i.e. the idea is to, as much as possible, mimic what multiple
-> > > recvmsg calls would do, but reduce its in/out kernel (and inside kernel
-> > > subsystems) overhead.
-> 
-> > > Perhaps we can have something in between, i.e. for things like EFAULT,
-> > > we should report straight away, effectively dropping whatever datagrams
-> > > successfully received in the current batch, do you agree?
-> 
-> > Not unreasonable - EFAULT shouldn't happen unless the application
-> > is buggy.
-> 
-> Ok.
-> 
-> > > For transient errors the existing mechanism, fixed so that only per
-> > > socket errors are saved for later, as today, could be kept?
-> 
-> > I don't think it is ever necessary to save an errno value for the
-> > next system call at all.
-> > Just process the next system call and see what happens.
-> 
-> > If the call returns with less than the maximum number of datagrams
-> > and with a non-zero timeout left - then the application can infer
-> > that it was terminated by an abnormal event of some kind.
-> > This might be a signal.
-> 
-> Then it could use getsockopt(SO_ERROR) perhaps? I.e. we don't return the
-> error on the next call, but we provide a way for the app to retrieve the
-> reason for the smaller than expected batch?
+[[PATCH V2 3/3] init/calibrate.c: no prefix in logging] On 29/05/2014 (Thu 10:14) Fabian Frederick wrote:
 
-If you really think it is necessary, then you want a field in the
-control structure.
-But IMHO returning the 'time left' is more than enough.
+> define pr_fmt without prefix to avoid any default prefix update
 
-IIRC the original problem was that the user-specified timeout
-was used as an inter-datagram timer instead of an overall timeout.
+Again, it isn't clear to me what you are trying to achieve here.
+The printk.h header already has the define which you add here.
 
-I suspect that most application won't actually care about the
-'time left', nor the actual number of returned datagrams.
-They will just process what they are given and then wait for
-the next batch.
+A general rule for commits is to cover off three points.
 
-	David
+1) Describe what the user visible symptom is, i.e. "printk from
+calibrate.c are appearing with verbose prefix blah blah..."
 
+2) Describe the underlying reason for the bug/issue, i.e. "This happens
+because macro blah comes from foo.h but only when bar is defined."
 
+3) Describe how your fix works and why it is the right/best fix for the
+issue, i.e. "Here we introduce blah blah which will ensure ...."
 
+Also, to make life easier for maintainers, you probably want to add a
+0/N lead-in (see --cover-letter) which describes what you are trying to
+achieve with the whole series, and when you create a v2 of the series,
+you need to list in there for the maintainer how v2 differs from v1.
+
+Finally try not to send a v2 within hours of sending a v1 -- give a
+chance for the v1 to get looked at 1st; typically at least one day.
+
+Thanks,
+Paul.
+--
+
+> 
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  init/calibrate.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/init/calibrate.c b/init/calibrate.c
+> index fb9be44..169e98d 100644
+> --- a/init/calibrate.c
+> +++ b/init/calibrate.c
+> @@ -4,6 +4,8 @@
+>   *  Copyright (C) 1991, 1992  Linus Torvalds
+>   */
+>  
+> +#define pr_fmt(fmt) fmt
+> +
+>  #include <linux/jiffies.h>
+>  #include <linux/delay.h>
+>  #include <linux/init.h>
+> -- 
+> 1.9.1
+> 
