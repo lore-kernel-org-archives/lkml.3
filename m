@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933719AbaE2Fbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:31:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57775 "EHLO
+	id S934568AbaE2Fb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:31:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756307AbaE2EfF (ORCPT
+	with ESMTP id S1756296AbaE2EfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:35:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michele Baldessari <michele@acksyn.org>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 040/140] USB: serial: ftdi_sio: add id for Brainboxes serial cards
-Date: Wed, 28 May 2014 21:32:59 -0700
-Message-Id: <20140529043054.535892037@linuxfoundation.org>
+Subject: [PATCH 3.14 039/140] USB: usb_wwan: fix handling of missing bulk endpoints
+Date: Wed, 28 May 2014 21:32:58 -0700
+Message-Id: <20140529043054.397194187@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,106 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michele Baldessari <michele@acksyn.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit efe26e16b1d93ac0085e69178cc18811629e8fc5 upstream.
+commit bd73bd8831696f189a479a0712ae95208e513d7e upstream.
 
-Custom VID/PIDs for Brainboxes cards as reported in
-https://bugzilla.redhat.com/show_bug.cgi?id=1071914
+Fix regression introduced by commit 8e493ca1767d ("USB: usb_wwan: fix
+bulk-urb allocation") by making sure to require both bulk-in and out
+endpoints during port probe.
 
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
+The original option driver (which usb_wwan is based on) was written
+under the assumption that either endpoint could be missing, but
+evidently this cannot have been tested properly. Specifically, it would
+handle opening a device without bulk-in (but would blow up during resume
+which was implemented later), but not a missing bulk-out in write()
+(although it is handled in some places such as write_room()).
+
+Fortunately (?), the driver also got the test for missing endpoints
+wrong so the urbs were in fact always allocated, although they would be
+initialised using the wrong endpoint address (0) and any submission of
+such an urb would fail.
+
+The commit mentioned above fixed the test for missing endpoints but
+thereby exposed the other bugs which would now generate null-pointer
+exceptions rather than failed urb submissions.
+
+The regression was introduced in v3.7, but the offending commit was also
+marked for stable.
+
+Reported-by: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Tested-by: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   33 +++++++++++++++++++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 70 insertions(+)
+ drivers/usb/serial/usb_wwan.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -909,6 +909,39 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
- 	/* Cressi Devices */
- 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
-+	/* Brainboxes Devices */
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
- 	{ }					/* Terminating entry */
- };
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -466,6 +466,9 @@ int usb_wwan_port_probe(struct usb_seria
+ 	int err;
+ 	int i;
  
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1326,3 +1326,40 @@
-  * Manufacturer: Cressi
-  */
- #define FTDI_CRESSI_PID		0x87d0
++	if (!port->bulk_in_size || !port->bulk_out_size)
++		return -ENODEV;
 +
-+/*
-+ * Brainboxes devices
-+ */
-+#define BRAINBOXES_VID			0x05d1
-+#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
-+#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
-+#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
-+#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
-+#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
-+#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
-+#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
-+#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
-+#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
-+#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
-+#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
-+#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
-+#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
-+#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
-+#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
-+#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
+ 	portdata = kzalloc(sizeof(*portdata), GFP_KERNEL);
+ 	if (!portdata)
+ 		return -ENOMEM;
+@@ -473,9 +476,6 @@ int usb_wwan_port_probe(struct usb_seria
+ 	init_usb_anchor(&portdata->delayed);
+ 
+ 	for (i = 0; i < N_IN_URB; i++) {
+-		if (!port->bulk_in_size)
+-			break;
+-
+ 		buffer = (u8 *)__get_free_page(GFP_KERNEL);
+ 		if (!buffer)
+ 			goto bail_out_error;
+@@ -489,9 +489,6 @@ int usb_wwan_port_probe(struct usb_seria
+ 	}
+ 
+ 	for (i = 0; i < N_OUT_URB; i++) {
+-		if (!port->bulk_out_size)
+-			break;
+-
+ 		buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
+ 		if (!buffer)
+ 			goto bail_out_error2;
 
 
