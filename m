@@ -1,157 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530AbaE2OHD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:07:03 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:57697 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965128AbaE2OGH (ORCPT
+	id S1757580AbaE2OHO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:07:14 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:40945 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757484AbaE2OHJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 10:06:07 -0400
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/5] clk: bcm281xx: implement prerequisite clocks
-Date: Thu, 29 May 2014 09:05:58 -0500
-Message-Id: <1401372361-18842-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401372361-18842-1-git-send-email-elder@linaro.org>
-References: <1401372361-18842-1-git-send-email-elder@linaro.org>
+	Thu, 29 May 2014 10:07:09 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Arnaldo Carvalho de Melo'" <acme@kernel.org>
+CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        =?Windows-1252?Q?Ondrej_B=EDlka?= <neleai@seznam.cz>,
+        Caitlin Bestler <caitlin.bestler@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Elie De Brauwer" <eliedebrauwer@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        "Steven Whitehouse" <steve@chygwyn.com>,
+        =?Windows-1252?Q?R=E9mi_Denis-Courmont?= 
+	<remi.denis-courmont@nokia.com>,
+        Paul Moore <paul@paul-moore.com>,
+        "Chris Friesen" <chris.friesen@windriver.com>
+Subject: RE: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
+Thread-Topic: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness
+ [RESEND]
+Thread-Index: AQHPeoaBBF42JoL2CUKh/KaMaW27r5tWGHxAgAA9vQCAAQahgIAAKLeAgAARU2A=
+Date: Thu, 29 May 2014 14:06:04 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724FC78@AcuExch.aculab.com>
+References: <20140526211706.GA25474@kernel.org> <5384BEC5.2080607@gmail.com>
+ <20140527192115.GD25474@kernel.org>
+ <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com>
+ <20140527203010.GA2764@kernel.org> <5385D47A.3070401@gmail.com>
+ <20140528150720.GB2764@kernel.org>
+ <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
+ <20140528195004.GD2764@kernel.org>
+ <063D6719AE5E284EB5DD2968C1650D6D1724FB67@AcuExch.aculab.com>
+ <20140529135547.GG2764@kernel.org>
+In-Reply-To: <20140529135547.GG2764@kernel.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow a clock to specify a "prerequisite" clock.  The prerequisite
-clock must be initialized before the clock that depends on it.  A
-prerequisite clock is defined initially by its name; as that clock
-gets initialized the name gets replaced with a pointer to its clock
-structure pointer.
+From: 'Arnaldo Carvalho de Melo'
+...
+> > I remember some discussions from an XNET standards meeting (I've forgotten
+> > exactly which errors on which calls were being discussed).
+> > My recollection is that you return success with a partial transfer
+> > count for ANY error that happens after some data has been transferred.
+> > The actual error will be returned when it happens again on the next
+> > system call - Note the AGAIN, not a saved error.
+> 
+> A saved error, for the right entity, in the recvmmsg case, that
+> basically is batching multiple recvmsg syscalls, doesn't sound like a
+> problem, i.e. the idea is to, as much as possible, mimic what multiple
+> recvmsg calls would do, but reduce its in/out kernel (and inside kernel
+> subsystems) overhead.
+> 
+> Perhaps we can have something in between, i.e. for things like EFAULT,
+> we should report straight away, effectively dropping whatever datagrams
+> successfully received in the current batch, do you agree?
 
-Rework the KONA_CLK() macro, and define a new KONA_CLK_PREREQ()
-variant that allows a prerequisite clock to be specified.
+Not unreasonable - EFAULT shouldn't happen unless the application
+is buggy.
 
-There exist clocks that could specify more than one prequisite, but
-almost all clocks only ever use one.  We can add support for more
-than one if we find we need it at some point.
+> For transient errors the existing mechanism, fixed so that only per
+> socket errors are saved for later, as today, could be kept?
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- drivers/clk/bcm/clk-kona.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/bcm/clk-kona.h | 19 ++++++++++++++++---
- 2 files changed, 61 insertions(+), 3 deletions(-)
+I don't think it is ever necessary to save an errno value for the
+next system call at all.
+Just process the next system call and see what happens.
 
-diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-index 9691b62..d08b3e9 100644
---- a/drivers/clk/bcm/clk-kona.c
-+++ b/drivers/clk/bcm/clk-kona.c
-@@ -1247,6 +1247,48 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
- 	return true;
- }
- 
-+static bool __kona_clk_init(struct kona_clk *bcm_clk);
-+static bool __kona_prereq_init(struct kona_clk *bcm_clk)
-+{
-+	struct clk *clk;
-+	struct clk_hw *hw;
-+	struct kona_clk *prereq;
-+
-+	BUG_ON(clk_is_initialized(bcm_clk));
-+
-+	if (!bcm_clk->p.prereq)
-+		return true;
-+
-+	clk = clk_get(NULL, bcm_clk->p.prereq);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: unable to get prereq clock %s for %s\n",
-+			__func__, bcm_clk->p.prereq, bcm_clk->init_data.name);
-+		return false;
-+	}
-+	hw = __clk_get_hw(clk);
-+	if (!hw) {
-+		pr_err("%s: null hw pointer for clock %s\n", __func__,
-+			bcm_clk->init_data.name);
-+		return false;
-+	}
-+	prereq = to_kona_clk(hw);
-+	if (prereq->ccu != bcm_clk->ccu) {
-+		pr_err("%s: prereq clock %s CCU different for clock %s\n",
-+			__func__, bcm_clk->p.prereq, bcm_clk->init_data.name);
-+		return false;
-+	}
-+
-+	/* Initialize the prerequisite clock first */
-+	if (!__kona_clk_init(prereq)) {
-+		pr_err("%s: failed to init prereq %s for clock %s\n",
-+			__func__, bcm_clk->p.prereq, bcm_clk->init_data.name);
-+		return false;
-+	}
-+	bcm_clk->p.prereq_clk = clk;
-+
-+	return true;
-+}
-+
- static bool __kona_clk_init(struct kona_clk *bcm_clk)
- {
- 	bool ret;
-@@ -1254,6 +1296,9 @@ static bool __kona_clk_init(struct kona_clk *bcm_clk)
- 	if (clk_is_initialized(bcm_clk))
- 		return true;
- 
-+	if (!__kona_prereq_init(bcm_clk))
-+		return false;
-+
- 	switch (bcm_clk->type) {
- 	case bcm_clk_peri:
- 		ret = __peri_clk_init(bcm_clk);
-diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
-index 10e238d..be00767 100644
---- a/drivers/clk/bcm/clk-kona.h
-+++ b/drivers/clk/bcm/clk-kona.h
-@@ -22,6 +22,8 @@
- #include <linux/device.h>
- #include <linux/of.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/debugfs.h>
- 
- #define	BILLION		1000000000
- 
-@@ -408,6 +410,10 @@ struct kona_clk {
- 	enum bcm_clk_type type;
- 	u32 flags;		/* BCM_CLK_KONA_FLAGS_* below */
- 	union {
-+		const char *prereq;
-+		struct clk *prereq_clk;
-+	} p;
-+	union {
- 		void *data;
- 		struct peri_clk_data *peri;
- 	} u;
-@@ -422,15 +428,22 @@ struct kona_clk {
- #define BCM_CLK_KONA_FLAGS_INITIALIZED	((u32)1 << 0)	/* Clock initialized */
- 
- /* Initialization macro for an entry in a CCU's kona_clks[] array. */
--#define KONA_CLK(_ccu_name, _clk_name, _type)				\
--	{								\
-+#define ___KONA_CLK_COMMON(_ccu_name, _clk_name, _type)			\
- 		.init_data	= {					\
- 			.name = #_clk_name,				\
- 			.ops = &kona_ ## _type ## _clk_ops,		\
- 		},							\
- 		.ccu		= &_ccu_name ## _ccu_data,		\
- 		.type		= bcm_clk_ ## _type,			\
--		.u.data		= &_clk_name ## _data,			\
-+		.u.data		= &_clk_name ## _data
-+#define KONA_CLK_PREREQ(_ccu_name, _clk_name, _type, _prereq)		\
-+	{								\
-+		.p.prereq	= #_prereq,				\
-+		___KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
-+	}
-+#define KONA_CLK(_ccu_name, _clk_name, _type)				\
-+	{								\
-+		___KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
- 	}
- #define LAST_KONA_CLK	{ .type = bcm_clk_none }
- 
--- 
-1.9.1
+If the call returns with less than the maximum number of datagrams
+and with a non-zero timeout left - then the application can infer
+that it was terminated by an abnormal event of some kind.
+This might be a signal.
+I'm not sure if an icmp error on a connected datagram socket could
+generate a 'disconnect'. It might happen if the interface is being
+used for something like SCTP.
+In either case the next call will detect the error.
+
+	David
+
+
 
