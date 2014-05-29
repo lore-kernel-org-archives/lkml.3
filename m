@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512AbaE2HEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:04:31 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:62947 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199AbaE2HEa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:04:30 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: fix 'make help' message error
-References: <1400993449-24094-1-git-send-email-nasa4836@gmail.com>
-Date: Thu, 29 May 2014 16:04:24 +0900
-In-Reply-To: <1400993449-24094-1-git-send-email-nasa4836@gmail.com> (Jianyu
-	Zhan's message of "Sun, 25 May 2014 12:50:49 +0800")
-Message-ID: <87sintf4lj.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756677AbaE2HEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:04:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20636 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756581AbaE2HEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 03:04:43 -0400
+Date: Thu, 29 May 2014 09:04:31 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Dongsu Park <dongsu.park@profitbricks.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] bio: decrease bi_iter.bi_size by len in the fail path
+Message-ID: <20140529070430.GA2602@dhcp-27-189.brq.redhat.com>
+References: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
+ <1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
+ <CACVXFVO6uW3KoVPoeb+O0txuY2Ji6BO1Sob1e-g7NmZBv9MPBQ@mail.gmail.com>
+ <CACVXFVNNc3dRshmMYNgS+pn54RC2dyQkJFOy1=HJdXfUfuhAMQ@mail.gmail.com>
+ <20140528172150.GA3261@dhcp-27-189.brq.redhat.com>
+ <CACVXFVPQR6xdzJxakPhA_rMiNyquooEGt_XS50-nZmyY0P+0CA@mail.gmail.com>
+ <5386CE5A.6070708@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5386CE5A.6070708@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jianyu,
+On Thu, May 29, 2014 at 02:06:18PM +0800, Jet Chen wrote:
+> This patch works, thanks.
+> 
+> Tested-by: Jet Chen <jet.chen@intel.com>
+> 
 
-On Sun, 25 May 2014 12:50:49 +0800, Jianyu Zhan wrote:
-> Currently 'make help' message has such hint:
->
->    use "make prefix=<path> <install target>" to install to a particular
->        path like make prefix=/usr/local install install-doc
->
-> But this is misleading, when I specify "prefix=/usr/local", it has got no
-> respect at all. Instead, what takes effect is the "DESTDIR" variable.
-> In this case, "DESTDIR" has a empty value, so the actual install
-> directory falls back $HOME, not '/usr/local'.
->
-> Specifying "DESTDIR=/usr/local" will work as desired.
->
-> This patch fixes the help message.
+> diff --git a/block/bio.c b/block/bio.c
+> index 0443694..f9bae56 100644
+> --- a/block/bio.c
+> +++ b/block/bio.c
+> @@ -744,6 +744,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  				}
+>  			}
+>  
+> +			bio->bi_iter.bi_size += len;
+>  			goto done;
+>  		}
+>  	}
+> @@ -761,6 +762,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  	bvec->bv_offset = offset;
+>  	bio->bi_vcnt++;
+>  	bio->bi_phys_segments++;
+> +	bio->bi_iter.bi_size += len;
+>  
+>  	/*
+>  	 * Perform a recount if the number of segments is greater
+> @@ -802,7 +804,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+>  
+>   done:
+> -	bio->bi_iter.bi_size += len;
+>  	return len;
+>  
+>   failed:
+> @@ -810,6 +811,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  	bvec->bv_len = 0;
+>  	bvec->bv_offset = 0;
+>  	bio->bi_vcnt--;
+> +	bio->bi_iter.bi_size -= len;
+>  	blk_recount_segments(q, bio);
+>  	return 0;
+>  }
 
-I don't know what's the correct way to do this.  But it seems like the
-prefix was overwritten when given from user, so below patch will work
-also.
+Good!
+
+Jens, can you review and merge it?
 
 Thanks,
-Namhyung
+Maurizio Lombardi
 
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 729bbdf5cec7..80a8a0a1c7e7 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -599,7 +599,7 @@ endif
- 
- # Make the path relative to DESTDIR, not to prefix
- ifndef DESTDIR
--prefix = $(HOME)
-+prefix ?= $(HOME)
- endif
- bindir_relative = bin
- bindir = $(prefix)/$(bindir_relative)
