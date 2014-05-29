@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605AbaE2Efd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57915 "EHLO
+	id S932863AbaE2EgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:36:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498AbaE2EfZ (ORCPT
+	with ESMTP id S932803AbaE2EgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:25 -0400
+	Thu, 29 May 2014 00:36:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Butler <pbutler@sonusnet.com>,
-        Dongsheng Song <dongsheng.song@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        =?UTF-8?q?Timo=20Ter=E4s?= <timo.teras@iki.fi>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 077/140] Revert "net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receivers buffer"
-Date: Wed, 28 May 2014 21:33:36 -0700
-Message-Id: <20140529043059.488404776@linuxfoundation.org>
+Subject: [PATCH 3.14 131/140] net: gro: make sure skb->cb[] initial content has not to be zero
+Date: Wed, 28 May 2014 21:34:30 -0700
+Message-Id: <20140529043106.210099864@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,311 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 362d52040c71f6e8d8158be48c812d7729cb8df1 ]
+[ Upstream commit 29e98242783ed3ba569797846a606ba66f781625 ]
 
-This reverts commit ef2820a735f7 ("net: sctp: Fix a_rwnd/rwnd management
-to reflect real state of the receiver's buffer") as it introduced a
-serious performance regression on SCTP over IPv4 and IPv6, though a not
-as dramatic on the latter. Measurements are on 10Gbit/s with ixgbe NICs.
+Starting from linux-3.13, GRO attempts to build full size skbs.
 
-Current state:
+Problem is the commit assumed one particular field in skb->cb[]
+was clean, but it is not the case on some stacked devices.
 
-[root@Lab200slot2 ~]# iperf3 --sctp -4 -c 192.168.241.3 -V -l 1452 -t 60
-iperf version 3.0.1 (10 January 2014)
-Linux Lab200slot2 3.14.0 #1 SMP Thu Apr 3 23:18:29 EDT 2014 x86_64
-Time: Fri, 11 Apr 2014 17:56:21 GMT
-Connecting to host 192.168.241.3, port 5201
-      Cookie: Lab200slot2.1397238981.812898.548918
-[  4] local 192.168.241.2 port 38616 connected to 192.168.241.3 port 5201
-Starting Test: protocol: SCTP, 1 streams, 1452 byte blocks, omitting 0 seconds, 60 second test
-[ ID] Interval           Transfer     Bandwidth
-[  4]   0.00-1.09   sec  20.8 MBytes   161 Mbits/sec
-[  4]   1.09-2.13   sec  10.8 MBytes  86.8 Mbits/sec
-[  4]   2.13-3.15   sec  3.57 MBytes  29.5 Mbits/sec
-[  4]   3.15-4.16   sec  4.33 MBytes  35.7 Mbits/sec
-[  4]   4.16-6.21   sec  10.4 MBytes  42.7 Mbits/sec
-[  4]   6.21-6.21   sec  0.00 Bytes    0.00 bits/sec
-[  4]   6.21-7.35   sec  34.6 MBytes   253 Mbits/sec
-[  4]   7.35-11.45  sec  22.0 MBytes  45.0 Mbits/sec
-[  4]  11.45-11.45  sec  0.00 Bytes    0.00 bits/sec
-[  4]  11.45-11.45  sec  0.00 Bytes    0.00 bits/sec
-[  4]  11.45-11.45  sec  0.00 Bytes    0.00 bits/sec
-[  4]  11.45-12.51  sec  16.0 MBytes   126 Mbits/sec
-[  4]  12.51-13.59  sec  20.3 MBytes   158 Mbits/sec
-[  4]  13.59-14.65  sec  13.4 MBytes   107 Mbits/sec
-[  4]  14.65-16.79  sec  33.3 MBytes   130 Mbits/sec
-[  4]  16.79-16.79  sec  0.00 Bytes    0.00 bits/sec
-[  4]  16.79-17.82  sec  5.94 MBytes  48.7 Mbits/sec
-(etc)
+Timo reported a crash in case traffic is decrypted before
+reaching a GRE device.
 
-[root@Lab200slot2 ~]#  iperf3 --sctp -6 -c 2001:db8:0:f101::1 -V -l 1400 -t 60
-iperf version 3.0.1 (10 January 2014)
-Linux Lab200slot2 3.14.0 #1 SMP Thu Apr 3 23:18:29 EDT 2014 x86_64
-Time: Fri, 11 Apr 2014 19:08:41 GMT
-Connecting to host 2001:db8:0:f101::1, port 5201
-      Cookie: Lab200slot2.1397243321.714295.2b3f7c
-[  4] local 2001:db8:0:f101::2 port 55804 connected to 2001:db8:0:f101::1 port 5201
-Starting Test: protocol: SCTP, 1 streams, 1400 byte blocks, omitting 0 seconds, 60 second test
-[ ID] Interval           Transfer     Bandwidth
-[  4]   0.00-1.00   sec   169 MBytes  1.42 Gbits/sec
-[  4]   1.00-2.00   sec   201 MBytes  1.69 Gbits/sec
-[  4]   2.00-3.00   sec   188 MBytes  1.58 Gbits/sec
-[  4]   3.00-4.00   sec   174 MBytes  1.46 Gbits/sec
-[  4]   4.00-5.00   sec   165 MBytes  1.39 Gbits/sec
-[  4]   5.00-6.00   sec   199 MBytes  1.67 Gbits/sec
-[  4]   6.00-7.00   sec   163 MBytes  1.36 Gbits/sec
-[  4]   7.00-8.00   sec   174 MBytes  1.46 Gbits/sec
-[  4]   8.00-9.00   sec   193 MBytes  1.62 Gbits/sec
-[  4]   9.00-10.00  sec   196 MBytes  1.65 Gbits/sec
-[  4]  10.00-11.00  sec   157 MBytes  1.31 Gbits/sec
-[  4]  11.00-12.00  sec   175 MBytes  1.47 Gbits/sec
-[  4]  12.00-13.00  sec   192 MBytes  1.61 Gbits/sec
-[  4]  13.00-14.00  sec   199 MBytes  1.67 Gbits/sec
-(etc)
+Fix this by initializing NAPI_GRO_CB(skb)->last at the right place,
+this also removes one conditional.
 
-After patch:
+Thanks a lot to Timo for providing full reports and bisecting this.
 
-[root@Lab200slot2 ~]#  iperf3 --sctp -4 -c 192.168.240.3 -V -l 1452 -t 60
-iperf version 3.0.1 (10 January 2014)
-Linux Lab200slot2 3.14.0+ #1 SMP Mon Apr 14 12:06:40 EDT 2014 x86_64
-Time: Mon, 14 Apr 2014 16:40:48 GMT
-Connecting to host 192.168.240.3, port 5201
-      Cookie: Lab200slot2.1397493648.413274.65e131
-[  4] local 192.168.240.2 port 50548 connected to 192.168.240.3 port 5201
-Starting Test: protocol: SCTP, 1 streams, 1452 byte blocks, omitting 0 seconds, 60 second test
-[ ID] Interval           Transfer     Bandwidth
-[  4]   0.00-1.00   sec   240 MBytes  2.02 Gbits/sec
-[  4]   1.00-2.00   sec   239 MBytes  2.01 Gbits/sec
-[  4]   2.00-3.00   sec   240 MBytes  2.01 Gbits/sec
-[  4]   3.00-4.00   sec   239 MBytes  2.00 Gbits/sec
-[  4]   4.00-5.00   sec   245 MBytes  2.05 Gbits/sec
-[  4]   5.00-6.00   sec   240 MBytes  2.01 Gbits/sec
-[  4]   6.00-7.00   sec   240 MBytes  2.02 Gbits/sec
-[  4]   7.00-8.00   sec   239 MBytes  2.01 Gbits/sec
-
-With the reverted patch applied, the SCTP/IPv4 performance is back
-to normal on latest upstream for IPv4 and IPv6 and has same throughput
-as 3.4.2 test kernel, steady and interval reports are smooth again.
-
-Fixes: ef2820a735f7 ("net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer")
-Reported-by: Peter Butler <pbutler@sonusnet.com>
-Reported-by: Dongsheng Song <dongsheng.song@gmail.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Tested-by: Peter Butler <pbutler@sonusnet.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
-Cc: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Fixes: 8a29111c7ca6 ("net: gro: allow to build full sized skb")
+Bisected-by: Timo Teras <timo.teras@iki.fi>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Timo Teräs <timo.teras@iki.fi>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/sctp/structs.h |   14 +++++++
- net/sctp/associola.c       |   82 +++++++++++++++++++++++++++++++++++----------
- net/sctp/sm_statefuns.c    |    2 -
- net/sctp/socket.c          |    6 +++
- net/sctp/ulpevent.c        |    8 +---
- 5 files changed, 87 insertions(+), 25 deletions(-)
+ net/core/dev.c    |    1 +
+ net/core/skbuff.c |    4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -1653,6 +1653,17 @@ struct sctp_association {
- 	/* This is the last advertised value of rwnd over a SACK chunk. */
- 	__u32 a_rwnd;
- 
-+	/* Number of bytes by which the rwnd has slopped.  The rwnd is allowed
-+	 * to slop over a maximum of the association's frag_point.
-+	 */
-+	__u32 rwnd_over;
-+
-+	/* Keeps treack of rwnd pressure.  This happens when we have
-+	 * a window, but not recevie buffer (i.e small packets).  This one
-+	 * is releases slowly (1 PMTU at a time ).
-+	 */
-+	__u32 rwnd_press;
-+
- 	/* This is the sndbuf size in use for the association.
- 	 * This corresponds to the sndbuf size for the association,
- 	 * as specified in the sk->sndbuf.
-@@ -1881,7 +1892,8 @@ void sctp_assoc_update(struct sctp_assoc
- __u32 sctp_association_get_next_tsn(struct sctp_association *);
- 
- void sctp_assoc_sync_pmtu(struct sock *, struct sctp_association *);
--void sctp_assoc_rwnd_update(struct sctp_association *, bool);
-+void sctp_assoc_rwnd_increase(struct sctp_association *, unsigned int);
-+void sctp_assoc_rwnd_decrease(struct sctp_association *, unsigned int);
- void sctp_assoc_set_primary(struct sctp_association *,
- 			    struct sctp_transport *);
- void sctp_assoc_del_nonprimary_peers(struct sctp_association *,
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1396,35 +1396,44 @@ static inline bool sctp_peer_needs_updat
- 	return false;
- }
- 
--/* Update asoc's rwnd for the approximated state in the buffer,
-- * and check whether SACK needs to be sent.
-- */
--void sctp_assoc_rwnd_update(struct sctp_association *asoc, bool update_peer)
-+/* Increase asoc's rwnd by len and send any window update SACK if needed. */
-+void sctp_assoc_rwnd_increase(struct sctp_association *asoc, unsigned int len)
- {
--	int rx_count;
- 	struct sctp_chunk *sack;
- 	struct timer_list *timer;
- 
--	if (asoc->ep->rcvbuf_policy)
--		rx_count = atomic_read(&asoc->rmem_alloc);
--	else
--		rx_count = atomic_read(&asoc->base.sk->sk_rmem_alloc);
-+	if (asoc->rwnd_over) {
-+		if (asoc->rwnd_over >= len) {
-+			asoc->rwnd_over -= len;
-+		} else {
-+			asoc->rwnd += (len - asoc->rwnd_over);
-+			asoc->rwnd_over = 0;
-+		}
-+	} else {
-+		asoc->rwnd += len;
-+	}
- 
--	if ((asoc->base.sk->sk_rcvbuf - rx_count) > 0)
--		asoc->rwnd = (asoc->base.sk->sk_rcvbuf - rx_count) >> 1;
--	else
--		asoc->rwnd = 0;
-+	/* If we had window pressure, start recovering it
-+	 * once our rwnd had reached the accumulated pressure
-+	 * threshold.  The idea is to recover slowly, but up
-+	 * to the initial advertised window.
-+	 */
-+	if (asoc->rwnd_press && asoc->rwnd >= asoc->rwnd_press) {
-+		int change = min(asoc->pathmtu, asoc->rwnd_press);
-+		asoc->rwnd += change;
-+		asoc->rwnd_press -= change;
-+	}
- 
--	pr_debug("%s: asoc:%p rwnd=%u, rx_count=%d, sk_rcvbuf=%d\n",
--		 __func__, asoc, asoc->rwnd, rx_count,
--		 asoc->base.sk->sk_rcvbuf);
-+	pr_debug("%s: asoc:%p rwnd increased by %d to (%u, %u) - %u\n",
-+		 __func__, asoc, len, asoc->rwnd, asoc->rwnd_over,
-+		 asoc->a_rwnd);
- 
- 	/* Send a window update SACK if the rwnd has increased by at least the
- 	 * minimum of the association's PMTU and half of the receive buffer.
- 	 * The algorithm used is similar to the one described in
- 	 * Section 4.2.3.3 of RFC 1122.
- 	 */
--	if (update_peer && sctp_peer_needs_update(asoc)) {
-+	if (sctp_peer_needs_update(asoc)) {
- 		asoc->a_rwnd = asoc->rwnd;
- 
- 		pr_debug("%s: sending window update SACK- asoc:%p rwnd:%u "
-@@ -1446,6 +1455,45 @@ void sctp_assoc_rwnd_update(struct sctp_
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3944,6 +3944,7 @@ static enum gro_result dev_gro_receive(s
  	}
- }
+ 	NAPI_GRO_CB(skb)->count = 1;
+ 	NAPI_GRO_CB(skb)->age = jiffies;
++	NAPI_GRO_CB(skb)->last = skb;
+ 	skb_shinfo(skb)->gso_size = skb_gro_len(skb);
+ 	skb->next = napi->gro_list;
+ 	napi->gro_list = skb;
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -3076,7 +3076,7 @@ int skb_gro_receive(struct sk_buff **hea
+ 	if (unlikely(p->len + len >= 65536))
+ 		return -E2BIG;
  
-+/* Decrease asoc's rwnd by len. */
-+void sctp_assoc_rwnd_decrease(struct sctp_association *asoc, unsigned int len)
-+{
-+	int rx_count;
-+	int over = 0;
-+
-+	if (unlikely(!asoc->rwnd || asoc->rwnd_over))
-+		pr_debug("%s: association:%p has asoc->rwnd:%u, "
-+			 "asoc->rwnd_over:%u!\n", __func__, asoc,
-+			 asoc->rwnd, asoc->rwnd_over);
-+
-+	if (asoc->ep->rcvbuf_policy)
-+		rx_count = atomic_read(&asoc->rmem_alloc);
-+	else
-+		rx_count = atomic_read(&asoc->base.sk->sk_rmem_alloc);
-+
-+	/* If we've reached or overflowed our receive buffer, announce
-+	 * a 0 rwnd if rwnd would still be positive.  Store the
-+	 * the potential pressure overflow so that the window can be restored
-+	 * back to original value.
-+	 */
-+	if (rx_count >= asoc->base.sk->sk_rcvbuf)
-+		over = 1;
-+
-+	if (asoc->rwnd >= len) {
-+		asoc->rwnd -= len;
-+		if (over) {
-+			asoc->rwnd_press += asoc->rwnd;
-+			asoc->rwnd = 0;
-+		}
-+	} else {
-+		asoc->rwnd_over = len - asoc->rwnd;
-+		asoc->rwnd = 0;
-+	}
-+
-+	pr_debug("%s: asoc:%p rwnd decreased by %d to (%u, %u, %u)\n",
-+		 __func__, asoc, len, asoc->rwnd, asoc->rwnd_over,
-+		 asoc->rwnd_press);
-+}
+-	lp = NAPI_GRO_CB(p)->last ?: p;
++	lp = NAPI_GRO_CB(p)->last;
+ 	pinfo = skb_shinfo(lp);
  
- /* Build the bind address list for the association based on info from the
-  * local endpoint and the remote peer.
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -6178,7 +6178,7 @@ static int sctp_eat_data(const struct sc
- 	 * PMTU.  In cases, such as loopback, this might be a rather
- 	 * large spill over.
- 	 */
--	if ((!chunk->data_accepted) && (!asoc->rwnd ||
-+	if ((!chunk->data_accepted) && (!asoc->rwnd || asoc->rwnd_over ||
- 	    (datalen > asoc->rwnd + asoc->frag_point))) {
+ 	if (headlen <= offset) {
+@@ -3192,7 +3192,7 @@ merge:
  
- 		/* If this is the next TSN, consider reneging to make
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -2115,6 +2115,12 @@ static int sctp_recvmsg(struct kiocb *io
- 		sctp_skb_pull(skb, copied);
- 		skb_queue_head(&sk->sk_receive_queue, skb);
+ 	__skb_pull(skb, offset);
  
-+		/* When only partial message is copied to the user, increase
-+		 * rwnd by that amount. If all the data in the skb is read,
-+		 * rwnd is updated when the event is freed.
-+		 */
-+		if (!sctp_ulpevent_is_notification(event))
-+			sctp_assoc_rwnd_increase(event->asoc, copied);
- 		goto out;
- 	} else if ((event->msg_flags & MSG_NOTIFICATION) ||
- 		   (event->msg_flags & MSG_EOR))
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -989,7 +989,7 @@ static void sctp_ulpevent_receive_data(s
- 	skb = sctp_event2skb(event);
- 	/* Set the owner and charge rwnd for bytes received.  */
- 	sctp_ulpevent_set_owner(event, asoc);
--	sctp_assoc_rwnd_update(asoc, false);
-+	sctp_assoc_rwnd_decrease(asoc, skb_headlen(skb));
- 
- 	if (!skb->data_len)
- 		return;
-@@ -1011,7 +1011,6 @@ static void sctp_ulpevent_release_data(s
- {
- 	struct sk_buff *skb, *frag;
- 	unsigned int	len;
--	struct sctp_association *asoc;
- 
- 	/* Current stack structures assume that the rcv buffer is
- 	 * per socket.   For UDP style sockets this is not true as
-@@ -1036,11 +1035,8 @@ static void sctp_ulpevent_release_data(s
- 	}
- 
- done:
--	asoc = event->asoc;
--	sctp_association_hold(asoc);
-+	sctp_assoc_rwnd_increase(event->asoc, len);
- 	sctp_ulpevent_release_owner(event);
--	sctp_assoc_rwnd_update(asoc, true);
--	sctp_association_put(asoc);
- }
- 
- static void sctp_ulpevent_release_frag_data(struct sctp_ulpevent *event)
+-	if (!NAPI_GRO_CB(p)->last)
++	if (NAPI_GRO_CB(p)->last == p)
+ 		skb_shinfo(p)->frag_list = skb;
+ 	else
+ 		NAPI_GRO_CB(p)->last->next = skb;
 
 
