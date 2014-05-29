@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaE2XM4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 19:12:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46245 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaE2XMz (ORCPT
+	id S1751986AbaE2XTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 19:19:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59281 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaE2XTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 19:12:55 -0400
-Date: Thu, 29 May 2014 16:12:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Li Zefan <lizefan@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
- allocations (v4)
-Message-Id: <20140529161253.73ff978f723972f503123fe8@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
-References: <20140523193706.GA22854@amt.cnet>
-	<20140526185344.GA19976@amt.cnet>
-	<53858A06.8080507@huawei.com>
-	<20140528224324.GA1132@amt.cnet>
-	<20140529184303.GA20571@amt.cnet>
-	<alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 May 2014 19:19:23 -0400
+Date: Fri, 30 May 2014 00:19:22 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kai <wildex999@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: BUG?: super.c:sget spin_lock not released?
+Message-ID: <20140529231921.GO18016@ZenIV.linux.org.uk>
+References: <CA+jWvaKyLPfFb6b-aGCz8RhCCcsSZ+kz5Co3xSKwPOhsguHFMA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+jWvaKyLPfFb6b-aGCz8RhCCcsSZ+kz5Co3xSKwPOhsguHFMA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014 16:01:55 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+On Fri, May 30, 2014 at 12:49:56AM +0200, Kai wrote:
+> Hello,
+> 
+> I have recently been playing around with writing a custom filesystem
+> for Linux, and have been reading the source of other filesystems, and
+> the functions they call into the linux kernel.
+> While looking at the function sget in super.c I found something strange.
+> 
+> before if(test) it takes a spinlock, however there seems to be two
+> cases where it does not unlock it.
+> (Kernel 3.14, super.c line 441)
+> 
+> One:
+> if(!grab_super(old)) goto retry;
+> Will jump to before spin_lock(), without releasing it first.
 
-> There are still three issues with this, two of which are only minor and 
-> one that needs more thought:
-> 
->  (1) this doesn't affect only cpusets which the changelog indicates, it 
->      also bypasses mempolicies for GFP_DMA and GFP_DMA32 allocations since
->      the nodemask != NULL in the page allocator when there is an effective
->      mempolicy.  That may be precisely what you're trying to do (do the
->      same for mempolicies as you're doing for cpusets), but the comment 
->      now in the code specifically refers to cpusets.  Can you make a case
->      for the mempolicies exception as well?  Otherwise, we'll need to do
-> 
-> 	if (!nodemask && gfp_zone(gfp_mask) < policy_zone)
-> 		nodemask = &node_states[N_ONLINE];
-> 
-> And the two minors:
-> 
->  (2) this should be &node_states[N_MEMORY], not &node_states[N_ONLINE] 
->      since memoryless nodes should not be included.  Note that
->      guarantee_online_mems() looks at N_MEMORY and
->      cpuset_current_mems_allowed is defined for N_MEMORY without
->      cpusets.
-> 
->  (3) it's unnecessary for this to be after the "retry_cpuset" label and
->      check the gfp mask again if we need to relook at the allowed cpuset
->      mask.
+Er...  So either grab_super() releases that spinlock, or that thing
+is screwed.  The next obvious step would be to look into grab_super()...
 
-OK, thanks, I made the patch go away for now.
+> Two:
+> And if it finds an old sb, it will return without releasing the lock.
+
+... unless something it calls does just that.
