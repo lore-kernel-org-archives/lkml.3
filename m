@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933864AbaE2ItP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:49:15 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:45239 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933449AbaE2ItI (ORCPT
+	id S932660AbaE2ItE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:49:04 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:50580 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932546AbaE2ItA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:49:08 -0400
+	Thu, 29 May 2014 04:49:00 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-serial@vger.kernel.org,
@@ -17,66 +17,49 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-serial@vger.kernel.org,
         Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Jiri Slaby <jslaby@suse.cz>,
         Dirk Behme <dirk.behme@de.bosch.com>
-Subject: [PATCH tty-next v2 4/4] serial: kgdb_nmi: Improve console integration with KDB I/O
-Date: Thu, 29 May 2014 09:48:46 +0100
-Message-Id: <1401353326-14148-5-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH tty-next v2 0/4] serial: kgdb_nmi: Allow ttyNMIX to act as primary console
+Date: Thu, 29 May 2014 09:48:42 +0100
+Message-Id: <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <20140528200344.GA2750@kroah.com>
 References: <20140528200344.GA2750@kroah.com>
- <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kgdb_nmi_tty_enabled is used for two unrelated purposes, namely to
-suppress normal TTY input handling and to suppress console output
-(although it has no effect at all on TTY output). A much better way to
-handle muting the console is to not have to mute it in the first place!
-That's what this patch does.
+This patchset contains a number of fixes to make it possible to use
+ttyNMIX as the primary console (providing you also have that the
+additional architecture specific code which is proposed in a 
+different patch set).
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- drivers/tty/serial/kgdb_nmi.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+The first patch fixes a bug in the cpm poll_put_char() driver. This
+is not strictly related to ttyNMIX but appears in this patch series
+for historical reasons (it was part of a patch that did impact ttyNMIX
+but most of that patch is already in the kernel thanks to an 
+independent patch from Doug Anderson).
 
-diff --git a/drivers/tty/serial/kgdb_nmi.c b/drivers/tty/serial/kgdb_nmi.c
-index 20d21d0..cfadf29 100644
---- a/drivers/tty/serial/kgdb_nmi.c
-+++ b/drivers/tty/serial/kgdb_nmi.c
-@@ -44,13 +44,22 @@ MODULE_PARM_DESC(magic, "magic sequence to enter NMI debugger (default $3#33)");
- 
- static bool kgdb_nmi_tty_enabled;
- 
-+static int kgdb_nmi_console_setup(struct console *co, char *options)
-+{
-+	/* The NMI console uses the dbg_io_ops to issue console messages. To
-+	 * avoid duplicate messages during kdb sessions we must inform kdb's
-+	 * I/O utilities that messages sent to the console will automatically
-+	 * be displayed on the dbg_io.
-+	 */
-+	dbg_io_ops->is_console = true;
-+
-+	return 0;
-+}
-+
- static void kgdb_nmi_console_write(struct console *co, const char *s, uint c)
- {
- 	int i;
- 
--	if (!kgdb_nmi_tty_enabled || atomic_read(&kgdb_active) >= 0)
--		return;
--
- 	for (i = 0; i < c; i++)
- 		dbg_io_ops->write_char(s[i]);
- }
-@@ -65,6 +74,7 @@ static struct tty_driver *kgdb_nmi_console_device(struct console *co, int *idx)
- 
- static struct console kgdb_nmi_console = {
- 	.name	= "ttyNMI",
-+	.setup  = kgdb_nmi_console_setup,
- 	.write	= kgdb_nmi_console_write,
- 	.device	= kgdb_nmi_console_device,
- 	.flags	= CON_PRINTBUFFER | CON_ANYTIME | CON_ENABLED,
+The remaining patches are specific to kgdb_nmi and have no effect on
+any other part of the kernel.
+
+The series has been runtime tested on ARM and compile tested on
+x86 and powerpc.
+
+Changes since v1:
+
+- Trimmed down the first patch to the remaining fragments as described 
+  above.
+- Rebased on tty-next as requested by Greg KH.
+
+Daniel Thompson (4):
+  serial: cpm_uart: No LF conversion in put_poll_char()
+  serial: kgdb_nmi: Use container_of() to locate private data
+  serial: kgdb_nmi: Switch from tasklets to real timers
+  serial: kgdb_nmi: Improve console integration with KDB I/O
+
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c |  8 ++--
+ drivers/tty/serial/kgdb_nmi.c               | 59 +++++++++++++----------------
+ 2 files changed, 31 insertions(+), 36 deletions(-)
+
 -- 
 1.9.0
 
