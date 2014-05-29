@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749AbaE2TYy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:24:54 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:54068 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaE2TYw (ORCPT
+	id S1755977AbaE2TYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:24:34 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:36034 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaE2TYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:24:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-Date: Thu, 29 May 2014 21:24:07 +0200
-Message-ID: <4755790.VgRQTHz3K1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53873F4A.9030303@ti.com>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <CACRpkdaD6ZLFu7-tOeDRvKCAC6X6_W84Vsqs1o-xUzUZOjyvFQ@mail.gmail.com> <53873F4A.9030303@ti.com>
+	Thu, 29 May 2014 15:24:32 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:dAsmmRUZCExuzHoOeVnYN7uM05eRh3Jpozby0GxHWGe
- Y/JIioD8NOwlYXLtOptdi0ce5Aph4QuYJ1d/BbbnmrhLrZaHfB
- GFaHz3/WNxggziZiUBHlOkyad+9TwKvA1rA4//yo+OoGayFy6a
- PbWooYQks1sz5lM1hDwIIuJy2ErjdA3MgK4tgQQq2AFrC53Wm+
- /DyhaWRNdd7MjkmlfAYTt+PIUL8Po8fpg7zvKVWXgwA+PO7g5O
- mmEzW/rjkIbiOcmW6tyG9KMCGLsUJzcmp9BQPe+o2cQB7FQfbX
- iS5aml4cqF3T+4TBTUyj5YIlFuBAP3ybaXVqXcWcR0fvNJvndx
- Z6ZDLeCsehS+KpVaAKcQ=
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <32659.1401391220@warthog.procyon.org.uk>
+References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
+	<28592.1401382081@warthog.procyon.org.uk>
+	<CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com>
+	<29026.1401383705@warthog.procyon.org.uk>
+	<CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com>
+	<29191.1401384252@warthog.procyon.org.uk>
+	<CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com>
+	<29410.1401385296@warthog.procyon.org.uk>
+	<CA+icZUU-BcgbZ2b0-Nbu=9g57c5WTJV3Him29cDnpuOp5W62Sw@mail.gmail.com>
+	<31766.1401387746@warthog.procyon.org.uk>
+	<CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com>
+	<CA+icZUWo9eD=0KqVapZ_2vWZfWrrSWauaXMRNvkmdy+4cXgAig@mail.gmail.com>
+	<32659.1401391220@warthog.procyon.org.uk>
+Date: Thu, 29 May 2014 21:24:31 +0200
+Message-ID: <CA+icZUUS-cgeogyR7h_bFhe2YCiNB+sLZy1E5VcceQeS_Jkxpg@mail.gmail.com>
+Subject: Re: Unionmount and overlayfs testsuite
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
+        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 May 2014 10:08:10 Santosh Shilimkar wrote:
-> On Thursday 29 May 2014 10:01 AM, Linus Walleij wrote:
-> > On Wed, May 28, 2014 at 4:04 PM, Santosh Shilimkar
-> > <santosh.shilimkar@ti.com> wrote:
-> >> On Wednesday 28 May 2014 09:32 AM, Linus Walleij wrote:
-> > 
-> >>>> I suspect what you want is
-> >>>>
-> >>>>         dma-ranges = <0x80000000 0 0x80000000>;
-> >>>>
-> >>>> to translate dma_addr_t 0x80000000-0xffffffff to phys_addr_t 0x0-0x7fffffff
-> >>>> rather than phys_addr_t 0x800000000-0x87fffffff.
-> >>>
-> >> Interesting. Where does the ROM address space resides on integrator then considering
-> >> address 0 is used for DMA.
-> > 
-> > The ROM is at physical address 0x20000000, don't ask me
-> > why 
-> > 
-> > The RAM is typically at 0x00000000-0x0fffffff, on up to four parallell
-> > tiles, i.e. up to four completely independent CPUs are booted off the
-> > same ROM and using a set of shared peripherals.
-> > 
-> The reason I asked the question because most of the ARM SOC I came across
-> aren't using the RAM phys address 0 and thought was because of boot architecture
-> with ROM occupying that address with reset vector starting at address 0.
-> 
-> That was one of the main reason we had description on max_*pfn on ARM w.r.t
-> to other acrhes.
-> 
-> Will corner ARM guys to understand bit more about it in some conference 
+On Thu, May 29, 2014 at 9:20 PM, David Howells <dhowells@redhat.com> wrote:
+> Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>
+>> Hmm, why is the generated binary callled "open-file" and in the
+>> scripts I see "open_file"?
+>
+> grep is your friend:-)  Look in tool_box.inc
+>
 
-If this is anything like the versatile express, the reason it works is probably
-because there is another microcontroller in the system that does the bootstrap
-and is able to load code into RAM before turning on the main CPU.
+I resetted to origin/HEAD and still get...
 
-	Arnd
+# LC_ALL=C TEST_OVERLAYFS=1 ./run.sh
+***
+*** ./run.sh open-plain.test
+***
+TEST100: Open O_RDONLY
+ - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
+ - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
+TEST101: Open O_WRONLY
+ - open_file -w /mnt/a/foo101 -W q
+/mnt/a/foo101: Test file not on upper filesystem  (line 30)
+
+- Sedat -
