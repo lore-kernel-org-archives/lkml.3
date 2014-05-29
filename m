@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347AbaE2Iem (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:34:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60731 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaE2Iei (ORCPT
+	id S932805AbaE2IhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:37:20 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:33798 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756551AbaE2IhQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:34:38 -0400
-Message-ID: <5386F0FE.7040003@ti.com>
-Date: Thu, 29 May 2014 14:04:06 +0530
-From: Satish Patel <satish.patel@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 29 May 2014 04:37:16 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Joe Perches'" <joe@perches.com>, Cody P Schafer <dev@codyps.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: RE: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
+ le}_to_cpu() and cpu_to_{be, le}() macros
+Thread-Topic: [PATCH 11/16] byteorder: provide a linux/byteorder.h with {be,
+ le}_to_cpu() and cpu_to_{be, le}() macros
+Thread-Index: AQHPehtRSTTppVgBd0OVC+FRTYrw6JtVrLPQgADQNQCAAAHCgIAADZSAgACwchA=
+Date: Thu, 29 May 2014 08:36:11 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1724FA5C@AcuExch.aculab.com>
+References: <1401236684-10579-1-git-send-email-dev@codyps.com>
+	 <1401236684-10579-12-git-send-email-dev@codyps.com>
+	 <063D6719AE5E284EB5DD2968C1650D6D1724EEAF@AcuExch.aculab.com>
+	 <CAPoQQ-17OHotfbczJvEoq=vAzu_+6-sV3M1ZAhDaQ45wB3NB4A@mail.gmail.com>
+	 <CAPoQQ-11vW3Q0=LcS-myNZ6hXeYBeu==_prwHJXHvLfkUSmZHQ@mail.gmail.com>
+ <1401318025.19335.15.camel@joe-AO725>
+In-Reply-To: <1401318025.19335.15.camel@joe-AO725>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <rob@landley.net>, <tony@atomide.com>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>
-Subject: Re: [PATCH v3 1/5] sc_phy:SmartCard(SC) PHY interface to SC controller
-References: <1401267437-22489-1-git-send-email-satish.patel@ti.com> <1401267437-22489-2-git-send-email-satish.patel@ti.com> <20140528185334.GA30763@kroah.com>
-In-Reply-To: <20140528185334.GA30763@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Joe Perches
+> On Wed, 2014-05-28 at 17:11 -0500, Cody P Schafer wrote:
+> > On Wed, May 28, 2014 at 5:05 PM, Cody P Schafer <dev@codyps.com> wrote:
+> > > On Wed, May 28, 2014 at 3:45 AM, David Laight <David.Laight@aculab.com> wrote:
+> > >> From: Cody P Schafer
+> > >>> Rather manually specifying the size of the integer to be converted, key
+> > >>> off of the type size. Reduces duplicate size info and the occurance of
+> > >>> certain types of bugs (using the wrong sized conversion).
+> > >> ...
+> > >>> +#define be_to_cpu(v) \
+> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint8_t) , v, \
+> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint16_t), be16_to_cpu(v), \
+> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint32_t), be32_to_cpu(v), \
+> > >>> +     __builtin_choose_expr(sizeof(v) == sizeof(uint64_t), be64_to_cpu(v), \
+> > >>> +             (void)0))))
+> > >> ...
+> > >>
+> > >> I'm not at all sure that using the 'size' of the constant will reduce
+> > >> the number of bugs - it just introduces a whole new category of bugs.
+> > >
+> > > Certainly, if you mis-size the argument (and thus have missized one of
+> > > the variables containing the be value, probably a bug anyhow), there
+> > > will be problems.
+> > >
+> > > I put this interface together because of an actual bug I wrote into
+> > > the initial code of the hv_24x7 driver (resized a struct member
+> > > without adjusting the be*_to_cpu() sizing).
+> > > Having this "auto sizing" macro means I can avoid encoding the size of
+> > > a struct field in multiple places.
+> >
+> > To clarify, the point I'm making here is that this simply cuts out 1
+> > more place we can screw up endianness conversion sizing.
+> 
+> It does screw up other types when you do things like:
+> 
+> 	u8 foo = some_function();
+> 
+> 	cpu_to_be(foo + 1);
+> 
+> the return value is sizeof(int) not u8
+
+And you'd have to be very, very careful with constants:
+#define SOME_CONST xxxxx
+	cp_to_be(SOME_CONST)
+isn't likely to be the right size.
+
+	David
 
 
-On 5/29/2014 12:23 AM, Greg KH wrote:
-> On Wed, May 28, 2014 at 02:27:13PM +0530, Satish Patel wrote:
->> SmartCard controller uses this interface to communicate with
->> SmartCard via PHY
->>
->> Some SmartCard PHY has multiple slots for cards.
->> This inerface also enables controller to communicate
->> with one or more SmartCard connected over phy.
->>
->> interface structure includes following APIs
->> - set/get config
->> - activate/deactivate smart card
->> - warm reset
->> - register_notify (for card insert/remove/overheat)
->> - unregister_notify
->>
->> Signed-off-by: Satish Patel <satish.patel@ti.com>
->> ---
->>   Documentation/sc_phy.txt |  171 ++++++++++++++++++++++++++++++++++++++++++++++
->>   include/linux/sc_phy.h   |  136 ++++++++++++++++++++++++++++++++++++
->>   2 files changed, 307 insertions(+)
->>   create mode 100644 Documentation/sc_phy.txt
->>   create mode 100644 include/linux/sc_phy.h
->
-> These are .h files, but where is the "api" functions that use
-> these structures defined at?
->
-This is like template/wrappers, smart card phy driver will write API 
-functions. And smartcard controller will call these functions.
-With proposed approach, smartcard controller can communicate with any 
-smart card phy (TI/NxP) without change in code. Using DT entry smartcard 
-and PHY will gets connected with each other.
-Refer diagram given @Documentation/sc_phy.txt.
 
-
-> confused,
->
-> greg k-h
->
