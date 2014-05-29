@@ -1,443 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315AbaE2V1U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:27:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18843 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932432AbaE2VYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:24:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,936,1392192000"; 
-   d="scan'208";a="519900266"
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [PATCH char-misc-next v2 2/8] misc: mic: add a bus driver for virtual MIC devices
-Date: Thu, 29 May 2014 14:23:59 -0700
-Message-Id: <6e4394a52ccac7bbd16450ace82b2c1a118440e0.1401397315.git.sudeep.dutt@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1401397315.git.sudeep.dutt@intel.com>
-References: <cover.1401397315.git.sudeep.dutt@intel.com>
-In-Reply-To: <cover.1401397315.git.sudeep.dutt@intel.com>
-References: <cover.1401397315.git.sudeep.dutt@intel.com>
+	id S932432AbaE2V16 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:27:58 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:58785 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801AbaE2V1z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 17:27:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140529210708.GA26023@roeck-us.net>
+References: <20140529043049.661315084@linuxfoundation.org>
+	<53874CE2.2010701@roeck-us.net>
+	<20140529182109.GA10142@kroah.com>
+	<20140529210708.GA26023@roeck-us.net>
+Date: Thu, 29 May 2014 14:27:54 -0700
+X-Google-Sender-Auth: o32PbhEXojVePU05yMIGA12DZUY
+Message-ID: <CA+55aFws44CBn4SOBdxrQ8T6kt6xXL3wFi-JNvW6fUPBWAxA=g@mail.gmail.com>
+Subject: Re: [PATCH 3.14 000/140] 3.14.5-stable review
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>, Michal Marek <mmarek@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, satoru.takeuchi@gmail.com,
+        Shuah Khan <shuah.kh@samsung.com>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This MIC virtual bus driver takes the responsibility of creating all
-the virtual devices connected to the PCIe device on the host and the
-platform device on the card. The MIC bus hardware operations provide
-a way to abstract certain hardware details from the base physical devices.
-Examples of devices added on the MIC virtual bus include host DMA and card DMA.
-This abstraction enables using a common DMA driver on host and card.
+On Thu, May 29, 2014 at 2:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Thu, May 29, 2014 at 11:21:09AM -0700, Greg Kroah-Hartman wrote:
+>> On Thu, May 29, 2014 at 08:06:10AM -0700, Guenter Roeck wrote:
+>> >
+>> > alpha:defconfig                     - Fails with 'Inconsistent kallsyms data'. New failure; need to debug.
+>> >
+>> > Bisect points to commit 'vlan: Fix lockdep warning with stacked vlan devices' as culprit
+>> > for the alpha:defconfig build failure. Reverting this patch fixes the problem.
+>> > I looked at the patch, but I have no idea what may cause the failure.
+>>
+>> Odd.  Is this also broken in Linus's tree?
+>>
+> Agreed, it is odd. As I said, not idea what is causing this.
+> v3.15-rc7 is fine.
 
-Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Siva Yerramreddy <yshivakrishna@gmail.com>
----
- drivers/misc/mic/Kconfig       |  17 ++++
- drivers/misc/mic/Makefile      |   1 +
- drivers/misc/mic/bus/Makefile  |   5 +
- drivers/misc/mic/bus/mic_bus.c | 219 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mic_bus.h        | 112 +++++++++++++++++++++
- 5 files changed, 354 insertions(+)
- create mode 100644 drivers/misc/mic/bus/Makefile
- create mode 100644 drivers/misc/mic/bus/mic_bus.c
- create mode 100644 include/linux/mic_bus.h
+The bisection is almost certainly bogus, and this 'inconsistent
+kallsyms data' issue is not new. I thought we fixed it, but it's
+possible that there are alpha-specific issues and/or that it depends
+on binutils versions.
 
-diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
-index 462a5b1..ee1d2ac 100644
---- a/drivers/misc/mic/Kconfig
-+++ b/drivers/misc/mic/Kconfig
-@@ -1,3 +1,20 @@
-+comment "Intel MIC Bus Driver"
-+
-+config INTEL_MIC_BUS
-+	tristate "Intel MIC Bus Driver"
-+	depends on 64BIT && PCI && X86 && X86_DEV_DMA_OPS
-+	help
-+	  This option is selected by any driver which registers a
-+	  device or driver on the MIC Bus, such as CONFIG_INTEL_MIC_HOST,
-+	  CONFIG_INTEL_MIC_CARD, CONFIG_INTEL_MIC_X100_DMA etc.
-+
-+	  If you are building a host/card kernel with an Intel MIC device
-+	  then say M (recommended) or Y, else say N. If unsure say N.
-+
-+	  More information about the Intel MIC family as well as the Linux
-+	  OS and tools for MIC to use with this driver are available from
-+	  <http://software.intel.com/en-us/mic-developer>.
-+
- comment "Intel MIC Host Driver"
- 
- config INTEL_MIC_HOST
-diff --git a/drivers/misc/mic/Makefile b/drivers/misc/mic/Makefile
-index 05b34d6..e9bf148 100644
---- a/drivers/misc/mic/Makefile
-+++ b/drivers/misc/mic/Makefile
-@@ -4,3 +4,4 @@
- #
- obj-$(CONFIG_INTEL_MIC_HOST) += host/
- obj-$(CONFIG_INTEL_MIC_CARD) += card/
-+obj-$(CONFIG_INTEL_MIC_BUS) += bus/
-diff --git a/drivers/misc/mic/bus/Makefile b/drivers/misc/mic/bus/Makefile
-new file mode 100644
-index 0000000..d85c7f2
---- /dev/null
-+++ b/drivers/misc/mic/bus/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile - Intel MIC Linux driver.
-+# Copyright(c) 2014, Intel Corporation.
-+#
-+obj-$(CONFIG_INTEL_MIC_BUS) += mic_bus.o
-diff --git a/drivers/misc/mic/bus/mic_bus.c b/drivers/misc/mic/bus/mic_bus.c
-new file mode 100644
-index 0000000..36d1233
---- /dev/null
-+++ b/drivers/misc/mic/bus/mic_bus.c
-@@ -0,0 +1,219 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * The full GNU General Public License is included in this distribution in
-+ * the file called "COPYING".
-+ *
-+ * Intel MIC Bus driver.
-+ *
-+ * This implementation is very similar to the the virtio bus driver
-+ * implementation @ drivers/virtio/virtio.c
-+ */
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/idr.h>
-+#include <linux/mic_bus.h>
-+
-+/* Unique numbering for mbus devices. */
-+static DEFINE_IDA(mbus_index_ida);
-+
-+static ssize_t device_show(struct device *d,
-+			   struct device_attribute *attr, char *buf)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	return sprintf(buf, "0x%04x\n", dev->id.device);
-+}
-+static DEVICE_ATTR_RO(device);
-+
-+static ssize_t vendor_show(struct device *d,
-+			   struct device_attribute *attr, char *buf)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	return sprintf(buf, "0x%04x\n", dev->id.vendor);
-+}
-+static DEVICE_ATTR_RO(vendor);
-+
-+static ssize_t modalias_show(struct device *d,
-+			     struct device_attribute *attr, char *buf)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	return sprintf(buf, "mbus:d%08Xv%08X\n",
-+		       dev->id.device, dev->id.vendor);
-+}
-+static DEVICE_ATTR_RO(modalias);
-+
-+static struct attribute *mbus_dev_attrs[] = {
-+	&dev_attr_device.attr,
-+	&dev_attr_vendor.attr,
-+	&dev_attr_modalias.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(mbus_dev);
-+
-+static inline int mbus_id_match(const struct mbus_device *dev,
-+				const struct mbus_device_id *id)
-+{
-+	if (id->device != dev->id.device && id->device != MBUS_DEV_ANY_ID)
-+		return 0;
-+
-+	return id->vendor == MBUS_DEV_ANY_ID || id->vendor == dev->id.vendor;
-+}
-+
-+/*
-+ * This looks through all the IDs a driver claims to support.  If any of them
-+ * match, we return 1 and the kernel will call mbus_dev_probe().
-+ */
-+static int mbus_dev_match(struct device *dv, struct device_driver *dr)
-+{
-+	unsigned int i;
-+	struct mbus_device *dev = dev_to_mbus(dv);
-+	const struct mbus_device_id *ids;
-+
-+	ids = drv_to_mbus(dr)->id_table;
-+	for (i = 0; ids[i].device; i++)
-+		if (mbus_id_match(dev, &ids[i]))
-+			return 1;
-+	return 0;
-+}
-+
-+static int mbus_uevent(struct device *dv, struct kobj_uevent_env *env)
-+{
-+	struct mbus_device *dev = dev_to_mbus(dv);
-+
-+	return add_uevent_var(env, "MODALIAS=mbus:d%08Xv%08X",
-+			      dev->id.device, dev->id.vendor);
-+}
-+
-+static int mbus_dev_probe(struct device *d)
-+{
-+	int err;
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	struct mbus_driver *drv = drv_to_mbus(dev->dev.driver);
-+
-+	err = drv->probe(dev);
-+	if (!err)
-+		if (drv->scan)
-+			drv->scan(dev);
-+	return err;
-+}
-+
-+static int mbus_dev_remove(struct device *d)
-+{
-+	struct mbus_device *dev = dev_to_mbus(d);
-+	struct mbus_driver *drv = drv_to_mbus(dev->dev.driver);
-+
-+	drv->remove(dev);
-+	return 0;
-+}
-+
-+static struct bus_type mic_bus = {
-+	.name  = "mic_bus",
-+	.match = mbus_dev_match,
-+	.dev_groups = mbus_dev_groups,
-+	.uevent = mbus_uevent,
-+	.probe = mbus_dev_probe,
-+	.remove = mbus_dev_remove,
-+};
-+
-+int mbus_register_driver(struct mbus_driver *driver)
-+{
-+	driver->driver.bus = &mic_bus;
-+	return driver_register(&driver->driver);
-+}
-+EXPORT_SYMBOL_GPL(mbus_register_driver);
-+
-+void mbus_unregister_driver(struct mbus_driver *driver)
-+{
-+	driver_unregister(&driver->driver);
-+}
-+EXPORT_SYMBOL_GPL(mbus_unregister_driver);
-+
-+static void mbus_release_dev(struct device *d)
-+{
-+	struct mbus_device *mbdev = dev_to_mbus(d);
-+	kfree(mbdev);
-+}
-+
-+struct mbus_device *
-+mbus_register_device(struct device *pdev, int id, struct dma_map_ops *dma_ops,
-+		     struct mbus_hw_ops *hw_ops, void __iomem *mmio_va)
-+{
-+	int ret;
-+	struct mbus_device *mbdev;
-+
-+	mbdev = kzalloc(sizeof(*mbdev), GFP_KERNEL);
-+	if (!mbdev)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mbdev->mmio_va = mmio_va;
-+	mbdev->dev.parent = pdev;
-+	mbdev->id.device = id;
-+	mbdev->id.vendor = MBUS_DEV_ANY_ID;
-+	mbdev->dev.archdata.dma_ops = dma_ops;
-+	mbdev->dev.dma_mask = &mbdev->dev.coherent_dma_mask;
-+	dma_set_mask(&mbdev->dev, DMA_BIT_MASK(64));
-+	mbdev->dev.release = mbus_release_dev;
-+	mbdev->hw_ops = hw_ops;
-+	dev_set_drvdata(&mbdev->dev, mbdev);
-+	mbdev->dev.bus = &mic_bus;
-+
-+	/* Assign a unique device index and hence name. */
-+	ret = ida_simple_get(&mbus_index_ida, 0, 0, GFP_KERNEL);
-+	if (ret < 0)
-+		goto free_mbdev;
-+
-+	mbdev->index = ret;
-+	dev_set_name(&mbdev->dev, "mbus-dev%u", mbdev->index);
-+	/*
-+	 * device_register() causes the bus infrastructure to look for a
-+	 * matching driver.
-+	 */
-+	ret = device_register(&mbdev->dev);
-+	if (ret)
-+		goto ida_remove;
-+	return mbdev;
-+ida_remove:
-+	ida_simple_remove(&mbus_index_ida, mbdev->index);
-+free_mbdev:
-+	kfree(mbdev);
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(mbus_register_device);
-+
-+void mbus_unregister_device(struct mbus_device *mbdev)
-+{
-+	int index = mbdev->index; /* save for after device release */
-+
-+	device_unregister(&mbdev->dev);
-+	ida_simple_remove(&mbus_index_ida, index);
-+}
-+EXPORT_SYMBOL_GPL(mbus_unregister_device);
-+
-+static int __init mbus_init(void)
-+{
-+	return bus_register(&mic_bus);
-+}
-+
-+static void __exit mbus_exit(void)
-+{
-+	bus_unregister(&mic_bus);
-+	ida_destroy(&mbus_index_ida);
-+}
-+
-+core_initcall(mbus_init);
-+module_exit(mbus_exit);
-+
-+MODULE_AUTHOR("Intel Corporation");
-+MODULE_DESCRIPTION("Intel(R) MIC Bus driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mic_bus.h b/include/linux/mic_bus.h
-new file mode 100644
-index 0000000..74b6b82
---- /dev/null
-+++ b/include/linux/mic_bus.h
-@@ -0,0 +1,112 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * The full GNU General Public License is included in this distribution in
-+ * the file called "COPYING".
-+ *
-+ * Intel MIC Bus driver.
-+ *
-+ * This implementation is very similar to the the virtio bus driver
-+ * implementation @ include/linux/virtio.h.
-+ */
-+#ifndef _MIC_BUS_H_
-+#define _MIC_BUS_H_
-+/*
-+ * Everything a mbus driver needs to work with any particular mbus
-+ * implementation.
-+ */
-+#include <linux/interrupt.h>
-+#include <linux/dma-mapping.h>
-+
-+struct mbus_device_id {
-+	__u32 device;
-+	__u32 vendor;
-+};
-+
-+#define MBUS_DEV_DMA_HOST 2
-+#define MBUS_DEV_DMA_MIC 3
-+#define MBUS_DEV_ANY_ID 0xffffffff
-+
-+/**
-+ * mbus_device - representation of a device using mbus
-+ * @priv: private pointer for the driver's use.
-+ * @mmio_va: virtual address of mmio space
-+ * @hw_ops: the hardware ops supported by this device.
-+ * @id: the device type identification (used to match it with a driver).
-+ * @dev: underlying device.
-+ * be used to communicate with.
-+ * @index: unique position on the mbus bus
-+ */
-+struct mbus_device {
-+	void *priv;
-+	void __iomem *mmio_va;
-+	struct mbus_hw_ops *hw_ops;
-+	struct mbus_device_id id;
-+	struct device dev;
-+	int index;
-+};
-+
-+/**
-+ * mbus_driver - operations for a mbus I/O driver
-+ * @driver: underlying device driver (populate name and owner).
-+ * @id_table: the ids serviced by this driver.
-+ * @probe: the function to call when a device is found.  Returns 0 or -errno.
-+ * @remove: the function to call when a device is removed.
-+ */
-+struct mbus_driver {
-+	struct device_driver driver;
-+	const struct mbus_device_id *id_table;
-+	int (*probe)(struct mbus_device *dev);
-+	void (*scan)(struct mbus_device *dev);
-+	void (*remove)(struct mbus_device *dev);
-+};
-+
-+/**
-+ * struct mic_irq - opaque pointer used as cookie
-+ */
-+struct mic_irq;
-+
-+/**
-+ * mbus_hw_ops - Hardware operations for accessing a MIC device on the MIC bus.
-+ */
-+struct mbus_hw_ops {
-+	struct mic_irq* (*request_threaded_irq)(struct mbus_device *mbdev,
-+						irq_handler_t handler,
-+						irq_handler_t thread_fn,
-+						const char *name, void *data,
-+						int intr_src);
-+	void (*free_irq)(struct mbus_device *mbdev,
-+			 struct mic_irq *cookie, void *data);
-+	void (*ack_interrupt)(struct mbus_device *mbdev, int num);
-+};
-+
-+struct mbus_device *
-+mbus_register_device(struct device *pdev, int id, struct dma_map_ops *dma_ops,
-+		     struct mbus_hw_ops *hw_ops, void __iomem *mmio_va);
-+void mbus_unregister_device(struct mbus_device *mbdev);
-+
-+int mbus_register_driver(struct mbus_driver *drv);
-+void mbus_unregister_driver(struct mbus_driver *drv);
-+
-+static inline struct mbus_device *dev_to_mbus(struct device *_dev)
-+{
-+	return container_of(_dev, struct mbus_device, dev);
-+}
-+
-+static inline struct mbus_driver *drv_to_mbus(struct device_driver *drv)
-+{
-+	return container_of(drv, struct mbus_driver, driver);
-+}
-+
-+#endif /* _MIC_BUS_H */
--- 
-1.8.2.1
+In particular, when we've seen it in the past, it has depended on
+exact alignment of code or data, which is why random changes
+(particularly to percpu data) can seem to trigger it. Basically, two
+symbols getting the same address and then being sorted differently by
+'nm' or similar.
 
+See for example
+
+  http://marc.info/?l=linux-next&m=133267456809502&w=2
+
+where it hits ARM and rmk actually debugged that particular case.
+
+Adding Michal to the cc, because I have a dim memory of this being
+fixed, but I can't remember how. I hope Michal does.. Or maybe the
+fact that alpha is hit by this just means that I mis-remember.
+
+               Linus
