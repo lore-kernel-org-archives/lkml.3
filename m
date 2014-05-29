@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236AbaE2HUt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:20:49 -0400
-Received: from skprod3.natinst.com ([130.164.80.24]:49121 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933066AbaE2HUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:20:31 -0400
-X-Greylist: delayed 1714 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 May 2014 03:20:31 EDT
-From: Vicentiu Neagoe <vicentiu.neagoe@ni.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Westfahl <jeff.westfahl@ni.com>
-Subject: [PATCH] usb: gadget: u_ether: synchronize with transmit when stopping queue
-Date: Thu, 29 May 2014 09:49:41 +0300
-Message-Id: <1401346181-13119-1-git-send-email-vicentiu.neagoe@ni.com>
-X-Mailer: git-send-email 1.7.9.5
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 05/29/2014 01:51:51 AM,
-	Serialize by Router on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 05/29/2014 01:51:51 AM,
-	Serialize complete at 05/29/2014 01:51:51 AM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-29_02:2014-05-28,2014-05-29,1970-01-01 signatures=0
+	id S933339AbaE2HVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:21:06 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:33165 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933066AbaE2HVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 03:21:04 -0400
+Subject: [PATCH] mm: make try_to_unmap_one static and cleanup ttu_flags
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 29 May 2014 11:20:54 +0400
+Message-ID: <20140529072054.12187.36670.stgit@zurg>
+User-Agent: StGit/0.17.1-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Westfahl <jeff.westfahl@ni.com>
+Nowdays try_to_unmap_one() is used only inside mm/rmap.c, this patch makes it
+static. Also it transforms action part of ttu_flags into individiual bits.
+These flags aren't part of any uses-space visible api or even trace events.
 
-When disconnecting, it's possible that another thread has already made it
-into eth_start_xmit before we call netif_stop_queue. This can lead to a
-crash as eth_start_xmit tries to use resources that gether_disconnect is
-freeing. Use netif_tx_lock/unlock around netif_stop_queue to ensure no
-threads are executing during the remainder of gether_disconnect.
-
-Signed-off-by: Jeff Westfahl <jeff.westfahl@ni.com>
-Tested-by: Jaeden Amero <jaeden.amero@ni.com>
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
 ---
- drivers/usb/gadget/u_ether.c |    3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/rmap.h |   11 +++--------
+ mm/rmap.c            |   14 +++++++-------
+ 2 files changed, 10 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
-index b7d4f82..085a76e 100644
---- a/drivers/usb/gadget/u_ether.c
-+++ b/drivers/usb/gadget/u_ether.c
-@@ -1120,7 +1120,10 @@ void gether_disconnect(struct gether *link)
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index b66c211..1960daa 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -72,10 +72,9 @@ struct anon_vma_chain {
+ };
  
- 	DBG(dev, "%s\n", __func__);
+ enum ttu_flags {
+-	TTU_UNMAP = 0,			/* unmap mode */
+-	TTU_MIGRATION = 1,		/* migration mode */
+-	TTU_MUNLOCK = 2,		/* munlock mode */
+-	TTU_ACTION_MASK = 0xff,
++	TTU_UNMAP = 1,			/* unmap mode */
++	TTU_MIGRATION = 2,		/* migration mode */
++	TTU_MUNLOCK = 4,		/* munlock mode */
  
-+	netif_tx_lock(dev->net);
- 	netif_stop_queue(dev->net);
-+	netif_tx_unlock(dev->net);
-+
- 	netif_carrier_off(dev->net);
+ 	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
+ 	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
+@@ -186,11 +185,7 @@ int page_referenced(struct page *, int is_locked,
+ int page_referenced_one(struct page *, struct vm_area_struct *,
+ 	unsigned long address, void *arg);
  
- 	/* disable endpoints, forcing (synchronous) completion
--- 
-1.7.9.5
+-#define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
+-
+ int try_to_unmap(struct page *, enum ttu_flags flags);
+-int try_to_unmap_one(struct page *, struct vm_area_struct *,
+-			unsigned long address, void *arg);
+ 
+ /*
+  * Called from mm/filemap_xip.c to unmap empty zero page
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 75d9d5c..b8e78be 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1112,8 +1112,8 @@ out:
+ /*
+  * @arg: enum ttu_flags will be passed to this argument
+  */
+-int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+-		     unsigned long address, void *arg)
++static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
++			    unsigned long address, void *arg)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *pte;
+@@ -1135,7 +1135,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 		if (vma->vm_flags & VM_LOCKED)
+ 			goto out_mlock;
+ 
+-		if (TTU_ACTION(flags) == TTU_MUNLOCK)
++		if (flags & TTU_MUNLOCK)
+ 			goto out_unmap;
+ 	}
+ 	if (!(flags & TTU_IGNORE_ACCESS)) {
+@@ -1203,7 +1203,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 			 * pte. do_swap_page() will wait until the migration
+ 			 * pte is removed and then restart fault handling.
+ 			 */
+-			BUG_ON(TTU_ACTION(flags) != TTU_MIGRATION);
++			BUG_ON(!(flags & TTU_MIGRATION));
+ 			entry = make_migration_entry(page, pte_write(pteval));
+ 		}
+ 		swp_pte = swp_entry_to_pte(entry);
+@@ -1212,7 +1212,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 		set_pte_at(mm, address, pte, swp_pte);
+ 		BUG_ON(pte_file(*pte));
+ 	} else if (IS_ENABLED(CONFIG_MIGRATION) &&
+-		   (TTU_ACTION(flags) == TTU_MIGRATION)) {
++		   (flags & TTU_MIGRATION)) {
+ 		/* Establish migration entry for a file page */
+ 		swp_entry_t entry;
+ 		entry = make_migration_entry(page, pte_write(pteval));
+@@ -1225,7 +1225,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 
+ out_unmap:
+ 	pte_unmap_unlock(pte, ptl);
+-	if (ret != SWAP_FAIL && TTU_ACTION(flags) != TTU_MUNLOCK)
++	if (ret != SWAP_FAIL && !(flags & TTU_MUNLOCK))
+ 		mmu_notifier_invalidate_page(mm, address);
+ out:
+ 	return ret;
+@@ -1512,7 +1512,7 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
+ 	 * locking requirements of exec(), migration skips
+ 	 * temporary VMAs until after exec() completes.
+ 	 */
+-	if (flags & TTU_MIGRATION && !PageKsm(page) && PageAnon(page))
++	if ((flags & TTU_MIGRATION) && !PageKsm(page) && PageAnon(page))
+ 		rwc.invalid_vma = invalid_migration_vma;
+ 
+ 	ret = rmap_walk(page, &rwc);
 
