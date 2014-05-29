@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934203AbaE2N7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:59:20 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59458 "EHLO
+	id S933494AbaE2N7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:59:19 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59467 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933424AbaE2Ntd (ORCPT
+	by vger.kernel.org with ESMTP id S933440AbaE2Ntd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ying Cai <ycai@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 091/103] ip_tunnel: Set network header properly for IP_ECN_decapsulate()
-Date: Thu, 29 May 2014 15:49:16 +0200
-Message-Id: <90ca7e93604cfb1f11c2ebf8faf476b3b0ea2e1f.1401371259.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 053/103] drm/vmwgfx: Make sure user-space can't DMA across buffer object boundaries v2
+Date: Thu, 29 May 2014 15:48:38 +0200
+Message-Id: <e826b6c6640660db799f6c8344f40447e76036e8.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
@@ -23,50 +23,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ying Cai <ycai@google.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit e96f2e7c430014eff52c93cabef1ad4f42ed0db1 ]
+commit cbd75e97a525e3819c02dc18bc2d67aa544c9e45 upstream.
 
-In ip_tunnel_rcv(), set skb->network_header to inner IP header
-before IP_ECN_decapsulate().
+We already check that the buffer object we're accessing is registered with
+the file. Now also make sure that we can't DMA across buffer object boundaries.
 
-Without the fix, IP_ECN_decapsulate() takes outer IP header as
-inner IP header, possibly causing error messages or packet drops.
+v2: Code commenting update.
 
-Note that this skb_reset_network_header() call was in this spot when
-the original feature for checking consistency of ECN bits through
-tunnels was added in eccc1bb8d4b4 ("tunnel: drop packet if ECN present
-with not-ECT"). It was only removed from this spot in 3d7b46cd20e3
-("ip_tunnel: push generic protocol handling to ip_tunnel module.").
-
-Fixes: 3d7b46cd20e3 ("ip_tunnel: push generic protocol handling to ip_tunnel module.")
-Reported-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Ying Cai <ycai@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/ip_tunnel.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index 3bedb26cfb53..d626d4059a42 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -433,6 +433,8 @@ int ip_tunnel_rcv(struct ip_tunnel *tunnel, struct sk_buff *skb,
- 		tunnel->i_seqno = ntohl(tpi->seq) + 1;
- 	}
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+index 8b059eb09d9b..1b9aa982257e 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+@@ -834,14 +834,36 @@ static int vmw_cmd_dma(struct vmw_private *dev_priv,
+ 		SVGA3dCmdSurfaceDMA dma;
+ 	} *cmd;
+ 	int ret;
++	SVGA3dCmdSurfaceDMASuffix *suffix;
++	uint32_t bo_size;
  
-+	skb_reset_network_header(skb);
+ 	cmd = container_of(header, struct vmw_dma_cmd, header);
++	suffix = (SVGA3dCmdSurfaceDMASuffix *)((unsigned long) &cmd->dma +
++					       header->size - sizeof(*suffix));
 +
- 	err = IP_ECN_decapsulate(iph, skb);
- 	if (unlikely(err)) {
- 		if (log_ecn_error)
++	/* Make sure device and verifier stays in sync. */
++	if (unlikely(suffix->suffixSize != sizeof(*suffix))) {
++		DRM_ERROR("Invalid DMA suffix size.\n");
++		return -EINVAL;
++	}
++
+ 	ret = vmw_translate_guest_ptr(dev_priv, sw_context,
+ 				      &cmd->dma.guest.ptr,
+ 				      &vmw_bo);
+ 	if (unlikely(ret != 0))
+ 		return ret;
+ 
++	/* Make sure DMA doesn't cross BO boundaries. */
++	bo_size = vmw_bo->base.num_pages * PAGE_SIZE;
++	if (unlikely(cmd->dma.guest.ptr.offset > bo_size)) {
++		DRM_ERROR("Invalid DMA offset.\n");
++		return -EINVAL;
++	}
++
++	bo_size -= cmd->dma.guest.ptr.offset;
++	if (unlikely(suffix->maximumOffset > bo_size))
++		suffix->maximumOffset = bo_size;
++
+ 	ret = vmw_cmd_res_check(dev_priv, sw_context, vmw_res_surface,
+ 				user_surface_converter, &cmd->dma.host.sid,
+ 				NULL);
 -- 
 1.9.3
 
