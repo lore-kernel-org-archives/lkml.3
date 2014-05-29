@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965123AbaE2OFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:05:51 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59421 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933304AbaE2Ntc (ORCPT
+	id S965144AbaE2OGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:06:08 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:61126 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965126AbaE2OGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:49:32 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
-        Chris Mason <clm@fb.com>, "David S. Miller" <davem@davemloft.net>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 076/103] ipv6: fib: fix fib dump restart
-Date: Thu, 29 May 2014 15:49:01 +0200
-Message-Id: <f0b511cae2f0545e88ecd5cc7fcd0f9d7dac96c6.1401371259.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
-References: <cover.1401371258.git.jslaby@suse.cz>
+	Thu, 29 May 2014 10:06:04 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/5] clk: bcm: prerequisite and bus clock support
+Date: Thu, 29 May 2014 09:05:56 -0500
+Message-Id: <1401372361-18842-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kumar Sundararajan <kumar@fb.com>
+Currently only peripheral clocks are supported for Broadcom platforms
+that use Kona style CCUs for clocking.  This series adds support for
+bus clocks as well.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+One motivation for doing this is that there exist peripheral clocks
+that cannot be configured without having first initialized a related
+bus clock.  Adding bus clock support allows such peripheral clocks
+to be usable.
 
-===============
+This also imposes a new requirement, however--that the bus clock
+be initialized *before* the clock that depends on it.  For this,
+we define the notion of a "prerequisite" clock.  If a clock has a
+prerequisite specified, that prequisite clock will be initialized
+first.  For now this only affects startup-time initialization.
 
-[ Upstream commit 1c2658545816088477e91860c3a645053719cb54 ]
+These patches are based on Mike Turquette's current "clk-next"
+branch.
+    4c8f806 Merge branch 'clk-fixes' into clk-next
 
-When the ipv6 fib changes during a table dump, the walk is
-restarted and the number of nodes dumped are skipped. But the existing
-code doesn't advance to the next node after a node is skipped. This can
-cause the dump to loop or produce lots of duplicates when the fib
-is modified during the dump.
+They are available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/bcm-bus-clk-v3
 
-This change advances the walk to the next node if the current node is
-skipped after a restart.
+					-Alex
 
-Signed-off-by: Kumar Sundararajan <kumar@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/ipv6/ip6_fib.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Version history:
+v3: - Deleted unused clk_lookup field from struct kona_clk
+    - Now use term "initialized" rather than "enabled"
+v2: - Added field "p" to the previously unnamed prereq union.
 
-diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-index 5bec666aba61..5e30677953d7 100644
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -1418,7 +1418,7 @@ static int fib6_walk_continue(struct fib6_walker_t *w)
- 
- 				if (w->skip) {
- 					w->skip--;
--					continue;
-+					goto skip;
- 				}
- 
- 				err = w->func(w);
-@@ -1428,6 +1428,7 @@ static int fib6_walk_continue(struct fib6_walker_t *w)
- 				w->count++;
- 				continue;
- 			}
-+skip:
- 			w->state = FWS_U;
- 		case FWS_U:
- 			if (fn == w->root)
+
+Alex Elder (5):
+  clk: bcm281xx: add an initialized flag
+  clk: bcm281xx: implement prerequisite clocks
+  clk: bcm281xx: add bus clock support
+  clk: bcm281xx: define a bus clock
+  ARM: dts: add bus clock bsc3_apb for bcm281xx
+
+ arch/arm/boot/dts/bcm11351.dtsi      |   3 +-
+ drivers/clk/bcm/clk-bcm281xx.c       |  13 +++-
+ drivers/clk/bcm/clk-kona-setup.c     |  96 +++++++++++++++++++++++++++-
+ drivers/clk/bcm/clk-kona.c           | 120 ++++++++++++++++++++++++++++++++++-
+ drivers/clk/bcm/clk-kona.h           |  34 +++++++++-
+ include/dt-bindings/clock/bcm281xx.h |   3 +-
+ 6 files changed, 258 insertions(+), 11 deletions(-)
+
 -- 
-1.9.3
+1.9.1
 
