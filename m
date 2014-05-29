@@ -1,153 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaE2Dve (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 23:51:34 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:65099 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755952AbaE2Dvd (ORCPT
+	id S1755972AbaE2Dwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 23:52:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54734 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518AbaE2Dwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 23:51:33 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 29 May 2014 12:52:05 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au, mst@redhat.com,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [PATCH 1/2] ftrace: print stack usage right before Oops
-Message-ID: <20140529035205.GD10092@bbox>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <20140528121832.747aaf75@gandalf.local.home>
+	Wed, 28 May 2014 23:52:36 -0400
+Date: Thu, 29 May 2014 04:52:33 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140529035233.GF18016@ZenIV.linux.org.uk>
+References: <20140527031415.GS18016@ZenIV.linux.org.uk>
+ <20140527040026.GT18016@ZenIV.linux.org.uk>
+ <20140527070409.GA1801@lahna.fi.intel.com>
+ <20140528031955.GW18016@ZenIV.linux.org.uk>
+ <20140528073751.GB1757@lahna.fi.intel.com>
+ <20140528115701.GY18016@ZenIV.linux.org.uk>
+ <20140528131136.GA1643@lahna.fi.intel.com>
+ <20140528141937.GZ18016@ZenIV.linux.org.uk>
+ <20140528183954.GA18016@ZenIV.linux.org.uk>
+ <20140529031149.GE18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140528121832.747aaf75@gandalf.local.home>
+In-Reply-To: <20140529031149.GE18016@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 12:18:32PM -0400, Steven Rostedt wrote:
-> On Wed, 28 May 2014 15:53:58 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
+On Thu, May 29, 2014 at 04:11:49AM +0100, Al Viro wrote:
+> On Wed, May 28, 2014 at 07:39:54PM +0100, Al Viro wrote:
 > 
-> > While I played with my own feature(ex, something on the way to reclaim),
-> > kernel went to oops easily. I guessed reason would be stack overflow
-> > and wanted to prove it.
-> > 
-> > I found stack tracer which would be very useful for me but kernel went
-> > oops before my user program gather the information via
-> > "watch cat /sys/kernel/debug/tracing/stack_trace" so I couldn't get an
-> > stack usage of each functions.
-> > 
-> > What I want was that emit the kernel stack usage when kernel goes oops.
-> > 
-> > This patch records callstack of max stack usage into ftrace buffer
-> > right before Oops and print that information with ftrace_dump_on_oops.
-> > At last, I can find a culprit. :)
-> > 
+> > OK, the warnings about averting your eyes very much apply; the thing below
+> > definitely needs more massage before it becomes acceptable (and no, it's
+> > not a single commit; I'm not that insane), but it changes behaviour in the
+> > way described above.  Could you check if the livelock persists with it?
+> > No trace-generating code in there, so the logs should be compact enough...
 > 
-> This is not dependent on patch 2/2, nor is 2/2 dependent on this patch,
-> I'll review this as if 2/2 does not exist.
+> Here's an updated patch, hopefully slightly less vomit-inducing.  Should
+> give the same behaviour as the previous one...  Again, it's a cumulative
+> diff - I'm still massaging the splitup here.
 
-Yeb, Thanks!
-
-> 
-> 
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  kernel/trace/trace_stack.c | 32 ++++++++++++++++++++++++++++++--
-> >  1 file changed, 30 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-> > index 5aa9a5b9b6e2..5eb88e60bc5e 100644
-> > --- a/kernel/trace/trace_stack.c
-> > +++ b/kernel/trace/trace_stack.c
-> > @@ -51,6 +51,30 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
-> >  int stack_tracer_enabled;
-> >  static int last_stack_tracer_enabled;
-> >  
-> > +static inline void print_max_stack(void)
-> > +{
-> > +	long i;
-> > +	int size;
-> > +
-> > +	trace_printk("        Depth    Size   Location"
-> > +			   "    (%d entries)\n"
-> 
-> Please do not break strings just to satisfy that silly 80 character
-> limit. Even Linus Torvalds said that's pretty stupid.
-
-I just copied existing code from trace_stack.c.
-Okay, I will fix. :)
-
-> 
-> Also, do not use trace_printk(). It is not made to be included in a
-> production kernel. It reserves special buffers to make it as fast as
-> possible, and those buffers should not be created in production
-> systems. In fact, I will probably add for 3.16 a big warning message
-> when trace_printk() is used.
-> 
-> Since this is a bug, why not just use printk() instead?
-
-Thanks for the info. I will use printk(KERN_EMERG).
-
-> 
-> BTW, wouldn't this this function crash as well if the stack is already
-> bad?
-
-It wasn't crashed until code has data from corrupted threadinfo.
-
-> 
-> -- Steve
-> 
-> > +			   "        -----    ----   --------\n",
-> > +			   max_stack_trace.nr_entries - 1);
-> > +
-> > +	for (i = 0; i < max_stack_trace.nr_entries; i++) {
-> > +		if (stack_dump_trace[i] == ULONG_MAX)
-> > +			break;
-> > +		if (i+1 == max_stack_trace.nr_entries ||
-> > +				stack_dump_trace[i+1] == ULONG_MAX)
-> > +			size = stack_dump_index[i];
-> > +		else
-> > +			size = stack_dump_index[i] - stack_dump_index[i+1];
-> > +
-> > +		trace_printk("%3ld) %8d   %5d   %pS\n", i, stack_dump_index[i],
-> > +				size, (void *)stack_dump_trace[i]);
-> > +	}
-> > +}
-> > +
-> >  static inline void
-> >  check_stack(unsigned long ip, unsigned long *stack)
-> >  {
-> > @@ -149,8 +173,12 @@ check_stack(unsigned long ip, unsigned long *stack)
-> >  			i++;
-> >  	}
-> >  
-> > -	BUG_ON(current != &init_task &&
-> > -		*(end_of_stack(current)) != STACK_END_MAGIC);
-> > +	if ((current != &init_task &&
-> > +		*(end_of_stack(current)) != STACK_END_MAGIC)) {
-> > +		print_max_stack();
-> > +		BUG();
-> > +	}
-> > +
-> >   out:
-> >  	arch_spin_unlock(&max_stack_lock);
-> >  	local_irq_restore(flags);
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+BTW, it still leaves the "proceed to parent" case in shrink_dentry_list();
+in theory, it's also vulnerable to the same livelock.  Can be dealt pretty
+much the same way; I'd rather leave that one for right after -final, though,
+if the already posted variant turns out to be sufficient...
