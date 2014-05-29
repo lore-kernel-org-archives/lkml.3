@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934666AbaE2FgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:36:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57707 "EHLO
+	id S934689AbaE2Fgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:36:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57694 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244AbaE2Ee6 (ORCPT
+	with ESMTP id S1756233AbaE2Ee4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:34:58 -0400
+	Thu, 29 May 2014 00:34:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <koverstreet@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 030/140] md/raid1: r1buf_pool_alloc: free allocate pages when subsequent allocation fails.
-Date: Wed, 28 May 2014 21:32:49 -0700
-Message-Id: <20140529043053.247831291@linuxfoundation.org>
+        Derya <derya.kiran@yahoo.de>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.14 027/140] Revert "HID: microsoft: Add IDs for Surface Type/Touch Cover 2"
+Date: Wed, 28 May 2014 21:32:46 -0700
+Message-Id: <20140529043052.851940220@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -28,76 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Derya <derya.kiran@yahoo.de>
 
-commit da1aab3dca9aa88ae34ca392470b8943159e25fe upstream.
+commit f3b0cbce01cd5c242b420d986b208d306bdc5083 upstream.
 
-When performing a user-request check/repair (MD_RECOVERY_REQUEST is set)
-on a raid1, we allocate multiple bios each with their own set of pages.
+This reverts commit 117309c51dca42121f70cacec801511b76acf75c.
 
-If the page allocations for one bio fails, we currently do *not* free
-the pages allocated for the previous bios, nor do we free the bio itself.
+The MS Surface Pro 2 has an USB composite device with 3 interfaces
+- interface 0 - sensor hub
+- interface 1 - wacom digitizer
+- interface 2 - the keyboard cover, if one is attached
+This USB composite device changes it product id dependent on if and which
+keyboard cover is attached. Adding the covers to hid_have_special_driver
+prevents loading the right hid drivers for the other two interfaces, all 3
+get loaded with hid-microsoft. We don't even need hid-microsoft for the
+keyboards. We have to revert this to load the right hid modules for each
+interface.
 
-This patch frees all the already-allocate pages, and makes sure that
-all the bios are freed as well.
-
-This bug can cause a memory leak which can ultimately OOM a machine.
-It was introduced in 3.10-rc1.
-
-Fixes: a07876064a0b73ab5ef1ebcf14b1cf0231c07858
-Cc: Kent Overstreet <koverstreet@google.com>
-Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Derya <derya.kiran@yahoo.de>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/hid/hid-core.c      |    2 --
+ drivers/hid/hid-ids.h       |    2 --
+ drivers/hid/hid-microsoft.c |    4 ----
+ 3 files changed, 8 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -97,6 +97,7 @@ static void * r1buf_pool_alloc(gfp_t gfp
- 	struct pool_info *pi = data;
- 	struct r1bio *r1_bio;
- 	struct bio *bio;
-+	int need_pages;
- 	int i, j;
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1780,8 +1780,6 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_USB) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_2) },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TOUCH_COVER_2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY, USB_DEVICE_ID_GENIUS_KB29E) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -624,8 +624,6 @@
+ #define USB_DEVICE_ID_MS_PRESENTER_8K_USB	0x0713
+ #define USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K	0x0730
+ #define USB_DEVICE_ID_MS_COMFORT_MOUSE_4500	0x076c
+-#define USB_DEVICE_ID_MS_TOUCH_COVER_2	0x07a7
+-#define USB_DEVICE_ID_MS_TYPE_COVER_2	0x07a9
  
- 	r1_bio = r1bio_pool_alloc(gfp_flags, pi);
-@@ -119,15 +120,15 @@ static void * r1buf_pool_alloc(gfp_t gfp
- 	 * RESYNC_PAGES for each bio.
- 	 */
- 	if (test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery))
--		j = pi->raid_disks;
-+		need_pages = pi->raid_disks;
- 	else
--		j = 1;
--	while(j--) {
-+		need_pages = 1;
-+	for (j = 0; j < need_pages; j++) {
- 		bio = r1_bio->bios[j];
- 		bio->bi_vcnt = RESYNC_PAGES;
+ #define USB_VENDOR_ID_MOJO		0x8282
+ #define USB_DEVICE_ID_RETRO_ADAPTER	0x3201
+--- a/drivers/hid/hid-microsoft.c
++++ b/drivers/hid/hid-microsoft.c
+@@ -208,10 +208,6 @@ static const struct hid_device_id ms_dev
+ 		.driver_data = MS_NOGET },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
+ 		.driver_data = MS_DUPLICATE_USAGES },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TYPE_COVER_2),
+-		.driver_data = 0 },
+-	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_TOUCH_COVER_2),
+-		.driver_data = 0 },
  
- 		if (bio_alloc_pages(bio, gfp_flags))
--			goto out_free_bio;
-+			goto out_free_pages;
- 	}
- 	/* If not user-requests, copy the page pointers to all bios */
- 	if (!test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery)) {
-@@ -141,6 +142,14 @@ static void * r1buf_pool_alloc(gfp_t gfp
- 
- 	return r1_bio;
- 
-+out_free_pages:
-+	while (--j >= 0) {
-+		struct bio_vec *bv;
-+
-+		bio_for_each_segment_all(bv, r1_bio->bios[j], i)
-+			__free_page(bv->bv_page);
-+	}
-+
- out_free_bio:
- 	while (++j < pi->raid_disks)
- 		bio_put(r1_bio->bios[j]);
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT),
+ 		.driver_data = MS_PRESENTER },
 
 
