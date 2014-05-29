@@ -1,102 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927AbaE2WLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 18:11:38 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:41262 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340AbaE2WLg (ORCPT
+	id S932698AbaE2WOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 18:14:42 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:65060 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaE2WOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 18:11:36 -0400
+	Thu, 29 May 2014 18:14:37 -0400
+Message-ID: <5387B149.20408@gmail.com>
+Date: Thu, 29 May 2014 15:14:33 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <5387A96C.6080404@linaro.org>
-References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1401211721-19712-3-git-send-email-bjorn.andersson@sonymobile.com>
-	<53875E2A.7050902@linaro.org>
-	<CAJAp7Ogd5CCsyBhQmaDsy6SAG+YPAPzEJWP0fSKHK1kov3Z6cw@mail.gmail.com>
-	<5387A96C.6080404@linaro.org>
-Date: Thu, 29 May 2014 15:11:35 -0700
-Message-ID: <CAJAp7Ogo1uQXG5Fwa9AFEiS+K=7i+UJTQABmjPCW3ba-EYr04Q@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: abdoulaye berthe <berthe.ab@gmail.com>
+CC: linus.walleij@linaro.org, gnurou@gmail.com, m@bues.ch,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
+        linux-wireless@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-samsungsoc@vger.kernel.org,
+        spear-devel@list.st.com, platform-driver-x86@vger.kernel.org,
+        netdev@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] gpio: removes all usage of gpiochip_remove retval
+References: <1401400492-26175-1-git-send-email-berthe.ab@gmail.com>
+In-Reply-To: <1401400492-26175-1-git-send-email-berthe.ab@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 2:41 PM, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
->> Although we will not have more than one rpm in a system and therefore not
->> instatiate this driver multiple times I do not want to run it off the
->> global
->> state.
->>
-> I agree.
->
-> Why not make a separate data structure for the qcom_of_data?
->
+On 05/29/2014 02:54 PM, abdoulaye berthe wrote:
 
-That might make sense, definitely worth a spin.
+Did you forget a changelog explaining why this is either needed, or even 
+a good idea?  I joined the conversation late and don't know why you are 
+doing this.
 
->>> Should't you use the platform_get_resource_byname here?
+Thanks,
+David Daney
+
+
+
+> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+> ---
+>   arch/arm/common/scoop.c                        | 10 ++--------
+>   arch/mips/txx9/generic/setup.c                 |  4 ++--
+>   arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c |  3 ++-
+>   arch/sh/boards/mach-x3proto/gpio.c             |  6 ++----
+>   drivers/bcma/driver_gpio.c                     |  3 ++-
+>   drivers/gpio/gpio-74x164.c                     |  8 +++-----
+>   drivers/gpio/gpio-adnp.c                       |  9 +--------
+>   drivers/gpio/gpio-adp5520.c                    |  8 +-------
+>   drivers/gpio/gpio-adp5588.c                    |  6 +-----
+>   drivers/gpio/gpio-amd8111.c                    |  3 +--
+>   drivers/gpio/gpio-arizona.c                    |  3 ++-
+>   drivers/gpio/gpio-cs5535.c                     |  8 +-------
+>   drivers/gpio/gpio-da9052.c                     |  3 ++-
+>   drivers/gpio/gpio-da9055.c                     |  3 ++-
+>   drivers/gpio/gpio-dwapb.c                      |  2 +-
+>   drivers/gpio/gpio-em.c                         |  5 +----
+>   drivers/gpio/gpio-f7188x.c                     | 18 ++----------------
+>   drivers/gpio/gpio-generic.c                    |  3 ++-
+>   drivers/gpio/gpio-grgpio.c                     |  4 +---
+>   drivers/gpio/gpio-ich.c                        |  9 +--------
+>   drivers/gpio/gpio-it8761e.c                    |  6 +-----
+>   drivers/gpio/gpio-janz-ttl.c                   |  8 +-------
+>   drivers/gpio/gpio-kempld.c                     |  3 ++-
+>   drivers/gpio/gpio-lp3943.c                     |  3 ++-
+>   drivers/gpio/gpio-lynxpoint.c                  |  5 +----
+>   drivers/gpio/gpio-max730x.c                    | 12 ++++--------
+>   drivers/gpio/gpio-max732x.c                    |  7 +------
+>   drivers/gpio/gpio-mc33880.c                    | 11 +++--------
+>   drivers/gpio/gpio-mc9s08dz60.c                 |  3 ++-
+>   drivers/gpio/gpio-mcp23s08.c                   | 26 +++++++-------------------
+>   drivers/gpio/gpio-ml-ioh.c                     |  8 ++------
+>   drivers/gpio/gpio-msm-v2.c                     |  5 +----
+>   drivers/gpio/gpio-mxc.c                        |  2 +-
+>   drivers/gpio/gpio-octeon.c                     |  3 ++-
+>   drivers/gpio/gpio-palmas.c                     |  3 ++-
+>   drivers/gpio/gpio-pca953x.c                    |  7 +------
+>   drivers/gpio/gpio-pcf857x.c                    |  4 +---
+>   drivers/gpio/gpio-pch.c                        | 10 ++--------
+>   drivers/gpio/gpio-rc5t583.c                    |  3 ++-
+>   drivers/gpio/gpio-rcar.c                       |  5 +----
+>   drivers/gpio/gpio-rdc321x.c                    |  7 ++-----
+>   drivers/gpio/gpio-sch.c                        | 16 +++-------------
+>   drivers/gpio/gpio-sch311x.c                    |  6 ++----
+>   drivers/gpio/gpio-sodaville.c                  |  4 +---
+>   drivers/gpio/gpio-stmpe.c                      |  8 +-------
+>   drivers/gpio/gpio-sx150x.c                     |  7 ++-----
+>   drivers/gpio/gpio-syscon.c                     |  3 ++-
+>   drivers/gpio/gpio-tb10x.c                      |  5 +----
+>   drivers/gpio/gpio-tc3589x.c                    |  8 +-------
+>   drivers/gpio/gpio-timberdale.c                 |  5 +----
+>   drivers/gpio/gpio-tps6586x.c                   |  3 ++-
+>   drivers/gpio/gpio-tps65910.c                   |  3 ++-
+>   drivers/gpio/gpio-tps65912.c                   |  3 ++-
+>   drivers/gpio/gpio-ts5500.c                     |  6 +++---
+>   drivers/gpio/gpio-twl4030.c                    |  4 +---
+>   drivers/gpio/gpio-twl6040.c                    |  3 ++-
+>   drivers/gpio/gpio-ucb1400.c                    |  2 +-
+>   drivers/gpio/gpio-viperboard.c                 | 10 +++-------
+>   drivers/gpio/gpio-vx855.c                      |  3 +--
+>   drivers/gpio/gpio-wm831x.c                     |  3 ++-
+>   drivers/gpio/gpio-wm8350.c                     |  3 ++-
+>   drivers/gpio/gpio-wm8994.c                     |  3 ++-
+>   drivers/hid/hid-cp2112.c                       |  6 ++----
+>   drivers/input/keyboard/adp5588-keys.c          |  4 +---
+>   drivers/input/keyboard/adp5589-keys.c          |  4 +---
+>   drivers/input/touchscreen/ad7879.c             | 10 +++-------
+>   drivers/leds/leds-pca9532.c                    | 10 ++--------
+>   drivers/leds/leds-tca6507.c                    |  7 ++-----
+>   drivers/media/dvb-frontends/cxd2820r_core.c    | 10 +++-------
+>   drivers/mfd/asic3.c                            |  3 ++-
+>   drivers/mfd/htc-i2cpld.c                       |  8 +-------
+>   drivers/mfd/sm501.c                            | 17 +++--------------
+>   drivers/mfd/tc6393xb.c                         | 13 ++++---------
+>   drivers/mfd/ucb1x00-core.c                     |  8 ++------
+>   drivers/pinctrl/pinctrl-abx500.c               | 15 +++------------
+>   drivers/pinctrl/pinctrl-adi2.c                 |  9 ++++-----
+>   drivers/pinctrl/pinctrl-as3722.c               | 11 ++---------
+>   drivers/pinctrl/pinctrl-baytrail.c             |  5 +----
+>   drivers/pinctrl/pinctrl-coh901.c               | 10 ++--------
+>   drivers/pinctrl/pinctrl-exynos5440.c           |  6 +-----
+>   drivers/pinctrl/pinctrl-msm.c                  | 11 ++---------
+>   drivers/pinctrl/pinctrl-nomadik.c              |  2 +-
+>   drivers/pinctrl/pinctrl-rockchip.c             | 16 ++++------------
+>   drivers/pinctrl/pinctrl-samsung.c              | 14 ++++----------
+>   drivers/pinctrl/pinctrl-sunxi.c                |  3 +--
+>   drivers/pinctrl/sh-pfc/gpio.c                  |  9 +++------
+>   drivers/pinctrl/spear/pinctrl-plgpio.c         |  3 +--
+>   drivers/pinctrl/vt8500/pinctrl-wmt.c           |  9 ++-------
+>   drivers/platform/x86/intel_pmic_gpio.c         |  3 +--
+>   drivers/ssb/driver_gpio.c                      |  3 ++-
+>   drivers/staging/vme/devices/vme_pio2_gpio.c    |  4 +---
+>   drivers/tty/serial/max310x.c                   | 10 ++++------
+>   drivers/video/fbdev/via/via-gpio.c             | 10 +++-------
+>   sound/soc/codecs/wm5100.c                      |  5 +----
+>   sound/soc/codecs/wm8903.c                      |  6 +-----
+>   sound/soc/codecs/wm8962.c                      |  5 +----
+>   sound/soc/codecs/wm8996.c                      |  6 +-----
+>   97 files changed, 182 insertions(+), 460 deletions(-)
+>
 [...]
-> But my point on platform_get_resource_byname is to remove the dependency on
-> the resource ordering, It is very difficult to catch errors resulting in
-> wrong ordered resources in DT.
->
-
-Sorry, forgot to answer the first part of your question.
-
-The order in dt must be fixed, hence there isn't really any reason to
-use the byname; as long as it doesn't add any context or such here. We
-had a long long discussion with the dt guys about this a few months
-back.
-
->>>> +       ret = irq_set_irq_wake(irq_ack, 1);
->>>> +       if (ret)
->>>> +               dev_warn(&pdev->dev, "failed to mark ack irq as
->>>> wakeup\n");
->>>> +
->>>
->>>
->>> ..]
->>>
->>> Shouln't these be set as part of the pm suspend call, if the device is
->>> wakeup capable?
->>>
->>>
->>
->> Is there any reason to toggle this?
->>
->> I'm not sure when this interrupt will actually be fired, but I don't see
->> any
->> harm in keeping it wakup enabled at all times.
->
->
-> Typically the wake-up source is driven/enabled by the user. When the system
-> goes to low-power state it would enable the wakeup on the irq. And when
-> there is an interrupt it would wake up the system as part of resuming from
-> low-power state.
->
-
-But the RPM is the user; the ack irq is used to acknowledge requests
-or to notify the Linux system about some event. If these happens when
-the system is asleep it's always expected (in current implementation
-at least) to wake up the system; hence I mark it as a wake irq.
-
-> Again if you what this interrupt to wakeup the system, I would expect
-> pm_wakeup_event/related calls in the interrupt handler too.
->
-
-There is no power management here. I'll have to look into what value
-this would add. I have to get back to you on this.
-
-Regards,
-Bjorn
