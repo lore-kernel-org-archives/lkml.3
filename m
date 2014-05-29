@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539AbaE2N5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:57:22 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59463 "EHLO
+	id S1757523AbaE2N5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:57:18 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59477 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933467AbaE2Ntd (ORCPT
+	by vger.kernel.org with ESMTP id S933472AbaE2Ntd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:33 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Florian Westphal <fw@strlen.de>,
+Cc: linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 092/103] net: ipv4: ip_forward: fix inverted local_df test
-Date: Thu, 29 May 2014 15:49:17 +0200
-Message-Id: <b2b68efab92145a73420d86a2956fec786eda078.1401371259.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 022/103] netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
+Date: Thu, 29 May 2014 15:48:07 +0200
+Message-Id: <62c97a8612f753ffa6c5c7bebe140cc0951e539f.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
@@ -23,54 +26,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Westphal <fw@strlen.de>
+From: Andrey Vagin <avagin@openvz.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit ca6c5d4ad216d5942ae544bbf02503041bd802aa ]
+commit 223b02d923ecd7c84cf9780bb3686f455d279279 upstream.
 
-local_df means 'ignore DF bit if set', so if its set we're
-allowed to perform ip fragmentation.
+"len" contains sizeof(nf_ct_ext) and size of extensions. In a worst
+case it can contain all extensions. Bellow you can find sizes for all
+types of extensions. Their sum is definitely bigger than 256.
 
-This wasn't noticed earlier because the output path also drops such skbs
-(and emits needed icmp error) and because netfilter ip defrag did not
-set local_df until couple of days ago.
+nf_ct_ext_types[0]->len = 24
+nf_ct_ext_types[1]->len = 32
+nf_ct_ext_types[2]->len = 24
+nf_ct_ext_types[3]->len = 32
+nf_ct_ext_types[4]->len = 152
+nf_ct_ext_types[5]->len = 2
+nf_ct_ext_types[6]->len = 16
+nf_ct_ext_types[7]->len = 8
 
-Only difference is that DF-packets-larger-than MTU now discarded
-earlier (f.e. we avoid pointless netfilter postrouting trip).
+I have seen "len" up to 280 and my host has crashes w/o this patch.
 
-While at it, drop the repeated test ip_exceeds_mtu, checking it once
-is enough...
+The right way to fix this problem is reducing the size of the ecache
+extension (4) and Florian is going to do this, but these changes will
+be quite large to be appropriate for a stable tree.
 
-Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 5b423f6a40a0 (netfilter: nf_conntrack: fix racy timer handling with reliable)
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/ip_forward.c | 4 ++--
+ include/net/netfilter/nf_conntrack_extend.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/ip_forward.c b/net/ipv4/ip_forward.c
-index 98d7e53d2afd..bd1c5baf69be 100644
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -42,12 +42,12 @@
- static bool ip_may_fragment(const struct sk_buff *skb)
- {
- 	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
--	       !skb->local_df;
-+		skb->local_df;
- }
+diff --git a/include/net/netfilter/nf_conntrack_extend.h b/include/net/netfilter/nf_conntrack_extend.h
+index 88a1d4060d52..88877224473f 100644
+--- a/include/net/netfilter/nf_conntrack_extend.h
++++ b/include/net/netfilter/nf_conntrack_extend.h
+@@ -47,8 +47,8 @@ enum nf_ct_ext_id {
+ /* Extensions: optional stuff which isn't permanently in struct. */
+ struct nf_ct_ext {
+ 	struct rcu_head rcu;
+-	u8 offset[NF_CT_EXT_NUM];
+-	u8 len;
++	u16 offset[NF_CT_EXT_NUM];
++	u16 len;
+ 	char data[0];
+ };
  
- static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
- {
--	if (skb->len <= mtu || skb->local_df)
-+	if (skb->len <= mtu)
- 		return false;
- 
- 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
 -- 
 1.9.3
 
